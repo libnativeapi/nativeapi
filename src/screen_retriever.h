@@ -3,31 +3,10 @@
 #include <memory>
 #include <vector>
 
-// Representation of a display
-struct Display {
-  char* id;
-  char* name;
-  double width;
-  double height;
-  double visiblePositionX;
-  double visiblePositionY;
-  double visibleSizeWidth;
-  double visibleSizeHeight;
-  double scaleFactor;
-};
+#include "ui/display.h"
+#include "ui/geometry.h"
 
-// Representation of a list of displays
-struct DisplayList {
-  Display* displays;
-  int count;
-};
-
-// Representation of a cursor position
-struct CursorPoint {
-  double x;
-  double y;
-};
-
+namespace nativeapi {
 // Abstract base class for ScreenRetriever
 class ScreenRetriever {
  public:
@@ -37,7 +16,7 @@ class ScreenRetriever {
   static std::unique_ptr<ScreenRetriever> Create();
 
   // Get the current cursor screen point
-  virtual CursorPoint GetCursorScreenPoint() = 0;
+  virtual Point GetCursorScreenPoint() = 0;
 
   // Get the primary display information
   virtual Display GetPrimaryDisplay() = 0;
@@ -45,3 +24,5 @@ class ScreenRetriever {
   // Get all displays information
   virtual DisplayList GetAllDisplays() = 0;
 };
+
+}  // namespace nativeapi

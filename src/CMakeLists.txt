@@ -33,7 +33,7 @@ add_library(libnativeapi STATIC
 
 # Set library properties
 set_target_properties(libnativeapi PROPERTIES
-  PUBLIC_HEADER "libnativeapi.h;screen_retriever.h;screen_retriever_linux.h;screen_retriever_macos.h;screen_retriever_windows.h"
+  PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/libnativeapi/src/**/*.h"
 )
 
 # Set library include directories

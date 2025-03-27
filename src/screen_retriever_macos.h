@@ -5,13 +5,15 @@
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
 
+namespace nativeapi {
+
 // macOS implementation of ScreenRetriever
 class ScreenRetrieverMacOS : public ScreenRetriever {
  public:
   ScreenRetrieverMacOS();
   ~ScreenRetrieverMacOS() override;
 
-  CursorPoint GetCursorScreenPoint() override;
+  Point GetCursorScreenPoint() override;
   Display GetPrimaryDisplay() override;
   DisplayList GetAllDisplays() override;
 
@@ -19,3 +21,5 @@ class ScreenRetrieverMacOS : public ScreenRetriever {
   // Helper method to create Display struct from NSScreen
   Display CreateDisplayFromNSScreen(NSScreen* screen, bool isMainScreen);
 };
+
+}  // namespace nativeapi

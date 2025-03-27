@@ -1,6 +1,8 @@
 #include "screen_retriever_windows.h"
 #include <iostream>
 
+namespace nativeapi {
+
 ScreenRetrieverWindows::ScreenRetrieverWindows() {
   // Constructor implementation
   std::cout << "ScreenRetrieverWindows initialized" << std::endl;
@@ -11,9 +13,9 @@ ScreenRetrieverWindows::~ScreenRetrieverWindows() {
   std::cout << "ScreenRetrieverWindows destroyed" << std::endl;
 }
 
-CursorPoint ScreenRetrieverWindows::GetCursorScreenPoint() {
+Point ScreenRetrieverWindows::GetCursorScreenPoint() {
   // Empty implementation
-  CursorPoint point;
+  Point point;
   point.x = 0.0;
   point.y = 0.0;
   return point;
@@ -42,3 +44,5 @@ DisplayList ScreenRetrieverWindows::GetAllDisplays() {
   displayList.count = 1;
   return displayList;
 }
+
+}  // namespace nativeapi

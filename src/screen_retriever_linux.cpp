@@ -1,6 +1,8 @@
 #include "screen_retriever_linux.h"
 #include <iostream>
 
+namespace nativeapi {
+
 ScreenRetrieverLinux::ScreenRetrieverLinux() {
   // Constructor implementation
   std::cout << "ScreenRetrieverLinux initialized" << std::endl;
@@ -11,9 +13,9 @@ ScreenRetrieverLinux::~ScreenRetrieverLinux() {
   std::cout << "ScreenRetrieverLinux destroyed" << std::endl;
 }
 
-CursorPoint ScreenRetrieverLinux::GetCursorScreenPoint() {
+Point ScreenRetrieverLinux::GetCursorScreenPoint() {
   // Empty implementation
-  CursorPoint point;
+  Point point;
   point.x = 0.0;
   point.y = 0.0;
   return point;
@@ -42,3 +44,5 @@ DisplayList ScreenRetrieverLinux::GetAllDisplays() {
   displayList.count = 1;
   return displayList;
 }
+
+}  // namespace nativeapi

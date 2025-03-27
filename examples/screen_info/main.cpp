@@ -2,10 +2,10 @@
 #include "libnativeapi.h"
 
 int main() {
-  auto screenRetriever = ScreenRetriever::Create();
+  auto screenRetriever = nativeapi::ScreenRetriever::Create();
 
   // Get primary display information
-  Display primaryDisplay = screenRetriever->GetPrimaryDisplay();
+  nativeapi::Display primaryDisplay = screenRetriever->GetPrimaryDisplay();
   std::cout << "Primary Display Information:" << std::endl;
   std::cout << "ID: " << primaryDisplay.id << std::endl;
   std::cout << "Name: " << primaryDisplay.name << std::endl;
@@ -19,10 +19,10 @@ int main() {
   std::cout << std::endl;
 
   // Get all displays information
-  DisplayList allDisplays = screenRetriever->GetAllDisplays();
+  nativeapi::DisplayList allDisplays = screenRetriever->GetAllDisplays();
   std::cout << "All Displays Information:" << std::endl;
   for (int i = 0; i < allDisplays.count; i++) {
-    Display& display = allDisplays.displays[i];
+    nativeapi::Display& display = allDisplays.displays[i];
     std::cout << "Display " << (i + 1) << ":" << std::endl;
     std::cout << "ID: " << display.id << std::endl;
     std::cout << "Name: " << display.name << std::endl;
@@ -34,10 +34,10 @@ int main() {
     std::cout << "Visible Size: " << display.visibleSizeWidth << "x"
               << display.visibleSizeHeight << std::endl;
     std::cout << std::endl;
-  }
+    }
 
   // Get cursor position
-  CursorPoint cursorPoint = screenRetriever->GetCursorScreenPoint();
+  nativeapi::Point cursorPoint = screenRetriever->GetCursorScreenPoint();
   std::cout << "Current Cursor Position: (" << cursorPoint.x << ", "
             << cursorPoint.y << ")" << std::endl;
 

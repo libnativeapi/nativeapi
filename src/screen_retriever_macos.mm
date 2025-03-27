@@ -6,6 +6,8 @@
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
 
+namespace nativeapi {
+
 // Helper function to convert NSString to char*
 static char* ConvertNSStringToCString(NSString* nsString) {
   if (nsString == nil) {
@@ -25,8 +27,8 @@ ScreenRetrieverMacOS::~ScreenRetrieverMacOS() {
   std::cout << "ScreenRetrieverMacOS destroyed" << std::endl;
 }
 
-CursorPoint ScreenRetrieverMacOS::GetCursorScreenPoint() {
-  CursorPoint point;
+Point ScreenRetrieverMacOS::GetCursorScreenPoint() {
+  Point point;
 
   // Get the current mouse position
   NSPoint mouseLocation = [NSEvent mouseLocation];
@@ -49,7 +51,7 @@ DisplayList ScreenRetrieverMacOS::GetAllDisplays() {
   NSArray<NSScreen*>* screens = [NSScreen screens];
   bool isFirstScreen = true;
 
-  int count = (int) screens.count;
+  int count = (int)screens.count;
   displayList.displays = new Display[count];
   displayList.count = count;
   int index = 0;
@@ -97,3 +99,5 @@ Display ScreenRetrieverMacOS::CreateDisplayFromNSScreen(NSScreen* screen, bool i
 
   return display;
 }
+
+}  // namespace nativeapi
