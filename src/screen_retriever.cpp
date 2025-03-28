@@ -1,24 +1,62 @@
+#include <cstring>
+#include <iostream>
+#include <string>
 #include "screen_retriever.h"
-
-// Forward declarations for platform-specific implementations
-#ifdef __APPLE__
-#include "screen_retriever_macos.h"
-#elif defined(_WIN32)
-#include "screen_retriever_windows.h"
-#else
-#include "screen_retriever_linux.h"
-#endif
 
 namespace nativeapi {
 
-std::unique_ptr<ScreenRetriever> ScreenRetriever::Create() {
-#ifdef __APPLE__
-  return std::unique_ptr<ScreenRetriever>(new ScreenRetrieverMacOS());
-#elif defined(_WIN32)
-  return std::unique_ptr<ScreenRetriever>(new ScreenRetrieverWindows());
-#else
-  return std::unique_ptr<ScreenRetriever>(new ScreenRetrieverLinux());
-#endif
+void ScreenRetriever::AddEventListener(ScreenEventType event_type,
+                                       std::function<void(const void*)> listener) {
+  std::cout << "\nAdd!" << std::endl;
+
+  listeners_[event_type].push_back(listener);
 }
 
+void ScreenRetriever::RemoveEventListener(ScreenEventType event_type,
+                                          std::function<void(const void*)> listener) {
+  // Note: This is a simplified implementation that removes all listeners for the event type
+  listeners_[event_type].clear();
+}
+
+
+void ScreenRetriever::HandleDisplayChange() {
+  auto new_displays = GetAllDisplays();
+
+  // Find added displays
+  for (const auto& new_display : new_displays) {
+    bool found = false;
+    for (const auto& current_display : current_displays_) {
+      if (new_display.id == current_display.id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // This is a new display
+      for (const auto& listener : listeners_[ScreenEventType::DisplayAdded]) {
+        listener(&new_display);
+      }
+    }
+  }
+
+  // Find removed displays
+  for (const auto& current_display : current_displays_) {
+    bool found = false;
+    for (const auto& new_display : new_displays) {
+      if (current_display.id == new_display.id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // This display was removed
+      for (const auto& listener : listeners_[ScreenEventType::DisplayRemoved]) {
+        listener(&current_display);
+      }
+    }
+  }
+
+  // Update current display list
+  current_displays_ = std::move(new_displays);
+}
 }  // namespace nativeapi

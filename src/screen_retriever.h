@@ -1,28 +1,52 @@
 #pragma once
 
-#include <memory>
+#include <functional>
+#include <map>
 #include <vector>
 
-#include "ui/display.h"
-#include "ui/geometry.h"
+#include "display.h"
+#include "geometry.h"
 
 namespace nativeapi {
+
+// Event types that can be listened to
+enum class ScreenEventType : uint8_t {
+  DisplayAdded = 0x01,    // New display connected
+  DisplayRemoved = 0x02,  // Display disconnected
+};
+
 // Abstract base class for ScreenRetriever
 class ScreenRetriever {
  public:
-  virtual ~ScreenRetriever() = default;
-
-  // Static factory method to create platform-specific instance
-  static std::unique_ptr<ScreenRetriever> Create();
+  ScreenRetriever();
+  virtual ~ScreenRetriever();
 
   // Get the current cursor screen point
-  virtual Point GetCursorScreenPoint() = 0;
+  Point GetCursorScreenPoint();
 
   // Get the primary display information
-  virtual Display GetPrimaryDisplay() = 0;
+  Display GetPrimaryDisplay();
 
   // Get all displays information
-  virtual DisplayList GetAllDisplays() = 0;
+  std::vector<Display> GetAllDisplays();
+
+  // Add event listener for specific event type
+  void AddEventListener(ScreenEventType event_type,
+                        std::function<void(const void*)> listener);
+
+  // Remove event listener for specific event type
+  void RemoveEventListener(ScreenEventType event_type,
+                           std::function<void(const void*)> listener);
+
+ private:
+  // Store current displays to detect changes
+  std::vector<Display> current_displays_;
+
+  // Event listeners storage
+  std::map<ScreenEventType, std::vector<std::function<void(const void*)>>>
+      listeners_;
+
+  void HandleDisplayChange();
 };
 
 }  // namespace nativeapi

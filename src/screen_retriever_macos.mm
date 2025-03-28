@@ -1,7 +1,7 @@
-#include "screen_retriever_macos.h"
 #include <cstring>
 #include <iostream>
 #include <string>
+#include "screen_retriever.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -17,54 +17,7 @@ static char* ConvertNSStringToCString(NSString* nsString) {
   return cString ? strdup(cString) : strdup("");
 }
 
-ScreenRetrieverMacOS::ScreenRetrieverMacOS() {
-  // Constructor implementation
-  std::cout << "ScreenRetrieverMacOS initialized" << std::endl;
-}
-
-ScreenRetrieverMacOS::~ScreenRetrieverMacOS() {
-  // Destructor implementation
-  std::cout << "ScreenRetrieverMacOS destroyed" << std::endl;
-}
-
-Point ScreenRetrieverMacOS::GetCursorScreenPoint() {
-  Point point;
-
-  // Get the current mouse position
-  NSPoint mouseLocation = [NSEvent mouseLocation];
-  point.x = mouseLocation.x;
-  point.y = mouseLocation.y;
-
-  return point;
-}
-
-Display ScreenRetrieverMacOS::GetPrimaryDisplay() {
-  // Get the primary display (first screen)
-  NSArray<NSScreen*>* screens = [NSScreen screens];
-  return CreateDisplayFromNSScreen(screens[0], true);
-}
-
-DisplayList ScreenRetrieverMacOS::GetAllDisplays() {
-  DisplayList displayList;
-
-  // Get all screens
-  NSArray<NSScreen*>* screens = [NSScreen screens];
-  bool isFirstScreen = true;
-
-  int count = (int)screens.count;
-  displayList.displays = new Display[count];
-  displayList.count = count;
-  int index = 0;
-  for (NSScreen* screen in screens) {
-    displayList.displays[index] = CreateDisplayFromNSScreen(screen, isFirstScreen);
-    index++;
-    isFirstScreen = false;  // Only the first screen is the main screen
-  }
-
-  return displayList;
-}
-
-Display ScreenRetrieverMacOS::CreateDisplayFromNSScreen(NSScreen* screen, bool isFirstScreen) {
+static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isFirstScreen) {
   Display display;
 
   // Get screen details
@@ -98,6 +51,61 @@ Display ScreenRetrieverMacOS::CreateDisplayFromNSScreen(NSScreen* screen, bool i
   display.scaleFactor = scaleFactor;
 
   return display;
+}
+
+id displayObserver_;
+
+ScreenRetriever::ScreenRetriever() {
+  // Store initial display configuration
+  current_displays_ = GetAllDisplays();
+
+  // Set up display configuration change observer
+  displayObserver_ = [[NSNotificationCenter defaultCenter]
+      addObserverForName:NSApplicationDidChangeScreenParametersNotification
+                  object:nil
+                   queue:[NSOperationQueue mainQueue]
+              usingBlock:^(NSNotification* notification) {
+                HandleDisplayChange();
+              }];
+}
+
+ScreenRetriever::~ScreenRetriever() {
+  // Remove observer
+  if (displayObserver_) {
+    [[NSNotificationCenter defaultCenter] removeObserver:displayObserver_];
+  }
+  // Note: cursor observer is automatically cleaned up when the run loop source is removed
+}
+
+Point ScreenRetriever::GetCursorScreenPoint() {
+  Point point;
+
+  // Get the current mouse position
+  NSPoint mouseLocation = [NSEvent mouseLocation];
+  point.x = mouseLocation.x;
+  point.y = mouseLocation.y;
+
+  return point;
+}
+
+Display ScreenRetriever::GetPrimaryDisplay() {
+  // Get the primary display (first screen)
+  NSArray<NSScreen*>* screens = [NSScreen screens];
+  return CreateDisplayFromNSScreen(screens[0], true);
+}
+
+std::vector<Display> ScreenRetriever::GetAllDisplays() {
+  std::vector<Display> displayList;
+
+  // Get all screens
+  NSArray<NSScreen*>* screens = [NSScreen screens];
+  bool isFirstScreen = true;
+  for (NSScreen* screen in screens) {
+    displayList.push_back(CreateDisplayFromNSScreen(screen, isFirstScreen));
+    isFirstScreen = false;  // Only the first screen is the main screen
+  }
+
+  return displayList;
 }
 
 }  // namespace nativeapi

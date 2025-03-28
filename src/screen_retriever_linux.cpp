@@ -1,19 +1,19 @@
-#include "screen_retriever_linux.h"
 #include <iostream>
+#include "screen_retriever.h"
 
 namespace nativeapi {
 
-ScreenRetrieverLinux::ScreenRetrieverLinux() {
+ScreenRetriever::ScreenRetriever() {
   // Constructor implementation
-  std::cout << "ScreenRetrieverLinux initialized" << std::endl;
+  std::cout << "ScreenRetriever initialized" << std::endl;
 }
 
-ScreenRetrieverLinux::~ScreenRetrieverLinux() {
+ScreenRetriever::~ScreenRetriever() {
   // Destructor implementation
-  std::cout << "ScreenRetrieverLinux destroyed" << std::endl;
+  std::cout << "ScreenRetriever destroyed" << std::endl;
 }
 
-Point ScreenRetrieverLinux::GetCursorScreenPoint() {
+Point ScreenRetriever::GetCursorScreenPoint() {
   // Empty implementation
   Point point;
   point.x = 0.0;
@@ -21,7 +21,7 @@ Point ScreenRetrieverLinux::GetCursorScreenPoint() {
   return point;
 }
 
-Display ScreenRetrieverLinux::GetPrimaryDisplay() {
+Display ScreenRetriever::GetPrimaryDisplay() {
   // Empty implementation
   Display display;
   display.id = "display-1";
@@ -36,12 +36,10 @@ Display ScreenRetrieverLinux::GetPrimaryDisplay() {
   return display;
 }
 
-DisplayList ScreenRetrieverLinux::GetAllDisplays() {
+std::vector<Display> ScreenRetriever::GetAllDisplays() {
   // Empty implementation
-  DisplayList displayList;
-  displayList.displays = new Display[1];
-  displayList.displays[0] = GetPrimaryDisplay();
-  displayList.count = 1;
+  std::vector<Display> displayList;
+  displayList.push_back(GetPrimaryDisplay());
   return displayList;
 }
 

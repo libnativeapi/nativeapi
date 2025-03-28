@@ -14,31 +14,35 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Common source files
+file(GLOB COMMON_SOURCES "*.cpp")
+list(FILTER COMMON_SOURCES EXCLUDE REGEX "linux.*|macos.*|windows.*")
+
 # Platform-specific source files
 if(LINUX)
-  set(PLATFORM_SOURCES "screen_retriever_linux.cpp")
+  file(GLOB PLATFORM_SOURCES "*_linux.cpp")
 elseif(APPLE)
-  set(PLATFORM_SOURCES "screen_retriever_macos.mm")
+  file(GLOB PLATFORM_SOURCES "*_macos.mm")
 elseif(WIN32)
-  set(PLATFORM_SOURCES "screen_retriever_windows.cpp")
+  file(GLOB PLATFORM_SOURCES "*_windows.cpp")
 else()
   set(PLATFORM_SOURCES "")
 endif()
 
 # Add library target
 add_library(libnativeapi STATIC
-  "screen_retriever.cpp"
+  ${COMMON_SOURCES}
   ${PLATFORM_SOURCES}
 )
 
 # Set library properties
 set_target_properties(libnativeapi PROPERTIES
-  PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/libnativeapi/src/**/*.h"
+  PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../include/**/*.h"
 )
 
 # Set library include directories
 target_include_directories(libnativeapi PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<INSTALL_INTERFACE:include>
 )
 

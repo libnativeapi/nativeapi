@@ -20,12 +20,12 @@ struct Point {
   double y;
 };
 
-// /**
-//  * Size is a 2D size in the coordinate system.
-//  */
-// struct Size {
-//   double height;
-//   double width;
-// };
+/**
+ * Size is a 2D size in the coordinate system.
+ */
+struct Size {
+  double height;
+  double width;
+};
 
 }  // namespace nativeapi

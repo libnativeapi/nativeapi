@@ -1,9 +1,12 @@
+#pragma once
+#include <string>
+
 namespace nativeapi {
 
 // Representation of a display
 struct Display {
-  char* id;
-  char* name;
+  std::string id;
+  std::string name;
   double width;
   double height;
   double visiblePositionX;
@@ -11,12 +14,6 @@ struct Display {
   double visibleSizeWidth;
   double visibleSizeHeight;
   double scaleFactor;
-};
-
-// Representation of a list of displays
-struct DisplayList {
-  Display* displays;
-  int count;
 };
 
 }  // namespace nativeapi
