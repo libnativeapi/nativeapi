@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include <cstdint>
 
 #include "display.h"
 #include "geometry.h"
