@@ -21,6 +21,9 @@ list(FILTER COMMON_SOURCES EXCLUDE REGEX "linux.*|macos.*|windows.*")
 # Platform-specific source files
 if(LINUX)
   file(GLOB PLATFORM_SOURCES "*_linux.cpp")
+  # Find GTK package for Linux
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 elseif(APPLE)
   file(GLOB PLATFORM_SOURCES "*_macos.mm")
 elseif(WIN32)
@@ -46,8 +49,14 @@ target_include_directories(libnativeapi PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-# Link required frameworks (macOS only)
+if (LINUX)
+  target_include_directories(libnativeapi PUBLIC ${GTK_INCLUDE_DIRS})
+endif ()
+
+# Link required frameworks and libraries
 if(APPLE)
   target_link_libraries(libnativeapi PUBLIC "-framework Cocoa")
   target_compile_options(libnativeapi PRIVATE "-x" "objective-c++")
-endif()
+elseif (LINUX)
+  target_link_libraries(libnativeapi PUBLIC PkgConfig::GTK)
+endif ()
