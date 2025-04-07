@@ -16,7 +16,7 @@ enum class ScreenEventType : uint8_t {
   DisplayRemoved = 0x02,  // Display disconnected
 };
 
-// Abstract base class for ScreenRetriever
+// ScreenRetriever is a singleton that manages all screens on the system.
 class ScreenRetriever {
  public:
   ScreenRetriever();

@@ -7,3 +7,4 @@ add_subdirectory(src)
 
 # Add example programs subdirectory
 add_subdirectory(examples/screen_info)
+add_subdirectory(examples/window_example)
