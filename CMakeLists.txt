@@ -6,5 +6,5 @@ project(libnativeapi_library VERSION 0.0.1 LANGUAGES CXX)
 add_subdirectory(src)
 
 # Add example programs subdirectory
-add_subdirectory(examples/screen_info)
+add_subdirectory(examples/display_example)
 add_subdirectory(examples/window_example)

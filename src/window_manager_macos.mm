@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+
 #include "window.h"
 #include "window_manager.h"
 
@@ -23,6 +24,9 @@ Window WindowManager::GetCurrent() {
   if (window == nil) {
     std::cerr << "No main window found." << std::endl;
     return Window();
+  } else {
+    std::cout << "Main window found." << std::endl;
+    std::cout << "Window title: " << [[window title] UTF8String] << std::endl;
   }
   return *new Window();
 }

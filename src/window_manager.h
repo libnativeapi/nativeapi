@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "window.h"
 namespace nativeapi {
 
 // WindowManager is a singleton that manages all windows on the system.

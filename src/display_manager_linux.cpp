@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
 #include <iostream>
-#include "screen_retriever.h"
+#include "display_manager.h"
 
 namespace nativeapi {
 
@@ -30,18 +30,18 @@ static Display CreateDisplayFromGdkMonitor(GdkMonitor* monitor,
   return display;
 }
 
-ScreenRetriever::ScreenRetriever() {
+DisplayManager::DisplayManager() {
   gtk_init(nullptr, nullptr);
   // Constructor implementation
-  std::cout << "ScreenRetriever initialized" << std::endl;
+  std::cout << "DisplayManager initialized" << std::endl;
 }
 
-ScreenRetriever::~ScreenRetriever() {
+DisplayManager::~DisplayManager() {
   // Destructor implementation
-  std::cout << "ScreenRetriever destroyed" << std::endl;
+  std::cout << "DisplayManager destroyed" << std::endl;
 }
 
-Point ScreenRetriever::GetCursorScreenPoint() {
+Point DisplayManager::GetCursorPosition() {
   GdkDisplay* display = gdk_display_get_default();
   GdkSeat* seat = gdk_display_get_default_seat(display);
   GdkDevice* pointer = gdk_seat_get_pointer(seat);
@@ -56,7 +56,7 @@ Point ScreenRetriever::GetCursorScreenPoint() {
   return point;
 }
 
-Display ScreenRetriever::GetPrimaryDisplay() {
+Display DisplayManager::GetPrimary() {
   GdkDisplay* display = gdk_display_get_default();
   GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
 
@@ -71,10 +71,10 @@ Display ScreenRetriever::GetPrimaryDisplay() {
   return CreateDisplayFromGdkMonitor(monitor, true);
 }
 
-std::vector<Display> ScreenRetriever::GetAllDisplays() {
+std::vector<Display> DisplayManager::GetAll() {
   // Empty implementation
   std::vector<Display> displayList;
-  displayList.push_back(GetPrimaryDisplay());
+  displayList.push_back(GetPrimary());
   return displayList;
 }
 

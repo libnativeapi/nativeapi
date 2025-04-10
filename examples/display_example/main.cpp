@@ -3,14 +3,13 @@
 
 using nativeapi::Display;
 using nativeapi::Point;
-using nativeapi::ScreenEventType;
-using nativeapi::ScreenRetriever;
+using nativeapi::DisplayManager;
 
 int main() {
-  ScreenRetriever screenRetriever = ScreenRetriever();
+  DisplayManager displayManager = DisplayManager();
 
   // Get primary display information
-  Display primaryDisplay = screenRetriever.GetPrimaryDisplay();
+  Display primaryDisplay = displayManager.GetPrimary();
   std::cout << "Primary Display Information:" << std::endl;
   std::cout << "ID: " << primaryDisplay.id << std::endl;
   std::cout << "Name: " << primaryDisplay.name << std::endl;
@@ -24,7 +23,7 @@ int main() {
   std::cout << std::endl;
 
   // Get all displays information
-  std::vector<Display> allDisplays = screenRetriever.GetAllDisplays();
+  std::vector<Display> allDisplays = displayManager.GetAll();
   std::cout << "All Displays Information:" << std::endl;
   for (int i = 0; i < allDisplays.size(); i++) {
     Display& display = allDisplays[i];
@@ -42,8 +41,8 @@ int main() {
   }
 
   // Get cursor position
-  Point cursorPoint = screenRetriever.GetCursorScreenPoint();
-  std::cout << "Current Cursor Position: (" << cursorPoint.x << ", "
-            << cursorPoint.y << ")" << std::endl;
+  Point cursorPosition = displayManager.GetCursorPosition();
+  std::cout << "Current Cursor Position: (" << cursorPosition.x << ", "
+            << cursorPosition.y << ")" << std::endl;
   return 0;
 }

@@ -50,4 +50,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: examples-${{ matrix.platform }}
-        path: build/examples/screen_info/ 
+        path: build/examples/display_example/ 

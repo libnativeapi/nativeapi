@@ -1,6 +1,6 @@
 #include <codecvt>
 #include <iostream>
-#include "screen_retriever.h"
+#include "display_manager.h"
 
 #include <shellscalingapi.h>
 #include <windows.h>
@@ -65,17 +65,17 @@ Display CreateDisplayFromMonitor(HMONITOR monitor, bool isMainScreen) {
 
   return display;
 }
-ScreenRetriever::ScreenRetriever() {
+DisplayManager::DisplayManager() {
   // Constructor implementation
-  std::cout << "ScreenRetriever initialized" << std::endl;
+  std::cout << "DisplayManager initialized" << std::endl;
 }
 
-ScreenRetriever::~ScreenRetriever() {
+DisplayManager::~DisplayManager() {
   // Destructor implementation
-  std::cout << "ScreenRetriever destroyed" << std::endl;
+  std::cout << "DisplayManager destroyed" << std::endl;
 }
 
-Point ScreenRetriever::GetCursorScreenPoint() {
+Point DisplayManager::GetCursorScreenPoint() {
   POINT cursorPos;
   GetCursorPos(&cursorPos);
 
@@ -85,7 +85,7 @@ Point ScreenRetriever::GetCursorScreenPoint() {
   return point;
 }
 
-Display ScreenRetriever::GetPrimaryDisplay() {
+Display DisplayManager::GetPrimaryDisplay() {
   POINT ptZero = {0, 0};
   HMONITOR monitor = MonitorFromPoint(ptZero, MONITOR_DEFAULTTOPRIMARY);
   Display display = CreateDisplayFromMonitor(monitor, true);
@@ -104,7 +104,7 @@ BOOL CALLBACK MonitorRepresentationEnumProc(HMONITOR monitor,
   return TRUE;
 }
 
-std::vector<Display> ScreenRetriever::GetAllDisplays() {
+std::vector<Display> DisplayManager::GetAllDisplays() {
   std::vector<Display> displayList;
   ::EnumDisplayMonitors(nullptr, nullptr, MonitorRepresentationEnumProc,
                         reinterpret_cast<LPARAM>(&displayList));

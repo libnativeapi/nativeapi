@@ -1,22 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(screen_info_example VERSION 0.0.1 LANGUAGES CXX)
+project(display_example VERSION 0.0.1 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add example program
-add_executable(screen_info_example
+add_executable(display_example
   "main.cpp"
 )
 
 # Link main library
-target_link_libraries(screen_info_example PRIVATE libnativeapi)
+target_link_libraries(display_example PRIVATE libnativeapi)
 
 # Set example program properties
-set_target_properties(screen_info_example PROPERTIES
-  OUTPUT_NAME "screen_info_example"
+set_target_properties(display_example PROPERTIES
+  OUTPUT_NAME "display_example"
 )
 
 # Set example program compile options (macOS only)
