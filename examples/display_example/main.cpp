@@ -2,11 +2,21 @@
 #include "nativeapi.h"
 
 using nativeapi::Display;
-using nativeapi::Point;
+using nativeapi::DisplayEventHandler;
 using nativeapi::DisplayManager;
+using nativeapi::Point;
 
 int main() {
   DisplayManager displayManager = DisplayManager();
+
+  // DisplayEventHandler displayEventHandler = DisplayEventHandler(
+  //     [](const Display& display) {
+  //       std::cout << "Display added: " << display.id << std::endl;
+  //     },
+  //     [](const Display& display) {
+  //       std::cout << "Display removed: " << display.id << std::endl;
+  //     });
+  // displayManager.AddListener(&displayEventHandler);
 
   // Get primary display information
   Display primaryDisplay = displayManager.GetPrimary();

@@ -46,4 +46,24 @@ class DisplayManager {
   void NotifyDisplayRemoved(const Display& display);
 };
 
+// DisplayEventHandler is an implementation of DisplayListener that uses
+// callbacks to handle display events.
+class DisplayEventHandler : public DisplayListener {
+ public:
+  // Constructor that takes callbacks for display events
+  DisplayEventHandler(
+      std::function<void(const Display&)> onDisplayAddedCallback,
+      std::function<void(const Display&)> onDisplayRemovedCallback);
+
+  // Implementation of OnDisplayAdded from DisplayListener interface
+  void OnDisplayAdded(const Display& display) override;
+
+  // Implementation of OnDisplayRemoved from DisplayListener interface
+  void OnDisplayRemoved(const Display& display) override;
+
+ private:
+  std::function<void(const Display&)> onDisplayAddedCallback_;
+  std::function<void(const Display&)> onDisplayRemovedCallback_;
+};
+
 }  // namespace nativeapi
