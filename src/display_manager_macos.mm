@@ -91,14 +91,6 @@ DisplayManager::~DisplayManager() {
   }
 }
 
-Point DisplayManager::GetCursorPosition() {
-  NSPoint mouseLocation = [NSEvent mouseLocation];
-  Point point;
-  point.x = mouseLocation.x;
-  point.y = mouseLocation.y;
-  return point;
-}
-
 std::vector<Display> DisplayManager::GetAll() {
   std::vector<Display> displayList;
   NSArray<NSScreen*>* screens = [NSScreen screens];
@@ -114,6 +106,14 @@ Display DisplayManager::GetPrimary() {
   // Get the primary display (first NSScreen)
   NSArray<NSScreen*>* screens = [NSScreen screens];
   return CreateDisplayFromNSScreen(screens[0], true);
+}
+
+Point DisplayManager::GetCursorPosition() {
+  NSPoint mouseLocation = [NSEvent mouseLocation];
+  Point point;
+  point.x = mouseLocation.x;
+  point.y = mouseLocation.y;
+  return point;
 }
 
 }  // namespace nativeapi

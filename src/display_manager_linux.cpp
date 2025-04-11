@@ -36,24 +36,11 @@ DisplayManager::DisplayManager() {
   std::cout << "DisplayManager initialized" << std::endl;
 }
 
-DisplayManager::~DisplayManager() {
-  // Destructor implementation
-  std::cout << "DisplayManager destroyed" << std::endl;
-}
-
-Point DisplayManager::GetCursorPosition() {
-  GdkDisplay* display = gdk_display_get_default();
-  GdkSeat* seat = gdk_display_get_default_seat(display);
-  GdkDevice* pointer = gdk_seat_get_pointer(seat);
-
-  int x, y;
-  gdk_device_get_position(pointer, NULL, &x, &y);
-
+std::vector<Display> DisplayManager::GetAll() {
   // Empty implementation
-  Point point;
-  point.x = x;
-  point.y = y;
-  return point;
+  std::vector<Display> displayList;
+  displayList.push_back(GetPrimary());
+  return displayList;
 }
 
 Display DisplayManager::GetPrimary() {
@@ -71,11 +58,19 @@ Display DisplayManager::GetPrimary() {
   return CreateDisplayFromGdkMonitor(monitor, true);
 }
 
-std::vector<Display> DisplayManager::GetAll() {
+Point DisplayManager::GetCursorPosition() {
+  GdkDisplay* display = gdk_display_get_default();
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* pointer = gdk_seat_get_pointer(seat);
+
+  int x, y;
+  gdk_device_get_position(pointer, NULL, &x, &y);
+
   // Empty implementation
-  std::vector<Display> displayList;
-  displayList.push_back(GetPrimary());
-  return displayList;
+  Point point;
+  point.x = x;
+  point.y = y;
+  return point;
 }
 
 }  // namespace nativeapi

@@ -24,14 +24,14 @@ class DisplayManager {
   DisplayManager();
   virtual ~DisplayManager();
 
-  // Get the current cursor position
-  Point GetCursorPosition();
-
   // Get all displays information
   std::vector<Display> GetAll();
 
   // Get the primary display information
   Display GetPrimary();
+
+  // Get the current cursor position
+  Point GetCursorPosition();
 
   // Add a listener to the display manager
   void AddListener(DisplayListener* listener);

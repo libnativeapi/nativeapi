@@ -65,33 +65,6 @@ Display CreateDisplayFromMonitor(HMONITOR monitor, bool isMainScreen) {
 
   return display;
 }
-DisplayManager::DisplayManager() {
-  // Constructor implementation
-  std::cout << "DisplayManager initialized" << std::endl;
-}
-
-DisplayManager::~DisplayManager() {
-  // Destructor implementation
-  std::cout << "DisplayManager destroyed" << std::endl;
-}
-
-Point DisplayManager::GetCursorScreenPoint() {
-  POINT cursorPos;
-  GetCursorPos(&cursorPos);
-
-  Point point;
-  point.x = cursorPos.x;
-  point.y = cursorPos.y;
-  return point;
-}
-
-Display DisplayManager::GetPrimaryDisplay() {
-  POINT ptZero = {0, 0};
-  HMONITOR monitor = MonitorFromPoint(ptZero, MONITOR_DEFAULTTOPRIMARY);
-  Display display = CreateDisplayFromMonitor(monitor, true);
-  display.id = "";
-  return display;
-}
 
 BOOL CALLBACK MonitorRepresentationEnumProc(HMONITOR monitor,
                                             HDC hdc,
@@ -104,11 +77,28 @@ BOOL CALLBACK MonitorRepresentationEnumProc(HMONITOR monitor,
   return TRUE;
 }
 
-std::vector<Display> DisplayManager::GetAllDisplays() {
+std::vector<Display> DisplayManager::GetAll() {
   std::vector<Display> displayList;
   ::EnumDisplayMonitors(nullptr, nullptr, MonitorRepresentationEnumProc,
                         reinterpret_cast<LPARAM>(&displayList));
   return displayList;
 }
 
+Display DisplayManager::GetPrimary() {
+  POINT ptZero = {0, 0};
+  HMONITOR monitor = MonitorFromPoint(ptZero, MONITOR_DEFAULTTOPRIMARY);
+  Display display = CreateDisplayFromMonitor(monitor, true);
+  display.id = "";
+  return display;
+}
+
+Point DisplayManager::GetCursorPosition() {
+  POINT cursorPos;
+  GetCursorPos(&cursorPos);
+
+  Point point;
+  point.x = cursorPos.x;
+  point.y = cursorPos.y;
+  return point;
+}
 }  // namespace nativeapi
