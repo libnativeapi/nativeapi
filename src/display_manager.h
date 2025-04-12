@@ -42,8 +42,7 @@ class DisplayManager {
  private:
   std::vector<Display> displays_;
   std::vector<DisplayListener*> listeners_;
-  void NotifyDisplayAdded(const Display& display);
-  void NotifyDisplayRemoved(const Display& display);
+  void NotifyListeners(std::function<void(DisplayListener*)> callback);
 };
 
 // DisplayEventHandler is an implementation of DisplayListener that uses
