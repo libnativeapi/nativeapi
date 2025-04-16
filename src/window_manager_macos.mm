@@ -20,23 +20,31 @@ Window WindowManager::Create() {
 
 Window WindowManager::GetCurrent() {
   NSApplication* app = [NSApplication sharedApplication];
-  NSWindow* window = [app mainWindow];
-  if (window == nil) {
+  NSWindow* ns_window = [app mainWindow];
+  if (ns_window == nil) {
     std::cerr << "No main window found." << std::endl;
     return Window();
   } else {
     std::cout << "Main window found." << std::endl;
-    std::cout << "Window title: " << [[window title] UTF8String] << std::endl;
+    std::cout << "Window title: " << [[ns_window title] UTF8String] << std::endl;
   }
-  return *new Window();
+  return *new Window(ns_window);
 }
 
 std::vector<Window> WindowManager::GetAll() {
-  std::vector<Window> displayList;
-
-  displayList.push_back(GetCurrent());
-
-  return displayList;
+  std::vector<Window> windowList;
+  NSApplication* app = [NSApplication sharedApplication];
+  NSArray* windows = [app windows];
+  for (NSWindow* ns_window in windows) {
+    if ([ns_window isVisible]) {
+      NSRect frame = [ns_window frame];
+        std::cout << "Window title: " << [[ns_window title] UTF8String] << std::endl;
+        std::cout << "Window size: " << frame.size.width << "x" << frame.size.height
+                    << std::endl;
+      windowList.push_back(*new Window(ns_window));
+    }
+  }
+  return windowList;
 }
 
 }  // namespace nativeapi
