@@ -14,6 +14,16 @@ struct Point {
  * Size is a 2D size in the coordinate system.
  */
 struct Size {
+  double width;
+  double height;
+};
+
+/**
+ * Rectangle is a 2D rectangle in the coordinate system.
+ */
+struct Rectangle {
+  double x;
+  double y;
   double height;
   double width;
 };
