@@ -14,8 +14,24 @@ WindowManager::WindowManager() {}
 
 WindowManager::~WindowManager() {}
 
-Window WindowManager::Create() {
-  return *new Window();
+Window WindowManager::Get(WindowID id) {
+  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
+  for (NSWindow* ns_window in ns_windows) {
+    if ([ns_window windowNumber] == id) {
+      std::cout << "Found window with ID: " << id << std::endl;
+      return Window((__bridge void*)ns_window);
+    }
+  }
+  return nullptr;
+}
+
+std::vector<Window> WindowManager::GetAll() {
+  std::vector<Window> windows;
+  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
+  for (NSWindow* ns_window in ns_windows) {
+    windows.push_back(Window((__bridge void*)ns_window));
+  }
+  return windows;
 }
 
 Window WindowManager::GetCurrent() {
@@ -28,23 +44,7 @@ Window WindowManager::GetCurrent() {
     std::cout << "Main window found." << std::endl;
     std::cout << "Window title: " << [[ns_window title] UTF8String] << std::endl;
   }
-  return *new Window(ns_window);
-}
-
-std::vector<Window> WindowManager::GetAll() {
-  std::vector<Window> windowList;
-  NSApplication* app = [NSApplication sharedApplication];
-  NSArray* windows = [app windows];
-  for (NSWindow* ns_window in windows) {
-    if ([ns_window isVisible]) {
-      NSRect frame = [ns_window frame];
-        std::cout << "Window title: " << [[ns_window title] UTF8String] << std::endl;
-        std::cout << "Window size: " << frame.size.width << "x" << frame.size.height
-                    << std::endl;
-      windowList.push_back(*new Window(ns_window));
-    }
-  }
-  return windowList;
+  return Window((__bridge void*)ns_window);
 }
 
 }  // namespace nativeapi

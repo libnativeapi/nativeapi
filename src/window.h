@@ -4,21 +4,22 @@
 
 namespace nativeapi {
 
+typedef int32_t WindowID;
+
 class Window {
  public:
   Window();
-  Window(void* window);  // Constructor that takes NSWindow*
+  Window(void* window);
   virtual ~Window();
 
-  std::string id;
-  std::string name;
+  WindowID id;
 
-  void* GetNSWindow() const;  // Returns NSWindow* on macOS
-  Size GetSize() const;  // Get window size
+  void* GetNSWindow() const;
+  Size GetSize() const;
 
  private:
   class Impl;
-  Impl* pimpl_;  // Pointer to implementation
+  Impl* pimpl_;
 };
 
 }  // namespace nativeapi

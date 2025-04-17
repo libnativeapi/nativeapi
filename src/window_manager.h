@@ -11,13 +11,14 @@ class WindowManager {
   WindowManager();
   virtual ~WindowManager();
 
-  Window Create();
-
-  // Get the current window.
-  Window GetCurrent();
+  // Get a window by its ID.
+  Window Get(WindowID id);
 
   // Get all windows.
   std::vector<Window> GetAll();
+
+  // Get the current window.
+  Window GetCurrent();
 };
 
 }  // namespace nativeapi

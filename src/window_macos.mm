@@ -1,6 +1,6 @@
+#include <iostream>
 #include "window.h"
 #include "window_manager.h"
-#include <iostream>
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -15,12 +15,12 @@ class Window::Impl {
 };
 
 Window::Window() : pimpl_(nullptr) {
-  id = "window1";
+  id = -1;
   std::cout << "Window created with null pimpl_" << std::endl;
 }
 
-Window::Window(void* window) : pimpl_(new Impl((NSWindow*)window)) {
-  id = "window1";
+Window::Window(void* window) : pimpl_(new Impl((__bridge NSWindow*)window)) {
+  id = pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : 0;
   std::cout << "Window created with NSWindow: " << pimpl_->ns_window_ << std::endl;
 }
 
@@ -39,7 +39,7 @@ void* Window::GetNSWindow() const {
     return nullptr;
   }
   std::cout << "GetNSWindow: returning valid NSWindow pointer" << std::endl;
-  return pimpl_->ns_window_;
+  return (__bridge void*)pimpl_->ns_window_;
 }
 
 Size Window::GetSize() const {
