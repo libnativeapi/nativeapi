@@ -14,37 +14,46 @@ WindowManager::WindowManager() {}
 
 WindowManager::~WindowManager() {}
 
-Window WindowManager::Get(WindowID id) {
+std::shared_ptr<Window> WindowManager::Get(WindowID id) {
+  auto it = windows_.find(id);
+  if (it != windows_.end()) {
+    return it->second;
+  }
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   for (NSWindow* ns_window in ns_windows) {
     if ([ns_window windowNumber] == id) {
-      std::cout << "Found window with ID: " << id << std::endl;
-      return Window((__bridge void*)ns_window);
+      auto window = std::make_shared<Window>((__bridge void*)ns_window);
+      windows_[id] = window;
+      return window;
     }
   }
   return nullptr;
 }
 
-std::vector<Window> WindowManager::GetAll() {
-  std::vector<Window> windows;
+std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
+  std::vector<std::shared_ptr<Window>> windows;
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   for (NSWindow* ns_window in ns_windows) {
-    windows.push_back(Window((__bridge void*)ns_window));
+    WindowID window_id = [ns_window windowNumber];
+    auto it = windows_.find(window_id);
+    if (it == windows_.end()) {
+      auto window = std::make_shared<Window>((__bridge void*)ns_window);
+      windows_[window_id] = window;
+    }
+  }
+  for (auto& window : windows_) {
+    windows.push_back(window.second);
   }
   return windows;
 }
 
-Window WindowManager::GetCurrent() {
+std::shared_ptr<Window> WindowManager::GetCurrent() {
   NSApplication* app = [NSApplication sharedApplication];
   NSWindow* ns_window = [app mainWindow];
-  if (ns_window == nil) {
-    std::cerr << "No main window found." << std::endl;
-    return Window();
-  } else {
-    std::cout << "Main window found." << std::endl;
-    std::cout << "Window title: " << [[ns_window title] UTF8String] << std::endl;
+  if (ns_window != nil) {
+    return Get([ns_window windowNumber]);
   }
-  return Window((__bridge void*)ns_window);
+  return nullptr;
 }
 
 }  // namespace nativeapi

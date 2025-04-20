@@ -27,16 +27,12 @@ using nativeapi::WindowManager;
   [self.window makeMainWindow];
   [NSApp activateIgnoringOtherApps:YES];
 
-  //   dispatch_async(dispatch_get_main_queue(), ^{
-
-  //   });
-
   // 延迟检查主窗口
-    dispatch_async(dispatch_get_main_queue(), ^{
-        NSLog(@"主窗口: %@", NSApp.mainWindow);
-        NSLog(@"关键窗口: %@", NSApp.keyWindow);
-        NSLog(@"所有窗口: %@", NSApp.windows);
-    });
+  dispatch_async(dispatch_get_main_queue(), ^{
+    NSLog(@"主窗口: %@", NSApp.mainWindow);
+    NSLog(@"关键窗口: %@", NSApp.keyWindow);
+    NSLog(@"所有窗口: %@", NSApp.windows);
+  });
 
   [[NSNotificationCenter defaultCenter]
       addObserverForName:NSWindowDidBecomeMainNotification
@@ -50,25 +46,28 @@ using nativeapi::WindowManager;
                 WindowManager windowManager = WindowManager();
 
                 // Get current window information
-                Window currentWindow = windowManager.GetCurrent();
-                std::cout << "Current Window Information:" << std::endl;
-                std::cout << "ID: " << currentWindow.id << std::endl;
+                std::shared_ptr<Window> currentWindowPtr = windowManager.GetCurrent();
+                if (currentWindowPtr != nullptr) {
+                  Window& currentWindow = *currentWindowPtr;
+                  std::cout << "Current Window Information:" << std::endl;
+                  std::cout << "ID: " << currentWindow.id << std::endl;
 
-               // Get window size
-               auto size = currentWindow.GetSize();
-               std::cout << "Window Size: " << size.width << "x" << size.height << std::endl;
+                  // Get window size
+                  auto size = currentWindow.GetSize();
+                  std::cout << "Window Size: " << size.width << "x" << size.height << std::endl;
+                }
 
-               // Get all windows
-               std::vector<Window> windowList = windowManager.GetAll();
-               std::cout << "\nAll Windows Information:" << std::endl;
-               for (size_t i = 0; i < windowList.size(); i++) {
-                 const Window& window = windowList[i];
-                 std::cout << "Window " << (i + 1) << ":" << std::endl;
-                 std::cout << "ID: " << window.id << std::endl;
-                 auto windowSize = window.GetSize();
-                 std::cout << "Size: " << windowSize.width << "x" << windowSize.height
-                           << std::endl;
-               }
+                // Get all windows
+                std::vector<std::shared_ptr<Window>> windowList = (windowManager.GetAll());
+                std::cout << "\nAll Windows Information:" << std::endl;
+                for (size_t i = 0; i < windowList.size(); i++) {
+                  const Window& window = *windowList[i];
+                  std::cout << "Window " << (i + 1) << ":" << std::endl;
+                  std::cout << "ID: " << window.id << std::endl;
+                  auto windowSize = window.GetSize();
+                  std::cout << "Size: " << windowSize.width << "x" << windowSize.height
+                            << std::endl;
+                }
               }];
 }
 

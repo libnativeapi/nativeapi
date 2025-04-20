@@ -14,18 +14,15 @@ class Window::Impl {
   NSWindow* ns_window_;
 };
 
-Window::Window() : pimpl_(nullptr) {
+Window::Window() : pimpl_(new Impl(nil)) {
   id = -1;
-  std::cout << "Window created with null pimpl_" << std::endl;
 }
 
 Window::Window(void* window) : pimpl_(new Impl((__bridge NSWindow*)window)) {
   id = pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : 0;
-  std::cout << "Window created with NSWindow: " << pimpl_->ns_window_ << std::endl;
 }
 
 Window::~Window() {
-  std::cout << "Window destroyed, pimpl_: " << pimpl_ << std::endl;
   delete pimpl_;
 }
 
