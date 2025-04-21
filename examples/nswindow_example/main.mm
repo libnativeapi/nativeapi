@@ -3,6 +3,8 @@
 #include <iostream>
 #include "nativeapi.h"
 
+using nativeapi::Tray;
+using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
 
@@ -68,6 +70,19 @@ using nativeapi::WindowManager;
                   std::cout << "Size: " << windowSize.width << "x" << windowSize.height
                             << std::endl;
                 }
+
+
+    TrayManager trayManager = TrayManager();
+
+    std::shared_ptr<Tray> newTrayPtr = trayManager.Create();
+    if (newTrayPtr != nullptr) {
+      Tray& newTray = *newTrayPtr;
+      newTray.SetTitle("Hello, World!");
+      std::cout << "Tray ID: " << newTray.id << std::endl;
+      std::cout << "Tray Title: " << newTray.GetTitle() << std::endl;
+    } else {
+      std::cerr << "Failed to create tray." << std::endl;
+    }
               }];
 }
 
