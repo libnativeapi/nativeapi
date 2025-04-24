@@ -97,7 +97,7 @@ void Window::SetFullScreen(bool is_full_screen) {
 }
 
 bool Window::IsFullScreen() const {
-  return [pimpl_->ns_window_ styleMask] & NSFullScreenWindowMask;
+  return [pimpl_->ns_window_ styleMask] & NSWindowStyleMaskFullScreen;
 }
 
 //// void Window::SetBackgroundColor(Color color);
@@ -157,15 +157,15 @@ Size Window::GetMaximumSize() {
 void Window::SetResizable(bool is_resizable) {
   NSUInteger style_mask = [pimpl_->ns_window_ styleMask];
   if (is_resizable) {
-    style_mask |= NSResizableWindowMask;
+    style_mask |= NSWindowStyleMaskResizable;
   } else {
-    style_mask &= ~NSResizableWindowMask;
+    style_mask &= ~NSWindowStyleMaskResizable;
   }
   [pimpl_->ns_window_ setStyleMask:style_mask];
 }
 
 bool Window::IsResizable() const {
-  return [pimpl_->ns_window_ styleMask] & NSResizableWindowMask;
+  return [pimpl_->ns_window_ styleMask] & NSWindowStyleMaskResizable;
 }
 
 void Window::SetMovable(bool is_movable) {
@@ -209,21 +209,21 @@ void Window::SetFullScreenable(bool is_full_screenable) {
 }
 
 bool Window::IsFullScreenable() const {
-  return [pimpl_->ns_window_ styleMask] & NSFullScreenWindowMask;
+  return [pimpl_->ns_window_ styleMask] & NSWindowStyleMaskFullScreen;
 }
 
 void Window::SetClosable(bool is_closable) {
   NSUInteger style_mask = [pimpl_->ns_window_ styleMask];
   if (is_closable) {
-    style_mask |= NSClosableWindowMask;
+    style_mask |= NSWindowStyleMaskClosable;
   } else {
-    style_mask &= ~NSClosableWindowMask;
+    style_mask &= ~NSWindowStyleMaskClosable;
   }
   [pimpl_->ns_window_ setStyleMask:style_mask];
 }
 
 bool Window::IsClosable() const {
-  return [pimpl_->ns_window_ styleMask] & NSClosableWindowMask;
+  return [pimpl_->ns_window_ styleMask] & NSWindowStyleMaskClosable;
 }
 
 void Window::SetAlwaysOnTop(bool is_always_on_top) {

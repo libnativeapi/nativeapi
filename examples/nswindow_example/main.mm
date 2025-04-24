@@ -3,6 +3,11 @@
 #include <iostream>
 #include "nativeapi.h"
 
+using nativeapi::BroadcastCenter;
+using nativeapi::BroadcastEventHandler;
+using nativeapi::Display;
+using nativeapi::DisplayEventHandler;
+using nativeapi::DisplayManager;
 using nativeapi::Tray;
 using nativeapi::TrayManager;
 using nativeapi::Window;
@@ -35,6 +40,32 @@ using nativeapi::WindowManager;
     NSLog(@"关键窗口: %@", NSApp.keyWindow);
     NSLog(@"所有窗口: %@", NSApp.windows);
   });
+
+
+  DisplayManager displayManager = DisplayManager();
+
+  DisplayEventHandler displayEventHandler = DisplayEventHandler(
+      [](const Display& display) {
+        std::cout << "Display added: " << display.id << std::endl;
+      },
+      [](const Display& display) {
+        std::cout << "Display removed: " << display.id << std::endl;
+      });
+  displayManager.AddListener(&displayEventHandler);
+
+  std::shared_ptr<BroadcastCenter> broadcastCenter = std::make_shared<BroadcastCenter>();
+
+  BroadcastEventHandler broadcastEventHandler =
+      BroadcastEventHandler([](const std::string& message) {
+        std::cout << "Received broadcast: " << message << std::endl;
+      });
+
+  broadcastCenter->RegisterReceiver("com.example.myNotification", &broadcastEventHandler);
+
+  //  broadcastCenter.RegisterReceiver(
+  //      BroadcastEventHandler ([&](const std::string& message) {
+  //        std::cout << "Received broadcast: " << message << std::endl;
+  //      }));
 
   [[NSNotificationCenter defaultCenter]
       addObserverForName:NSWindowDidBecomeMainNotification
@@ -71,18 +102,17 @@ using nativeapi::WindowManager;
                             << std::endl;
                 }
 
+                TrayManager trayManager = TrayManager();
 
-    TrayManager trayManager = TrayManager();
-
-    std::shared_ptr<Tray> newTrayPtr = trayManager.Create();
-    if (newTrayPtr != nullptr) {
-      Tray& newTray = *newTrayPtr;
-      newTray.SetTitle("Hello, World!");
-      std::cout << "Tray ID: " << newTray.id << std::endl;
-      std::cout << "Tray Title: " << newTray.GetTitle() << std::endl;
-    } else {
-      std::cerr << "Failed to create tray." << std::endl;
-    }
+                std::shared_ptr<Tray> newTrayPtr = trayManager.Create();
+                if (newTrayPtr != nullptr) {
+                  Tray& newTray = *newTrayPtr;
+                  newTray.SetTitle("Hello, World!");
+                  std::cout << "Tray ID: " << newTray.id << std::endl;
+                  std::cout << "Tray Title: " << newTray.GetTitle() << std::endl;
+                } else {
+                  std::cerr << "Failed to create tray." << std::endl;
+                }
               }];
 }
 

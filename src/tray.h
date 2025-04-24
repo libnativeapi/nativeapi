@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "geometry.h"
+#include "menu.h"
 
 namespace nativeapi {
 
@@ -21,6 +22,9 @@ class Tray {
 
   void SetTooltip(std::string tooltip);
   std::string GetTooltip();
+
+  void SetContextMenu(Menu menu);
+  // Menu GetContextMenu();
 
   Rectangle GetBounds();
 

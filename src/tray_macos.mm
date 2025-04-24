@@ -1,4 +1,5 @@
 #include <iostream>
+#include "menu.h"
 #include "tray.h"
 
 // Import Cocoa headers
@@ -62,7 +63,7 @@ void Tray::SetTitle(std::string title) {
 }
 
 std::string Tray::GetTitle() {
-  return [pimpl_->ns_status_item_.title UTF8String];
+  return [[pimpl_->ns_status_item_.button title] UTF8String];
 }
 
 void Tray::SetTooltip(std::string tooltip) {
@@ -73,4 +74,12 @@ std::string Tray::GetTooltip() {
   return [[pimpl_->ns_status_item_.button toolTip] UTF8String];
 }
 
+void Tray::SetContextMenu(Menu menu) {
+  // NSMenu* ns_menu = (__bridge NSMenu*)menu.GetNativeMenu();
+  // [pimpl_->ns_status_item_.button setMenu:ns_menu];
+}
+
+// Menu Tray::GetContextMenu() {
+//   return Menu((__bridge void*)pimpl_->ns_status_item_.button.menu);
+// }
 }  // namespace nativeapi
