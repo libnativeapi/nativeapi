@@ -14,7 +14,8 @@ namespace nativeapi {
 // want to listen for broadcasts.
 class BroadcastReceiver {
  public:
-  virtual void OnBroadcastReceived(const std::string& message) = 0;
+  virtual void OnBroadcastReceived(const std::string& topic,
+                                   const std::string& message) = 0;
 };
 
 // BroadcastCenter is a singleton that manages all broadcasts on the system.
@@ -23,16 +24,15 @@ class BroadcastCenter {
   BroadcastCenter();
   virtual ~BroadcastCenter();
 
+  // Send a broadcast message to all receivers of a given topic
+  void SendBroadcast(const std::string& topic, const std::string& message);
+
   // Register a receiver to the broadcast center
   void RegisterReceiver(const std::string& topic, BroadcastReceiver* receiver);
 
   // Unregister a receiver from the broadcast center
   void UnregisterReceiver(const std::string& topic,
                           BroadcastReceiver* receiver);
-
-  // Notify all receivers of a given topic
-  void NotifyReceivers(const std::string& topic,
-                       std::function<void(BroadcastReceiver*)> callback);
 
  private:
   std::vector<BroadcastReceiver*> receivers_;
@@ -43,14 +43,17 @@ class BroadcastCenter {
 class BroadcastEventHandler : public BroadcastReceiver {
  public:
   // Constructor that takes callbacks for broadcast events
-  BroadcastEventHandler(std::function<void(const std::string& message)>
-                            onBroadcastReceivedCallback);
+  BroadcastEventHandler(
+      std::function<void(const std::string& topic, const std::string& message)>
+          onBroadcastReceivedCallback);
 
   // Implementation of OnBroadcastReceive from BroadcastReceiver interface
-  void OnBroadcastReceived(const std::string& message) override;
+  void OnBroadcastReceived(const std::string& topic,
+                           const std::string& message) override;
 
  private:
-  std::function<void(const std::string&)> onBroadcastReceivedCallback_;
+  std::function<void(const std::string& topic, const std::string& message)>
+      onBroadcastReceivedCallback_;
 };
 
 }  // namespace nativeapi

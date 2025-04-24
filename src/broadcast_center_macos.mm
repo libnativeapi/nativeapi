@@ -13,19 +13,27 @@ namespace nativeapi {
 // Static map to store BroadcastCenter instances
 static std::map<BroadcastCenter*, std::string> g_broadcast_centers;
 
-void BroadcastCenter::RegisterReceiver(const std::string& topic, BroadcastReceiver* receiver) {
-  receivers_.push_back(receiver);
+void BroadcastCenter::SendBroadcast(const std::string& topic, const std::string& message) {
+  NSDistributedNotificationCenter* center = [NSDistributedNotificationCenter defaultCenter];
+  [center postNotificationName:[NSString stringWithUTF8String:topic.c_str()]
+                        object:nil
+                      userInfo:@{@"message" : [NSString stringWithUTF8String:message.c_str()]}
+            deliverImmediately:YES];
+}
 
+void BroadcastCenter::RegisterReceiver(const std::string& topic, BroadcastReceiver* receiver) {
   NSDistributedNotificationCenter* center = [NSDistributedNotificationCenter defaultCenter];
   [center addObserverForName:[NSString stringWithUTF8String:topic.c_str()]
                       object:nil
                        queue:[NSOperationQueue mainQueue]
                   usingBlock:^(NSNotification* notification) {
                     std::string message = [notification.userInfo[@"message"] UTF8String];
-                    receiver->OnBroadcastReceived(message);
+                    receiver->OnBroadcastReceived(topic, message);
                   }];
 }
 
-void BroadcastCenter::UnregisterReceiver(const std::string& topic, BroadcastReceiver* receiver) {}
+void BroadcastCenter::UnregisterReceiver(const std::string& topic, BroadcastReceiver* receiver) {
+  // TODO: Implement
+}
 
 }  // namespace nativeapi
