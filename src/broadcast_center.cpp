@@ -20,6 +20,8 @@ BroadcastEventHandler::BroadcastEventHandler(
 void BroadcastEventHandler::OnBroadcastReceived(const std::string& topic,
                                                 const std::string& message) {
   if (onBroadcastReceivedCallback_) {
+    std::cout << "BroadcastEventHandler::OnBroadcastReceived() " << topic << " "
+              << message << std::endl;
     onBroadcastReceivedCallback_(topic, message);
   }
 }

@@ -49,7 +49,11 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   NSApplication* app = [NSApplication sharedApplication];
+  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   NSWindow* ns_window = [app mainWindow];
+  if (ns_window == nil) {
+    ns_window = [ns_windows objectAtIndex:0];
+  }
   if (ns_window != nil) {
     return Get([ns_window windowNumber]);
   }

@@ -10,9 +10,6 @@
 
 namespace nativeapi {
 
-// Static map to store BroadcastCenter instances
-static std::map<BroadcastCenter*, std::string> g_broadcast_centers;
-
 void BroadcastCenter::SendBroadcast(const std::string& topic, const std::string& message) {
   NSDistributedNotificationCenter* center = [NSDistributedNotificationCenter defaultCenter];
   [center postNotificationName:[NSString stringWithUTF8String:topic.c_str()]
@@ -27,6 +24,7 @@ void BroadcastCenter::RegisterReceiver(const std::string& topic, BroadcastReceiv
                       object:nil
                        queue:[NSOperationQueue mainQueue]
                   usingBlock:^(NSNotification* notification) {
+                    std::string topic = [notification.name UTF8String];
                     std::string message = [notification.userInfo[@"message"] UTF8String];
                     receiver->OnBroadcastReceived(topic, message);
                   }];
