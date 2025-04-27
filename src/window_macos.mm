@@ -40,7 +40,7 @@ bool Window::IsFocused() const {
 
 void Window::Show() {
   [pimpl_->ns_window_ setIsVisible:YES];
-  [pimpl_->ns_window_ makeKeyAndOrderFront:nil];
+  [pimpl_->ns_window_ orderFrontRegardless];
 }
 
 void Window::Hide() {
@@ -116,8 +116,16 @@ Rectangle Window::GetBounds() const {
   return bounds;
 }
 
-void Window::SetSize(Size size) {
-  [pimpl_->ns_window_ setFrame:NSMakeRect(0, 0, size.width, size.height) display:YES];
+void Window::SetSize(Size size, bool animate) {
+  NSRect frame = [pimpl_->ns_window_ frame];
+  frame.origin.y += (frame.size.height - size.height);
+  frame.size.width = size.width;
+  frame.size.height = size.height;
+  if (animate) {
+    [[pimpl_->ns_window_ animator] setFrame:frame display:YES animate:YES];
+  } else {
+    [pimpl_->ns_window_ setFrame:frame display:YES];
+  }
 }
 
 Size Window::GetSize() const {
@@ -235,7 +243,11 @@ bool Window::IsAlwaysOnTop() {
 }
 
 void Window::SetPosition(Point point) {
-  [pimpl_->ns_window_ setFrameOrigin:NSMakePoint(point.x, point.y)];
+  NSRect screenFrameRect = [[NSScreen screens][0] frame];
+  // Convert point to bottom left origin
+  NSPoint bottomLeft =
+      NSMakePoint(point.x, screenFrameRect.size.height - point.y - GetSize().height);
+  [pimpl_->ns_window_ setFrameOrigin:bottomLeft];
 }
 
 Point Window::GetPosition() {

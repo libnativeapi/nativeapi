@@ -32,7 +32,7 @@ class Window {
   // Color GetBackgroundColor() const;
   void SetBounds(Rectangle bounds);
   Rectangle GetBounds() const;
-  void SetSize(Size size);
+  void SetSize(Size size, bool animate);
   Size GetSize() const;
   void SetContentSize(Size size);
   Size GetContentSize() const;

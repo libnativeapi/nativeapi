@@ -32,7 +32,6 @@ using nativeapi::WindowManager;
   [self.window center];
   [self.window makeKeyAndOrderFront:nil];
   [self.window makeMainWindow];
-  [NSApp activateIgnoringOtherApps:YES];
 
   // 延迟检查主窗口
   dispatch_async(dispatch_get_main_queue(), ^{
@@ -52,20 +51,6 @@ using nativeapi::WindowManager;
         std::cout << "Display removed: " << display.id << std::endl;
       });
   displayManager.AddListener(&displayEventHandler);
-
-  std::shared_ptr<BroadcastCenter> broadcastCenter = std::make_shared<BroadcastCenter>();
-
-  BroadcastEventHandler broadcastEventHandler =
-      BroadcastEventHandler([](const std::string& message) {
-        std::cout << "Received broadcast: " << message << std::endl;
-      });
-
-  broadcastCenter->RegisterReceiver("com.example.myNotification", &broadcastEventHandler);
-
-  //  broadcastCenter.RegisterReceiver(
-  //      BroadcastEventHandler ([&](const std::string& message) {
-  //        std::cout << "Received broadcast: " << message << std::endl;
-  //      }));
 
   [[NSNotificationCenter defaultCenter]
       addObserverForName:NSWindowDidBecomeMainNotification
