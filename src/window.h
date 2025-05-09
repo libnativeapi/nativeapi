@@ -18,6 +18,7 @@ class Window {
   void Blur();
   bool IsFocused() const;
   void Show();
+  void ShowInactive();
   void Hide();
   bool IsVisible() const;
   void Maximize();
@@ -62,6 +63,10 @@ class Window {
   bool HasShadow() const;
   void SetOpacity(float opacity);
   float GetOpacity() const;
+  void SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces);
+  bool IsVisibleOnAllWorkspaces() const;
+  void SetIgnoreMouseEvents(bool is_ignore_mouse_events);
+  bool IsIgnoreMouseEvents() const;
   void SetFocusable(bool is_focusable);
   bool IsFocusable() const;
   void StartDragging();

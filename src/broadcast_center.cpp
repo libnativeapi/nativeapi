@@ -4,13 +4,9 @@
 
 namespace nativeapi {
 
-BroadcastCenter::BroadcastCenter() {
-  std::cout << "BroadcastCenter::BroadcastCenter()" << std::endl;
-};
+BroadcastCenter::BroadcastCenter() {}
 
-BroadcastCenter::~BroadcastCenter() {
-  std::cout << "BroadcastCenter::~BroadcastCenter()" << std::endl;
-};
+BroadcastCenter::~BroadcastCenter() {}
 
 BroadcastEventHandler::BroadcastEventHandler(
     std::function<void(const std::string& topic, const std::string& message)>

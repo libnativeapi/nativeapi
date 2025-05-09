@@ -4,12 +4,8 @@
 
 namespace nativeapi {
 
-AccessibilityManager::AccessibilityManager() {
-  std::cout << "AccessibilityManager::AccessibilityManager()" << std::endl;
-};
+AccessibilityManager::AccessibilityManager() {}
 
-AccessibilityManager::~AccessibilityManager() {
-  std::cout << "AccessibilityManager::~AccessibilityManager()" << std::endl;
-};
+AccessibilityManager::~AccessibilityManager() {}
 
 }  // namespace nativeapi

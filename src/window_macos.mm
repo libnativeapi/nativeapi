@@ -40,6 +40,15 @@ bool Window::IsFocused() const {
 
 void Window::Show() {
   [pimpl_->ns_window_ setIsVisible:YES];
+  // Panels receive key focus when shown but should not activate the app.
+  if (![pimpl_->ns_window_ isKindOfClass:[NSPanel class]]) {
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+  }
+  [pimpl_->ns_window_ makeKeyAndOrderFront:nil];
+}
+
+void Window::ShowInactive() {
+  [pimpl_->ns_window_ setIsVisible:YES];
   [pimpl_->ns_window_ orderFrontRegardless];
 }
 
@@ -280,6 +289,24 @@ void Window::SetOpacity(float opacity) {
 
 float Window::GetOpacity() const {
   return [pimpl_->ns_window_ alphaValue];
+}
+
+void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
+  [pimpl_->ns_window_ setCollectionBehavior:is_visible_on_all_workspaces
+                                                ? NSWindowCollectionBehaviorCanJoinAllSpaces
+                                                : NSWindowCollectionBehaviorDefault];
+}
+
+bool Window::IsVisibleOnAllWorkspaces() const {
+  return [pimpl_->ns_window_ collectionBehavior] & NSWindowCollectionBehaviorCanJoinAllSpaces;
+}
+
+void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
+  [pimpl_->ns_window_ setIgnoresMouseEvents:is_ignore_mouse_events];
+}
+
+bool Window::IsIgnoreMouseEvents() const {
+  return [pimpl_->ns_window_ ignoresMouseEvents];
 }
 
 void Window::SetFocusable(bool is_focusable) {
