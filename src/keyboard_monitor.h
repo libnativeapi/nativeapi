@@ -10,19 +10,18 @@ namespace nativeapi {
 class KeyboardEventHandler {
  public:
   // Constructor that takes callbacks for keyboard events
-  KeyboardEventHandler(
-      std::function<void(const std::string&)> onKeyPressedCallback,
-      std::function<void(const std::string&)> onKeyReleasedCallback);
+  KeyboardEventHandler(std::function<void(int)> onKeyPressedCallback,
+                       std::function<void(int)> onKeyReleasedCallback);
 
   // Handle key pressed event
-  void OnKeyPressed(const std::string& key);
+  void OnKeyPressed(int keycode);
 
   // Handle key released event
-  void OnKeyReleased(const std::string& key);
+  void OnKeyReleased(int keycode);
 
  private:
-  std::function<void(const std::string&)> onKeyPressedCallback_;
-  std::function<void(const std::string&)> onKeyReleasedCallback_;
+  std::function<void(int)> onKeyPressedCallback_;
+  std::function<void(int)> onKeyReleasedCallback_;
 };
 
 class KeyboardMonitor {

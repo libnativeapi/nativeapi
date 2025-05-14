@@ -41,22 +41,10 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
   // Get the key code
   CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
 
-  // Convert key code to string representation
-  UniCharCount actualStringLength = 0;
-  UniChar unicodeString[4];
-  CGEventKeyboardGetUnicodeString(event, 4, &actualStringLength, unicodeString);
-
-  if (actualStringLength > 0) {
-    std::string keyStr(actualStringLength, 0);
-    for (UniCharCount i = 0; i < actualStringLength; ++i) {
-      keyStr[i] = static_cast<char>(unicodeString[i]);
-    }
-
-    if (type == kCGEventKeyDown) {
-      eventHandler->OnKeyPressed(keyStr);
-    } else if (type == kCGEventKeyUp) {
-      eventHandler->OnKeyReleased(keyStr);
-    }
+  if (type == kCGEventKeyDown) {
+    eventHandler->OnKeyPressed(keyCode);
+  } else if (type == kCGEventKeyUp) {
+    eventHandler->OnKeyReleased(keyCode);
   }
 
   return event;
