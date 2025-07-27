@@ -6,12 +6,26 @@
 
 namespace nativeapi {
 
+enum class ModifierKey : uint32_t {
+  None = 0,
+  Shift = 1 << 0,
+  Ctrl = 1 << 1,
+  Alt = 1 << 2,
+  Meta = 1 << 3,  // Windows key or Cmd key
+  Fn = 1 << 4,
+  CapsLock = 1 << 5,
+  NumLock = 1 << 6,
+  ScrollLock = 1 << 7
+};
+
 // KeyboardEventHandler uses callbacks to handle keyboard events.
 class KeyboardEventHandler {
  public:
   // Constructor that takes callbacks for keyboard events
-  KeyboardEventHandler(std::function<void(int)> onKeyPressedCallback,
-                       std::function<void(int)> onKeyReleasedCallback);
+  KeyboardEventHandler(
+      std::function<void(int)> onKeyPressedCallback,
+      std::function<void(int)> onKeyReleasedCallback,
+      std::function<void(uint32_t)> onModifierKeysChangedCallback);
 
   // Handle key pressed event
   void OnKeyPressed(int keycode);
@@ -19,9 +33,13 @@ class KeyboardEventHandler {
   // Handle key released event
   void OnKeyReleased(int keycode);
 
+  // Handle modifier keys changed event
+  void OnModifierKeysChanged(uint32_t modifier_keys);
+
  private:
   std::function<void(int)> onKeyPressedCallback_;
   std::function<void(int)> onKeyReleasedCallback_;
+  std::function<void(uint32_t)> onModifierKeysChangedCallback_;
 };
 
 class KeyboardMonitor {

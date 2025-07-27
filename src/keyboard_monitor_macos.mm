@@ -45,8 +45,32 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
     eventHandler->OnKeyPressed(keyCode);
   } else if (type == kCGEventKeyUp) {
     eventHandler->OnKeyReleased(keyCode);
+  } else if (type == kCGEventFlagsChanged) {
+    CGEventFlags flags = CGEventGetFlags(event);
+    uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
+    if (flags & kCGEventFlagMaskShift) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::Shift);
+    }
+    if (flags & kCGEventFlagMaskControl) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::Ctrl);
+    }
+    if (flags & kCGEventFlagMaskAlternate) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::Alt);
+    }
+    if (flags & kCGEventFlagMaskCommand) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::Meta);
+    }
+    if (flags & kCGEventFlagMaskSecondaryFn) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::Fn);
+    }
+    if (flags & kCGEventFlagMaskAlphaShift) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::CapsLock);
+    }
+    if (flags & kCGEventFlagMaskNumericPad) {
+      modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
+    }
+    eventHandler->OnModifierKeysChanged(modifier_keys);
   }
-
   return event;
 }
 
@@ -55,13 +79,16 @@ void KeyboardMonitor::Start() {
     return;  // Already started
   }
 
+  // Create event mask
+  CGEventMask eventMask =
+      (1 << kCGEventKeyDown) | (1 << kCGEventKeyUp) | (1 << kCGEventFlagsChanged);
+
   // Create event tap for keyboard events
   impl_->eventTap =
       CGEventTapCreate(kCGSessionEventTap,        // Monitor session-wide events
                        kCGHeadInsertEventTap,     // Insert at the head of the event queue
                        kCGEventTapOptionDefault,  // Default options
-                       CGEventMaskBit(kCGEventKeyDown) |
-                           CGEventMaskBit(kCGEventKeyUp),  // Monitor key down and up events
+                       eventMask,                 // Monitor key down, up, and flags changed events
                        keyboardEventCallback,
                        this);  // Pass this pointer as user data
 

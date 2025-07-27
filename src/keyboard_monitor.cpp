@@ -4,9 +4,11 @@ namespace nativeapi {
 
 KeyboardEventHandler::KeyboardEventHandler(
     std::function<void(int)> onKeyPressedCallback,
-    std::function<void(int)> onKeyReleasedCallback)
+    std::function<void(int)> onKeyReleasedCallback,
+    std::function<void(uint32_t)> onModifierKeysChangedCallback)
     : onKeyPressedCallback_(onKeyPressedCallback),
-      onKeyReleasedCallback_(onKeyReleasedCallback) {}
+      onKeyReleasedCallback_(onKeyReleasedCallback),
+      onModifierKeysChangedCallback_(onModifierKeysChangedCallback) {}
 
 void KeyboardEventHandler::OnKeyPressed(int keycode) {
   if (onKeyPressedCallback_) {
@@ -17,6 +19,12 @@ void KeyboardEventHandler::OnKeyPressed(int keycode) {
 void KeyboardEventHandler::OnKeyReleased(int keycode) {
   if (onKeyReleasedCallback_) {
     onKeyReleasedCallback_(keycode);
+  }
+}
+
+void KeyboardEventHandler::OnModifierKeysChanged(uint32_t modifier_keys) {
+  if (onModifierKeysChangedCallback_) {
+    onModifierKeysChangedCallback_(modifier_keys);
   }
 }
 
