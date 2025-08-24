@@ -20,14 +20,14 @@ list(FILTER COMMON_SOURCES EXCLUDE REGEX "linux.*|macos.*|windows.*")
 
 # Platform-specific source files
 if(LINUX)
-  file(GLOB PLATFORM_SOURCES "*_linux.cpp")
+  file(GLOB PLATFORM_SOURCES "impl/*_linux.cpp")
   # Find GTK package for Linux
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 elseif(APPLE)
-  file(GLOB PLATFORM_SOURCES "*_macos.mm")
+  file(GLOB PLATFORM_SOURCES "impl/*_macos.mm")
 elseif(WIN32)
-  file(GLOB PLATFORM_SOURCES "*_windows.cpp")
+  file(GLOB PLATFORM_SOURCES "impl/*_windows.cpp")
 else()
   set(PLATFORM_SOURCES "")
 endif()

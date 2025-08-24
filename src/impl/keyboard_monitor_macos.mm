@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "keyboard_monitor.h"
+#include "../keyboard_monitor.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

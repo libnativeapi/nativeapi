@@ -1,6 +1,6 @@
 #include <codecvt>
 #include <iostream>
-#include "display_manager.h"
+#include "../display_manager.h"
 
 #include <shellscalingapi.h>
 #include <windows.h>

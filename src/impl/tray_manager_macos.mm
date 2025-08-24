@@ -2,15 +2,15 @@
 #include <iostream>
 #include <string>
 
-#include "tray.h"
-#include "tray_manager.h"
+#include "../tray.h"
+#include "../tray_manager.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
 
 namespace nativeapi {
 
-TrayManager::TrayManager() {}
+TrayManager::TrayManager() : next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {}
 
@@ -18,6 +18,7 @@ std::shared_ptr<Tray> TrayManager::Create() {
   NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
   NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
   auto tray = std::make_shared<Tray>((__bridge void*)status_item);
+  tray->id = next_tray_id_++;
   trays_[tray->id] = tray;
   return tray;
 }

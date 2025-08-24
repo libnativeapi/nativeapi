@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../src/accessibility_manager.h"
-#include "../src/broadcast_center.h"
 #include "../src/display.h"
 #include "../src/display_manager.h"
 #include "../src/geometry.h"

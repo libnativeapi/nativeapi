@@ -1,6 +1,6 @@
 #include <iostream>
-#include "menu.h"
-#include "tray.h"
+#include "../menu.h"
+#include "../tray.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -12,6 +12,7 @@ class Tray::Impl {
  public:
   Impl(NSStatusItem* tray) : ns_status_item_(tray) {}
   NSStatusItem* ns_status_item_;
+  Menu context_menu_;  // 添加菜单成员变量来保持菜单对象的生命周期
 };
 
 Tray::Tray() : pimpl_(new Impl(nil)) {
@@ -19,7 +20,7 @@ Tray::Tray() : pimpl_(new Impl(nil)) {
 }
 
 Tray::Tray(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) {
-  id = 0;
+  id = -1;  // Will be set by TrayManager when created
 }
 
 Tray::~Tray() {
@@ -75,11 +76,33 @@ std::string Tray::GetTooltip() {
 }
 
 void Tray::SetContextMenu(Menu menu) {
-  // NSMenu* ns_menu = (__bridge NSMenu*)menu.GetNativeMenu();
-  // [pimpl_->ns_status_item_.button setMenu:ns_menu];
+  // 保存菜单对象的副本来维持其生命周期
+  pimpl_->context_menu_ = menu;
+
+  NSMenu* ns_menu = (__bridge NSMenu*)pimpl_->context_menu_.GetNativeMenu();
+  if (ns_menu) {
+    [pimpl_->ns_status_item_ setMenu:ns_menu];
+  }
 }
 
-// Menu Tray::GetContextMenu() {
-//   return Menu((__bridge void*)pimpl_->ns_status_item_.button.menu);
-// }
+Menu Tray::GetContextMenu() {
+  return pimpl_->context_menu_;
+}
+
+Rectangle Tray::GetBounds() {
+  Rectangle bounds = {0, 0, 0, 0};
+
+  if (pimpl_->ns_status_item_.button) {
+    NSRect buttonFrame = [pimpl_->ns_status_item_.button frame];
+    NSRect screenFrame = [pimpl_->ns_status_item_.button convertRect:buttonFrame toView:nil];
+    NSRect windowFrame = [pimpl_->ns_status_item_.button.window convertRectToScreen:screenFrame];
+
+    bounds.x = windowFrame.origin.x;
+    bounds.y = windowFrame.origin.y;
+    bounds.width = windowFrame.size.width;
+    bounds.height = windowFrame.size.height;
+  }
+
+  return bounds;
+}
 }  // namespace nativeapi

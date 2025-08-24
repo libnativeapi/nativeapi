@@ -24,6 +24,8 @@ class MenuItem {
   std::string GetTooltip();
 
  private:
+  friend class Menu;
+  friend class Tray;
   class Impl;
   Impl* pimpl_;
 };
@@ -40,8 +42,16 @@ class Menu {
 
   void AddItem(MenuItem item);
   void RemoveItem(MenuItem item);
+  void AddSeparator();
+
+  // Convenience methods
+  MenuItem CreateItem(std::string title);
+  MenuItem CreateItem(std::string title, std::string icon);
+
+  void* GetNativeMenu();
 
  private:
+  friend class Tray;
   class Impl;
   Impl* pimpl_;
 };

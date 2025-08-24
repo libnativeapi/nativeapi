@@ -26,6 +26,8 @@ class TrayManager {
  private:
   // Store tray instances
   std::unordered_map<TrayID, std::shared_ptr<Tray>> trays_;
+  // ID generator for new trays
+  TrayID next_tray_id_;
 };
 
 }  // namespace nativeapi

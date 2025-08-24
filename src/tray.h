@@ -24,7 +24,7 @@ class Tray {
   std::string GetTooltip();
 
   void SetContextMenu(Menu menu);
-  // Menu GetContextMenu();
+  Menu GetContextMenu();
 
   Rectangle GetBounds();
 

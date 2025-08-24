@@ -3,8 +3,6 @@
 #include <iostream>
 #include "nativeapi.h"
 
-using nativeapi::BroadcastCenter;
-using nativeapi::BroadcastEventHandler;
 using nativeapi::Display;
 using nativeapi::DisplayEventHandler;
 using nativeapi::DisplayManager;
@@ -12,6 +10,9 @@ using nativeapi::Tray;
 using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
+using nativeapi::Tray;
+using nativeapi::TrayManager;
+using nativeapi::Menu;
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 @property(strong) NSWindow* window;
