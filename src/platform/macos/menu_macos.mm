@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../menu.h"
+#include "../../menu.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

@@ -1,6 +1,6 @@
 #include <iostream>
-#include "../menu.h"
-#include "../tray.h"
+#include "../../menu.h"
+#include "../../tray.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

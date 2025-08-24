@@ -51,9 +51,7 @@ cd build
 
 # Configure and build
 cmake ..
-make -j$(nproc)  # Linux/macOS
-# or
-cmake --build . --config Release  # Windows
+cmake --build . --config Release
 ```
 
 ## Language Bindings

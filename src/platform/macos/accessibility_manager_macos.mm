@@ -1,4 +1,4 @@
-#include "../accessibility_manager.h"
+#include "../../accessibility_manager.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

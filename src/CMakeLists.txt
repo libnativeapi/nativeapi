@@ -7,7 +7,7 @@ project(libnativeapi VERSION 0.0.1 LANGUAGES CXX)
 
 # Enable Objective-C++
 if(APPLE)
-  enable_language(OBJCXX)
+    enable_language(OBJCXX)
 endif()
 
 # Set C++ standard
@@ -16,20 +16,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Common source files
 file(GLOB COMMON_SOURCES "*.cpp")
-list(FILTER COMMON_SOURCES EXCLUDE REGEX "linux.*|macos.*|windows.*")
+list(FILTER COMMON_SOURCES EXCLUDE REGEX "platform/*")
 
 # Platform-specific source files
 if(LINUX)
-  file(GLOB PLATFORM_SOURCES "impl/*_linux.cpp")
-  # Find GTK package for Linux
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+    file(GLOB PLATFORM_SOURCES "platform/linux/*_linux.cpp")
+    # Find GTK package for Linux
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 elseif(APPLE)
-  file(GLOB PLATFORM_SOURCES "impl/*_macos.mm")
+    file(GLOB PLATFORM_SOURCES "platform/macos/*_macos.mm")
 elseif(WIN32)
-  file(GLOB PLATFORM_SOURCES "impl/*_windows.cpp")
+    file(GLOB PLATFORM_SOURCES "platform/windows/*_windows.cpp")
 else()
-  set(PLATFORM_SOURCES "")
+    set(PLATFORM_SOURCES "")
 endif()
 
 # Add library target
@@ -50,13 +50,13 @@ target_include_directories(libnativeapi PUBLIC
 )
 
 if (LINUX)
-  target_include_directories(libnativeapi PUBLIC ${GTK_INCLUDE_DIRS})
+    target_include_directories(libnativeapi PUBLIC ${GTK_INCLUDE_DIRS})
 endif ()
 
 # Link required frameworks and libraries
 if(APPLE)
-  target_link_libraries(libnativeapi PUBLIC "-framework Cocoa")
-  target_compile_options(libnativeapi PRIVATE "-x" "objective-c++")
+    target_link_libraries(libnativeapi PUBLIC "-framework Cocoa")
+    target_compile_options(libnativeapi PRIVATE "-x" "objective-c++")
 elseif (LINUX)
-  target_link_libraries(libnativeapi PUBLIC PkgConfig::GTK)
+    target_link_libraries(libnativeapi PUBLIC PkgConfig::GTK)
 endif ()

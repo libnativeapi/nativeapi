@@ -1,6 +1,6 @@
 #include <iostream>
-#include "../window.h"
-#include "../window_manager.h"
+#include "../../window.h"
+#include "../../window_manager.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

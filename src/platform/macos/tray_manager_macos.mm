@@ -2,8 +2,8 @@
 #include <iostream>
 #include <string>
 
-#include "../tray.h"
-#include "../tray_manager.h"
+#include "../../tray.h"
+#include "../../tray_manager.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>

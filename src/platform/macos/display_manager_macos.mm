@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "../display.h"
-#include "../display_manager.h"
+#include "../../display.h"
+#include "../../display_manager.h"
 
 // Import Cocoa and Core Graphics headers
 #import <Cocoa/Cocoa.h>

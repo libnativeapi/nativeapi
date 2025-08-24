@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
 #include <iostream>
-#include "../display_manager.h"
+#include "../../display_manager.h"
 
 namespace nativeapi {
 
