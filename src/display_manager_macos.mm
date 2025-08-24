@@ -7,8 +7,9 @@
 #include "display.h"
 #include "display_manager.h"
 
-// Import Cocoa headers
+// Import Cocoa and Core Graphics headers
 #import <Cocoa/Cocoa.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 namespace nativeapi {
 
@@ -36,14 +37,55 @@ static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isPrimary) {
   }
   display.name = [displayName UTF8String];
 
-  // Set size and position properties
-  display.width = frame.size.width;
-  display.height = frame.size.height;
-  display.visiblePositionX = visibleFrame.origin.x;
-  display.visiblePositionY = visibleFrame.origin.y;
-  display.visibleSizeWidth = visibleFrame.size.width;
-  display.visibleSizeHeight = visibleFrame.size.height;
+  // Set position and size using geometry types
+  display.position = {frame.origin.x, frame.origin.y};
+  display.size = {frame.size.width, frame.size.height};
+  display.workArea = {visibleFrame.origin.x, visibleFrame.origin.y,
+                     visibleFrame.size.height, visibleFrame.size.width};
   display.scaleFactor = scaleFactor;
+  display.isPrimary = isPrimary;
+
+  // Determine orientation based on dimensions
+  if (frame.size.width > frame.size.height) {
+    display.orientation = DisplayOrientation::kLandscape;
+  } else {
+    display.orientation = DisplayOrientation::kPortrait;
+  }
+
+  // Try to get refresh rate using Core Graphics
+  CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode(displayID);
+  if (displayMode) {
+    double refreshRate = CGDisplayModeGetRefreshRate(displayMode);
+    display.refreshRate = refreshRate > 0 ? (int)refreshRate : 60; // Default to 60Hz if unknown
+    CGDisplayModeRelease(displayMode);
+  }
+
+  // Set default bit depth for modern displays
+  display.bitDepth = 32;
+
+  // Try to get hardware info using newer APIs
+  // For now, use display name parsing and default values since the old API is deprecated
+  // This could be enhanced with newer IOKit approaches if needed
+  NSString* displayNameStr = [NSString stringWithUTF8String:display.name.c_str()];
+  if ([displayNameStr containsString:@"Apple"]) {
+    display.manufacturer = "Apple";
+  } else if ([displayNameStr containsString:@"Dell"]) {
+    display.manufacturer = "Dell";
+  } else if ([displayNameStr containsString:@"Samsung"]) {
+    display.manufacturer = "Samsung";
+  } else if ([displayNameStr containsString:@"LG"]) {
+    display.manufacturer = "LG";
+  } else {
+    display.manufacturer = "Unknown";
+  }
+
+  // Use display name as model for now
+  display.model = display.name;
+  display.serialNumber = ""; // Not easily available without deprecated APIs
+
+  // Set default values if hardware info couldn't be retrieved
+  if (display.manufacturer.empty()) display.manufacturer = "Unknown";
+  if (display.model.empty()) display.model = "Unknown";
 
   return display;
 }
