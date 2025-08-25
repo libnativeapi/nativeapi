@@ -14,16 +14,16 @@ static Display CreateDisplayFromGdkMonitor(GdkMonitor* monitor,
   GdkRectangle frame;
   gdk_monitor_get_geometry(monitor, &frame);
 
-  display.width = frame.width;
-  display.height = frame.height;
+  display.size.width = frame.width;
+  display.size.height = frame.height;
 
   GdkRectangle workarea_rect;
   gdk_monitor_get_workarea(monitor, &workarea_rect);
 
-  display.visibleSizeWidth = workarea_rect.width;
-  display.visibleSizeHeight = workarea_rect.height;
-  display.visiblePositionX = workarea_rect.x;
-  display.visiblePositionY = workarea_rect.y;
+  display.workArea.x = workarea_rect.x;
+  display.workArea.y = workarea_rect.y;
+  display.workArea.width = workarea_rect.width;
+  display.workArea.height = workarea_rect.height;
 
   display.scaleFactor = gdk_monitor_get_scale_factor(monitor);
 
