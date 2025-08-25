@@ -12,9 +12,22 @@
 namespace nativeapi {
 
 WindowManager::WindowManager() {
-  // Initialize GTK if not already initialized (check if default display exists)
+  // Try to initialize GTK if not already initialized
+  // In headless environments, this may fail, which is acceptable
   if (!gdk_display_get_default()) {
-    gtk_init(nullptr, nullptr);
+    // Temporarily redirect stderr to suppress GTK warnings in headless environments
+    FILE* original_stderr = stderr;
+    freopen("/dev/null", "w", stderr);
+    
+    gboolean gtk_result = gtk_init_check(nullptr, nullptr);
+    
+    // Restore stderr
+    fflush(stderr);
+    freopen("/dev/tty", "w", stderr);
+    stderr = original_stderr;
+    
+    // gtk_init_check returns FALSE if initialization failed (e.g., no display)
+    // This is acceptable for headless environments
   }
 }
 
