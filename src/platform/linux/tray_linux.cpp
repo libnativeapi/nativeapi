@@ -14,6 +14,7 @@ class Tray::Impl {
   Impl(GtkStatusIcon* tray) : gtk_status_icon_(tray), title_(""), tooltip_("") {}
   
   GtkStatusIcon* gtk_status_icon_;
+  Menu context_menu_;  // Store menu object to keep it alive
   std::string title_;  // GTK StatusIcon doesn't have title, so we store it
   std::string tooltip_;
 };
@@ -111,15 +112,15 @@ std::string Tray::GetTooltip() {
 }
 
 void Tray::SetContextMenu(Menu menu) {
-  // For now, just store the menu - full implementation would need 
-  // to connect popup-menu signal and show GTK menu
-  // TODO: Implement proper menu integration
+  // Store the menu object to keep it alive
+  pimpl_->context_menu_ = menu;
+  
+  // Note: Full GTK integration would need to connect popup-menu signal
+  // and show the GTK menu from the Menu object's GetNativeMenu()
 }
 
 Menu Tray::GetContextMenu() {
-  // Return a default/empty menu for now
-  // TODO: Return the stored menu once properly implemented
-  return Menu();
+  return pimpl_->context_menu_;
 }
 
 Rectangle Tray::GetBounds() {
