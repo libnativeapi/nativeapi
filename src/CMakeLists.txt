@@ -19,7 +19,7 @@ file(GLOB COMMON_SOURCES "*.cpp")
 list(FILTER COMMON_SOURCES EXCLUDE REGEX "platform/*")
 
 # Platform-specific source files
-if(LINUX)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     file(GLOB PLATFORM_SOURCES "platform/linux/*_linux.cpp")
     # Find GTK package for Linux
     find_package(PkgConfig REQUIRED)
@@ -49,7 +49,7 @@ target_include_directories(libnativeapi PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_include_directories(libnativeapi PUBLIC ${GTK_INCLUDE_DIRS})
 endif ()
 
@@ -57,6 +57,6 @@ endif ()
 if(APPLE)
     target_link_libraries(libnativeapi PUBLIC "-framework Cocoa")
     target_compile_options(libnativeapi PRIVATE "-x" "objective-c++")
-elseif (LINUX)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(libnativeapi PUBLIC PkgConfig::GTK)
 endif ()

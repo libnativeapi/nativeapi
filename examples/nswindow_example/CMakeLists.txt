@@ -6,8 +6,10 @@ project(nswindow_example VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Enable Objective-C++
-enable_language(OBJCXX)
+# Enable Objective-C++ (macOS only)
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
 
 # Add example program
 add_executable(nswindow_example
