@@ -99,16 +99,16 @@ public:
         // Register window class if not already registered
         static bool class_registered = false;
         if (!class_registered) {
-            WNDCLASS wc = {};
+            WNDCLASSW wc = {};
             wc.lpfnWndProc = TrayWindowProc;
             wc.hInstance = GetModuleHandle(nullptr);
             wc.lpszClassName = TRAY_WINDOW_CLASS;
-            RegisterClass(&wc);
+            RegisterClassW(&wc);
             class_registered = true;
         }
         
         // Create hidden window for tray messages
-        hwnd_ = CreateWindow(
+        hwnd_ = CreateWindowW(
             TRAY_WINDOW_CLASS,
             L"TrayWindow",
             WS_OVERLAPPED,
@@ -122,13 +122,13 @@ public:
     void InitializeTrayIcon() {
         if (!hwnd_) return;
         
-        nid_.cbSize = sizeof(NOTIFYICONDATA);
+        nid_.cbSize = sizeof(NOTIFYICONDATAW);
         nid_.hWnd = hwnd_;
         nid_.uID = tray_uid_;
         nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
         nid_.uCallbackMessage = g_tray_message;
         nid_.hIcon = LoadIcon(nullptr, IDI_APPLICATION); // Default icon
-        wcscpy_s(nid_.szTip, L"Tray Icon");
+        wcscpy_s(nid_.szTip, sizeof(nid_.szTip)/sizeof(wchar_t), L"Tray Icon");
         
         // Store tray pointer in window
         SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(tray_ptr_));
@@ -153,15 +153,14 @@ public:
         if (!hwnd_) return;
         
         std::wstring wtooltip = StringToWideString(tooltip);
-        wcsncpy_s(nid_.szTip, wtooltip.c_str(), sizeof(nid_.szTip) / sizeof(wchar_t) - 1);
-        nid_.szTip[sizeof(nid_.szTip) / sizeof(wchar_t) - 1] = L'\0';
+        wcsncpy_s(nid_.szTip, sizeof(nid_.szTip) / sizeof(wchar_t), wtooltip.c_str(), _TRUNCATE);
         
         Shell_NotifyIcon(NIM_MODIFY, &nid_);
     }
 
     HWND hwnd_;
     UINT tray_uid_;
-    NOTIFYICONDATA nid_;
+    NOTIFYICONDATAW nid_;
     HICON icon_;
     std::string title_;
     std::string tooltip_;
@@ -200,7 +199,7 @@ void Tray::SetIcon(std::string icon) {
     } else if (!icon.empty()) {
         // Load icon from file path
         std::wstring wicon = StringToWideString(icon);
-        pimpl_->icon_ = (HICON)LoadImage(
+        pimpl_->icon_ = (HICON)LoadImageW(
             nullptr,
             wicon.c_str(),
             IMAGE_ICON,
@@ -246,9 +245,9 @@ Rectangle Tray::GetBounds() {
     
     if (pimpl_->hwnd_) {
         // Get the position of the notification area
-        HWND hTray = FindWindow(L"Shell_TrayWnd", nullptr);
+        HWND hTray = FindWindowW(L"Shell_TrayWnd", nullptr);
         if (hTray) {
-            HWND hNotify = FindWindowEx(hTray, nullptr, L"TrayNotifyWnd", nullptr);
+            HWND hNotify = FindWindowExW(hTray, nullptr, L"TrayNotifyWnd", nullptr);
             if (hNotify) {
                 RECT rect;
                 GetWindowRect(hNotify, &rect);

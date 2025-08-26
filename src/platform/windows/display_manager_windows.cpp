@@ -13,7 +13,7 @@ UINT GetMonitorDpi(HMONITOR monitor) {
   typedef HRESULT(WINAPI* GetDpiForMonitorFunc)(HMONITOR, int, UINT*, UINT*);
   
   // Try to load GetDpiForMonitor from Shcore.dll (Windows 8.1+)
-  HMODULE shcore = LoadLibrary(L"Shcore.dll");
+  HMODULE shcore = LoadLibraryW(L"Shcore.dll");
   if (shcore) {
     GetDpiForMonitorFunc getDpiForMonitor = 
         (GetDpiForMonitorFunc)GetProcAddress(shcore, "GetDpiForMonitor");
@@ -54,7 +54,7 @@ Display CreateDisplayFromMonitor(HMONITOR monitor, bool isPrimary) {
   UINT dpi = GetMonitorDpi(monitor);
   
   Display display;
-  display.name = WideStringToString(std::wstring(info.szDevice));
+  display.name = std::string(info.szDevice);
   display.scaleFactor = static_cast<double>(dpi) / kBaseDpi;
   display.isPrimary = isPrimary;
   
@@ -74,7 +74,7 @@ Display CreateDisplayFromMonitor(HMONITOR monitor, bool isPrimary) {
   DISPLAY_DEVICE displayDevice;
   displayDevice.cb = sizeof(DISPLAY_DEVICE);
   if (EnumDisplayDevices(info.szDevice, 0, &displayDevice, 0)) {
-    display.id = WideStringToString(std::wstring(displayDevice.DeviceID));
+    display.id = std::string(displayDevice.DeviceID);
     
     // Get display settings
     DEVMODE devMode;

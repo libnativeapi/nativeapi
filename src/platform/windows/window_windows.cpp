@@ -442,7 +442,7 @@ Point Window::GetPosition() {
 void Window::SetTitle(std::string title) {
     if (pimpl_->hwnd_) {
         std::wstring wtitle = StringToWideString(title);
-        SetWindowText(pimpl_->hwnd_, wtitle.c_str());
+        SetWindowTextW(pimpl_->hwnd_, wtitle.c_str());
     }
 }
 
@@ -451,7 +451,7 @@ std::string Window::GetTitle() {
         int length = GetWindowTextLength(pimpl_->hwnd_);
         if (length > 0) {
             std::wstring wtitle(length + 1, L'\0');
-            GetWindowText(pimpl_->hwnd_, &wtitle[0], length + 1);
+            GetWindowTextW(pimpl_->hwnd_, &wtitle[0], length + 1);
             wtitle.resize(length);
             return WideStringToString(wtitle);
         }
@@ -572,3 +572,5 @@ void* Window::GetNSWindow() const {
     // This method name suggests macOS compatibility - return HWND instead
     return pimpl_->hwnd_;
 }
+
+}  // namespace nativeapi

@@ -3,6 +3,11 @@
 #include <windows.h>
 #include <oleacc.h>
 
+// SM_SCREENREADER is not defined in all Windows SDK versions
+#ifndef SM_SCREENREADER
+#define SM_SCREENREADER 40
+#endif
+
 namespace nativeapi {
 
 void AccessibilityManager::Enable() {

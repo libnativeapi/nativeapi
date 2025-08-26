@@ -64,6 +64,7 @@ class KeyboardMonitor {
 
  private:
   class Impl;
+  friend class Impl;  // Allow Impl class to access private members
   std::unique_ptr<Impl> impl_;
   KeyboardEventHandler* event_handler_;
 };

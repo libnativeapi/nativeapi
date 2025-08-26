@@ -83,7 +83,7 @@ void MenuItem::SetIcon(std::string icon) {
   } else if (!icon.empty()) {
     // Load icon from file path
     std::wstring wicon(icon.begin(), icon.end());
-    HICON hIcon = (HICON)LoadImage(nullptr, wicon.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    HICON hIcon = (HICON)LoadImageW(nullptr, wicon.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
     if (hIcon) {
       // Convert HICON to HBITMAP
       HDC hdc = GetDC(nullptr);
@@ -151,8 +151,8 @@ void Menu::AddItem(MenuItem item) {
   // Store the item to keep it alive
   pimpl_->items_.push_back(item);
   
-  MENUITEMINFO mii = {};
-  mii.cbSize = sizeof(MENUITEMINFO);
+  MENUITEMINFOW mii = {};
+  mii.cbSize = sizeof(MENUITEMINFOW);
   mii.fMask = MIIM_ID | MIIM_STRING | MIIM_DATA;
   mii.wID = item.pimpl_->menu_id_;
   
@@ -167,7 +167,7 @@ void Menu::AddItem(MenuItem item) {
     mii.hbmpItem = item.pimpl_->icon_bitmap_;
   }
 
-  InsertMenuItem(pimpl_->hmenu_, GetMenuItemCount(pimpl_->hmenu_), TRUE, &mii);
+  InsertMenuItemW(pimpl_->hmenu_, GetMenuItemCount(pimpl_->hmenu_), TRUE, &mii);
 }
 
 void Menu::RemoveItem(MenuItem item) {
@@ -188,12 +188,12 @@ void Menu::RemoveItem(MenuItem item) {
 void Menu::AddSeparator() {
   if (!pimpl_->hmenu_) return;
   
-  MENUITEMINFO mii = {};
-  mii.cbSize = sizeof(MENUITEMINFO);
+  MENUITEMINFOW mii = {};
+  mii.cbSize = sizeof(MENUITEMINFOW);
   mii.fMask = MIIM_FTYPE;
   mii.fType = MFT_SEPARATOR;
   
-  InsertMenuItem(pimpl_->hmenu_, GetMenuItemCount(pimpl_->hmenu_), TRUE, &mii);
+  InsertMenuItemW(pimpl_->hmenu_, GetMenuItemCount(pimpl_->hmenu_), TRUE, &mii);
 }
 
 MenuItem Menu::CreateItem(std::string title) {

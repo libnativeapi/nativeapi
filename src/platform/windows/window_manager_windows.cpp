@@ -42,7 +42,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
         if (!(exStyle & WS_EX_TOOLWINDOW)) {
             // Check if window has a title
             wchar_t title[256];
-            if (GetWindowText(hwnd, title, sizeof(title) / sizeof(wchar_t)) > 0) {
+            if (GetWindowTextW(hwnd, title, sizeof(title) / sizeof(wchar_t)) > 0) {
                 windows->push_back(hwnd);
             }
         }
