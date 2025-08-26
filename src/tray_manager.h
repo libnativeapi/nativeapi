@@ -8,7 +8,7 @@
 
 namespace nativeapi {
 
-// WindowManager is a singleton that manages all windows on the system.
+// TrayManager is a singleton that manages all system tray icons.
 class TrayManager {
  public:
   TrayManager();
@@ -22,6 +22,9 @@ class TrayManager {
 
   // Get all trays.
   std::vector<std::shared_ptr<Tray>> GetAll();
+
+  // Destroy a tray by its ID. Returns true if tray was found and destroyed.
+  bool Destroy(TrayID id);
 
  private:
   // Store tray instances

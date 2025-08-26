@@ -1,31 +1,45 @@
 #include <iostream>
 #include "nativeapi.h"
 
+using nativeapi::AppRunner;
+using nativeapi::Tray;
+using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
+using nativeapi::WindowOptions;
 
 int main() {
-  WindowManager windowManager = WindowManager();
+  WindowManager window_manager = WindowManager();
 
-  // Get primary display information
-  std::shared_ptr<Window> currentWindowPtr = windowManager.GetCurrent();
-  if (currentWindowPtr != nullptr) {
-    Window& currentWindow = *currentWindowPtr;
-    std::cout << "Current Window Information:" << std::endl;
-    std::cout << "ID: " << currentWindow.id << std::endl;
-    std::cout << std::endl;
-  }
-
-  // Get all windows
-  std::vector<std::shared_ptr<Window>> windowList = (windowManager.GetAll());
-  std::cout << "\nAll Windows Information:" << std::endl;
-  for (size_t i = 0; i < windowList.size(); i++) {
-    const Window& window = *windowList[i];
-    std::cout << "Window " << (i + 1) << ":" << std::endl;
+  // Create a new window with options
+  WindowOptions options;
+  options.title = "My Window";
+  options.size.width = 800;
+  options.size.height = 600;
+  std::shared_ptr<Window> window_ptr = window_manager.Create(options);
+  if (window_ptr != nullptr) {
+    Window& window = *window_ptr;
+    std::cout << "New Window Information:" << std::endl;
     std::cout << "ID: " << window.id << std::endl;
-    auto windowSize = window.GetSize();
-    std::cout << "Size: " << windowSize.width << "x" << windowSize.height
-              << std::endl;
+    std::cout << std::endl;
+    window.Show();
+    window.Focus();
   }
+
+  TrayManager trayManager = TrayManager();
+
+  std::shared_ptr<Tray> newTrayPtr = trayManager.Create();
+  if (newTrayPtr != nullptr) {
+    Tray& newTray = *newTrayPtr;
+    newTray.SetTitle("Hello, World!");
+    std::cout << "Tray ID: " << newTray.id << std::endl;
+    std::cout << "Tray Title: " << newTray.GetTitle() << std::endl;
+  } else {
+    std::cerr << "Failed to create tray." << std::endl;
+  }
+
+  AppRunner runner;
+  runner.Run(window_ptr);
+
   return 0;
 }

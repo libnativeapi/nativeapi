@@ -6,6 +6,20 @@ namespace nativeapi {
 
 typedef long WindowID;
 
+/**
+ * WindowOptions is a struct that contains options for creating a window.
+ */
+struct WindowOptions {
+  std::string title;
+  Size size;
+  Size minimum_size;
+  Size maximum_size;
+  bool centered;
+};
+
+/**
+ * Window is a class that represents a window.
+ */
 class Window {
  public:
   Window();
