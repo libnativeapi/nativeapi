@@ -231,13 +231,27 @@ int main() {
 
   std::cout << "\n✅ Display information retrieved successfully!" << std::endl;
 
+  // Test C API
+  std::cout << "\n=== Testing C API ===" << std::endl;
   native_display_list_t display_list = native_display_manager_get_all();
 
-  std::cout << "C API - Found " << display_list.count
-            << " display(s):" << std::endl;
-  for (size_t i = 0; i < display_list.count; ++i) {
-    std::cout << "Display " << (i + 1)
-              << " Name: " << display_list.displays[i].name << std::endl;
+  if (display_list.displays != nullptr && display_list.count > 0) {
+    std::cout << "C API - Found " << display_list.count
+              << " display(s):" << std::endl;
+    for (size_t i = 0; i < display_list.count; ++i) {
+      const native_display_t& display = display_list.displays[i];
+      std::cout << "Display " << (i + 1) << ":" << std::endl;
+      std::cout << "  Name: " << (display.name ? display.name : "Unknown") << std::endl;
+      std::cout << "  ID: " << (display.id ? display.id : "Unknown") << std::endl;
+      std::cout << "  Size: " << display.size.width << " x " << display.size.height << std::endl;
+      std::cout << "  Primary: " << (display.is_primary ? "Yes" : "No") << std::endl;
+      std::cout << std::endl;
+    }
+    
+    // Clean up memory
+    native_display_list_free(&display_list);
+  } else {
+    std::cout << "C API - No displays found or error occurred" << std::endl;
   }
 
   return 0;

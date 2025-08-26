@@ -18,6 +18,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(GLOB COMMON_SOURCES "*.cpp")
 list(FILTER COMMON_SOURCES EXCLUDE REGEX "platform/*")
 
+# C API source files
+file(GLOB CAPI_SOURCES "capi/*.cpp" "capi/*.c")
+
 # Platform-specific source files
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     file(GLOB PLATFORM_SOURCES "platform/linux/*_linux.cpp")
@@ -38,6 +41,7 @@ endif()
 add_library(libnativeapi STATIC
   ${COMMON_SOURCES}
   ${PLATFORM_SOURCES}
+  ${CAPI_SOURCES}
 )
 
 # Set library properties

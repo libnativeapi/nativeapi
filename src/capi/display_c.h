@@ -46,6 +46,9 @@ typedef struct {
   char* serial_number;  // Display serial number (if available)
 } native_display_t;
 
+/**
+ * Representation of a list of displays
+ */
 typedef struct {
   native_display_t* displays;
   long count;

@@ -22,6 +22,9 @@ native_display_t native_display_manager_get_primary();
 FFI_PLUGIN_EXPORT
 native_point_t native_display_manager_get_cursor_position();
 
+FFI_PLUGIN_EXPORT
+void native_display_list_free(native_display_list_t* list);
+
 #ifdef __cplusplus
 }
 #endif
