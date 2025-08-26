@@ -9,11 +9,11 @@ using namespace nativeapi;
 static AccessibilityManager g_accessibility_manager = AccessibilityManager();
 
 FFI_PLUGIN_EXPORT
-void accessibility_manager_enable() {
+void native_accessibility_manager_enable() {
   g_accessibility_manager.Enable();
 }
 
 FFI_PLUGIN_EXPORT
-bool accessibility_manager_is_enabled() {
+bool native_accessibility_manager_is_enabled() {
   return g_accessibility_manager.IsEnabled();
 }

@@ -9,6 +9,7 @@ using nativeapi::WindowManager;
 using nativeapi::WindowOptions;
 
 int main() {
+  TrayManager tray_manager = TrayManager();
   WindowManager window_manager = WindowManager();
 
   // Create a new window with options
@@ -17,23 +18,14 @@ int main() {
   options.size.width = 800;
   options.size.height = 600;
   std::shared_ptr<Window> window_ptr = window_manager.Create(options);
-  if (window_ptr != nullptr) {
-    Window& window = *window_ptr;
-    std::cout << "New Window Information:" << std::endl;
-    std::cout << "ID: " << window.id << std::endl;
-    std::cout << std::endl;
-    window.Show();
-    window.Focus();
-  }
 
-  TrayManager trayManager = TrayManager();
 
-  std::shared_ptr<Tray> newTrayPtr = trayManager.Create();
-  if (newTrayPtr != nullptr) {
-    Tray& newTray = *newTrayPtr;
-    newTray.SetTitle("Hello, World!");
-    std::cout << "Tray ID: " << newTray.id << std::endl;
-    std::cout << "Tray Title: " << newTray.GetTitle() << std::endl;
+  std::shared_ptr<Tray> tray_ptr = tray_manager.Create();
+  if (tray_ptr != nullptr) {
+    Tray& tray = *tray_ptr;
+    tray.SetTitle("Hello, World!");
+    std::cout << "Tray ID: " << tray.id << std::endl;
+    std::cout << "Tray Title: " << tray.GetTitle() << std::endl;
   } else {
     std::cerr << "Failed to create tray." << std::endl;
   }
