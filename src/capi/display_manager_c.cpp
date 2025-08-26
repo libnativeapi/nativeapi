@@ -2,6 +2,12 @@
 #include <iostream>
 #include <vector>
 
+#ifdef _WIN32
+#define STRDUP _strdup
+#else
+#define STRDUP strdup
+#endif
+
 #include "../display.h"
 #include "../display_manager.h"
 
@@ -31,13 +37,13 @@ native_display_t to_native_display(const Display& raw_display) {
   native_display_t display = {};
 
   // Allocate and copy strings
-  display.id = strdup(raw_display.id.c_str());
-  display.name = strdup(raw_display.name.c_str());
+  display.id = STRDUP(raw_display.id.c_str());
+  display.name = STRDUP(raw_display.name.c_str());
   display.manufacturer = raw_display.manufacturer.empty()
                              ? nullptr
-                             : strdup(raw_display.manufacturer.c_str());
+                             : STRDUP(raw_display.manufacturer.c_str());
   display.model =
-      raw_display.model.empty() ? nullptr : strdup(raw_display.model.c_str());
+      raw_display.model.empty() ? nullptr : STRDUP(raw_display.model.c_str());
   display.serial_number = nullptr;  // Not available in the C++ API
 
   // Copy position

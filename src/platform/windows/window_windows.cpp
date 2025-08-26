@@ -390,10 +390,10 @@ bool Window::IsClosable() const {
     if (pimpl_->hwnd_) {
         HMENU hMenu = GetSystemMenu(pimpl_->hwnd_, FALSE);
         if (hMenu) {
-            MENUITEMINFO mii = {};
-            mii.cbSize = sizeof(MENUITEMINFO);
+            MENUITEMINFOW mii = {};
+            mii.cbSize = sizeof(MENUITEMINFOW);
             mii.fMask = MIIM_STATE;
-            if (GetMenuItemInfo(hMenu, SC_CLOSE, FALSE, &mii)) {
+            if (GetMenuItemInfoW(hMenu, SC_CLOSE, FALSE, &mii)) {
                 return !(mii.fState & MFS_GRAYED);
             }
         }
@@ -448,7 +448,7 @@ void Window::SetTitle(std::string title) {
 
 std::string Window::GetTitle() {
     if (pimpl_->hwnd_) {
-        int length = GetWindowTextLength(pimpl_->hwnd_);
+        int length = GetWindowTextLengthW(pimpl_->hwnd_);
         if (length > 0) {
             std::wstring wtitle(length + 1, L'\0');
             GetWindowTextW(pimpl_->hwnd_, &wtitle[0], length + 1);

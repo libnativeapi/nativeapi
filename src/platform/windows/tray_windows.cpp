@@ -133,19 +133,19 @@ public:
         // Store tray pointer in window
         SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(tray_ptr_));
         
-        Shell_NotifyIcon(NIM_ADD, &nid_);
+        Shell_NotifyIconW(NIM_ADD, &nid_);
     }
     
     void RemoveTrayIcon() {
         if (hwnd_) {
-            Shell_NotifyIcon(NIM_DELETE, &nid_);
+            Shell_NotifyIconW(NIM_DELETE, &nid_);
         }
     }
     
     void UpdateIcon() {
         if (hwnd_ && icon_) {
             nid_.hIcon = icon_;
-            Shell_NotifyIcon(NIM_MODIFY, &nid_);
+            Shell_NotifyIconW(NIM_MODIFY, &nid_);
         }
     }
     
@@ -155,7 +155,7 @@ public:
         std::wstring wtooltip = StringToWideString(tooltip);
         wcsncpy_s(nid_.szTip, sizeof(nid_.szTip) / sizeof(wchar_t), wtooltip.c_str(), _TRUNCATE);
         
-        Shell_NotifyIcon(NIM_MODIFY, &nid_);
+        Shell_NotifyIconW(NIM_MODIFY, &nid_);
     }
 
     HWND hwnd_;
