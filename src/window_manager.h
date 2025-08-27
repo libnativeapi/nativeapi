@@ -1,12 +1,139 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
+#include "event.h"
+#include "event_dispatcher.h"
+#include "geometry.h"
 #include "window.h"
 
 namespace nativeapi {
+
+/**
+ * Event class for window creation
+ */
+class WindowCreatedEvent : public TypedEvent<WindowCreatedEvent> {
+ public:
+  explicit WindowCreatedEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window closure
+ */
+class WindowClosedEvent : public TypedEvent<WindowClosedEvent> {
+ public:
+  explicit WindowClosedEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window focus gained
+ */
+class WindowFocusedEvent : public TypedEvent<WindowFocusedEvent> {
+ public:
+  explicit WindowFocusedEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window focus lost
+ */
+class WindowBlurredEvent : public TypedEvent<WindowBlurredEvent> {
+ public:
+  explicit WindowBlurredEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window minimized
+ */
+class WindowMinimizedEvent : public TypedEvent<WindowMinimizedEvent> {
+ public:
+  explicit WindowMinimizedEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window maximized
+ */
+class WindowMaximizedEvent : public TypedEvent<WindowMaximizedEvent> {
+ public:
+  explicit WindowMaximizedEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window restored
+ */
+class WindowRestoredEvent : public TypedEvent<WindowRestoredEvent> {
+ public:
+  explicit WindowRestoredEvent(WindowID window_id) : window_id_(window_id) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+
+ private:
+  WindowID window_id_;
+};
+
+/**
+ * Event class for window moved
+ */
+class WindowMovedEvent : public TypedEvent<WindowMovedEvent> {
+ public:
+  WindowMovedEvent(WindowID window_id, Point new_position)
+      : window_id_(window_id), new_position_(new_position) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+  Point GetNewPosition() const { return new_position_; }
+
+ private:
+  WindowID window_id_;
+  Point new_position_;
+};
+
+/**
+ * Event class for window resized
+ */
+class WindowResizedEvent : public TypedEvent<WindowResizedEvent> {
+ public:
+  WindowResizedEvent(WindowID window_id, Size new_size)
+      : window_id_(window_id), new_size_(new_size) {}
+
+  WindowID GetWindowId() const { return window_id_; }
+  Size GetNewSize() const { return new_size_; }
+
+ private:
+  WindowID window_id_;
+  Size new_size_;
+};
 
 // WindowManager is a singleton that manages all windows on the system.
 class WindowManager {
@@ -29,9 +156,45 @@ class WindowManager {
   // Destroy a window by its ID. Returns true if window was destroyed.
   bool Destroy(WindowID id);
 
+  // Event dispatcher methods for window events
+  template <typename EventType>
+  size_t AddListener(TypedEventListener<EventType>* listener) {
+    return event_dispatcher_.AddListener<EventType>(listener);
+  }
+
+  template <typename EventType>
+  size_t AddListener(std::function<void(const EventType&)> callback) {
+    return event_dispatcher_.AddListener<EventType>(std::move(callback));
+  }
+
+  bool RemoveListener(size_t listener_id) {
+    return event_dispatcher_.RemoveListener(listener_id);
+  }
+
+  // Get the event dispatcher (for advanced usage)
+  EventDispatcher& GetEventDispatcher() { return event_dispatcher_; }
+
  private:
+  // Forward declaration for platform-specific implementation
+  class WindowManagerImpl;
+  
   // Store window instances
   std::unordered_map<WindowID, std::shared_ptr<Window>> windows_;
+  
+  // Event dispatcher for window events
+  EventDispatcher event_dispatcher_;
+  
+  // Platform-specific implementation
+  std::unique_ptr<WindowManagerImpl> impl_;
+  
+  // Platform-specific method to set up event monitoring
+  void SetupEventMonitoring();
+  
+  // Platform-specific method to clean up event monitoring
+  void CleanupEventMonitoring();
+  
+  // Internal method to dispatch window events
+  void DispatchWindowEvent(const Event& event);
 };
 
 }  // namespace nativeapi
