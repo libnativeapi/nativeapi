@@ -37,7 +37,7 @@ class KeyboardMonitor::Impl {
   uint32_t GetModifierState();
 };
 
-KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_handler_(nullptr) {}
+KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_dispatcher_() {}
 
 KeyboardMonitor::~KeyboardMonitor() {
   Stop();
@@ -154,15 +154,18 @@ void KeyboardMonitor::Impl::MonitoringLoop() {
         if (XGetEventData(display_, &event.xcookie)) {
           XIDeviceEvent* xi_event = (XIDeviceEvent*)event.xcookie.data;
           
-          auto* eventHandler = monitor_->GetEventHandler();
-          if (eventHandler) {
-            if (xi_event->evtype == XI_KeyPress) {
-              eventHandler->OnKeyPressed(xi_event->detail);
-              eventHandler->OnModifierKeysChanged(GetModifierState());
-            } else if (xi_event->evtype == XI_KeyRelease) {
-              eventHandler->OnKeyReleased(xi_event->detail);
-              eventHandler->OnModifierKeysChanged(GetModifierState());
-            }
+          if (xi_event->evtype == XI_KeyPress) {
+            KeyPressedEvent key_event(xi_event->detail);
+            monitor_->DispatchEvent(key_event);
+            
+            ModifierKeysChangedEvent modifier_event(GetModifierState());
+            monitor_->DispatchEvent(modifier_event);
+          } else if (xi_event->evtype == XI_KeyRelease) {
+            KeyReleasedEvent key_event(xi_event->detail);
+            monitor_->DispatchEvent(key_event);
+            
+            ModifierKeysChangedEvent modifier_event(GetModifierState());
+            monitor_->DispatchEvent(modifier_event);
           }
           
           XFreeEventData(display_, &event.xcookie);
@@ -211,6 +214,10 @@ void KeyboardMonitor::Stop() {
 
 bool KeyboardMonitor::IsMonitoring() const {
   return impl_->monitoring_;
+}
+
+void KeyboardMonitor::DispatchEvent(const Event& event) {
+  event_dispatcher_.DispatchSync(event);
 }
 
 }  // namespace nativeapi

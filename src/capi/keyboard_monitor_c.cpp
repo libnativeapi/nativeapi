@@ -1,11 +1,11 @@
 #include "keyboard_monitor_c.h"
 #include "../keyboard_monitor.h"
+#include "../keyboard_events.h"
 #include <memory>
 
 // Internal structure to hold C API state
 struct native_keyboard_monitor_t {
   std::unique_ptr<nativeapi::KeyboardMonitor> cpp_monitor;
-  std::unique_ptr<nativeapi::KeyboardEventHandler> event_handler;
   
   // Store C callback functions and user data
   native_key_pressed_callback_t on_key_pressed;
@@ -13,13 +13,20 @@ struct native_keyboard_monitor_t {
   native_modifier_keys_changed_callback_t on_modifier_keys_changed;
   void* user_data;
   
+  // Store listener IDs for cleanup
+  size_t key_pressed_listener_id;
+  size_t key_released_listener_id;
+  size_t modifier_keys_listener_id;
+  
   native_keyboard_monitor_t() 
     : cpp_monitor(nullptr), 
-      event_handler(nullptr),
       on_key_pressed(nullptr),
       on_key_released(nullptr),
       on_modifier_keys_changed(nullptr),
-      user_data(nullptr) {}
+      user_data(nullptr),
+      key_pressed_listener_id(0),
+      key_released_listener_id(0),
+      modifier_keys_listener_id(0) {}
 };
 
 // Helper function to convert C++ ModifierKey enum to C enum
@@ -88,6 +95,17 @@ bool native_keyboard_monitor_set_callbacks(
     return false;
   }
   
+  // Remove existing listeners if any
+  if (monitor->key_pressed_listener_id > 0) {
+    monitor->cpp_monitor->RemoveListener(monitor->key_pressed_listener_id);
+  }
+  if (monitor->key_released_listener_id > 0) {
+    monitor->cpp_monitor->RemoveListener(monitor->key_released_listener_id);
+  }
+  if (monitor->modifier_keys_listener_id > 0) {
+    monitor->cpp_monitor->RemoveListener(monitor->modifier_keys_listener_id);
+  }
+  
   // Store the C callbacks and user data
   monitor->on_key_pressed = on_key_pressed;
   monitor->on_key_released = on_key_released;
@@ -95,34 +113,31 @@ bool native_keyboard_monitor_set_callbacks(
   monitor->user_data = user_data;
   
   try {
-    // Create C++ lambda callbacks that call the C callbacks
-    auto key_pressed_callback = [monitor](int keycode) {
-      if (monitor->on_key_pressed) {
-        monitor->on_key_pressed(keycode, monitor->user_data);
-      }
-    };
+    // Add event listeners with callback lambdas
+    if (on_key_pressed) {
+      monitor->key_pressed_listener_id = monitor->cpp_monitor->AddListener<nativeapi::KeyPressedEvent>(
+        [monitor](const nativeapi::KeyPressedEvent& event) {
+          monitor->on_key_pressed(event.GetKeycode(), monitor->user_data);
+        }
+      );
+    }
     
-    auto key_released_callback = [monitor](int keycode) {
-      if (monitor->on_key_released) {
-        monitor->on_key_released(keycode, monitor->user_data);
-      }
-    };
+    if (on_key_released) {
+      monitor->key_released_listener_id = monitor->cpp_monitor->AddListener<nativeapi::KeyReleasedEvent>(
+        [monitor](const nativeapi::KeyReleasedEvent& event) {
+          monitor->on_key_released(event.GetKeycode(), monitor->user_data);
+        }
+      );
+    }
     
-    auto modifier_keys_changed_callback = [monitor](uint32_t modifier_keys) {
-      if (monitor->on_modifier_keys_changed) {
-        uint32_t c_modifier_keys = convert_modifier_keys_to_c(modifier_keys);
-        monitor->on_modifier_keys_changed(c_modifier_keys, monitor->user_data);
-      }
-    };
-    
-    // Create the event handler with the lambda callbacks
-    monitor->event_handler = std::make_unique<nativeapi::KeyboardEventHandler>(
-        key_pressed_callback,
-        key_released_callback,
-        modifier_keys_changed_callback);
-    
-    // Set the event handler on the keyboard monitor
-    monitor->cpp_monitor->SetEventHandler(monitor->event_handler.get());
+    if (on_modifier_keys_changed) {
+      monitor->modifier_keys_listener_id = monitor->cpp_monitor->AddListener<nativeapi::ModifierKeysChangedEvent>(
+        [monitor](const nativeapi::ModifierKeysChangedEvent& event) {
+          uint32_t c_modifier_keys = convert_modifier_keys_to_c(event.GetModifierKeys());
+          monitor->on_modifier_keys_changed(c_modifier_keys, monitor->user_data);
+        }
+      );
+    }
     
     return true;
   } catch (...) {

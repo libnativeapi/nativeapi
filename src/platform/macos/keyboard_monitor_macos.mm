@@ -19,7 +19,7 @@ class KeyboardMonitor::Impl {
   KeyboardMonitor* monitor_;
 };
 
-KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_handler_(nullptr) {}
+KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_dispatcher_() {}
 
 KeyboardMonitor::~KeyboardMonitor() {
   Stop();
@@ -34,17 +34,15 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
   if (!monitor)
     return event;
 
-  auto* eventHandler = monitor->GetEventHandler();
-  if (!eventHandler)
-    return event;
-
   // Get the key code
   CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
 
   if (type == kCGEventKeyDown) {
-    eventHandler->OnKeyPressed(keyCode);
+    KeyPressedEvent key_event(keyCode);
+    monitor->DispatchEvent(key_event);
   } else if (type == kCGEventKeyUp) {
-    eventHandler->OnKeyReleased(keyCode);
+    KeyReleasedEvent key_event(keyCode);
+    monitor->DispatchEvent(key_event);
   } else if (type == kCGEventFlagsChanged) {
     CGEventFlags flags = CGEventGetFlags(event);
     uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
@@ -69,7 +67,8 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
     if (flags & kCGEventFlagMaskNumericPad) {
       modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
     }
-    eventHandler->OnModifierKeysChanged(modifier_keys);
+    ModifierKeysChangedEvent modifier_event(modifier_keys);
+    monitor->DispatchEvent(modifier_event);
   }
   return event;
 }
@@ -129,6 +128,10 @@ void KeyboardMonitor::Stop() {
 
 bool KeyboardMonitor::IsMonitoring() const {
   return impl_->eventTap != nullptr;
+}
+
+void KeyboardMonitor::DispatchEvent(const Event& event) {
+  event_dispatcher_.DispatchSync(event);
 }
 
 }  // namespace nativeapi
