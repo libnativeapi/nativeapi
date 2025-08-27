@@ -109,8 +109,7 @@ DisplayManager::DisplayManager() {
                   old_ids.insert(d.id);
                 for (const auto& d : new_displays) {
                   if (old_ids.find(d.id) == old_ids.end()) {
-                    NotifyListeners(
-                        [d](DisplayListener* listener) { listener->OnDisplayAdded(d); });
+                    DispatchDisplayAddedEvent(d);
                   }
                 }
 
@@ -120,8 +119,7 @@ DisplayManager::DisplayManager() {
                   new_ids.insert(d.id);
                 for (const auto& d : old_displays) {
                   if (new_ids.find(d.id) == new_ids.end()) {
-                    NotifyListeners(
-                        [d](DisplayListener* listener) { listener->OnDisplayRemoved(d); });
+                    DispatchDisplayRemovedEvent(d);
                   }
                 }
 
