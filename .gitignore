@@ -9,4 +9,6 @@ cmake-build-debug/
 *_test
 callback_test
 simple_test
-event_test
+event_testbuild*/
+build_*/
+*.o
