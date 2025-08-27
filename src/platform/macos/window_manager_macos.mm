@@ -165,12 +165,12 @@ void WindowManager::WindowManagerImpl::OnWindowEvent(NSWindow* window, const std
     manager_->DispatchWindowEvent(event);
   } else if (event_type == "resized") {
     NSRect frame = [window frame];
-    Size new_size = {static_cast<int>(frame.size.width), static_cast<int>(frame.size.height)};
+    Size new_size = {frame.size.width, frame.size.height};
     WindowResizedEvent event(window_id, new_size);
     manager_->DispatchWindowEvent(event);
   } else if (event_type == "moved") {
     NSRect frame = [window frame];
-    Point new_position = {static_cast<int>(frame.origin.x), static_cast<int>(frame.origin.y)};
+    Point new_position = {frame.origin.x, frame.origin.y};
     WindowMovedEvent event(window_id, new_position);
     manager_->DispatchWindowEvent(event);
   } else if (event_type == "closing") {
