@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "display.h"
-#include "geometry.h"
 #include "event.h"
 #include "event_dispatcher.h"
+#include "geometry.h"
 
 namespace nativeapi {
 
@@ -16,7 +16,7 @@ namespace nativeapi {
 class DisplayAddedEvent : public TypedEvent<DisplayAddedEvent> {
  public:
   explicit DisplayAddedEvent(const Display& display) : display_(display) {}
-  
+
   const Display& GetDisplay() const { return display_; }
 
  private:
@@ -26,7 +26,7 @@ class DisplayAddedEvent : public TypedEvent<DisplayAddedEvent> {
 class DisplayRemovedEvent : public TypedEvent<DisplayRemovedEvent> {
  public:
   explicit DisplayRemovedEvent(const Display& display) : display_(display) {}
-  
+
   const Display& GetDisplay() const { return display_; }
 
  private:
@@ -63,12 +63,12 @@ class DisplayManager {
   void RemoveListener(DisplayListener* listener);
 
   // Event dispatcher methods for the new system
-  template<typename EventType>
+  template <typename EventType>
   size_t AddEventListener(TypedEventListener<EventType>* listener) {
     return event_dispatcher_.AddListener<EventType>(listener);
   }
 
-  template<typename EventType>
+  template <typename EventType>
   size_t AddEventListener(std::function<void(const EventType&)> callback) {
     return event_dispatcher_.AddListener<EventType>(std::move(callback));
   }
@@ -83,10 +83,10 @@ class DisplayManager {
  private:
   std::vector<Display> displays_;
   std::vector<DisplayListener*> listeners_;  // For backward compatibility
-  EventDispatcher event_dispatcher_;  // New event system
-  
+  EventDispatcher event_dispatcher_;         // New event system
+
   void NotifyListeners(std::function<void(DisplayListener*)> callback);
-  
+
   // New event dispatch methods
   void DispatchDisplayAddedEvent(const Display& display);
   void DispatchDisplayRemovedEvent(const Display& display);

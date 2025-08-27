@@ -22,7 +22,7 @@ void DisplayManager::NotifyListeners(
 void DisplayManager::DispatchDisplayAddedEvent(const Display& display) {
   // Dispatch through the new event system
   event_dispatcher_.DispatchSync<DisplayAddedEvent>(display);
-  
+
   // Also notify old-style listeners for backward compatibility
   NotifyListeners([&display](DisplayListener* listener) {
     listener->OnDisplayAdded(display);
@@ -32,7 +32,7 @@ void DisplayManager::DispatchDisplayAddedEvent(const Display& display) {
 void DisplayManager::DispatchDisplayRemovedEvent(const Display& display) {
   // Dispatch through the new event system
   event_dispatcher_.DispatchSync<DisplayRemovedEvent>(display);
-  
+
   // Also notify old-style listeners for backward compatibility
   NotifyListeners([&display](DisplayListener* listener) {
     listener->OnDisplayRemoved(display);

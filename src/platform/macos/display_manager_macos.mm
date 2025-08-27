@@ -40,8 +40,8 @@ static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isPrimary) {
   // Set position and size using geometry types
   display.position = {frame.origin.x, frame.origin.y};
   display.size = {frame.size.width, frame.size.height};
-  display.workArea = {visibleFrame.origin.x, visibleFrame.origin.y,
-                     visibleFrame.size.height, visibleFrame.size.width};
+  display.workArea = {visibleFrame.origin.x, visibleFrame.origin.y, visibleFrame.size.height,
+                      visibleFrame.size.width};
   display.scaleFactor = scaleFactor;
   display.isPrimary = isPrimary;
 
@@ -56,7 +56,7 @@ static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isPrimary) {
   CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode(displayID);
   if (displayMode) {
     double refreshRate = CGDisplayModeGetRefreshRate(displayMode);
-    display.refreshRate = refreshRate > 0 ? (int)refreshRate : 60; // Default to 60Hz if unknown
+    display.refreshRate = refreshRate > 0 ? (int)refreshRate : 60;  // Default to 60Hz if unknown
     CGDisplayModeRelease(displayMode);
   }
 
@@ -81,11 +81,13 @@ static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isPrimary) {
 
   // Use display name as model for now
   display.model = display.name;
-  display.serialNumber = ""; // Not easily available without deprecated APIs
+  display.serialNumber = "";  // Not easily available without deprecated APIs
 
   // Set default values if hardware info couldn't be retrieved
-  if (display.manufacturer.empty()) display.manufacturer = "Unknown";
-  if (display.model.empty()) display.model = "Unknown";
+  if (display.manufacturer.empty())
+    display.manufacturer = "Unknown";
+  if (display.model.empty())
+    display.model = "Unknown";
 
   return display;
 }
