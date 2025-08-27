@@ -11,7 +11,25 @@
 
 namespace nativeapi {
 
-WindowManager::WindowManager() {
+// Private implementation for Linux (stub for now)  
+class WindowManager::WindowManagerImpl {
+public:
+  WindowManagerImpl(WindowManager* manager) : manager_(manager) {}
+  ~WindowManagerImpl() {}
+  
+  void SetupEventMonitoring() {
+    // TODO: Implement Linux-specific event monitoring using GTK signals
+  }
+  
+  void CleanupEventMonitoring() {
+    // TODO: Implement Linux-specific cleanup
+  }
+  
+private:
+  WindowManager* manager_;
+};
+
+WindowManager::WindowManager() : impl_(std::make_unique<WindowManagerImpl>(this)) {
   // Try to initialize GTK if not already initialized
   // In headless environments, this may fail, which is acceptable
   if (!gdk_display_get_default()) {
@@ -29,9 +47,25 @@ WindowManager::WindowManager() {
     // gtk_init_check returns FALSE if initialization failed (e.g., no display)
     // This is acceptable for headless environments
   }
+  
+  SetupEventMonitoring();
 }
 
-WindowManager::~WindowManager() {}
+WindowManager::~WindowManager() {
+  CleanupEventMonitoring();
+}
+
+void WindowManager::SetupEventMonitoring() {
+  impl_->SetupEventMonitoring();
+}
+
+void WindowManager::CleanupEventMonitoring() {
+  impl_->CleanupEventMonitoring();
+}
+
+void WindowManager::DispatchWindowEvent(const Event& event) {
+  event_dispatcher_.DispatchSync(event);
+}
 
 std::shared_ptr<Window> WindowManager::Get(WindowID id) {
   auto it = windows_.find(id);
@@ -129,6 +163,22 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   g_list_free(toplevels);
   
   return nullptr;
+}
+
+std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
+  // TODO: Implement Linux window creation using GTK
+  // For now, return nullptr as this is a stub implementation
+  return nullptr;
+}
+
+bool WindowManager::Destroy(WindowID id) {
+  auto it = windows_.find(id);
+  if (it != windows_.end()) {
+    // TODO: Implement proper GTK window destruction
+    windows_.erase(it);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace nativeapi

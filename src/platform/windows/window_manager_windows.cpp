@@ -11,9 +11,43 @@
 
 namespace nativeapi {
 
-WindowManager::WindowManager() {}
+// Private implementation for Windows (stub for now)
+class WindowManager::WindowManagerImpl {
+public:
+  WindowManagerImpl(WindowManager* manager) : manager_(manager) {}
+  ~WindowManagerImpl() {}
+  
+  void SetupEventMonitoring() {
+    // TODO: Implement Windows-specific event monitoring
+  }
+  
+  void CleanupEventMonitoring() {
+    // TODO: Implement Windows-specific cleanup
+  }
+  
+private:
+  WindowManager* manager_;
+};
 
-WindowManager::~WindowManager() {}
+WindowManager::WindowManager() : impl_(std::make_unique<WindowManagerImpl>(this)) {
+  SetupEventMonitoring();
+}
+
+WindowManager::~WindowManager() {
+  CleanupEventMonitoring();
+}
+
+void WindowManager::SetupEventMonitoring() {
+  impl_->SetupEventMonitoring();
+}
+
+void WindowManager::CleanupEventMonitoring() {
+  impl_->CleanupEventMonitoring();
+}
+
+void WindowManager::DispatchWindowEvent(const Event& event) {
+  event_dispatcher_.DispatchSync(event);
+}
 
 std::shared_ptr<Window> WindowManager::Get(WindowID id) {
     auto it = windows_.find(id);
@@ -74,6 +108,25 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
     }
     
     return result;
+}
+
+std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
+  // TODO: Implement Windows window creation
+  // For now, return nullptr as this is a stub implementation
+  return nullptr;
+}
+
+bool WindowManager::Destroy(WindowID id) {
+  auto it = windows_.find(id);
+  if (it != windows_.end()) {
+    HWND hwnd = reinterpret_cast<HWND>(id);
+    if (IsWindow(hwnd)) {
+      DestroyWindow(hwnd);
+    }
+    windows_.erase(it);
+    return true;
+  }
+  return false;
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
