@@ -179,9 +179,4 @@ class EventDispatcher {
   std::atomic<size_t> next_listener_id_;
 };
 
-/**
- * Convenience function to create a global event dispatcher instance.
- * This is useful for applications that need a single, shared event system.
- */
-EventDispatcher& GetGlobalEventDispatcher();
 }  // namespace nativeapi

@@ -180,9 +180,4 @@ void EventDispatcher::ProcessAsyncEvents() {
   }
 }
 
-EventDispatcher& GetGlobalEventDispatcher() {
-  static EventDispatcher global_dispatcher;
-  return global_dispatcher;
-}
-
 }  // namespace nativeapi

@@ -19,7 +19,6 @@ int main() {
   options.size.height = 600;
   std::shared_ptr<Window> window_ptr = window_manager.Create(options);
 
-
   std::shared_ptr<Tray> tray_ptr = tray_manager.Create();
   if (tray_ptr != nullptr) {
     Tray& tray = *tray_ptr;
