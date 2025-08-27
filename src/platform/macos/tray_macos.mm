@@ -7,12 +7,82 @@
 
 namespace nativeapi {
 
+// Forward declaration
+class Tray;
+
+}  // namespace nativeapi
+
+// Objective-C delegate for handling tray button events
+@interface TrayButtonDelegate : NSObject
+@property (nonatomic, assign) nativeapi::Tray* tray;
+- (instancetype)initWithTray:(nativeapi::Tray*)tray;
+- (void)handleButtonClick:(NSStatusBarButton*)sender;
+@end
+
+@implementation TrayButtonDelegate
+
+- (instancetype)initWithTray:(nativeapi::Tray*)tray {
+  if (self = [super init]) {
+    _tray = tray;
+  }
+  return self;
+}
+
+- (void)handleButtonClick:(NSStatusBarButton*)sender {
+  if (!_tray) return;
+  
+  NSEvent* currentEvent = [NSApp currentEvent];
+  if (!currentEvent) {
+    // Default to left click if no event available
+    _tray->DispatchClickedEvent();
+    return;
+  }
+  
+  NSEventType eventType = [currentEvent type];
+  NSInteger clickCount = [currentEvent clickCount];
+  
+  if (eventType == NSEventTypeRightMouseUp) {
+    _tray->DispatchRightClickedEvent();
+  } else if (eventType == NSEventTypeLeftMouseUp) {
+    if (clickCount >= 2) {
+      _tray->DispatchDoubleClickedEvent();
+    } else {
+      _tray->DispatchClickedEvent();
+    }
+  } else {
+    // Default to left click for other events
+    _tray->DispatchClickedEvent();
+  }
+}
+
+@end
+
+namespace nativeapi {
+
 // Private implementation class
 class Tray::Impl {
  public:
-  Impl(NSStatusItem* tray) : ns_status_item_(tray) {}
+  Impl(NSStatusItem* tray) : ns_status_item_(tray), delegate_(nil) {}
+  ~Impl() {
+    if (delegate_) {
+      [delegate_ release];
+    }
+  }
+  
   NSStatusItem* ns_status_item_;
   Menu context_menu_;  // 添加菜单成员变量来保持菜单对象的生命周期
+  TrayButtonDelegate* delegate_;
+  
+  void SetupEventHandling(Tray* tray) {
+    if (ns_status_item_ && ns_status_item_.button) {
+      delegate_ = [[TrayButtonDelegate alloc] initWithTray:tray];
+      [ns_status_item_.button setTarget:delegate_];
+      [ns_status_item_.button setAction:@selector(handleButtonClick:)];
+      
+      // Enable right-click detection
+      [ns_status_item_.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
+    }
+  }
 };
 
 Tray::Tray() : pimpl_(new Impl(nil)) {
@@ -21,6 +91,8 @@ Tray::Tray() : pimpl_(new Impl(nil)) {
 
 Tray::Tray(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) {
   id = -1;  // Will be set by TrayManager when created
+  // Set up event handling after construction
+  pimpl_->SetupEventHandling(this);
 }
 
 Tray::~Tray() {
