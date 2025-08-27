@@ -17,7 +17,7 @@ class KeyboardMonitor::Impl {
 
 KeyboardMonitor::Impl* KeyboardMonitor::Impl::instance_ = nullptr;
 
-KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_handler_(nullptr) {}
+KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_dispatcher_() {}
 
 KeyboardMonitor::~KeyboardMonitor() {
   Stop();
@@ -34,19 +34,17 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   }
 
   auto* monitor = KeyboardMonitor::Impl::instance_->monitor_;
-  auto* eventHandler = monitor->GetEventHandler();
-  if (!eventHandler) {
-    return CallNextHookEx(nullptr, nCode, wParam, lParam);
-  }
 
   if (nCode == HC_ACTION) {
     KBDLLHOOKSTRUCT* pKbStruct = (KBDLLHOOKSTRUCT*)lParam;
     
     // Handle key events
     if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-      eventHandler->OnKeyPressed(pKbStruct->vkCode);
+      KeyPressedEvent key_event(pKbStruct->vkCode);
+      monitor->DispatchEvent(key_event);
     } else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
-      eventHandler->OnKeyReleased(pKbStruct->vkCode);
+      KeyReleasedEvent key_event(pKbStruct->vkCode);
+      monitor->DispatchEvent(key_event);
     }
 
     // Check for modifier key changes
@@ -78,7 +76,8 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     // Only call if modifier keys changed
     static uint32_t lastModifierKeys = 0;
     if (modifierKeys != lastModifierKeys) {
-      eventHandler->OnModifierKeysChanged(modifierKeys);
+      ModifierKeysChangedEvent modifier_event(modifierKeys);
+      monitor->DispatchEvent(modifier_event);
       lastModifierKeys = modifierKeys;
     }
   }
@@ -128,6 +127,10 @@ void KeyboardMonitor::Stop() {
 
 bool KeyboardMonitor::IsMonitoring() const {
   return impl_->hook_ != nullptr;
+}
+
+void KeyboardMonitor::DispatchEvent(const Event& event) {
+  event_dispatcher_.DispatchSync(event);
 }
 
 }  // namespace nativeapi
