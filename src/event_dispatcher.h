@@ -29,40 +29,41 @@ class EventDispatcher {
   /**
    * Add a listener for a specific event type.
    * The listener will be called whenever an event of that type is dispatched.
-   * 
-   * @param listener Pointer to the event listener (must remain valid until removed)
+   *
+   * @param listener Pointer to the event listener (must remain valid until
+   * removed)
    * @return A unique listener ID that can be used to remove the listener
    */
-  template<typename EventType>
+  template <typename EventType>
   size_t AddListener(TypedEventListener<EventType>* listener) {
     return AddListener(TypedEvent<EventType>::GetStaticType(), listener);
   }
 
   /**
    * Add a callback function as a listener for a specific event type.
-   * 
+   *
    * @param callback Function to call when the event occurs
    * @return A unique listener ID that can be used to remove the listener
    */
-  template<typename EventType>
+  template <typename EventType>
   size_t AddListener(std::function<void(const EventType&)> callback) {
-    auto callback_listener = std::make_unique<CallbackEventListener<EventType>>(
-        std::move(callback));
+    auto callback_listener =
+        std::make_unique<CallbackEventListener<EventType>>(std::move(callback));
     auto listener_ptr = callback_listener.get();
-    
+
     // Store the callback listener first, then add it
     {
       std::lock_guard<std::mutex> lock(listeners_mutex_);
       callback_listeners_.emplace_back(std::move(callback_listener));
     }
-    
+
     // Use the type-erased method to avoid infinite recursion
     return AddListener(TypedEvent<EventType>::GetStaticType(), listener_ptr);
   }
 
   /**
    * Remove a listener by its ID.
-   * 
+   *
    * @param listener_id The ID returned by AddListener
    * @return true if the listener was found and removed, false otherwise
    */
@@ -71,7 +72,7 @@ class EventDispatcher {
   /**
    * Remove all listeners for a specific event type.
    */
-  template<typename EventType>
+  template <typename EventType>
   void RemoveAllListeners() {
     RemoveAllListeners(TypedEvent<EventType>::GetStaticType());
   }
@@ -84,7 +85,7 @@ class EventDispatcher {
   /**
    * Dispatch an event synchronously to all registered listeners.
    * This will call all listeners immediately on the current thread.
-   * 
+   *
    * @param event The event to dispatch
    */
   void DispatchSync(const Event& event);
@@ -93,7 +94,7 @@ class EventDispatcher {
    * Dispatch an event synchronously using perfect forwarding.
    * This creates the event object and dispatches it immediately.
    */
-  template<typename EventType, typename... Args>
+  template <typename EventType, typename... Args>
   void DispatchSync(Args&&... args) {
     EventType event(std::forward<Args>(args)...);
     DispatchSync(event);
@@ -102,7 +103,7 @@ class EventDispatcher {
   /**
    * Queue an event for asynchronous dispatch.
    * The event will be dispatched on the background thread.
-   * 
+   *
    * @param event The event to queue (will be copied)
    */
   void DispatchAsync(std::unique_ptr<Event> event);
@@ -110,7 +111,7 @@ class EventDispatcher {
   /**
    * Queue an event for asynchronous dispatch using perfect forwarding.
    */
-  template<typename EventType, typename... Args>
+  template <typename EventType, typename... Args>
   void DispatchAsync(Args&&... args) {
     auto event = std::make_unique<EventType>(std::forward<Args>(args)...);
     DispatchAsync(std::move(event));
@@ -135,7 +136,7 @@ class EventDispatcher {
   /**
    * Get the number of listeners registered for a specific event type.
    */
-  template<typename EventType>
+  template <typename EventType>
   size_t GetListenerCount() const {
     return GetListenerCount(TypedEvent<EventType>::GetStaticType());
   }
@@ -162,10 +163,10 @@ class EventDispatcher {
   // Member variables
   mutable std::mutex listeners_mutex_;
   std::unordered_map<std::type_index, std::vector<ListenerInfo>> listeners_;
-  
+
   // Storage for callback listeners to manage their lifetime
   std::vector<std::unique_ptr<EventListener>> callback_listeners_;
-  
+
   // Async event processing
   std::mutex queue_mutex_;
   std::queue<std::unique_ptr<Event>> event_queue_;
@@ -173,9 +174,14 @@ class EventDispatcher {
   std::thread worker_thread_;
   std::atomic<bool> running_;
   std::atomic<bool> stop_requested_;
-  
+
   // Listener ID generation
   std::atomic<size_t> next_listener_id_;
 };
 
+/**
+ * Convenience function to create a global event dispatcher instance.
+ * This is useful for applications that need a single, shared event system.
+ */
+EventDispatcher& GetGlobalEventDispatcher();
 }  // namespace nativeapi

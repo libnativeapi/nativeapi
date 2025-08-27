@@ -5,42 +5,42 @@
 
 namespace nativeapi {
 
-EventDispatcher::EventDispatcher() 
-    : running_(false), stop_requested_(false), next_listener_id_(1) {
-}
+EventDispatcher::EventDispatcher()
+    : running_(false), stop_requested_(false), next_listener_id_(1) {}
 
 EventDispatcher::~EventDispatcher() {
   Stop();
 }
 
-size_t EventDispatcher::AddListener(std::type_index event_type, EventListener* listener) {
+size_t EventDispatcher::AddListener(std::type_index event_type,
+                                    EventListener* listener) {
   if (!listener) {
-    return 0; // Invalid listener
+    return 0;  // Invalid listener
   }
 
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   size_t listener_id = next_listener_id_.fetch_add(1);
-  
+
   listeners_[event_type].push_back({listener, listener_id});
-  
+
   return listener_id;
 }
 
 bool EventDispatcher::RemoveListener(size_t listener_id) {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
-  
+
   for (auto& [event_type, listener_list] : listeners_) {
     auto it = std::find_if(listener_list.begin(), listener_list.end(),
-                          [listener_id](const ListenerInfo& info) {
-                            return info.id == listener_id;
-                          });
-    
+                           [listener_id](const ListenerInfo& info) {
+                             return info.id == listener_id;
+                           });
+
     if (it != listener_list.end()) {
       listener_list.erase(it);
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -58,7 +58,7 @@ void EventDispatcher::RemoveAllListeners() {
 void EventDispatcher::DispatchSync(const Event& event) {
   std::type_index event_type = typeid(event);
   std::vector<EventListener*> listeners_copy;
-  
+
   // Copy listeners to avoid holding the lock during dispatch
   {
     std::lock_guard<std::mutex> lock(listeners_mutex_);
@@ -70,7 +70,7 @@ void EventDispatcher::DispatchSync(const Event& event) {
       }
     }
   }
-  
+
   // Dispatch to all listeners
   for (auto* listener : listeners_copy) {
     try {
@@ -97,35 +97,35 @@ void EventDispatcher::DispatchAsync(std::unique_ptr<Event> event) {
     std::lock_guard<std::mutex> lock(queue_mutex_);
     event_queue_.push(std::move(event));
   }
-  
+
   queue_condition_.notify_one();
 }
 
 void EventDispatcher::Start() {
   if (running_.load()) {
-    return; // Already running
+    return;  // Already running
   }
 
   stop_requested_.store(false);
   running_.store(true);
-  
+
   worker_thread_ = std::thread(&EventDispatcher::ProcessAsyncEvents, this);
 }
 
 void EventDispatcher::Stop() {
   if (!running_.load()) {
-    return; // Not running
+    return;  // Not running
   }
 
   stop_requested_.store(true);
   queue_condition_.notify_all();
-  
+
   if (worker_thread_.joinable()) {
     worker_thread_.join();
   }
-  
+
   running_.store(false);
-  
+
   // Clear any remaining events in the queue
   std::lock_guard<std::mutex> lock(queue_mutex_);
   while (!event_queue_.empty()) {
@@ -155,29 +155,34 @@ size_t EventDispatcher::GetTotalListenerCount() const {
 void EventDispatcher::ProcessAsyncEvents() {
   while (running_.load()) {
     std::unique_ptr<Event> event;
-    
+
     // Wait for an event or stop signal
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
       queue_condition_.wait(lock, [this] {
         return !event_queue_.empty() || stop_requested_.load();
       });
-      
+
       if (stop_requested_.load()) {
         break;
       }
-      
+
       if (!event_queue_.empty()) {
         event = std::move(event_queue_.front());
         event_queue_.pop();
       }
     }
-    
+
     // Dispatch the event if we have one
     if (event) {
       DispatchSync(*event);
     }
   }
+}
+
+EventDispatcher& GetGlobalEventDispatcher() {
+  static EventDispatcher global_dispatcher;
+  return global_dispatcher;
 }
 
 }  // namespace nativeapi
