@@ -4,6 +4,8 @@
 #include "../src/app_runner.h"
 #include "../src/display.h"
 #include "../src/display_manager.h"
+#include "../src/event.h"
+#include "../src/event_dispatcher.h"
 #include "../src/geometry.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"

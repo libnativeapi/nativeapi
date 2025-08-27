@@ -3,3 +3,10 @@
 .vscode/
 build/
 cmake-build-debug/
+
+# Generated test binaries and object files
+*.o
+*_test
+callback_test
+simple_test
+event_test
