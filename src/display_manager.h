@@ -6,9 +6,32 @@
 #include <vector>
 
 #include "display.h"
+#include "event.h"
+#include "event_dispatcher.h"
 #include "geometry.h"
 
 namespace nativeapi {
+
+// Event classes for display changes
+class DisplayAddedEvent : public TypedEvent<DisplayAddedEvent> {
+ public:
+  explicit DisplayAddedEvent(const Display& display) : display_(display) {}
+
+  const Display& GetDisplay() const { return display_; }
+
+ private:
+  Display display_;
+};
+
+class DisplayRemovedEvent : public TypedEvent<DisplayRemovedEvent> {
+ public:
+  explicit DisplayRemovedEvent(const Display& display) : display_(display) {}
+
+  const Display& GetDisplay() const { return display_; }
+
+ private:
+  Display display_;
+};
 
 // DisplayListener is an interface that can be implemented by classes that want
 // to listen for display events.
@@ -39,10 +62,34 @@ class DisplayManager {
   // Remove a listener from the display manager
   void RemoveListener(DisplayListener* listener);
 
+  // Event dispatcher methods for the new system
+  template <typename EventType>
+  size_t AddEventListener(TypedEventListener<EventType>* listener) {
+    return event_dispatcher_.AddListener<EventType>(listener);
+  }
+
+  template <typename EventType>
+  size_t AddEventListener(std::function<void(const EventType&)> callback) {
+    return event_dispatcher_.AddListener<EventType>(std::move(callback));
+  }
+
+  bool RemoveEventListener(size_t listener_id) {
+    return event_dispatcher_.RemoveListener(listener_id);
+  }
+
+  // Get the event dispatcher (for advanced usage)
+  EventDispatcher& GetEventDispatcher() { return event_dispatcher_; }
+
  private:
   std::vector<Display> displays_;
-  std::vector<DisplayListener*> listeners_;
+  std::vector<DisplayListener*> listeners_;  // For backward compatibility
+  EventDispatcher event_dispatcher_;         // New event system
+
   void NotifyListeners(std::function<void(DisplayListener*)> callback);
+
+  // New event dispatch methods
+  void DispatchDisplayAddedEvent(const Display& display);
+  void DispatchDisplayRemovedEvent(const Display& display);
 };
 
 // DisplayEventHandler is an implementation of DisplayListener that uses
