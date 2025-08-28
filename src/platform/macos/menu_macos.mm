@@ -371,7 +371,7 @@ int MenuItem::GetRadioGroup() const {
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     pimpl_->submenu_ = submenu;
     if (submenu) {
-        [pimpl_->ns_menu_item_ setSubmenu:(NSMenu*)submenu->GetNativeMenu()];
+        [pimpl_->ns_menu_item_ setSubmenu:(__bridge NSMenu*)submenu->GetNativeMenu()];
     } else {
         [pimpl_->ns_menu_item_ setSubmenu:nil];
     }
@@ -468,7 +468,7 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     if (!item) return;
 
     pimpl_->items_.push_back(item);
-    [pimpl_->ns_menu_ addItem:(NSMenuItem*)item->GetNativeItem()];
+    [pimpl_->ns_menu_ addItem:(__bridge NSMenuItem*)item->GetNativeItem()];
 }
 
 void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
@@ -480,7 +480,7 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
     }
 
     pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
-    [pimpl_->ns_menu_ insertItem:(NSMenuItem*)item->GetNativeItem() atIndex:index];
+    [pimpl_->ns_menu_ insertItem:(__bridge NSMenuItem*)item->GetNativeItem() atIndex:index];
 }
 
 bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
@@ -488,7 +488,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
     auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
     if (it != pimpl_->items_.end()) {
-        [pimpl_->ns_menu_ removeItem:(NSMenuItem*)item->GetNativeItem()];
+        [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeItem()];
         pimpl_->items_.erase(it);
         return true;
     }
@@ -498,7 +498,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 bool Menu::RemoveItemById(MenuItemID item_id) {
     for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
         if ((*it)->id == item_id) {
-            [pimpl_->ns_menu_ removeItem:(NSMenuItem*)(*it)->GetNativeItem()];
+            [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)(*it)->GetNativeItem()];
             pimpl_->items_.erase(it);
             return true;
         }
@@ -510,7 +510,7 @@ bool Menu::RemoveItemAt(size_t index) {
     if (index >= pimpl_->items_.size()) return false;
 
     auto item = pimpl_->items_[index];
-    [pimpl_->ns_menu_ removeItem:(NSMenuItem*)item->GetNativeItem()];
+    [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeItem()];
     pimpl_->items_.erase(pimpl_->items_.begin() + index);
     return true;
 }

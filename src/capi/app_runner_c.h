@@ -9,11 +9,11 @@
 #define FFI_PLUGIN_EXPORT
 #endif
 
+#include "window_c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "window_c.h"
 
 /**
  * App runner exit codes

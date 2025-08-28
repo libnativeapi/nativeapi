@@ -9,11 +9,11 @@
 #define FFI_PLUGIN_EXPORT
 #endif
 
+#include "geometry_c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "geometry_c.h"
 
 /**
  * Window ID type
