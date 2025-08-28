@@ -150,7 +150,18 @@ std::string TrayIcon::GetTooltip() {
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   pimpl_->context_menu_ = menu;
-  // Note: Menu functionality is not implemented in this simplified version
+
+  // Set the menu as the status item's menu for right-click
+  if (pimpl_->ns_status_item_ && menu) {
+    // Get the NSMenu from the Menu object
+    NSMenu* nsMenu = (__bridge NSMenu*)menu->GetNativeMenu();
+    if (nsMenu) {
+      [pimpl_->ns_status_item_ setMenu:nsMenu];
+    }
+  } else if (pimpl_->ns_status_item_) {
+    // Remove the menu if null is passed
+    [pimpl_->ns_status_item_ setMenu:nil];
+  }
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
@@ -217,13 +228,28 @@ void TrayIcon::SetOnDoubleClick(std::function<void()> callback) {
 }
 
 bool TrayIcon::ShowContextMenu(double x, double y) {
-  // Note: Context menu functionality is not implemented in this simplified version
-  return false;
+  if (!pimpl_->context_menu_) {
+    return false;
+  }
+
+  // Show the context menu at the specified coordinates
+  return pimpl_->context_menu_->ShowAsContextMenu(x, y);
 }
 
 bool TrayIcon::ShowContextMenu() {
-  // Note: Context menu functionality is not implemented in this simplified version
-  return false;
+  if (!pimpl_->context_menu_) {
+    return false;
+  }
+
+  // Get the bounds of the tray icon to show menu near it
+  Rectangle bounds = GetBounds();
+  if (bounds.width > 0 && bounds.height > 0) {
+    // Show menu below the tray icon
+    return pimpl_->context_menu_->ShowAsContextMenu(bounds.x, bounds.y + bounds.height);
+  } else {
+    // Fall back to showing at mouse location
+    return pimpl_->context_menu_->ShowAsContextMenu();
+  }
 }
 
 // Internal method to handle click events
@@ -261,6 +287,11 @@ void TrayIcon::HandleDoubleClick() {
       (event.type == NSEventTypeLeftMouseUp && (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     _trayIcon->HandleRightClick();
+
+    // Show context menu if available
+    if (_trayIcon->GetContextMenu()) {
+      _trayIcon->ShowContextMenu();
+    }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {

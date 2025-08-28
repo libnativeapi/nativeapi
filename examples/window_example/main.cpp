@@ -6,6 +6,10 @@ using nativeapi::Display;
 using nativeapi::DisplayAddedEvent;
 using nativeapi::DisplayManager;
 using nativeapi::DisplayRemovedEvent;
+using nativeapi::Menu;
+using nativeapi::MenuItem;
+using nativeapi::MenuItemSelectedEvent;
+using nativeapi::MenuItemType;
 using nativeapi::TrayIcon;
 using nativeapi::TrayManager;
 using nativeapi::Window;
@@ -72,15 +76,70 @@ int main() {
     std::cout << "Tray ID: " << tray_icon.id << std::endl;
     std::cout << "Tray Title: " << tray_icon.GetTitle() << std::endl;
 
+    // Create context menu
+    auto context_menu = Menu::Create();
+    
+    // Add menu items
+    auto show_window_item = MenuItem::Create("Show Window", MenuItemType::Normal);
+    show_window_item->SetOnClick([window_ptr](const MenuItemSelectedEvent& event) {
+      std::cout << "Show Window clicked from context menu" << std::endl;
+      if (window_ptr) {
+        window_ptr->Show();
+        window_ptr->Focus();
+      }
+    });
+    context_menu->AddItem(show_window_item);
+
+    auto hide_window_item = MenuItem::Create("Hide Window", MenuItemType::Normal);
+    hide_window_item->SetOnClick([window_ptr](const MenuItemSelectedEvent& event) {
+      std::cout << "Hide Window clicked from context menu" << std::endl;
+      if (window_ptr) {
+        window_ptr->Hide();
+      }
+    });
+    context_menu->AddItem(hide_window_item);
+
+    // Add separator
+    context_menu->AddSeparator();
+
+    // Add about item
+    auto about_item = MenuItem::Create("About", MenuItemType::Normal);
+    about_item->SetOnClick([](const MenuItemSelectedEvent& event) {
+      std::cout << "About clicked from context menu" << std::endl;
+      std::cout << "Window Example v1.0 - Native API Demo" << std::endl;
+    });
+    context_menu->AddItem(about_item);
+
+    // Add another separator
+    context_menu->AddSeparator();
+
+    // Add exit item
+    auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
+    exit_item->SetOnClick([&window_manager](const MenuItemSelectedEvent& event) {
+      std::cout << "Exit clicked from context menu" << std::endl;
+      // Get all windows and destroy them to trigger app exit
+      auto windows = window_manager.GetAll();
+      for (auto& window : windows) {
+        window_manager.Destroy(window->id);
+      }
+    });
+    context_menu->AddItem(exit_item);
+
+    // Set the context menu to the tray icon
+    tray_icon.SetContextMenu(context_menu);
+
     // Set up click handlers
     tray_icon.SetOnLeftClick([]() {
       std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
       std::cout << "This is the left click handler working!" << std::endl;
     });
 
-    tray_icon.SetOnRightClick([]() {
+    tray_icon.SetOnRightClick([&tray_icon]() {
       std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
       std::cout << "This is the right click handler working!" << std::endl;
+      // Context menu will be shown automatically on right-click
+      // But we can also manually show it if needed:
+      // tray_icon.ShowContextMenu();
     });
 
     tray_icon.SetOnDoubleClick([]() {
