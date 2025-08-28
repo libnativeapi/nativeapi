@@ -1,143 +1,661 @@
 #include <iostream>
+#include <atomic>
+#include <unordered_map>
+#include <vector>
 #include "../../menu.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
 
+// Forward declarations - moved to global scope
+@interface MenuItemTarget : NSObject
+@property (nonatomic, assign) nativeapi::MenuItemID itemId;
+- (void)menuItemClicked:(id)sender;
+@end
+
+@interface MenuDelegate : NSObject <NSMenuDelegate>
+@property (nonatomic, assign) nativeapi::MenuID menuId;
+@end
+
 namespace nativeapi {
 
-// Private implementation class
-class MenuItem::Impl {
- public:
-  Impl(NSMenuItem* menu_item) : ns_menu_item_(menu_item) {}
-  NSMenuItem* ns_menu_item_;
-};
+// Global ID generators
+static std::atomic<MenuItemID> g_next_menu_item_id{1};
+static std::atomic<MenuID> g_next_menu_id{1};
 
-MenuItem::MenuItem() : pimpl_(new Impl([[NSMenuItem alloc] init])) {
-  id = -1;
-}
+// Global registry for callbacks
+static std::unordered_map<MenuItemID, std::function<void(const MenuItemSelectedEvent&)>> g_click_callbacks;
+static std::unordered_map<MenuItemID, std::function<void(const MenuItemStateChangedEvent&)>> g_state_callbacks;
+static std::unordered_map<MenuID, std::function<void()>> g_menu_will_show_callbacks;
+static std::unordered_map<MenuID, std::function<void()>> g_menu_did_hide_callbacks;
 
-MenuItem::MenuItem(void* menu_item) : pimpl_(new Impl((__bridge NSMenuItem*)menu_item)) {
-  id = 0;
-}
+// Helper function to convert KeyboardAccelerator to NSString and modifier mask
+std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& accelerator) {
+    NSString* keyEquivalent = @"";
+    NSUInteger modifierMask = 0;
 
-MenuItem::~MenuItem() {
-  delete pimpl_;
-}
-
-void MenuItem::SetTitle(std::string title) {
-  [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:title.c_str()]];
-}
-
-std::string MenuItem::GetTitle() {
-  return [[pimpl_->ns_menu_item_ title] UTF8String];
-}
-
-void MenuItem::SetIcon(std::string icon) {
-  // Check if the icon is a base64 string
-  if (icon.find("data:image") != std::string::npos) {
-    // Extract the base64 part
-    size_t pos = icon.find("base64,");
-    if (pos != std::string::npos) {
-      std::string base64Icon = icon.substr(pos + 7);
-
-      // Convert base64 to NSData
-      NSData* imageData = [[NSData alloc]
-          initWithBase64EncodedString:[NSString stringWithUTF8String:base64Icon.c_str()]
-                              options:NSDataBase64DecodingIgnoreUnknownCharacters];
-
-      // Create image from data
-      NSImage* image = [[NSImage alloc] initWithData:imageData];
-
-      // Set image size
-      [image setSize:NSMakeSize(16, 16)];  // Default menu item icon size
-      [image setTemplate:YES];
-
-      // Set the image to the menu item
-      [pimpl_->ns_menu_item_ setImage:image];
+    // Convert key
+    if (!accelerator.key.empty()) {
+        if (accelerator.key.length() == 1) {
+            // Single character key
+            char c = std::tolower(accelerator.key[0]);
+            keyEquivalent = [NSString stringWithFormat:@"%c", c];
+        } else {
+            // Special keys
+            std::string key = accelerator.key;
+            if (key == "F1") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF1FunctionKey];
+            else if (key == "F2") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF2FunctionKey];
+            else if (key == "F3") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF3FunctionKey];
+            else if (key == "F4") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF4FunctionKey];
+            else if (key == "F5") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF5FunctionKey];
+            else if (key == "F6") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
+            else if (key == "F7") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF7FunctionKey];
+            else if (key == "F8") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF8FunctionKey];
+            else if (key == "F9") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF9FunctionKey];
+            else if (key == "F10") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF10FunctionKey];
+            else if (key == "F11") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF11FunctionKey];
+            else if (key == "F12") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF12FunctionKey];
+            else if (key == "Enter" || key == "Return") keyEquivalent = @"\r";
+            else if (key == "Tab") keyEquivalent = @"\t";
+            else if (key == "Space") keyEquivalent = @" ";
+            else if (key == "Escape") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)0x1B];
+            else if (key == "Delete" || key == "Backspace") keyEquivalent = @"\b";
+            else if (key == "ArrowUp") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSUpArrowFunctionKey];
+            else if (key == "ArrowDown") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSDownArrowFunctionKey];
+            else if (key == "ArrowLeft") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSLeftArrowFunctionKey];
+            else if (key == "ArrowRight") keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSRightArrowFunctionKey];
+        }
     }
-  } else {
-    // Use the icon as a file path or named image
-    NSImage* image = [NSImage imageNamed:[NSString stringWithUTF8String:icon.c_str()]];
-    if (image) {
-      [image setSize:NSMakeSize(16, 16)];
-      [image setTemplate:YES];
-      [pimpl_->ns_menu_item_ setImage:image];
+
+    // Convert modifiers
+    if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
+        modifierMask |= NSEventModifierFlagCommand; // On macOS, Ctrl maps to Cmd
     }
-  }
-}
+    if (accelerator.modifiers & KeyboardAccelerator::Alt) {
+        modifierMask |= NSEventModifierFlagOption;
+    }
+    if (accelerator.modifiers & KeyboardAccelerator::Shift) {
+        modifierMask |= NSEventModifierFlagShift;
+    }
+    if (accelerator.modifiers & KeyboardAccelerator::Meta) {
+        modifierMask |= NSEventModifierFlagControl; // On macOS, Meta maps to Ctrl
+    }
 
-std::string MenuItem::GetIcon() {
-  NSImage* image = [pimpl_->ns_menu_item_ image];
-  if (image) {
-    // For simplicity, return the image name if it's a named image
-    // In a real implementation, you might want to return the actual image data
-    return "image_set";
-  }
-  return "";
-}
-
-void MenuItem::SetTooltip(std::string tooltip) {
-  [pimpl_->ns_menu_item_ setToolTip:[NSString stringWithUTF8String:tooltip.c_str()]];
-}
-
-std::string MenuItem::GetTooltip() {
-  NSString* tooltip = [pimpl_->ns_menu_item_ toolTip];
-  return tooltip ? [tooltip UTF8String] : "";
-}
-
-// Private implementation class
-class Menu::Impl {
- public:
-  Impl(NSMenu* menu) : ns_menu_(menu) {}
-  NSMenu* ns_menu_;
-};
-
-Menu::Menu() : pimpl_(new Impl([[NSMenu alloc] init])) {
-  id = -1;
-}
-
-Menu::Menu(void* menu) : pimpl_(new Impl((__bridge NSMenu*)menu)) {
-  id = 0;
-}
-
-Menu::~Menu() {
-  delete pimpl_;
-}
-
-void Menu::AddItem(MenuItem item) {
-  if (pimpl_->ns_menu_ && item.pimpl_->ns_menu_item_) {
-    [pimpl_->ns_menu_ addItem:item.pimpl_->ns_menu_item_];
-  }
-}
-
-void Menu::RemoveItem(MenuItem item) {
-  if (pimpl_->ns_menu_ && item.pimpl_->ns_menu_item_) {
-    [pimpl_->ns_menu_ removeItem:item.pimpl_->ns_menu_item_];
-  }
-}
-
-void Menu::AddSeparator() {
-  if (pimpl_->ns_menu_) {
-    [pimpl_->ns_menu_ addItem:[NSMenuItem separatorItem]];
-  }
-}
-
-MenuItem Menu::CreateItem(std::string title) {
-  NSMenuItem* ns_menu_item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:title.c_str()]
-                                                        action:nil
-                                                 keyEquivalent:@""];
-  return MenuItem((__bridge void*)ns_menu_item);
-}
-
-MenuItem Menu::CreateItem(std::string title, std::string icon) {
-  MenuItem item = CreateItem(title);
-  item.SetIcon(icon);
-  return item;
-}
-
-void* Menu::GetNativeMenu() {
-  return (__bridge void*)pimpl_->ns_menu_;
+    return std::make_pair(keyEquivalent, modifierMask);
 }
 
 }  // namespace nativeapi
+
+// Implementation of MenuItemTarget - moved to global scope
+@implementation MenuItemTarget
+- (void)menuItemClicked:(id)sender {
+    NSMenuItem* menuItem = (NSMenuItem*)sender;
+
+    // Handle state changes for checkable items
+    if ([menuItem state] == NSControlStateValueOn) {
+        [menuItem setState:NSControlStateValueOff];
+        auto callback = nativeapi::g_state_callbacks.find(_itemId);
+        if (callback != nativeapi::g_state_callbacks.end()) {
+            nativeapi::MenuItemStateChangedEvent event(_itemId, false);
+            callback->second(event);
+        }
+    } else if ([menuItem state] == NSControlStateValueOff &&
+               ([menuItem.title rangeOfString:@"☑"].location == NSNotFound)) { // Not a checkbox/radio
+        [menuItem setState:NSControlStateValueOn];
+        auto callback = nativeapi::g_state_callbacks.find(_itemId);
+        if (callback != nativeapi::g_state_callbacks.end()) {
+            nativeapi::MenuItemStateChangedEvent event(_itemId, true);
+            callback->second(event);
+        }
+    }
+
+    // Handle click callback
+    auto clickCallback = nativeapi::g_click_callbacks.find(_itemId);
+    if (clickCallback != nativeapi::g_click_callbacks.end()) {
+        nativeapi::MenuItemSelectedEvent event(_itemId, [[menuItem title] UTF8String]);
+        clickCallback->second(event);
+    }
+}
+@end
+
+// Implementation of MenuDelegate - moved to global scope
+@implementation MenuDelegate
+- (void)menuWillOpen:(NSMenu *)menu {
+    auto callback = nativeapi::g_menu_will_show_callbacks.find(_menuId);
+    if (callback != nativeapi::g_menu_will_show_callbacks.end()) {
+        callback->second();
+    }
+}
+
+- (void)menuDidClose:(NSMenu *)menu {
+    auto callback = nativeapi::g_menu_did_hide_callbacks.find(_menuId);
+    if (callback != nativeapi::g_menu_did_hide_callbacks.end()) {
+        callback->second();
+    }
+}
+@end
+
+namespace nativeapi {
+
+// KeyboardAccelerator implementation
+std::string KeyboardAccelerator::ToString() const {
+    std::string result;
+
+    if (modifiers & Meta) result += "Ctrl+";
+    if (modifiers & Alt) result += "Alt+";
+    if (modifiers & Shift) result += "Shift+";
+    if (modifiers & Ctrl) result += "Cmd+";  // On macOS, show as Cmd
+
+    result += key;
+    return result;
+}
+
+// MenuItem::Impl implementation
+class MenuItem::Impl {
+ public:
+    NSMenuItem* ns_menu_item_;
+    MenuItemTarget* target_;
+    MenuItemType type_;
+    std::string text_;
+    std::string icon_;
+    std::string tooltip_;
+    KeyboardAccelerator accelerator_;
+    bool has_accelerator_;
+    bool enabled_;
+    bool visible_;
+    bool checked_;
+    int radio_group_;
+    std::shared_ptr<Menu> submenu_;
+
+    Impl(NSMenuItem* menu_item, MenuItemType type)
+        : ns_menu_item_(menu_item)
+        , target_([[MenuItemTarget alloc] init])
+        , type_(type)
+        , accelerator_("", KeyboardAccelerator::None)
+        , has_accelerator_(false)
+        , enabled_(true)
+        , visible_(true)
+        , checked_(false)
+        , radio_group_(-1) {
+
+        [ns_menu_item_ setTarget:target_];
+        [ns_menu_item_ setAction:@selector(menuItemClicked:)];
+    }
+
+    ~Impl() {
+        if (target_) {
+            target_ = nil;
+        }
+    }
+};
+
+// MenuItem implementation
+std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType type) {
+    NSMenuItem* nsItem = nullptr;
+
+    switch (type) {
+        case MenuItemType::Separator:
+            nsItem = [NSMenuItem separatorItem];
+            break;
+        case MenuItemType::Normal:
+        case MenuItemType::Checkbox:
+        case MenuItemType::Radio:
+        case MenuItemType::Submenu:
+        default:
+            nsItem = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()]
+                                               action:nil
+                                        keyEquivalent:@""];
+            break;
+    }
+
+    auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
+    item->pimpl_ = std::make_unique<Impl>(nsItem, type);
+    item->id = g_next_menu_item_id++;
+    item->pimpl_->target_.itemId = item->id;
+    item->pimpl_->text_ = text;
+
+    return item;
+}
+
+std::shared_ptr<MenuItem> MenuItem::CreateSeparator() {
+    return Create("", MenuItemType::Separator);
+}
+
+MenuItem::MenuItem(void* native_item)
+    : id(g_next_menu_item_id++)
+    , pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
+    pimpl_->target_.itemId = id;
+}
+
+MenuItem::MenuItem(const std::string& text, MenuItemType type)
+    : id(0) { // Will be set in Create method
+}
+
+MenuItem::~MenuItem() {
+    // Clean up callbacks
+    g_click_callbacks.erase(id);
+    g_state_callbacks.erase(id);
+}
+
+MenuItemType MenuItem::GetType() const {
+    return pimpl_->type_;
+}
+
+void MenuItem::SetText(const std::string& text) {
+    pimpl_->text_ = text;
+    [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:text.c_str()]];
+}
+
+std::string MenuItem::GetText() const {
+    return pimpl_->text_;
+}
+
+void MenuItem::SetIcon(const std::string& icon) {
+    pimpl_->icon_ = icon;
+
+    NSImage* image = nullptr;
+
+    // Check if the icon is a base64 string
+    if (icon.find("data:image") != std::string::npos) {
+        // Extract the base64 part
+        size_t pos = icon.find("base64,");
+        if (pos != std::string::npos) {
+            std::string base64Icon = icon.substr(pos + 7);
+
+            // Convert base64 to NSData
+            NSData* imageData = [[NSData alloc]
+                initWithBase64EncodedString:[NSString stringWithUTF8String:base64Icon.c_str()]
+                                    options:NSDataBase64DecodingIgnoreUnknownCharacters];
+
+            if (imageData) {
+                image = [[NSImage alloc] initWithData:imageData];
+            }
+        }
+    } else if (!icon.empty()) {
+        // Try to load as file path first
+        NSString* iconPath = [NSString stringWithUTF8String:icon.c_str()];
+        image = [[NSImage alloc] initWithContentsOfFile:iconPath];
+
+        // If that fails, try as named image
+        if (!image) {
+            image = [NSImage imageNamed:iconPath];
+        }
+    }
+
+    if (image) {
+        [image setSize:NSMakeSize(16, 16)];  // Standard menu item icon size
+        [image setTemplate:YES];
+        [pimpl_->ns_menu_item_ setImage:image];
+    }
+}
+
+std::string MenuItem::GetIcon() const {
+    return pimpl_->icon_;
+}
+
+void MenuItem::SetTooltip(const std::string& tooltip) {
+    pimpl_->tooltip_ = tooltip;
+    [pimpl_->ns_menu_item_ setToolTip:[NSString stringWithUTF8String:tooltip.c_str()]];
+}
+
+std::string MenuItem::GetTooltip() const {
+    return pimpl_->tooltip_;
+}
+
+void MenuItem::SetAccelerator(const KeyboardAccelerator& accelerator) {
+    pimpl_->accelerator_ = accelerator;
+    pimpl_->has_accelerator_ = true;
+
+    auto keyAndModifier = ConvertAccelerator(accelerator);
+    [pimpl_->ns_menu_item_ setKeyEquivalent:keyAndModifier.first];
+    [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:keyAndModifier.second];
+}
+
+KeyboardAccelerator MenuItem::GetAccelerator() const {
+    if (pimpl_->has_accelerator_) {
+        return pimpl_->accelerator_;
+    }
+    return KeyboardAccelerator("", KeyboardAccelerator::None);
+}
+
+void MenuItem::RemoveAccelerator() {
+    pimpl_->has_accelerator_ = false;
+    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    [pimpl_->ns_menu_item_ setKeyEquivalent:@""];
+    [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:0];
+}
+
+void MenuItem::SetEnabled(bool enabled) {
+    pimpl_->enabled_ = enabled;
+    [pimpl_->ns_menu_item_ setEnabled:enabled];
+}
+
+bool MenuItem::IsEnabled() const {
+    return pimpl_->enabled_;
+}
+
+void MenuItem::SetVisible(bool visible) {
+    pimpl_->visible_ = visible;
+    [pimpl_->ns_menu_item_ setHidden:!visible];
+}
+
+bool MenuItem::IsVisible() const {
+    return pimpl_->visible_;
+}
+
+void MenuItem::SetChecked(bool checked) {
+    if (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio) {
+        pimpl_->checked_ = checked;
+        [pimpl_->ns_menu_item_ setState:checked ? NSControlStateValueOn : NSControlStateValueOff];
+
+        // Handle radio button group logic
+        if (pimpl_->type_ == MenuItemType::Radio && checked && pimpl_->radio_group_ >= 0) {
+            // TODO: Implement radio group mutual exclusion
+            // This would require maintaining a registry of radio groups
+        }
+    }
+}
+
+bool MenuItem::IsChecked() const {
+    return pimpl_->checked_;
+}
+
+void MenuItem::SetRadioGroup(int group_id) {
+    pimpl_->radio_group_ = group_id;
+}
+
+int MenuItem::GetRadioGroup() const {
+    return pimpl_->radio_group_;
+}
+
+void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
+    pimpl_->submenu_ = submenu;
+    if (submenu) {
+        [pimpl_->ns_menu_item_ setSubmenu:(NSMenu*)submenu->GetNativeMenu()];
+    } else {
+        [pimpl_->ns_menu_item_ setSubmenu:nil];
+    }
+}
+
+std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
+    return pimpl_->submenu_;
+}
+
+void MenuItem::RemoveSubmenu() {
+    pimpl_->submenu_.reset();
+    [pimpl_->ns_menu_item_ setSubmenu:nil];
+}
+
+void MenuItem::SetOnClick(std::function<void(const MenuItemSelectedEvent&)> callback) {
+    if (callback) {
+        g_click_callbacks[id] = callback;
+    } else {
+        g_click_callbacks.erase(id);
+    }
+}
+
+void MenuItem::SetOnStateChanged(std::function<void(const MenuItemStateChangedEvent&)> callback) {
+    if (callback) {
+        g_state_callbacks[id] = callback;
+    } else {
+        g_state_callbacks.erase(id);
+    }
+}
+
+bool MenuItem::Trigger() {
+    if (!pimpl_->enabled_) return false;
+
+    [pimpl_->target_ menuItemClicked:pimpl_->ns_menu_item_];
+    return true;
+}
+
+void* MenuItem::GetNativeItem() const {
+    return (__bridge void*)pimpl_->ns_menu_item_;
+}
+
+// Menu::Impl implementation
+class Menu::Impl {
+ public:
+    NSMenu* ns_menu_;
+    MenuDelegate* delegate_;
+    std::vector<std::shared_ptr<MenuItem>> items_;
+    bool enabled_;
+    bool visible_;
+
+    Impl(NSMenu* menu)
+        : ns_menu_(menu)
+        , delegate_([[MenuDelegate alloc] init])
+        , enabled_(true)
+        , visible_(false) {
+        [ns_menu_ setDelegate:delegate_];
+    }
+
+    ~Impl() {
+        if (delegate_) {
+            delegate_ = nil;
+        }
+    }
+};
+
+// Menu implementation
+std::shared_ptr<Menu> Menu::Create() {
+    NSMenu* nsMenu = [[NSMenu alloc] init];
+    auto menu = std::shared_ptr<Menu>(new Menu());
+    menu->pimpl_ = std::make_unique<Impl>(nsMenu);
+    menu->id = g_next_menu_id++;
+    menu->pimpl_->delegate_.menuId = menu->id;
+
+    return menu;
+}
+
+Menu::Menu(void* native_menu)
+    : id(g_next_menu_id++)
+    , pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
+    pimpl_->delegate_.menuId = id;
+}
+
+Menu::Menu()
+    : id(0) { // Will be set in Create method
+}
+
+Menu::~Menu() {
+    // Clean up callbacks
+    g_menu_will_show_callbacks.erase(id);
+    g_menu_did_hide_callbacks.erase(id);
+}
+
+void Menu::AddItem(std::shared_ptr<MenuItem> item) {
+    if (!item) return;
+
+    pimpl_->items_.push_back(item);
+    [pimpl_->ns_menu_ addItem:(NSMenuItem*)item->GetNativeItem()];
+}
+
+void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
+    if (!item) return;
+
+    if (index >= pimpl_->items_.size()) {
+        AddItem(item);
+        return;
+    }
+
+    pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
+    [pimpl_->ns_menu_ insertItem:(NSMenuItem*)item->GetNativeItem() atIndex:index];
+}
+
+bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
+    if (!item) return false;
+
+    auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
+    if (it != pimpl_->items_.end()) {
+        [pimpl_->ns_menu_ removeItem:(NSMenuItem*)item->GetNativeItem()];
+        pimpl_->items_.erase(it);
+        return true;
+    }
+    return false;
+}
+
+bool Menu::RemoveItemById(MenuItemID item_id) {
+    for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
+        if ((*it)->id == item_id) {
+            [pimpl_->ns_menu_ removeItem:(NSMenuItem*)(*it)->GetNativeItem()];
+            pimpl_->items_.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Menu::RemoveItemAt(size_t index) {
+    if (index >= pimpl_->items_.size()) return false;
+
+    auto item = pimpl_->items_[index];
+    [pimpl_->ns_menu_ removeItem:(NSMenuItem*)item->GetNativeItem()];
+    pimpl_->items_.erase(pimpl_->items_.begin() + index);
+    return true;
+}
+
+void Menu::Clear() {
+    [pimpl_->ns_menu_ removeAllItems];
+    pimpl_->items_.clear();
+}
+
+void Menu::AddSeparator() {
+    auto separator = MenuItem::CreateSeparator();
+    AddItem(separator);
+}
+
+void Menu::InsertSeparator(size_t index) {
+    auto separator = MenuItem::CreateSeparator();
+    InsertItem(index, separator);
+}
+
+size_t Menu::GetItemCount() const {
+    return pimpl_->items_.size();
+}
+
+std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
+    if (index >= pimpl_->items_.size()) return nullptr;
+    return pimpl_->items_[index];
+}
+
+std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemID item_id) const {
+    for (const auto& item : pimpl_->items_) {
+        if (item->id == item_id) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
+    return pimpl_->items_;
+}
+
+std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
+    for (const auto& item : pimpl_->items_) {
+        std::string itemText = item->GetText();
+        if (case_sensitive) {
+            if (itemText == text) return item;
+        } else {
+            std::string lowerItemText = itemText;
+            std::string lowerSearchText = text;
+            std::transform(lowerItemText.begin(), lowerItemText.end(), lowerItemText.begin(), ::tolower);
+            std::transform(lowerSearchText.begin(), lowerSearchText.end(), lowerSearchText.begin(), ::tolower);
+            if (lowerItemText == lowerSearchText) return item;
+        }
+    }
+    return nullptr;
+}
+
+bool Menu::ShowAsContextMenu(double x, double y) {
+    NSPoint point = NSMakePoint(x, y);
+
+    // Convert screen coordinates to window coordinates if needed
+    NSEvent* event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                                        location:point
+                                   modifierFlags:0
+                                       timestamp:0
+                                    windowNumber:0
+                                         context:nil
+                                     eventNumber:0
+                                      clickCount:1
+                                        pressure:1.0];
+
+    pimpl_->visible_ = true;
+    [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:nil];
+    pimpl_->visible_ = false;
+
+    return true;
+}
+
+bool Menu::ShowAsContextMenu() {
+    NSPoint mouseLocation = [NSEvent mouseLocation];
+    return ShowAsContextMenu(mouseLocation.x, mouseLocation.y);
+}
+
+bool Menu::Close() {
+    if (pimpl_->visible_) {
+        [pimpl_->ns_menu_ cancelTracking];
+        pimpl_->visible_ = false;
+        return true;
+    }
+    return false;
+}
+
+bool Menu::IsVisible() const {
+    return pimpl_->visible_;
+}
+
+void Menu::SetEnabled(bool enabled) {
+    pimpl_->enabled_ = enabled;
+    // Enable/disable all items
+    for (auto& item : pimpl_->items_) {
+        item->SetEnabled(enabled);
+    }
+}
+
+bool Menu::IsEnabled() const {
+    return pimpl_->enabled_;
+}
+
+void Menu::SetOnMenuWillShow(std::function<void()> callback) {
+    if (callback) {
+        g_menu_will_show_callbacks[id] = callback;
+    } else {
+        g_menu_will_show_callbacks.erase(id);
+    }
+}
+
+void Menu::SetOnMenuDidHide(std::function<void()> callback) {
+    if (callback) {
+        g_menu_did_hide_callbacks[id] = callback;
+    } else {
+        g_menu_did_hide_callbacks.erase(id);
+    }
+}
+
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
+    auto item = MenuItem::Create(text, MenuItemType::Normal);
+    AddItem(item);
+    return item;
+}
+
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text, const std::string& icon) {
+    auto item = MenuItem::Create(text, MenuItemType::Normal);
+    item->SetIcon(icon);
+    AddItem(item);
+    return item;
+}
+
+std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std::shared_ptr<Menu> submenu) {
+    auto item = MenuItem::Create(text, MenuItemType::Submenu);
+    item->SetSubmenu(submenu);
+    AddItem(item);
+    return item;
+}
+
+void* Menu::GetNativeMenu() const {
+    return (__bridge void*)pimpl_->ns_menu_;
+}
+}

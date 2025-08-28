@@ -13,9 +13,8 @@ using nativeapi::WindowManager;
 using nativeapi::WindowOptions;
 
 int main() {
-
   native_accessibility_manager_enable();
-  bool is_enabled= native_accessibility_manager_is_enabled();
+  bool is_enabled = native_accessibility_manager_is_enabled();
   std::cout << "is_enabled: " << is_enabled << std::endl;
 
   DisplayManager& display_manager = DisplayManager::GetInstance();
@@ -33,9 +32,61 @@ int main() {
   std::shared_ptr<TrayIcon> tray_icon_ptr = tray_manager.Create();
   if (tray_icon_ptr != nullptr) {
     TrayIcon& tray_icon = *tray_icon_ptr;
-    tray_icon.SetIcon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAhGVYSWZNTQAqAAAACAAFARIAAwAAAAEAAQAAARoABQAAAAEAAABKARsABQAAAAEAAABSASgAAwAAAAEAAgAAh2kABAAAAAEAAABaAAAAAAAAAEgAAAABAAAASAAAAAEAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAFKADAAQAAAABAAAAFAAAAABB553+AAAACXBIWXMAAAsTAAALEwEAmpwYAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAADOElEQVQ4EY1USUtbURQ+N+/Fh1O04IxYHFAQNKiIIOJGV10oVbEb3fgHJLpKf0DjQuim3RS3roR25c7qzoWgkCAiiAM4IW5MnPUlt+c75j6iCdILN+/cM3xnzFFEpPjqYDD4WWsd4htUSgXAS8v4k3VExroJ1o3y/R6NRv+wlrKg2t7e/s2yrB+2bX8sKChwwHNdl/Xg6+WwMTmOQ+Alk0mR+Xw+Bzb8+FJRUeFcXFz8VYiMBb/ZzE0kEnp/f99mWnV2dtLz87MAAMzv99PR0RGVlJRQaWkpQCkvL49F2oV+KpWy+Y5YlZWVv+Dl6uoq2dra6p+enlYtLS20vr4uhqwkYCcnJzQ0NCQ8dkqFhYW0tbWlzs/PrcfHx2RZWZnFAdRQW1tbvLe3FzVJzc/Pw6OOxWJ4a/C5HLqvr0/ex8fHenV1VWjIFxcX9cHBgR4YGEg1Nzfrjo6OuM35BwCCsPnKQTo4SJNrQysrKzQxMUG1tbVSRxGm5aDZXBrLZMD3FgwK5uzs7AhYXV0dhUIhYZeXl9PS0pLQ4+Pj1NDQQLu7u1RUVKS4kdrHEi8yA4RO4kxNTdHm5iZtb28TmvSSCNHY2BhdXl7S2toajY6OUiAQINQarfcZYwOGr+FVV1dTU1MTFRcXe2IDyk2gxsZG6TqPC3FjRQcRZh14w5mZmRGDcDhMp6en4gjOuLs0OTlJKMXy8jLV19cTd1psXmCFzP7p7++XVObm5kQYiUTo+vqahoeHCWPE3ae7uztvXqGUM0IDDa83NzcEYIDy4NPe3p6ADQ4Oypsb4ZUIdrapiQHJ/CI9GDw8PAh7YWGBzs7OhI7H45mqHo2UX82gJ0kTAEVa3d3dNDs7Kw3q6uoSJ6Z5GTYag22GMmt8TPT8XxeAnp4e+Q+jFLnAGFghZaygV+uKN484hZEBBX1/f+/xM6ICqVmOBZGwqqqqPrHRx/z8fPf29tbiJUH8f6XDw0PiVSZdfmOc6+lyFohi47/WVy6ENA/1l/XFg23zDhiRuqUXbBi1whJ9enqSQUWa7x3IcWHH0xDhLfUVYSpsWt6LMfZQwwX/wLVwWPG97osM9Wf7Df6GGOwnsP4BQFiPuOZ8wJUAAAAASUVORK5CYII=");
+    tray_icon.SetIcon(
+        "data:image/"
+        "png;base64,"
+        "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABGdBTUEAALGPC/"
+        "xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAhGVY"
+        "SWZNTQAqAAAACAAFARIAAwAAAAEAAQAAARoABQAAAAEAAABKARsABQAAAAEAAABSASgAAw"
+        "AAAAEAAgAAh2kABAAAAAEAAABaAAAAAAAAAEgAAAABAAAASAAAAAEAA6ABAAMAAAABAAEA"
+        "AKACAAQAAAABAAAAFKADAAQAAAABAAAAFAAAAABB553+"
+        "AAAACXBIWXMAAAsTAAALEwEAmpwYAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPH"
+        "g6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUg"
+        "Ni4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OT"
+        "kvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjph"
+        "Ym91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3"
+        "RpZmYvMS4wLyI+"
+        "CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+"
+        "CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+"
+        "CjwveDp4bXBtZXRhPgoZXuEHAAADOElEQVQ4EY1USUtbURQ+N+/"
+        "Fh1O04IxYHFAQNKiIIOJGV10oVbEb3fgHJLpKf0DjQuim3RS3roR25c7qzoWgkCAiiAM4I"
+        "W5MnPUlt+c75j6iCdILN+/cM3xnzFFEpPjqYDD4WWsd4htUSgXAS8v4k3VExroJ1o3y/"
+        "R6NRv+wlrKg2t7e/s2yrB+2bX8sKChwwHNdl/"
+        "Xg6+WwMTmOQ+Alk0mR+Xw+Bzb8+FJRUeFcXFz8VYiMBb/ZzE0kEnp/"
+        "f99mWnV2dtLz87MAAMzv99PR0RGVlJRQaWkpQCkvL49F2oV+KpWy+Y5YlZWVv+"
+        "Dl6uoq2dra6p+enlYtLS20vr4uhqwkYCcnJzQ0NCQ8dkqFhYW0tbWlzs/"
+        "PrcfHx2RZWZnFAdRQW1tbvLe3FzVJzc/Pw6OOxWJ4a/C5HLqvr0/"
+        "ex8fHenV1VWjIFxcX9cHBgR4YGEg1Nzfrjo6OuM35BwCCsPnKQTo4SJNrQysrKzQxMUG1t"
+        "bVSRxGm5aDZXBrLZMD3FgwK5uzs7AhYXV0dhUIhYZeXl9PS0pLQ4+"
+        "Pj1NDQQLu7u1RUVKS4kdrHEi8yA4RO4kxNTdHm5iZtb28TmvSSCNHY2BhdXl7S2toajY6O"
+        "UiAQINQarfcZYwOGr+"
+        "FVV1dTU1MTFRcXe2IDyk2gxsZG6TqPC3FjRQcRZh14w5mZmRGDcDhMp6en4gjOuLs0OTlJ"
+        "KMXy8jLV19cTd1psXmCFzP7p7++XVObm5kQYiUTo+"
+        "vqahoeHCWPE3ae7uztvXqGUM0IDDa83NzcEYIDy4NPe3p6ADQ4Oypsb4ZUIdrapiQHJ/"
+        "CI9GDw8PAh7YWGBzs7OhI7H45mqHo2UX82gJ0kTAEVa3d3dNDs7Kw3q6uoSJ6Z5GTYag22"
+        "GMmt8TPT8XxeAnp4e+Q+jFLnAGFghZaygV+uKN484hZEBBX1/f+/"
+        "xM6ICqVmOBZGwqqqqPrHRx/z8fPf29tbiJUH8f6XDw0PiVSZdfmOc6+lyFohi47/"
+        "WVy6ENA/1l/"
+        "XFg23zDhiRuqUXbBi1whJ9enqSQUWa7x3IcWHH0xDhLfUVYSpsWt6LMfZQwwX/"
+        "wLVwWPG97osM9Wf7Df6GGOwnsP4BQFiPuOZ8wJUAAAAASUVORK5CYII=");
     std::cout << "Tray ID: " << tray_icon.id << std::endl;
     std::cout << "Tray Title: " << tray_icon.GetTitle() << std::endl;
+
+    // Set up click handlers
+    tray_icon.SetOnLeftClick([]() {
+      std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
+      std::cout << "This is the left click handler working!" << std::endl;
+    });
+
+    tray_icon.SetOnRightClick([]() {
+      std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
+      std::cout << "This is the right click handler working!" << std::endl;
+    });
+
+    tray_icon.SetOnDoubleClick([]() {
+      std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
+      std::cout << "This is the double click handler working!" << std::endl;
+    });
   } else {
     std::cerr << "Failed to create tray." << std::endl;
   }
