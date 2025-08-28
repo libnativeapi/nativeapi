@@ -13,6 +13,11 @@ using nativeapi::WindowManager;
 using nativeapi::WindowOptions;
 
 int main() {
+
+  native_accessibility_manager_enable();
+  bool is_enabled= native_accessibility_manager_is_enabled();
+  std::cout << "is_enabled: " << is_enabled << std::endl;
+
   DisplayManager& display_manager = DisplayManager::GetInstance();
   TrayManager& tray_manager = TrayManager::GetInstance();
   WindowManager& window_manager = WindowManager::GetInstance();
