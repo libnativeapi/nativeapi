@@ -144,7 +144,7 @@ void printDisplayInfo(const Display& display, bool isPrimary = false) {
 
 int main() {
   try {
-    DisplayManager displayManager = DisplayManager();
+    DisplayManager& displayManager = DisplayManager::GetInstance();
 
     std::cout << "=== Native API Display Manager Demo ===" << std::endl;
     std::cout << std::endl;
