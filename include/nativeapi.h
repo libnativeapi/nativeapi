@@ -9,7 +9,14 @@
 #include "../src/geometry.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"
-#include "../src/tray.h"
+#include "../src/tray_icon.h"
 #include "../src/tray_manager.h"
 #include "../src/window.h"
 #include "../src/window_manager.h"
+
+// Include necessary headers for C API
+#include "../src/capi/accessibility_manager_c.h"
+#include "../src/capi/display_c.h"
+#include "../src/capi/display_manager_c.h"
+#include "../src/capi/geometry_c.h"
+#include "../src/capi/keyboard_monitor_c.h"

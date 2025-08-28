@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "../../tray.h"
+#include "../../tray_icon.h"
 #include "../../tray_manager.h"
 
 // Import Cocoa headers
@@ -14,16 +14,20 @@ TrayManager::TrayManager() : next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {}
 
-std::shared_ptr<Tray> TrayManager::Create() {
+bool TrayManager::IsSupported() {
+  return true;
+}
+
+std::shared_ptr<TrayIcon> TrayManager::Create() {
   NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
   NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
-  auto tray = std::make_shared<Tray>((__bridge void*)status_item);
+  auto tray = std::make_shared<TrayIcon>((__bridge void*)status_item);
   tray->id = next_tray_id_++;
   trays_[tray->id] = tray;
   return tray;
 }
 
-std::shared_ptr<Tray> TrayManager::Get(TrayID id) {
+std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconID id) {
   auto it = trays_.find(id);
   if (it != trays_.end()) {
     return it->second;
@@ -31,8 +35,8 @@ std::shared_ptr<Tray> TrayManager::Get(TrayID id) {
   return nullptr;
 }
 
-std::vector<std::shared_ptr<Tray>> TrayManager::GetAll() {
-  std::vector<std::shared_ptr<Tray>> trays;
+std::vector<std::shared_ptr<TrayIcon>> TrayManager::GetAll() {
+  std::vector<std::shared_ptr<TrayIcon>> trays;
   for (auto& tray : trays_) {
     trays.push_back(tray.second);
   }

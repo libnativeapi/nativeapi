@@ -1,11 +1,11 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdbool.h>
-#include <stdint.h>
 
 /**
  * Modifier key enumeration for C API
@@ -41,7 +41,8 @@ typedef void (*native_key_released_callback_t)(int keycode, void* user_data);
  * @param modifier_keys Bitwise OR of active modifier keys
  * @param user_data User-provided data passed to the callback
  */
-typedef void (*native_modifier_keys_changed_callback_t)(uint32_t modifier_keys, void* user_data);
+typedef void (*native_modifier_keys_changed_callback_t)(uint32_t modifier_keys,
+                                                        void* user_data);
 
 /**
  * Opaque handle to keyboard monitor instance
@@ -65,7 +66,8 @@ void native_keyboard_monitor_destroy(native_keyboard_monitor_t* monitor);
  * @param monitor Pointer to keyboard monitor instance
  * @param on_key_pressed Callback for key pressed events (can be NULL)
  * @param on_key_released Callback for key released events (can be NULL)
- * @param on_modifier_keys_changed Callback for modifier keys changed events (can be NULL)
+ * @param on_modifier_keys_changed Callback for modifier keys changed events
+ * (can be NULL)
  * @param user_data User data to pass to callbacks
  * @return true on success, false on failure
  */
@@ -95,7 +97,8 @@ bool native_keyboard_monitor_stop(native_keyboard_monitor_t* monitor);
  * @param monitor Pointer to keyboard monitor instance
  * @return true if monitoring is active, false otherwise
  */
-bool native_keyboard_monitor_is_monitoring(const native_keyboard_monitor_t* monitor);
+bool native_keyboard_monitor_is_monitoring(
+    const native_keyboard_monitor_t* monitor);
 
 #ifdef __cplusplus
 }

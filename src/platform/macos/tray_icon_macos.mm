@@ -1,33 +1,33 @@
 #include <iostream>
-#include "../../menu.h"
-#include "../../tray.h"
-
-// Import Cocoa headers
 #import <Cocoa/Cocoa.h>
+
+#include "../../menu.h"
+#include "../../tray_icon.h"
+
 
 namespace nativeapi {
 
 // Private implementation class
-class Tray::Impl {
+class TrayIcon::Impl {
  public:
   Impl(NSStatusItem* tray) : ns_status_item_(tray) {}
   NSStatusItem* ns_status_item_;
   Menu context_menu_;  // 添加菜单成员变量来保持菜单对象的生命周期
 };
 
-Tray::Tray() : pimpl_(new Impl(nil)) {
+TrayIcon::TrayIcon() : pimpl_(new Impl(nil)) {
   id = -1;
 }
 
-Tray::Tray(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) {
   id = -1;  // Will be set by TrayManager when created
 }
 
-Tray::~Tray() {
+TrayIcon::~TrayIcon() {
   delete pimpl_;
 }
 
-void Tray::SetIcon(std::string icon) {
+void TrayIcon::SetIcon(std::string icon) {
   // Check if the icon is a base64 string
   if (icon.find("data:image") != std::string::npos) {
     // Extract the base64 part
@@ -45,7 +45,7 @@ void Tray::SetIcon(std::string icon) {
 
       // Set image size and template property
       [image setSize:NSMakeSize(20, 20)];  // Default icon size
-      [image setTemplate:YES];
+//      [image setTemplate:YES];
 
       // Set the image to the button
       [pimpl_->ns_status_item_.button setImage:image];
@@ -57,25 +57,25 @@ void Tray::SetIcon(std::string icon) {
   }
 }
 
-void Tray::SetTitle(std::string title) {
+void TrayIcon::SetTitle(std::string title) {
   if (pimpl_->ns_status_item_.button) {
     [pimpl_->ns_status_item_.button setTitle:[NSString stringWithUTF8String:title.c_str()]];
   }
 }
 
-std::string Tray::GetTitle() {
+std::string TrayIcon::GetTitle() {
   return [[pimpl_->ns_status_item_.button title] UTF8String];
 }
 
-void Tray::SetTooltip(std::string tooltip) {
+void TrayIcon::SetTooltip(std::string tooltip) {
   [pimpl_->ns_status_item_.button setToolTip:[NSString stringWithUTF8String:tooltip.c_str()]];
 }
 
-std::string Tray::GetTooltip() {
+std::string TrayIcon::GetTooltip() {
   return [[pimpl_->ns_status_item_.button toolTip] UTF8String];
 }
 
-void Tray::SetContextMenu(Menu menu) {
+void TrayIcon::SetContextMenu(Menu menu) {
   // 保存菜单对象的副本来维持其生命周期
   pimpl_->context_menu_ = menu;
 
@@ -85,11 +85,11 @@ void Tray::SetContextMenu(Menu menu) {
   }
 }
 
-Menu Tray::GetContextMenu() {
+Menu TrayIcon::GetContextMenu() {
   return pimpl_->context_menu_;
 }
 
-Rectangle Tray::GetBounds() {
+Rectangle TrayIcon::GetBounds() {
   Rectangle bounds = {0, 0, 0, 0};
 
   if (pimpl_->ns_status_item_.button) {

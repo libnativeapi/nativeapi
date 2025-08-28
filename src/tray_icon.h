@@ -1,19 +1,20 @@
 #pragma once
+
 #include <string>
 #include "geometry.h"
 #include "menu.h"
 
 namespace nativeapi {
 
-typedef long TrayID;
+typedef long TrayIconID;
 
-class Tray {
+class TrayIcon {
  public:
-  Tray();
-  Tray(void* tray);
-  virtual ~Tray();
+  TrayIcon();
+  TrayIcon(void* tray);
+  virtual ~TrayIcon();
 
-  TrayID id;
+  TrayIconID id;
 
   void SetIcon(std::string icon);
 

@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tray.h"
+#include "tray_icon.h"
 
 namespace nativeapi {
 
@@ -14,23 +14,26 @@ class TrayManager {
   TrayManager();
   virtual ~TrayManager();
 
+  // Check if system tray is supported.
+  bool IsSupported();
+
   // Create a new tray.
-  std::shared_ptr<Tray> Create();
+  std::shared_ptr<TrayIcon> Create();
 
   // Get a tray by its ID. Returns nullptr if tray not found.
-  std::shared_ptr<Tray> Get(TrayID id);
+  std::shared_ptr<TrayIcon> Get(TrayIconID id);
 
   // Get all trays.
-  std::vector<std::shared_ptr<Tray>> GetAll();
+  std::vector<std::shared_ptr<TrayIcon>> GetAll();
 
   // Destroy a tray by its ID. Returns true if tray was found and destroyed.
-  bool Destroy(TrayID id);
+  bool Destroy(TrayIconID id);
 
  private:
   // Store tray instances
-  std::unordered_map<TrayID, std::shared_ptr<Tray>> trays_;
+  std::unordered_map<TrayIconID, std::shared_ptr<TrayIcon>> trays_;
   // ID generator for new trays
-  TrayID next_tray_id_;
+  TrayIconID next_tray_id_;
 };
 
 }  // namespace nativeapi
