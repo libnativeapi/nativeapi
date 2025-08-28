@@ -1,0 +1,573 @@
+#pragma once
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "geometry_c.h"
+
+/**
+ * Opaque handles for menu objects
+ */
+typedef void* native_menu_t;
+typedef void* native_menu_item_t;
+
+/**
+ * Menu and menu item identifiers
+ */
+typedef long native_menu_id_t;
+typedef long native_menu_item_id_t;
+
+/**
+ * Menu item types
+ */
+typedef enum {
+  NATIVE_MENU_ITEM_TYPE_NORMAL = 0,
+  NATIVE_MENU_ITEM_TYPE_CHECKBOX = 1,
+  NATIVE_MENU_ITEM_TYPE_RADIO = 2,
+  NATIVE_MENU_ITEM_TYPE_SEPARATOR = 3,
+  NATIVE_MENU_ITEM_TYPE_SUBMENU = 4
+} native_menu_item_type_t;
+
+/**
+ * Keyboard accelerator modifier flags
+ */
+typedef enum {
+  NATIVE_ACCELERATOR_MODIFIER_NONE = 0,
+  NATIVE_ACCELERATOR_MODIFIER_CTRL = 1 << 0,
+  NATIVE_ACCELERATOR_MODIFIER_ALT = 1 << 1,
+  NATIVE_ACCELERATOR_MODIFIER_SHIFT = 1 << 2,
+  NATIVE_ACCELERATOR_MODIFIER_META = 1 << 3
+} native_accelerator_modifier_t;
+
+/**
+ * Keyboard accelerator structure
+ */
+typedef struct {
+  int modifiers;
+  char key[64];
+} native_keyboard_accelerator_t;
+
+/**
+ * Menu item selection event
+ */
+typedef struct {
+  native_menu_item_id_t item_id;
+  char item_text[256];
+} native_menu_item_selected_event_t;
+
+/**
+ * Menu item state changed event
+ */
+typedef struct {
+  native_menu_item_id_t item_id;
+  bool checked;
+} native_menu_item_state_changed_event_t;
+
+/**
+ * Menu item list structure
+ */
+typedef struct {
+  native_menu_item_t* items;
+  size_t count;
+} native_menu_item_list_t;
+
+/**
+ * Event callback function types
+ */
+typedef void (*native_menu_item_click_callback_t)(const native_menu_item_selected_event_t* event, void* user_data);
+typedef void (*native_menu_item_state_changed_callback_t)(const native_menu_item_state_changed_event_t* event, void* user_data);
+typedef void (*native_menu_will_show_callback_t)(native_menu_id_t menu_id, void* user_data);
+typedef void (*native_menu_did_hide_callback_t)(native_menu_id_t menu_id, void* user_data);
+
+/**
+ * MenuItem operations
+ */
+
+/**
+ * Create a new menu item
+ * @param text The display text for the menu item
+ * @param type The type of menu item to create
+ * @return Menu item handle, or NULL if creation failed
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_item_create(const char* text, native_menu_item_type_t type);
+
+/**
+ * Create a separator menu item
+ * @return Menu item handle, or NULL if creation failed
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_item_create_separator(void);
+
+/**
+ * Destroy a menu item and release its resources
+ * @param item The menu item to destroy
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_destroy(native_menu_item_t item);
+
+/**
+ * Get the ID of a menu item
+ * @param item The menu item
+ * @return The menu item ID
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item);
+
+/**
+ * Get the type of a menu item
+ * @param item The menu item
+ * @return The menu item type
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item);
+
+/**
+ * Set the text of a menu item
+ * @param item The menu item
+ * @param text The text to set
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_text(native_menu_item_t item, const char* text);
+
+/**
+ * Get the text of a menu item
+ * @param item The menu item
+ * @param buffer Buffer to store the text (caller allocated)
+ * @param buffer_size Size of the buffer
+ * @return Length of the text, or -1 if buffer too small
+ */
+FFI_PLUGIN_EXPORT
+int native_menu_item_get_text(native_menu_item_t item, char* buffer, size_t buffer_size);
+
+/**
+ * Set the icon of a menu item
+ * @param item The menu item
+ * @param icon Path to icon file or base64 data
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_icon(native_menu_item_t item, const char* icon);
+
+/**
+ * Get the icon of a menu item
+ * @param item The menu item
+ * @param buffer Buffer to store the icon path/data (caller allocated)
+ * @param buffer_size Size of the buffer
+ * @return Length of the icon string, or -1 if buffer too small
+ */
+FFI_PLUGIN_EXPORT
+int native_menu_item_get_icon(native_menu_item_t item, char* buffer, size_t buffer_size);
+
+/**
+ * Set the tooltip of a menu item
+ * @param item The menu item
+ * @param tooltip The tooltip text to set
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_tooltip(native_menu_item_t item, const char* tooltip);
+
+/**
+ * Get the tooltip of a menu item
+ * @param item The menu item
+ * @param buffer Buffer to store the tooltip (caller allocated)
+ * @param buffer_size Size of the buffer
+ * @return Length of the tooltip, or -1 if buffer too small
+ */
+FFI_PLUGIN_EXPORT
+int native_menu_item_get_tooltip(native_menu_item_t item, char* buffer, size_t buffer_size);
+
+/**
+ * Set the keyboard accelerator for a menu item
+ * @param item The menu item
+ * @param accelerator The keyboard accelerator to set
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_accelerator(native_menu_item_t item, const native_keyboard_accelerator_t* accelerator);
+
+/**
+ * Get the keyboard accelerator of a menu item
+ * @param item The menu item
+ * @param accelerator Pointer to store the accelerator (caller allocated)
+ * @return true if accelerator exists, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_item_get_accelerator(native_menu_item_t item, native_keyboard_accelerator_t* accelerator);
+
+/**
+ * Remove the keyboard accelerator from a menu item
+ * @param item The menu item
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_remove_accelerator(native_menu_item_t item);
+
+/**
+ * Set the enabled state of a menu item
+ * @param item The menu item
+ * @param enabled true to enable, false to disable
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_enabled(native_menu_item_t item, bool enabled);
+
+/**
+ * Check if a menu item is enabled
+ * @param item The menu item
+ * @return true if enabled, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_item_is_enabled(native_menu_item_t item);
+
+/**
+ * Set the visibility of a menu item
+ * @param item The menu item
+ * @param visible true to show, false to hide
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_visible(native_menu_item_t item, bool visible);
+
+/**
+ * Check if a menu item is visible
+ * @param item The menu item
+ * @return true if visible, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_item_is_visible(native_menu_item_t item);
+
+/**
+ * Set the checked state of a checkbox/radio menu item
+ * @param item The menu item
+ * @param checked true to check, false to uncheck
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_checked(native_menu_item_t item, bool checked);
+
+/**
+ * Check if a menu item is checked
+ * @param item The menu item
+ * @return true if checked, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_item_is_checked(native_menu_item_t item);
+
+/**
+ * Set the radio group ID for a radio menu item
+ * @param item The menu item
+ * @param group_id The radio group identifier
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_radio_group(native_menu_item_t item, int group_id);
+
+/**
+ * Get the radio group ID of a menu item
+ * @param item The menu item
+ * @return The radio group ID, or -1 if not set
+ */
+FFI_PLUGIN_EXPORT
+int native_menu_item_get_radio_group(native_menu_item_t item);
+
+/**
+ * Set the submenu for a menu item
+ * @param item The menu item
+ * @param submenu The submenu to attach
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu);
+
+/**
+ * Get the submenu of a menu item
+ * @param item The menu item
+ * @return The submenu handle, or NULL if no submenu
+ */
+FFI_PLUGIN_EXPORT
+native_menu_t native_menu_item_get_submenu(native_menu_item_t item);
+
+/**
+ * Remove the submenu from a menu item
+ * @param item The menu item
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_remove_submenu(native_menu_item_t item);
+
+/**
+ * Set click event callback for a menu item
+ * @param item The menu item
+ * @param callback The callback function
+ * @param user_data User data to pass to callback
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_on_click(native_menu_item_t item, native_menu_item_click_callback_t callback, void* user_data);
+
+/**
+ * Set state changed event callback for a menu item
+ * @param item The menu item
+ * @param callback The callback function
+ * @param user_data User data to pass to callback
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_set_on_state_changed(native_menu_item_t item, native_menu_item_state_changed_callback_t callback, void* user_data);
+
+/**
+ * Programmatically trigger a menu item
+ * @param item The menu item
+ * @return true if triggered successfully, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_item_trigger(native_menu_item_t item);
+
+/**
+ * Menu operations
+ */
+
+/**
+ * Create a new menu
+ * @return Menu handle, or NULL if creation failed
+ */
+FFI_PLUGIN_EXPORT
+native_menu_t native_menu_create(void);
+
+/**
+ * Destroy a menu and release its resources
+ * @param menu The menu to destroy
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_destroy(native_menu_t menu);
+
+/**
+ * Get the ID of a menu
+ * @param menu The menu
+ * @return The menu ID
+ */
+FFI_PLUGIN_EXPORT
+native_menu_id_t native_menu_get_id(native_menu_t menu);
+
+/**
+ * Add a menu item to the end of the menu
+ * @param menu The menu
+ * @param item The menu item to add
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_add_item(native_menu_t menu, native_menu_item_t item);
+
+/**
+ * Insert a menu item at a specific position
+ * @param menu The menu
+ * @param item The menu item to insert
+ * @param index The position to insert at (0-based)
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_insert_item(native_menu_t menu, native_menu_item_t item, size_t index);
+
+/**
+ * Remove a menu item from the menu
+ * @param menu The menu
+ * @param item The menu item to remove
+ * @return true if item was found and removed, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item);
+
+/**
+ * Remove a menu item by its ID
+ * @param menu The menu
+ * @param item_id The ID of the item to remove
+ * @return true if item was found and removed, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_remove_item_by_id(native_menu_t menu, native_menu_item_id_t item_id);
+
+/**
+ * Remove a menu item at a specific position
+ * @param menu The menu
+ * @param index The position of the item to remove (0-based)
+ * @return true if item was removed, false if index out of bounds
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_remove_item_at(native_menu_t menu, size_t index);
+
+/**
+ * Remove all items from the menu
+ * @param menu The menu
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_clear(native_menu_t menu);
+
+/**
+ * Add a separator to the end of the menu
+ * @param menu The menu
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_add_separator(native_menu_t menu);
+
+/**
+ * Insert a separator at a specific position
+ * @param menu The menu
+ * @param index The position to insert the separator at (0-based)
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_insert_separator(native_menu_t menu, size_t index);
+
+/**
+ * Get the number of items in the menu
+ * @param menu The menu
+ * @return The number of items
+ */
+FFI_PLUGIN_EXPORT
+size_t native_menu_get_item_count(native_menu_t menu);
+
+/**
+ * Get a menu item at a specific position
+ * @param menu The menu
+ * @param index The position of the item (0-based)
+ * @return The menu item handle, or NULL if index out of bounds
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_get_item_at(native_menu_t menu, size_t index);
+
+/**
+ * Get a menu item by its ID
+ * @param menu The menu
+ * @param item_id The ID of the item to find
+ * @return The menu item handle, or NULL if not found
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_item_id_t item_id);
+
+/**
+ * Get all menu items
+ * @param menu The menu
+ * @return List of menu items (caller must free with native_menu_item_list_free)
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
+
+/**
+ * Find a menu item by text
+ * @param menu The menu
+ * @param text The text to search for
+ * @return The first menu item with matching text, or NULL if not found
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_find_item_by_text(native_menu_t menu, const char* text);
+
+/**
+ * Show the menu as a context menu at specified coordinates
+ * @param menu The menu
+ * @param x The x-coordinate in screen coordinates
+ * @param y The y-coordinate in screen coordinates
+ * @return true if menu was shown successfully, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_show_as_context_menu(native_menu_t menu, double x, double y);
+
+/**
+ * Show the menu as a context menu at default location
+ * @param menu The menu
+ * @return true if menu was shown successfully, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_show_as_context_menu_default(native_menu_t menu);
+
+/**
+ * Close the menu if it's currently showing
+ * @param menu The menu
+ * @return true if menu was closed, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_close(native_menu_t menu);
+
+/**
+ * Check if the menu is currently visible
+ * @param menu The menu
+ * @return true if visible, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_is_visible(native_menu_t menu);
+
+/**
+ * Set the enabled state of the menu
+ * @param menu The menu
+ * @param enabled true to enable, false to disable
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_set_enabled(native_menu_t menu, bool enabled);
+
+/**
+ * Check if the menu is enabled
+ * @param menu The menu
+ * @return true if enabled, false otherwise
+ */
+FFI_PLUGIN_EXPORT
+bool native_menu_is_enabled(native_menu_t menu);
+
+/**
+ * Set callback for when menu will show
+ * @param menu The menu
+ * @param callback The callback function
+ * @param user_data User data to pass to callback
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_set_on_will_show(native_menu_t menu, native_menu_will_show_callback_t callback, void* user_data);
+
+/**
+ * Set callback for when menu did hide
+ * @param menu The menu
+ * @param callback The callback function
+ * @param user_data User data to pass to callback
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_set_on_did_hide(native_menu_t menu, native_menu_did_hide_callback_t callback, void* user_data);
+
+/**
+ * Create and add a menu item in one operation
+ * @param menu The menu
+ * @param text The item text
+ * @param type The item type
+ * @return The created menu item handle
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_create_and_add_item(native_menu_t menu, const char* text, native_menu_item_type_t type);
+
+/**
+ * Create and add a submenu item in one operation
+ * @param menu The menu
+ * @param text The item text
+ * @param submenu The submenu to attach
+ * @return The created menu item handle
+ */
+FFI_PLUGIN_EXPORT
+native_menu_item_t native_menu_create_and_add_submenu(native_menu_t menu, const char* text, native_menu_t submenu);
+
+/**
+ * Utility functions
+ */
+
+/**
+ * Free a menu item list
+ * @param list The list to free
+ */
+FFI_PLUGIN_EXPORT
+void native_menu_item_list_free(native_menu_item_list_t list);
+
+/**
+ * Convert keyboard accelerator to string representation
+ * @param accelerator The accelerator
+ * @param buffer Buffer to store the string (caller allocated)
+ * @param buffer_size Size of the buffer
+ * @return Length of the string, or -1 if buffer too small
+ */
+FFI_PLUGIN_EXPORT
+int native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator, char* buffer, size_t buffer_size);
+
+#ifdef __cplusplus
+}
+#endif
