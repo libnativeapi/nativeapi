@@ -159,8 +159,7 @@ int main() {
         std::cout << "Display removed: " << event.GetDisplay().id << std::endl;
       });
 
-  AppRunner runner;
-  runner.Run(window_ptr);
+  RunApp(window_ptr);
 
   return 0;
 }
