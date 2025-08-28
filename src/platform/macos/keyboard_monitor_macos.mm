@@ -19,7 +19,7 @@ class KeyboardMonitor::Impl {
   KeyboardMonitor* monitor_;
 };
 
-KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_dispatcher_() {}
+KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)) {}
 
 KeyboardMonitor::~KeyboardMonitor() {
   Stop();
@@ -30,8 +30,8 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
                                         CGEventType type,
                                         CGEventRef event,
                                         void* refcon) {
-  auto* monitor = static_cast<KeyboardMonitor*>(refcon);
-  if (!monitor)
+  auto* event_dispatcher = static_cast<EventDispatcher*>(refcon);
+  if (!event_dispatcher)
     return event;
 
   // Get the key code
@@ -39,10 +39,10 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
 
   if (type == kCGEventKeyDown) {
     KeyPressedEvent key_event(keyCode);
-    monitor->DispatchEvent(key_event);
+    event_dispatcher->DispatchSync(key_event);
   } else if (type == kCGEventKeyUp) {
     KeyReleasedEvent key_event(keyCode);
-    monitor->DispatchEvent(key_event);
+    event_dispatcher->DispatchSync(key_event);
   } else if (type == kCGEventFlagsChanged) {
     CGEventFlags flags = CGEventGetFlags(event);
     uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
@@ -68,7 +68,7 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
       modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
     }
     ModifierKeysChangedEvent modifier_event(modifier_keys);
-    monitor->DispatchEvent(modifier_event);
+    event_dispatcher->DispatchSync(modifier_event);
   }
   return event;
 }
@@ -89,7 +89,7 @@ void KeyboardMonitor::Start() {
                        kCGEventTapOptionDefault,  // Default options
                        eventMask,                 // Monitor key down, up, and flags changed events
                        keyboardEventCallback,
-                       this);  // Pass this pointer as user data
+                       &GetEventDispatcher());  // Pass this pointer as user data
 
   if (impl_->eventTap == nullptr) {
     std::cerr << "Failed to create event tap" << std::endl;
@@ -128,10 +128,6 @@ void KeyboardMonitor::Stop() {
 
 bool KeyboardMonitor::IsMonitoring() const {
   return impl_->eventTap != nullptr;
-}
-
-void KeyboardMonitor::DispatchEvent(const Event& event) {
-  event_dispatcher_.DispatchSync(event);
 }
 
 }  // namespace nativeapi

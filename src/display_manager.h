@@ -7,7 +7,7 @@
 
 #include "display.h"
 #include "event.h"
-#include "event_dispatcher.h"
+#include "event_emitter.h"
 #include "geometry.h"
 
 namespace nativeapi {
@@ -41,7 +41,7 @@ class DisplayRemovedEvent : public TypedEvent<DisplayRemovedEvent> {
 /**
  * DisplayManager is a singleton that manages all displays on the system.
  */
-class DisplayManager {
+class DisplayManager : public EventEmitter {
  public:
   DisplayManager();
   virtual ~DisplayManager();
@@ -55,26 +55,7 @@ class DisplayManager {
   // Get the current cursor position
   Point GetCursorPosition();
 
-  // Event dispatcher methods for the new system
-  template <typename EventType>
-  size_t AddListener(TypedEventListener<EventType>* listener) {
-    return event_dispatcher_.AddListener<EventType>(listener);
-  }
-
-  template <typename EventType>
-  size_t AddListener(std::function<void(const EventType&)> callback) {
-    return event_dispatcher_.AddListener<EventType>(std::move(callback));
-  }
-
-  bool RemoveListener(size_t listener_id) {
-    return event_dispatcher_.RemoveListener(listener_id);
-  }
-
-  // Get the event dispatcher (for advanced usage)
-  EventDispatcher& GetEventDispatcher() { return event_dispatcher_; }
-
  private:
-  EventDispatcher event_dispatcher_;
   std::vector<Display> displays_;
 };
 

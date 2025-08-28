@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "event.h"
-#include "event_dispatcher.h"
+#include "event_emitter.h"
 #include "geometry.h"
 #include "window.h"
 
@@ -136,7 +136,7 @@ class WindowResizedEvent : public TypedEvent<WindowResizedEvent> {
 };
 
 // WindowManager is a singleton that manages all windows on the system.
-class WindowManager {
+class WindowManager: public EventEmitter {
  public:
   WindowManager();
   virtual ~WindowManager();
@@ -156,36 +156,12 @@ class WindowManager {
   // Destroy a window by its ID. Returns true if window was destroyed.
   bool Destroy(WindowID id);
 
-  // Event dispatcher methods for window events
-  template <typename EventType>
-  size_t AddListener(TypedEventListener<EventType>* listener) {
-    return event_dispatcher_.AddListener<EventType>(listener);
-  }
-
-  template <typename EventType>
-  size_t AddListener(std::function<void(const EventType&)> callback) {
-    return event_dispatcher_.AddListener<EventType>(std::move(callback));
-  }
-
-  bool RemoveListener(size_t listener_id) {
-    return event_dispatcher_.RemoveListener(listener_id);
-  }
-
-  // Get the event dispatcher (for advanced usage)
-  EventDispatcher& GetEventDispatcher() { return event_dispatcher_; }
-
- private:
-  // Forward declaration for platform-specific implementation
-  class WindowManagerImpl;
+private:
+  class Impl;  // Forward declaration only
+  std::unique_ptr<Impl> pimpl_;
   
   // Store window instances
   std::unordered_map<WindowID, std::shared_ptr<Window>> windows_;
-  
-  // Event dispatcher for window events
-  EventDispatcher event_dispatcher_;
-  
-  // Platform-specific implementation
-  std::unique_ptr<WindowManagerImpl> impl_;
   
   // Platform-specific method to set up event monitoring
   void SetupEventMonitoring();

@@ -12,11 +12,10 @@
 namespace nativeapi {
 
 // Private implementation to hide Objective-C details
-class WindowManager::WindowManagerImpl {
+class WindowManager::Impl {
 public:
-  WindowManagerImpl(WindowManager* manager);
-  ~WindowManagerImpl();
-  
+  Impl(WindowManager* manager);
+  ~Impl();
   void SetupEventMonitoring();
   void CleanupEventMonitoring();
   void OnWindowEvent(NSWindow* window, const std::string& event_type);
@@ -30,13 +29,13 @@ private:
 
 // Objective-C delegate class to handle NSWindow notifications
 @interface NativeAPIWindowManagerDelegate : NSObject
-@property (nonatomic, assign) nativeapi::WindowManager::WindowManagerImpl* impl;
-- (instancetype)initWithImpl:(nativeapi::WindowManager::WindowManagerImpl*)impl;
+@property (nonatomic, assign) void* impl;  // Use void* instead of private class
+- (instancetype)initWithImpl:(void*)impl;
 @end
 
 @implementation NativeAPIWindowManagerDelegate
 
-- (instancetype)initWithImpl:(nativeapi::WindowManager::WindowManagerImpl*)impl {
+- (instancetype)initWithImpl:(void*)impl {
   if (self = [super init]) {
     _impl = impl;
   }
@@ -46,49 +45,49 @@ private:
 - (void)windowDidBecomeKey:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "focused");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "focused");
   }
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "blurred");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "blurred");
   }
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "minimized");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "minimized");
   }
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "restored");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "restored");
   }
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "resized");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "resized");
   }
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "moved");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "moved");
   }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl) {
-    _impl->OnWindowEvent(window, "closing");
+//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "closing");
   }
 }
 
@@ -96,15 +95,15 @@ private:
 
 namespace nativeapi {
 
-WindowManager::WindowManagerImpl::WindowManagerImpl(WindowManager* manager)
+WindowManager::Impl::Impl(WindowManager* manager)
     : manager_(manager), delegate_(nullptr) {
 }
 
-WindowManager::WindowManagerImpl::~WindowManagerImpl() {
+WindowManager::Impl::~Impl() {
   CleanupEventMonitoring();
 }
 
-void WindowManager::WindowManagerImpl::SetupEventMonitoring() {
+void WindowManager::Impl::SetupEventMonitoring() {
   if (!delegate_) {
     delegate_ = [[NativeAPIWindowManagerDelegate alloc] initWithImpl:this];
     
@@ -140,7 +139,7 @@ void WindowManager::WindowManagerImpl::SetupEventMonitoring() {
   }
 }
 
-void WindowManager::WindowManagerImpl::CleanupEventMonitoring() {
+void WindowManager::Impl::CleanupEventMonitoring() {
   if (delegate_) {
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center removeObserver:delegate_];
@@ -148,7 +147,7 @@ void WindowManager::WindowManagerImpl::CleanupEventMonitoring() {
   }
 }
 
-void WindowManager::WindowManagerImpl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
+void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
   WindowID window_id = [window windowNumber];
   
   if (event_type == "focused") {
@@ -179,7 +178,7 @@ void WindowManager::WindowManagerImpl::OnWindowEvent(NSWindow* window, const std
   }
 }
 
-WindowManager::WindowManager() : impl_(std::make_unique<WindowManagerImpl>(this)) {
+WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
   SetupEventMonitoring();
 }
 
@@ -188,15 +187,15 @@ WindowManager::~WindowManager() {
 }
 
 void WindowManager::SetupEventMonitoring() {
-  impl_->SetupEventMonitoring();
+  pimpl_->SetupEventMonitoring();
 }
 
 void WindowManager::CleanupEventMonitoring() {
-  impl_->CleanupEventMonitoring();
+  pimpl_->CleanupEventMonitoring();
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {
-  event_dispatcher_.DispatchSync(event);
+  EmitSync(event);  // Use Dispatch instead of DispatchSync
 }
 
 // Create a new window with the given options.
