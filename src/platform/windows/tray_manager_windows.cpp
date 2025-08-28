@@ -1,50 +1,76 @@
-#include <windows.h>
 #include <shellapi.h>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <windows.h>
 #include <memory>
+#include <mutex>
+
+#include "../../tray_icon.h"
 #include "../../tray_manager.h"
-#include "../../tray.h"
 
 namespace nativeapi {
 
 TrayManager::TrayManager() : next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {
-    // Clean up all trays
-    for (auto& pair : trays_) {
-        auto tray = pair.second;
-        if (tray) {
-            // The tray destructor will handle cleanup
-        }
+  std::lock_guard<std::mutex> lock(mutex_);
+  // Clean up all managed tray icons
+  for (auto& pair : trays_) {
+    auto tray = pair.second;
+    if (tray) {
+      // The TrayIcon destructor will handle cleanup of the Windows tray icon
     }
-    trays_.clear();
+  }
+  trays_.clear();
 }
 
-std::shared_ptr<Tray> TrayManager::Create() {
-    auto tray = std::make_shared<Tray>();
-    tray->id = next_tray_id_++;
-    trays_[tray->id] = tray;
-    return tray;
+bool TrayManager::IsSupported() {
+  // System tray is generally supported on Windows
+  // We could add additional checks here if needed
+  return true;
 }
 
-std::shared_ptr<Tray> TrayManager::Get(TrayID id) {
-    auto it = trays_.find(id);
-    if (it != trays_.end()) {
-        return it->second;
-    }
-    return nullptr;
+std::shared_ptr<TrayIcon> TrayManager::Create() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Create a new tray icon instance
+  auto tray = std::make_shared<TrayIcon>();
+  tray->id = next_tray_id_++;
+  trays_[tray->id] = tray;
+
+  return tray;
 }
 
-std::vector<std::shared_ptr<Tray>> TrayManager::GetAll() {
-    std::vector<std::shared_ptr<Tray>> result;
-    for (const auto& pair : trays_) {
-        if (auto tray = pair.second) {
-            result.push_back(tray);
-        }
-    }
-    return result;
+std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconID id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto it = trays_.find(id);
+  if (it != trays_.end()) {
+    return it->second;
+  }
+  return nullptr;
+}
+
+std::vector<std::shared_ptr<TrayIcon>> TrayManager::GetAll() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  std::vector<std::shared_ptr<TrayIcon>> result;
+  for (const auto& pair : trays_) {
+    result.push_back(pair.second);
+  }
+  return result;
+}
+
+bool TrayManager::Destroy(TrayIconID id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto it = trays_.find(id);
+  if (it != trays_.end()) {
+    // Remove the tray icon from our container
+    // The shared_ptr will automatically clean up when the last reference is
+    // released
+    trays_.erase(it);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace nativeapi

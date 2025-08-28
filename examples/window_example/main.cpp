@@ -13,9 +13,9 @@ using nativeapi::WindowManager;
 using nativeapi::WindowOptions;
 
 int main() {
-  DisplayManager display_manager = DisplayManager();
-  TrayManager tray_manager = TrayManager();
-  WindowManager window_manager = WindowManager();
+  DisplayManager& display_manager = DisplayManager::GetInstance();
+  TrayManager& tray_manager = TrayManager::GetInstance();
+  WindowManager& window_manager = WindowManager::GetInstance();
 
   // Create a new window with options
   WindowOptions options = {.title = "Window Example",

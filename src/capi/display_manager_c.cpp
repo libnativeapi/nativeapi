@@ -64,7 +64,8 @@ native_display_t to_native_display(const Display& raw_display) {
   return display;
 }
 
-DisplayManager g_display_manager = DisplayManager();
+DisplayManager& g_display_manager = DisplayManager::GetInstance();
+
 
 FFI_PLUGIN_EXPORT
 native_display_list_t native_display_manager_get_all() {
