@@ -4,7 +4,6 @@
 #include <sstream>
 #include <thread>
 #include "nativeapi.h"
-#include "nativeapi_c.h"
 
 using nativeapi::Display;
 using nativeapi::DisplayManager;
@@ -247,7 +246,7 @@ int main() {
       std::cout << "  Primary: " << (display.is_primary ? "Yes" : "No") << std::endl;
       std::cout << std::endl;
     }
-    
+
     // Clean up memory
     native_display_list_free(&display_list);
   } else {
