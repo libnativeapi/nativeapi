@@ -8,9 +8,9 @@
 namespace nativeapi {
 
 /**
- * AppRunner is a singleton class that manages the application lifecycle and runs the main
- * event loop. It provides a way to run an application with a given window and
- * handle application events.
+ * AppRunner is a singleton class that manages the application lifecycle and
+ * runs the main event loop. It provides a way to run an application with a
+ * given window and handle application events.
  */
 class AppRunner {
  public:
@@ -33,7 +33,6 @@ class AppRunner {
    * @return Exit code of the application (0 for success)
    */
   int Run(std::shared_ptr<Window> window);
-
 
  private:
   AppRunner();

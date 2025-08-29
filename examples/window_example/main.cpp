@@ -78,7 +78,7 @@ int main() {
 
     // Create context menu
     auto context_menu = Menu::Create();
-    
+
     // Add menu items
     auto show_window_item = MenuItem::Create("Show Window", MenuItemType::Normal);
     show_window_item->SetOnClick([window_ptr](const MenuItemSelectedEvent& event) {

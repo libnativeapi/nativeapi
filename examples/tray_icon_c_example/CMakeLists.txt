@@ -1,22 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tray_menu_c_example VERSION 0.0.1 LANGUAGES CXX)
+project(tray_icon_c_example VERSION 0.0.1 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add example program
-add_executable(tray_menu_c_example
+add_executable(tray_icon_c_example
         "main.c"
 )
 
 # Link main library
-target_link_libraries(tray_menu_c_example PRIVATE nativeapi)
+target_link_libraries(tray_icon_c_example PRIVATE nativeapi)
 
 # Set example program properties
-set_target_properties(tray_menu_c_example PROPERTIES
-        OUTPUT_NAME "tray_menu_c_example"
+set_target_properties(tray_icon_c_example PROPERTIES
+        OUTPUT_NAME "tray_icon_c_example"
 )
 
 # Set example program compile options (macOS only)
