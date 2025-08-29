@@ -3,8 +3,13 @@
 #include <cstring>
 #include <map>
 #include <memory>
+#include <unordered_map>
 
 using namespace nativeapi;
+
+// Global object storage to manage shared_ptr lifetimes
+static std::unordered_map<void*, std::shared_ptr<MenuItem>> g_menu_items;
+static std::unordered_map<void*, std::shared_ptr<Menu>> g_menus;
 
 // Internal structures to manage C callbacks
 struct MenuItemCallbackData {
@@ -106,7 +111,9 @@ native_menu_item_t native_menu_item_create(const char* text, native_menu_item_ty
   
   try {
     auto item = MenuItem::Create(text, convert_menu_item_type(type));
-    return static_cast<native_menu_item_t>(item.get());
+    void* handle = item.get();
+    g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
+    return static_cast<native_menu_item_t>(handle);
   } catch (...) {
     return nullptr;
   }
@@ -115,7 +122,9 @@ native_menu_item_t native_menu_item_create(const char* text, native_menu_item_ty
 native_menu_item_t native_menu_item_create_separator(void) {
   try {
     auto item = MenuItem::CreateSeparator();
-    return static_cast<native_menu_item_t>(item.get());
+    void* handle = item.get();
+    g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
+    return static_cast<native_menu_item_t>(handle);
   } catch (...) {
     return nullptr;
   }
@@ -130,8 +139,11 @@ void native_menu_item_destroy(native_menu_item_t item) {
     g_menu_item_callbacks.erase(it);
   }
   
-  // Note: The actual MenuItem object is managed by shared_ptr
-  // This just removes our reference to it
+  // Remove from global storage - this will release the shared_ptr
+  auto item_it = g_menu_items.find(item);
+  if (item_it != g_menu_items.end()) {
+    g_menu_items.erase(item_it);
+  }
 }
 
 native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item) {
@@ -495,7 +507,9 @@ bool native_menu_item_trigger(native_menu_item_t item) {
 native_menu_t native_menu_create(void) {
   try {
     auto menu = Menu::Create();
-    return static_cast<native_menu_t>(menu.get());
+    void* handle = menu.get();
+    g_menus[handle] = menu;  // Store shared_ptr to keep object alive
+    return static_cast<native_menu_t>(handle);
   } catch (...) {
     return nullptr;
   }
@@ -510,8 +524,11 @@ void native_menu_destroy(native_menu_t menu) {
     g_menu_callbacks.erase(it);
   }
   
-  // Note: The actual Menu object is managed by shared_ptr
-  // This just removes our reference to it
+  // Remove from global storage - this will release the shared_ptr
+  auto menu_it = g_menus.find(menu);
+  if (menu_it != g_menus.end()) {
+    g_menus.erase(menu_it);
+  }
 }
 
 native_menu_id_t native_menu_get_id(native_menu_t menu) {
@@ -530,8 +547,11 @@ void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
   
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    auto item_ptr = std::shared_ptr<MenuItem>(static_cast<MenuItem*>(item));
-    menu_ptr->AddItem(item_ptr);
+    // Get the shared_ptr from global storage instead of creating a new one
+    auto item_it = g_menu_items.find(item);
+    if (item_it != g_menu_items.end()) {
+      menu_ptr->AddItem(item_it->second);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -542,8 +562,11 @@ void native_menu_insert_item(native_menu_t menu, native_menu_item_t item, size_t
   
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    auto item_ptr = std::shared_ptr<MenuItem>(static_cast<MenuItem*>(item));
-    menu_ptr->InsertItem(index, item_ptr);
+    // Get the shared_ptr from global storage instead of creating a new one
+    auto item_it = g_menu_items.find(item);
+    if (item_it != g_menu_items.end()) {
+      menu_ptr->InsertItem(index, item_it->second);
+    }
   } catch (...) {
     // Ignore exceptions
   }

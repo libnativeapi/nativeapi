@@ -72,6 +72,12 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) 
 }
 
 TrayIcon::~TrayIcon() {
+  // Clear callbacks to prevent dangling function objects
+  if (pimpl_) {
+    pimpl_->on_left_click_ = nullptr;
+    pimpl_->on_right_click_ = nullptr;
+    pimpl_->on_double_click_ = nullptr;
+  }
   delete pimpl_;
 }
 
@@ -255,19 +261,31 @@ bool TrayIcon::ShowContextMenu() {
 // Internal method to handle click events
 void TrayIcon::HandleLeftClick() {
   if (pimpl_->on_left_click_) {
-    pimpl_->on_left_click_();
+    try {
+      pimpl_->on_left_click_();
+    } catch (...) {
+      // Protect against callback exceptions
+    }
   }
 }
 
 void TrayIcon::HandleRightClick() {
   if (pimpl_->on_right_click_) {
-    pimpl_->on_right_click_();
+    try {
+      pimpl_->on_right_click_();
+    } catch (...) {
+      // Protect against callback exceptions
+    }
   }
 }
 
 void TrayIcon::HandleDoubleClick() {
   if (pimpl_->on_double_click_) {
-    pimpl_->on_double_click_();
+    try {
+      pimpl_->on_double_click_();
+    } catch (...) {
+      // Protect against callback exceptions
+    }
   }
 }
 

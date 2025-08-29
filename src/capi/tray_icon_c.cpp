@@ -17,7 +17,7 @@ struct TrayIconCallbackData {
 };
 
 // Global map to store callback data
-static std::map<native_tray_icon_t, std::unique_ptr<TrayIconCallbackData>> g_tray_icon_callbacks;
+static std::map<native_tray_icon_t, std::shared_ptr<TrayIconCallbackData>> g_tray_icon_callbacks;
 
 // TrayIcon C API Implementation
 
@@ -224,16 +224,16 @@ void native_tray_icon_set_on_left_click(native_tray_icon_t tray_icon, native_tra
     // Get or create callback data
     auto it = g_tray_icon_callbacks.find(tray_icon);
     if (it == g_tray_icon_callbacks.end()) {
-      g_tray_icon_callbacks[tray_icon] = std::make_unique<TrayIconCallbackData>();
+      g_tray_icon_callbacks[tray_icon] = std::make_shared<TrayIconCallbackData>();
     }
     
-    auto& callback_data = g_tray_icon_callbacks[tray_icon];
+    auto callback_data = g_tray_icon_callbacks[tray_icon];
     callback_data->left_click_callback = callback;
     callback_data->left_click_user_data = user_data;
     
     if (callback) {
-      tray_icon_ptr->SetOnLeftClick([tray_icon, callback_data = callback_data.get()]() {
-        if (callback_data->left_click_callback) {
+      tray_icon_ptr->SetOnLeftClick([callback_data]() {
+        if (callback_data && callback_data->left_click_callback) {
           callback_data->left_click_callback(callback_data->left_click_user_data);
         }
       });
@@ -254,16 +254,16 @@ void native_tray_icon_set_on_right_click(native_tray_icon_t tray_icon, native_tr
     // Get or create callback data
     auto it = g_tray_icon_callbacks.find(tray_icon);
     if (it == g_tray_icon_callbacks.end()) {
-      g_tray_icon_callbacks[tray_icon] = std::make_unique<TrayIconCallbackData>();
+      g_tray_icon_callbacks[tray_icon] = std::make_shared<TrayIconCallbackData>();
     }
     
-    auto& callback_data = g_tray_icon_callbacks[tray_icon];
+    auto callback_data = g_tray_icon_callbacks[tray_icon];
     callback_data->right_click_callback = callback;
     callback_data->right_click_user_data = user_data;
     
     if (callback) {
-      tray_icon_ptr->SetOnRightClick([tray_icon, callback_data = callback_data.get()]() {
-        if (callback_data->right_click_callback) {
+      tray_icon_ptr->SetOnRightClick([callback_data]() {
+        if (callback_data && callback_data->right_click_callback) {
           callback_data->right_click_callback(callback_data->right_click_user_data);
         }
       });
@@ -284,16 +284,16 @@ void native_tray_icon_set_on_double_click(native_tray_icon_t tray_icon, native_t
     // Get or create callback data
     auto it = g_tray_icon_callbacks.find(tray_icon);
     if (it == g_tray_icon_callbacks.end()) {
-      g_tray_icon_callbacks[tray_icon] = std::make_unique<TrayIconCallbackData>();
+      g_tray_icon_callbacks[tray_icon] = std::make_shared<TrayIconCallbackData>();
     }
     
-    auto& callback_data = g_tray_icon_callbacks[tray_icon];
+    auto callback_data = g_tray_icon_callbacks[tray_icon];
     callback_data->double_click_callback = callback;
     callback_data->double_click_user_data = user_data;
     
     if (callback) {
-      tray_icon_ptr->SetOnDoubleClick([tray_icon, callback_data = callback_data.get()]() {
-        if (callback_data->double_click_callback) {
+      tray_icon_ptr->SetOnDoubleClick([callback_data]() {
+        if (callback_data && callback_data->double_click_callback) {
           callback_data->double_click_callback(callback_data->double_click_user_data);
         }
       });
