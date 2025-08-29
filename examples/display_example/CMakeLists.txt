@@ -12,7 +12,7 @@ add_executable(display_example
 )
 
 # Link main library
-target_link_libraries(display_example PRIVATE libnativeapi)
+target_link_libraries(display_example PRIVATE nativeapi)
 
 # Set example program properties
 set_target_properties(display_example PROPERTIES
@@ -21,7 +21,7 @@ set_target_properties(display_example PROPERTIES
 
 # Set example program compile options (macOS only)
 if(APPLE)
-  set_source_files_properties("main.cpp"
+    set_source_files_properties("main.cpp"
     PROPERTIES
     COMPILE_FLAGS "-x objective-c++"
   )

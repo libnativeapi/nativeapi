@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(libnativeapi_library VERSION 0.0.1 LANGUAGES CXX C)
+project(nativeapi_library VERSION 0.0.1 LANGUAGES CXX C)
 
 # Add library subdirectory
 add_subdirectory(src)

@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(keyboard_example main.cpp)
 
 # Link with the native API library
-target_link_libraries(keyboard_example libnativeapi)
+target_link_libraries(keyboard_example nativeapi)
 
 # Set include directories to find the C API header
 target_include_directories(keyboard_example PRIVATE ../../src)

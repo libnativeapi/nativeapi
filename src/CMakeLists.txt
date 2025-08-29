@@ -3,7 +3,7 @@
 # the plugin to fail to compile for some customers of the plugin.
 cmake_minimum_required(VERSION 3.10)
 
-project(libnativeapi VERSION 0.0.1 LANGUAGES CXX)
+project(nativeapi VERSION 0.0.1 LANGUAGES CXX)
 
 # Enable Objective-C++
 if(APPLE)
@@ -38,31 +38,31 @@ else()
 endif()
 
 # Add library target
-add_library(libnativeapi STATIC
+add_library(nativeapi STATIC
   ${COMMON_SOURCES}
   ${PLATFORM_SOURCES}
   ${CAPI_SOURCES}
 )
 
 # Set library properties
-set_target_properties(libnativeapi PROPERTIES
+set_target_properties(nativeapi PROPERTIES
   PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../include/**/*.h"
 )
 
 # Set library include directories
-target_include_directories(libnativeapi PUBLIC
+target_include_directories(nativeapi PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<INSTALL_INTERFACE:include>
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_include_directories(libnativeapi PUBLIC ${GTK_INCLUDE_DIRS})
+    target_include_directories(nativeapi PUBLIC ${GTK_INCLUDE_DIRS})
 endif ()
 
 # Link required frameworks and libraries
 if(APPLE)
-    target_link_libraries(libnativeapi PUBLIC "-framework Cocoa")
-    target_compile_options(libnativeapi PRIVATE "-x" "objective-c++")
+    target_link_libraries(nativeapi PUBLIC "-framework Cocoa")
+    target_compile_options(nativeapi PRIVATE "-x" "objective-c++")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(libnativeapi PUBLIC PkgConfig::GTK PkgConfig::X11 PkgConfig::XI pthread)
+    target_link_libraries(nativeapi PUBLIC PkgConfig::GTK PkgConfig::X11 PkgConfig::XI pthread)
 endif ()

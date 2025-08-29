@@ -1,4 +1,4 @@
-# libnativeapi
+# nativeapi
 
 A cross-platform C++ library providing unified access to native system APIs.
 
@@ -42,9 +42,10 @@ sudo dnf install gtk3-devel
 
 ```bash
 # Clone the repository
-git clone https://github.com/leanflutter/libnativeapi.git
-cd libnativeapi
-
+git clone https://github.com/libnativeapi/nativeapi.git
+cd nativeapi
+```
+```bash
 # Create build directory
 mkdir build
 cd build
@@ -56,9 +57,9 @@ cmake --build . --config Release
 
 ## Language Bindings
 
-Currently available language bindings for libnativeapi:
+Currently available language bindings for nativeapi:
 
-- [nativeapi-flutter](https://github.com/leanflutter/nativeapi-flutter) - Flutter bindings
+- [nativeapi-flutter](https://github.com/libnativeapi/nativeapi-flutter) - Flutter bindings
 - [nativeapi-swift](https://github.com/leanflutter/nativeapi-swift) - Swift bindings
 
 These bindings provide native system API access while preserving the library's core functionality.

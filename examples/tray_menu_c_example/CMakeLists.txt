@@ -12,7 +12,7 @@ add_executable(tray_menu_c_example
 )
 
 # Link main library
-target_link_libraries(tray_menu_c_example PRIVATE libnativeapi)
+target_link_libraries(tray_menu_c_example PRIVATE nativeapi)
 
 # Set example program properties
 set_target_properties(tray_menu_c_example PROPERTIES
