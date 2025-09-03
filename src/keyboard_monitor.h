@@ -6,7 +6,7 @@
 
 #include "event_dispatcher.h"
 #include "event_emitter.h"
-#include "keyboard_events.h"
+#include "keyboard_event.h"
 
 namespace nativeapi {
 
