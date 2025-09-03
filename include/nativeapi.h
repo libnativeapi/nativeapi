@@ -8,11 +8,13 @@
 #include "../src/event.h"
 #include "../src/event_dispatcher.h"
 #include "../src/geometry.h"
+#include "../src/keyboard_event.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"
 #include "../src/tray_icon.h"
 #include "../src/tray_manager.h"
 #include "../src/window.h"
+#include "../src/window_event.h"
 #include "../src/window_manager.h"
 
 // Include necessary headers for C API
