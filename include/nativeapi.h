@@ -3,6 +3,7 @@
 #include "../src/accessibility_manager.h"
 #include "../src/app_runner.h"
 #include "../src/display.h"
+#include "../src/display_event.h"
 #include "../src/display_manager.h"
 #include "../src/event.h"
 #include "../src/event_dispatcher.h"

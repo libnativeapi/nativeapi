@@ -6,49 +6,14 @@
 #include <vector>
 
 #include "display.h"
+#include "display_event.h"
 #include "event.h"
 #include "event_emitter.h"
 #include "geometry.h"
 
 namespace nativeapi {
 
-/**
- * Event class for display addition
- *
- * This event is emitted when a new display is connected to the system.
- */
-class DisplayAddedEvent : public TypedEvent<DisplayAddedEvent> {
- public:
-  explicit DisplayAddedEvent(const Display& display) : display_(display) {}
 
-  /**
-   * Get the added display information
-   * @return Reference to the added display
-   */
-  const Display& GetDisplay() const { return display_; }
-
- private:
-  Display display_;
-};
-
-/**
- * Event class for display removal
- *
- * This event is emitted when a display is disconnected from the system.
- */
-class DisplayRemovedEvent : public TypedEvent<DisplayRemovedEvent> {
- public:
-  explicit DisplayRemovedEvent(const Display& display) : display_(display) {}
-
-  /**
-   * Get the removed display information
-   * @return Reference to the removed display
-   */
-  const Display& GetDisplay() const { return display_; }
-
- private:
-  Display display_;
-};
 
 /**
  * DisplayManager is a singleton that manages all displays on the system.
