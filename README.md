@@ -1,6 +1,6 @@
 # nativeapi
 
-A cross-platform C++ library providing unified access to native system APIs.
+A modern cross-platform C++ library providing seamless, unified access to native system APIs across multiple platforms.
 
 ## Requirements
 
