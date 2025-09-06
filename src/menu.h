@@ -47,6 +47,30 @@ enum class MenuItemType {
   Submenu
 };
 
+/**
+ * @brief State of a menu item (for checkboxes and radio buttons).
+ *
+ * Defines the possible states for checkable menu items.
+ * Mixed state is typically used for checkboxes to indicate
+ * a partially selected or indeterminate state.
+ */
+enum class MenuItemState {
+  /**
+   * Item is not checked/selected.
+   */
+  Unchecked,
+
+  /**
+   * Item is checked/selected.
+   */
+  Checked,
+
+  /**
+   * Item is in mixed/indeterminate state (checkboxes only).
+   * Typically shown as a dash (-) or special symbol.
+   */
+  Mixed
+};
 
 /**
  * @brief Keyboard accelerator for menu items.
@@ -355,21 +379,22 @@ class MenuItem : public EventEmitter {
   bool IsVisible() const;
 
   /**
-   * @brief Set the checked state of a checkbox or radio menu item.
+   * @brief Set the state of a checkbox or radio menu item.
    *
-   * This method only affects items of type Checkbox or Radio.
-   * For other item types, this method has no effect.
+   * This method provides more control than SetChecked, allowing
+   * you to set mixed/indeterminate state for checkboxes.
+   * For radio items, only Unchecked and Checked states are valid.
    *
-   * @param checked true to check the item, false to uncheck it
+   * @param state The desired state (Unchecked, Checked, or Mixed)
    */
-  void SetChecked(bool checked);
+  void SetState(MenuItemState state);
 
   /**
-   * @brief Check if a checkbox or radio menu item is currently checked.
+   * @brief Get the current state of a checkbox or radio menu item.
    *
-   * @return true if the item is checked, false otherwise
+   * @return The current state (Unchecked, Checked, or Mixed)
    */
-  bool IsChecked() const;
+  MenuItemState GetState() const;
 
   /**
    * @brief Set the radio group ID for radio menu items.

@@ -5,20 +5,28 @@
 #include "../../src/capi/app_runner_c.h"
 
 // Event callback functions
-void on_menu_item_selected(const void* event, void* user_data) {
-    const native_menu_item_selected_event_t* selected_event = (const native_menu_item_selected_event_t*)event;
+void on_menu_item_clicked(const void* event, void* user_data) {
+    const native_menu_item_clicked_event_t* clicked_event = (const native_menu_item_clicked_event_t*)event;
     const char* item_name = (const char*)user_data;
     
-    printf("[EVENT] Menu item selected: %s (ID: %ld, Text: %s)\n", 
-           item_name, selected_event->item_id, selected_event->item_text);
+    printf("[EVENT] Menu item clicked: %s (ID: %ld, Text: %s)\n", 
+           item_name, clicked_event->item_id, clicked_event->item_text);
 }
 
-void on_menu_item_state_changed(const void* event, void* user_data) {
-    const native_menu_item_state_changed_event_t* state_event = (const native_menu_item_state_changed_event_t*)event;
+void on_menu_item_submenu_opened(const void* event, void* user_data) {
+    const native_menu_item_submenu_opened_event_t* submenu_event = (const native_menu_item_submenu_opened_event_t*)event;
     const char* item_name = (const char*)user_data;
     
-    printf("[EVENT] Menu item state changed: %s (ID: %ld, Checked: %s)\n", 
-           item_name, state_event->item_id, state_event->checked ? "true" : "false");
+    printf("[EVENT] Menu item submenu opened: %s (ID: %ld)\n", 
+           item_name, submenu_event->item_id);
+}
+
+void on_menu_item_submenu_closed(const void* event, void* user_data) {
+    const native_menu_item_submenu_closed_event_t* submenu_event = (const native_menu_item_submenu_closed_event_t*)event;
+    const char* item_name = (const char*)user_data;
+    
+    printf("[EVENT] Menu item submenu closed: %s (ID: %ld)\n", 
+           item_name, submenu_event->item_id);
 }
 
 void on_menu_opened(const void* event, void* user_data) {
@@ -63,7 +71,7 @@ int main() {
     // Set up radio group
     native_menu_item_set_radio_group(radio_item1, 1);
     native_menu_item_set_radio_group(radio_item2, 1);
-    native_menu_item_set_checked(radio_item1, true);
+    native_menu_item_set_state(radio_item1, NATIVE_MENU_ITEM_STATE_CHECKED);
     
     // Set keyboard accelerators
     native_keyboard_accelerator_t ctrl_n = { NATIVE_ACCELERATOR_MODIFIER_CTRL, "N" };
@@ -74,23 +82,14 @@ int main() {
     printf("Setting up event listeners using new event system...\n");
     
     // Add event listeners using the new event system
-    int file_listener = native_menu_item_add_listener(file_item, NATIVE_MENU_ITEM_EVENT_SELECTED, 
-                                                      on_menu_item_selected, (void*)"New File");
+    int file_listener = native_menu_item_add_listener(file_item, NATIVE_MENU_ITEM_EVENT_CLICKED, 
+                                                      on_menu_item_clicked, (void*)"New File");
     
-    int checkbox_select_listener = native_menu_item_add_listener(checkbox_item, NATIVE_MENU_ITEM_EVENT_SELECTED, 
-                                                                 on_menu_item_selected, (void*)"Word Wrap");
+    int checkbox_select_listener = native_menu_item_add_listener(checkbox_item, NATIVE_MENU_ITEM_EVENT_CLICKED, 
+                                                                 on_menu_item_clicked, (void*)"Word Wrap");
     
-    int checkbox_state_listener = native_menu_item_add_listener(checkbox_item, NATIVE_MENU_ITEM_EVENT_STATE_CHANGED, 
-                                                                on_menu_item_state_changed, (void*)"Word Wrap");
-    
-    int radio1_state_listener = native_menu_item_add_listener(radio_item1, NATIVE_MENU_ITEM_EVENT_STATE_CHANGED, 
-                                                              on_menu_item_state_changed, (void*)"View Mode 1");
-    
-    int radio2_state_listener = native_menu_item_add_listener(radio_item2, NATIVE_MENU_ITEM_EVENT_STATE_CHANGED, 
-                                                              on_menu_item_state_changed, (void*)"View Mode 2");
-    
-    int exit_listener = native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_SELECTED, 
-                                                      on_menu_item_selected, (void*)"Exit");
+    int exit_listener = native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED, 
+                                                      on_menu_item_clicked, (void*)"Exit");
     
     // Add menu event listeners
     int menu_open_listener = native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, 
@@ -100,15 +99,13 @@ int main() {
                                                        on_menu_closed, (void*)"Main Menu");
     
     // Check if listeners were added successfully
-    if (file_listener == -1 || checkbox_select_listener == -1 || checkbox_state_listener == -1 ||
-        radio1_state_listener == -1 || radio2_state_listener == -1 || exit_listener == -1 ||
+    if (file_listener == -1 || checkbox_select_listener == -1 || exit_listener == -1 ||
         menu_open_listener == -1 || menu_close_listener == -1) {
         printf("Failed to add some event listeners\n");
     } else {
         printf("All event listeners added successfully\n");
-        printf("Listener IDs: file=%d, checkbox_select=%d, checkbox_state=%d, radio1=%d, radio2=%d, exit=%d, menu_open=%d, menu_close=%d\n",
-               file_listener, checkbox_select_listener, checkbox_state_listener, 
-               radio1_state_listener, radio2_state_listener, exit_listener,
+        printf("Listener IDs: file=%d, checkbox_select=%d, exit=%d, menu_open=%d, menu_close=%d\n",
+               file_listener, checkbox_select_listener, exit_listener,
                menu_open_listener, menu_close_listener);
     }
     
@@ -123,6 +120,26 @@ int main() {
     native_menu_add_item(menu, exit_item);
     
     printf("Menu created with %zu items\n", native_menu_get_item_count(menu));
+    
+    // Add submenu to demonstrate submenu events
+    native_menu_t submenu = native_menu_create();
+    native_menu_item_t submenu_item1 = native_menu_item_create("Submenu Item 1", NATIVE_MENU_ITEM_TYPE_NORMAL);
+    native_menu_item_t submenu_item2 = native_menu_item_create("Submenu Item 2", NATIVE_MENU_ITEM_TYPE_NORMAL);
+    
+    native_menu_add_item(submenu, submenu_item1);
+    native_menu_add_item(submenu, submenu_item2);
+    
+    native_menu_item_t submenu_parent = native_menu_item_create("Tools", NATIVE_MENU_ITEM_TYPE_SUBMENU);
+    native_menu_item_set_submenu(submenu_parent, submenu);
+    native_menu_add_item(menu, submenu_parent);
+    
+    // Add submenu event listeners
+    int submenu_open_listener = native_menu_item_add_listener(submenu_parent, NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED, 
+                                                              on_menu_item_submenu_opened, (void*)"Tools");
+    int submenu_close_listener = native_menu_item_add_listener(submenu_parent, NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED, 
+                                                               on_menu_item_submenu_closed, (void*)"Tools");
+    
+    printf("Added submenu with %zu items\n", native_menu_get_item_count(submenu));
     
     // Demonstrate programmatic triggering
     printf("\n=== Testing Programmatic Event Triggering ===\n");
@@ -145,14 +162,14 @@ int main() {
     // Demonstrate listener removal
     printf("\n=== Testing Listener Removal ===\n");
     
-    printf("Removing checkbox state listener...\n");
-    if (native_menu_item_remove_listener(checkbox_item, checkbox_state_listener)) {
-        printf("Checkbox state listener removed successfully\n");
+    printf("Removing checkbox click listener...\n");
+    if (native_menu_item_remove_listener(checkbox_item, checkbox_select_listener)) {
+        printf("Checkbox click listener removed successfully\n");
     } else {
-        printf("Failed to remove checkbox state listener\n");
+        printf("Failed to remove checkbox click listener\n");
     }
     
-    printf("Triggering checkbox item after removing state listener...\n");
+    printf("Triggering checkbox item after removing click listener...\n");
     native_menu_item_trigger(checkbox_item);
     
     // Show menu as context menu (this may not work in console applications)
@@ -171,10 +188,10 @@ int main() {
     native_menu_item_t additional_item = native_menu_item_create("Additional Test", NATIVE_MENU_ITEM_TYPE_NORMAL);
     
     // Test that we can add multiple listeners for the same event
-    int additional_listener1 = native_menu_item_add_listener(additional_item, NATIVE_MENU_ITEM_EVENT_SELECTED, 
-                                                             on_menu_item_selected, (void*)"Additional Test 1");
-    int additional_listener2 = native_menu_item_add_listener(additional_item, NATIVE_MENU_ITEM_EVENT_SELECTED, 
-                                                             on_menu_item_selected, (void*)"Additional Test 2");
+    int additional_listener1 = native_menu_item_add_listener(additional_item, NATIVE_MENU_ITEM_EVENT_CLICKED, 
+                                                             on_menu_item_clicked, (void*)"Additional Test 1");
+    int additional_listener2 = native_menu_item_add_listener(additional_item, NATIVE_MENU_ITEM_EVENT_CLICKED, 
+                                                             on_menu_item_clicked, (void*)"Additional Test 2");
     
     printf("Added multiple listeners for the same event\n");
     printf("Triggering item with multiple listeners...\n");
@@ -191,11 +208,14 @@ int main() {
     printf("This example demonstrates:\n");
     printf("1. Creating menus and menu items with different types\n");
     printf("2. Using the new event listener API with native_menu_item_add_listener()\n");
-    printf("3. Handling NATIVE_MENU_ITEM_EVENT_SELECTED and NATIVE_MENU_ITEM_EVENT_STATE_CHANGED\n");
+    printf("3. Handling NATIVE_MENU_ITEM_EVENT_CLICKED\n");
     printf("4. Handling NATIVE_MENU_EVENT_OPENED and NATIVE_MENU_EVENT_CLOSED\n");
-    printf("5. Programmatic event triggering\n");
-    printf("6. Event listener removal with native_menu_item_remove_listener()\n");
-    printf("7. Multiple listeners for the same event type\n");
+    printf("5. Handling NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED and NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED\n");
+    printf("6. Programmatic event triggering\n");
+    printf("7. Event listener removal with native_menu_item_remove_listener()\n");
+    printf("8. Multiple listeners for the same event type\n");
+    printf("9. Manual state management for checkbox and radio items\n");
+    printf("10. Submenu support with event handling\n");
     
     // Cleanup
     native_menu_item_destroy(file_item);
@@ -203,6 +223,10 @@ int main() {
     native_menu_item_destroy(radio_item1);
     native_menu_item_destroy(radio_item2);
     native_menu_item_destroy(exit_item);
+    native_menu_item_destroy(submenu_item1);
+    native_menu_item_destroy(submenu_item2);
+    native_menu_item_destroy(submenu_parent);
+    native_menu_destroy(submenu);
     native_menu_destroy(menu);
     
     return 0;

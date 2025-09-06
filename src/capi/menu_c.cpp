@@ -107,6 +107,32 @@ static native_keyboard_accelerator_t convert_keyboard_accelerator(const Keyboard
   return result;
 }
 
+static MenuItemState convert_menu_item_state(native_menu_item_state_t state) {
+  switch (state) {
+    case NATIVE_MENU_ITEM_STATE_UNCHECKED:
+      return MenuItemState::Unchecked;
+    case NATIVE_MENU_ITEM_STATE_CHECKED:
+      return MenuItemState::Checked;
+    case NATIVE_MENU_ITEM_STATE_MIXED:
+      return MenuItemState::Mixed;
+    default:
+      return MenuItemState::Unchecked;
+  }
+}
+
+static native_menu_item_state_t convert_menu_item_state(MenuItemState state) {
+  switch (state) {
+    case MenuItemState::Unchecked:
+      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
+    case MenuItemState::Checked:
+      return NATIVE_MENU_ITEM_STATE_CHECKED;
+    case MenuItemState::Mixed:
+      return NATIVE_MENU_ITEM_STATE_MIXED;
+    default:
+      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
+  }
+}
+
 // MenuItem C API Implementation
 
 native_menu_item_t native_menu_item_create(const char* text, native_menu_item_type_t type) {
@@ -340,25 +366,25 @@ bool native_menu_item_is_visible(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_checked(native_menu_item_t item, bool checked) {
+void native_menu_item_set_state(native_menu_item_t item, native_menu_item_state_t state) {
   if (!item) return;
   
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetChecked(checked);
+    menu_item->SetState(convert_menu_item_state(state));
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-bool native_menu_item_is_checked(native_menu_item_t item) {
-  if (!item) return false;
+native_menu_item_state_t native_menu_item_get_state(native_menu_item_t item) {
+  if (!item) return NATIVE_MENU_ITEM_STATE_UNCHECKED;
   
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->IsChecked();
+    return convert_menu_item_state(menu_item->GetState());
   } catch (...) {
-    return false;
+    return NATIVE_MENU_ITEM_STATE_UNCHECKED;
   }
 }
 
@@ -439,14 +465,14 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
     g_menu_item_listeners[item][listener_id] = std::move(listener_data);
     
     // Add the appropriate event listener based on event type
-    if (event_type == NATIVE_MENU_ITEM_EVENT_SELECTED) {
+    if (event_type == NATIVE_MENU_ITEM_EVENT_CLICKED) {
       menu_item->AddListener<MenuItemClickedEvent>([item, listener_id](const MenuItemClickedEvent& event) {
         // Find the listener data
         auto item_it = g_menu_item_listeners.find(item);
         if (item_it != g_menu_item_listeners.end()) {
           auto listener_it = item_it->second.find(listener_id);
           if (listener_it != item_it->second.end()) {
-            native_menu_item_selected_event_t c_event = {};
+            native_menu_item_clicked_event_t c_event = {};
             c_event.item_id = event.GetItemId();
             strncpy(c_event.item_text, event.GetItemText().c_str(), sizeof(c_event.item_text) - 1);
             c_event.item_text[sizeof(c_event.item_text) - 1] = '\0';
@@ -455,16 +481,29 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
           }
         }
       });
-    } else if (event_type == NATIVE_MENU_ITEM_EVENT_STATE_CHANGED) {
-      menu_item->AddListener<MenuItemClickedEvent>([item, listener_id](const MenuItemClickedEvent& event) {
+    } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED) {
+      menu_item->AddListener<MenuItemSubmenuOpenedEvent>([item, listener_id](const MenuItemSubmenuOpenedEvent& event) {
         // Find the listener data
         auto item_it = g_menu_item_listeners.find(item);
         if (item_it != g_menu_item_listeners.end()) {
           auto listener_it = item_it->second.find(listener_id);
           if (listener_it != item_it->second.end()) {
-            native_menu_item_state_changed_event_t c_event = {};
+            native_menu_item_submenu_opened_event_t c_event = {};
             c_event.item_id = event.GetItemId();
-            c_event.checked = false; // Application should manage checkbox/radio state
+            
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
+        }
+      });
+    } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED) {
+      menu_item->AddListener<MenuItemSubmenuClosedEvent>([item, listener_id](const MenuItemSubmenuClosedEvent& event) {
+        // Find the listener data
+        auto item_it = g_menu_item_listeners.find(item);
+        if (item_it != g_menu_item_listeners.end()) {
+          auto listener_it = item_it->second.find(listener_id);
+          if (listener_it != item_it->second.end()) {
+            native_menu_item_submenu_closed_event_t c_event = {};
+            c_event.item_id = event.GetItemId();
             
             listener_it->second->callback(&c_event, listener_it->second->user_data);
           }

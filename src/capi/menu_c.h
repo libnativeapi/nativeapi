@@ -40,6 +40,15 @@ typedef enum {
 } native_menu_item_type_t;
 
 /**
+ * Menu item states
+ */
+typedef enum {
+  NATIVE_MENU_ITEM_STATE_UNCHECKED = 0,
+  NATIVE_MENU_ITEM_STATE_CHECKED = 1,
+  NATIVE_MENU_ITEM_STATE_MIXED = 2
+} native_menu_item_state_t;
+
+/**
  * Keyboard accelerator modifier flags
  */
 typedef enum {
@@ -59,20 +68,27 @@ typedef struct {
 } native_keyboard_accelerator_t;
 
 /**
- * Menu item selection event
+ * Menu item clicked event
  */
 typedef struct {
   native_menu_item_id_t item_id;
   char item_text[256];
-} native_menu_item_selected_event_t;
+} native_menu_item_clicked_event_t;
 
 /**
- * Menu item state changed event
+ * Menu item submenu opened event
  */
 typedef struct {
   native_menu_item_id_t item_id;
-  bool checked;
-} native_menu_item_state_changed_event_t;
+} native_menu_item_submenu_opened_event_t;
+
+/**
+ * Menu item submenu closed event
+ */
+typedef struct {
+  native_menu_item_id_t item_id;
+} native_menu_item_submenu_closed_event_t;
+
 
 /**
  * Menu item list structure
@@ -107,8 +123,9 @@ typedef void (*native_menu_event_callback_t)(const void* event, void* user_data)
  * Event types for menu item events
  */
 typedef enum {
-  NATIVE_MENU_ITEM_EVENT_SELECTED = 0,
-  NATIVE_MENU_ITEM_EVENT_STATE_CHANGED = 1
+  NATIVE_MENU_ITEM_EVENT_CLICKED = 0,
+  NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED = 1,
+  NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED = 2
 } native_menu_item_event_type_t;
 
 /**
@@ -273,20 +290,20 @@ FFI_PLUGIN_EXPORT
 bool native_menu_item_is_visible(native_menu_item_t item);
 
 /**
- * Set the checked state of a checkbox/radio menu item
+ * Set the state of a checkbox/radio menu item
  * @param item The menu item
- * @param checked true to check, false to uncheck
+ * @param state The state to set (unchecked, checked, or mixed)
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_checked(native_menu_item_t item, bool checked);
+void native_menu_item_set_state(native_menu_item_t item, native_menu_item_state_t state);
 
 /**
- * Check if a menu item is checked
+ * Get the state of a menu item
  * @param item The menu item
- * @return true if checked, false otherwise
+ * @return The current state of the menu item
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_item_is_checked(native_menu_item_t item);
+native_menu_item_state_t native_menu_item_get_state(native_menu_item_t item);
 
 /**
  * Set the radio group ID for a radio menu item

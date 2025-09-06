@@ -97,18 +97,12 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     }
 
     nativeapi::MenuItem* menuItemPtr = menuItemIt->second;
+    nativeapi::MenuItemType itemType = menuItemPtr->GetType();
 
-    // Handle state changes for checkable items
-    if ([menuItem state] == NSControlStateValueOn) {
-        [menuItem setState:NSControlStateValueOff];
-        menuItemPtr->EmitStateChangedEvent(false);
-    } else if ([menuItem state] == NSControlStateValueOff &&
-               ([menuItem.title rangeOfString:@"☑"].location == NSNotFound)) { // Not a checkbox/radio
-        [menuItem setState:NSControlStateValueOn];
-        menuItemPtr->EmitStateChangedEvent(true);
-    }
+    // Don't automatically handle state changes - let user code control the state
+    // This prevents double-toggling when user event handlers also call SetChecked
 
-    // Emit click event
+    // Emit click event for all types
     menuItemPtr->EmitSelectedEvent([[menuItem title] UTF8String]);
 }
 @end
@@ -160,7 +154,7 @@ class MenuItem::Impl {
     bool has_accelerator_;
     bool enabled_;
     bool visible_;
-    bool checked_;
+    MenuItemState state_;
     int radio_group_;
     std::shared_ptr<Menu> submenu_;
 
@@ -172,7 +166,7 @@ class MenuItem::Impl {
         , has_accelerator_(false)
         , enabled_(true)
         , visible_(true)
-        , checked_(false)
+        , state_(MenuItemState::Unchecked)
         , radio_group_(-1) {
 
         [ns_menu_item_ setTarget:target_];
@@ -344,21 +338,49 @@ bool MenuItem::IsVisible() const {
     return pimpl_->visible_;
 }
 
-void MenuItem::SetChecked(bool checked) {
-    if (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio) {
-        pimpl_->checked_ = checked;
-        [pimpl_->ns_menu_item_ setState:checked ? NSControlStateValueOn : NSControlStateValueOff];
 
-        // Handle radio button group logic
-        if (pimpl_->type_ == MenuItemType::Radio && checked && pimpl_->radio_group_ >= 0) {
-            // TODO: Implement radio group mutual exclusion
-            // This would require maintaining a registry of radio groups
+
+void MenuItem::SetState(MenuItemState state) {
+    if (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio) {
+        // Radio buttons don't support Mixed state
+        if (pimpl_->type_ == MenuItemType::Radio && state == MenuItemState::Mixed) {
+            return;
+        }
+
+        pimpl_->state_ = state;
+
+        // Set the appropriate NSControlStateValue
+        NSControlStateValue nsState;
+        switch (state) {
+            case MenuItemState::Unchecked:
+                nsState = NSControlStateValueOff;
+                break;
+            case MenuItemState::Checked:
+                nsState = NSControlStateValueOn;
+                break;
+            case MenuItemState::Mixed:
+                nsState = NSControlStateValueMixed;
+                break;
+        }
+        [pimpl_->ns_menu_item_ setState:nsState];
+
+        // Handle radio button group logic - uncheck others in the same group
+        if (pimpl_->type_ == MenuItemType::Radio && state == MenuItemState::Checked && pimpl_->radio_group_ >= 0) {
+            for (auto& pair : g_menu_item_registry) {
+                MenuItem* otherItem = pair.second;
+                if (otherItem != this &&
+                    otherItem->GetType() == MenuItemType::Radio &&
+                    otherItem->GetRadioGroup() == pimpl_->radio_group_) {
+                    otherItem->pimpl_->state_ = MenuItemState::Unchecked;
+                    [otherItem->pimpl_->ns_menu_item_ setState:NSControlStateValueOff];
+                }
+            }
         }
     }
 }
 
-bool MenuItem::IsChecked() const {
-    return pimpl_->checked_;
+MenuItemState MenuItem::GetState() const {
+    return pimpl_->state_;
 }
 
 void MenuItem::SetRadioGroup(int group_id) {
@@ -404,8 +426,8 @@ void MenuItem::EmitSelectedEvent(const std::string& item_text) {
 }
 
 void MenuItem::EmitStateChangedEvent(bool checked) {
-    // Now just emit clicked event, application manages state
-    EmitSync<MenuItemClickedEvent>(id, pimpl_->text_);
+    // This method is kept for compatibility but doesn't emit events
+    // State change events are handled through the regular click event
 }
 
 // Menu::Impl implementation

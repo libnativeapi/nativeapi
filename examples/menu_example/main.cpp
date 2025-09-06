@@ -25,7 +25,7 @@ int main() {
         // Set up radio group
         radioItem1->SetRadioGroup(1);
         radioItem2->SetRadioGroup(1);
-        radioItem1->SetChecked(true);
+        radioItem1->SetState(MenuItemState::Checked);
         
         // Set keyboard accelerators
         fileItem->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
@@ -131,6 +131,16 @@ int main() {
         
         auto submenuParent = MenuItem::Create("Tools", MenuItemType::Submenu);
         submenuParent->SetSubmenu(submenu);
+        
+        // Add submenu event listeners
+        submenuParent->AddListener<MenuItemSubmenuOpenedEvent>([](const MenuItemSubmenuOpenedEvent& event) {
+            std::cout << "[EVENT] Submenu opened: ID " << event.GetItemId() << std::endl;
+        });
+        
+        submenuParent->AddListener<MenuItemSubmenuClosedEvent>([](const MenuItemSubmenuClosedEvent& event) {
+            std::cout << "[EVENT] Submenu closed: ID " << event.GetItemId() << std::endl;
+        });
+        
         menu->AddItem(submenuParent);
         
         std::cout << "Added submenu with " << submenu->GetItemCount() << " items" << std::endl;
@@ -146,8 +156,9 @@ int main() {
         std::cout << "2. Using the new event system with AddListener<EventType>()" << std::endl;
         std::cout << "3. Handling MenuItemClickedEvent (state managed by application)" << std::endl;
         std::cout << "4. Handling MenuOpenedEvent and MenuClosedEvent" << std::endl;
-        std::cout << "5. Programmatic event triggering" << std::endl;
-        std::cout << "6. Submenu support with event propagation" << std::endl;
+        std::cout << "5. Handling MenuItemSubmenuOpenedEvent and MenuItemSubmenuClosedEvent" << std::endl;
+        std::cout << "6. Programmatic event triggering" << std::endl;
+        std::cout << "7. Submenu support with event propagation" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

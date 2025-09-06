@@ -15,24 +15,20 @@
 #include "../../src/capi/tray_manager_c.h"
 
 // Event callback functions
-void on_menu_item_selected(const void* event, void* user_data) {
-  const native_menu_item_selected_event_t* selected_event = (const native_menu_item_selected_event_t*)event;
-  printf("Menu item clicked: ID=%ld, Text='%s'\n", selected_event->item_id,
-         selected_event->item_text);
+void on_menu_item_clicked(const void* event, void* user_data) {
+  const native_menu_item_clicked_event_t* clicked_event = (const native_menu_item_clicked_event_t*)event;
+  printf("Menu item clicked: ID=%ld, Text='%s'\n", clicked_event->item_id,
+         clicked_event->item_text);
 
-  if (strcmp(selected_event->item_text, "Exit") == 0) {
+  if (strcmp(clicked_event->item_text, "Exit") == 0) {
     printf("Exiting application...\n");
     exit(0);
-  } else if (strcmp(selected_event->item_text, "Show Message") == 0) {
+  } else if (strcmp(clicked_event->item_text, "Show Message") == 0) {
     printf("Hello from tray menu!\n");
   }
 }
 
-void on_menu_item_state_changed(const void* event, void* user_data) {
-  const native_menu_item_state_changed_event_t* state_event = (const native_menu_item_state_changed_event_t*)event;
-  printf("Checkbox state changed: ID=%ld, Checked=%s\n", state_event->item_id,
-         state_event->checked ? "true" : "false");
-}
+
 
 void on_tray_left_click(void* user_data) {
   printf("Tray icon left clicked!\n");
@@ -103,13 +99,13 @@ int main() {
   native_menu_item_set_accelerator(exit_item, &exit_accel);
 
   // Set checkbox state
-  native_menu_item_set_checked(checkbox, true);
+  native_menu_item_set_state(checkbox, NATIVE_MENU_ITEM_STATE_CHECKED);
 
   // Set up event listeners using new API
-  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_SELECTED, on_menu_item_selected, NULL);
-  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_SELECTED, on_menu_item_selected, NULL);
-  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_SELECTED, on_menu_item_selected, NULL);
-  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_STATE_CHANGED, on_menu_item_state_changed, NULL);
+  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
 
   // Add items to menu
   native_menu_add_item(menu, item1);

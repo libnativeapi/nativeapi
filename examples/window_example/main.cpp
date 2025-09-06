@@ -9,6 +9,7 @@ using nativeapi::DisplayRemovedEvent;
 using nativeapi::Menu;
 using nativeapi::MenuItem;
 using nativeapi::MenuItemClickedEvent;
+using nativeapi::MenuItemState;
 using nativeapi::MenuItemType;
 using nativeapi::TrayIcon;
 using nativeapi::TrayManager;
@@ -109,6 +110,93 @@ int main() {
       std::cout << "Window Example v1.0 - Native API Demo" << std::endl;
     });
     context_menu->AddItem(about_item);
+
+    // Add preferences submenu with checkbox items
+    auto preferences_item = MenuItem::Create("Preferences", MenuItemType::Normal);
+    context_menu->AddItem(preferences_item);
+    
+    // Add checkbox menu items
+    auto auto_start_item = MenuItem::Create("Auto Start", MenuItemType::Checkbox);
+    auto_start_item->SetState(MenuItemState::Checked); // Initially checked
+    auto_start_item->AddListener<MenuItemClickedEvent>([auto_start_item](const MenuItemClickedEvent& event) {
+      auto current_state = auto_start_item->GetState();
+      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
+      auto_start_item->SetState(new_state);
+      std::cout << "Auto Start " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
+    });
+    context_menu->AddItem(auto_start_item);
+
+    auto notifications_item = MenuItem::Create("Show Notifications", MenuItemType::Checkbox);
+    notifications_item->SetState(MenuItemState::Unchecked); // Initially unchecked
+    notifications_item->AddListener<MenuItemClickedEvent>([notifications_item](const MenuItemClickedEvent& event) {
+      auto current_state = notifications_item->GetState();
+      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
+      notifications_item->SetState(new_state);
+      std::cout << "Notifications " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
+    });
+    context_menu->AddItem(notifications_item);
+
+    // Add three-state checkbox example
+    auto sync_item = MenuItem::Create("Sync Status", MenuItemType::Checkbox);
+    sync_item->SetState(MenuItemState::Mixed); // Initially mixed/indeterminate
+    sync_item->AddListener<MenuItemClickedEvent>([sync_item](const MenuItemClickedEvent& event) {
+      auto current_state = sync_item->GetState();
+      MenuItemState next_state;
+      std::string state_name;
+      
+      // Cycle through states: Mixed -> Checked -> Unchecked -> Mixed
+      switch (current_state) {
+        case MenuItemState::Mixed:
+          next_state = MenuItemState::Checked;
+          state_name = "enabled";
+          break;
+        case MenuItemState::Checked:
+          next_state = MenuItemState::Unchecked;
+          state_name = "disabled";
+          break;
+        case MenuItemState::Unchecked:
+        default:
+          next_state = MenuItemState::Mixed;
+          state_name = "partial";
+          break;
+      }
+      
+      sync_item->SetState(next_state);
+      std::cout << "Sync Status: " << state_name << std::endl;
+    });
+    context_menu->AddItem(sync_item);
+
+    // Add separator before radio group
+    context_menu->AddSeparator();
+
+    // Add radio button group for theme selection
+    auto theme_label = MenuItem::Create("Theme:", MenuItemType::Normal);
+    context_menu->AddItem(theme_label);
+
+    auto light_theme_item = MenuItem::Create("Light Theme", MenuItemType::Radio);
+    light_theme_item->SetRadioGroup(0); // Group 0
+    light_theme_item->SetState(MenuItemState::Checked); // Default selection
+    light_theme_item->AddListener<MenuItemClickedEvent>([light_theme_item](const MenuItemClickedEvent& event) {
+      light_theme_item->SetState(MenuItemState::Checked);
+      std::cout << "Light theme selected" << std::endl;
+    });
+    context_menu->AddItem(light_theme_item);
+
+    auto dark_theme_item = MenuItem::Create("Dark Theme", MenuItemType::Radio);
+    dark_theme_item->SetRadioGroup(0); // Same group as light theme
+    dark_theme_item->AddListener<MenuItemClickedEvent>([dark_theme_item](const MenuItemClickedEvent& event) {
+      dark_theme_item->SetState(MenuItemState::Checked);
+      std::cout << "Dark theme selected" << std::endl;
+    });
+    context_menu->AddItem(dark_theme_item);
+
+    auto auto_theme_item = MenuItem::Create("Auto Theme", MenuItemType::Radio);
+    auto_theme_item->SetRadioGroup(0); // Same group
+    auto_theme_item->AddListener<MenuItemClickedEvent>([auto_theme_item](const MenuItemClickedEvent& event) {
+      auto_theme_item->SetState(MenuItemState::Checked);
+      std::cout << "Auto theme selected" << std::endl;
+    });
+    context_menu->AddItem(auto_theme_item);
 
     // Add another separator
     context_menu->AddSeparator();
