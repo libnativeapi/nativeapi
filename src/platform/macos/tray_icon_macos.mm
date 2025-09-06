@@ -1,6 +1,7 @@
 #include "../../tray_icon.h"
 #include "../../menu.h"
 #include "../../geometry.h"
+#include "../../tray_icon_event.h"
 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -50,11 +51,6 @@ class TrayIcon::Impl {
   std::string title_;
   std::string tooltip_;
   bool visible_;
-
-  // Event callbacks
-  std::function<void()> on_left_click_;
-  std::function<void()> on_right_click_;
-  std::function<void()> on_double_click_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(new Impl()) {
@@ -72,12 +68,6 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) 
 }
 
 TrayIcon::~TrayIcon() {
-  // Clear callbacks to prevent dangling function objects
-  if (pimpl_) {
-    pimpl_->on_left_click_ = nullptr;
-    pimpl_->on_right_click_ = nullptr;
-    pimpl_->on_double_click_ = nullptr;
-  }
   delete pimpl_;
 }
 
@@ -221,17 +211,6 @@ bool TrayIcon::IsVisible() {
   return pimpl_->visible_;
 }
 
-void TrayIcon::SetOnLeftClick(std::function<void()> callback) {
-  pimpl_->on_left_click_ = callback;
-}
-
-void TrayIcon::SetOnRightClick(std::function<void()> callback) {
-  pimpl_->on_right_click_ = callback;
-}
-
-void TrayIcon::SetOnDoubleClick(std::function<void()> callback) {
-  pimpl_->on_double_click_ = callback;
-}
 
 bool TrayIcon::ShowContextMenu(double x, double y) {
   if (!pimpl_->context_menu_) {
@@ -260,32 +239,26 @@ bool TrayIcon::ShowContextMenu() {
 
 // Internal method to handle click events
 void TrayIcon::HandleLeftClick() {
-  if (pimpl_->on_left_click_) {
-    try {
-      pimpl_->on_left_click_();
-    } catch (...) {
-      // Protect against callback exceptions
-    }
+  try {
+    EmitSync<TrayIconClickedEvent>(id, "left");
+  } catch (...) {
+    // Protect against event emission exceptions
   }
 }
 
 void TrayIcon::HandleRightClick() {
-  if (pimpl_->on_right_click_) {
-    try {
-      pimpl_->on_right_click_();
-    } catch (...) {
-      // Protect against callback exceptions
-    }
+  try {
+    EmitSync<TrayIconRightClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
   }
 }
 
 void TrayIcon::HandleDoubleClick() {
-  if (pimpl_->on_double_click_) {
-    try {
-      pimpl_->on_double_click_();
-    } catch (...) {
-      // Protect against callback exceptions
-    }
+  try {
+    EmitSync<TrayIconDoubleClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
   }
 }
 

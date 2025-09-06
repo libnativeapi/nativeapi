@@ -6,6 +6,7 @@
 #include "../../src/tray_icon.h"
 #include "../../src/tray_manager.h"
 #include "../../src/menu.h"
+#include "../../src/tray_icon_event.h"
 
 #ifdef __APPLE__
 #import <Cocoa/Cocoa.h>
@@ -47,21 +48,24 @@ int main() {
     // Try to set a system icon (using a system-provided icon)
     trayIcon->SetIcon("NSImageNameStatusAvailable");
 
-    // Set up click handlers
-    trayIcon->SetOnLeftClick([]() {
+    // Set up event listeners
+    trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
         std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
         std::cout << "This is the left click handler working!" << std::endl;
+        std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
     });
 
-    trayIcon->SetOnRightClick([&trayIcon]() {
+    trayIcon->AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
         std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
         std::cout << "This is the right click handler working!" << std::endl;
+        std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
         // Context menu will be shown automatically
     });
 
-    trayIcon->SetOnDoubleClick([]() {
+    trayIcon->AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
         std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
         std::cout << "This is the double click handler working!" << std::endl;
+        std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
     });
 
     // Create context menu

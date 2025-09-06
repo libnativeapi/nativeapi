@@ -4,12 +4,13 @@
 #include <gtk/gtk.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include "../../menu.h"
-#include "../../tray.h"
+#include "../../tray_icon.h"
+#include "../../tray_icon_event.h"
 
 namespace nativeapi {
 
 // Private implementation class
-class Tray::Impl {
+class TrayIcon::Impl {
  public:
   Impl(GtkStatusIcon* tray) : gtk_status_icon_(tray), title_(""), tooltip_("") {}
   
@@ -19,11 +20,11 @@ class Tray::Impl {
   std::string tooltip_;
 };
 
-Tray::Tray() : pimpl_(new Impl(nullptr)) {
+TrayIcon::TrayIcon() : pimpl_(new Impl(nullptr)) {
   id = -1;
 }
 
-Tray::Tray(void* tray) : pimpl_(new Impl((GtkStatusIcon*)tray)) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((GtkStatusIcon*)tray)) {
   id = -1;  // Will be set by TrayManager when created
   // Make the status icon visible
   if (pimpl_->gtk_status_icon_) {
@@ -31,14 +32,14 @@ Tray::Tray(void* tray) : pimpl_(new Impl((GtkStatusIcon*)tray)) {
   }
 }
 
-Tray::~Tray() {
+TrayIcon::~TrayIcon() {
   if (pimpl_->gtk_status_icon_) {
     g_object_unref(pimpl_->gtk_status_icon_);
   }
   delete pimpl_;
 }
 
-void Tray::SetIcon(std::string icon) {
+void TrayIcon::SetIcon(std::string icon) {
   if (!pimpl_->gtk_status_icon_) {
     return;
   }
@@ -90,40 +91,40 @@ void Tray::SetIcon(std::string icon) {
   }
 }
 
-void Tray::SetTitle(std::string title) {
+void TrayIcon::SetTitle(std::string title) {
   pimpl_->title_ = title;
   // GTK StatusIcon doesn't support title directly, so we just store it
   // Some desktop environments might show this in tooltips or context
 }
 
-std::string Tray::GetTitle() {
+std::string TrayIcon::GetTitle() {
   return pimpl_->title_;
 }
 
-void Tray::SetTooltip(std::string tooltip) {
+void TrayIcon::SetTooltip(std::string tooltip) {
   pimpl_->tooltip_ = tooltip;
   if (pimpl_->gtk_status_icon_) {
     gtk_status_icon_set_tooltip_text(pimpl_->gtk_status_icon_, tooltip.c_str());
   }
 }
 
-std::string Tray::GetTooltip() {
+std::string TrayIcon::GetTooltip() {
   return pimpl_->tooltip_;
 }
 
-void Tray::SetContextMenu(Menu menu) {
+void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   // Store the menu object to keep it alive
-  pimpl_->context_menu_ = menu;
-  
+  pimpl_->context_menu_ = *menu;
+
   // Note: Full GTK integration would need to connect popup-menu signal
   // and show the GTK menu from the Menu object's GetNativeMenu()
 }
 
-Menu Tray::GetContextMenu() {
-  return pimpl_->context_menu_;
+std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
+  return std::make_shared<Menu>(pimpl_->context_menu_);
 }
 
-Rectangle Tray::GetBounds() {
+Rectangle TrayIcon::GetBounds() {
   Rectangle bounds = {0, 0, 0, 0};
   
   if (pimpl_->gtk_status_icon_) {
@@ -140,6 +141,86 @@ Rectangle Tray::GetBounds() {
   }
   
   return bounds;
+}
+
+bool TrayIcon::Show() {
+  if (pimpl_->gtk_status_icon_) {
+    gtk_status_icon_set_visible(pimpl_->gtk_status_icon_, TRUE);
+    return true;
+  }
+  return false;
+}
+
+bool TrayIcon::Hide() {
+  if (pimpl_->gtk_status_icon_) {
+    gtk_status_icon_set_visible(pimpl_->gtk_status_icon_, FALSE);
+    return true;
+  }
+  return false;
+}
+
+bool TrayIcon::IsVisible() {
+  if (pimpl_->gtk_status_icon_) {
+    return gtk_status_icon_get_visible(pimpl_->gtk_status_icon_) == TRUE;
+  }
+  return false;
+}
+
+void TrayIcon::SetOnLeftClick(std::function<void()> callback) {
+  // This method is deprecated - use event listeners instead
+}
+
+void TrayIcon::SetOnRightClick(std::function<void()> callback) {
+  // This method is deprecated - use event listeners instead
+}
+
+void TrayIcon::SetOnDoubleClick(std::function<void()> callback) {
+  // This method is deprecated - use event listeners instead
+}
+
+bool TrayIcon::ShowContextMenu(double x, double y) {
+  if (!pimpl_->context_menu_.GetNativeMenu()) {
+    return false;
+  }
+
+  // Note: GTK implementation would need to show the menu at the specified coordinates
+  // This is a simplified implementation
+  return false;
+}
+
+bool TrayIcon::ShowContextMenu() {
+  if (!pimpl_->context_menu_.GetNativeMenu()) {
+    return false;
+  }
+
+  // Note: GTK implementation would need to show the menu at cursor position
+  // This is a simplified implementation
+  return false;
+}
+
+// Internal method to handle click events
+void TrayIcon::HandleLeftClick() {
+  try {
+    EmitSync<TrayIconClickedEvent>(id, "left");
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
+}
+
+void TrayIcon::HandleRightClick() {
+  try {
+    EmitSync<TrayIconRightClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
+}
+
+void TrayIcon::HandleDoubleClick() {
+  try {
+    EmitSync<TrayIconDoubleClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
 }
 
 }  // namespace nativeapi

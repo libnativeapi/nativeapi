@@ -12,6 +12,7 @@
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"
 #include "../src/tray_icon.h"
+#include "../src/tray_icon_event.h"
 #include "../src/tray_manager.h"
 #include "../src/window.h"
 #include "../src/window_event.h"

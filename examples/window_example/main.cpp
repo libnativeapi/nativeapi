@@ -14,6 +14,9 @@ using nativeapi::MenuItemSubmenuClosedEvent;
 using nativeapi::MenuItemSubmenuOpenedEvent;
 using nativeapi::MenuItemType;
 using nativeapi::TrayIcon;
+using nativeapi::TrayIconClickedEvent;
+using nativeapi::TrayIconRightClickedEvent;
+using nativeapi::TrayIconDoubleClickedEvent;
 using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
@@ -264,23 +267,26 @@ int main() {
     // Set the context menu to the tray icon
     tray_icon.SetContextMenu(context_menu);
 
-    // Set up click handlers
-    tray_icon.SetOnLeftClick([]() {
+    // Set up event listeners
+    tray_icon.AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
       std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
       std::cout << "This is the left click handler working!" << std::endl;
+      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
     });
 
-    tray_icon.SetOnRightClick([&tray_icon]() {
+    tray_icon.AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
       std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
       std::cout << "This is the right click handler working!" << std::endl;
+      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
       // Context menu will be shown automatically on right-click
       // But we can also manually show it if needed:
       // tray_icon.ShowContextMenu();
     });
 
-    tray_icon.SetOnDoubleClick([]() {
+    tray_icon.AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
       std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
       std::cout << "This is the double click handler working!" << std::endl;
+      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
     });
   } else {
     std::cerr << "Failed to create tray." << std::endl;

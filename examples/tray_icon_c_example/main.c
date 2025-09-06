@@ -28,18 +28,20 @@ void on_menu_item_clicked(const void* event, void* user_data) {
   }
 }
 
-
-
-void on_tray_left_click(void* user_data) {
-  printf("Tray icon left clicked!\n");
+void on_tray_clicked(const void* event, void* user_data) {
+  const native_tray_icon_clicked_event_t* clicked_event = (const native_tray_icon_clicked_event_t*)event;
+  printf("Tray icon clicked! ID=%ld, Button='%s'\n", clicked_event->tray_icon_id,
+         clicked_event->button);
 }
 
-void on_tray_right_click(void* user_data) {
-  printf("Tray icon right clicked!\n");
+void on_tray_right_clicked(const void* event, void* user_data) {
+  const native_tray_icon_right_clicked_event_t* right_clicked_event = (const native_tray_icon_right_clicked_event_t*)event;
+  printf("Tray icon right clicked! ID=%ld\n", right_clicked_event->tray_icon_id);
 }
 
-void on_tray_double_click(void* user_data) {
-  printf("Tray icon double clicked!\n");
+void on_tray_double_clicked(const void* event, void* user_data) {
+  const native_tray_icon_double_clicked_event_t* double_clicked_event = (const native_tray_icon_double_clicked_event_t*)event;
+  printf("Tray icon double clicked! ID=%ld\n", double_clicked_event->tray_icon_id);
 }
 
 void on_menu_opened(const void* event, void* user_data) {
@@ -161,10 +163,10 @@ int main() {
   // Set the context menu
   native_tray_icon_set_context_menu(tray_icon, menu);
 
-  // Set up tray icon event handlers
-  native_tray_icon_set_on_left_click(tray_icon, on_tray_left_click, NULL);
-  native_tray_icon_set_on_right_click(tray_icon, on_tray_right_click, NULL);
-  native_tray_icon_set_on_double_click(tray_icon, on_tray_double_click, NULL);
+  // Set up tray icon event listeners using new API
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED, on_tray_right_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED, on_tray_double_clicked, NULL);
 
   // Show the tray icon
   if (native_tray_icon_show(tray_icon)) {
@@ -203,7 +205,7 @@ int main() {
   native_tray_icon_list_free(tray_list);
 
   printf("\n=== Tray icon and menu are now active ===\n");
-  printf("- Left click the tray icon to see left click message\n");
+  printf("- Click the tray icon to see click message\n");
   printf("- Right click the tray icon to open context menu\n");
   printf("- Double click the tray icon to see double click message\n");
   printf("- Use menu items to interact with the application\n");

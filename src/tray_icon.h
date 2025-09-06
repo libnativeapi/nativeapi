@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <string>
+#include "event_emitter.h"
 #include "geometry.h"
 #include "menu.h"
 
@@ -21,7 +22,7 @@ typedef long TrayIconID;
  * - Setting custom icons (including base64-encoded images)
  * - Displaying text titles and tooltips
  * - Context menus for user interaction
- * - Event handling for mouse clicks
+ * - Event emission for mouse clicks (TrayIconClickedEvent, TrayIconRightClickedEvent, TrayIconDoubleClickedEvent)
  * - Visibility control
  *
  * @note This class uses the PIMPL idiom to hide platform-specific
@@ -35,6 +36,17 @@ typedef long TrayIconID;
  * trayIcon->SetIcon("path/to/icon.png");
  * trayIcon->SetTooltip("My Application");
  *
+ * // Set up event listeners
+ * trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
+ *     // Handle left click - show/hide main window
+ *     mainWindow->IsVisible() ? mainWindow->Hide() : mainWindow->Show();
+ * });
+ *
+ * trayIcon->AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
+ *     // Handle right click - show context menu
+ *     trayIcon->ShowContextMenu();
+ * });
+ *
  * // Set up a context menu
  * Menu menu;
  * auto item = menu.CreateItem("Exit");
@@ -45,7 +57,7 @@ typedef long TrayIconID;
  * trayIcon->Show();
  * ```
  */
-class TrayIcon {
+class TrayIcon : public EventEmitter {
  public:
   /**
    * @brief Default constructor for TrayIcon.
@@ -228,46 +240,6 @@ class TrayIcon {
    */
   bool IsVisible();
 
-  /**
-   * @brief Set a callback function for left mouse click events.
-   *
-   * The callback function will be invoked when the user left-clicks
-   * on the tray icon. This is commonly used to show/hide the main
-   * application window.
-   *
-   * @param callback Function to call when the icon is left-clicked
-   *
-   * @example
-   * ```cpp
-   * trayIcon->SetOnLeftClick([]() {
-   *     // Show or hide main window
-   *     mainWindow->IsVisible() ? mainWindow->Hide() : mainWindow->Show();
-   * });
-   * ```
-   */
-  void SetOnLeftClick(std::function<void()> callback);
-
-  /**
-   * @brief Set a callback function for right mouse click events.
-   *
-   * The callback function will be invoked when the user right-clicks
-   * on the tray icon. Note that right-clicking typically also shows
-   * the context menu if one is set.
-   *
-   * @param callback Function to call when the icon is right-clicked
-   */
-  void SetOnRightClick(std::function<void()> callback);
-
-  /**
-   * @brief Set a callback function for double-click events.
-   *
-   * The callback function will be invoked when the user double-clicks
-   * on the tray icon. This is often used as an alternative way to
-   * open the main application window.
-   *
-   * @param callback Function to call when the icon is double-clicked
-   */
-  void SetOnDoubleClick(std::function<void()> callback);
 
   /**
    * @brief Programmatically display the context menu at a specified location.
@@ -322,7 +294,7 @@ class TrayIcon {
 
   /**
    * @brief Internal method to handle left mouse click events.
-   * 
+   *
    * This method is called internally by platform-specific code
    * when a left click event occurs on the tray icon.
    */
@@ -330,7 +302,7 @@ class TrayIcon {
 
   /**
    * @brief Internal method to handle right mouse click events.
-   * 
+   *
    * This method is called internally by platform-specific code
    * when a right click event occurs on the tray icon.
    */
@@ -338,11 +310,12 @@ class TrayIcon {
 
   /**
    * @brief Internal method to handle double click events.
-   * 
+   *
    * This method is called internally by platform-specific code
    * when a double click event occurs on the tray icon.
    */
   void HandleDoubleClick();
+
 
  private:
   /**

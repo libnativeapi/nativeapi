@@ -28,11 +28,40 @@ typedef void* native_tray_icon_t;
 typedef long native_tray_icon_id_t;
 
 /**
- * Event callback function types
+ * Tray icon clicked event
  */
-typedef void (*native_tray_icon_left_click_callback_t)(void* user_data);
-typedef void (*native_tray_icon_right_click_callback_t)(void* user_data);
-typedef void (*native_tray_icon_double_click_callback_t)(void* user_data);
+typedef struct {
+  native_tray_icon_id_t tray_icon_id;
+  char button[16];  // "left", "right", etc.
+} native_tray_icon_clicked_event_t;
+
+/**
+ * Tray icon right-clicked event
+ */
+typedef struct {
+  native_tray_icon_id_t tray_icon_id;
+} native_tray_icon_right_clicked_event_t;
+
+/**
+ * Tray icon double-clicked event
+ */
+typedef struct {
+  native_tray_icon_id_t tray_icon_id;
+} native_tray_icon_double_clicked_event_t;
+
+/**
+ * Event types for tray icon events
+ */
+typedef enum {
+  NATIVE_TRAY_ICON_EVENT_CLICKED = 0,
+  NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED = 1,
+  NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED = 2
+} native_tray_icon_event_type_t;
+
+/**
+ * Event callback function type
+ */
+typedef void (*native_tray_icon_event_callback_t)(const void* event, void* user_data);
 
 /**
  * TrayIcon operations
@@ -162,31 +191,24 @@ FFI_PLUGIN_EXPORT
 bool native_tray_icon_is_visible(native_tray_icon_t tray_icon);
 
 /**
- * Set callback for left mouse click events
+ * Add an event listener for tray icon events
  * @param tray_icon The tray icon
+ * @param event_type The type of event to listen for
  * @param callback The callback function
  * @param user_data User data to pass to callback
+ * @return Listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_on_left_click(native_tray_icon_t tray_icon, native_tray_icon_left_click_callback_t callback, void* user_data);
+int native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon_event_type_t event_type, native_tray_icon_event_callback_t callback, void* user_data);
 
 /**
- * Set callback for right mouse click events
+ * Remove an event listener
  * @param tray_icon The tray icon
- * @param callback The callback function
- * @param user_data User data to pass to callback
+ * @param listener_id The listener ID returned by add_listener
+ * @return true if the listener was found and removed, false otherwise
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_on_right_click(native_tray_icon_t tray_icon, native_tray_icon_right_click_callback_t callback, void* user_data);
-
-/**
- * Set callback for double click events
- * @param tray_icon The tray icon
- * @param callback The callback function
- * @param user_data User data to pass to callback
- */
-FFI_PLUGIN_EXPORT
-void native_tray_icon_set_on_double_click(native_tray_icon_t tray_icon, native_tray_icon_double_click_callback_t callback, void* user_data);
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id);
 
 /**
  * Show the context menu at specified coordinates
