@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 #include "event.h"
+#include "event_emitter.h"
 #include "geometry.h"
+#include "menu_event.h"
 
 namespace nativeapi {
 
@@ -45,42 +47,6 @@ enum class MenuItemType {
   Submenu
 };
 
-/**
- * @brief Menu item selection event.
- *
- * This event is fired when a menu item is clicked or activated.
- * Contains information about which menu item was selected.
- */
-class MenuItemSelectedEvent : public TypedEvent<MenuItemSelectedEvent> {
- public:
-  MenuItemSelectedEvent(MenuItemID item_id, const std::string& item_text)
-      : item_id_(item_id), item_text_(item_text) {}
-
-  MenuItemID GetItemId() const { return item_id_; }
-  const std::string& GetItemText() const { return item_text_; }
-
- private:
-  MenuItemID item_id_;
-  std::string item_text_;
-};
-
-/**
- * @brief Menu item state change event.
- *
- * This event is fired when a checkable menu item's state changes.
- */
-class MenuItemStateChangedEvent : public TypedEvent<MenuItemStateChangedEvent> {
- public:
-  MenuItemStateChangedEvent(MenuItemID item_id, bool checked)
-      : item_id_(item_id), checked_(checked) {}
-
-  MenuItemID GetItemId() const { return item_id_; }
-  bool IsChecked() const { return checked_; }
-
- private:
-  MenuItemID item_id_;
-  bool checked_;
-};
 
 /**
  * @brief Keyboard accelerator for menu items.
@@ -152,12 +118,13 @@ class Menu;
  * - Custom text, icons, and tooltips
  * - Keyboard shortcuts/accelerators
  * - Enable/disable state
- * - Event callbacks for user interaction
+ * - Event emission for user interaction
  * - Submenu nesting
  *
  * @note This class uses the PIMPL idiom to hide platform-specific
  * implementation details and ensure binary compatibility across different
- * platforms.
+ * platforms. It also inherits from EventEmitter to provide event-driven
+ * interaction handling.
  *
  * @example
  * ```cpp
@@ -165,7 +132,7 @@ class Menu;
  * auto item = MenuItem::Create("Open File", MenuItemType::Normal);
  * item->SetIcon("data:image/png;base64,...");
  * item->SetAccelerator(KeyboardAccelerator("O", KeyboardAccelerator::Ctrl));
- * item->SetOnClick([](const MenuItemSelectedEvent& event) {
+ * item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
  *     // Handle menu item click
  *     std::cout << "Opening file..." << std::endl;
  * });
@@ -173,12 +140,12 @@ class Menu;
  * // Create a checkbox item
  * auto checkbox = MenuItem::Create("Show Toolbar", MenuItemType::Checkbox);
  * checkbox->SetChecked(true);
- * checkbox->SetOnStateChanged([](const MenuItemStateChangedEvent& event) {
+ * checkbox->AddListener<MenuItemStateChangedEvent>([](const MenuItemStateChangedEvent& event) {
  *     std::cout << "Toolbar visibility: " << event.IsChecked() << std::endl;
  * });
  * ```
  */
-class MenuItem {
+class MenuItem : public EventEmitter {
  public:
   /**
    * @brief Factory method to create a new menu item.
@@ -443,41 +410,6 @@ class MenuItem {
    */
   void RemoveSubmenu();
 
-  /**
-   * @brief Set a callback function for menu item click events.
-   *
-   * The callback function will be invoked when the user clicks on
-   * the menu item (for normal items) or when the state changes
-   * (for checkbox/radio items).
-   *
-   * @param callback Function to call when the item is clicked
-   *
-   * @example
-   * ```cpp
-   * item->SetOnClick([](const MenuItemSelectedEvent& event) {
-   *     std::cout << "Item clicked: " << event.GetItemText() << std::endl;
-   * });
-   * ```
-   */
-  void SetOnClick(std::function<void(const MenuItemSelectedEvent&)> callback);
-
-  /**
-   * @brief Set a callback function for menu item state change events.
-   *
-   * This callback is specifically for checkbox and radio items when
-   * their checked state changes. For normal items, use SetOnClick instead.
-   *
-   * @param callback Function to call when the item state changes
-   *
-   * @example
-   * ```cpp
-   * checkbox->SetOnStateChanged([](const MenuItemStateChangedEvent& event) {
-   *     std::cout << "Checkbox state: " << event.IsChecked() << std::endl;
-   * });
-   * ```
-   */
-  void SetOnStateChanged(
-      std::function<void(const MenuItemStateChangedEvent&)> callback);
 
   /**
    * @brief Programmatically trigger this menu item.
@@ -499,6 +431,26 @@ class MenuItem {
    * @return Pointer to the native menu item object
    */
   void* GetNativeItem() const;
+
+  /**
+   * @brief Emit a menu item selected event.
+   *
+   * This method is used internally by platform implementations to
+   * emit selection events when a menu item is clicked.
+   *
+   * @param item_text The text of the selected menu item
+   */
+  void EmitSelectedEvent(const std::string& item_text);
+
+  /**
+   * @brief Emit a menu item state changed event.
+   *
+   * This method is used internally by platform implementations to
+   * emit state change events when a checkable menu item's state changes.
+   *
+   * @param checked The new checked state of the menu item
+   */
+  void EmitStateChangedEvent(bool checked);
 
  private:
   /**
@@ -530,13 +482,14 @@ class MenuItem {
  * The class supports:
  * - Adding, removing, and organizing menu items
  * - Displaying as context menus or application menus
- * - Event handling for menu interactions
+ * - Event emission for menu interactions
  * - Hierarchical submenu structures
  * - Dynamic menu modification
  *
  * @note This class uses the PIMPL idiom to hide platform-specific
  * implementation details and ensure binary compatibility across different
- * platforms.
+ * platforms. It also inherits from EventEmitter to provide event-driven
+ * interaction handling.
  *
  * @example
  * ```cpp
@@ -557,11 +510,16 @@ class MenuItem {
  * auto exitItem = MenuItem::Create("Exit", MenuItemType::Normal);
  * fileMenu->AddItem(exitItem);
  *
+ * // Listen to menu events
+ * fileMenu->AddListener<MenuWillOpenEvent>([](const MenuWillOpenEvent& event) {
+ *     std::cout << "Menu will open" << std::endl;
+ * });
+ *
  * // Show as context menu
  * fileMenu->ShowAsContextMenu(100, 100);
  * ```
  */
-class Menu {
+class Menu : public EventEmitter {
  public:
   /**
    * @brief Factory method to create a new menu.
@@ -785,23 +743,6 @@ class Menu {
    */
   bool IsEnabled() const;
 
-  /**
-   * @brief Set a callback function for menu open events.
-   *
-   * The callback is invoked when the menu is about to be shown.
-   *
-   * @param callback Function to call when the menu opens
-   */
-  void SetOnMenuWillShow(std::function<void()> callback);
-
-  /**
-   * @brief Set a callback function for menu close events.
-   *
-   * The callback is invoked when the menu is closed or hidden.
-   *
-   * @param callback Function to call when the menu closes
-   */
-  void SetOnMenuDidHide(std::function<void()> callback);
 
   /**
    * @brief Create a standard menu item and add it to the menu.
@@ -849,6 +790,22 @@ class Menu {
    * @return Pointer to the native menu object
    */
   void* GetNativeMenu() const;
+
+  /**
+   * @brief Emit a menu will open event.
+   *
+   * This method is used internally by platform implementations to
+   * emit events when a menu is about to be opened.
+   */
+  void EmitWillOpenEvent();
+
+  /**
+   * @brief Emit a menu will close event.
+   *
+   * This method is used internally by platform implementations to
+   * emit events when a menu is about to be closed.
+   */
+  void EmitWillCloseEvent();
 
  private:
   /**

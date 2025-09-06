@@ -81,7 +81,7 @@ int main() {
 
     // Add menu items
     auto show_window_item = MenuItem::Create("Show Window", MenuItemType::Normal);
-    show_window_item->SetOnClick([window_ptr](const MenuItemSelectedEvent& event) {
+    show_window_item->AddListener<MenuItemSelectedEvent>([window_ptr](const MenuItemSelectedEvent& event) {
       std::cout << "Show Window clicked from context menu" << std::endl;
       if (window_ptr) {
         window_ptr->Show();
@@ -91,7 +91,7 @@ int main() {
     context_menu->AddItem(show_window_item);
 
     auto hide_window_item = MenuItem::Create("Hide Window", MenuItemType::Normal);
-    hide_window_item->SetOnClick([window_ptr](const MenuItemSelectedEvent& event) {
+    hide_window_item->AddListener<MenuItemSelectedEvent>([window_ptr](const MenuItemSelectedEvent& event) {
       std::cout << "Hide Window clicked from context menu" << std::endl;
       if (window_ptr) {
         window_ptr->Hide();
@@ -104,7 +104,7 @@ int main() {
 
     // Add about item
     auto about_item = MenuItem::Create("About", MenuItemType::Normal);
-    about_item->SetOnClick([](const MenuItemSelectedEvent& event) {
+    about_item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
       std::cout << "About clicked from context menu" << std::endl;
       std::cout << "Window Example v1.0 - Native API Demo" << std::endl;
     });
@@ -115,7 +115,7 @@ int main() {
 
     // Add exit item
     auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
-    exit_item->SetOnClick([&window_manager](const MenuItemSelectedEvent& event) {
+    exit_item->AddListener<MenuItemSelectedEvent>([&window_manager](const MenuItemSelectedEvent& event) {
       std::cout << "Exit clicked from context menu" << std::endl;
       // Get all windows and destroy them to trigger app exit
       auto windows = window_manager.GetAll();

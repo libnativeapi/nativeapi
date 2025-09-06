@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include "../../menu.h"
+#include "../../menu_event.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -23,11 +24,9 @@ namespace nativeapi {
 static std::atomic<MenuItemID> g_next_menu_item_id{1};
 static std::atomic<MenuID> g_next_menu_id{1};
 
-// Global registry for callbacks
-static std::unordered_map<MenuItemID, std::function<void(const MenuItemSelectedEvent&)>> g_click_callbacks;
-static std::unordered_map<MenuItemID, std::function<void(const MenuItemStateChangedEvent&)>> g_state_callbacks;
-static std::unordered_map<MenuID, std::function<void()>> g_menu_will_show_callbacks;
-static std::unordered_map<MenuID, std::function<void()>> g_menu_did_hide_callbacks;
+// Global registry to map native objects to C++ objects for event emission
+static std::unordered_map<MenuItemID, MenuItem*> g_menu_item_registry;
+static std::unordered_map<MenuID, Menu*> g_menu_registry;
 
 // Helper function to convert KeyboardAccelerator to NSString and modifier mask
 std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& accelerator) {
@@ -91,46 +90,44 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 - (void)menuItemClicked:(id)sender {
     NSMenuItem* menuItem = (NSMenuItem*)sender;
 
+    // Find the MenuItem object in registry
+    auto menuItemIt = nativeapi::g_menu_item_registry.find(_itemId);
+    if (menuItemIt == nativeapi::g_menu_item_registry.end()) {
+        return; // Item not found in registry
+    }
+
+    nativeapi::MenuItem* menuItemPtr = menuItemIt->second;
+
     // Handle state changes for checkable items
     if ([menuItem state] == NSControlStateValueOn) {
         [menuItem setState:NSControlStateValueOff];
-        auto callback = nativeapi::g_state_callbacks.find(_itemId);
-        if (callback != nativeapi::g_state_callbacks.end()) {
-            nativeapi::MenuItemStateChangedEvent event(_itemId, false);
-            callback->second(event);
-        }
+        menuItemPtr->EmitStateChangedEvent(false);
     } else if ([menuItem state] == NSControlStateValueOff &&
                ([menuItem.title rangeOfString:@"☑"].location == NSNotFound)) { // Not a checkbox/radio
         [menuItem setState:NSControlStateValueOn];
-        auto callback = nativeapi::g_state_callbacks.find(_itemId);
-        if (callback != nativeapi::g_state_callbacks.end()) {
-            nativeapi::MenuItemStateChangedEvent event(_itemId, true);
-            callback->second(event);
-        }
+        menuItemPtr->EmitStateChangedEvent(true);
     }
 
-    // Handle click callback
-    auto clickCallback = nativeapi::g_click_callbacks.find(_itemId);
-    if (clickCallback != nativeapi::g_click_callbacks.end()) {
-        nativeapi::MenuItemSelectedEvent event(_itemId, [[menuItem title] UTF8String]);
-        clickCallback->second(event);
-    }
+    // Emit click event
+    menuItemPtr->EmitSelectedEvent([[menuItem title] UTF8String]);
 }
 @end
 
 // Implementation of MenuDelegate - moved to global scope
 @implementation MenuDelegate
 - (void)menuWillOpen:(NSMenu *)menu {
-    auto callback = nativeapi::g_menu_will_show_callbacks.find(_menuId);
-    if (callback != nativeapi::g_menu_will_show_callbacks.end()) {
-        callback->second();
+    auto menuIt = nativeapi::g_menu_registry.find(_menuId);
+    if (menuIt != nativeapi::g_menu_registry.end()) {
+        nativeapi::Menu* menuPtr = menuIt->second;
+        menuPtr->EmitWillOpenEvent();
     }
 }
 
 - (void)menuDidClose:(NSMenu *)menu {
-    auto callback = nativeapi::g_menu_did_hide_callbacks.find(_menuId);
-    if (callback != nativeapi::g_menu_did_hide_callbacks.end()) {
-        callback->second();
+    auto menuIt = nativeapi::g_menu_registry.find(_menuId);
+    if (menuIt != nativeapi::g_menu_registry.end()) {
+        nativeapi::Menu* menuPtr = menuIt->second;
+        menuPtr->EmitWillCloseEvent();
     }
 }
 @end
@@ -214,6 +211,9 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
     item->pimpl_->target_.itemId = item->id;
     item->pimpl_->text_ = text;
 
+    // Register the MenuItem for event emission
+    g_menu_item_registry[item->id] = item.get();
+
     return item;
 }
 
@@ -225,6 +225,8 @@ MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++)
     , pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
     pimpl_->target_.itemId = id;
+    // Register the MenuItem for event emission
+    g_menu_item_registry[id] = this;
 }
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
@@ -232,9 +234,8 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
 }
 
 MenuItem::~MenuItem() {
-    // Clean up callbacks
-    g_click_callbacks.erase(id);
-    g_state_callbacks.erase(id);
+    // Unregister from event registry
+    g_menu_item_registry.erase(id);
 }
 
 MenuItemType MenuItem::GetType() const {
@@ -386,21 +387,6 @@ void MenuItem::RemoveSubmenu() {
     [pimpl_->ns_menu_item_ setSubmenu:nil];
 }
 
-void MenuItem::SetOnClick(std::function<void(const MenuItemSelectedEvent&)> callback) {
-    if (callback) {
-        g_click_callbacks[id] = callback;
-    } else {
-        g_click_callbacks.erase(id);
-    }
-}
-
-void MenuItem::SetOnStateChanged(std::function<void(const MenuItemStateChangedEvent&)> callback) {
-    if (callback) {
-        g_state_callbacks[id] = callback;
-    } else {
-        g_state_callbacks.erase(id);
-    }
-}
 
 bool MenuItem::Trigger() {
     if (!pimpl_->enabled_) return false;
@@ -411,6 +397,14 @@ bool MenuItem::Trigger() {
 
 void* MenuItem::GetNativeItem() const {
     return (__bridge void*)pimpl_->ns_menu_item_;
+}
+
+void MenuItem::EmitSelectedEvent(const std::string& item_text) {
+    EmitSync<MenuItemSelectedEvent>(id, item_text);
+}
+
+void MenuItem::EmitStateChangedEvent(bool checked) {
+    EmitSync<MenuItemStateChangedEvent>(id, checked);
 }
 
 // Menu::Impl implementation
@@ -445,6 +439,9 @@ std::shared_ptr<Menu> Menu::Create() {
     menu->id = g_next_menu_id++;
     menu->pimpl_->delegate_.menuId = menu->id;
 
+    // Register the Menu for event emission
+    g_menu_registry[menu->id] = menu.get();
+
     return menu;
 }
 
@@ -452,6 +449,8 @@ Menu::Menu(void* native_menu)
     : id(g_next_menu_id++)
     , pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
     pimpl_->delegate_.menuId = id;
+    // Register the Menu for event emission
+    g_menu_registry[id] = this;
 }
 
 Menu::Menu()
@@ -459,9 +458,8 @@ Menu::Menu()
 }
 
 Menu::~Menu() {
-    // Clean up callbacks
-    g_menu_will_show_callbacks.erase(id);
-    g_menu_did_hide_callbacks.erase(id);
+    // Unregister from event registry
+    g_menu_registry.erase(id);
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
@@ -583,7 +581,9 @@ bool Menu::ShowAsContextMenu(double x, double y) {
                                         pressure:1.0];
 
     pimpl_->visible_ = true;
-    [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:nil];
+    // Create a dummy view to avoid the nil warning
+    NSView* dummyView = [[NSView alloc] init];
+    [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
     pimpl_->visible_ = false;
 
     return true;
@@ -619,21 +619,6 @@ bool Menu::IsEnabled() const {
     return pimpl_->enabled_;
 }
 
-void Menu::SetOnMenuWillShow(std::function<void()> callback) {
-    if (callback) {
-        g_menu_will_show_callbacks[id] = callback;
-    } else {
-        g_menu_will_show_callbacks.erase(id);
-    }
-}
-
-void Menu::SetOnMenuDidHide(std::function<void()> callback) {
-    if (callback) {
-        g_menu_did_hide_callbacks[id] = callback;
-    } else {
-        g_menu_did_hide_callbacks.erase(id);
-    }
-}
 
 std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
     auto item = MenuItem::Create(text, MenuItemType::Normal);
@@ -657,5 +642,13 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
 
 void* Menu::GetNativeMenu() const {
     return (__bridge void*)pimpl_->ns_menu_;
+}
+
+void Menu::EmitWillOpenEvent() {
+    EmitSync<MenuWillOpenEvent>(id);
+}
+
+void Menu::EmitWillCloseEvent() {
+    EmitSync<MenuWillCloseEvent>(id);
 }
 }

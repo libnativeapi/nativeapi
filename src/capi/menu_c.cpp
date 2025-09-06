@@ -11,24 +11,27 @@ using namespace nativeapi;
 static std::unordered_map<void*, std::shared_ptr<MenuItem>> g_menu_items;
 static std::unordered_map<void*, std::shared_ptr<Menu>> g_menus;
 
-// Internal structures to manage C callbacks
-struct MenuItemCallbackData {
-  native_menu_item_click_callback_t click_callback;
-  native_menu_item_state_changed_callback_t state_changed_callback;
-  void* click_user_data;
-  void* state_changed_user_data;
+// Internal structures to manage event listeners
+
+// Event listener data structures
+struct EventListenerData {
+  native_menu_item_event_callback_t callback;
+  void* user_data;
+  int listener_id;
 };
 
-struct MenuCallbackData {
-  native_menu_will_show_callback_t will_show_callback;
-  native_menu_did_hide_callback_t did_hide_callback;
-  void* will_show_user_data;
-  void* did_hide_user_data;
+struct MenuEventListenerData {
+  native_menu_event_callback_t callback;
+  void* user_data;
+  int listener_id;
 };
 
-// Global maps to store callback data
-static std::map<native_menu_item_t, std::unique_ptr<MenuItemCallbackData>> g_menu_item_callbacks;
-static std::map<native_menu_t, std::unique_ptr<MenuCallbackData>> g_menu_callbacks;
+// Global maps to store event listeners
+static std::map<native_menu_item_t, std::map<int, std::unique_ptr<EventListenerData>>> g_menu_item_listeners;
+static std::map<native_menu_t, std::map<int, std::unique_ptr<MenuEventListenerData>>> g_menu_listeners;
+
+// Global listener ID counter
+static std::atomic<int> g_next_listener_id{1};
 
 // Helper functions
 static MenuItemType convert_menu_item_type(native_menu_item_type_t type) {
@@ -132,12 +135,6 @@ native_menu_item_t native_menu_item_create_separator(void) {
 
 void native_menu_item_destroy(native_menu_item_t item) {
   if (!item) return;
-  
-  // Clean up callbacks
-  auto it = g_menu_item_callbacks.find(item);
-  if (it != g_menu_item_callbacks.end()) {
-    g_menu_item_callbacks.erase(it);
-  }
   
   // Remove from global storage - this will release the shared_ptr
   auto item_it = g_menu_items.find(item);
@@ -422,72 +419,87 @@ void native_menu_item_remove_submenu(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_on_click(native_menu_item_t item, native_menu_item_click_callback_t callback, void* user_data) {
-  if (!item) return;
+
+
+// New event listener API implementation
+int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_event_type_t event_type, native_menu_item_event_callback_t callback, void* user_data) {
+  if (!item || !callback) return -1;
   
   try {
     auto menu_item = static_cast<MenuItem*>(item);
+    int listener_id = g_next_listener_id++;
     
-    // Get or create callback data
-    auto it = g_menu_item_callbacks.find(item);
-    if (it == g_menu_item_callbacks.end()) {
-      g_menu_item_callbacks[item] = std::make_unique<MenuItemCallbackData>();
-    }
+    // Create listener data
+    auto listener_data = std::make_unique<EventListenerData>();
+    listener_data->callback = callback;
+    listener_data->user_data = user_data;
+    listener_data->listener_id = listener_id;
     
-    auto& callback_data = g_menu_item_callbacks[item];
-    callback_data->click_callback = callback;
-    callback_data->click_user_data = user_data;
+    // Store the listener data
+    g_menu_item_listeners[item][listener_id] = std::move(listener_data);
     
-    if (callback) {
-      menu_item->SetOnClick([item, callback_data = callback_data.get()](const MenuItemSelectedEvent& event) {
-        if (callback_data->click_callback) {
-          native_menu_item_selected_event_t c_event = {};
-          c_event.item_id = event.GetItemId();
-          strncpy(c_event.item_text, event.GetItemText().c_str(), sizeof(c_event.item_text) - 1);
-          c_event.item_text[sizeof(c_event.item_text) - 1] = '\0';
-          
-          callback_data->click_callback(&c_event, callback_data->click_user_data);
+    // Add the appropriate event listener based on event type
+    if (event_type == NATIVE_MENU_ITEM_EVENT_SELECTED) {
+      menu_item->AddListener<MenuItemSelectedEvent>([item, listener_id](const MenuItemSelectedEvent& event) {
+        // Find the listener data
+        auto item_it = g_menu_item_listeners.find(item);
+        if (item_it != g_menu_item_listeners.end()) {
+          auto listener_it = item_it->second.find(listener_id);
+          if (listener_it != item_it->second.end()) {
+            native_menu_item_selected_event_t c_event = {};
+            c_event.item_id = event.GetItemId();
+            strncpy(c_event.item_text, event.GetItemText().c_str(), sizeof(c_event.item_text) - 1);
+            c_event.item_text[sizeof(c_event.item_text) - 1] = '\0';
+            
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
         }
       });
-    } else {
-      menu_item->SetOnClick(nullptr);
+    } else if (event_type == NATIVE_MENU_ITEM_EVENT_STATE_CHANGED) {
+      menu_item->AddListener<MenuItemStateChangedEvent>([item, listener_id](const MenuItemStateChangedEvent& event) {
+        // Find the listener data
+        auto item_it = g_menu_item_listeners.find(item);
+        if (item_it != g_menu_item_listeners.end()) {
+          auto listener_it = item_it->second.find(listener_id);
+          if (listener_it != item_it->second.end()) {
+            native_menu_item_state_changed_event_t c_event = {};
+            c_event.item_id = event.GetItemId();
+            c_event.checked = event.IsChecked();
+            
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
+        }
+      });
     }
+    
+    return listener_id;
   } catch (...) {
-    // Ignore exceptions
+    return -1;
   }
 }
 
-void native_menu_item_set_on_state_changed(native_menu_item_t item, native_menu_item_state_changed_callback_t callback, void* user_data) {
-  if (!item) return;
+bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id) {
+  if (!item) return false;
   
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    
-    // Get or create callback data
-    auto it = g_menu_item_callbacks.find(item);
-    if (it == g_menu_item_callbacks.end()) {
-      g_menu_item_callbacks[item] = std::make_unique<MenuItemCallbackData>();
-    }
-    
-    auto& callback_data = g_menu_item_callbacks[item];
-    callback_data->state_changed_callback = callback;
-    callback_data->state_changed_user_data = user_data;
-    
-    if (callback) {
-      menu_item->SetOnStateChanged([item, callback_data = callback_data.get()](const MenuItemStateChangedEvent& event) {
-        if (callback_data->state_changed_callback) {
-          native_menu_item_state_changed_event_t c_event = {};
-          c_event.item_id = event.GetItemId();
-          c_event.checked = event.IsChecked();
-          
-          callback_data->state_changed_callback(&c_event, callback_data->state_changed_user_data);
+    auto item_it = g_menu_item_listeners.find(item);
+    if (item_it != g_menu_item_listeners.end()) {
+      auto listener_it = item_it->second.find(listener_id);
+      if (listener_it != item_it->second.end()) {
+        // Remove the listener data
+        item_it->second.erase(listener_it);
+        
+        // If no more listeners for this item, remove the item entry
+        if (item_it->second.empty()) {
+          g_menu_item_listeners.erase(item_it);
         }
-      });
-    } else {
-      menu_item->SetOnStateChanged(nullptr);
+        
+        return true;
+      }
     }
+    return false;
   } catch (...) {
-    // Ignore exceptions
+    return false;
   }
 }
 
@@ -517,12 +529,6 @@ native_menu_t native_menu_create(void) {
 
 void native_menu_destroy(native_menu_t menu) {
   if (!menu) return;
-  
-  // Clean up callbacks
-  auto it = g_menu_callbacks.find(menu);
-  if (it != g_menu_callbacks.end()) {
-    g_menu_callbacks.erase(it);
-  }
   
   // Remove from global storage - this will release the shared_ptr
   auto menu_it = g_menus.find(menu);
@@ -786,65 +792,84 @@ bool native_menu_is_enabled(native_menu_t menu) {
   }
 }
 
-void native_menu_set_on_will_show(native_menu_t menu, native_menu_will_show_callback_t callback, void* user_data) {
-  if (!menu) return;
+
+
+// New menu event listener API implementation
+int native_menu_add_listener(native_menu_t menu, native_menu_event_type_t event_type, native_menu_event_callback_t callback, void* user_data) {
+  if (!menu || !callback) return -1;
   
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
+    int listener_id = g_next_listener_id++;
     
-    // Get or create callback data
-    auto it = g_menu_callbacks.find(menu);
-    if (it == g_menu_callbacks.end()) {
-      g_menu_callbacks[menu] = std::make_unique<MenuCallbackData>();
-    }
+    // Create listener data
+    auto listener_data = std::make_unique<MenuEventListenerData>();
+    listener_data->callback = callback;
+    listener_data->user_data = user_data;
+    listener_data->listener_id = listener_id;
     
-    auto& callback_data = g_menu_callbacks[menu];
-    callback_data->will_show_callback = callback;
-    callback_data->will_show_user_data = user_data;
+    // Store the listener data
+    g_menu_listeners[menu][listener_id] = std::move(listener_data);
     
-    if (callback) {
-      menu_ptr->SetOnMenuWillShow([menu, callback_data = callback_data.get()]() {
-        if (callback_data->will_show_callback) {
-          auto menu_ptr = static_cast<Menu*>(menu);
-          callback_data->will_show_callback(menu_ptr->id, callback_data->will_show_user_data);
+    // Add the appropriate event listener based on event type
+    if (event_type == NATIVE_MENU_EVENT_WILL_OPEN) {
+      menu_ptr->AddListener<MenuWillOpenEvent>([menu, listener_id](const MenuWillOpenEvent& event) {
+        // Find the listener data
+        auto menu_it = g_menu_listeners.find(menu);
+        if (menu_it != g_menu_listeners.end()) {
+          auto listener_it = menu_it->second.find(listener_id);
+          if (listener_it != menu_it->second.end()) {
+            native_menu_will_open_event_t c_event = {};
+            c_event.menu_id = event.GetMenuId();
+            
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
         }
       });
-    } else {
-      menu_ptr->SetOnMenuWillShow(nullptr);
+    } else if (event_type == NATIVE_MENU_EVENT_WILL_CLOSE) {
+      menu_ptr->AddListener<MenuWillCloseEvent>([menu, listener_id](const MenuWillCloseEvent& event) {
+        // Find the listener data
+        auto menu_it = g_menu_listeners.find(menu);
+        if (menu_it != g_menu_listeners.end()) {
+          auto listener_it = menu_it->second.find(listener_id);
+          if (listener_it != menu_it->second.end()) {
+            native_menu_will_close_event_t c_event = {};
+            c_event.menu_id = event.GetMenuId();
+            
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
+        }
+      });
     }
+    
+    return listener_id;
   } catch (...) {
-    // Ignore exceptions
+    return -1;
   }
 }
 
-void native_menu_set_on_did_hide(native_menu_t menu, native_menu_did_hide_callback_t callback, void* user_data) {
-  if (!menu) return;
+bool native_menu_remove_listener(native_menu_t menu, int listener_id) {
+  if (!menu) return false;
   
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    
-    // Get or create callback data
-    auto it = g_menu_callbacks.find(menu);
-    if (it == g_menu_callbacks.end()) {
-      g_menu_callbacks[menu] = std::make_unique<MenuCallbackData>();
-    }
-    
-    auto& callback_data = g_menu_callbacks[menu];
-    callback_data->did_hide_callback = callback;
-    callback_data->did_hide_user_data = user_data;
-    
-    if (callback) {
-      menu_ptr->SetOnMenuDidHide([menu, callback_data = callback_data.get()]() {
-        if (callback_data->did_hide_callback) {
-          auto menu_ptr = static_cast<Menu*>(menu);
-          callback_data->did_hide_callback(menu_ptr->id, callback_data->did_hide_user_data);
+    auto menu_it = g_menu_listeners.find(menu);
+    if (menu_it != g_menu_listeners.end()) {
+      auto listener_it = menu_it->second.find(listener_id);
+      if (listener_it != menu_it->second.end()) {
+        // Remove the listener data
+        menu_it->second.erase(listener_it);
+        
+        // If no more listeners for this menu, remove the menu entry
+        if (menu_it->second.empty()) {
+          g_menu_listeners.erase(menu_it);
         }
-      });
-    } else {
-      menu_ptr->SetOnMenuDidHide(nullptr);
+        
+        return true;
+      }
     }
+    return false;
   } catch (...) {
-    // Ignore exceptions
+    return false;
   }
 }
 

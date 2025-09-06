@@ -83,12 +83,41 @@ typedef struct {
 } native_menu_item_list_t;
 
 /**
- * Event callback function types
+ * Menu will open event
  */
-typedef void (*native_menu_item_click_callback_t)(const native_menu_item_selected_event_t* event, void* user_data);
-typedef void (*native_menu_item_state_changed_callback_t)(const native_menu_item_state_changed_event_t* event, void* user_data);
-typedef void (*native_menu_will_show_callback_t)(native_menu_id_t menu_id, void* user_data);
-typedef void (*native_menu_did_hide_callback_t)(native_menu_id_t menu_id, void* user_data);
+typedef struct {
+  native_menu_id_t menu_id;
+} native_menu_will_open_event_t;
+
+/**
+ * Menu will close event
+ */
+typedef struct {
+  native_menu_id_t menu_id;
+} native_menu_will_close_event_t;
+
+
+/**
+ * Event listener registration function types
+ */
+typedef void (*native_menu_item_event_callback_t)(const void* event, void* user_data);
+typedef void (*native_menu_event_callback_t)(const void* event, void* user_data);
+
+/**
+ * Event types for menu item events
+ */
+typedef enum {
+  NATIVE_MENU_ITEM_EVENT_SELECTED = 0,
+  NATIVE_MENU_ITEM_EVENT_STATE_CHANGED = 1
+} native_menu_item_event_type_t;
+
+/**
+ * Event types for menu events
+ */
+typedef enum {
+  NATIVE_MENU_EVENT_WILL_OPEN = 0,
+  NATIVE_MENU_EVENT_WILL_CLOSE = 1
+} native_menu_event_type_t;
 
 /**
  * MenuItem operations
@@ -299,22 +328,25 @@ FFI_PLUGIN_EXPORT
 void native_menu_item_remove_submenu(native_menu_item_t item);
 
 /**
- * Set click event callback for a menu item
+ * Add event listener for a menu item
  * @param item The menu item
+ * @param event_type The type of event to listen for
  * @param callback The callback function
- * @param user_data User data to pass to callback
+ * @param user_data User data passed to callback
+ * @return A listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_on_click(native_menu_item_t item, native_menu_item_click_callback_t callback, void* user_data);
+int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_event_type_t event_type, native_menu_item_event_callback_t callback, void* user_data);
 
 /**
- * Set state changed event callback for a menu item
+ * Remove event listener from a menu item
  * @param item The menu item
- * @param callback The callback function
- * @param user_data User data to pass to callback
+ * @param listener_id The listener ID returned by native_menu_item_add_listener
+ * @return true if removed successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_on_state_changed(native_menu_item_t item, native_menu_item_state_changed_callback_t callback, void* user_data);
+bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id);
+
 
 /**
  * Programmatically trigger a menu item
@@ -510,22 +542,25 @@ FFI_PLUGIN_EXPORT
 bool native_menu_is_enabled(native_menu_t menu);
 
 /**
- * Set callback for when menu will show
+ * Add event listener for a menu
  * @param menu The menu
+ * @param event_type The type of event to listen for
  * @param callback The callback function
- * @param user_data User data to pass to callback
+ * @param user_data User data passed to callback
+ * @return A listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-void native_menu_set_on_will_show(native_menu_t menu, native_menu_will_show_callback_t callback, void* user_data);
+int native_menu_add_listener(native_menu_t menu, native_menu_event_type_t event_type, native_menu_event_callback_t callback, void* user_data);
 
 /**
- * Set callback for when menu did hide
+ * Remove event listener from a menu
  * @param menu The menu
- * @param callback The callback function
- * @param user_data User data to pass to callback
+ * @param listener_id The listener ID returned by native_menu_add_listener
+ * @return true if removed successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-void native_menu_set_on_did_hide(native_menu_t menu, native_menu_did_hide_callback_t callback, void* user_data);
+bool native_menu_remove_listener(native_menu_t menu, int listener_id);
+
 
 /**
  * Create and add a menu item in one operation
