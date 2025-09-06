@@ -10,6 +10,8 @@ using nativeapi::Menu;
 using nativeapi::MenuItem;
 using nativeapi::MenuItemClickedEvent;
 using nativeapi::MenuItemState;
+using nativeapi::MenuItemSubmenuClosedEvent;
+using nativeapi::MenuItemSubmenuOpenedEvent;
 using nativeapi::MenuItemType;
 using nativeapi::TrayIcon;
 using nativeapi::TrayManager;
@@ -111,7 +113,53 @@ int main() {
     });
     context_menu->AddItem(about_item);
 
-    // Add preferences submenu with checkbox items
+    // Create Tools submenu with submenu event handling
+    auto tools_submenu = Menu::Create();
+    
+    // Add items to tools submenu
+    auto clear_cache_item = MenuItem::Create("Clear Cache", MenuItemType::Normal);
+    clear_cache_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+      std::cout << "Clear Cache clicked from submenu" << std::endl;
+    });
+    tools_submenu->AddItem(clear_cache_item);
+    
+    auto reset_settings_item = MenuItem::Create("Reset Settings", MenuItemType::Normal);
+    reset_settings_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+      std::cout << "Reset Settings clicked from submenu" << std::endl;
+    });
+    tools_submenu->AddItem(reset_settings_item);
+    
+    tools_submenu->AddSeparator();
+    
+    auto debug_mode_item = MenuItem::Create("Debug Mode", MenuItemType::Checkbox);
+    debug_mode_item->SetState(MenuItemState::Unchecked);
+    debug_mode_item->AddListener<MenuItemClickedEvent>([debug_mode_item](const MenuItemClickedEvent& event) {
+      auto current_state = debug_mode_item->GetState();
+      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
+      debug_mode_item->SetState(new_state);
+      std::cout << "Debug Mode " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
+    });
+    tools_submenu->AddItem(debug_mode_item);
+    
+    // Create the submenu parent item
+    auto tools_item = MenuItem::Create("Tools", MenuItemType::Submenu);
+    tools_item->SetSubmenu(tools_submenu);
+    
+    // Add submenu event listeners
+    tools_item->AddListener<MenuItemSubmenuOpenedEvent>([](const MenuItemSubmenuOpenedEvent& event) {
+      std::cout << "Tools submenu opened (ID: " << event.GetItemId() << ")" << std::endl;
+    });
+    
+    tools_item->AddListener<MenuItemSubmenuClosedEvent>([](const MenuItemSubmenuClosedEvent& event) {
+      std::cout << "Tools submenu closed (ID: " << event.GetItemId() << ")" << std::endl;
+    });
+    
+    context_menu->AddItem(tools_item);
+    
+    // Add separator before preferences
+    context_menu->AddSeparator();
+    
+    // Add preferences section (not a submenu, just a label)
     auto preferences_item = MenuItem::Create("Preferences", MenuItemType::Normal);
     context_menu->AddItem(preferences_item);
     
