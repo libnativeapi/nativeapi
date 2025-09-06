@@ -46,14 +46,14 @@ void on_tray_double_click(void* user_data) {
   printf("Tray icon double clicked!\n");
 }
 
-void on_menu_will_open(const void* event, void* user_data) {
-  const native_menu_will_open_event_t* open_event = (const native_menu_will_open_event_t*)event;
-  printf("Menu will open: ID=%ld\n", open_event->menu_id);
+void on_menu_opened(const void* event, void* user_data) {
+  const native_menu_opened_event_t* open_event = (const native_menu_opened_event_t*)event;
+  printf("Menu opened: ID=%ld\n", open_event->menu_id);
 }
 
-void on_menu_will_close(const void* event, void* user_data) {
-  const native_menu_will_close_event_t* close_event = (const native_menu_will_close_event_t*)event;
-  printf("Menu will close: ID=%ld\n", close_event->menu_id);
+void on_menu_closed(const void* event, void* user_data) {
+  const native_menu_closed_event_t* close_event = (const native_menu_closed_event_t*)event;
+  printf("Menu closed: ID=%ld\n", close_event->menu_id);
 }
 
 int main() {
@@ -121,8 +121,8 @@ int main() {
   printf("Added %zu items to menu\n", native_menu_get_item_count(menu));
 
   // Set menu event listeners using new API
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_WILL_OPEN, on_menu_will_open, NULL);
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_WILL_CLOSE, on_menu_will_close, NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, on_menu_opened, NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, on_menu_closed, NULL);
 
   // Create a submenu example
   native_menu_t submenu = native_menu_create();

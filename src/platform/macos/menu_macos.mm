@@ -119,7 +119,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     auto menuIt = nativeapi::g_menu_registry.find(_menuId);
     if (menuIt != nativeapi::g_menu_registry.end()) {
         nativeapi::Menu* menuPtr = menuIt->second;
-        menuPtr->EmitWillOpenEvent();
+        menuPtr->EmitOpenedEvent();
     }
 }
 
@@ -127,7 +127,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     auto menuIt = nativeapi::g_menu_registry.find(_menuId);
     if (menuIt != nativeapi::g_menu_registry.end()) {
         nativeapi::Menu* menuPtr = menuIt->second;
-        menuPtr->EmitWillCloseEvent();
+        menuPtr->EmitClosedEvent();
     }
 }
 @end
@@ -644,11 +644,11 @@ void* Menu::GetNativeMenu() const {
     return (__bridge void*)pimpl_->ns_menu_;
 }
 
-void Menu::EmitWillOpenEvent() {
-    EmitSync<MenuWillOpenEvent>(id);
+void Menu::EmitOpenedEvent() {
+    EmitSync<MenuOpenedEvent>(id);
 }
 
-void Menu::EmitWillCloseEvent() {
-    EmitSync<MenuWillCloseEvent>(id);
+void Menu::EmitClosedEvent() {
+    EmitSync<MenuClosedEvent>(id);
 }
 }

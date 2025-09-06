@@ -812,28 +812,28 @@ int native_menu_add_listener(native_menu_t menu, native_menu_event_type_t event_
     g_menu_listeners[menu][listener_id] = std::move(listener_data);
     
     // Add the appropriate event listener based on event type
-    if (event_type == NATIVE_MENU_EVENT_WILL_OPEN) {
-      menu_ptr->AddListener<MenuWillOpenEvent>([menu, listener_id](const MenuWillOpenEvent& event) {
+    if (event_type == NATIVE_MENU_EVENT_OPENED) {
+      menu_ptr->AddListener<MenuOpenedEvent>([menu, listener_id](const MenuOpenedEvent& event) {
         // Find the listener data
         auto menu_it = g_menu_listeners.find(menu);
         if (menu_it != g_menu_listeners.end()) {
           auto listener_it = menu_it->second.find(listener_id);
           if (listener_it != menu_it->second.end()) {
-            native_menu_will_open_event_t c_event = {};
+            native_menu_opened_event_t c_event = {};
             c_event.menu_id = event.GetMenuId();
             
             listener_it->second->callback(&c_event, listener_it->second->user_data);
           }
         }
       });
-    } else if (event_type == NATIVE_MENU_EVENT_WILL_CLOSE) {
-      menu_ptr->AddListener<MenuWillCloseEvent>([menu, listener_id](const MenuWillCloseEvent& event) {
+    } else if (event_type == NATIVE_MENU_EVENT_CLOSED) {
+      menu_ptr->AddListener<MenuClosedEvent>([menu, listener_id](const MenuClosedEvent& event) {
         // Find the listener data
         auto menu_it = g_menu_listeners.find(menu);
         if (menu_it != g_menu_listeners.end()) {
           auto listener_it = menu_it->second.find(listener_id);
           if (listener_it != menu_it->second.end()) {
-            native_menu_will_close_event_t c_event = {};
+            native_menu_closed_event_t c_event = {};
             c_event.menu_id = event.GetMenuId();
             
             listener_it->second->callback(&c_event, listener_it->second->user_data);

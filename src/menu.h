@@ -511,8 +511,8 @@ class MenuItem : public EventEmitter {
  * fileMenu->AddItem(exitItem);
  *
  * // Listen to menu events
- * fileMenu->AddListener<MenuWillOpenEvent>([](const MenuWillOpenEvent& event) {
- *     std::cout << "Menu will open" << std::endl;
+ * fileMenu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {
+ *     std::cout << "Menu opened" << std::endl;
  * });
  *
  * // Show as context menu
@@ -792,20 +792,20 @@ class Menu : public EventEmitter {
   void* GetNativeMenu() const;
 
   /**
-   * @brief Emit a menu will open event.
+   * @brief Emit a menu opened event.
    *
-   * This method is used internally by platform implementations to
-   * emit events when a menu is about to be opened.
+   * This is primarily used by platform implementations to
+   * emit events when a menu has been opened.
    */
-  void EmitWillOpenEvent();
+  void EmitOpenedEvent();
 
   /**
-   * @brief Emit a menu will close event.
+   * @brief Emit a menu closed event.
    *
-   * This method is used internally by platform implementations to
-   * emit events when a menu is about to be closed.
+   * This is primarily used by platform implementations to
+   * emit events when a menu has been closed.
    */
-  void EmitWillCloseEvent();
+  void EmitClosedEvent();
 
  private:
   /**

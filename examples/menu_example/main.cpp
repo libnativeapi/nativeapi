@@ -67,12 +67,12 @@ int main() {
         });
         
         // Listen to menu events
-        menu->AddListener<MenuWillOpenEvent>([](const MenuWillOpenEvent& event) {
-            std::cout << "[EVENT] Menu will open: ID " << event.GetMenuId() << std::endl;
+        menu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {
+            std::cout << "[EVENT] Menu opened: ID " << event.GetMenuId() << std::endl;
         });
         
-        menu->AddListener<MenuWillCloseEvent>([](const MenuWillCloseEvent& event) {
-            std::cout << "[EVENT] Menu will close: ID " << event.GetMenuId() << std::endl;
+        menu->AddListener<MenuClosedEvent>([](const MenuClosedEvent& event) {
+            std::cout << "[EVENT] Menu closed: ID " << event.GetMenuId() << std::endl;
         });
         
         // Add items to menu
@@ -149,7 +149,7 @@ int main() {
         std::cout << "1. Creating menus and menu items with different types" << std::endl;
         std::cout << "2. Using the new event system with AddListener<EventType>()" << std::endl;
         std::cout << "3. Handling MenuItemSelectedEvent and MenuItemStateChangedEvent" << std::endl;
-        std::cout << "4. Handling MenuWillOpenEvent and MenuWillCloseEvent" << std::endl;
+        std::cout << "4. Handling MenuOpenedEvent and MenuClosedEvent" << std::endl;
         std::cout << "5. Programmatic event triggering" << std::endl;
         std::cout << "6. Submenu support with event propagation" << std::endl;
         

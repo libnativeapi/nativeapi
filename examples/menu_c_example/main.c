@@ -21,18 +21,18 @@ void on_menu_item_state_changed(const void* event, void* user_data) {
            item_name, state_event->item_id, state_event->checked ? "true" : "false");
 }
 
-void on_menu_will_open(const void* event, void* user_data) {
-    const native_menu_will_open_event_t* open_event = (const native_menu_will_open_event_t*)event;
+void on_menu_opened(const void* event, void* user_data) {
+    const native_menu_opened_event_t* open_event = (const native_menu_opened_event_t*)event;
     const char* menu_name = (const char*)user_data;
     
-    printf("[EVENT] Menu will open: %s (ID: %ld)\n", menu_name, open_event->menu_id);
+    printf("[EVENT] Menu opened: %s (ID: %ld)\n", menu_name, open_event->menu_id);
 }
 
-void on_menu_will_close(const void* event, void* user_data) {
-    const native_menu_will_close_event_t* close_event = (const native_menu_will_close_event_t*)event;
+void on_menu_closed(const void* event, void* user_data) {
+    const native_menu_closed_event_t* close_event = (const native_menu_closed_event_t*)event;
     const char* menu_name = (const char*)user_data;
     
-    printf("[EVENT] Menu will close: %s (ID: %ld)\n", menu_name, close_event->menu_id);
+    printf("[EVENT] Menu closed: %s (ID: %ld)\n", menu_name, close_event->menu_id);
 }
 
 int main() {
@@ -93,11 +93,11 @@ int main() {
                                                       on_menu_item_selected, (void*)"Exit");
     
     // Add menu event listeners
-    int menu_open_listener = native_menu_add_listener(menu, NATIVE_MENU_EVENT_WILL_OPEN, 
-                                                      on_menu_will_open, (void*)"Main Menu");
+    int menu_open_listener = native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, 
+                                                      on_menu_opened, (void*)"Main Menu");
     
-    int menu_close_listener = native_menu_add_listener(menu, NATIVE_MENU_EVENT_WILL_CLOSE, 
-                                                       on_menu_will_close, (void*)"Main Menu");
+    int menu_close_listener = native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, 
+                                                       on_menu_closed, (void*)"Main Menu");
     
     // Check if listeners were added successfully
     if (file_listener == -1 || checkbox_select_listener == -1 || checkbox_state_listener == -1 ||
@@ -192,7 +192,7 @@ int main() {
     printf("1. Creating menus and menu items with different types\n");
     printf("2. Using the new event listener API with native_menu_item_add_listener()\n");
     printf("3. Handling NATIVE_MENU_ITEM_EVENT_SELECTED and NATIVE_MENU_ITEM_EVENT_STATE_CHANGED\n");
-    printf("4. Handling NATIVE_MENU_EVENT_WILL_OPEN and NATIVE_MENU_EVENT_WILL_CLOSE\n");
+    printf("4. Handling NATIVE_MENU_EVENT_OPENED and NATIVE_MENU_EVENT_CLOSED\n");
     printf("5. Programmatic event triggering\n");
     printf("6. Event listener removal with native_menu_item_remove_listener()\n");
     printf("7. Multiple listeners for the same event type\n");

@@ -47,13 +47,13 @@ class MenuItemStateChangedEvent : public TypedEvent<MenuItemStateChangedEvent> {
 };
 
 /**
- * @brief Menu will open event.
+ * @brief Menu opened event.
  *
- * This event is fired when a menu is about to be displayed.
+ * This event is fired when a menu has been displayed.
  */
-class MenuWillOpenEvent : public TypedEvent<MenuWillOpenEvent> {
+class MenuOpenedEvent : public TypedEvent<MenuOpenedEvent> {
  public:
-  MenuWillOpenEvent(MenuID menu_id) : menu_id_(menu_id) {}
+  MenuOpenedEvent(MenuID menu_id) : menu_id_(menu_id) {}
 
   MenuID GetMenuId() const { return menu_id_; }
 
@@ -62,13 +62,13 @@ class MenuWillOpenEvent : public TypedEvent<MenuWillOpenEvent> {
 };
 
 /**
- * @brief Menu will close event.
+ * @brief Menu closed event.
  *
- * This event is fired when a menu is about to be hidden or closed.
+ * This event is fired when a menu has been hidden or closed.
  */
-class MenuWillCloseEvent : public TypedEvent<MenuWillCloseEvent> {
+class MenuClosedEvent : public TypedEvent<MenuClosedEvent> {
  public:
-  MenuWillCloseEvent(MenuID menu_id) : menu_id_(menu_id) {}
+  MenuClosedEvent(MenuID menu_id) : menu_id_(menu_id) {}
 
   MenuID GetMenuId() const { return menu_id_; }
 

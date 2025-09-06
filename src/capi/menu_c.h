@@ -83,18 +83,18 @@ typedef struct {
 } native_menu_item_list_t;
 
 /**
- * Menu will open event
+ * Menu opened event
  */
 typedef struct {
   native_menu_id_t menu_id;
-} native_menu_will_open_event_t;
+} native_menu_opened_event_t;
 
 /**
- * Menu will close event
+ * Menu closed event
  */
 typedef struct {
   native_menu_id_t menu_id;
-} native_menu_will_close_event_t;
+} native_menu_closed_event_t;
 
 
 /**
@@ -115,8 +115,8 @@ typedef enum {
  * Event types for menu events
  */
 typedef enum {
-  NATIVE_MENU_EVENT_WILL_OPEN = 0,
-  NATIVE_MENU_EVENT_WILL_CLOSE = 1
+  NATIVE_MENU_EVENT_OPENED = 0,
+  NATIVE_MENU_EVENT_CLOSED = 1
 } native_menu_event_type_t;
 
 /**
