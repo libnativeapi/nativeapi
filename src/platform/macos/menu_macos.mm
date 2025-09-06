@@ -400,11 +400,12 @@ void* MenuItem::GetNativeItem() const {
 }
 
 void MenuItem::EmitSelectedEvent(const std::string& item_text) {
-    EmitSync<MenuItemSelectedEvent>(id, item_text);
+    EmitSync<MenuItemClickedEvent>(id, item_text);
 }
 
 void MenuItem::EmitStateChangedEvent(bool checked) {
-    EmitSync<MenuItemStateChangedEvent>(id, checked);
+    // Now just emit clicked event, application manages state
+    EmitSync<MenuItemClickedEvent>(id, pimpl_->text_);
 }
 
 // Menu::Impl implementation

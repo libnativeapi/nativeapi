@@ -35,34 +35,30 @@ int main() {
         std::cout << "Setting up event listeners..." << std::endl;
         
         // Listen to menu item selection events
-        fileItem->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
-            std::cout << "[EVENT] Menu item selected: " << event.GetItemText() 
+        fileItem->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Menu item clicked: " << event.GetItemText() 
                       << " (ID: " << event.GetItemId() << ")" << std::endl;
         });
         
-        checkboxItem->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
+        checkboxItem->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
             std::cout << "[EVENT] Checkbox item clicked: " << event.GetItemText() 
-                      << " (ID: " << event.GetItemId() << ")" << std::endl;
+                      << " (ID: " << event.GetItemId() << ") - Handle state manually" << std::endl;
         });
         
-        // Listen to state change events for checkable items
-        checkboxItem->AddListener<MenuItemStateChangedEvent>([](const MenuItemStateChangedEvent& event) {
-            std::cout << "[EVENT] Checkbox state changed: ID " << event.GetItemId() 
-                      << ", checked: " << (event.IsChecked() ? "true" : "false") << std::endl;
+        // Note: State management is now handled by the application
+        
+        radioItem1->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Radio item 1 clicked: ID " << event.GetItemId() 
+                      << " - Handle state manually" << std::endl;
         });
         
-        radioItem1->AddListener<MenuItemStateChangedEvent>([](const MenuItemStateChangedEvent& event) {
-            std::cout << "[EVENT] Radio item 1 state changed: ID " << event.GetItemId() 
-                      << ", checked: " << (event.IsChecked() ? "true" : "false") << std::endl;
+        radioItem2->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Radio item 2 clicked: ID " << event.GetItemId() 
+                      << " - Handle state manually" << std::endl;
         });
         
-        radioItem2->AddListener<MenuItemStateChangedEvent>([](const MenuItemStateChangedEvent& event) {
-            std::cout << "[EVENT] Radio item 2 state changed: ID " << event.GetItemId() 
-                      << ", checked: " << (event.IsChecked() ? "true" : "false") << std::endl;
-        });
-        
-        exitItem->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
-            std::cout << "[EVENT] Exit item selected: " << event.GetItemText() << std::endl;
+        exitItem->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Exit item clicked: " << event.GetItemText() << std::endl;
             std::cout << "Application should exit now..." << std::endl;
         });
         
@@ -122,12 +118,12 @@ int main() {
         auto submenuItem1 = MenuItem::Create("Submenu Item 1", MenuItemType::Normal);
         auto submenuItem2 = MenuItem::Create("Submenu Item 2", MenuItemType::Normal);
         
-        submenuItem1->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
-            std::cout << "[EVENT] Submenu item selected: " << event.GetItemText() << std::endl;
+        submenuItem1->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText() << std::endl;
         });
         
-        submenuItem2->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
-            std::cout << "[EVENT] Submenu item selected: " << event.GetItemText() << std::endl;
+        submenuItem2->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+            std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText() << std::endl;
         });
         
         submenu->AddItem(submenuItem1);
@@ -148,7 +144,7 @@ int main() {
         std::cout << "This example demonstrates:" << std::endl;
         std::cout << "1. Creating menus and menu items with different types" << std::endl;
         std::cout << "2. Using the new event system with AddListener<EventType>()" << std::endl;
-        std::cout << "3. Handling MenuItemSelectedEvent and MenuItemStateChangedEvent" << std::endl;
+        std::cout << "3. Handling MenuItemClickedEvent (state managed by application)" << std::endl;
         std::cout << "4. Handling MenuOpenedEvent and MenuClosedEvent" << std::endl;
         std::cout << "5. Programmatic event triggering" << std::endl;
         std::cout << "6. Submenu support with event propagation" << std::endl;

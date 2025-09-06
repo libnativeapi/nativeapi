@@ -132,7 +132,7 @@ class Menu;
  * auto item = MenuItem::Create("Open File", MenuItemType::Normal);
  * item->SetIcon("data:image/png;base64,...");
  * item->SetAccelerator(KeyboardAccelerator("O", KeyboardAccelerator::Ctrl));
- * item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
+ * item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
  *     // Handle menu item click
  *     std::cout << "Opening file..." << std::endl;
  * });
@@ -140,8 +140,8 @@ class Menu;
  * // Create a checkbox item
  * auto checkbox = MenuItem::Create("Show Toolbar", MenuItemType::Checkbox);
  * checkbox->SetChecked(true);
- * checkbox->AddListener<MenuItemStateChangedEvent>([](const MenuItemStateChangedEvent& event) {
- *     std::cout << "Toolbar visibility: " << event.IsChecked() << std::endl;
+ * checkbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+ *     std::cout << "Toolbar clicked, handle state change manually" << std::endl;
  * });
  * ```
  */

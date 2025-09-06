@@ -440,7 +440,7 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
     
     // Add the appropriate event listener based on event type
     if (event_type == NATIVE_MENU_ITEM_EVENT_SELECTED) {
-      menu_item->AddListener<MenuItemSelectedEvent>([item, listener_id](const MenuItemSelectedEvent& event) {
+      menu_item->AddListener<MenuItemClickedEvent>([item, listener_id](const MenuItemClickedEvent& event) {
         // Find the listener data
         auto item_it = g_menu_item_listeners.find(item);
         if (item_it != g_menu_item_listeners.end()) {
@@ -456,7 +456,7 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
         }
       });
     } else if (event_type == NATIVE_MENU_ITEM_EVENT_STATE_CHANGED) {
-      menu_item->AddListener<MenuItemStateChangedEvent>([item, listener_id](const MenuItemStateChangedEvent& event) {
+      menu_item->AddListener<MenuItemClickedEvent>([item, listener_id](const MenuItemClickedEvent& event) {
         // Find the listener data
         auto item_it = g_menu_item_listeners.find(item);
         if (item_it != g_menu_item_listeners.end()) {
@@ -464,7 +464,7 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
           if (listener_it != item_it->second.end()) {
             native_menu_item_state_changed_event_t c_event = {};
             c_event.item_id = event.GetItemId();
-            c_event.checked = event.IsChecked();
+            c_event.checked = false; // Application should manage checkbox/radio state
             
             listener_it->second->callback(&c_event, listener_it->second->user_data);
           }

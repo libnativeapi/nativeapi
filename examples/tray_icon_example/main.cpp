@@ -14,7 +14,7 @@
 using namespace nativeapi;
 using nativeapi::Menu;
 using nativeapi::MenuItem;
-using nativeapi::MenuItemSelectedEvent;
+using nativeapi::MenuItemClickedEvent;
 using nativeapi::MenuItemType;
 
 int main() {
@@ -69,7 +69,7 @@ int main() {
     
     // Add menu items
     auto status_item = MenuItem::Create("Status: Running", MenuItemType::Normal);
-    status_item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
+    status_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
         std::cout << "Status clicked from context menu" << std::endl;
     });
     context_menu->AddItem(status_item);
@@ -79,7 +79,7 @@ int main() {
 
     // Add settings item
     auto settings_item = MenuItem::Create("Settings...", MenuItemType::Normal);
-    settings_item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
+    settings_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
         std::cout << "Settings clicked from context menu" << std::endl;
         std::cout << "Opening settings dialog..." << std::endl;
     });
@@ -87,7 +87,7 @@ int main() {
 
     // Add about item
     auto about_item = MenuItem::Create("About", MenuItemType::Normal);
-    about_item->AddListener<MenuItemSelectedEvent>([](const MenuItemSelectedEvent& event) {
+    about_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
         std::cout << "About clicked from context menu" << std::endl;
         std::cout << "TrayIcon Example v1.0 - Native API Demo" << std::endl;
     });
@@ -99,7 +99,7 @@ int main() {
     // Add exit item
     auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
     bool* should_exit = new bool(false);
-    exit_item->AddListener<MenuItemSelectedEvent>([should_exit](const MenuItemSelectedEvent& event) {
+    exit_item->AddListener<MenuItemClickedEvent>([should_exit](const MenuItemClickedEvent& event) {
         std::cout << "Exit clicked from context menu" << std::endl;
         *should_exit = true;
     });
