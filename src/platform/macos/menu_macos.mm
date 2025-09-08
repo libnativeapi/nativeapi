@@ -8,6 +8,9 @@
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
 
+// Note: This file assumes ARC (Automatic Reference Counting) is enabled
+// for proper memory management of Objective-C objects.
+
 // Forward declarations - moved to global scope
 @interface MenuItemTarget : NSObject
 @property (nonatomic, assign) nativeapi::MenuItemID itemId;
@@ -175,6 +178,9 @@ class MenuItem::Impl {
 
     ~Impl() {
         if (target_) {
+            // Remove target and action to prevent callbacks after destruction
+            [ns_menu_item_ setTarget:nil];
+            [ns_menu_item_ setAction:nil];
             target_ = nil;
         }
     }
@@ -248,7 +254,7 @@ std::string MenuItem::GetText() const {
 void MenuItem::SetIcon(const std::string& icon) {
     pimpl_->icon_ = icon;
 
-    NSImage* image = nullptr;
+    NSImage* image = nil;
 
     // Check if the icon is a base64 string
     if (icon.find("data:image") != std::string::npos) {
@@ -258,8 +264,9 @@ void MenuItem::SetIcon(const std::string& icon) {
             std::string base64Icon = icon.substr(pos + 7);
 
             // Convert base64 to NSData
+            NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
             NSData* imageData = [[NSData alloc]
-                initWithBase64EncodedString:[NSString stringWithUTF8String:base64Icon.c_str()]
+                initWithBase64EncodedString:base64String
                                     options:NSDataBase64DecodingIgnoreUnknownCharacters];
 
             if (imageData) {
@@ -281,6 +288,9 @@ void MenuItem::SetIcon(const std::string& icon) {
         [image setSize:NSMakeSize(16, 16)];  // Standard menu item icon size
         [image setTemplate:YES];
         [pimpl_->ns_menu_item_ setImage:image];
+    } else {
+        // Clear the image if no valid icon is provided
+        [pimpl_->ns_menu_item_ setImage:nil];
     }
 }
 
@@ -449,6 +459,8 @@ class Menu::Impl {
 
     ~Impl() {
         if (delegate_) {
+            // Remove delegate to prevent callbacks after destruction
+            [ns_menu_ setDelegate:nil];
             delegate_ = nil;
         }
     }
@@ -604,9 +616,13 @@ bool Menu::ShowAsContextMenu(double x, double y) {
                                         pressure:1.0];
 
     pimpl_->visible_ = true;
-    // Create a dummy view to avoid the nil warning
-    NSView* dummyView = [[NSView alloc] init];
-    [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
+    
+    @autoreleasepool {
+        // Create a dummy view to avoid the nil warning
+        NSView* dummyView = [[NSView alloc] init];
+        [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
+    }
+    
     pimpl_->visible_ = false;
 
     return true;

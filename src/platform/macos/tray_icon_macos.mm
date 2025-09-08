@@ -6,6 +6,9 @@
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 
+// Note: This file assumes ARC (Automatic Reference Counting) is enabled
+// for proper memory management of Objective-C objects.
+
 // Forward declarations
 @interface TrayIconDelegate : NSObject
 @property (nonatomic, assign) nativeapi::TrayIcon* trayIcon;
@@ -37,6 +40,11 @@ class TrayIcon::Impl {
 
   ~Impl() {
     if (ns_status_item_) {
+      // Remove target and action to prevent callbacks after destruction
+      if (ns_status_item_.button) {
+        [ns_status_item_.button setTarget:nil];
+        [ns_status_item_.button setAction:nil];
+      }
       [[NSStatusBar systemStatusBar] removeStatusItem:ns_status_item_];
       ns_status_item_ = nil;
     }
@@ -115,6 +123,9 @@ void TrayIcon::SetIcon(std::string icon) {
 
     // Set the image to the button
     [pimpl_->ns_status_item_.button setImage:image];
+  } else {
+    // Clear the image if no valid icon is provided
+    [pimpl_->ns_status_item_.button setImage:nil];
   }
 }
 
