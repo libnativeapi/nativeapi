@@ -29,7 +29,7 @@ private:
   WindowManager* manager_;
 };
 
-WindowManager::WindowManager() : impl_(std::make_unique<WindowManagerImpl>(this)) {
+WindowManager::WindowManager() : pimpl_(std::make_unique<WindowManagerImpl>(this)) {
   SetupEventMonitoring();
 }
 
@@ -38,11 +38,11 @@ WindowManager::~WindowManager() {
 }
 
 void WindowManager::SetupEventMonitoring() {
-  impl_->SetupEventMonitoring();
+  pimpl_->SetupEventMonitoring();
 }
 
 void WindowManager::CleanupEventMonitoring() {
-  impl_->CleanupEventMonitoring();
+  pimpl_->CleanupEventMonitoring();
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {

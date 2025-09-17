@@ -52,9 +52,9 @@ class Window {
   void SetContentSize(Size size);
   Size GetContentSize() const;
   void SetMinimumSize(Size size);
-  Size GetMinimumSize();
+  Size GetMinimumSize() const;
   void SetMaximumSize(Size size);
-  Size GetMaximumSize();
+  Size GetMaximumSize() const;
   void SetResizable(bool is_resizable);
   bool IsResizable() const;
   void SetMovable(bool is_movable);
@@ -68,11 +68,11 @@ class Window {
   void SetClosable(bool is_closable);
   bool IsClosable() const;
   void SetAlwaysOnTop(bool is_always_on_top);
-  bool IsAlwaysOnTop();
+  bool IsAlwaysOnTop() const;
   void SetPosition(Point point);
-  Point GetPosition();
+  Point GetPosition() const;
   void SetTitle(std::string title);
-  std::string GetTitle();
+  std::string GetTitle() const;
   void SetHasShadow(bool has_shadow);
   bool HasShadow() const;
   void SetOpacity(float opacity);
