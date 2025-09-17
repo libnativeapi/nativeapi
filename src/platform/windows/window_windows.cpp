@@ -272,7 +272,7 @@ void Window::SetMinimumSize(Size size) {
     // This is a placeholder implementation
 }
 
-Size Window::GetMinimumSize() {
+Size Window::GetMinimumSize() const {
     // Placeholder implementation
     return Size{0, 0};
 }
@@ -282,7 +282,7 @@ void Window::SetMaximumSize(Size size) {
     // This is a placeholder implementation
 }
 
-Size Window::GetMaximumSize() {
+Size Window::GetMaximumSize() const {
     // Placeholder implementation
     return Size{0, 0};
 }
@@ -409,7 +409,7 @@ void Window::SetAlwaysOnTop(bool is_always_on_top) {
     }
 }
 
-bool Window::IsAlwaysOnTop() {
+bool Window::IsAlwaysOnTop() const {
     if (pimpl_->hwnd_) {
         LONG_PTR exStyle = GetWindowLongPtr(pimpl_->hwnd_, GWL_EXSTYLE);
         return (exStyle & WS_EX_TOPMOST) != 0;
@@ -425,7 +425,7 @@ void Window::SetPosition(Point point) {
     }
 }
 
-Point Window::GetPosition() {
+Point Window::GetPosition() const {
     Point point = {0, 0};
     
     if (pimpl_->hwnd_) {
@@ -446,7 +446,7 @@ void Window::SetTitle(std::string title) {
     }
 }
 
-std::string Window::GetTitle() {
+std::string Window::GetTitle() const {
     if (pimpl_->hwnd_) {
         int length = GetWindowTextLength(pimpl_->hwnd_);
         if (length > 0) {
