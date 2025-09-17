@@ -37,7 +37,7 @@ class KeyboardMonitor::Impl {
   uint32_t GetModifierState();
 };
 
-KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)), event_dispatcher_() {}
+KeyboardMonitor::KeyboardMonitor() : impl_(std::make_unique<Impl>(this)) {}
 
 KeyboardMonitor::~KeyboardMonitor() {
   Stop();
@@ -156,16 +156,16 @@ void KeyboardMonitor::Impl::MonitoringLoop() {
           
           if (xi_event->evtype == XI_KeyPress) {
             KeyPressedEvent key_event(xi_event->detail);
-            monitor_->DispatchEvent(key_event);
+            monitor_->EmitSync(key_event);
             
             ModifierKeysChangedEvent modifier_event(GetModifierState());
-            monitor_->DispatchEvent(modifier_event);
+            monitor_->EmitSync(modifier_event);
           } else if (xi_event->evtype == XI_KeyRelease) {
             KeyReleasedEvent key_event(xi_event->detail);
-            monitor_->DispatchEvent(key_event);
+            monitor_->EmitSync(key_event);
             
             ModifierKeysChangedEvent modifier_event(GetModifierState());
-            monitor_->DispatchEvent(modifier_event);
+            monitor_->EmitSync(modifier_event);
           }
           
           XFreeEventData(display_, &event.xcookie);
@@ -214,10 +214,6 @@ void KeyboardMonitor::Stop() {
 
 bool KeyboardMonitor::IsMonitoring() const {
   return impl_->monitoring_;
-}
-
-void KeyboardMonitor::DispatchEvent(const Event& event) {
-  event_dispatcher_.DispatchSync(event);
 }
 
 }  // namespace nativeapi

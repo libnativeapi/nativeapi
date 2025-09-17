@@ -16,47 +16,34 @@ class MenuItem::Impl {
   std::string tooltip_;
 };
 
-MenuItem::MenuItem() : pimpl_(new Impl(nullptr)) {
-  id = -1;
-}
-
 MenuItem::MenuItem(void* menu_item) : pimpl_(new Impl((GtkWidget*)menu_item)) {
-  id = -1;
 }
 
 MenuItem::~MenuItem() {
-  delete pimpl_;
 }
 
-void MenuItem::SetIcon(std::string icon) {
+void MenuItem::SetIcon(const std::string& icon) {
   pimpl_->icon_ = icon;
   // TODO: Implement icon setting for GTK menu item
 }
 
-std::string MenuItem::GetIcon() {
+std::string MenuItem::GetIcon() const {
   return pimpl_->icon_;
 }
 
-void MenuItem::SetTitle(std::string title) {
-  pimpl_->title_ = title;
-  if (pimpl_->gtk_menu_item_) {
-    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), title.c_str());
-  }
-}
-
-std::string MenuItem::GetTitle() {
-  return pimpl_->title_;
-}
-
-void MenuItem::SetTooltip(std::string tooltip) {
+void MenuItem::SetTooltip(const std::string& tooltip) {
   pimpl_->tooltip_ = tooltip;
   if (pimpl_->gtk_menu_item_) {
     gtk_widget_set_tooltip_text(pimpl_->gtk_menu_item_, tooltip.c_str());
   }
 }
 
-std::string MenuItem::GetTooltip() {
+std::string MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
+}
+
+void* MenuItem::GetNativeItem() const {
+  return (void*)pimpl_->gtk_menu_item_;
 }
 
 // Private implementation class for Menu
@@ -67,54 +54,30 @@ class Menu::Impl {
   GtkWidget* gtk_menu_;
 };
 
-Menu::Menu() : pimpl_(new Impl(gtk_menu_new())) {
-  id = -1;
-}
-
 Menu::Menu(void* menu) : pimpl_(new Impl((GtkWidget*)menu)) {
-  id = -1;
 }
 
 Menu::~Menu() {
   if (pimpl_->gtk_menu_) {
     g_object_unref(pimpl_->gtk_menu_);
   }
-  delete pimpl_;
 }
 
-void Menu::AddItem(MenuItem item) {
-  if (pimpl_->gtk_menu_ && item.pimpl_->gtk_menu_item_) {
-    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), item.pimpl_->gtk_menu_item_);
+void Menu::AddItem(std::shared_ptr<MenuItem> item) {
+  if (pimpl_->gtk_menu_ && item && item->GetNativeItem()) {
+    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeItem());
   }
 }
 
-void Menu::RemoveItem(MenuItem item) {
-  if (pimpl_->gtk_menu_ && item.pimpl_->gtk_menu_item_) {
-    gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), item.pimpl_->gtk_menu_item_);
+bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
+  if (pimpl_->gtk_menu_ && item && item->GetNativeItem()) {
+    gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeItem());
+    return true;
   }
+  return false;
 }
 
-void Menu::AddSeparator() {
-  if (pimpl_->gtk_menu_) {
-    GtkWidget* separator = gtk_separator_menu_item_new();
-    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), separator);
-  }
-}
-
-MenuItem Menu::CreateItem(std::string title) {
-  GtkWidget* menu_item = gtk_menu_item_new_with_label(title.c_str());
-  MenuItem item(menu_item);
-  item.SetTitle(title);
-  return item;
-}
-
-MenuItem Menu::CreateItem(std::string title, std::string icon) {
-  MenuItem item = CreateItem(title);
-  item.SetIcon(icon);
-  return item;
-}
-
-void* Menu::GetNativeMenu() {
+void* Menu::GetNativeMenu() const {
   return (void*)pimpl_->gtk_menu_;
 }
 
