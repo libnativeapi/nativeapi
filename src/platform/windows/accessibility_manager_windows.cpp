@@ -3,6 +3,8 @@
 #include <windows.h>
 #include <oleacc.h>
 
+#pragma comment(lib, "oleacc.lib")
+
 namespace nativeapi {
 
 void AccessibilityManager::Enable() {

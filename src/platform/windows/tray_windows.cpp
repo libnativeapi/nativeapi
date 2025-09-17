@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <memory>
+
+#pragma comment(lib, "shell32.lib")
+
 #include "../../tray.h"
 #include "../../menu.h"
 

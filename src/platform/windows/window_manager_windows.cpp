@@ -12,10 +12,10 @@
 namespace nativeapi {
 
 // Private implementation for Windows (stub for now)
-class WindowManager::WindowManagerImpl {
+class WindowManager::Impl {
 public:
-  WindowManagerImpl(WindowManager* manager) : manager_(manager) {}
-  ~WindowManagerImpl() {}
+  Impl(WindowManager* manager) : manager_(manager) {}
+  ~Impl() {}
   
   void SetupEventMonitoring() {
     // TODO: Implement Windows-specific event monitoring
@@ -29,7 +29,7 @@ private:
   WindowManager* manager_;
 };
 
-WindowManager::WindowManager() : pimpl_(std::make_unique<WindowManagerImpl>(this)) {
+WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
   SetupEventMonitoring();
 }
 

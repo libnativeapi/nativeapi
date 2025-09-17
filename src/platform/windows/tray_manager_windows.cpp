@@ -3,6 +3,8 @@
 #include <memory>
 #include <mutex>
 
+#pragma comment(lib, "shell32.lib")
+
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
 

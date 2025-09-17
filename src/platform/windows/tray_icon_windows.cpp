@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <memory>
+
+#pragma comment(lib, "shell32.lib")
+
 #include "../../tray_icon.h"
 #include "../../menu.h"
 #include "../../tray_icon_event.h"
