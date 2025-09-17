@@ -12,10 +12,10 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl(GtkStatusIcon* tray) : gtk_status_icon_(tray), title_(""), tooltip_("") {}
+  Impl(GtkStatusIcon* tray) : gtk_status_icon_(tray), title_(""), tooltip_(""), context_menu_(nullptr) {}
   
   GtkStatusIcon* gtk_status_icon_;
-  Menu context_menu_;  // Store menu object to keep it alive
+  std::shared_ptr<Menu> context_menu_;  // Store menu shared_ptr to keep it alive
   std::string title_;  // GTK StatusIcon doesn't have title, so we store it
   std::string tooltip_;
 };
@@ -113,15 +113,15 @@ std::string TrayIcon::GetTooltip() {
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
-  // Store the menu object to keep it alive
-  pimpl_->context_menu_ = *menu;
+  // Store the menu shared_ptr to keep it alive
+  pimpl_->context_menu_ = menu;
 
   // Note: Full GTK integration would need to connect popup-menu signal
   // and show the GTK menu from the Menu object's GetNativeMenu()
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
-  return std::make_shared<Menu>(pimpl_->context_menu_);
+  return pimpl_->context_menu_;
 }
 
 Rectangle TrayIcon::GetBounds() {
@@ -166,20 +166,8 @@ bool TrayIcon::IsVisible() {
   return false;
 }
 
-void TrayIcon::SetOnLeftClick(std::function<void()> callback) {
-  // This method is deprecated - use event listeners instead
-}
-
-void TrayIcon::SetOnRightClick(std::function<void()> callback) {
-  // This method is deprecated - use event listeners instead
-}
-
-void TrayIcon::SetOnDoubleClick(std::function<void()> callback) {
-  // This method is deprecated - use event listeners instead
-}
-
 bool TrayIcon::ShowContextMenu(double x, double y) {
-  if (!pimpl_->context_menu_.GetNativeMenu()) {
+  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeMenu()) {
     return false;
   }
 
@@ -189,7 +177,7 @@ bool TrayIcon::ShowContextMenu(double x, double y) {
 }
 
 bool TrayIcon::ShowContextMenu() {
-  if (!pimpl_->context_menu_.GetNativeMenu()) {
+  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeMenu()) {
     return false;
   }
 

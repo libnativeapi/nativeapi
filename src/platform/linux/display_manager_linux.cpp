@@ -38,6 +38,10 @@ DisplayManager::DisplayManager() {
   std::cout << "DisplayManager initialized" << std::endl;
 }
 
+DisplayManager::~DisplayManager() {
+  // Destructor implementation
+}
+
 std::vector<Display> DisplayManager::GetAll() {
   // Empty implementation
   std::vector<Display> displayList;

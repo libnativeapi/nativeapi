@@ -12,10 +12,10 @@
 namespace nativeapi {
 
 // Private implementation for Linux (stub for now)  
-class WindowManager::WindowManagerImpl {
+class WindowManager::Impl {
 public:
-  WindowManagerImpl(WindowManager* manager) : manager_(manager) {}
-  ~WindowManagerImpl() {}
+  Impl(WindowManager* manager) : manager_(manager) {}
+  ~Impl() {}
   
   void SetupEventMonitoring() {
     // TODO: Implement Linux-specific event monitoring using GTK signals
@@ -29,7 +29,7 @@ private:
   WindowManager* manager_;
 };
 
-WindowManager::WindowManager() : impl_(std::make_unique<WindowManagerImpl>(this)) {
+WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
   // Try to initialize GTK if not already initialized
   // In headless environments, this may fail, which is acceptable
   if (!gdk_display_get_default()) {
@@ -56,15 +56,15 @@ WindowManager::~WindowManager() {
 }
 
 void WindowManager::SetupEventMonitoring() {
-  impl_->SetupEventMonitoring();
+  pimpl_->SetupEventMonitoring();
 }
 
 void WindowManager::CleanupEventMonitoring() {
-  impl_->CleanupEventMonitoring();
+  pimpl_->CleanupEventMonitoring();
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {
-  event_dispatcher_.DispatchSync(event);
+  EmitSync(event);
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowID id) {
