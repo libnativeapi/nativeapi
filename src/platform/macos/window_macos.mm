@@ -157,7 +157,7 @@ void Window::SetMinimumSize(Size size) {
   [pimpl_->ns_window_ setMinSize:NSMakeSize(size.width, size.height)];
 }
 
-Size Window::GetMinimumSize() {
+Size Window::GetMinimumSize() const {
   NSSize size = [pimpl_->ns_window_ minSize];
   return Size{static_cast<double>(size.width), static_cast<double>(size.height)};
 }
@@ -166,7 +166,7 @@ void Window::SetMaximumSize(Size size) {
   [pimpl_->ns_window_ setMaxSize:NSMakeSize(size.width, size.height)];
 }
 
-Size Window::GetMaximumSize() {
+Size Window::GetMaximumSize() const {
   NSSize size = [pimpl_->ns_window_ maxSize];
   return Size{static_cast<double>(size.width), static_cast<double>(size.height)};
 }
@@ -247,7 +247,7 @@ void Window::SetAlwaysOnTop(bool is_always_on_top) {
   [pimpl_->ns_window_ setLevel:is_always_on_top ? NSFloatingWindowLevel : NSNormalWindowLevel];
 }
 
-bool Window::IsAlwaysOnTop() {
+bool Window::IsAlwaysOnTop() const {
   return [pimpl_->ns_window_ level] == NSFloatingWindowLevel;
 }
 
@@ -259,7 +259,7 @@ void Window::SetPosition(Point point) {
   [pimpl_->ns_window_ setFrameOrigin:bottomLeft];
 }
 
-Point Window::GetPosition() {
+Point Window::GetPosition() const {
   NSRect frame = [pimpl_->ns_window_ frame];
   Point point = {static_cast<double>(frame.origin.x), static_cast<double>(frame.origin.y)};
   return point;
@@ -269,7 +269,7 @@ void Window::SetTitle(std::string title) {
   [pimpl_->ns_window_ setTitle:[NSString stringWithUTF8String:title.c_str()]];
 }
 
-std::string Window::GetTitle() {
+std::string Window::GetTitle() const {
   NSString* title = [pimpl_->ns_window_ title];
   return title ? std::string([title UTF8String]) : std::string();
 }
