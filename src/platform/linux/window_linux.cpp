@@ -182,7 +182,7 @@ void Window::SetMinimumSize(Size size) {
   // For now, we'll provide a basic implementation that doesn't enforce constraints
 }
 
-Size Window::GetMinimumSize() {
+Size Window::GetMinimumSize() const {
   return Size{0, 0};
 }
 
@@ -191,7 +191,7 @@ void Window::SetMaximumSize(Size size) {
   // For now, we'll provide a basic implementation that doesn't enforce constraints
 }
 
-Size Window::GetMaximumSize() {
+Size Window::GetMaximumSize() const {
   return Size{-1, -1}; // -1 indicates no maximum
 }
 
@@ -254,7 +254,7 @@ void Window::SetAlwaysOnTop(bool is_always_on_top) {
   }
 }
 
-bool Window::IsAlwaysOnTop() {
+bool Window::IsAlwaysOnTop() const {
   if (!pimpl_->gdk_window_) return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_ABOVE;
@@ -266,7 +266,7 @@ void Window::SetPosition(Point point) {
   }
 }
 
-Point Window::GetPosition() {
+Point Window::GetPosition() const {
   Point point = {0, 0};
   if (pimpl_->gdk_window_) {
     gint x, y;
@@ -282,7 +282,7 @@ void Window::SetTitle(std::string title) {
   // For now, provide stub implementation
 }
 
-std::string Window::GetTitle() {
+std::string Window::GetTitle() const {
   // GDK windows don't have titles directly - this would come from the GTK widget
   return std::string();
 }

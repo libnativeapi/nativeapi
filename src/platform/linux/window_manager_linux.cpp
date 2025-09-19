@@ -166,9 +166,80 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 }
 
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  // TODO: Implement Linux window creation using GTK
-  // For now, return nullptr as this is a stub implementation
-  return nullptr;
+  // Check if GTK is available
+  GdkDisplay* display = gdk_display_get_default();
+  if (!display) {
+    std::cerr << "No display available for window creation" << std::endl;
+    return nullptr;
+  }
+
+  // Create a new GTK window
+  GtkWidget* gtk_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  if (!gtk_window) {
+    std::cerr << "Failed to create GTK window" << std::endl;
+    return nullptr;
+  }
+
+  // Set window properties from options
+  if (!options.title.empty()) {
+    gtk_window_set_title(GTK_WINDOW(gtk_window), options.title.c_str());
+  }
+
+  // Set window size
+  if (options.size.width > 0 && options.size.height > 0) {
+    gtk_window_set_default_size(GTK_WINDOW(gtk_window),
+                                options.size.width,
+                                options.size.height);
+  }
+
+  // Set minimum size if specified
+  if (options.minimum_size.width > 0 && options.minimum_size.height > 0) {
+    GdkGeometry geometry;
+    geometry.min_width = options.minimum_size.width;
+    geometry.min_height = options.minimum_size.height;
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MIN_SIZE);
+  }
+
+  // Set maximum size if specified
+  if (options.maximum_size.width > 0 && options.maximum_size.height > 0) {
+    GdkGeometry geometry;
+    geometry.max_width = options.maximum_size.width;
+    geometry.max_height = options.maximum_size.height;
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MAX_SIZE);
+  }
+
+  // Center the window if requested
+  if (options.centered) {
+    gtk_window_set_position(GTK_WINDOW(gtk_window), GTK_WIN_POS_CENTER);
+  }
+
+  // Show the window
+  gtk_widget_show(gtk_window);
+
+  // Get the GdkWindow after the widget is realized
+  GdkWindow* gdk_window = gtk_widget_get_window(gtk_window);
+  if (!gdk_window) {
+    // If window is not yet realized, realize it first
+    gtk_widget_realize(gtk_window);
+    gdk_window = gtk_widget_get_window(gtk_window);
+  }
+
+  if (!gdk_window) {
+    std::cerr << "Failed to get GdkWindow from GTK widget" << std::endl;
+    gtk_widget_destroy(gtk_window);
+    return nullptr;
+  }
+
+  // Create our Window wrapper
+  auto window = std::make_shared<Window>((void*)gdk_window);
+  WindowID window_id = (WindowID)gdk_window;
+
+  // Store in our cache
+  windows_[window_id] = window;
+
+  std::cout << "Created window with ID: " << window_id << std::endl;
+
+  return window;
 }
 
 bool WindowManager::Destroy(WindowID id) {
