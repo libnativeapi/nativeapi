@@ -32,11 +32,12 @@ int main() {
   WindowManager& window_manager = WindowManager::GetInstance();
 
   // Create a new window with options
-  WindowOptions options = {.title = "Window Example",
-                           .size = {800, 600},
-                           .minimum_size = {400, 300},
-                           .maximum_size = {1920, 1080},
-                           .centered = true};
+  WindowOptions options;
+  options.title = "Window Example";
+  options.size = {800, 600};
+  options.minimum_size = {400, 300};
+  options.maximum_size = {1920, 1080};
+  options.centered = true;
   std::shared_ptr<Window> window_ptr = window_manager.Create(options);
 
   std::shared_ptr<TrayIcon> tray_icon_ptr = tray_manager.Create();

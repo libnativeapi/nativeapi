@@ -86,17 +86,17 @@ int main() {
     }
     
     if (native_keyboard_monitor_is_monitoring(g_monitor)) {
-        std::cout << "✅ Keyboard monitoring is now active\n";
-        std::cout << "\n📚 This example demonstrates the KeyboardMonitor C API:\n";
+        std::cout << "Keyboard monitoring is now active\n";
+        std::cout << "\nThis example demonstrates the KeyboardMonitor C API:\n";
         std::cout << "• native_keyboard_monitor_create() - Creates a monitor instance\n";
         std::cout << "• native_keyboard_monitor_set_callbacks() - Sets event callbacks\n";
         std::cout << "• native_keyboard_monitor_start() - Starts monitoring\n";
         std::cout << "• native_keyboard_monitor_is_monitoring() - Checks status\n";
         std::cout << "• native_keyboard_monitor_stop() - Stops monitoring\n";
         std::cout << "• native_keyboard_monitor_destroy() - Cleans up resources\n";
-        std::cout << "\n🎹 Press keys to see events. Press Ctrl+C to exit.\n\n";
+        std::cout << "\nPress keys to see events. Press Ctrl+C to exit.\n\n";
     } else {
-        std::cout << "⚠️  Monitor created but not monitoring (may be due to permissions or display server)\n";
+        std::cout << "Warning: Monitor created but not monitoring (may be due to permissions or display server)\n";
         std::cout << "This is expected in headless environments or without proper permissions.\n";
         std::cout << "On a desktop system with X11/Wayland, you would see keyboard events.\n\n";
     }

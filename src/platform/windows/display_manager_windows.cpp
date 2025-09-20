@@ -1,106 +1,85 @@
 #include <windows.h>
 #include <vector>
 #include <string>
-#include <iostream>
+#include <set>
+
+#include "../../display.h"
 #include "../../display_manager.h"
+#include "../../display_event.h"
 
 namespace nativeapi {
 
-const double kBaseDpi = 96.0;
-
-// Helper function to get DPI for a monitor
-UINT GetMonitorDpi(HMONITOR monitor) {
-  typedef HRESULT(WINAPI* GetDpiForMonitorFunc)(HMONITOR, int, UINT*, UINT*);
+static Display CreateDisplayFromMonitorInfo(HMONITOR hMonitor, MONITORINFOEX* monitorInfo, bool isPrimary) {
+  Display display;
   
-  // Try to load GetDpiForMonitor from Shcore.dll (Windows 8.1+)
-  HMODULE shcore = LoadLibrary(L"Shcore.dll");
-  if (shcore) {
-    GetDpiForMonitorFunc getDpiForMonitor = 
-        (GetDpiForMonitorFunc)GetProcAddress(shcore, "GetDpiForMonitor");
-    if (getDpiForMonitor) {
-      UINT dpiX = 0, dpiY = 0;
-      HRESULT hr = getDpiForMonitor(monitor, 0, &dpiX, &dpiY); // MDT_EFFECTIVE_DPI = 0
-      FreeLibrary(shcore);
-      if (SUCCEEDED(hr)) {
-        return dpiX;
-      }
-    }
-    FreeLibrary(shcore);
+  // Set unique identifier using monitor handle
+  display.id = std::to_string(reinterpret_cast<uintptr_t>(hMonitor));
+  
+  // Set display name from device name
+  std::string deviceName = monitorInfo->szDevice;
+  display.name = deviceName;
+  
+  // Get monitor rectangle
+  RECT rect = monitorInfo->rcMonitor;
+  RECT workRect = monitorInfo->rcWork;
+  
+  // Set position and size
+  display.position = {static_cast<double>(rect.left), static_cast<double>(rect.top)};
+  display.size = {static_cast<double>(rect.right - rect.left), static_cast<double>(rect.bottom - rect.top)};
+  display.workArea = {static_cast<double>(workRect.left), static_cast<double>(workRect.top), 
+                      static_cast<double>(workRect.bottom - workRect.top), static_cast<double>(workRect.right - workRect.left)};
+  
+  // Get scale factor
+  HDC hdc = GetDC(nullptr);
+  if (hdc) {
+    int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+    display.scaleFactor = dpiX / 96.0; // 96 DPI is 100% scale
+    ReleaseDC(nullptr, hdc);
+  } else {
+    display.scaleFactor = 1.0;
   }
   
-  // Fallback to system DPI
-  HDC hdc = GetDC(nullptr);
-  UINT dpi = GetDeviceCaps(hdc, LOGPIXELSX);
-  ReleaseDC(nullptr, hdc);
-  return dpi;
-}
-
-// Helper function to convert wide string to string
-std::string WideStringToString(const std::wstring& wstr) {
-  if (wstr.empty()) return std::string();
-  
-  int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), nullptr, 0, nullptr, nullptr);
-  std::string strTo(size_needed, 0);
-  WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, nullptr, nullptr);
-  return strTo;
-}
-
-// Helper method to create Display struct from HMONITOR
-Display CreateDisplayFromMonitor(HMONITOR monitor, bool isPrimary) {
-  MONITORINFOEX info;
-  info.cbSize = sizeof(MONITORINFOEX);
-  GetMonitorInfo(monitor, &info);
-  
-  UINT dpi = GetMonitorDpi(monitor);
-  
-  Display display;
-  display.name = WideStringToString(std::wstring(info.szDevice));
-  display.scaleFactor = static_cast<double>(dpi) / kBaseDpi;
   display.isPrimary = isPrimary;
   
-  // Calculate positions and sizes (convert from physical pixels to logical pixels)
-  display.position.x = static_cast<double>(info.rcMonitor.left) / display.scaleFactor;
-  display.position.y = static_cast<double>(info.rcMonitor.top) / display.scaleFactor;
-  display.size.width = static_cast<double>(info.rcMonitor.right - info.rcMonitor.left) / display.scaleFactor;
-  display.size.height = static_cast<double>(info.rcMonitor.bottom - info.rcMonitor.top) / display.scaleFactor;
-  
-  // Work area (area excluding taskbars, etc.)
-  display.workArea.x = static_cast<double>(info.rcWork.left) / display.scaleFactor;
-  display.workArea.y = static_cast<double>(info.rcWork.top) / display.scaleFactor;
-  display.workArea.width = static_cast<double>(info.rcWork.right - info.rcWork.left) / display.scaleFactor;
-  display.workArea.height = static_cast<double>(info.rcWork.bottom - info.rcWork.top) / display.scaleFactor;
-  
-  // Try to get additional display information
-  DISPLAY_DEVICE displayDevice;
-  displayDevice.cb = sizeof(DISPLAY_DEVICE);
-  if (EnumDisplayDevices(info.szDevice, 0, &displayDevice, 0)) {
-    display.id = WideStringToString(std::wstring(displayDevice.DeviceID));
-    
-    // Get display settings
-    DEVMODE devMode;
-    devMode.dmSize = sizeof(DEVMODE);
-    if (EnumDisplaySettings(info.szDevice, ENUM_CURRENT_SETTINGS, &devMode)) {
-      display.refreshRate = devMode.dmDisplayFrequency;
-      display.bitDepth = devMode.dmBitsPerPel;
-    }
+  // Determine orientation
+  if (display.size.width > display.size.height) {
+    display.orientation = DisplayOrientation::kLandscape;
+  } else {
+    display.orientation = DisplayOrientation::kPortrait;
   }
+  
+  // Set default values
+  display.refreshRate = 60; // Default refresh rate
+  display.bitDepth = 32;    // Default bit depth
+  display.manufacturer = "Unknown";
+  display.model = display.name;
+  display.serialNumber = "";
   
   return display;
 }
 
-// Callback for EnumDisplayMonitors
-BOOL CALLBACK MonitorEnumProc(HMONITOR monitor, HDC hdc, LPRECT clip, LPARAM listParam) {
-  std::vector<Display>* displays = reinterpret_cast<std::vector<Display>*>(listParam);
+static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+  auto* displays = reinterpret_cast<std::vector<Display>*>(dwData);
   
-  // Check if this is the primary monitor
-  POINT pt = {0, 0};
-  HMONITOR primaryMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
-  bool isPrimary = (monitor == primaryMonitor);
+  MONITORINFOEX monitorInfo;
+  monitorInfo.cbSize = sizeof(MONITORINFOEX);
   
-  Display display = CreateDisplayFromMonitor(monitor, isPrimary);
-  displays->push_back(display);
+  if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+    bool isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
+    displays->push_back(CreateDisplayFromMonitorInfo(hMonitor, &monitorInfo, isPrimary));
+  }
   
   return TRUE;
+}
+
+DisplayManager::DisplayManager() {
+  displays_ = GetAll();
+  // TODO: Set up display configuration change monitoring
+  // On Windows, you would typically register for WM_DISPLAYCHANGE messages
+}
+
+DisplayManager::~DisplayManager() {
+  // TODO: Clean up display change monitoring
 }
 
 std::vector<Display> DisplayManager::GetAll() {
@@ -110,19 +89,26 @@ std::vector<Display> DisplayManager::GetAll() {
 }
 
 Display DisplayManager::GetPrimary() {
-  POINT pt = {0, 0};
-  HMONITOR monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
-  return CreateDisplayFromMonitor(monitor, true);
+  std::vector<Display> displays = GetAll();
+  for (const auto& display : displays) {
+    if (display.isPrimary) {
+      return display;
+    }
+  }
+  // If no primary display found, return the first one
+  if (!displays.empty()) {
+    return displays[0];
+  }
+  // Return empty display if no displays found
+  return Display{};
 }
 
 Point DisplayManager::GetCursorPosition() {
   POINT cursorPos;
-  GetCursorPos(&cursorPos);
-  
-  Point point;
-  point.x = static_cast<double>(cursorPos.x);
-  point.y = static_cast<double>(cursorPos.y);
-  return point;
+  if (GetCursorPos(&cursorPos)) {
+    return {static_cast<double>(cursorPos.x), static_cast<double>(cursorPos.y)};
+  }
+  return {0.0, 0.0};
 }
 
 }  // namespace nativeapi

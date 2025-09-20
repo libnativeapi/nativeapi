@@ -326,16 +326,16 @@ void Window::StartDragging() {
 
 void Window::StartResizing() {}
 
-void* Window::GetNSWindow() const {
+void* Window::GetNativeObject() const {
   if (!pimpl_) {
-    std::cout << "GetNSWindow: pimpl_ is null" << std::endl;
+    std::cout << "GetNativeObject: pimpl_ is null" << std::endl;
     return nullptr;
   }
   if (!pimpl_->ns_window_) {
-    std::cout << "GetNSWindow: ns_window_ is null" << std::endl;
+    std::cout << "GetNativeObject: ns_window_ is null" << std::endl;
     return nullptr;
   }
-  std::cout << "GetNSWindow: returning valid NSWindow pointer" << std::endl;
+  std::cout << "GetNativeObject: returning valid NSWindow pointer" << std::endl;
   return (__bridge void*)pimpl_->ns_window_;
 }
 

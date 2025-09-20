@@ -241,7 +241,7 @@ void native_window_start_resizing(native_window_t window);
 
 // Platform-specific functions
 FFI_PLUGIN_EXPORT
-void* native_window_get_ns_window(native_window_t window);
+void* native_window_get_native_object(native_window_t window);
 
 // Memory management
 FFI_PLUGIN_EXPORT

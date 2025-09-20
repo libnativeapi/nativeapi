@@ -114,6 +114,16 @@ class TrayManager {
   TrayManager();
 
   /**
+   * @brief Private implementation class using the PIMPL idiom.
+   */
+  class Impl;
+
+  /**
+   * @brief Pointer to the private implementation instance.
+   */
+  std::unique_ptr<Impl> pimpl_;
+
+  /**
    * @brief Container for storing active tray icon instances.
    *
    * Maps tray icon IDs to their corresponding TrayIcon instances

@@ -1,388 +1,279 @@
 #include <windows.h>
 #include <shellapi.h>
-#include <commctrl.h>
 #include <iostream>
-#include <string>
 #include <vector>
-#include <memory>
-
-#pragma comment(lib, "shell32.lib")
+#include <string>
 
 #include "../../tray_icon.h"
 #include "../../menu.h"
+#include "../../geometry.h"
 #include "../../tray_icon_event.h"
 
 namespace nativeapi {
 
-// Window class name for tray window
-static const wchar_t* TRAY_WINDOW_CLASS = L"NativeAPITrayIconWindow";
-static UINT g_tray_message = WM_USER + 1;
-static UINT g_next_tray_uid = 1000;
-
-// Helper function to convert string to wide string
-std::wstring StringToWideString(const std::string& str) {
-    if (str.empty()) return std::wstring();
-
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), nullptr, 0);
-    std::wstring wstrTo(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
-    return wstrTo;
-}
-
-// Helper function to convert base64 to HICON
-HICON Base64ToIcon(const std::string& base64Data) {
-    // This is a placeholder - in a full implementation you would:
-    // 1. Decode the base64 string
-    // 2. Create an HICON from the decoded image data
-    // For now, return nullptr
-    return nullptr;
-}
-
-// Window procedure for tray messages
-LRESULT CALLBACK TrayIconWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (msg == g_tray_message) {
-        UINT tray_id = LOWORD(wParam);
-        UINT mouse_msg = HIWORD(lParam);
-
-        // Find the tray icon instance
-        TrayIcon* trayIcon = reinterpret_cast<TrayIcon*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-
-        if (trayIcon) {
-            switch (mouse_msg) {
-                case WM_RBUTTONUP: {
-                    // Handle right click
-                    trayIcon->HandleRightClick();
-
-                    // Show context menu
-                    auto contextMenu = trayIcon->GetContextMenu();
-                    if (contextMenu) {
-                        HMENU hmenu = static_cast<HMENU>(contextMenu->GetNativeMenu());
-                        if (hmenu) {
-                            POINT pt;
-                            GetCursorPos(&pt);
-
-                            // Required for popup menus to work correctly
-                            SetForegroundWindow(hwnd);
-
-                            TrackPopupMenu(hmenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, nullptr);
-
-                            // Required after TrackPopupMenu
-                            PostMessage(hwnd, WM_NULL, 0, 0);
-                        }
-                    }
-                    break;
-                }
-                case WM_LBUTTONUP:
-                    // Handle left click
-                    trayIcon->HandleLeftClick();
-                    break;
-                case WM_LBUTTONDBLCLK:
-                    // Handle double click
-                    trayIcon->HandleDoubleClick();
-                    break;
-            }
-        }
-        return 0;
-    }
-
-    return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-
 // Private implementation class
 class TrayIcon::Impl {
-public:
-    Impl() : hwnd_(nullptr), tray_uid_(g_next_tray_uid++), icon_(nullptr), tray_icon_(nullptr) {
-        CreateTrayWindow();
-        InitializeTrayIcon();
+ public:
+  Impl() : hwnd_(nullptr), icon_id_(0), visible_(false), icon_handle_(nullptr) {}
+
+  Impl(HWND hwnd, UINT icon_id) : hwnd_(hwnd), icon_id_(icon_id), visible_(false), icon_handle_(nullptr) {
+    // Initialize NOTIFYICONDATA structure
+    ZeroMemory(&nid_, sizeof(NOTIFYICONDATA));
+    nid_.cbSize = sizeof(NOTIFYICONDATA);
+    nid_.hWnd = hwnd_;
+    nid_.uID = icon_id_;
+    nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    nid_.uCallbackMessage = WM_USER + 1; // Custom message for tray icon events
+  }
+
+  // Windows-specific method to set internal data
+  void SetWindowsData(HWND hwnd, UINT icon_id) {
+    hwnd_ = hwnd;
+    icon_id_ = icon_id;
+    
+    // Re-initialize NOTIFYICONDATA structure
+    ZeroMemory(&nid_, sizeof(NOTIFYICONDATA));
+    nid_.cbSize = sizeof(NOTIFYICONDATA);
+    nid_.hWnd = hwnd_;
+    nid_.uID = icon_id_;
+    nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    nid_.uCallbackMessage = WM_USER + 1; // Custom message for tray icon events
+  }
+
+  // Windows-specific message handler
+  LRESULT HandleWindowsMessage(UINT message, WPARAM wParam, LPARAM lParam, TrayIcon* tray_icon) {
+    if (message == WM_USER + 1 && wParam == icon_id_) {
+      switch (lParam) {
+        case WM_LBUTTONUP:
+          tray_icon->HandleLeftClick();
+          break;
+        case WM_RBUTTONUP:
+          tray_icon->HandleRightClick();
+          if (tray_icon->GetContextMenu()) {
+            tray_icon->ShowContextMenu();
+          }
+          break;
+        case WM_LBUTTONDBLCLK:
+          tray_icon->HandleDoubleClick();
+          break;
+      }
+      return 0;
     }
+    return DefWindowProc(hwnd_, message, wParam, lParam);
+  }
 
-    ~Impl() {
-        RemoveTrayIcon();
-        if (hwnd_) {
-            DestroyWindow(hwnd_);
-        }
-        if (icon_) {
-            DestroyIcon(icon_);
-        }
+  ~Impl() {
+    if (visible_) {
+      Shell_NotifyIcon(NIM_DELETE, &nid_);
     }
-
-    void CreateTrayWindow() {
-        // Register window class if not already registered
-        static bool class_registered = false;
-        if (!class_registered) {
-            WNDCLASS wc = {};
-            wc.lpfnWndProc = TrayIconWindowProc;
-            wc.hInstance = GetModuleHandle(nullptr);
-            wc.lpszClassName = TRAY_WINDOW_CLASS;
-            RegisterClass(&wc);
-            class_registered = true;
-        }
-
-        // Create hidden window for tray messages
-        hwnd_ = CreateWindow(
-            TRAY_WINDOW_CLASS,
-            L"TrayIconWindow",
-            WS_OVERLAPPED,
-            0, 0, 0, 0,
-            nullptr, nullptr,
-            GetModuleHandle(nullptr),
-            nullptr
-        );
+    if (icon_handle_) {
+      DestroyIcon(icon_handle_);
     }
+  }
 
-    void InitializeTrayIcon() {
-        if (!hwnd_) return;
-
-        nid_.cbSize = sizeof(NOTIFYICONDATA);
-        nid_.hWnd = hwnd_;
-        nid_.uID = tray_uid_;
-        nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-        nid_.uCallbackMessage = g_tray_message;
-        nid_.hIcon = LoadIcon(nullptr, IDI_APPLICATION); // Default icon
-        wcscpy_s(nid_.szTip, L"Tray Icon");
-
-        // Store tray icon pointer in window
-        SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(tray_icon_));
-
-        Shell_NotifyIcon(NIM_ADD, &nid_);
-    }
-
-    void RemoveTrayIcon() {
-        if (hwnd_) {
-            Shell_NotifyIcon(NIM_DELETE, &nid_);
-        }
-    }
-
-    void UpdateIcon() {
-        if (hwnd_ && icon_) {
-            nid_.hIcon = icon_;
-            Shell_NotifyIcon(NIM_MODIFY, &nid_);
-        }
-    }
-
-    void UpdateTooltip(const std::string& tooltip) {
-        if (!hwnd_) return;
-
-        std::wstring wtooltip = StringToWideString(tooltip);
-        wcsncpy_s(nid_.szTip, wtooltip.c_str(), sizeof(nid_.szTip) / sizeof(wchar_t) - 1);
-        nid_.szTip[sizeof(nid_.szTip) / sizeof(wchar_t) - 1] = L'\0';
-
-        Shell_NotifyIcon(NIM_MODIFY, &nid_);
-    }
-
-    void SetTrayIconPointer(TrayIcon* tray_icon) {
-        tray_icon_ = tray_icon;
-        if (hwnd_) {
-            SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(tray_icon_));
-        }
-    }
-
-    HWND hwnd_;
-    UINT tray_uid_;
-    NOTIFYICONDATA nid_;
-    HICON icon_;
-    std::string title_;
-    std::string tooltip_;
-    std::shared_ptr<Menu> context_menu_;
-    TrayIcon* tray_icon_;
+  HWND hwnd_;
+  UINT icon_id_;
+  NOTIFYICONDATA nid_;
+  std::shared_ptr<Menu> context_menu_;
+  std::string title_;
+  std::string tooltip_;
+  bool visible_;
+  HICON icon_handle_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(new Impl()) {
-    id = -1;
-    pimpl_->SetTrayIconPointer(this);
+  id = -1;
 }
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl()) {
-    id = -1; // Will be set by TrayManager when created
-    pimpl_->SetTrayIconPointer(this);
+  id = -1; // Will be set by TrayManager when created
+  // In a real implementation, you'd extract HWND and icon ID from the tray parameter
+  // For now, this constructor is mainly used by TrayManager for creating uninitialized icons
 }
 
 TrayIcon::~TrayIcon() {
-    delete pimpl_;
+  delete pimpl_;
 }
 
 void TrayIcon::SetIcon(std::string icon) {
-    if (pimpl_->icon_) {
-        DestroyIcon(pimpl_->icon_);
-        pimpl_->icon_ = nullptr;
-    }
+  if (!pimpl_->hwnd_) {
+    return;
+  }
 
-    // Check if the icon is a base64 string
-    if (icon.find("data:image") != std::string::npos) {
-        // Extract the base64 part
-        size_t pos = icon.find("base64,");
-        if (pos != std::string::npos) {
-            std::string base64Icon = icon.substr(pos + 7);
-            pimpl_->icon_ = Base64ToIcon(base64Icon);
-        }
-    } else if (!icon.empty()) {
-        // Load icon from file path
-        std::wstring wicon = StringToWideString(icon);
-        pimpl_->icon_ = (HICON)LoadImage(
-            nullptr,
-            wicon.c_str(),
-            IMAGE_ICON,
-            0, 0, // Use default size
-            LR_LOADFROMFILE | LR_DEFAULTSIZE
-        );
-    }
+  HICON hIcon = nullptr;
 
-    if (pimpl_->icon_) {
-        pimpl_->UpdateIcon();
+  // Check if the icon is a base64 string
+  if (icon.find("data:image") == 0) {
+    // For base64 icons, we'd need to decode and create HICON
+    // This is a placeholder implementation
+    hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+  } else if (!icon.empty()) {
+    // Try to load as file path first
+    hIcon = (HICON)LoadImage(nullptr, icon.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    
+    // If file path failed, try as resource
+    if (!hIcon) {
+      hIcon = LoadIcon(GetModuleHandle(nullptr), icon.c_str());
     }
+    
+    // If still failed, use default application icon
+    if (!hIcon) {
+      hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    }
+  } else {
+    // Use default application icon
+    hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+  }
+
+  if (hIcon) {
+    // Clean up previous icon
+    if (pimpl_->icon_handle_) {
+      DestroyIcon(pimpl_->icon_handle_);
+    }
+    
+    pimpl_->icon_handle_ = hIcon;
+    pimpl_->nid_.hIcon = hIcon;
+    
+    if (pimpl_->visible_) {
+      Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
+    }
+  }
 }
 
 void TrayIcon::SetTitle(std::string title) {
-    pimpl_->title_ = title;
-    // Note: Windows tray icons don't display titles like macOS status items
-    // The title could be used as part of the tooltip or for identification
+  pimpl_->title_ = title;
+  // Windows tray icons don't have a separate title, only tooltip
+  // We'll use title as part of the tooltip
+  SetTooltip(title);
 }
 
 std::string TrayIcon::GetTitle() {
-    return pimpl_->title_;
+  return pimpl_->title_;
 }
 
 void TrayIcon::SetTooltip(std::string tooltip) {
-    pimpl_->tooltip_ = tooltip;
-    pimpl_->UpdateTooltip(tooltip);
+  pimpl_->tooltip_ = tooltip;
+  
+  if (pimpl_->hwnd_) {
+    strncpy_s(pimpl_->nid_.szTip, tooltip.c_str(), sizeof(pimpl_->nid_.szTip) - 1);
+    pimpl_->nid_.szTip[sizeof(pimpl_->nid_.szTip) - 1] = '\0';
+    
+    if (pimpl_->visible_) {
+      Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
+    }
+  }
 }
 
 std::string TrayIcon::GetTooltip() {
-    return pimpl_->tooltip_;
+  return pimpl_->tooltip_;
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
-    pimpl_->context_menu_ = menu;
+  pimpl_->context_menu_ = menu;
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
-    return pimpl_->context_menu_;
+  return pimpl_->context_menu_;
 }
 
 Rectangle TrayIcon::GetBounds() {
-    Rectangle bounds = {0, 0, 0, 0};
-
-    if (pimpl_->hwnd_) {
-        // Get the position of the notification area
-        HWND hTray = FindWindow(L"Shell_TrayWnd", nullptr);
-        if (hTray) {
-            HWND hNotify = FindWindowEx(hTray, nullptr, L"TrayNotifyWnd", nullptr);
-            if (hNotify) {
-                RECT rect;
-                GetWindowRect(hNotify, &rect);
-
-                // This is approximate - getting exact icon position is complex
-                bounds.x = static_cast<double>(rect.left);
-                bounds.y = static_cast<double>(rect.top);
-                bounds.width = static_cast<double>(rect.right - rect.left);
-                bounds.height = static_cast<double>(rect.bottom - rect.top);
-            }
-        }
+  Rectangle bounds = {0, 0, 0, 0};
+  
+  if (pimpl_->hwnd_ && pimpl_->visible_) {
+    RECT rect;
+    NOTIFYICONIDENTIFIER niid = {};
+    niid.cbSize = sizeof(NOTIFYICONIDENTIFIER);
+    niid.hWnd = pimpl_->hwnd_;
+    niid.uID = pimpl_->icon_id_;
+    
+    // Get the rectangle of the notification icon
+    if (Shell_NotifyIconGetRect(&niid, &rect) == S_OK) {
+      bounds.x = rect.left;
+      bounds.y = rect.top;
+      bounds.width = rect.right - rect.left;
+      bounds.height = rect.bottom - rect.top;
     }
-
-    return bounds;
+  }
+  
+  return bounds;
 }
 
 bool TrayIcon::Show() {
-    if (pimpl_->hwnd_) {
-        // Tray icon is always visible once added, but we could implement visibility control
-        return true;
+  if (pimpl_->hwnd_ && !pimpl_->visible_) {
+    if (Shell_NotifyIcon(NIM_ADD, &pimpl_->nid_) == TRUE) {
+      pimpl_->visible_ = true;
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 
 bool TrayIcon::Hide() {
-    if (pimpl_->hwnd_) {
-        // Remove the tray icon
-        pimpl_->RemoveTrayIcon();
-        return true;
+  if (pimpl_->hwnd_ && pimpl_->visible_) {
+    if (Shell_NotifyIcon(NIM_DELETE, &pimpl_->nid_) == TRUE) {
+      pimpl_->visible_ = false;
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 
 bool TrayIcon::IsVisible() {
-    // Tray icon is visible if the window exists and the icon is added
-    return pimpl_->hwnd_ != nullptr;
-}
-
-void TrayIcon::SetOnLeftClick(std::function<void()> callback) {
-    // This method is deprecated - use event listeners instead
-}
-
-void TrayIcon::SetOnRightClick(std::function<void()> callback) {
-    // This method is deprecated - use event listeners instead
-}
-
-void TrayIcon::SetOnDoubleClick(std::function<void()> callback) {
-    // This method is deprecated - use event listeners instead
+  return pimpl_->visible_;
 }
 
 bool TrayIcon::ShowContextMenu(double x, double y) {
-    if (!pimpl_->context_menu_) {
-        return false;
-    }
-
-    HMENU hmenu = static_cast<HMENU>(pimpl_->context_menu_->GetNativeMenu());
-    if (hmenu && pimpl_->hwnd_) {
-        POINT pt = { static_cast<LONG>(x), static_cast<LONG>(y) };
-
-        // Required for popup menus to work correctly
-        SetForegroundWindow(pimpl_->hwnd_);
-
-        TrackPopupMenu(hmenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, pimpl_->hwnd_, nullptr);
-
-        // Required after TrackPopupMenu
-        PostMessage(pimpl_->hwnd_, WM_NULL, 0, 0);
-        return true;
-    }
+  if (!pimpl_->context_menu_) {
     return false;
+  }
+
+  // Show the context menu at the specified coordinates
+  return pimpl_->context_menu_->ShowAsContextMenu(x, y);
 }
 
 bool TrayIcon::ShowContextMenu() {
-    if (!pimpl_->context_menu_) {
-        return false;
-    }
-
-    HMENU hmenu = static_cast<HMENU>(pimpl_->context_menu_->GetNativeMenu());
-    if (hmenu && pimpl_->hwnd_) {
-        POINT pt;
-        GetCursorPos(&pt);
-
-        // Required for popup menus to work correctly
-        SetForegroundWindow(pimpl_->hwnd_);
-
-        TrackPopupMenu(hmenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, pimpl_->hwnd_, nullptr);
-
-        // Required after TrackPopupMenu
-        PostMessage(pimpl_->hwnd_, WM_NULL, 0, 0);
-        return true;
-    }
+  if (!pimpl_->context_menu_) {
     return false;
+  }
+
+  // Get the bounds of the tray icon to show menu near it
+  Rectangle bounds = GetBounds();
+  if (bounds.width > 0 && bounds.height > 0) {
+    // Show menu below the tray icon
+    return pimpl_->context_menu_->ShowAsContextMenu(bounds.x, bounds.y + bounds.height);
+  } else {
+    // Fall back to showing at mouse location
+    return pimpl_->context_menu_->ShowAsContextMenu();
+  }
 }
 
 // Internal method to handle click events
 void TrayIcon::HandleLeftClick() {
-    try {
-        EmitSync<TrayIconClickedEvent>(id, "left");
-    } catch (...) {
-        // Protect against event emission exceptions
-    }
+  try {
+    EmitSync<TrayIconClickedEvent>(id, "left");
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
 }
 
 void TrayIcon::HandleRightClick() {
-    try {
-        EmitSync<TrayIconRightClickedEvent>(id);
-    } catch (...) {
-        // Protect against event emission exceptions
-    }
+  try {
+    EmitSync<TrayIconRightClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
 }
 
 void TrayIcon::HandleDoubleClick() {
-    try {
-        EmitSync<TrayIconDoubleClickedEvent>(id);
-    } catch (...) {
-        // Protect against event emission exceptions
-    }
+  try {
+    EmitSync<TrayIconDoubleClickedEvent>(id);
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
 }
 
-}  // namespace nativeapi
+// Note: Windows-specific functionality is now handled internally by the Impl class
+// The SetWindowsData and HandleWindowsMessage methods have been moved to the Impl class
+// to maintain proper encapsulation and avoid exposing platform-specific details in the public API
+
+} // namespace nativeapi

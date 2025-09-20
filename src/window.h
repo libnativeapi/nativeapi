@@ -86,7 +86,11 @@ class Window {
   void StartDragging();
   void StartResizing();
 
-  void* GetNSWindow() const;
+  /**
+   * @brief Get the native window object for the current platform.
+   * @return NSWindow* on macOS, HWND on Windows, GdkWindow* on Linux
+   */
+  void* GetNativeObject() const;
 
  private:
   class Impl;

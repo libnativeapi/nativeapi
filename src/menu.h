@@ -478,6 +478,8 @@ class MenuItem : public EventEmitter {
   void EmitStateChangedEvent(bool checked);
 
  private:
+  friend class Menu;
+
   /**
    * @brief Private constructor for factory methods.
    *

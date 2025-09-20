@@ -37,9 +37,9 @@ std::string truncateString(const std::string& str, size_t maxLength) {
 // Helper function to format a table row with proper alignment
 std::string formatTableRow(const std::string& content, int totalWidth = 70) {
   std::string truncated =
-      truncateString(content, totalWidth - 4);  // Leave space for "│ " and " │"
+      truncateString(content, totalWidth - 4);  // Leave space for "| " and " |"
   std::ostringstream oss;
-  oss << "│ " << std::left << std::setw(totalWidth - 4) << truncated << " │";
+  oss << "| " << std::left << std::setw(totalWidth - 4) << truncated << " |";
   return oss.str();
 }
 
@@ -50,22 +50,22 @@ std::string createTableBorder(const std::string& leftChar,
                               const std::string& fillChar,
                               int width = 70) {
   std::string border;
-  if (leftChar == "┌")
+  if (leftChar == "+")
     border = "+";
-  else if (leftChar == "├")
+  else if (leftChar == "+")
     border = "+";
-  else if (leftChar == "└")
+  else if (leftChar == "+")
     border = "+";
   else
     border = leftChar;
 
   border += std::string(width - 2, '-');
 
-  if (rightChar == "┐")
+  if (rightChar == "+")
     border += "+";
-  else if (rightChar == "┤")
+  else if (rightChar == "+")
     border += "+";
-  else if (rightChar == "┘")
+  else if (rightChar == "+")
     border += "+";
   else
     border += rightChar;
@@ -77,10 +77,10 @@ std::string createTableBorder(const std::string& leftChar,
 void printDisplayInfo(const Display& display, bool isPrimary = false) {
   const int tableWidth = 70;
 
-  std::cout << createTableBorder("┌", "┐", "─", tableWidth) << std::endl;
+  std::cout << createTableBorder("+", "+", "-", tableWidth) << std::endl;
   std::cout << formatTableRow("Display: " + display.name, tableWidth)
             << std::endl;
-  std::cout << createTableBorder("├", "┤", "─", tableWidth) << std::endl;
+  std::cout << createTableBorder("+", "+", "-", tableWidth) << std::endl;
   std::cout << formatTableRow("ID: " + display.id, tableWidth) << std::endl;
 
   // Format position string
@@ -139,7 +139,7 @@ void printDisplayInfo(const Display& display, bool isPrimary = false) {
     std::cout << formatTableRow(modelStr, tableWidth) << std::endl;
   }
 
-  std::cout << createTableBorder("└", "┘", "─", tableWidth) << std::endl;
+  std::cout << createTableBorder("+", "+", "-", tableWidth) << std::endl;
 }
 
 int main() {
@@ -196,8 +196,8 @@ int main() {
     }
 
     const int summaryWidth = 60;
-    std::cout << "📊 SUMMARY:" << std::endl;
-    std::cout << createTableBorder("┌", "┐", "─", summaryWidth) << std::endl;
+    std::cout << "SUMMARY:" << std::endl;
+    std::cout << createTableBorder("+", "+", "-", summaryWidth) << std::endl;
 
     // Format each summary line properly
     std::string totalDisplaysStr =
@@ -218,17 +218,17 @@ int main() {
     std::string scaleRangeStr = scaleRangeStream.str();
     std::cout << formatTableRow(scaleRangeStr, summaryWidth) << std::endl;
 
-    std::cout << createTableBorder("└", "┘", "─", summaryWidth) << std::endl;
+    std::cout << createTableBorder("+", "+", "-", summaryWidth) << std::endl;
 
   } catch (const std::exception& e) {
-    std::cerr << "❌ Error: " << e.what() << std::endl;
+    std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   } catch (...) {
-    std::cerr << "❌ Unknown error occurred" << std::endl;
+    std::cerr << "Unknown error occurred" << std::endl;
     return 1;
   }
 
-  std::cout << "\n✅ Display information retrieved successfully!" << std::endl;
+  std::cout << "\nDisplay information retrieved successfully!" << std::endl;
 
   // Test C API
   std::cout << "\n=== Testing C API ===" << std::endl;

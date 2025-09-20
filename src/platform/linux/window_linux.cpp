@@ -347,9 +347,8 @@ void Window::StartResizing() {
   // Provide stub implementation
 }
 
-void* Window::GetNSWindow() const {
-  // This method is macOS-specific, return nullptr on Linux
-  return nullptr;
+void* Window::GetNativeObject() const {
+  return pimpl_ ? pimpl_->gdk_window_ : nullptr;
 }
 
 }  // namespace nativeapi

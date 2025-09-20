@@ -317,7 +317,7 @@ class TrayIcon : public EventEmitter {
   void HandleDoubleClick();
 
 
- private:
+private:
   /**
    * @brief Private implementation class using the PIMPL idiom.
    *

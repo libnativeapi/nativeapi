@@ -46,6 +46,9 @@ class KeyboardMonitor: public EventEmitter {
   // Check if the keyboard monitor is monitoring
   bool IsMonitoring() const;
 
+  // Get access to the event dispatcher for internal use
+  EventDispatcher& GetInternalEventDispatcher();
+
  private:
   class Impl;
   std::unique_ptr<Impl> impl_;
