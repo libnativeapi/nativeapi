@@ -39,6 +39,11 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
+    // First, safely clean up context_menu_
+    if (context_menu_) {
+      context_menu_.reset();  // Explicitly reset shared_ptr
+    }
+    
     if (ns_status_item_) {
       // Remove target and action to prevent callbacks after destruction
       if (ns_status_item_.button) {
@@ -156,6 +161,14 @@ std::string TrayIcon::GetTooltip() {
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
+  // First, clean up old menu reference
+  if (pimpl_->context_menu_) {
+    if (pimpl_->ns_status_item_) {
+      [pimpl_->ns_status_item_ setMenu:nil];
+    }
+    pimpl_->context_menu_.reset();
+  }
+  
   pimpl_->context_menu_ = menu;
 
   // Set the menu as the status item's menu for right-click
@@ -165,9 +178,6 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
     if (nsMenu) {
       [pimpl_->ns_status_item_ setMenu:nsMenu];
     }
-  } else if (pimpl_->ns_status_item_) {
-    // Remove the menu if null is passed
-    [pimpl_->ns_status_item_ setMenu:nil];
   }
 }
 

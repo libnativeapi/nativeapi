@@ -22,13 +22,17 @@ TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) 
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
-  // Clean up all managed tray icons
+  
+  // First, clean up all tray icon menu references to prevent circular references
   for (auto& pair : trays_) {
     auto tray = pair.second;
     if (tray) {
-      // The TrayIcon destructor will handle cleanup of the NSStatusItem
+      // Explicitly clear menu references
+      tray->SetContextMenu(nullptr);
     }
   }
+  
+  // Then clear the container
   trays_.clear();
 }
 

@@ -164,6 +164,11 @@ class MenuItem::Impl {
     }
 
     ~Impl() {
+        // First, clean up submenu reference
+        if (submenu_) {
+            submenu_.reset();
+        }
+        
         if (target_) {
             // Remove target and action to prevent callbacks after destruction
             [ns_menu_item_ setTarget:nil];
@@ -221,8 +226,11 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
 }
 
 MenuItem::~MenuItem() {
-    // Unregister from event registry
-    g_menu_item_registry.erase(id);
+    // Safely remove from global registry
+    auto it = g_menu_item_registry.find(id);
+    if (it != g_menu_item_registry.end()) {
+        g_menu_item_registry.erase(it);
+    }
 }
 
 MenuItemType MenuItem::GetType() const {
@@ -445,6 +453,9 @@ class Menu::Impl {
     }
 
     ~Impl() {
+        // First, clear all menu item references
+        items_.clear();
+        
         if (delegate_) {
             // Remove delegate to prevent callbacks after destruction
             [ns_menu_ setDelegate:nil];
@@ -480,8 +491,11 @@ Menu::Menu()
 }
 
 Menu::~Menu() {
-    // Unregister from event registry
-    g_menu_registry.erase(id);
+    // Safely remove from global registry
+    auto it = g_menu_registry.find(id);
+    if (it != g_menu_registry.end()) {
+        g_menu_registry.erase(it);
+    }
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
