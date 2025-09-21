@@ -131,19 +131,6 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
 namespace nativeapi {
 
-// KeyboardAccelerator implementation
-std::string KeyboardAccelerator::ToString() const {
-    std::string result;
-
-    if (modifiers & Meta) result += "Ctrl+";
-    if (modifiers & Alt) result += "Alt+";
-    if (modifiers & Shift) result += "Shift+";
-    if (modifiers & Ctrl) result += "Cmd+";  // On macOS, show as Cmd
-
-    result += key;
-    return result;
-}
-
 // MenuItem::Impl implementation
 class MenuItem::Impl {
  public:
@@ -616,13 +603,13 @@ bool Menu::ShowAsContextMenu(double x, double y) {
                                         pressure:1.0];
 
     pimpl_->visible_ = true;
-    
+
     @autoreleasepool {
         // Create a dummy view to avoid the nil warning
         NSView* dummyView = [[NSView alloc] init];
         [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
     }
-    
+
     pimpl_->visible_ = false;
 
     return true;

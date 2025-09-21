@@ -74,19 +74,6 @@ std::pair<UINT, UINT> ConvertAccelerator(const KeyboardAccelerator& accelerator)
 
 namespace nativeapi {
 
-// KeyboardAccelerator implementation
-std::string KeyboardAccelerator::ToString() const {
-    std::string result;
-
-    if (modifiers & Ctrl) result += "Ctrl+";
-    if (modifiers & Alt) result += "Alt+";
-    if (modifiers & Shift) result += "Shift+";
-    if (modifiers & Meta) result += "Win+";
-
-    result += key;
-    return result;
-}
-
 // MenuItem::Impl implementation
 class MenuItem::Impl {
  public:
@@ -215,7 +202,7 @@ void MenuItem::RemoveAccelerator() {
 void MenuItem::SetEnabled(bool enabled) {
     pimpl_->enabled_ = enabled;
     if (pimpl_->parent_menu_) {
-        EnableMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_, 
+        EnableMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_,
                       enabled ? MF_ENABLED : MF_GRAYED);
     }
 }
@@ -237,7 +224,7 @@ bool MenuItem::IsVisible() const {
 void MenuItem::SetState(MenuItemState state) {
     if (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio) {
         pimpl_->state_ = state;
-        
+
         if (pimpl_->parent_menu_) {
             UINT checkState = MF_UNCHECKED;
             if (state == MenuItemState::Checked) {
@@ -255,7 +242,7 @@ void MenuItem::SetState(MenuItemState state) {
                     otherItem->GetRadioGroup() == pimpl_->radio_group_) {
                     otherItem->pimpl_->state_ = MenuItemState::Unchecked;
                     if (otherItem->pimpl_->parent_menu_) {
-                        CheckMenuItem(otherItem->pimpl_->parent_menu_, 
+                        CheckMenuItem(otherItem->pimpl_->parent_menu_,
                                     otherItem->pimpl_->menu_item_id_, MF_UNCHECKED);
                     }
                 }
@@ -348,7 +335,7 @@ std::shared_ptr<Menu> Menu::Create() {
     if (!hmenu) {
         return nullptr;
     }
-    
+
     auto menu = std::shared_ptr<Menu>(new Menu());
     menu->pimpl_ = std::make_unique<Impl>(hmenu);
     menu->id = g_next_menu_id++;
@@ -379,7 +366,7 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     if (!item) return;
 
     pimpl_->items_.push_back(item);
-    
+
     UINT flags = MF_STRING;
     if (item->GetType() == MenuItemType::Separator) {
         flags = MF_SEPARATOR;
@@ -388,7 +375,7 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     } else if (item->GetType() == MenuItemType::Radio) {
         flags |= MF_UNCHECKED;
     }
-    
+
     UINT_PTR menuId = item->id;
     HMENU subMenu = nullptr;
     if (item->GetSubmenu()) {
@@ -396,9 +383,9 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
         flags |= MF_POPUP;
         menuId = reinterpret_cast<UINT_PTR>(subMenu);
     }
-    
+
     AppendMenu(pimpl_->hmenu_, flags, menuId, item->GetText().c_str());
-    
+
     // Update the item's impl with menu info
     item->pimpl_->parent_menu_ = pimpl_->hmenu_;
     item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
@@ -413,14 +400,14 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
     }
 
     pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
-    
+
     UINT flags = MF_STRING | MF_BYPOSITION;
     if (item->GetType() == MenuItemType::Separator) {
         flags = MF_SEPARATOR | MF_BYPOSITION;
     }
-    
+
     InsertMenu(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id, item->GetText().c_str());
-    
+
     item->pimpl_->parent_menu_ = pimpl_->hmenu_;
     item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
 }
@@ -513,16 +500,16 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
 
 bool Menu::ShowAsContextMenu(double x, double y) {
     pimpl_->visible_ = true;
-    
+
     POINT pt = {static_cast<int>(x), static_cast<int>(y)};
     HWND hwnd = GetActiveWindow();
     if (!hwnd) {
         hwnd = GetDesktopWindow();
     }
-    
+
     // Show the context menu
     TrackPopupMenu(pimpl_->hmenu_, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, nullptr);
-    
+
     pimpl_->visible_ = false;
     return true;
 }
