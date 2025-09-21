@@ -90,14 +90,14 @@ MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
-void MenuItem::SetText(const std::string& text) {
-  pimpl_->title_ = text;
+void MenuItem::SetLabel(const std::string& label) {
+  pimpl_->title_ = label;
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
-    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), text.c_str());
+    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), label.c_str());
   }
 }
 
-std::string MenuItem::GetText() const {
+std::string MenuItem::GetLabel() const {
   return pimpl_->title_;
 }
 
@@ -186,7 +186,7 @@ int MenuItem::GetRadioGroup() const {
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
   pimpl_->submenu_ = submenu;
   if (pimpl_->gtk_menu_item_ && submenu) {
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), (GtkWidget*)submenu->GetNativeMenu());
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), (GtkWidget*)submenu->GetNativeObject());
   }
 }
 
@@ -210,7 +210,7 @@ bool MenuItem::Trigger() {
   return false;
 }
 
-void* MenuItem::GetNativeItem() const {
+void* MenuItem::GetNativeObject() const {
   return (void*)pimpl_->gtk_menu_item_;
 }
 
@@ -264,9 +264,9 @@ Menu::~Menu() {
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
-  if (pimpl_->gtk_menu_ && item && item->GetNativeItem()) {
+  if (pimpl_->gtk_menu_ && item && item->GetNativeObject()) {
     pimpl_->items_.push_back(item);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeItem());
+    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
   }
 }
 
@@ -279,17 +279,17 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   }
   
   pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
-  if (pimpl_->gtk_menu_ && item->GetNativeItem()) {
-    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeItem(), index);
+  if (pimpl_->gtk_menu_ && item->GetNativeObject()) {
+    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject(), index);
   }
 }
 
 bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
-  if (pimpl_->gtk_menu_ && item && item->GetNativeItem()) {
+  if (pimpl_->gtk_menu_ && item && item->GetNativeObject()) {
     auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
     if (it != pimpl_->items_.end()) {
       pimpl_->items_.erase(it);
-      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeItem());
+      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
       return true;
     }
   }
@@ -355,7 +355,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
-    std::string item_text = item->GetText();
+    std::string item_text = item->GetLabel();
     if (case_sensitive) {
       if (item_text == text) {
         return item;
@@ -430,7 +430,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
   return item;
 }
 
-void* Menu::GetNativeMenu() const {
+void* Menu::GetNativeObject() const {
   return (void*)pimpl_->gtk_menu_;
 }
 

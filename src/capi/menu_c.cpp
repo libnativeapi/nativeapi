@@ -218,27 +218,27 @@ native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_text(native_menu_item_t item, const char* text) {
-  if (!item || !text)
+void native_menu_item_set_label(native_menu_item_t item, const char* label) {
+  if (!item || !label)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetText(text);
+    menu_item->SetLabel(label);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-int native_menu_item_get_text(native_menu_item_t item,
-                              char* buffer,
-                              size_t buffer_size) {
+int native_menu_item_get_label(native_menu_item_t item,
+                               char* buffer,
+                               size_t buffer_size) {
   if (!item || !buffer || buffer_size == 0)
     return -1;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    std::string text = menu_item->GetText();
+    std::string text = menu_item->GetLabel();
 
     if (text.length() >= buffer_size) {
       return -1;

@@ -235,28 +235,28 @@ class MenuItem : public EventEmitter {
   MenuItemType GetType() const;
 
   /**
-   * @brief Set the display text for the menu item.
+   * @brief Set the display label for the menu item.
    *
-   * The text is what appears in the menu. On some platforms,
+   * The label is what appears in the menu. On some platforms,
    * ampersand characters (&) can be used to indicate mnemonics
    * (keyboard navigation keys).
    *
-   * @param text The text to display
+   * @param label The label to display
    *
    * @example
    * ```cpp
-   * item->SetText("&File");  // 'F' becomes the mnemonic on Windows/Linux
-   * item->SetText("Open Recent");
+   * item->SetLabel("&File");  // 'F' becomes the mnemonic on Windows/Linux
+   * item->SetLabel("Open Recent");
    * ```
    */
-  void SetText(const std::string& text);
+  void SetLabel(const std::string& label);
 
   /**
-   * @brief Get the current display text of the menu item.
+   * @brief Get the current display label of the menu item.
    *
-   * @return The current text as a string
+   * @return The current label as a string
    */
-  std::string GetText() const;
+  std::string GetLabel() const;
 
   /**
    * @brief Set the icon for the menu item.
@@ -455,7 +455,7 @@ class MenuItem : public EventEmitter {
    *
    * @return Pointer to the native menu item object
    */
-  void* GetNativeItem() const;
+  void* GetNativeObject() const;
 
   /**
    * @brief Emit a menu item selected event.
@@ -816,7 +816,7 @@ class Menu : public EventEmitter {
    *
    * @return Pointer to the native menu object
    */
-  void* GetNativeMenu() const;
+  void* GetNativeObject() const;
 
   /**
    * @brief Emit a menu opened event.

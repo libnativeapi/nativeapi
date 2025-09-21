@@ -180,22 +180,22 @@ FFI_PLUGIN_EXPORT
 native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item);
 
 /**
- * Set the text of a menu item
+ * Set the label of a menu item
  * @param item The menu item
- * @param text The text to set
+ * @param label The label to set
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_text(native_menu_item_t item, const char* text);
+void native_menu_item_set_label(native_menu_item_t item, const char* label);
 
 /**
- * Get the text of a menu item
+ * Get the label of a menu item
  * @param item The menu item
- * @param buffer Buffer to store the text (caller allocated)
+ * @param buffer Buffer to store the label (caller allocated)
  * @param buffer_size Size of the buffer
- * @return Length of the text, or -1 if buffer too small
+ * @return Length of the label, or -1 if buffer too small
  */
 FFI_PLUGIN_EXPORT
-int native_menu_item_get_text(native_menu_item_t item, char* buffer, size_t buffer_size);
+int native_menu_item_get_label(native_menu_item_t item, char* buffer, size_t buffer_size);
 
 /**
  * Set the icon of a menu item

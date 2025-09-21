@@ -229,12 +229,12 @@ MenuItemType MenuItem::GetType() const {
     return pimpl_->type_;
 }
 
-void MenuItem::SetText(const std::string& text) {
-    pimpl_->text_ = text;
-    [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:text.c_str()]];
+void MenuItem::SetLabel(const std::string& label) {
+    pimpl_->text_ = label;
+    [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:label.c_str()]];
 }
 
-std::string MenuItem::GetText() const {
+std::string MenuItem::GetLabel() const {
     return pimpl_->text_;
 }
 
@@ -391,7 +391,7 @@ int MenuItem::GetRadioGroup() const {
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     pimpl_->submenu_ = submenu;
     if (submenu) {
-        [pimpl_->ns_menu_item_ setSubmenu:(__bridge NSMenu*)submenu->GetNativeMenu()];
+        [pimpl_->ns_menu_item_ setSubmenu:(__bridge NSMenu*)submenu->GetNativeObject()];
     } else {
         [pimpl_->ns_menu_item_ setSubmenu:nil];
     }
@@ -414,7 +414,7 @@ bool MenuItem::Trigger() {
     return true;
 }
 
-void* MenuItem::GetNativeItem() const {
+void* MenuItem::GetNativeObject() const {
     return (__bridge void*)pimpl_->ns_menu_item_;
 }
 
@@ -488,7 +488,7 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     if (!item) return;
 
     pimpl_->items_.push_back(item);
-    [pimpl_->ns_menu_ addItem:(__bridge NSMenuItem*)item->GetNativeItem()];
+    [pimpl_->ns_menu_ addItem:(__bridge NSMenuItem*)item->GetNativeObject()];
 }
 
 void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
@@ -500,7 +500,7 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
     }
 
     pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
-    [pimpl_->ns_menu_ insertItem:(__bridge NSMenuItem*)item->GetNativeItem() atIndex:index];
+    [pimpl_->ns_menu_ insertItem:(__bridge NSMenuItem*)item->GetNativeObject() atIndex:index];
 }
 
 bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
@@ -508,7 +508,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
     auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
     if (it != pimpl_->items_.end()) {
-        [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeItem()];
+        [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeObject()];
         pimpl_->items_.erase(it);
         return true;
     }
@@ -518,7 +518,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 bool Menu::RemoveItemById(MenuItemID item_id) {
     for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
         if ((*it)->id == item_id) {
-            [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)(*it)->GetNativeItem()];
+            [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)(*it)->GetNativeObject()];
             pimpl_->items_.erase(it);
             return true;
         }
@@ -530,7 +530,7 @@ bool Menu::RemoveItemAt(size_t index) {
     if (index >= pimpl_->items_.size()) return false;
 
     auto item = pimpl_->items_[index];
-    [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeItem()];
+    [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)item->GetNativeObject()];
     pimpl_->items_.erase(pimpl_->items_.begin() + index);
     return true;
 }
@@ -574,7 +574,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
     for (const auto& item : pimpl_->items_) {
-        std::string itemText = item->GetText();
+        std::string itemText = item->GetLabel();
         if (case_sensitive) {
             if (itemText == text) return item;
         } else {
@@ -666,7 +666,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
     return item;
 }
 
-void* Menu::GetNativeMenu() const {
+void* Menu::GetNativeObject() const {
     return (__bridge void*)pimpl_->ns_menu_;
 }
 

@@ -145,18 +145,18 @@ MenuItemType MenuItem::GetType() const {
     return pimpl_->type_;
 }
 
-void MenuItem::SetText(const std::string& text) {
-    pimpl_->text_ = text;
+void MenuItem::SetLabel(const std::string& label) {
+    pimpl_->text_ = label;
     if (pimpl_->parent_menu_) {
         MENUITEMINFO mii = {};
         mii.cbSize = sizeof(MENUITEMINFO);
         mii.fMask = MIIM_STRING;
-        mii.dwTypeData = const_cast<LPSTR>(text.c_str());
+        mii.dwTypeData = const_cast<LPSTR>(label.c_str());
         SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
     }
 }
 
-std::string MenuItem::GetText() const {
+std::string MenuItem::GetLabel() const {
     return pimpl_->text_;
 }
 
@@ -269,7 +269,7 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
         MENUITEMINFO mii = {};
         mii.cbSize = sizeof(MENUITEMINFO);
         mii.fMask = MIIM_SUBMENU;
-        mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeMenu());
+        mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeObject());
         SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
     }
 }
@@ -296,7 +296,7 @@ bool MenuItem::Trigger() {
     return true;
 }
 
-void* MenuItem::GetNativeItem() const {
+void* MenuItem::GetNativeObject() const {
     return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->menu_item_id_));
 }
 
@@ -379,12 +379,12 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     UINT_PTR menuId = item->id;
     HMENU subMenu = nullptr;
     if (item->GetSubmenu()) {
-        subMenu = static_cast<HMENU>(item->GetSubmenu()->GetNativeMenu());
+        subMenu = static_cast<HMENU>(item->GetSubmenu()->GetNativeObject());
         flags |= MF_POPUP;
         menuId = reinterpret_cast<UINT_PTR>(subMenu);
     }
 
-    AppendMenu(pimpl_->hmenu_, flags, menuId, item->GetText().c_str());
+    AppendMenu(pimpl_->hmenu_, flags, menuId, item->GetLabel().c_str());
 
     // Update the item's impl with menu info
     item->pimpl_->parent_menu_ = pimpl_->hmenu_;
@@ -406,7 +406,7 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
         flags = MF_SEPARATOR | MF_BYPOSITION;
     }
 
-    InsertMenu(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id, item->GetText().c_str());
+    InsertMenu(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id, item->GetLabel().c_str());
 
     item->pimpl_->parent_menu_ = pimpl_->hmenu_;
     item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
@@ -484,7 +484,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
     for (const auto& item : pimpl_->items_) {
-        std::string itemText = item->GetText();
+        std::string itemText = item->GetLabel();
         if (case_sensitive) {
             if (itemText == text) return item;
         } else {
@@ -565,7 +565,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
     return item;
 }
 
-void* Menu::GetNativeMenu() const {
+void* Menu::GetNativeObject() const {
     return pimpl_->hmenu_;
 }
 

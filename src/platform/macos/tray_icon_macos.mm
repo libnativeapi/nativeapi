@@ -161,7 +161,7 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   // Set the menu as the status item's menu for right-click
   if (pimpl_->ns_status_item_ && menu) {
     // Get the NSMenu from the Menu object
-    NSMenu* nsMenu = (__bridge NSMenu*)menu->GetNativeMenu();
+    NSMenu* nsMenu = (__bridge NSMenu*)menu->GetNativeObject();
     if (nsMenu) {
       [pimpl_->ns_status_item_ setMenu:nsMenu];
     }

@@ -13,7 +13,7 @@ namespace nativeapi {
 class TrayIcon::Impl {
  public:
   Impl(GtkStatusIcon* tray) : gtk_status_icon_(tray), title_(""), tooltip_(""), context_menu_(nullptr) {}
-  
+
   GtkStatusIcon* gtk_status_icon_;
   std::shared_ptr<Menu> context_menu_;  // Store menu shared_ptr to keep it alive
   std::string title_;  // GTK StatusIcon doesn't have title, so we store it
@@ -50,32 +50,32 @@ void TrayIcon::SetIcon(std::string icon) {
     size_t pos = icon.find("base64,");
     if (pos != std::string::npos) {
       std::string base64Icon = icon.substr(pos + 7);
-      
+
       // Decode base64 data
       gsize decoded_len;
       guchar* decoded_data = g_base64_decode(base64Icon.c_str(), &decoded_len);
-      
+
       if (decoded_data) {
         // Create pixbuf from decoded data
         GInputStream* stream = g_memory_input_stream_new_from_data(
             decoded_data, decoded_len, g_free);
         GError* error = nullptr;
         GdkPixbuf* pixbuf = gdk_pixbuf_new_from_stream(stream, nullptr, &error);
-        
+
         if (pixbuf && !error) {
           // Scale pixbuf to appropriate size (24x24 is common for tray icons)
           GdkPixbuf* scaled_pixbuf = gdk_pixbuf_scale_simple(
               pixbuf, 24, 24, GDK_INTERP_BILINEAR);
-          
+
           gtk_status_icon_set_from_pixbuf(pimpl_->gtk_status_icon_, scaled_pixbuf);
-          
+
           g_object_unref(scaled_pixbuf);
           g_object_unref(pixbuf);
         } else if (error) {
           std::cerr << "Error loading icon from base64: " << error->message << std::endl;
           g_error_free(error);
         }
-        
+
         g_object_unref(stream);
       }
     }
@@ -117,7 +117,7 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   pimpl_->context_menu_ = menu;
 
   // Note: Full GTK integration would need to connect popup-menu signal
-  // and show the GTK menu from the Menu object's GetNativeMenu()
+  // and show the GTK menu from the Menu object's GetNativeObject()
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
@@ -126,12 +126,12 @@ std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
 
 Rectangle TrayIcon::GetBounds() {
   Rectangle bounds = {0, 0, 0, 0};
-  
+
   if (pimpl_->gtk_status_icon_) {
     GdkScreen* screen;
     GdkRectangle area;
     GtkOrientation orientation;
-    
+
     if (gtk_status_icon_get_geometry(pimpl_->gtk_status_icon_, &screen, &area, &orientation)) {
       bounds.x = area.x;
       bounds.y = area.y;
@@ -139,7 +139,7 @@ Rectangle TrayIcon::GetBounds() {
       bounds.height = area.height;
     }
   }
-  
+
   return bounds;
 }
 
@@ -167,7 +167,7 @@ bool TrayIcon::IsVisible() {
 }
 
 bool TrayIcon::ShowContextMenu(double x, double y) {
-  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeMenu()) {
+  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
     return false;
   }
 
@@ -177,7 +177,7 @@ bool TrayIcon::ShowContextMenu(double x, double y) {
 }
 
 bool TrayIcon::ShowContextMenu() {
-  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeMenu()) {
+  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
     return false;
   }
 
