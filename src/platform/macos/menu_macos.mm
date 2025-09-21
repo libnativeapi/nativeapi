@@ -71,7 +71,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
     // Convert modifiers
     if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
-        modifierMask |= NSEventModifierFlagCommand; // On macOS, Ctrl maps to Cmd
+        modifierMask |= NSEventModifierFlagControl;
     }
     if (accelerator.modifiers & KeyboardAccelerator::Alt) {
         modifierMask |= NSEventModifierFlagOption;
@@ -80,7 +80,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
         modifierMask |= NSEventModifierFlagShift;
     }
     if (accelerator.modifiers & KeyboardAccelerator::Meta) {
-        modifierMask |= NSEventModifierFlagControl; // On macOS, Meta maps to Ctrl
+        modifierMask |= NSEventModifierFlagCommand;
     }
 
     return std::make_pair(keyEquivalent, modifierMask);
@@ -168,7 +168,7 @@ class MenuItem::Impl {
         if (submenu_) {
             submenu_.reset();
         }
-        
+
         if (target_) {
             // Remove target and action to prevent callbacks after destruction
             [ns_menu_item_ setTarget:nil];
@@ -227,9 +227,13 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
 
 MenuItem::~MenuItem() {
     // Safely remove from global registry
-    auto it = g_menu_item_registry.find(id);
-    if (it != g_menu_item_registry.end()) {
-        g_menu_item_registry.erase(it);
+    try {
+        auto it = g_menu_item_registry.find(id);
+        if (it != g_menu_item_registry.end()) {
+            g_menu_item_registry.erase(it);
+        }
+    } catch (...) {
+        // Ignore exceptions during cleanup - the registry may be destroyed during shutdown
     }
 }
 
@@ -453,14 +457,14 @@ class Menu::Impl {
     }
 
     ~Impl() {
-        // First, clear all menu item references
-        items_.clear();
-        
+        // First, remove delegate to prevent callbacks during cleanup
         if (delegate_) {
-            // Remove delegate to prevent callbacks after destruction
             [ns_menu_ setDelegate:nil];
             delegate_ = nil;
         }
+
+        // Then clear all menu item references
+        items_.clear();
     }
 };
 
@@ -492,9 +496,13 @@ Menu::Menu()
 
 Menu::~Menu() {
     // Safely remove from global registry
-    auto it = g_menu_registry.find(id);
-    if (it != g_menu_registry.end()) {
-        g_menu_registry.erase(it);
+    try {
+        auto it = g_menu_registry.find(id);
+        if (it != g_menu_registry.end()) {
+            g_menu_registry.erase(it);
+        }
+    } catch (...) {
+        // Ignore exceptions during cleanup - the registry may be destroyed during shutdown
     }
 }
 

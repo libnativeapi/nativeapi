@@ -23,16 +23,32 @@ TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
   
-  // First, clean up all tray icon menu references to prevent circular references
+  // First, hide all tray icons to prevent further UI interactions
   for (auto& pair : trays_) {
     auto tray = pair.second;
     if (tray) {
-      // Explicitly clear menu references
-      tray->SetContextMenu(nullptr);
+      try {
+        tray->Hide();
+      } catch (...) {
+        // Ignore exceptions during cleanup
+      }
     }
   }
   
-  // Then clear the container
+  // Then, clean up all tray icon menu references to prevent circular references
+  for (auto& pair : trays_) {
+    auto tray = pair.second;
+    if (tray) {
+      try {
+        // Explicitly clear menu references
+        tray->SetContextMenu(nullptr);
+      } catch (...) {
+        // Ignore exceptions during cleanup
+      }
+    }
+  }
+  
+  // Finally, clear the container
   trays_.clear();
 }
 

@@ -39,22 +39,28 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
-    // First, safely clean up context_menu_
-    if (context_menu_) {
-      context_menu_.reset();  // Explicitly reset shared_ptr
+    // First, clean up delegate to prevent callbacks
+    if (delegate_) {
+      delegate_.trayIcon = nullptr;  // Clear the raw pointer first
+      delegate_ = nil;
     }
     
+    // Then clean up the status item
     if (ns_status_item_) {
       // Remove target and action to prevent callbacks after destruction
       if (ns_status_item_.button) {
         [ns_status_item_.button setTarget:nil];
         [ns_status_item_.button setAction:nil];
       }
+      // Clear the menu to break potential circular references
+      [ns_status_item_ setMenu:nil];
       [[NSStatusBar systemStatusBar] removeStatusItem:ns_status_item_];
       ns_status_item_ = nil;
     }
-    if (delegate_) {
-      delegate_ = nil;
+    
+    // Finally, safely clean up context_menu_ after all UI references are cleared
+    if (context_menu_) {
+      context_menu_.reset();  // Explicitly reset shared_ptr
     }
   }
 
@@ -81,6 +87,10 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) 
 }
 
 TrayIcon::~TrayIcon() {
+  // Clear the delegate's reference to this object before destruction
+  if (pimpl_ && pimpl_->delegate_) {
+    pimpl_->delegate_.trayIcon = nullptr;
+  }
   delete pimpl_;
 }
 
@@ -289,7 +299,12 @@ void TrayIcon::HandleDoubleClick() {
 @implementation TrayIconDelegate
 
 - (void)statusItemClicked:(id)sender {
+  // Check if trayIcon is still valid before proceeding
   if (!_trayIcon) return;
+  
+  // Create a local reference to prevent race conditions
+  nativeapi::TrayIcon* trayIcon = _trayIcon;
+  if (!trayIcon) return;
 
   NSEvent* event = [NSApp currentEvent];
   if (!event) return;
@@ -298,23 +313,24 @@ void TrayIcon::HandleDoubleClick() {
   if (event.type == NSEventTypeRightMouseUp ||
       (event.type == NSEventTypeLeftMouseUp && (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
-    _trayIcon->HandleRightClick();
+    trayIcon->HandleRightClick();
 
-    // Show context menu if available
-    if (_trayIcon->GetContextMenu()) {
+    // Show context menu if available (check again for safety)
+    if (_trayIcon && _trayIcon->GetContextMenu()) {
       _trayIcon->ShowContextMenu();
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
-      _trayIcon->HandleDoubleClick();
+      trayIcon->HandleDoubleClick();
     } else {
-      _trayIcon->HandleLeftClick();
+      trayIcon->HandleLeftClick();
     }
   }
 }
 
 - (void)statusItemRightClicked:(id)sender {
+  // Check if trayIcon is still valid before proceeding
   if (_trayIcon) {
     _trayIcon->HandleRightClick();
   }
