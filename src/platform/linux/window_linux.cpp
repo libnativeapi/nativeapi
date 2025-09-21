@@ -347,7 +347,7 @@ void Window::StartResizing() {
   // Provide stub implementation
 }
 
-void* Window::GetNativeObject() const {
+void* Window::GetNativeObjectInternal() const {
   return pimpl_ ? pimpl_->gdk_window_ : nullptr;
 }
 

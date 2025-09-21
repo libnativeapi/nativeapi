@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "geometry.h"
+#include "foundation/native_object_provider.h"
 
 namespace nativeapi {
 
@@ -20,7 +21,7 @@ struct WindowOptions {
 /**
  * Window is a class that represents a window.
  */
-class Window {
+class Window : public NativeObjectProvider {
  public:
   Window();
   Window(void* window);
@@ -86,11 +87,16 @@ class Window {
   void StartDragging();
   void StartResizing();
 
+ protected:
   /**
-   * @brief Get the native window object for the current platform.
-   * @return NSWindow* on macOS, HWND on Windows, GdkWindow* on Linux
+   * @brief Internal method to get the platform-specific native window object.
+   * 
+   * This method must be implemented by platform-specific code to return
+   * the underlying native window object.
+   * 
+   * @return Pointer to the native window object
    */
-  void* GetNativeObject() const;
+  void* GetNativeObjectInternal() const override;
 
  private:
   class Impl;

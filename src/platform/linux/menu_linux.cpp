@@ -210,7 +210,7 @@ bool MenuItem::Trigger() {
   return false;
 }
 
-void* MenuItem::GetNativeObject() const {
+void* MenuItem::GetNativeObjectInternal() const {
   return (void*)pimpl_->gtk_menu_item_;
 }
 
@@ -430,7 +430,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
   return item;
 }
 
-void* Menu::GetNativeObject() const {
+void* Menu::GetNativeObjectInternal() const {
   return (void*)pimpl_->gtk_menu_;
 }
 

@@ -8,6 +8,7 @@
 #include "event_emitter.h"
 #include "geometry.h"
 #include "menu_event.h"
+#include "foundation/native_object_provider.h"
 
 namespace nativeapi {
 
@@ -156,7 +157,8 @@ class Menu;
  * auto item = MenuItem::Create("Open File", MenuItemType::Normal);
  * item->SetIcon("data:image/png;base64,...");
  * item->SetAccelerator(KeyboardAccelerator("O", KeyboardAccelerator::Ctrl));
- * item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+ * item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event)
+ * {
  *     // Handle menu item click
  *     std::cout << "Opening file..." << std::endl;
  * });
@@ -164,12 +166,13 @@ class Menu;
  * // Create a checkbox item
  * auto checkbox = MenuItem::Create("Show Toolbar", MenuItemType::Checkbox);
  * checkbox->SetChecked(true);
- * checkbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
- *     std::cout << "Toolbar clicked, handle state change manually" << std::endl;
+ * checkbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent&
+ * event) { std::cout << "Toolbar clicked, handle state change manually" <<
+ * std::endl;
  * });
  * ```
  */
-class MenuItem : public EventEmitter {
+class MenuItem : public EventEmitter, public NativeObjectProvider {
  public:
   /**
    * @brief Factory method to create a new menu item.
@@ -435,7 +438,6 @@ class MenuItem : public EventEmitter {
    */
   void RemoveSubmenu();
 
-
   /**
    * @brief Programmatically trigger this menu item.
    *
@@ -445,17 +447,6 @@ class MenuItem : public EventEmitter {
    * @return true if the item was successfully triggered, false otherwise
    */
   bool Trigger();
-
-  /**
-   * @brief Get the native platform-specific menu item object.
-   *
-   * This method provides access to the underlying platform-specific
-   * menu item for advanced use cases. Use with caution as this breaks
-   * the abstraction layer.
-   *
-   * @return Pointer to the native menu item object
-   */
-  void* GetNativeObject() const;
 
   /**
    * @brief Emit a menu item selected event.
@@ -476,6 +467,17 @@ class MenuItem : public EventEmitter {
    * @param checked The new checked state of the menu item
    */
   void EmitStateChangedEvent(bool checked);
+
+ protected:
+  /**
+   * @brief Internal method to get the platform-specific native menu item object.
+   * 
+   * This method must be implemented by platform-specific code to return
+   * the underlying native menu item object.
+   * 
+   * @return Pointer to the native menu item object
+   */
+  void* GetNativeObjectInternal() const override;
 
  private:
   friend class Menu;
@@ -546,7 +548,7 @@ class MenuItem : public EventEmitter {
  * fileMenu->ShowAsContextMenu(100, 100);
  * ```
  */
-class Menu : public EventEmitter {
+class Menu : public EventEmitter, public NativeObjectProvider {
  public:
   /**
    * @brief Factory method to create a new menu.
@@ -770,7 +772,6 @@ class Menu : public EventEmitter {
    */
   bool IsEnabled() const;
 
-
   /**
    * @brief Create a standard menu item and add it to the menu.
    *
@@ -808,17 +809,6 @@ class Menu : public EventEmitter {
                                                 std::shared_ptr<Menu> submenu);
 
   /**
-   * @brief Get the native platform-specific menu object.
-   *
-   * This method provides access to the underlying platform-specific
-   * menu for advanced use cases. Use with caution as this breaks
-   * the abstraction layer.
-   *
-   * @return Pointer to the native menu object
-   */
-  void* GetNativeObject() const;
-
-  /**
    * @brief Emit a menu opened event.
    *
    * This is primarily used by platform implementations to
@@ -833,6 +823,17 @@ class Menu : public EventEmitter {
    * emit events when a menu has been closed.
    */
   void EmitClosedEvent();
+
+ protected:
+  /**
+   * @brief Internal method to get the platform-specific native menu object.
+   * 
+   * This method must be implemented by platform-specific code to return
+   * the underlying native menu object.
+   * 
+   * @return Pointer to the native menu object
+   */
+  void* GetNativeObjectInternal() const override;
 
  private:
   /**

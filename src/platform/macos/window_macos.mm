@@ -326,7 +326,7 @@ void Window::StartDragging() {
 
 void Window::StartResizing() {}
 
-void* Window::GetNativeObject() const {
+void* Window::GetNativeObjectInternal() const {
   if (!pimpl_) {
     std::cout << "GetNativeObject: pimpl_ is null" << std::endl;
     return nullptr;

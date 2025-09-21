@@ -486,7 +486,7 @@ void Window::StartResizing() {
   // This would require more complex implementation
 }
 
-void* Window::GetNativeObject() const {
+void* Window::GetNativeObjectInternal() const {
   return pimpl_ ? reinterpret_cast<void*>(pimpl_->hwnd_) : nullptr;
 }
 

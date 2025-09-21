@@ -426,7 +426,7 @@ bool MenuItem::Trigger() {
     return true;
 }
 
-void* MenuItem::GetNativeObject() const {
+void* MenuItem::GetNativeObjectInternal() const {
     return (__bridge void*)pimpl_->ns_menu_item_;
 }
 
@@ -688,7 +688,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std
     return item;
 }
 
-void* Menu::GetNativeObject() const {
+void* Menu::GetNativeObjectInternal() const {
     return (__bridge void*)pimpl_->ns_menu_;
 }
 
