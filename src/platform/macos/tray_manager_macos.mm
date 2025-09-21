@@ -5,6 +5,7 @@
 
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
+#include "../../menu.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
