@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "foundation/native_object_provider.h"
 #include "geometry.h"
 
 namespace nativeapi {
@@ -17,31 +18,51 @@ enum class DisplayOrientation {
 /**
  * Representation of a display/monitor
  */
-struct Display {
+class Display : public NativeObjectProvider {
+ public:
+  Display();
+  Display(void* display);
+  Display(const Display& other);
+  Display& operator=(const Display& other);
+  Display(Display&& other) noexcept;
+  Display& operator=(Display&& other) noexcept;
+  virtual ~Display();
+
   // Basic identification
-  std::string id;    // Unique identifier for the display
-  std::string name;  // Human-readable display name
+  std::string GetId() const;
+  std::string GetName() const;
 
   // Physical properties
-  Point position{0.0, 0.0};  // Display position in virtual desktop coordinates
-  Size size{0.0, 0.0};       // Full display size in logical pixels
-  Rectangle workArea{
-      0.0, 0.0, 0.0,
-      0.0};  // Available work area (excluding taskbars, docks, etc.)
-  double scaleFactor =
-      0.0;  // Display scaling factor (1.0 = 100%, 2.0 = 200%, etc.)
+  Point GetPosition() const;
+  Size GetSize() const;
+  Rectangle GetWorkArea() const;
+  double GetScaleFactor() const;
 
   // Additional properties
-  bool isPrimary = false;  // Whether this is the primary display
-  DisplayOrientation orientation =
-      DisplayOrientation::kPortrait;  // Current display orientation
-  int refreshRate = 0;                // Refresh rate in Hz (0 if unknown)
-  int bitDepth = 0;                   // Color bit depth (0 if unknown)
+  bool IsPrimary() const;
+  DisplayOrientation GetOrientation() const;
+  int GetRefreshRate() const;
+  int GetBitDepth() const;
 
   // Hardware information
-  std::string manufacturer;  // Display manufacturer
-  std::string model;         // Display model
-  std::string serialNumber;  // Display serial number (if available)
+  std::string GetManufacturer() const;
+  std::string GetModel() const;
+  std::string GetSerialNumber() const;
+
+ protected:
+  /**
+   * @brief Internal method to get the platform-specific native display object.
+   *
+   * This method must be implemented by platform-specific code to return
+   * the underlying native display object.
+   *
+   * @return Pointer to the native display object
+   */
+  void* GetNativeObjectInternal() const override;
+
+ private:
+  class Impl;
+  std::unique_ptr<Impl> pimpl_;
 };
 
 }  // namespace nativeapi

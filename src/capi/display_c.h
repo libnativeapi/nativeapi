@@ -3,11 +3,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
 #endif
 
 #include "geometry_c.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Display orientation enumeration
@@ -20,163 +26,85 @@ typedef enum : int {
 } native_display_orientation_t;
 
 /**
- * Representation of a display/monitor
+ * Opaque display handle
  */
-typedef struct {
-  // Basic identification
-  char* id;    // Unique identifier for the display
-  char* name;  // Human-readable display name
-
-  // Physical properties
-  native_point_t position;  // Display position in virtual desktop coordinates
-  native_size_t size;       // Full display size in logical pixels
-  native_rectangle_t
-      work_area;        // Available work area (excluding taskbars, docks, etc.)
-  double scale_factor;  // Display scaling factor (1.0 = 100%, 2.0 = 200%, etc.)
-
-  // Additional properties
-  bool is_primary;  // Whether this is the primary display
-  native_display_orientation_t orientation;  // Current display orientation
-  int refresh_rate;  // Refresh rate in Hz (0 if unknown)
-  int bit_depth;     // Color bit depth (0 if unknown)
-
-  // Hardware information
-  char* manufacturer;   // Display manufacturer
-  char* model;          // Display model
-  char* serial_number;  // Display serial number (if available)
-} native_display_t;
+typedef struct native_display_handle* native_display_t;
 
 /**
- * Representation of a list of displays
+ * Display list structure
  */
 typedef struct {
   native_display_t* displays;
   long count;
 } native_display_list_t;
 
-/**
- * Create a new display structure with default values
- * @return Pointer to newly allocated display structure, or NULL on failure
- */
-native_display_t* native_display_create(void);
+// Basic identification getters
+FFI_PLUGIN_EXPORT
+char* native_display_get_id(native_display_t display);
 
-/**
- * Free a display structure and all its allocated strings
- * @param display Pointer to display structure to free
- */
-void native_display_destroy(native_display_t* display);
+FFI_PLUGIN_EXPORT
+char* native_display_get_name(native_display_t display);
 
-/**
- * Set the ID of a display
- * @param display Pointer to display structure
- * @param id ID string (will be copied)
- * @return true on success, false on failure
- */
-bool native_display_set_id(native_display_t* display, const char* id);
+// Physical properties getters
+FFI_PLUGIN_EXPORT
+native_point_t native_display_get_position(native_display_t display);
 
-/**
- * Set the name of a display
- * @param display Pointer to display structure
- * @param name Name string (will be copied)
- * @return true on success, false on failure
- */
-bool native_display_set_name(native_display_t* display, const char* name);
+FFI_PLUGIN_EXPORT
+native_size_t native_display_get_size(native_display_t display);
 
-/**
- * Set the manufacturer of a display
- * @param display Pointer to display structure
- * @param manufacturer Manufacturer string (will be copied)
- * @return true on success, false on failure
- */
-bool native_display_set_manufacturer(native_display_t* display,
-                                     const char* manufacturer);
+FFI_PLUGIN_EXPORT
+native_rectangle_t native_display_get_work_area(native_display_t display);
 
-/**
- * Set the model of a display
- * @param display Pointer to display structure
- * @param model Model string (will be copied)
- * @return true on success, false on failure
- */
-bool native_display_set_model(native_display_t* display, const char* model);
+FFI_PLUGIN_EXPORT
+double native_display_get_scale_factor(native_display_t display);
 
-/**
- * Set the serial number of a display
- * @param display Pointer to display structure
- * @param serial_number Serial number string (will be copied)
- * @return true on success, false on failure
- */
-bool native_display_set_serial_number(native_display_t* display,
-                                      const char* serial_number);
+// Additional properties getters
+FFI_PLUGIN_EXPORT
+bool native_display_is_primary(native_display_t display);
 
-/**
- * Set the position of a display
- * @param display Pointer to display structure
- * @param x X coordinate
- * @param y Y coordinate
- */
-void native_display_set_position(native_display_t* display, double x, double y);
+FFI_PLUGIN_EXPORT
+native_display_orientation_t native_display_get_orientation(
+    native_display_t display);
 
-/**
- * Set the size of a display
- * @param display Pointer to display structure
- * @param width Width in logical pixels
- * @param height Height in logical pixels
- */
-void native_display_set_size(native_display_t* display,
-                             double width,
-                             double height);
+FFI_PLUGIN_EXPORT
+int native_display_get_refresh_rate(native_display_t display);
 
-/**
- * Set the work area of a display
- * @param display Pointer to display structure
- * @param x X coordinate of work area
- * @param y Y coordinate of work area
- * @param width Width of work area
- * @param height Height of work area
- */
-void native_display_set_work_area(native_display_t* display,
-                                  double x,
-                                  double y,
-                                  double width,
-                                  double height);
+FFI_PLUGIN_EXPORT
+int native_display_get_bit_depth(native_display_t display);
 
-/**
- * Set the scale factor of a display
- * @param display Pointer to display structure
- * @param scale_factor Scale factor (1.0 = 100%, 2.0 = 200%, etc.)
- */
-void native_display_set_scale_factor(native_display_t* display,
-                                     double scale_factor);
+// Hardware information getters
+FFI_PLUGIN_EXPORT
+char* native_display_get_manufacturer(native_display_t display);
 
-/**
- * Set whether a display is primary
- * @param display Pointer to display structure
- * @param is_primary true if primary display, false otherwise
- */
-void native_display_set_primary(native_display_t* display, bool is_primary);
+FFI_PLUGIN_EXPORT
+char* native_display_get_model(native_display_t display);
 
-/**
- * Set the orientation of a display
- * @param display Pointer to display structure
- * @param orientation Display orientation
- */
-void native_display_set_orientation(native_display_t* display,
-                                    native_display_orientation_t orientation);
+FFI_PLUGIN_EXPORT
+char* native_display_get_serial_number(native_display_t display);
 
-/**
- * Set the refresh rate of a display
- * @param display Pointer to display structure
- * @param refresh_rate Refresh rate in Hz (0 if unknown)
- */
-void native_display_set_refresh_rate(native_display_t* display,
-                                     int refresh_rate);
+// Platform-specific functions
+FFI_PLUGIN_EXPORT
+void* native_display_get_native_object(native_display_t display);
 
-/**
- * Set the bit depth of a display
- * @param display Pointer to display structure
- * @param bit_depth Color bit depth (0 if unknown)
- */
-void native_display_set_bit_depth(native_display_t* display, int bit_depth);
+// Memory management
+FFI_PLUGIN_EXPORT
+void native_display_free_string(char* str);
+
+FFI_PLUGIN_EXPORT
+void native_display_free(native_display_t display);
+
+FFI_PLUGIN_EXPORT
+void native_display_list_free(native_display_list_t* list);
+
+// Internal function for creating display handles (used by
+// display_manager_c.cpp)
+#ifdef __cplusplus
+namespace nativeapi {
+class Display;
+}
+native_display_t native_display_create_handle(
+    const nativeapi::Display& display);
+#endif
 
 #ifdef __cplusplus
 }

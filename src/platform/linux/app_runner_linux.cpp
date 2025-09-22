@@ -34,18 +34,18 @@ public:
       return -1;
     }
 
-    std::cout << "Starting application with window ID: " << window->id << std::endl;
+    std::cout << "Starting application with window ID: " << window->GetId() << std::endl;
 
     // Connect to the window destroy signal to quit the main loop
     // when the window is closed
-    if (window->id != 0) {
+    if (window->GetId() != 0) {
       // Find the GTK window corresponding to our Window object
       GList* toplevels = gtk_window_list_toplevels();
       for (GList* l = toplevels; l != nullptr; l = l->next) {
         GtkWindow* gtk_window = GTK_WINDOW(l->data);
         GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
 
-        if (gdk_window && (WindowID)gdk_window == window->id) {
+        if (gdk_window && (WindowID)gdk_window == window->GetId()) {
           // Connect destroy signal to quit the main loop
           g_signal_connect(gtk_window, "destroy", G_CALLBACK(gtk_main_quit), nullptr);
           break;

@@ -260,7 +260,7 @@ int main() {
       // Get all windows and destroy them to trigger app exit
       auto windows = window_manager.GetAll();
       for (auto& window : windows) {
-        window_manager.Destroy(window->id);
+        window_manager.Destroy(window->GetId());
       }
     });
     context_menu->AddItem(exit_item);
@@ -295,11 +295,11 @@ int main() {
 
   display_manager.AddListener<nativeapi::DisplayAddedEvent>(
       [](const nativeapi::DisplayAddedEvent& event) {
-        std::cout << "Display added: " << event.GetDisplay().id << std::endl;
+        std::cout << "Display added: " << event.GetDisplay().GetId() << std::endl;
       });
   display_manager.AddListener<nativeapi::DisplayRemovedEvent>(
       [](const nativeapi::DisplayRemovedEvent& event) {
-        std::cout << "Display removed: " << event.GetDisplay().id << std::endl;
+        std::cout << "Display removed: " << event.GetDisplay().GetId() << std::endl;
       });
 
   RunApp(window_ptr);

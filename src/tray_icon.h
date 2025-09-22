@@ -333,7 +333,7 @@ private:
    * This pointer manages the platform-specific implementation of
    * the tray icon functionality.
    */
-  Impl* pimpl_;
+  std::unique_ptr<Impl> pimpl_;
 };
 
 }  // namespace nativeapi

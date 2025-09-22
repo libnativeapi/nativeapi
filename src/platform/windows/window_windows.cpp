@@ -12,16 +12,14 @@ class Window::Impl {
   HWND hwnd_;
 };
 
-Window::Window() : pimpl_(new Impl(nullptr)) {
-  id = -1;
+Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {
 }
 
-Window::Window(void* window) : pimpl_(new Impl(static_cast<HWND>(window))) {
-  id = pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_) : -1;
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {
 }
 
 Window::~Window() {
-  delete pimpl_;
+
 }
 
 void Window::Focus() {
@@ -484,6 +482,10 @@ void Window::StartDragging() {
 void Window::StartResizing() {
   // Windows doesn't have a direct API to start resizing programmatically
   // This would require more complex implementation
+}
+
+WindowID Window::GetId() const {
+  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_) : -1;
 }
 
 void* Window::GetNativeObjectInternal() const {

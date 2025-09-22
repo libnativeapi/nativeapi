@@ -44,7 +44,7 @@ class TrayIcon::Impl {
       delegate_.trayIcon = nullptr;  // Clear the raw pointer first
       delegate_ = nil;
     }
-    
+
     // Then clean up the status item
     if (ns_status_item_) {
       // Remove target and action to prevent callbacks after destruction
@@ -57,7 +57,7 @@ class TrayIcon::Impl {
       [[NSStatusBar systemStatusBar] removeStatusItem:ns_status_item_];
       ns_status_item_ = nil;
     }
-    
+
     // Finally, safely clean up context_menu_ after all UI references are cleared
     if (context_menu_) {
       context_menu_.reset();  // Explicitly reset shared_ptr
@@ -72,14 +72,14 @@ class TrayIcon::Impl {
   bool visible_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(new Impl()) {
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   id = -1;
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
   }
 }
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((__bridge NSStatusItem*)tray)) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
   id = -1; // Will be set by TrayManager when created
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
@@ -91,7 +91,7 @@ TrayIcon::~TrayIcon() {
   if (pimpl_ && pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = nullptr;
   }
-  delete pimpl_;
+
 }
 
 void TrayIcon::SetIcon(std::string icon) {
@@ -178,7 +178,7 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
     }
     pimpl_->context_menu_.reset();
   }
-  
+
   pimpl_->context_menu_ = menu;
 
   // Set the menu as the status item's menu for right-click
@@ -301,7 +301,7 @@ void TrayIcon::HandleDoubleClick() {
 - (void)statusItemClicked:(id)sender {
   // Check if trayIcon is still valid before proceeding
   if (!_trayIcon) return;
-  
+
   // Create a local reference to prevent race conditions
   nativeapi::TrayIcon* trayIcon = _trayIcon;
   if (!trayIcon) return;

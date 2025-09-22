@@ -14,16 +14,14 @@ class Window::Impl {
   NSWindow* ns_window_;
 };
 
-Window::Window() : pimpl_(new Impl(nil)) {
-  id = -1;
+Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {
 }
 
-Window::Window(void* window) : pimpl_(new Impl((__bridge NSWindow*)window)) {
-  id = pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : 0;
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)window)) {
 }
 
 Window::~Window() {
-  delete pimpl_;
+
 }
 
 void Window::Focus() {
@@ -325,6 +323,10 @@ void Window::StartDragging() {
 }
 
 void Window::StartResizing() {}
+
+WindowID Window::GetId() const {
+  return pimpl_ && pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : -1;
+}
 
 void* Window::GetNativeObjectInternal() const {
   if (!pimpl_) {

@@ -9,6 +9,8 @@ using nativeapi::Display;
 using nativeapi::DisplayManager;
 using nativeapi::DisplayOrientation;
 using nativeapi::Point;
+using nativeapi::Size;
+using nativeapi::Rectangle;
 
 // Helper function to convert orientation enum to string
 std::string orientationToString(DisplayOrientation orientation) {
@@ -78,64 +80,73 @@ void printDisplayInfo(const Display& display, bool isPrimary = false) {
   const int tableWidth = 70;
 
   std::cout << createTableBorder("+", "+", "-", tableWidth) << std::endl;
-  std::cout << formatTableRow("Display: " + display.name, tableWidth)
+  std::cout << formatTableRow("Display: " + display.GetName(), tableWidth)
             << std::endl;
   std::cout << createTableBorder("+", "+", "-", tableWidth) << std::endl;
-  std::cout << formatTableRow("ID: " + display.id, tableWidth) << std::endl;
+  std::cout << formatTableRow("ID: " + display.GetId(), tableWidth) << std::endl;
 
-  // Format position string
+  // Format position string using getter methods
+  Point position = display.GetPosition();
   std::string positionStr = "Position: (" +
-                            std::to_string((int)display.position.x) + ", " +
-                            std::to_string((int)display.position.y) + ")";
+                            std::to_string((int)position.x) + ", " +
+                            std::to_string((int)position.y) + ")";
   std::cout << formatTableRow(positionStr, tableWidth) << std::endl;
 
-  // Format size string with proper separator
-  std::string sizeStr = "Size: " + std::to_string((int)display.size.width) +
-                        " x " + std::to_string((int)display.size.height);
+  // Format size string with proper separator using getter methods
+  Size size = display.GetSize();
+  std::string sizeStr = "Size: " + std::to_string((int)size.width) +
+                        " x " + std::to_string((int)size.height);
   std::cout << formatTableRow(sizeStr, tableWidth) << std::endl;
 
-  // Format work area string with proper formatting
+  // Format work area string with proper formatting using getter methods
+  Rectangle workArea = display.GetWorkArea();
   std::string workAreaStr =
-      "Work Area: (" + std::to_string((int)display.workArea.x) + ", " +
-      std::to_string((int)display.workArea.y) + ") " +
-      std::to_string((int)display.workArea.width) + " x " +
-      std::to_string((int)display.workArea.height);
+      "Work Area: (" + std::to_string((int)workArea.x) + ", " +
+      std::to_string((int)workArea.y) + ") " +
+      std::to_string((int)workArea.width) + " x " +
+      std::to_string((int)workArea.height);
   std::cout << formatTableRow(workAreaStr, tableWidth) << std::endl;
 
-  // Format scale factor string
+  // Format scale factor string using getter methods
   std::stringstream scaleStream;
   scaleStream << "Scale Factor: " << std::fixed << std::setprecision(2)
-              << display.scaleFactor;
+              << display.GetScaleFactor();
   std::cout << formatTableRow(scaleStream.str(), tableWidth) << std::endl;
 
-  // Format primary status
+  // Format primary status using getter methods
   std::string primaryStr =
-      "Primary: " + std::string(display.isPrimary ? "Yes" : "No");
+      "Primary: " + std::string(display.IsPrimary() ? "Yes" : "No");
   std::cout << formatTableRow(primaryStr, tableWidth) << std::endl;
 
-  // Format orientation
+  // Format orientation using getter methods
   std::string orientationStr =
-      "Orientation: " + orientationToString(display.orientation);
+      "Orientation: " + orientationToString(display.GetOrientation());
   std::cout << formatTableRow(orientationStr, tableWidth) << std::endl;
 
-  // Format refresh rate
+  // Format refresh rate using getter methods
   std::string refreshStr =
-      "Refresh Rate: " + std::to_string(display.refreshRate) + " Hz";
+      "Refresh Rate: " + std::to_string(display.GetRefreshRate()) + " Hz";
   std::cout << formatTableRow(refreshStr, tableWidth) << std::endl;
 
-  if (display.bitDepth > 0) {
+  // Format bit depth using getter methods
+  int bitDepth = display.GetBitDepth();
+  if (bitDepth > 0) {
     std::string bitDepthStr =
-        "Bit Depth: " + std::to_string(display.bitDepth) + " bits";
+        "Bit Depth: " + std::to_string(bitDepth) + " bits";
     std::cout << formatTableRow(bitDepthStr, tableWidth) << std::endl;
   }
 
-  if (!display.manufacturer.empty()) {
-    std::string manufacturerStr = "Manufacturer: " + display.manufacturer;
+  // Format manufacturer using getter methods
+  std::string manufacturer = display.GetManufacturer();
+  if (!manufacturer.empty()) {
+    std::string manufacturerStr = "Manufacturer: " + manufacturer;
     std::cout << formatTableRow(manufacturerStr, tableWidth) << std::endl;
   }
 
-  if (!display.model.empty()) {
-    std::string modelStr = "Model: " + display.model;
+  // Format model using getter methods
+  std::string model = display.GetModel();
+  if (!model.empty()) {
+    std::string modelStr = "Model: " + model;
     std::cout << formatTableRow(modelStr, tableWidth) << std::endl;
   }
 
@@ -170,7 +181,7 @@ int main() {
     if (displays.size() > 1) {
       std::cout << "📱 SECONDARY DISPLAYS:" << std::endl;
       for (const auto& display : displays) {
-        if (!display.isPrimary) {
+        if (!display.IsPrimary()) {
           printDisplayInfo(display);
           std::cout << std::endl;
         }
@@ -183,16 +194,19 @@ int main() {
               << cursorPos.y << ")" << std::endl;
     std::cout << std::endl;
 
-    // Display summary statistics
+    // Display summary statistics using getter methods
     double totalWidth = 0, totalHeight = 0;
-    double minScaleFactor = displays[0].scaleFactor;
-    double maxScaleFactor = displays[0].scaleFactor;
+    double minScaleFactor = displays[0].GetScaleFactor();
+    double maxScaleFactor = displays[0].GetScaleFactor();
 
     for (const auto& display : displays) {
-      totalWidth += display.size.width;
-      totalHeight = std::max(totalHeight, display.size.height);
-      minScaleFactor = std::min(minScaleFactor, display.scaleFactor);
-      maxScaleFactor = std::max(maxScaleFactor, display.scaleFactor);
+      Size size = display.GetSize();
+      double scaleFactor = display.GetScaleFactor();
+      
+      totalWidth += size.width;
+      totalHeight = std::max(totalHeight, size.height);
+      minScaleFactor = std::min(minScaleFactor, scaleFactor);
+      maxScaleFactor = std::max(maxScaleFactor, scaleFactor);
     }
 
     const int summaryWidth = 60;
@@ -238,12 +252,23 @@ int main() {
     std::cout << "C API - Found " << display_list.count
               << " display(s):" << std::endl;
     for (size_t i = 0; i < display_list.count; ++i) {
-      const native_display_t& display = display_list.displays[i];
+      native_display_t display = display_list.displays[i];
       std::cout << "Display " << (i + 1) << ":" << std::endl;
-      std::cout << "  Name: " << (display.name ? display.name : "Unknown") << std::endl;
-      std::cout << "  ID: " << (display.id ? display.id : "Unknown") << std::endl;
-      std::cout << "  Size: " << display.size.width << " x " << display.size.height << std::endl;
-      std::cout << "  Primary: " << (display.is_primary ? "Yes" : "No") << std::endl;
+      
+      // Use getter functions instead of direct struct access
+      char* name = native_display_get_name(display);
+      std::cout << "  Name: " << (name ? name : "Unknown") << std::endl;
+      native_display_free_string(name);
+      
+      char* id = native_display_get_id(display);
+      std::cout << "  ID: " << (id ? id : "Unknown") << std::endl;
+      native_display_free_string(id);
+      
+      native_size_t size = native_display_get_size(display);
+      std::cout << "  Size: " << size.width << " x " << size.height << std::endl;
+      
+      bool is_primary = native_display_is_primary(display);
+      std::cout << "  Primary: " << (is_primary ? "Yes" : "No") << std::endl;
       std::cout << std::endl;
     }
 

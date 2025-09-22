@@ -20,11 +20,11 @@ class TrayIcon::Impl {
   std::string tooltip_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(new Impl(nullptr)) {
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
   id = -1;
 }
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl((GtkStatusIcon*)tray)) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((GtkStatusIcon*)tray)) {
   id = -1;  // Will be set by TrayManager when created
   // Make the status icon visible
   if (pimpl_->gtk_status_icon_) {
@@ -36,7 +36,7 @@ TrayIcon::~TrayIcon() {
   if (pimpl_->gtk_status_icon_) {
     g_object_unref(pimpl_->gtk_status_icon_);
   }
-  delete pimpl_;
+
 }
 
 void TrayIcon::SetIcon(std::string icon) {

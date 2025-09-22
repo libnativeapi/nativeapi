@@ -15,17 +15,17 @@ class Window::Impl {
   GdkWindow* gdk_window_;
 };
 
-Window::Window() : pimpl_(new Impl(nullptr)) {
+Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {
   id = -1;
 }
 
-Window::Window(void* window) : pimpl_(new Impl((GdkWindow*)window)) {
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {
   // Use pointer address as ID since GDK doesn't provide direct window IDs
   id = pimpl_->gdk_window_ ? (WindowID)pimpl_->gdk_window_ : 0;
 }
 
 Window::~Window() {
-  delete pimpl_;
+
 }
 
 void Window::Focus() {

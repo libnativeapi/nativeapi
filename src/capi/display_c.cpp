@@ -1,182 +1,208 @@
 #include "display_c.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstring>
+#include <memory>
+#include "../display.h"
 
-native_display_t* native_display_create(void) {
-  native_display_t* display =
-      (native_display_t*)malloc(sizeof(native_display_t));
-  if (!display) {
-    return NULL;
+using namespace nativeapi;
+
+// Internal structure to hold the actual Display pointer
+struct native_display_handle {
+  std::shared_ptr<Display> display;
+  explicit native_display_handle(std::shared_ptr<Display> d)
+      : display(std::move(d)) {}
+};
+
+// Helper function to safely copy C++ string to C string
+static char* copy_string(const std::string& str) {
+  if (str.empty())
+    return nullptr;
+
+  size_t len = str.length() + 1;
+  char* result = new (std::nothrow) char[len];
+  if (result) {
+    std::strcpy(result, str.c_str());
   }
-
-  // Initialize all fields to default values
-  display->id = NULL;
-  display->name = NULL;
-  display->position.x = 0.0;
-  display->position.y = 0.0;
-  display->size.width = 0.0;
-  display->size.height = 0.0;
-  display->work_area.x = 0.0;
-  display->work_area.y = 0.0;
-  display->work_area.width = 0.0;
-  display->work_area.height = 0.0;
-  display->scale_factor = 0.0;
-  display->is_primary = false;
-  display->orientation = NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
-  display->refresh_rate = 0;
-  display->bit_depth = 0;
-  display->manufacturer = NULL;
-  display->model = NULL;
-  display->serial_number = NULL;
-
-  return display;
+  return result;
 }
 
-void native_display_destroy(native_display_t* display) {
-  if (!display) {
-    return;
-  }
-
-  // Free all allocated strings
-  free(display->id);
-  free(display->name);
-  free(display->manufacturer);
-  free(display->model);
-  free(display->serial_number);
-
-  // Free the display structure itself
-  free(display);
+// Basic identification getters
+FFI_PLUGIN_EXPORT
+char* native_display_get_id(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return copy_string(display->display->GetId());
 }
 
-static bool set_string_field(char** field, const char* value) {
-  if (!field) {
+FFI_PLUGIN_EXPORT
+char* native_display_get_name(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return copy_string(display->display->GetName());
+}
+
+// Physical properties getters
+FFI_PLUGIN_EXPORT
+native_point_t native_display_get_position(native_display_t display) {
+  native_point_t result = {0.0, 0.0};
+  if (!display || !display->display)
+    return result;
+
+  Point pos = display->display->GetPosition();
+  result.x = pos.x;
+  result.y = pos.y;
+  return result;
+}
+
+FFI_PLUGIN_EXPORT
+native_size_t native_display_get_size(native_display_t display) {
+  native_size_t result = {0.0, 0.0};
+  if (!display || !display->display)
+    return result;
+
+  Size size = display->display->GetSize();
+  result.width = size.width;
+  result.height = size.height;
+  return result;
+}
+
+FFI_PLUGIN_EXPORT
+native_rectangle_t native_display_get_work_area(native_display_t display) {
+  native_rectangle_t result = {0.0, 0.0, 0.0, 0.0};
+  if (!display || !display->display)
+    return result;
+
+  Rectangle work_area = display->display->GetWorkArea();
+  result.x = work_area.x;
+  result.y = work_area.y;
+  result.width = work_area.width;
+  result.height = work_area.height;
+  return result;
+}
+
+FFI_PLUGIN_EXPORT
+double native_display_get_scale_factor(native_display_t display) {
+  if (!display || !display->display)
+    return 1.0;
+  return display->display->GetScaleFactor();
+}
+
+// Additional properties getters
+FFI_PLUGIN_EXPORT
+bool native_display_is_primary(native_display_t display) {
+  if (!display || !display->display)
     return false;
-  }
-
-  // Free existing string if any
-  free(*field);
-  *field = NULL;
-
-  if (!value) {
-    return true;  // Setting to NULL is valid
-  }
-
-  // Allocate and copy new string
-  size_t len = strlen(value) + 1;
-  *field = (char*)malloc(len);
-  if (!*field) {
-    return false;
-  }
-
-  strcpy(*field, value);
-  return true;
+  return display->display->IsPrimary();
 }
 
-bool native_display_set_id(native_display_t* display, const char* id) {
-  if (!display) {
-    return false;
+FFI_PLUGIN_EXPORT
+native_display_orientation_t native_display_get_orientation(
+    native_display_t display) {
+  if (!display || !display->display)
+    return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
+
+  DisplayOrientation orientation = display->display->GetOrientation();
+  switch (orientation) {
+    case DisplayOrientation::kPortrait:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
+    case DisplayOrientation::kLandscape:
+      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE;
+    case DisplayOrientation::kPortraitFlipped:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED;
+    case DisplayOrientation::kLandscapeFlipped:
+      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED;
+    default:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
   }
-  return set_string_field(&display->id, id);
 }
 
-bool native_display_set_name(native_display_t* display, const char* name) {
-  if (!display) {
-    return false;
-  }
-  return set_string_field(&display->name, name);
+FFI_PLUGIN_EXPORT
+int native_display_get_refresh_rate(native_display_t display) {
+  if (!display || !display->display)
+    return 0;
+  return display->display->GetRefreshRate();
 }
 
-bool native_display_set_manufacturer(native_display_t* display,
-                                     const char* manufacturer) {
-  if (!display) {
-    return false;
-  }
-  return set_string_field(&display->manufacturer, manufacturer);
+FFI_PLUGIN_EXPORT
+int native_display_get_bit_depth(native_display_t display) {
+  if (!display || !display->display)
+    return 0;
+  return display->display->GetBitDepth();
 }
 
-bool native_display_set_model(native_display_t* display, const char* model) {
-  if (!display) {
-    return false;
-  }
-  return set_string_field(&display->model, model);
+// Hardware information getters
+FFI_PLUGIN_EXPORT
+char* native_display_get_manufacturer(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return copy_string(display->display->GetManufacturer());
 }
 
-bool native_display_set_serial_number(native_display_t* display,
-                                      const char* serial_number) {
-  if (!display) {
-    return false;
-  }
-  return set_string_field(&display->serial_number, serial_number);
+FFI_PLUGIN_EXPORT
+char* native_display_get_model(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return copy_string(display->display->GetModel());
 }
 
-void native_display_set_position(native_display_t* display,
-                                 double x,
-                                 double y) {
-  if (!display) {
+FFI_PLUGIN_EXPORT
+char* native_display_get_serial_number(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return copy_string(display->display->GetSerialNumber());
+}
+
+// Platform-specific functions
+FFI_PLUGIN_EXPORT
+void* native_display_get_native_object(native_display_t display) {
+  if (!display || !display->display)
+    return nullptr;
+  return display->display->GetNativeObject();
+}
+
+// Memory management
+FFI_PLUGIN_EXPORT
+void native_display_free_string(char* str) {
+  if (str) {
+    delete[] str;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+void native_display_free(native_display_t display) {
+  if (display) {
+    delete display;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+void native_display_list_free(native_display_list_t* list) {
+  if (!list || !list->displays)
     return;
+
+  // Free individual display handles
+  for (long i = 0; i < list->count; i++) {
+    if (list->displays[i]) {
+      delete list->displays[i];
+    }
   }
-  display->position.x = x;
-  display->position.y = y;
+
+  // Free the displays array
+  delete[] list->displays;
+  list->displays = nullptr;
+  list->count = 0;
 }
 
-void native_display_set_size(native_display_t* display,
-                             double width,
-                             double height) {
-  if (!display) {
-    return;
-  }
-  display->size.width = width;
-  display->size.height = height;
-}
+// Internal function for creating display handles
+native_display_t native_display_create_handle(
+    const nativeapi::Display& cpp_display) {
+  try {
+    // Create a shared_ptr from the Display object (copy constructor)
+    auto display_ptr = std::make_shared<Display>(cpp_display);
 
-void native_display_set_work_area(native_display_t* display,
-                                  double x,
-                                  double y,
-                                  double width,
-                                  double height) {
-  if (!display) {
-    return;
+    // Create the native handle
+    auto* handle = new (std::nothrow) native_display_handle(display_ptr);
+    return handle;
+  } catch (const std::exception&) {
+    return nullptr;
   }
-  display->work_area.x = x;
-  display->work_area.y = y;
-  display->work_area.width = width;
-  display->work_area.height = height;
-}
-
-void native_display_set_scale_factor(native_display_t* display,
-                                     double scale_factor) {
-  if (!display) {
-    return;
-  }
-  display->scale_factor = scale_factor;
-}
-
-void native_display_set_primary(native_display_t* display, bool is_primary) {
-  if (!display) {
-    return;
-  }
-  display->is_primary = is_primary;
-}
-
-void native_display_set_orientation(native_display_t* display,
-                                    native_display_orientation_t orientation) {
-  if (!display) {
-    return;
-  }
-  display->orientation = orientation;
-}
-
-void native_display_set_refresh_rate(native_display_t* display,
-                                     int refresh_rate) {
-  if (!display) {
-    return;
-  }
-  display->refresh_rate = refresh_rate;
-}
-
-void native_display_set_bit_depth(native_display_t* display, int bit_depth) {
-  if (!display) {
-    return;
-  }
-  display->bit_depth = bit_depth;
 }

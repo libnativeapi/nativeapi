@@ -88,7 +88,7 @@ void native_window_options_set_centered(native_window_options_t* options, bool c
 FFI_PLUGIN_EXPORT
 native_window_id_t native_window_get_id(native_window_t window) {
     if (!window || !window->window) return -1;
-    return window->window->id;
+    return window->window->GetId();
 }
 
 FFI_PLUGIN_EXPORT

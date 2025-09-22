@@ -10,52 +10,8 @@
 namespace nativeapi {
 
 static Display CreateDisplayFromMonitorInfo(HMONITOR hMonitor, MONITORINFOEX* monitorInfo, bool isPrimary) {
-  Display display;
-  
-  // Set unique identifier using monitor handle
-  display.id = std::to_string(reinterpret_cast<uintptr_t>(hMonitor));
-  
-  // Set display name from device name
-  std::string deviceName = monitorInfo->szDevice;
-  display.name = deviceName;
-  
-  // Get monitor rectangle
-  RECT rect = monitorInfo->rcMonitor;
-  RECT workRect = monitorInfo->rcWork;
-  
-  // Set position and size
-  display.position = {static_cast<double>(rect.left), static_cast<double>(rect.top)};
-  display.size = {static_cast<double>(rect.right - rect.left), static_cast<double>(rect.bottom - rect.top)};
-  display.workArea = {static_cast<double>(workRect.left), static_cast<double>(workRect.top), 
-                      static_cast<double>(workRect.bottom - workRect.top), static_cast<double>(workRect.right - workRect.left)};
-  
-  // Get scale factor
-  HDC hdc = GetDC(nullptr);
-  if (hdc) {
-    int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-    display.scaleFactor = dpiX / 96.0; // 96 DPI is 100% scale
-    ReleaseDC(nullptr, hdc);
-  } else {
-    display.scaleFactor = 1.0;
-  }
-  
-  display.isPrimary = isPrimary;
-  
-  // Determine orientation
-  if (display.size.width > display.size.height) {
-    display.orientation = DisplayOrientation::kLandscape;
-  } else {
-    display.orientation = DisplayOrientation::kPortrait;
-  }
-  
-  // Set default values
-  display.refreshRate = 60; // Default refresh rate
-  display.bitDepth = 32;    // Default bit depth
-  display.manufacturer = "Unknown";
-  display.model = display.name;
-  display.serialNumber = "";
-  
-  return display;
+  // Simply create Display with HMONITOR - all properties will be read directly from the monitor
+  return Display(hMonitor);
 }
 
 static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {

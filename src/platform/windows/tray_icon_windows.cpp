@@ -81,18 +81,18 @@ class TrayIcon::Impl {
   HICON icon_handle_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(new Impl()) {
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   id = -1;
 }
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(new Impl()) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {
   id = -1; // Will be set by TrayManager when created
   // In a real implementation, you'd extract HWND and icon ID from the tray parameter
   // For now, this constructor is mainly used by TrayManager for creating uninitialized icons
 }
 
 TrayIcon::~TrayIcon() {
-  delete pimpl_;
+
 }
 
 void TrayIcon::SetIcon(std::string icon) {

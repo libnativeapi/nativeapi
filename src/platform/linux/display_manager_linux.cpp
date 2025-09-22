@@ -6,30 +6,8 @@ namespace nativeapi {
 
 static Display CreateDisplayFromGdkMonitor(GdkMonitor* monitor,
                                            bool isFirstScreen) {
-  Display display;
-
-  display.id = "";
-  display.name = gdk_monitor_get_model(monitor);
-
-  GdkRectangle frame;
-  gdk_monitor_get_geometry(monitor, &frame);
-
-  display.size.width = frame.width;
-  display.size.height = frame.height;
-  display.position.x = frame.x;
-  display.position.y = frame.y;
-
-  GdkRectangle workarea_rect;
-  gdk_monitor_get_workarea(monitor, &workarea_rect);
-
-  display.workArea.width = workarea_rect.width;
-  display.workArea.height = workarea_rect.height;
-  display.workArea.x = workarea_rect.x;
-  display.workArea.y = workarea_rect.y;
-
-  display.scaleFactor = gdk_monitor_get_scale_factor(monitor);
-
-  return display;
+  // Simply create Display with GdkMonitor - all properties will be read directly from the monitor
+  return Display(monitor);
 }
 
 DisplayManager::DisplayManager() {

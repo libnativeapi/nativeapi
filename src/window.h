@@ -27,7 +27,7 @@ class Window : public NativeObjectProvider {
   Window(void* window);
   virtual ~Window();
 
-  WindowID id;
+  WindowID GetId() const;
 
   void Focus();
   void Blur();
@@ -100,7 +100,7 @@ class Window : public NativeObjectProvider {
 
  private:
   class Impl;
-  Impl* pimpl_;
+  std::unique_ptr<Impl> pimpl_;
 };
 
 }  // namespace nativeapi
