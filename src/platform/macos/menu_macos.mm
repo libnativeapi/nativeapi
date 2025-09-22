@@ -13,12 +13,12 @@
 
 // Forward declarations - moved to global scope
 @interface MenuItemTarget : NSObject
-@property (nonatomic, assign) nativeapi::MenuItemID itemId;
+@property (nonatomic, assign) void* cppMenuItem;
 - (void)menuItemClicked:(id)sender;
 @end
 
 @interface MenuDelegate : NSObject <NSMenuDelegate>
-@property (nonatomic, assign) nativeapi::MenuID menuId;
+@property (nonatomic, assign) void* cppMenu;
 @end
 
 namespace nativeapi {
@@ -27,9 +27,7 @@ namespace nativeapi {
 static std::atomic<MenuItemID> g_next_menu_item_id{1};
 static std::atomic<MenuID> g_next_menu_id{1};
 
-// Global registry to map native objects to C++ objects for event emission
-static std::unordered_map<MenuItemID, MenuItem*> g_menu_item_registry;
-static std::unordered_map<MenuID, Menu*> g_menu_registry;
+// Removed global registries; events are dispatched via direct back-pointers
 
 // Helper function to convert KeyboardAccelerator to NSString and modifier mask
 std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& accelerator) {
@@ -92,14 +90,11 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 @implementation MenuItemTarget
 - (void)menuItemClicked:(id)sender {
     NSMenuItem* menuItem = (NSMenuItem*)sender;
-
-    // Find the MenuItem object in registry
-    auto menuItemIt = nativeapi::g_menu_item_registry.find(_itemId);
-    if (menuItemIt == nativeapi::g_menu_item_registry.end()) {
-        return; // Item not found in registry
+    // Use direct back-pointer to the C++ MenuItem
+    nativeapi::MenuItem* menuItemPtr = static_cast<nativeapi::MenuItem*>(_cppMenuItem);
+    if (!menuItemPtr) {
+        return;
     }
-
-    nativeapi::MenuItem* menuItemPtr = menuItemIt->second;
     nativeapi::MenuItemType itemType = menuItemPtr->GetType();
 
     // Don't automatically handle state changes - let user code control the state
@@ -113,19 +108,13 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 // Implementation of MenuDelegate - moved to global scope
 @implementation MenuDelegate
 - (void)menuWillOpen:(NSMenu *)menu {
-    auto menuIt = nativeapi::g_menu_registry.find(_menuId);
-    if (menuIt != nativeapi::g_menu_registry.end()) {
-        nativeapi::Menu* menuPtr = menuIt->second;
-        menuPtr->EmitOpenedEvent();
-    }
+    nativeapi::Menu* menuPtr = static_cast<nativeapi::Menu*>(_cppMenu);
+    if (menuPtr) menuPtr->EmitOpenedEvent();
 }
 
 - (void)menuDidClose:(NSMenu *)menu {
-    auto menuIt = nativeapi::g_menu_registry.find(_menuId);
-    if (menuIt != nativeapi::g_menu_registry.end()) {
-        nativeapi::Menu* menuPtr = menuIt->second;
-        menuPtr->EmitClosedEvent();
-    }
+    nativeapi::Menu* menuPtr = static_cast<nativeapi::Menu*>(_cppMenu);
+    if (menuPtr) menuPtr->EmitClosedEvent();
 }
 @end
 
@@ -200,11 +189,8 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
     auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
     item->pimpl_ = std::make_unique<Impl>(nsItem, type);
     item->id = g_next_menu_item_id++;
-    item->pimpl_->target_.itemId = item->id;
+    [item->pimpl_->target_ setCppMenuItem:(void*)item.get()];
     item->pimpl_->text_ = text;
-
-    // Register the MenuItem for event emission
-    g_menu_item_registry[item->id] = item.get();
 
     return item;
 }
@@ -216,9 +202,7 @@ std::shared_ptr<MenuItem> MenuItem::CreateSeparator() {
 MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++)
     , pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
-    pimpl_->target_.itemId = id;
-    // Register the MenuItem for event emission
-    g_menu_item_registry[id] = this;
+    [pimpl_->target_ setCppMenuItem:(void*)this];
 }
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
@@ -226,15 +210,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
 }
 
 MenuItem::~MenuItem() {
-    // Safely remove from global registry
-    try {
-        auto it = g_menu_item_registry.find(id);
-        if (it != g_menu_item_registry.end()) {
-            g_menu_item_registry.erase(it);
-        }
-    } catch (...) {
-        // Ignore exceptions during cleanup - the registry may be destroyed during shutdown
-    }
+    // No global registry cleanup required
 }
 
 MenuItemType MenuItem::GetType() const {
@@ -373,15 +349,23 @@ void MenuItem::SetState(MenuItemState state) {
         }
         [pimpl_->ns_menu_item_ setState:nsState];
 
-        // Handle radio button group logic - uncheck others in the same group
+        // Handle radio button group logic - uncheck siblings in the same NSMenu
         if (pimpl_->type_ == MenuItemType::Radio && state == MenuItemState::Checked && pimpl_->radio_group_ >= 0) {
-            for (auto& pair : g_menu_item_registry) {
-                MenuItem* otherItem = pair.second;
-                if (otherItem != this &&
-                    otherItem->GetType() == MenuItemType::Radio &&
-                    otherItem->GetRadioGroup() == pimpl_->radio_group_) {
-                    otherItem->pimpl_->state_ = MenuItemState::Unchecked;
-                    [otherItem->pimpl_->ns_menu_item_ setState:NSControlStateValueOff];
+            NSMenu* parentMenu = [pimpl_->ns_menu_item_ menu];
+            if (parentMenu) {
+                for (NSMenuItem* sibling in [parentMenu itemArray]) {
+                    if (sibling == pimpl_->ns_menu_item_) continue;
+                    NSObject* targetObj = [sibling target];
+                    if ([targetObj isKindOfClass:[MenuItemTarget class]]) {
+                        MenuItemTarget* siblingTarget = (MenuItemTarget*)targetObj;
+                        nativeapi::MenuItem* otherItem = static_cast<nativeapi::MenuItem*>([siblingTarget cppMenuItem]);
+                        if (otherItem &&
+                            otherItem->GetType() == MenuItemType::Radio &&
+                            otherItem->GetRadioGroup() == pimpl_->radio_group_) {
+                            otherItem->pimpl_->state_ = MenuItemState::Unchecked;
+                            [sibling setState:NSControlStateValueOff];
+                        }
+                    }
                 }
             }
         }
@@ -474,10 +458,7 @@ std::shared_ptr<Menu> Menu::Create() {
     auto menu = std::shared_ptr<Menu>(new Menu());
     menu->pimpl_ = std::make_unique<Impl>(nsMenu);
     menu->id = g_next_menu_id++;
-    menu->pimpl_->delegate_.menuId = menu->id;
-
-    // Register the Menu for event emission
-    g_menu_registry[menu->id] = menu.get();
+    [menu->pimpl_->delegate_ setCppMenu:(void*)menu.get()];
 
     return menu;
 }
@@ -485,9 +466,7 @@ std::shared_ptr<Menu> Menu::Create() {
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++)
     , pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
-    pimpl_->delegate_.menuId = id;
-    // Register the Menu for event emission
-    g_menu_registry[id] = this;
+    [pimpl_->delegate_ setCppMenu:(void*)this];
 }
 
 Menu::Menu()
@@ -495,15 +474,7 @@ Menu::Menu()
 }
 
 Menu::~Menu() {
-    // Safely remove from global registry
-    try {
-        auto it = g_menu_registry.find(id);
-        if (it != g_menu_registry.end()) {
-            g_menu_registry.erase(it);
-        }
-    } catch (...) {
-        // Ignore exceptions during cleanup - the registry may be destroyed during shutdown
-    }
+    // No global registry cleanup required
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
