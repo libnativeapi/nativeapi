@@ -142,7 +142,13 @@ void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     if (menu) {
-      auto menu_ptr = std::shared_ptr<Menu>(static_cast<Menu*>(menu));
+      // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
+      // Menu objects are owned by the global registry in menu_c.cpp and by Swift-side
+      // references. Creating an owning shared_ptr would introduce a separate control
+      // block and cause double-deletion during shutdown.
+      // Use a non-owning aliasing shared_ptr with an empty deleter instead.
+      auto menu_raw = static_cast<Menu*>(menu);
+      auto menu_ptr = std::shared_ptr<Menu>(menu_raw, [](Menu*){});
       tray_icon_ptr->SetContextMenu(menu_ptr);
     } else {
       tray_icon_ptr->SetContextMenu(nullptr);
