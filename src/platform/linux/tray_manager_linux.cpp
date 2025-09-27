@@ -45,7 +45,7 @@ TrayManager::~TrayManager() {
   for (auto& pair : trays_) {
     auto tray = pair.second;
     if (tray) {
-      // The TrayIcon destructor will handle cleanup of the GtkStatusIcon
+      // The TrayIcon destructor will handle cleanup of the AppIndicator
     }
   }
   trays_.clear();
