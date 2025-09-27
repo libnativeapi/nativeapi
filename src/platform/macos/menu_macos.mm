@@ -95,8 +95,6 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     if (!menuItemPtr) {
         return;
     }
-    nativeapi::MenuItemType itemType = menuItemPtr->GetType();
-
     // Don't automatically handle state changes - let user code control the state
     // This prevents double-toggling when user event handlers also call SetChecked
 

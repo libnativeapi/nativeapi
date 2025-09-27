@@ -47,7 +47,7 @@ native_point_t native_display_get_position(native_display_t display) {
   if (!display || !display->display)
     return result;
 
-  Point pos = display->display->GetPosition();
+  auto pos = display->display->GetPosition();
   result.x = pos.x;
   result.y = pos.y;
   return result;
@@ -59,7 +59,7 @@ native_size_t native_display_get_size(native_display_t display) {
   if (!display || !display->display)
     return result;
 
-  Size size = display->display->GetSize();
+  auto size = display->display->GetSize();
   result.width = size.width;
   result.height = size.height;
   return result;

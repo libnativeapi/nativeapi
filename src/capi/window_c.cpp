@@ -5,32 +5,26 @@
 
 using namespace nativeapi;
 
-// Internal structure to hold the actual Window pointer
-struct native_window_handle {
-    std::shared_ptr<Window> window;
-    explicit native_window_handle(std::shared_ptr<Window> w) : window(std::move(w)) {}
-};
-
 // Window options creation and destruction
 FFI_PLUGIN_EXPORT
 native_window_options_t* native_window_options_create(void) {
     auto* options = new (std::nothrow) native_window_options_t;
     if (!options) return nullptr;
-    
+
     // Initialize with default values
     options->title = nullptr;
     options->size = {800.0, 600.0};
     options->minimum_size = {0.0, 0.0};
     options->maximum_size = {0.0, 0.0};
     options->centered = true;
-    
+
     return options;
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_options_destroy(native_window_options_t* options) {
     if (!options) return;
-    
+
     if (options->title) {
         delete[] options->title;
     }
@@ -40,20 +34,20 @@ void native_window_options_destroy(native_window_options_t* options) {
 FFI_PLUGIN_EXPORT
 bool native_window_options_set_title(native_window_options_t* options, const char* title) {
     if (!options) return false;
-    
+
     // Free existing title
     if (options->title) {
         delete[] options->title;
         options->title = nullptr;
     }
-    
+
     if (title) {
         size_t len = strlen(title) + 1;
         options->title = new (std::nothrow) char[len];
         if (!options->title) return false;
         strcpy(options->title, title);
     }
-    
+
     return true;
 }
 
@@ -87,115 +81,133 @@ void native_window_options_set_centered(native_window_options_t* options, bool c
 // Window basic operations
 FFI_PLUGIN_EXPORT
 native_window_id_t native_window_get_id(native_window_t window) {
-    if (!window || !window->window) return -1;
-    return window->window->GetId();
+    if (!window) return -1;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->GetId();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_focus(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Focus();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Focus();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_blur(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Blur();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Blur();
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_focused(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsFocused();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsFocused();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_show(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Show();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Show();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_show_inactive(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->ShowInactive();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->ShowInactive();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_hide(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Hide();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Hide();
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_visible(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsVisible();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsVisible();
 }
 
 // Window state operations
 FFI_PLUGIN_EXPORT
 void native_window_maximize(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Maximize();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Maximize();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_unmaximize(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Unmaximize();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Unmaximize();
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_maximized(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsMaximized();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsMaximized();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_minimize(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Minimize();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Minimize();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_restore(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->Restore();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->Restore();
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_minimized(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsMinimized();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsMinimized();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_fullscreen(native_window_t window, bool is_fullscreen) {
-    if (!window || !window->window) return;
-    window->window->SetFullScreen(is_fullscreen);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetFullScreen(is_fullscreen);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_fullscreen(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsFullScreen();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsFullScreen();
 }
 
 // Window geometry operations
 FFI_PLUGIN_EXPORT
 void native_window_set_bounds(native_window_t window, native_rectangle_t bounds) {
-    if (!window || !window->window) return;
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
     Rectangle rect = {bounds.x, bounds.y, bounds.height, bounds.width};
-    window->window->SetBounds(rect);
+    win->SetBounds(rect);
 }
 
 FFI_PLUGIN_EXPORT
 native_rectangle_t native_window_get_bounds(native_window_t window) {
     native_rectangle_t result = {0.0, 0.0, 0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Rectangle bounds = window->window->GetBounds();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    Rectangle bounds = win->GetBounds();
     result.x = bounds.x;
     result.y = bounds.y;
     result.width = bounds.width;
@@ -205,17 +217,19 @@ native_rectangle_t native_window_get_bounds(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_size(native_window_t window, double width, double height, bool animate) {
-    if (!window || !window->window) return;
-    Size size = {width, height};
-    window->window->SetSize(size, animate);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Size size = {width, height};
+    win->SetSize(size, animate);
 }
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_size(native_window_t window) {
     native_size_t result = {0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Size size = window->window->GetSize();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Size size = win->GetSize();
     result.width = size.width;
     result.height = size.height;
     return result;
@@ -223,17 +237,19 @@ native_size_t native_window_get_size(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_content_size(native_window_t window, double width, double height) {
-    if (!window || !window->window) return;
-    Size size = {width, height};
-    window->window->SetContentSize(size);
+    if (!window) return;
+    nativeapi::Size size = {width, height};
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetContentSize(size);
 }
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_content_size(native_window_t window) {
     native_size_t result = {0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Size size = window->window->GetContentSize();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Size size = win->GetContentSize();
     result.width = size.width;
     result.height = size.height;
     return result;
@@ -241,17 +257,19 @@ native_size_t native_window_get_content_size(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_minimum_size(native_window_t window, double width, double height) {
-    if (!window || !window->window) return;
-    Size size = {width, height};
-    window->window->SetMinimumSize(size);
+    if (!window) return;
+    nativeapi::Size size = {width, height};
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetMinimumSize(size);
 }
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_minimum_size(native_window_t window) {
     native_size_t result = {0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Size size = window->window->GetMinimumSize();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Size size = win->GetMinimumSize();
     result.width = size.width;
     result.height = size.height;
     return result;
@@ -259,17 +277,19 @@ native_size_t native_window_get_minimum_size(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_maximum_size(native_window_t window, double width, double height) {
-    if (!window || !window->window) return;
-    Size size = {width, height};
-    window->window->SetMaximumSize(size);
+    if (!window) return;
+    nativeapi::Size size = {width, height};
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetMaximumSize(size);
 }
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_maximum_size(native_window_t window) {
     native_size_t result = {0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Size size = window->window->GetMaximumSize();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Size size = win->GetMaximumSize();
     result.width = size.width;
     result.height = size.height;
     return result;
@@ -277,17 +297,19 @@ native_size_t native_window_get_maximum_size(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_position(native_window_t window, double x, double y) {
-    if (!window || !window->window) return;
-    Point point = {x, y};
-    window->window->SetPosition(point);
+    if (!window) return;
+    nativeapi::Point point = {x, y};
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetPosition(point);
 }
 
 FFI_PLUGIN_EXPORT
 native_point_t native_window_get_position(native_window_t window) {
     native_point_t result = {0.0, 0.0};
-    if (!window || !window->window) return result;
-    
-    Point point = window->window->GetPosition();
+    if (!window) return result;
+
+    auto* win = static_cast<nativeapi::Window*>(window);
+    nativeapi::Point point = win->GetPosition();
     result.x = point.x;
     result.y = point.y;
     return result;
@@ -296,94 +318,109 @@ native_point_t native_window_get_position(native_window_t window) {
 // Window properties
 FFI_PLUGIN_EXPORT
 void native_window_set_resizable(native_window_t window, bool resizable) {
-    if (!window || !window->window) return;
-    window->window->SetResizable(resizable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetResizable(resizable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_resizable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsResizable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsResizable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_movable(native_window_t window, bool movable) {
-    if (!window || !window->window) return;
-    window->window->SetMovable(movable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetMovable(movable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_movable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsMovable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsMovable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_minimizable(native_window_t window, bool minimizable) {
-    if (!window || !window->window) return;
-    window->window->SetMinimizable(minimizable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetMinimizable(minimizable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_minimizable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsMinimizable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsMinimizable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_maximizable(native_window_t window, bool maximizable) {
-    if (!window || !window->window) return;
-    window->window->SetMaximizable(maximizable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetMaximizable(maximizable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_maximizable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsMaximizable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsMaximizable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_fullscreenable(native_window_t window, bool fullscreenable) {
-    if (!window || !window->window) return;
-    window->window->SetFullScreenable(fullscreenable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetFullScreenable(fullscreenable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_fullscreenable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsFullScreenable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsFullScreenable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_closable(native_window_t window, bool closable) {
-    if (!window || !window->window) return;
-    window->window->SetClosable(closable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetClosable(closable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_closable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsClosable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsClosable();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_always_on_top(native_window_t window, bool always_on_top) {
-    if (!window || !window->window) return;
-    window->window->SetAlwaysOnTop(always_on_top);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetAlwaysOnTop(always_on_top);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_always_on_top(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsAlwaysOnTop();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsAlwaysOnTop();
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_set_title(native_window_t window, const char* title) {
-    if (!window || !window->window || !title) return false;
-    
+    if (!window || !title) return false;
+
     try {
-        window->window->SetTitle(std::string(title));
+        auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetTitle(std::string(title));
         return true;
     } catch (...) {
         return false;
@@ -392,10 +429,11 @@ bool native_window_set_title(native_window_t window, const char* title) {
 
 FFI_PLUGIN_EXPORT
 char* native_window_get_title(native_window_t window) {
-    if (!window || !window->window) return nullptr;
-    
+    if (!window) return nullptr;
+
     try {
-        std::string title = window->window->GetTitle();
+        auto* win = static_cast<nativeapi::Window*>(window);
+        std::string title = win->GetTitle();
         char* result = new (std::nothrow) char[title.length() + 1];
         if (result) {
             strcpy(result, title.c_str());
@@ -408,82 +446,95 @@ char* native_window_get_title(native_window_t window) {
 
 FFI_PLUGIN_EXPORT
 void native_window_set_has_shadow(native_window_t window, bool has_shadow) {
-    if (!window || !window->window) return;
-    window->window->SetHasShadow(has_shadow);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetHasShadow(has_shadow);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_has_shadow(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->HasShadow();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->HasShadow();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_opacity(native_window_t window, float opacity) {
-    if (!window || !window->window) return;
-    window->window->SetOpacity(opacity);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetOpacity(opacity);
 }
 
 FFI_PLUGIN_EXPORT
 float native_window_get_opacity(native_window_t window) {
-    if (!window || !window->window) return 1.0f;
-    return window->window->GetOpacity();
+    if (!window) return 1.0f;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->GetOpacity();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible) {
-    if (!window || !window->window) return;
-    window->window->SetVisibleOnAllWorkspaces(visible);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetVisibleOnAllWorkspaces(visible);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_visible_on_all_workspaces(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsVisibleOnAllWorkspaces();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsVisibleOnAllWorkspaces();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_ignore_mouse_events(native_window_t window, bool ignore) {
-    if (!window || !window->window) return;
-    window->window->SetIgnoreMouseEvents(ignore);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetIgnoreMouseEvents(ignore);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_ignore_mouse_events(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsIgnoreMouseEvents();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsIgnoreMouseEvents();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_set_focusable(native_window_t window, bool focusable) {
-    if (!window || !window->window) return;
-    window->window->SetFocusable(focusable);
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->SetFocusable(focusable);
 }
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_focusable(native_window_t window) {
-    if (!window || !window->window) return false;
-    return window->window->IsFocusable();
+    if (!window) return false;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->IsFocusable();
 }
 
 // Window interactions
 FFI_PLUGIN_EXPORT
 void native_window_start_dragging(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->StartDragging();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->StartDragging();
 }
 
 FFI_PLUGIN_EXPORT
 void native_window_start_resizing(native_window_t window) {
-    if (!window || !window->window) return;
-    window->window->StartResizing();
+    if (!window) return;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    win->StartResizing();
 }
 
 // Platform-specific functions
 FFI_PLUGIN_EXPORT
 void* native_window_get_native_object(native_window_t window) {
-    if (!window || !window->window) return nullptr;
-    return window->window->GetNativeObject();
+    if (!window) return nullptr;
+    auto* win = static_cast<nativeapi::Window*>(window);
+    return win->GetNativeObject();
 }
 
 // Memory management
@@ -497,7 +548,7 @@ void native_window_free_string(char* str) {
 FFI_PLUGIN_EXPORT
 void native_window_list_free(native_window_list_t* list) {
     if (!list) return;
-    
+
     if (list->windows) {
         // Note: We don't delete the individual window handles here
         // because they are managed by the window manager

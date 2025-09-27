@@ -17,7 +17,7 @@ struct TrayIconListenerData {
 
 // Global maps to store listener data
 static std::map<native_tray_icon_t, std::vector<std::shared_ptr<TrayIconListenerData>>> g_tray_icon_listeners;
-static size_t g_next_listener_id = 1;
+static std::atomic<int> g_tray_icon_next_listener_id{1};
 
 // TrayIcon C API Implementation
 
@@ -32,7 +32,7 @@ native_tray_icon_t native_tray_icon_create(void) {
 
 native_tray_icon_t native_tray_icon_create_from_native(void* native_tray) {
   if (!native_tray) return nullptr;
-  
+
   try {
     auto tray_icon = std::make_shared<TrayIcon>(native_tray);
     return static_cast<native_tray_icon_t>(tray_icon.get());
@@ -49,14 +49,14 @@ void native_tray_icon_destroy(native_tray_icon_t tray_icon) {
   if (it != g_tray_icon_listeners.end()) {
     g_tray_icon_listeners.erase(it);
   }
-  
+
   // Note: The actual TrayIcon object is managed by shared_ptr
   // This just removes our reference to it
 }
 
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   if (!tray_icon) return -1;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->id;
@@ -67,7 +67,7 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
 
 void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon) {
   if (!tray_icon || !icon) return;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     tray_icon_ptr->SetIcon(icon);
@@ -78,7 +78,7 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon) {
 
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title) {
   if (!tray_icon || !title) return;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     tray_icon_ptr->SetTitle(title);
@@ -89,15 +89,15 @@ void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title)
 
 int native_tray_icon_get_title(native_tray_icon_t tray_icon, char* buffer, size_t buffer_size) {
   if (!tray_icon || !buffer || buffer_size == 0) return -1;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     std::string title = tray_icon_ptr->GetTitle();
-    
+
     if (title.length() >= buffer_size) {
       return -1;
     }
-    
+
     strncpy(buffer, title.c_str(), buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
     return static_cast<int>(title.length());
@@ -108,7 +108,7 @@ int native_tray_icon_get_title(native_tray_icon_t tray_icon, char* buffer, size_
 
 void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip) {
   if (!tray_icon || !tooltip) return;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     tray_icon_ptr->SetTooltip(tooltip);
@@ -119,15 +119,15 @@ void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tool
 
 int native_tray_icon_get_tooltip(native_tray_icon_t tray_icon, char* buffer, size_t buffer_size) {
   if (!tray_icon || !buffer || buffer_size == 0) return -1;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     std::string tooltip = tray_icon_ptr->GetTooltip();
-    
+
     if (tooltip.length() >= buffer_size) {
       return -1;
     }
-    
+
     strncpy(buffer, tooltip.c_str(), buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
     return static_cast<int>(tooltip.length());
@@ -138,7 +138,7 @@ int native_tray_icon_get_tooltip(native_tray_icon_t tray_icon, char* buffer, siz
 
 void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu) {
   if (!tray_icon) return;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     if (menu) {
@@ -160,7 +160,7 @@ void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu
 
 native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
   if (!tray_icon) return nullptr;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     auto menu = tray_icon_ptr->GetContextMenu();
@@ -172,16 +172,16 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
 
 bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds) {
   if (!tray_icon || !bounds) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     Rectangle cpp_bounds = tray_icon_ptr->GetBounds();
-    
+
     bounds->x = cpp_bounds.x;
     bounds->y = cpp_bounds.y;
     bounds->width = cpp_bounds.width;
     bounds->height = cpp_bounds.height;
-    
+
     return true;
   } catch (...) {
     return false;
@@ -190,7 +190,7 @@ bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_
 
 bool native_tray_icon_show(native_tray_icon_t tray_icon) {
   if (!tray_icon) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->Show();
@@ -201,7 +201,7 @@ bool native_tray_icon_show(native_tray_icon_t tray_icon) {
 
 bool native_tray_icon_hide(native_tray_icon_t tray_icon) {
   if (!tray_icon) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->Hide();
@@ -212,7 +212,7 @@ bool native_tray_icon_hide(native_tray_icon_t tray_icon) {
 
 bool native_tray_icon_is_visible(native_tray_icon_t tray_icon) {
   if (!tray_icon) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->IsVisible();
@@ -232,7 +232,7 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon
     listener_data->event_type = event_type;
     listener_data->callback = callback;
     listener_data->user_data = user_data;
-    listener_data->listener_id = g_next_listener_id++;
+    listener_data->listener_id = g_tray_icon_next_listener_id++;
 
     // Get or create listener list for this tray icon
     auto& listeners = g_tray_icon_listeners[tray_icon];
@@ -315,7 +315,7 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener
 
 bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon, double x, double y) {
   if (!tray_icon) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->ShowContextMenu(x, y);
@@ -326,7 +326,7 @@ bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon, double x, 
 
 bool native_tray_icon_show_context_menu_default(native_tray_icon_t tray_icon) {
   if (!tray_icon) return false;
-  
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     return tray_icon_ptr->ShowContextMenu();

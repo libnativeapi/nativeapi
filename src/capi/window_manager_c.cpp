@@ -7,12 +7,6 @@
 
 using namespace nativeapi;
 
-// Internal structure to hold the actual Window pointer
-struct native_window_handle {
-    std::shared_ptr<Window> window;
-    explicit native_window_handle(std::shared_ptr<Window> w) : window(std::move(w)) {}
-};
-
 // Global state for event callbacks
 struct EventCallbackInfo {
     native_window_event_callback_t callback;
@@ -43,10 +37,11 @@ static WindowOptions ConvertToWindowOptions(const native_window_options_t* optio
     return cpp_options;
 }
 
-// Helper function to create native_window_handle from shared_ptr<Window>
+// Helper function to create native_window_t from shared_ptr<Window>
 static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) {
     if (!window) return nullptr;
-    return new (std::nothrow) native_window_handle(std::move(window));
+    // Cast shared_ptr to void* - the WindowManager maintains the actual shared_ptr
+    return static_cast<void*>(window.get());
 }
 
 // Helper function to dispatch events to registered callbacks

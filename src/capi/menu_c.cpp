@@ -45,7 +45,8 @@ static std::map<native_menu_t,
     g_menu_listeners;
 
 // Global listener ID counter
-static std::atomic<int> g_next_listener_id{1};
+static std::atomic<int> g_menu_next_listener_id{1};
+static std::atomic<int> g_menu_item_next_listener_id{1};
 
 // Helper functions
 static MenuItemType convert_menu_item_type(native_menu_item_type_t type) {
@@ -524,7 +525,7 @@ int native_menu_item_add_listener(native_menu_item_t item,
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    int listener_id = g_next_listener_id++;
+    int listener_id = g_menu_item_next_listener_id++;
 
     // Create listener data
     auto listener_data = std::make_unique<EventListenerData>();
@@ -974,7 +975,7 @@ int native_menu_add_listener(native_menu_t menu,
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    int listener_id = g_next_listener_id++;
+    int listener_id = g_menu_next_listener_id++;
 
     // Create listener data
     auto listener_data = std::make_unique<MenuEventListenerData>();

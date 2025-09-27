@@ -19,7 +19,7 @@ public:
   void SetupEventMonitoring();
   void CleanupEventMonitoring();
   void OnWindowEvent(NSWindow* window, const std::string& event_type);
-  
+
 private:
   WindowManager* manager_;
   NativeAPIWindowManagerDelegate* delegate_;
@@ -43,49 +43,49 @@ private:
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "focused");
   }
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "blurred");
   }
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "minimized");
   }
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "restored");
   }
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "resized");
   }
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "moved");
   }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
-  NSWindow* window = [notification object];
+  // NSWindow* window = [notification object];
   if (_impl) {
 //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "closing");
   }
@@ -106,7 +106,7 @@ WindowManager::Impl::~Impl() {
 void WindowManager::Impl::SetupEventMonitoring() {
   if (!delegate_) {
     delegate_ = [[NativeAPIWindowManagerDelegate alloc] initWithImpl:this];
-    
+
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center addObserver:delegate_
                selector:@selector(windowDidBecomeKey:)
@@ -149,7 +149,7 @@ void WindowManager::Impl::CleanupEventMonitoring() {
 
 void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
   WindowID window_id = [window windowNumber];
-  
+
   if (event_type == "focused") {
     WindowFocusedEvent event(window_id);
     manager_->DispatchWindowEvent(event);
@@ -214,11 +214,11 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   WindowID window_id = [ns_window windowNumber];
   auto window = std::make_shared<Window>((__bridge void*)ns_window);
   windows_[window_id] = window;
-  
+
   // Dispatch window created event
   WindowCreatedEvent created_event(window_id);
   DispatchWindowEvent(created_event);
-  
+
   return window;
 }
 

@@ -34,7 +34,7 @@ typedef struct {
 /**
  * Opaque window handle
  */
-typedef struct native_window_handle* native_window_t;
+typedef void* native_window_t;
 
 /**
  * Window list structure
