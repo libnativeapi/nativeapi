@@ -27,8 +27,9 @@ typedef enum : int {
 
 /**
  * Opaque display handle
+ * Align with window handle design: use a raw pointer to underlying C++ type
  */
-typedef struct native_display_handle* native_display_t;
+typedef void* native_display_t;
 
 /**
  * Display list structure
