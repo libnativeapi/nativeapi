@@ -18,7 +18,7 @@ extern "C" {
 /**
  * Display orientation enumeration
  */
-typedef enum : int {
+typedef enum {
   NATIVE_DISPLAY_ORIENTATION_PORTRAIT = 0,
   NATIVE_DISPLAY_ORIENTATION_LANDSCAPE = 90,
   NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED = 180,

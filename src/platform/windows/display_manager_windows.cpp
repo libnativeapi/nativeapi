@@ -47,7 +47,7 @@ std::vector<Display> DisplayManager::GetAll() {
 Display DisplayManager::GetPrimary() {
   std::vector<Display> displays = GetAll();
   for (const auto& display : displays) {
-    if (display.isPrimary) {
+    if (display.IsPrimary()) {
       return display;
     }
   }

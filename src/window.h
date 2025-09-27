@@ -2,6 +2,7 @@
 #include <string>
 #include "geometry.h"
 #include "foundation/native_object_provider.h"
+#include <memory>
 
 namespace nativeapi {
 
