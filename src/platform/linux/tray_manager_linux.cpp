@@ -4,7 +4,7 @@
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
 
-// Import GTK headers - these may not be available in all build environments
+// Import headers
 #ifdef __has_include
   #if __has_include(<gtk/gtk.h>)
     #include <gtk/gtk.h>
@@ -15,6 +15,18 @@
 #else
   // Fallback for older compilers
   #define HAS_GTK 0
+#endif
+
+#ifdef __has_include
+  #if __has_include(<libayatana-appindicator/app-indicator.h>)
+    #include <libayatana-appindicator/app-indicator.h>
+    #define HAS_AYATANA_APPINDICATOR 1
+  #else
+    #define HAS_AYATANA_APPINDICATOR 0
+  #endif
+#else
+  // Fallback for older compilers
+  #define HAS_AYATANA_APPINDICATOR 0
 #endif
 
 namespace nativeapi {
@@ -33,18 +45,18 @@ TrayManager::~TrayManager() {
   for (auto& pair : trays_) {
     auto tray = pair.second;
     if (tray) {
-      // The TrayIcon destructor will handle cleanup of the GtkStatusIcon
+      // The TrayIcon destructor will handle cleanup of the AppIndicator
     }
   }
   trays_.clear();
 }
 
 bool TrayManager::IsSupported() {
-#if HAS_GTK
-  // Check if GTK is initialized and system tray is supported
+#if HAS_GTK && HAS_AYATANA_APPINDICATOR
+  // Check if GTK is initialized and AppIndicator is available
   return gtk_init_check(nullptr, nullptr);
 #else
-  // If GTK is not available, assume no system tray support
+  // If GTK or AppIndicator is not available, assume no system tray support
   return false;
 #endif
 }
@@ -52,20 +64,28 @@ bool TrayManager::IsSupported() {
 std::shared_ptr<TrayIcon> TrayManager::Create() {
   std::lock_guard<std::mutex> lock(mutex_);
 
-#if HAS_GTK
-  // Create a new tray using GTK StatusIcon
-  GtkStatusIcon* status_icon = gtk_status_icon_new();
-  if (!status_icon) {
+#if HAS_GTK && HAS_AYATANA_APPINDICATOR
+  // Create a unique ID for this tray icon
+  std::string indicator_id = "nativeapi-tray-" + std::to_string(next_tray_id_);
+  
+  // Create a new tray using AppIndicator
+  AppIndicator* app_indicator = app_indicator_new(
+    indicator_id.c_str(),
+    "application-default-icon",  // Default icon name
+    APP_INDICATOR_CATEGORY_APPLICATION_STATUS
+  );
+  
+  if (!app_indicator) {
     return nullptr;
   }
 
-  auto tray = std::make_shared<TrayIcon>((void*)status_icon);
+  auto tray = std::make_shared<TrayIcon>((void*)app_indicator);
   tray->id = next_tray_id_++;
   trays_[tray->id] = tray;
 
   return tray;
 #else
-  // GTK not available, return nullptr
+  // AppIndicator not available, return nullptr
   return nullptr;
 #endif
 }
