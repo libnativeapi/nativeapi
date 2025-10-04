@@ -78,7 +78,7 @@ Rectangle Display::GetWorkArea() const {
   GdkRectangle workarea;
   gdk_monitor_get_workarea(pimpl_->gdk_monitor_, &workarea);
   return {static_cast<double>(workarea.x), static_cast<double>(workarea.y),
-          static_cast<double>(workarea.height), static_cast<double>(workarea.width)};
+          static_cast<double>(workarea.width), static_cast<double>(workarea.height)};
 }
 
 double Display::GetScaleFactor() const {

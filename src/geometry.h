@@ -24,8 +24,8 @@ struct Size {
 struct Rectangle {
   double x;
   double y;
-  double height;
   double width;
+  double height;
 };
 
 }  // namespace nativeapi

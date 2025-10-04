@@ -85,8 +85,8 @@ Rectangle Display::GetWorkArea() const {
   MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
   RECT workRect = monitorInfo.rcWork;
   return {static_cast<double>(workRect.left), static_cast<double>(workRect.top),
-          static_cast<double>(workRect.bottom - workRect.top), 
-          static_cast<double>(workRect.right - workRect.left)};
+          static_cast<double>(workRect.right - workRect.left),
+          static_cast<double>(workRect.bottom - workRect.top)};
 }
 
 double Display::GetScaleFactor() const {

@@ -6,6 +6,15 @@
 
 namespace nativeapi {
 
+// NSRect extension-like helper for coordinate system conversion
+struct NSRectExt {
+  static CGPoint topLeft(NSRect rect) {
+    NSRect primaryScreenFrame = [[NSScreen screens][0] frame];
+    return CGPointMake(rect.origin.x,
+                      primaryScreenFrame.size.height - rect.origin.y - rect.size.height);
+  }
+};
+
 // Private implementation class
 class Display::Impl {
  public:
@@ -105,7 +114,11 @@ std::string Display::GetName() const {
 Point Display::GetPosition() const {
   if (!pimpl_->ns_screen_) return {0.0, 0.0};
   NSRect frame = [pimpl_->ns_screen_ frame];
-  return {frame.origin.x, frame.origin.y};
+
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeft = NSRectExt::topLeft(frame);
+
+  return {topLeft.x, topLeft.y};
 }
 
 Size Display::GetSize() const {
@@ -117,8 +130,12 @@ Size Display::GetSize() const {
 Rectangle Display::GetWorkArea() const {
   if (!pimpl_->ns_screen_) return {0.0, 0.0, 0.0, 0.0};
   NSRect visibleFrame = [pimpl_->ns_screen_ visibleFrame];
-  return {visibleFrame.origin.x, visibleFrame.origin.y,
-          visibleFrame.size.height, visibleFrame.size.width};
+
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeft = NSRectExt::topLeft(visibleFrame);
+
+  return {topLeft.x, topLeft.y,
+          visibleFrame.size.width, visibleFrame.size.height};
 }
 
 double Display::GetScaleFactor() const {
