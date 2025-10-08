@@ -10,6 +10,7 @@
 #include "../../src/capi/window_c.h"
 #include "../../src/capi/menu_c.h"
 #include "../../src/capi/run_example_app_c.h"
+#include "../../src/capi/string_utils_c.h"
 
 // Global variables to store handles
 static native_window_t g_window = NULL;
@@ -331,10 +332,10 @@ int main() {
         native_tray_icon_id_t tray_id = native_tray_icon_get_id(g_tray_icon);
         printf("Tray ID: %ld\n", tray_id);
 
-        char title_buffer[256];
-        int title_len = native_tray_icon_get_title(g_tray_icon, title_buffer, sizeof(title_buffer));
-        if (title_len >= 0) {
-            printf("Tray Title: %s\n", title_buffer);
+        char* title = native_tray_icon_get_title(g_tray_icon);
+        if (title) {
+            printf("Tray Title: %s\n", title);
+            free_c_str(title);
         }
 
         // Create context menu

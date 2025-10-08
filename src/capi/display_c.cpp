@@ -2,40 +2,23 @@
 #include <cstring>
 #include <memory>
 #include "../display.h"
+#include "string_utils_c.h"
 
 using namespace nativeapi;
-
-// Helper to cast opaque handle to C++ Display pointer
-static inline Display* to_display(native_display_t handle) {
-  return static_cast<Display*>(handle);
-}
-
-// Helper function to safely copy C++ string to C string
-static char* copy_string(const std::string& str) {
-  if (str.empty())
-    return nullptr;
-
-  size_t len = str.length() + 1;
-  char* result = new (std::nothrow) char[len];
-  if (result) {
-    std::strcpy(result, str.c_str());
-  }
-  return result;
-}
 
 // Basic identification getters
 FFI_PLUGIN_EXPORT
 char* native_display_get_id(native_display_t display) {
   if (!display)
     return nullptr;
-  return copy_string(to_display(display)->GetId());
+  return to_c_str(static_cast<Display*>(display)->GetId());
 }
 
 FFI_PLUGIN_EXPORT
 char* native_display_get_name(native_display_t display) {
   if (!display)
     return nullptr;
-  return copy_string(to_display(display)->GetName());
+  return to_c_str(static_cast<Display*>(display)->GetName());
 }
 
 // Physical properties getters
@@ -45,7 +28,7 @@ native_point_t native_display_get_position(native_display_t display) {
   if (!display)
     return result;
 
-  auto pos = to_display(display)->GetPosition();
+  auto pos = static_cast<Display*>(display)->GetPosition();
   result.x = pos.x;
   result.y = pos.y;
   return result;
@@ -57,7 +40,7 @@ native_size_t native_display_get_size(native_display_t display) {
   if (!display)
     return result;
 
-  auto size = to_display(display)->GetSize();
+  auto size = static_cast<Display*>(display)->GetSize();
   result.width = size.width;
   result.height = size.height;
   return result;
@@ -69,7 +52,7 @@ native_rectangle_t native_display_get_work_area(native_display_t display) {
   if (!display)
     return result;
 
-  Rectangle work_area = to_display(display)->GetWorkArea();
+  Rectangle work_area = static_cast<Display*>(display)->GetWorkArea();
   result.x = work_area.x;
   result.y = work_area.y;
   result.width = work_area.width;
@@ -81,7 +64,7 @@ FFI_PLUGIN_EXPORT
 double native_display_get_scale_factor(native_display_t display) {
   if (!display)
     return 1.0;
-  return to_display(display)->GetScaleFactor();
+  return static_cast<Display*>(display)->GetScaleFactor();
 }
 
 // Additional properties getters
@@ -89,7 +72,7 @@ FFI_PLUGIN_EXPORT
 bool native_display_is_primary(native_display_t display) {
   if (!display)
     return false;
-  return to_display(display)->IsPrimary();
+  return static_cast<Display*>(display)->IsPrimary();
 }
 
 FFI_PLUGIN_EXPORT
@@ -98,7 +81,8 @@ native_display_orientation_t native_display_get_orientation(
   if (!display)
     return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
 
-  DisplayOrientation orientation = to_display(display)->GetOrientation();
+  DisplayOrientation orientation =
+      static_cast<Display*>(display)->GetOrientation();
   switch (orientation) {
     case DisplayOrientation::kPortrait:
       return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
@@ -117,14 +101,14 @@ FFI_PLUGIN_EXPORT
 int native_display_get_refresh_rate(native_display_t display) {
   if (!display)
     return 0;
-  return to_display(display)->GetRefreshRate();
+  return static_cast<Display*>(display)->GetRefreshRate();
 }
 
 FFI_PLUGIN_EXPORT
 int native_display_get_bit_depth(native_display_t display) {
   if (!display)
     return 0;
-  return to_display(display)->GetBitDepth();
+  return static_cast<Display*>(display)->GetBitDepth();
 }
 
 // Platform-specific functions
@@ -132,14 +116,14 @@ FFI_PLUGIN_EXPORT
 void* native_display_get_native_object(native_display_t display) {
   if (!display)
     return nullptr;
-  return to_display(display)->GetNativeObject();
+  return static_cast<Display*>(display)->GetNativeObject();
 }
 
 // Memory management
 FFI_PLUGIN_EXPORT
 void native_display_free(native_display_t display) {
   if (display) {
-    delete to_display(display);
+    delete static_cast<Display*>(display);
   }
 }
 
@@ -151,7 +135,7 @@ void native_display_list_free(native_display_list_t* list) {
   // Free individual display handles
   for (long i = 0; i < list->count; i++) {
     if (list->displays[i]) {
-      delete to_display(list->displays[i]);
+      delete static_cast<Display*>(list->displays[i]);
     }
   }
 

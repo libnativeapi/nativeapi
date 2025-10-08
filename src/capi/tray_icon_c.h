@@ -61,7 +61,8 @@ typedef enum {
 /**
  * Event callback function type
  */
-typedef void (*native_tray_icon_event_callback_t)(const void* event, void* user_data);
+typedef void (*native_tray_icon_event_callback_t)(const void* event,
+                                                  void* user_data);
 
 /**
  * TrayIcon operations
@@ -111,17 +112,17 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon);
  * @param title The title text to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title);
+void native_tray_icon_set_title(native_tray_icon_t tray_icon,
+                                const char* title);
 
 /**
  * Get the title text of the tray icon
  * @param tray_icon The tray icon
- * @param buffer Buffer to store the title (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the title, or -1 if buffer too small
+ * @return The title text, or NULL if error. Caller must free the returned
+ * string.
  */
 FFI_PLUGIN_EXPORT
-int native_tray_icon_get_title(native_tray_icon_t tray_icon, char* buffer, size_t buffer_size);
+char* native_tray_icon_get_title(native_tray_icon_t tray_icon);
 
 /**
  * Set the tooltip text for the tray icon
@@ -129,17 +130,17 @@ int native_tray_icon_get_title(native_tray_icon_t tray_icon, char* buffer, size_
  * @param tooltip The tooltip text to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip);
+void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon,
+                                  const char* tooltip);
 
 /**
  * Get the tooltip text of the tray icon
  * @param tray_icon The tray icon
- * @param buffer Buffer to store the tooltip (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the tooltip, or -1 if buffer too small
+ * @return The tooltip text, or NULL if error. Caller must free the returned
+ * string.
  */
 FFI_PLUGIN_EXPORT
-int native_tray_icon_get_tooltip(native_tray_icon_t tray_icon, char* buffer, size_t buffer_size);
+char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon);
 
 /**
  * Set the context menu for the tray icon
@@ -147,7 +148,8 @@ int native_tray_icon_get_tooltip(native_tray_icon_t tray_icon, char* buffer, siz
  * @param menu The context menu to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu);
+void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon,
+                                       native_menu_t menu);
 
 /**
  * Get the context menu of the tray icon
@@ -164,7 +166,8 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon);
  * @return true if bounds were retrieved successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds);
+bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon,
+                                 native_rectangle_t* bounds);
 
 /**
  * Show the tray icon in the system tray
@@ -199,7 +202,10 @@ bool native_tray_icon_is_visible(native_tray_icon_t tray_icon);
  * @return Listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-int native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon_event_type_t event_type, native_tray_icon_event_callback_t callback, void* user_data);
+int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
+                                  native_tray_icon_event_type_t event_type,
+                                  native_tray_icon_event_callback_t callback,
+                                  void* user_data);
 
 /**
  * Remove an event listener
@@ -208,7 +214,8 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon
  * @return true if the listener was found and removed, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id);
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
+                                      int listener_id);
 
 /**
  * Show the context menu at specified coordinates
@@ -218,7 +225,9 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener
  * @return true if menu was shown successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon, double x, double y);
+bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon,
+                                        double x,
+                                        double y);
 
 /**
  * Show the context menu at default location

@@ -27,6 +27,7 @@
 #include "../src/capi/keyboard_monitor_c.h"
 #include "../src/capi/menu_c.h"
 #include "../src/capi/run_example_app_c.h"
+#include "../src/capi/string_utils_c.h"
 #include "../src/capi/tray_icon_c.h"
 #include "../src/capi/tray_manager_c.h"
 #include "../src/capi/window_c.h"
