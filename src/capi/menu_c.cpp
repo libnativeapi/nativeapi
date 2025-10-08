@@ -231,25 +231,22 @@ void native_menu_item_set_label(native_menu_item_t item, const char* label) {
   }
 }
 
-int native_menu_item_get_label(native_menu_item_t item,
-                               char* buffer,
-                               size_t buffer_size) {
-  if (!item || !buffer || buffer_size == 0)
-    return -1;
+char* native_menu_item_get_label(native_menu_item_t item) {
+  if (!item)
+    return nullptr;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string text = menu_item->GetLabel();
-
-    if (text.length() >= buffer_size) {
-      return -1;
+    
+    // Allocate C string and copy content
+    char* result = static_cast<char*>(malloc(text.length() + 1));
+    if (result) {
+      strcpy(result, text.c_str());
     }
-
-    strncpy(buffer, text.c_str(), buffer_size - 1);
-    buffer[buffer_size - 1] = '\0';
-    return static_cast<int>(text.length());
+    return result;
   } catch (...) {
-    return -1;
+    return nullptr;
   }
 }
 
@@ -265,25 +262,22 @@ void native_menu_item_set_icon(native_menu_item_t item, const char* icon) {
   }
 }
 
-int native_menu_item_get_icon(native_menu_item_t item,
-                              char* buffer,
-                              size_t buffer_size) {
-  if (!item || !buffer || buffer_size == 0)
-    return -1;
+char* native_menu_item_get_icon(native_menu_item_t item) {
+  if (!item)
+    return nullptr;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string icon = menu_item->GetIcon();
-
-    if (icon.length() >= buffer_size) {
-      return -1;
+    
+    // Allocate C string and copy content
+    char* result = static_cast<char*>(malloc(icon.length() + 1));
+    if (result) {
+      strcpy(result, icon.c_str());
     }
-
-    strncpy(buffer, icon.c_str(), buffer_size - 1);
-    buffer[buffer_size - 1] = '\0';
-    return static_cast<int>(icon.length());
+    return result;
   } catch (...) {
-    return -1;
+    return nullptr;
   }
 }
 
@@ -300,25 +294,22 @@ void native_menu_item_set_tooltip(native_menu_item_t item,
   }
 }
 
-int native_menu_item_get_tooltip(native_menu_item_t item,
-                                 char* buffer,
-                                 size_t buffer_size) {
-  if (!item || !buffer || buffer_size == 0)
-    return -1;
+char* native_menu_item_get_tooltip(native_menu_item_t item) {
+  if (!item)
+    return nullptr;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string tooltip = menu_item->GetTooltip();
-
-    if (tooltip.length() >= buffer_size) {
-      return -1;
+    
+    // Allocate C string and copy content
+    char* result = static_cast<char*>(malloc(tooltip.length() + 1));
+    if (result) {
+      strcpy(result, tooltip.c_str());
     }
-
-    strncpy(buffer, tooltip.c_str(), buffer_size - 1);
-    buffer[buffer_size - 1] = '\0';
-    return static_cast<int>(tooltip.length());
+    return result;
   } catch (...) {
-    return -1;
+    return nullptr;
   }
 }
 
@@ -1140,26 +1131,23 @@ void native_menu_cleanup_all(void) {
   cleanup_at_exit();
 }
 
-int native_keyboard_accelerator_to_string(
-    const native_keyboard_accelerator_t* accelerator,
-    char* buffer,
-    size_t buffer_size) {
-  if (!accelerator || !buffer || buffer_size == 0)
-    return -1;
+char* native_keyboard_accelerator_to_string(
+    const native_keyboard_accelerator_t* accelerator) {
+  if (!accelerator)
+    return nullptr;
 
   try {
     KeyboardAccelerator cpp_accelerator =
         convert_keyboard_accelerator(accelerator);
     std::string str = cpp_accelerator.ToString();
 
-    if (str.length() >= buffer_size) {
-      return -1;
+    // Allocate C string and copy content
+    char* result = static_cast<char*>(malloc(str.length() + 1));
+    if (result) {
+      strcpy(result, str.c_str());
     }
-
-    strncpy(buffer, str.c_str(), buffer_size - 1);
-    buffer[buffer_size - 1] = '\0';
-    return static_cast<int>(str.length());
+    return result;
   } catch (...) {
-    return -1;
+    return nullptr;
   }
 }

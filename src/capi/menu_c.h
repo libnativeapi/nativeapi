@@ -190,12 +190,10 @@ void native_menu_item_set_label(native_menu_item_t item, const char* label);
 /**
  * Get the label of a menu item
  * @param item The menu item
- * @param buffer Buffer to store the label (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the label, or -1 if buffer too small
+ * @return The label string (caller must free), or NULL if item is invalid
  */
 FFI_PLUGIN_EXPORT
-int native_menu_item_get_label(native_menu_item_t item, char* buffer, size_t buffer_size);
+char* native_menu_item_get_label(native_menu_item_t item);
 
 /**
  * Set the icon of a menu item
@@ -208,12 +206,10 @@ void native_menu_item_set_icon(native_menu_item_t item, const char* icon);
 /**
  * Get the icon of a menu item
  * @param item The menu item
- * @param buffer Buffer to store the icon path/data (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the icon string, or -1 if buffer too small
+ * @return The icon path/data string (caller must free), or NULL if item is invalid or no icon set
  */
 FFI_PLUGIN_EXPORT
-int native_menu_item_get_icon(native_menu_item_t item, char* buffer, size_t buffer_size);
+char* native_menu_item_get_icon(native_menu_item_t item);
 
 /**
  * Set the tooltip of a menu item
@@ -226,12 +222,10 @@ void native_menu_item_set_tooltip(native_menu_item_t item, const char* tooltip);
 /**
  * Get the tooltip of a menu item
  * @param item The menu item
- * @param buffer Buffer to store the tooltip (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the tooltip, or -1 if buffer too small
+ * @return The tooltip string (caller must free), or NULL if item is invalid or no tooltip set
  */
 FFI_PLUGIN_EXPORT
-int native_menu_item_get_tooltip(native_menu_item_t item, char* buffer, size_t buffer_size);
+char* native_menu_item_get_tooltip(native_menu_item_t item);
 
 /**
  * Set the keyboard accelerator for a menu item
@@ -613,12 +607,10 @@ void native_menu_item_list_free(native_menu_item_list_t list);
 /**
  * Convert keyboard accelerator to string representation
  * @param accelerator The accelerator
- * @param buffer Buffer to store the string (caller allocated)
- * @param buffer_size Size of the buffer
- * @return Length of the string, or -1 if buffer too small
+ * @return The string representation (caller must free), or NULL if accelerator is invalid
  */
 FFI_PLUGIN_EXPORT
-int native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator, char* buffer, size_t buffer_size);
+char* native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator);
 
 #ifdef __cplusplus
 }

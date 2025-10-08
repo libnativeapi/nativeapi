@@ -11,12 +11,14 @@
 // Include individual C API headers instead of the full nativeapi.h
 #include "../../src/capi/menu_c.h"
 #include "../../src/capi/run_example_app_c.h"
+#include "../../src/capi/string_utils_c.h"
 #include "../../src/capi/tray_icon_c.h"
 #include "../../src/capi/tray_manager_c.h"
 
 // Event callback functions
 void on_menu_item_clicked(const void* event, void* user_data) {
-  const native_menu_item_clicked_event_t* clicked_event = (const native_menu_item_clicked_event_t*)event;
+  const native_menu_item_clicked_event_t* clicked_event =
+      (const native_menu_item_clicked_event_t*)event;
   printf("Menu item clicked: ID=%ld, Text='%s'\n", clicked_event->item_id,
          clicked_event->item_text);
 
@@ -29,28 +31,35 @@ void on_menu_item_clicked(const void* event, void* user_data) {
 }
 
 void on_tray_clicked(const void* event, void* user_data) {
-  const native_tray_icon_clicked_event_t* clicked_event = (const native_tray_icon_clicked_event_t*)event;
-  printf("Tray icon clicked! ID=%ld, Button='%s'\n", clicked_event->tray_icon_id,
-         clicked_event->button);
+  const native_tray_icon_clicked_event_t* clicked_event =
+      (const native_tray_icon_clicked_event_t*)event;
+  printf("Tray icon clicked! ID=%ld, Button='%s'\n",
+         clicked_event->tray_icon_id, clicked_event->button);
 }
 
 void on_tray_right_clicked(const void* event, void* user_data) {
-  const native_tray_icon_right_clicked_event_t* right_clicked_event = (const native_tray_icon_right_clicked_event_t*)event;
-  printf("Tray icon right clicked! ID=%ld\n", right_clicked_event->tray_icon_id);
+  const native_tray_icon_right_clicked_event_t* right_clicked_event =
+      (const native_tray_icon_right_clicked_event_t*)event;
+  printf("Tray icon right clicked! ID=%ld\n",
+         right_clicked_event->tray_icon_id);
 }
 
 void on_tray_double_clicked(const void* event, void* user_data) {
-  const native_tray_icon_double_clicked_event_t* double_clicked_event = (const native_tray_icon_double_clicked_event_t*)event;
-  printf("Tray icon double clicked! ID=%ld\n", double_clicked_event->tray_icon_id);
+  const native_tray_icon_double_clicked_event_t* double_clicked_event =
+      (const native_tray_icon_double_clicked_event_t*)event;
+  printf("Tray icon double clicked! ID=%ld\n",
+         double_clicked_event->tray_icon_id);
 }
 
 void on_menu_opened(const void* event, void* user_data) {
-  const native_menu_opened_event_t* open_event = (const native_menu_opened_event_t*)event;
+  const native_menu_opened_event_t* open_event =
+      (const native_menu_opened_event_t*)event;
   printf("Menu opened: ID=%ld\n", open_event->menu_id);
 }
 
 void on_menu_closed(const void* event, void* user_data) {
-  const native_menu_closed_event_t* close_event = (const native_menu_closed_event_t*)event;
+  const native_menu_closed_event_t* close_event =
+      (const native_menu_closed_event_t*)event;
   printf("Menu closed: ID=%ld\n", close_event->menu_id);
 }
 
@@ -104,10 +113,14 @@ int main() {
   native_menu_item_set_state(checkbox, NATIVE_MENU_ITEM_STATE_CHECKED);
 
   // Set up event listeners using new API
-  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_CLICKED,
+                                on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_CLICKED,
+                                on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
+                                on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_CLICKED,
+                                on_menu_item_clicked, NULL);
 
   // Add items to menu
   native_menu_add_item(menu, item1);
@@ -119,8 +132,10 @@ int main() {
   printf("Added %zu items to menu\n", native_menu_get_item_count(menu));
 
   // Set menu event listeners using new API
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, on_menu_opened, NULL);
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, on_menu_closed, NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, on_menu_opened,
+                           NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, on_menu_closed,
+                           NULL);
 
   // Create a submenu example
   native_menu_t submenu = native_menu_create();
@@ -164,9 +179,13 @@ int main() {
   native_tray_icon_set_context_menu(tray_icon, menu);
 
   // Set up tray icon event listeners using new API
-  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_clicked, NULL);
-  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED, on_tray_right_clicked, NULL);
-  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED, on_tray_double_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED,
+                                on_tray_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED,
+                                on_tray_right_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon,
+                                NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED,
+                                on_tray_double_clicked, NULL);
 
   // Show the tray icon
   if (native_tray_icon_show(tray_icon)) {
@@ -191,10 +210,10 @@ int main() {
     // Get accelerator info
     native_keyboard_accelerator_t accel;
     if (native_menu_item_get_accelerator(found_item, &accel)) {
-      char accel_str[64];
-      if (native_keyboard_accelerator_to_string(&accel, accel_str,
-                                                sizeof(accel_str)) > 0) {
+      char* accel_str = native_keyboard_accelerator_to_string(&accel);
+      if (accel_str) {
         printf("Exit item accelerator: %s\n", accel_str);
+        free_c_str(accel_str);  // Free the allocated string
       }
     }
   }
