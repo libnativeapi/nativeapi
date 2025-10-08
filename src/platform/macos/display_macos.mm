@@ -171,28 +171,6 @@ int Display::GetBitDepth() const {
   return 32; // Default for modern displays
 }
 
-std::string Display::GetManufacturer() const {
-  if (!pimpl_->ns_screen_) return "Unknown";
-  std::string displayName = GetName();
-  NSString* displayNameStr = [NSString stringWithUTF8String:displayName.c_str()];
-  if ([displayNameStr containsString:@"Apple"]) {
-    return "Apple";
-  } else if ([displayNameStr containsString:@"Dell"]) {
-    return "Dell";
-  } else if ([displayNameStr containsString:@"Samsung"]) {
-    return "Samsung";
-  } else if ([displayNameStr containsString:@"LG"]) {
-    return "LG";
-  }
-  return "Unknown";
-}
 
-std::string Display::GetModel() const {
-  return GetName();
-}
-
-std::string Display::GetSerialNumber() const {
-  return ""; // Not easily available without deprecated APIs
-}
 
 }  // namespace nativeapi

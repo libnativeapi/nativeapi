@@ -111,19 +111,7 @@ int Display::GetBitDepth() const {
   return 32; // Default for modern displays
 }
 
-std::string Display::GetManufacturer() const {
-  if (!pimpl_->gdk_monitor_) return "Unknown";
-  const char* manufacturer = gdk_monitor_get_manufacturer(pimpl_->gdk_monitor_);
-  return manufacturer ? manufacturer : "Unknown";
-}
 
-std::string Display::GetModel() const {
-  return GetName();
-}
-
-std::string Display::GetSerialNumber() const {
-  return ""; // Not available in GDK
-}
 
 
 

@@ -1,8 +1,8 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "foundation/native_object_provider.h"
 #include "geometry.h"
-#include <memory>
 
 namespace nativeapi {
 
@@ -44,11 +44,6 @@ class Display : public NativeObjectProvider {
   DisplayOrientation GetOrientation() const;
   int GetRefreshRate() const;
   int GetBitDepth() const;
-
-  // Hardware information
-  std::string GetManufacturer() const;
-  std::string GetModel() const;
-  std::string GetSerialNumber() const;
 
  protected:
   /**

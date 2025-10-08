@@ -1,5 +1,6 @@
 #include "display_manager_c.h"
 #include <iostream>
+#include <memory>
 #include <vector>
 #include "../display.h"
 #include "../display_manager.h"
@@ -22,8 +23,19 @@ native_display_list_t native_display_manager_get_all() {
       list.displays = new (std::nothrow) native_display_t[list.count];
       if (list.displays) {
         for (size_t i = 0; i < displays.size(); i++) {
-          list.displays[i] = native_display_create_handle(displays[i]);
-          if (!list.displays[i]) {
+          try {
+            list.displays[i] = new (std::nothrow) Display(displays[i]);
+            if (!list.displays[i]) {
+              // If creation fails, clean up and return empty list
+              for (size_t j = 0; j < i; j++) {
+                native_display_free(list.displays[j]);
+              }
+              delete[] list.displays;
+              list.displays = nullptr;
+              list.count = 0;
+              break;
+            }
+          } catch (const std::exception&) {
             // If creation fails, clean up and return empty list
             for (size_t j = 0; j < i; j++) {
               native_display_free(list.displays[j]);
@@ -55,7 +67,8 @@ FFI_PLUGIN_EXPORT
 native_display_t native_display_manager_get_primary() {
   try {
     auto primary_display = g_display_manager.GetPrimary();
-    return native_display_create_handle(primary_display);
+    auto* handle = new (std::nothrow) Display(primary_display);
+    return handle;
   } catch (const std::exception& e) {
     std::cerr << "Error in native_display_manager_get_primary: " << e.what()
               << std::endl;

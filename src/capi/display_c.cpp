@@ -127,28 +127,6 @@ int native_display_get_bit_depth(native_display_t display) {
   return to_display(display)->GetBitDepth();
 }
 
-// Hardware information getters
-FFI_PLUGIN_EXPORT
-char* native_display_get_manufacturer(native_display_t display) {
-  if (!display)
-    return nullptr;
-  return copy_string(to_display(display)->GetManufacturer());
-}
-
-FFI_PLUGIN_EXPORT
-char* native_display_get_model(native_display_t display) {
-  if (!display)
-    return nullptr;
-  return copy_string(to_display(display)->GetModel());
-}
-
-FFI_PLUGIN_EXPORT
-char* native_display_get_serial_number(native_display_t display) {
-  if (!display)
-    return nullptr;
-  return copy_string(to_display(display)->GetSerialNumber());
-}
-
 // Platform-specific functions
 FFI_PLUGIN_EXPORT
 void* native_display_get_native_object(native_display_t display) {
@@ -158,13 +136,6 @@ void* native_display_get_native_object(native_display_t display) {
 }
 
 // Memory management
-FFI_PLUGIN_EXPORT
-void native_display_free_string(char* str) {
-  if (str) {
-    delete[] str;
-  }
-}
-
 FFI_PLUGIN_EXPORT
 void native_display_free(native_display_t display) {
   if (display) {
@@ -188,15 +159,4 @@ void native_display_list_free(native_display_list_t* list) {
   delete[] list->displays;
   list->displays = nullptr;
   list->count = 0;
-}
-
-// Internal function for creating display handles
-native_display_t native_display_create_handle(
-    const nativeapi::Display& cpp_display) {
-  try {
-    auto* handle = new (std::nothrow) Display(cpp_display);
-    return handle;
-  } catch (const std::exception&) {
-    return nullptr;
-  }
 }
