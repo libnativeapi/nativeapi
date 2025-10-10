@@ -326,9 +326,9 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon,
-                                        double x,
-                                        double y) {
+bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon,
+                                           double x,
+                                           double y) {
   if (!tray_icon)
     return false;
 
@@ -340,7 +340,7 @@ bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_open_context_menu_default(native_tray_icon_t tray_icon) {
+bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon) {
   if (!tray_icon)
     return false;
 
