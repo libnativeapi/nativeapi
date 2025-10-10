@@ -15,8 +15,8 @@ using nativeapi::MenuItemSubmenuOpenedEvent;
 using nativeapi::MenuItemType;
 using nativeapi::TrayIcon;
 using nativeapi::TrayIconClickedEvent;
-using nativeapi::TrayIconRightClickedEvent;
 using nativeapi::TrayIconDoubleClickedEvent;
+using nativeapi::TrayIconRightClickedEvent;
 using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
@@ -83,27 +83,33 @@ int main() {
     std::cout << "Tray ID: " << tray_icon.id << std::endl;
     std::cout << "Tray Title: " << tray_icon.GetTitle() << std::endl;
 
+    tray_icon.Show();
+
     // Create context menu
     auto context_menu = Menu::Create();
 
     // Add menu items
-    auto show_window_item = MenuItem::Create("Show Window", MenuItemType::Normal);
-    show_window_item->AddListener<MenuItemClickedEvent>([window_ptr](const MenuItemClickedEvent& event) {
-      std::cout << "Show Window clicked from context menu" << std::endl;
-      if (window_ptr) {
-        window_ptr->Show();
-        window_ptr->Focus();
-      }
-    });
+    auto show_window_item =
+        MenuItem::Create("Show Window", MenuItemType::Normal);
+    show_window_item->AddListener<MenuItemClickedEvent>(
+        [window_ptr](const MenuItemClickedEvent& event) {
+          std::cout << "Show Window clicked from context menu" << std::endl;
+          if (window_ptr) {
+            window_ptr->Show();
+            window_ptr->Focus();
+          }
+        });
     context_menu->AddItem(show_window_item);
 
-    auto hide_window_item = MenuItem::Create("Hide Window", MenuItemType::Normal);
-    hide_window_item->AddListener<MenuItemClickedEvent>([window_ptr](const MenuItemClickedEvent& event) {
-      std::cout << "Hide Window clicked from context menu" << std::endl;
-      if (window_ptr) {
-        window_ptr->Hide();
-      }
-    });
+    auto hide_window_item =
+        MenuItem::Create("Hide Window", MenuItemType::Normal);
+    hide_window_item->AddListener<MenuItemClickedEvent>(
+        [window_ptr](const MenuItemClickedEvent& event) {
+          std::cout << "Hide Window clicked from context menu" << std::endl;
+          if (window_ptr) {
+            window_ptr->Hide();
+          }
+        });
     context_menu->AddItem(hide_window_item);
 
     // Add separator
@@ -111,111 +117,144 @@ int main() {
 
     // Add about item
     auto about_item = MenuItem::Create("About", MenuItemType::Normal);
-    about_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
-      std::cout << "About clicked from context menu" << std::endl;
-      std::cout << "Window Example v1.0 - Native API Demo" << std::endl;
-    });
+    about_item->AddListener<MenuItemClickedEvent>(
+        [](const MenuItemClickedEvent& event) {
+          std::cout << "About clicked from context menu" << std::endl;
+          std::cout << "Window Example v1.0 - Native API Demo" << std::endl;
+        });
     context_menu->AddItem(about_item);
 
     // Create Tools submenu with submenu event handling
     auto tools_submenu = Menu::Create();
-    
+
     // Add items to tools submenu
-    auto clear_cache_item = MenuItem::Create("Clear Cache", MenuItemType::Normal);
-    clear_cache_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
-      std::cout << "Clear Cache clicked from submenu" << std::endl;
-    });
+    auto clear_cache_item =
+        MenuItem::Create("Clear Cache", MenuItemType::Normal);
+    clear_cache_item->AddListener<MenuItemClickedEvent>(
+        [](const MenuItemClickedEvent& event) {
+          std::cout << "Clear Cache clicked from submenu" << std::endl;
+        });
     tools_submenu->AddItem(clear_cache_item);
-    
-    auto reset_settings_item = MenuItem::Create("Reset Settings", MenuItemType::Normal);
-    reset_settings_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
-      std::cout << "Reset Settings clicked from submenu" << std::endl;
-    });
+
+    auto reset_settings_item =
+        MenuItem::Create("Reset Settings", MenuItemType::Normal);
+    reset_settings_item->AddListener<MenuItemClickedEvent>(
+        [](const MenuItemClickedEvent& event) {
+          std::cout << "Reset Settings clicked from submenu" << std::endl;
+        });
     tools_submenu->AddItem(reset_settings_item);
-    
+
     tools_submenu->AddSeparator();
-    
-    auto debug_mode_item = MenuItem::Create("Debug Mode", MenuItemType::Checkbox);
+
+    auto debug_mode_item =
+        MenuItem::Create("Debug Mode", MenuItemType::Checkbox);
     debug_mode_item->SetState(MenuItemState::Unchecked);
-    debug_mode_item->AddListener<MenuItemClickedEvent>([debug_mode_item](const MenuItemClickedEvent& event) {
-      auto current_state = debug_mode_item->GetState();
-      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
-      debug_mode_item->SetState(new_state);
-      std::cout << "Debug Mode " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
-    });
+    debug_mode_item->AddListener<MenuItemClickedEvent>(
+        [debug_mode_item](const MenuItemClickedEvent& event) {
+          auto current_state = debug_mode_item->GetState();
+          MenuItemState new_state = (current_state == MenuItemState::Checked)
+                                        ? MenuItemState::Unchecked
+                                        : MenuItemState::Checked;
+          debug_mode_item->SetState(new_state);
+          std::cout << "Debug Mode "
+                    << (new_state == MenuItemState::Checked ? "enabled"
+                                                            : "disabled")
+                    << std::endl;
+        });
     tools_submenu->AddItem(debug_mode_item);
-    
+
     // Create the submenu parent item
     auto tools_item = MenuItem::Create("Tools", MenuItemType::Submenu);
     tools_item->SetSubmenu(tools_submenu);
-    
+
     // Add submenu event listeners
-    tools_item->AddListener<MenuItemSubmenuOpenedEvent>([](const MenuItemSubmenuOpenedEvent& event) {
-      std::cout << "Tools submenu opened (ID: " << event.GetItemId() << ")" << std::endl;
-    });
-    
-    tools_item->AddListener<MenuItemSubmenuClosedEvent>([](const MenuItemSubmenuClosedEvent& event) {
-      std::cout << "Tools submenu closed (ID: " << event.GetItemId() << ")" << std::endl;
-    });
-    
+    tools_item->AddListener<MenuItemSubmenuOpenedEvent>(
+        [](const MenuItemSubmenuOpenedEvent& event) {
+          std::cout << "Tools submenu opened (ID: " << event.GetItemId() << ")"
+                    << std::endl;
+        });
+
+    tools_item->AddListener<MenuItemSubmenuClosedEvent>(
+        [](const MenuItemSubmenuClosedEvent& event) {
+          std::cout << "Tools submenu closed (ID: " << event.GetItemId() << ")"
+                    << std::endl;
+        });
+
     context_menu->AddItem(tools_item);
-    
+
     // Add separator before preferences
     context_menu->AddSeparator();
-    
+
     // Add preferences section (not a submenu, just a label)
-    auto preferences_item = MenuItem::Create("Preferences", MenuItemType::Normal);
+    auto preferences_item =
+        MenuItem::Create("Preferences", MenuItemType::Normal);
     context_menu->AddItem(preferences_item);
-    
+
     // Add checkbox menu items
-    auto auto_start_item = MenuItem::Create("Auto Start", MenuItemType::Checkbox);
-    auto_start_item->SetState(MenuItemState::Checked); // Initially checked
-    auto_start_item->AddListener<MenuItemClickedEvent>([auto_start_item](const MenuItemClickedEvent& event) {
-      auto current_state = auto_start_item->GetState();
-      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
-      auto_start_item->SetState(new_state);
-      std::cout << "Auto Start " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
-    });
+    auto auto_start_item =
+        MenuItem::Create("Auto Start", MenuItemType::Checkbox);
+    auto_start_item->SetState(MenuItemState::Checked);  // Initially checked
+    auto_start_item->AddListener<MenuItemClickedEvent>(
+        [auto_start_item](const MenuItemClickedEvent& event) {
+          auto current_state = auto_start_item->GetState();
+          MenuItemState new_state = (current_state == MenuItemState::Checked)
+                                        ? MenuItemState::Unchecked
+                                        : MenuItemState::Checked;
+          auto_start_item->SetState(new_state);
+          std::cout << "Auto Start "
+                    << (new_state == MenuItemState::Checked ? "enabled"
+                                                            : "disabled")
+                    << std::endl;
+        });
     context_menu->AddItem(auto_start_item);
 
-    auto notifications_item = MenuItem::Create("Show Notifications", MenuItemType::Checkbox);
-    notifications_item->SetState(MenuItemState::Unchecked); // Initially unchecked
-    notifications_item->AddListener<MenuItemClickedEvent>([notifications_item](const MenuItemClickedEvent& event) {
-      auto current_state = notifications_item->GetState();
-      MenuItemState new_state = (current_state == MenuItemState::Checked) ? MenuItemState::Unchecked : MenuItemState::Checked;
-      notifications_item->SetState(new_state);
-      std::cout << "Notifications " << (new_state == MenuItemState::Checked ? "enabled" : "disabled") << std::endl;
-    });
+    auto notifications_item =
+        MenuItem::Create("Show Notifications", MenuItemType::Checkbox);
+    notifications_item->SetState(
+        MenuItemState::Unchecked);  // Initially unchecked
+    notifications_item->AddListener<MenuItemClickedEvent>(
+        [notifications_item](const MenuItemClickedEvent& event) {
+          auto current_state = notifications_item->GetState();
+          MenuItemState new_state = (current_state == MenuItemState::Checked)
+                                        ? MenuItemState::Unchecked
+                                        : MenuItemState::Checked;
+          notifications_item->SetState(new_state);
+          std::cout << "Notifications "
+                    << (new_state == MenuItemState::Checked ? "enabled"
+                                                            : "disabled")
+                    << std::endl;
+        });
     context_menu->AddItem(notifications_item);
 
     // Add three-state checkbox example
     auto sync_item = MenuItem::Create("Sync Status", MenuItemType::Checkbox);
-    sync_item->SetState(MenuItemState::Mixed); // Initially mixed/indeterminate
-    sync_item->AddListener<MenuItemClickedEvent>([sync_item](const MenuItemClickedEvent& event) {
-      auto current_state = sync_item->GetState();
-      MenuItemState next_state;
-      std::string state_name;
-      
-      // Cycle through states: Mixed -> Checked -> Unchecked -> Mixed
-      switch (current_state) {
-        case MenuItemState::Mixed:
-          next_state = MenuItemState::Checked;
-          state_name = "enabled";
-          break;
-        case MenuItemState::Checked:
-          next_state = MenuItemState::Unchecked;
-          state_name = "disabled";
-          break;
-        case MenuItemState::Unchecked:
-        default:
-          next_state = MenuItemState::Mixed;
-          state_name = "partial";
-          break;
-      }
-      
-      sync_item->SetState(next_state);
-      std::cout << "Sync Status: " << state_name << std::endl;
-    });
+    sync_item->SetState(MenuItemState::Mixed);  // Initially mixed/indeterminate
+    sync_item->AddListener<MenuItemClickedEvent>(
+        [sync_item](const MenuItemClickedEvent& event) {
+          auto current_state = sync_item->GetState();
+          MenuItemState next_state;
+          std::string state_name;
+
+          // Cycle through states: Mixed -> Checked -> Unchecked -> Mixed
+          switch (current_state) {
+            case MenuItemState::Mixed:
+              next_state = MenuItemState::Checked;
+              state_name = "enabled";
+              break;
+            case MenuItemState::Checked:
+              next_state = MenuItemState::Unchecked;
+              state_name = "disabled";
+              break;
+            case MenuItemState::Unchecked:
+            default:
+              next_state = MenuItemState::Mixed;
+              state_name = "partial";
+              break;
+          }
+
+          sync_item->SetState(next_state);
+          std::cout << "Sync Status: " << state_name << std::endl;
+        });
     context_menu->AddItem(sync_item);
 
     // Add separator before radio group
@@ -225,29 +264,33 @@ int main() {
     auto theme_label = MenuItem::Create("Theme:", MenuItemType::Normal);
     context_menu->AddItem(theme_label);
 
-    auto light_theme_item = MenuItem::Create("Light Theme", MenuItemType::Radio);
-    light_theme_item->SetRadioGroup(0); // Group 0
-    light_theme_item->SetState(MenuItemState::Checked); // Default selection
-    light_theme_item->AddListener<MenuItemClickedEvent>([light_theme_item](const MenuItemClickedEvent& event) {
-      light_theme_item->SetState(MenuItemState::Checked);
-      std::cout << "Light theme selected" << std::endl;
-    });
+    auto light_theme_item =
+        MenuItem::Create("Light Theme", MenuItemType::Radio);
+    light_theme_item->SetRadioGroup(0);                  // Group 0
+    light_theme_item->SetState(MenuItemState::Checked);  // Default selection
+    light_theme_item->AddListener<MenuItemClickedEvent>(
+        [light_theme_item](const MenuItemClickedEvent& event) {
+          light_theme_item->SetState(MenuItemState::Checked);
+          std::cout << "Light theme selected" << std::endl;
+        });
     context_menu->AddItem(light_theme_item);
 
     auto dark_theme_item = MenuItem::Create("Dark Theme", MenuItemType::Radio);
-    dark_theme_item->SetRadioGroup(0); // Same group as light theme
-    dark_theme_item->AddListener<MenuItemClickedEvent>([dark_theme_item](const MenuItemClickedEvent& event) {
-      dark_theme_item->SetState(MenuItemState::Checked);
-      std::cout << "Dark theme selected" << std::endl;
-    });
+    dark_theme_item->SetRadioGroup(0);  // Same group as light theme
+    dark_theme_item->AddListener<MenuItemClickedEvent>(
+        [dark_theme_item](const MenuItemClickedEvent& event) {
+          dark_theme_item->SetState(MenuItemState::Checked);
+          std::cout << "Dark theme selected" << std::endl;
+        });
     context_menu->AddItem(dark_theme_item);
 
     auto auto_theme_item = MenuItem::Create("Auto Theme", MenuItemType::Radio);
-    auto_theme_item->SetRadioGroup(0); // Same group
-    auto_theme_item->AddListener<MenuItemClickedEvent>([auto_theme_item](const MenuItemClickedEvent& event) {
-      auto_theme_item->SetState(MenuItemState::Checked);
-      std::cout << "Auto theme selected" << std::endl;
-    });
+    auto_theme_item->SetRadioGroup(0);  // Same group
+    auto_theme_item->AddListener<MenuItemClickedEvent>(
+        [auto_theme_item](const MenuItemClickedEvent& event) {
+          auto_theme_item->SetState(MenuItemState::Checked);
+          std::cout << "Auto theme selected" << std::endl;
+        });
     context_menu->AddItem(auto_theme_item);
 
     // Add another separator
@@ -255,51 +298,57 @@ int main() {
 
     // Add exit item
     auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
-    exit_item->AddListener<MenuItemClickedEvent>([&window_manager](const MenuItemClickedEvent& event) {
-      std::cout << "Exit clicked from context menu" << std::endl;
-      // Get all windows and destroy them to trigger app exit
-      auto windows = window_manager.GetAll();
-      for (auto& window : windows) {
-        window_manager.Destroy(window->GetId());
-      }
-    });
+    exit_item->AddListener<MenuItemClickedEvent>(
+        [&window_manager](const MenuItemClickedEvent& event) {
+          std::cout << "Exit clicked from context menu" << std::endl;
+          // Get all windows and destroy them to trigger app exit
+          auto windows = window_manager.GetAll();
+          for (auto& window : windows) {
+            window_manager.Destroy(window->GetId());
+          }
+        });
     context_menu->AddItem(exit_item);
 
     // Set the context menu to the tray icon
     tray_icon.SetContextMenu(context_menu);
 
     // Set up event listeners
-    tray_icon.AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
-      std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
-      std::cout << "This is the left click handler working!" << std::endl;
-      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-    });
+    tray_icon.AddListener<TrayIconClickedEvent>(
+        [&tray_icon](const TrayIconClickedEvent& event) {
+          std::cout << "*** TRAY ICON LEFT CLICKED! ***" << std::endl;
+          std::cout << "This is the left click handler working!" << std::endl;
+          std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
 
-    tray_icon.AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
-      std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
-      std::cout << "This is the right click handler working!" << std::endl;
-      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-      // Context menu will be shown automatically on right-click
-      // But we can also manually show it if needed:
-      // tray_icon.ShowContextMenu();
-    });
+          // Open context menu on left click
+          tray_icon.OpenContextMenu();
+        });
 
-    tray_icon.AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
-      std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
-      std::cout << "This is the double click handler working!" << std::endl;
-      std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-    });
+    tray_icon.AddListener<TrayIconRightClickedEvent>(
+        [](const TrayIconRightClickedEvent& event) {
+          std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
+          std::cout << "This is the right click handler working!" << std::endl;
+          std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
+        });
+
+    tray_icon.AddListener<TrayIconDoubleClickedEvent>(
+        [](const TrayIconDoubleClickedEvent& event) {
+          std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
+          std::cout << "This is the double click handler working!" << std::endl;
+          std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
+        });
   } else {
     std::cerr << "Failed to create tray." << std::endl;
   }
 
   display_manager.AddListener<nativeapi::DisplayAddedEvent>(
       [](const nativeapi::DisplayAddedEvent& event) {
-        std::cout << "Display added: " << event.GetDisplay().GetId() << std::endl;
+        std::cout << "Display added: " << event.GetDisplay().GetId()
+                  << std::endl;
       });
   display_manager.AddListener<nativeapi::DisplayRemovedEvent>(
       [](const nativeapi::DisplayRemovedEvent& event) {
-        std::cout << "Display removed: " << event.GetDisplay().GetId() << std::endl;
+        std::cout << "Display removed: " << event.GetDisplay().GetId()
+                  << std::endl;
       });
 
   RunApp(window_ptr);

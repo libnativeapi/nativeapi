@@ -16,18 +16,26 @@
 - (void)statusItemRightClicked:(id)sender;
 @end
 
+@interface TrayIconMenuDelegate : NSObject <NSMenuDelegate>
+@property (nonatomic, assign) nativeapi::TrayIcon* trayIcon;
+@end
+
 namespace nativeapi {
 
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), delegate_(nil), visible_(false) {}
+  Impl() : ns_status_item_(nil), delegate_(nil), menu_delegate_(nil), visible_(false) {}
 
-  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil), visible_(false) {
+  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil), visible_(false) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];
       delegate_.trayIcon = nullptr; // Will be set later
+
+      // Create menu delegate
+      menu_delegate_ = [[TrayIconMenuDelegate alloc] init];
+      menu_delegate_.trayIcon = nullptr; // Will be set later
 
       // Set up click handlers
       [status_item.button setTarget:delegate_];
@@ -39,10 +47,15 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
-    // First, clean up delegate to prevent callbacks
+    // First, clean up delegates to prevent callbacks
     if (delegate_) {
       delegate_.trayIcon = nullptr;  // Clear the raw pointer first
       delegate_ = nil;
+    }
+
+    if (menu_delegate_) {
+      menu_delegate_.trayIcon = nullptr;  // Clear the raw pointer first
+      menu_delegate_ = nil;
     }
 
     // Then clean up the status item
@@ -52,8 +65,8 @@ class TrayIcon::Impl {
         [ns_status_item_.button setTarget:nil];
         [ns_status_item_.button setAction:nil];
       }
-      // Clear the menu to break potential circular references
-      [ns_status_item_ setMenu:nil];
+      // Clear menu reference
+      ns_status_item_.menu = nil;
       [[NSStatusBar systemStatusBar] removeStatusItem:ns_status_item_];
       ns_status_item_ = nil;
     }
@@ -66,6 +79,7 @@ class TrayIcon::Impl {
 
   NSStatusItem* ns_status_item_;
   TrayIconDelegate* delegate_;
+  TrayIconMenuDelegate* menu_delegate_;
   std::shared_ptr<Menu> context_menu_;
   std::string title_;
   std::string tooltip_;
@@ -77,12 +91,18 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
   }
+  if (pimpl_->menu_delegate_) {
+    pimpl_->menu_delegate_.trayIcon = this;
+  }
 }
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
   id = -1; // Will be set by TrayManager when created
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
+  }
+  if (pimpl_->menu_delegate_) {
+    pimpl_->menu_delegate_.trayIcon = this;
   }
 }
 
@@ -171,24 +191,11 @@ std::string TrayIcon::GetTooltip() {
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
-  // First, clean up old menu reference
-  if (pimpl_->context_menu_) {
-    if (pimpl_->ns_status_item_) {
-      [pimpl_->ns_status_item_ setMenu:nil];
-    }
-    pimpl_->context_menu_.reset();
-  }
-
+  // Store the menu reference
+  // Don't set the menu directly to the status item, as this would cause
+  // macOS to take over click handling and prevent our custom click events
+  // Instead, we'll show the menu manually in our click handler
   pimpl_->context_menu_ = menu;
-
-  // Set the menu as the status item's menu for right-click
-  if (pimpl_->ns_status_item_ && menu) {
-    // Get the NSMenu from the Menu object
-    NSMenu* nsMenu = (__bridge NSMenu*)menu->GetNativeObject();
-    if (nsMenu) {
-      [pimpl_->ns_status_item_ setMenu:nsMenu];
-    }
-  }
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
@@ -242,30 +249,46 @@ bool TrayIcon::IsVisible() {
   return pimpl_->visible_;
 }
 
-
-bool TrayIcon::ShowContextMenu(double x, double y) {
+bool TrayIcon::OpenContextMenu(double x, double y) {
   if (!pimpl_->context_menu_) {
     return false;
   }
 
-  // Show the context menu at the specified coordinates
+  // Open the context menu at the specified coordinates
   return pimpl_->context_menu_->ShowAsContextMenu(x, y);
 }
 
-bool TrayIcon::ShowContextMenu() {
-  if (!pimpl_->context_menu_) {
+bool TrayIcon::OpenContextMenu() {
+  if (!pimpl_->context_menu_ || !pimpl_->ns_status_item_ || !pimpl_->ns_status_item_.button) {
     return false;
   }
 
-  // Get the bounds of the tray icon to show menu near it
-  Rectangle bounds = GetBounds();
-  if (bounds.width > 0 && bounds.height > 0) {
-    // Show menu below the tray icon
-    return pimpl_->context_menu_->ShowAsContextMenu(bounds.x, bounds.y + bounds.height);
-  } else {
-    // Fall back to showing at mouse location
-    return pimpl_->context_menu_->ShowAsContextMenu();
+  // Use the Swift approach: set menu to status item and simulate click
+  // Get the native NSMenu object from our Menu wrapper
+  NSMenu* nativeMenu = (__bridge NSMenu*)pimpl_->context_menu_->GetNativeObject();
+  if (!nativeMenu) {
+    return false;
   }
+
+  // Set our menu delegate to handle menu close events
+  [nativeMenu setDelegate:pimpl_->menu_delegate_];
+
+  // Set the menu to the status item (like Swift version)
+  pimpl_->ns_status_item_.menu = nativeMenu;
+
+  // Simulate a click to show the menu (like Swift version)
+  [pimpl_->ns_status_item_.button performClick:nil];
+
+  return true;
+}
+
+bool TrayIcon::CloseContextMenu() {
+  if (!pimpl_->context_menu_) {
+    return true; // No menu to close, consider success
+  }
+
+  // Close the context menu
+  return pimpl_->context_menu_->Close();
 }
 
 // Internal method to handle click events
@@ -293,6 +316,12 @@ void TrayIcon::HandleDoubleClick() {
   }
 }
 
+void TrayIcon::ClearStatusItemMenu() {
+  if (pimpl_->ns_status_item_) {
+    pimpl_->ns_status_item_.menu = nil;
+  }
+}
+
 } // namespace nativeapi
 
 // Implementation of TrayIconDelegate
@@ -314,11 +343,6 @@ void TrayIcon::HandleDoubleClick() {
       (event.type == NSEventTypeLeftMouseUp && (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     trayIcon->HandleRightClick();
-
-    // Show context menu if available (check again for safety)
-    if (_trayIcon && _trayIcon->GetContextMenu()) {
-      _trayIcon->ShowContextMenu();
-    }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
@@ -333,6 +357,19 @@ void TrayIcon::HandleDoubleClick() {
   // Check if trayIcon is still valid before proceeding
   if (_trayIcon) {
     _trayIcon->HandleRightClick();
+  }
+}
+
+@end
+
+// Implementation of TrayIconMenuDelegate
+@implementation TrayIconMenuDelegate
+
+- (void)menuDidClose:(NSMenu *)menu {
+  // Check if trayIcon is still valid before proceeding
+  if (_trayIcon) {
+    // Call a public method to clear the menu (we'll add this method)
+    _trayIcon->ClearStatusItemMenu();
   }
 }
 

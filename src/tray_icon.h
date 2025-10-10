@@ -22,7 +22,8 @@ typedef long TrayIconID;
  * - Setting custom icons (including base64-encoded images)
  * - Displaying text titles and tooltips
  * - Context menus for user interaction
- * - Event emission for mouse clicks (TrayIconClickedEvent, TrayIconRightClickedEvent, TrayIconDoubleClickedEvent)
+ * - Event emission for mouse clicks (TrayIconClickedEvent,
+ * TrayIconRightClickedEvent, TrayIconDoubleClickedEvent)
  * - Visibility control
  *
  * @note This class uses the PIMPL idiom to hide platform-specific
@@ -37,14 +38,16 @@ typedef long TrayIconID;
  * trayIcon->SetTooltip("My Application");
  *
  * // Set up event listeners
- * trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
+ * trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent&
+ * event) {
  *     // Handle left click - show/hide main window
  *     mainWindow->IsVisible() ? mainWindow->Hide() : mainWindow->Show();
  * });
  *
- * trayIcon->AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
- *     // Handle right click - show context menu
- *     trayIcon->ShowContextMenu();
+ * trayIcon->AddListener<TrayIconRightClickedEvent>([](const
+ * TrayIconRightClickedEvent& event) {
+ *     // Handle right click - open context menu
+ *     trayIcon->OpenContextMenu();
  * });
  *
  * // Set up a context menu
@@ -240,7 +243,6 @@ class TrayIcon : public EventEmitter {
    */
   bool IsVisible();
 
-
   /**
    * @brief Programmatically display the context menu at a specified location.
    *
@@ -258,17 +260,17 @@ class TrayIcon : public EventEmitter {
    *
    * @example
    * ```cpp
-   * // Show context menu at current cursor position
+   * // Open context menu at current cursor position
    * POINT cursor;
    * GetCursorPos(&cursor);  // Windows example
-   * trayIcon->ShowContextMenu(cursor.x, cursor.y);
+   * trayIcon->OpenContextMenu(cursor.x, cursor.y);
    *
-   * // Show context menu near the tray icon
+   * // Open context menu near the tray icon
    * Rectangle bounds = trayIcon->GetBounds();
-   * trayIcon->ShowContextMenu(bounds.x, bounds.y + bounds.height);
+   * trayIcon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
    * ```
    */
-  bool ShowContextMenu(double x, double y);
+  bool OpenContextMenu(double x, double y);
 
   /**
    * @brief Display the context menu at the tray icon's location.
@@ -286,11 +288,31 @@ class TrayIcon : public EventEmitter {
    *
    * @example
    * ```cpp
-   * // Show context menu at default location
-   * trayIcon->ShowContextMenu();
+   * // Open context menu at default location
+   * trayIcon->OpenContextMenu();
    * ```
    */
-  bool ShowContextMenu();
+  bool OpenContextMenu();
+
+  /**
+   * @brief Close the currently displayed context menu.
+   *
+   * Closes the tray icon's context menu if it is currently visible.
+   * This allows for programmatic dismissal of the menu.
+   *
+   * @return true if the menu was successfully closed or wasn't visible, false
+   * on error
+   *
+   * @note This method is useful for keyboard shortcuts or programmatic control
+   *       that needs to dismiss the context menu without user interaction.
+   *
+   * @example
+   * ```cpp
+   * // Close the context menu programmatically
+   * trayIcon->CloseContextMenu();
+   * ```
+   */
+  bool CloseContextMenu();
 
   /**
    * @brief Internal method to handle left mouse click events.
@@ -316,8 +338,16 @@ class TrayIcon : public EventEmitter {
    */
   void HandleDoubleClick();
 
+  /**
+   * @brief Clear the menu reference from the status item.
+   *
+   * This method is used internally to clean up the menu reference
+   * when the context menu is closed. It's called by the menu delegate
+   * to ensure proper cleanup.
+   */
+  void ClearStatusItemMenu();
 
-private:
+ private:
   /**
    * @brief Private implementation class using the PIMPL idiom.
    *

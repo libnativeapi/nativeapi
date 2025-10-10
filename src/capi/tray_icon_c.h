@@ -218,24 +218,32 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
                                       int listener_id);
 
 /**
- * Show the context menu at specified coordinates
+ * Open the context menu at specified coordinates
  * @param tray_icon The tray icon
  * @param x The x-coordinate in screen coordinates
  * @param y The y-coordinate in screen coordinates
- * @return true if menu was shown successfully, false otherwise
+ * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon,
+bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon,
                                         double x,
                                         double y);
 
 /**
- * Show the context menu at default location
+ * Open the context menu at default location
  * @param tray_icon The tray icon
- * @return true if menu was shown successfully, false otherwise
+ * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_show_context_menu_default(native_tray_icon_t tray_icon);
+bool native_tray_icon_open_context_menu_default(native_tray_icon_t tray_icon);
+
+/**
+ * Close the currently displayed context menu
+ * @param tray_icon The tray icon
+ * @return true if menu was closed successfully or wasn't visible, false on error
+ */
+FFI_PLUGIN_EXPORT
+bool native_tray_icon_close_context_menu(native_tray_icon_t tray_icon);
 
 #ifdef __cplusplus
 }

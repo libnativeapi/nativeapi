@@ -326,7 +326,7 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon,
+bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon,
                                         double x,
                                         double y) {
   if (!tray_icon)
@@ -334,19 +334,31 @@ bool native_tray_icon_show_context_menu(native_tray_icon_t tray_icon,
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return tray_icon_ptr->ShowContextMenu(x, y);
+    return tray_icon_ptr->OpenContextMenu(x, y);
   } catch (...) {
     return false;
   }
 }
 
-bool native_tray_icon_show_context_menu_default(native_tray_icon_t tray_icon) {
+bool native_tray_icon_open_context_menu_default(native_tray_icon_t tray_icon) {
   if (!tray_icon)
     return false;
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return tray_icon_ptr->ShowContextMenu();
+    return tray_icon_ptr->OpenContextMenu();
+  } catch (...) {
+    return false;
+  }
+}
+
+bool native_tray_icon_close_context_menu(native_tray_icon_t tray_icon) {
+  if (!tray_icon)
+    return false;
+
+  try {
+    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    return tray_icon_ptr->CloseContextMenu();
   } catch (...) {
     return false;
   }

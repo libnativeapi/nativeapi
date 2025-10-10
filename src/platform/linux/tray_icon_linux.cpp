@@ -162,7 +162,7 @@ bool TrayIcon::IsVisible() {
   return false;
 }
 
-bool TrayIcon::ShowContextMenu(double x, double y) {
+bool TrayIcon::OpenContextMenu(double x, double y) {
   if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
     return false;
   }
@@ -173,13 +173,24 @@ bool TrayIcon::ShowContextMenu(double x, double y) {
   return true;
 }
 
-bool TrayIcon::ShowContextMenu() {
+bool TrayIcon::OpenContextMenu() {
   if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
     return false;
   }
 
   // AppIndicator shows context menu automatically on right-click
   // We don't need to manually show it as it's managed by the indicator framework
+  return true;
+}
+
+bool TrayIcon::CloseContextMenu() {
+  if (!pimpl_->context_menu_) {
+    return true; // No menu to close, consider success
+  }
+
+  // AppIndicator manages menu visibility automatically
+  // There's no direct way to programmatically close the menu
+  // but we can return true as the operation is conceptually successful
   return true;
 }
 
