@@ -12,6 +12,10 @@
 // Note: This file assumes ARC (Automatic Reference Counting) is enabled
 // for proper memory management of Objective-C objects.
 
+// Static keys for associated objects
+static const void* kMenuItemIdKey = &kMenuItemIdKey;
+static const void* kMenuIdKey = &kMenuIdKey;
+
 // Forward declarations - moved to global scope
 typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemID item_id, const std::string& item_text);
 typedef void (^MenuOpenedBlock)(nativeapi::MenuID menu_id);
@@ -122,7 +126,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
   if (_clickedBlock) {
     std::string itemText = [[menuItem title] UTF8String];
     // Get the MenuItemID from the menu item's associated object
-    NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, @"menuItemId");
+    NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, kMenuItemIdKey);
     if (itemIdObj) {
       nativeapi::MenuItemID itemId = [itemIdObj longValue];
       _clickedBlock(itemId, itemText);
@@ -136,7 +140,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 - (void)menuWillOpen:(NSMenu*)menu {
   if (_openedBlock) {
     // Get the MenuID from the menu's associated object
-    NSNumber* menuIdObj = objc_getAssociatedObject(menu, @"menuId");
+    NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
     if (menuIdObj) {
       nativeapi::MenuID menuId = [menuIdObj longValue];
       _openedBlock(menuId);
@@ -147,7 +151,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 - (void)menuDidClose:(NSMenu*)menu {
   if (_closedBlock) {
     // Get the MenuID from the menu's associated object
-    NSNumber* menuIdObj = objc_getAssociatedObject(menu, @"menuId");
+    NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
     if (menuIdObj) {
       nativeapi::MenuID menuId = [menuIdObj longValue];
       _closedBlock(menuId);
@@ -229,7 +233,7 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
   auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
   item->pimpl_ = std::make_unique<Impl>(nsItem, type);
   item->id = g_next_menu_item_id++;
-  objc_setAssociatedObject(nsItem, @"menuItemId", [NSNumber numberWithLong:item->id],
+  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:item->id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   item->pimpl_->text_ = text;
 
@@ -244,7 +248,7 @@ MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
       pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
   NSMenuItem* nsItem = (__bridge NSMenuItem*)native_item;
-  objc_setAssociatedObject(nsItem, @"menuItemId", [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
@@ -410,7 +414,7 @@ void MenuItem::SetState(MenuItemState state) {
           NSObject* targetObj = [sibling target];
           if ([targetObj isKindOfClass:[MenuItemTarget class]]) {
             // Get the MenuItemID from the associated object
-            NSNumber* siblingIdObj = objc_getAssociatedObject(sibling, @"menuItemId");
+            NSNumber* siblingIdObj = objc_getAssociatedObject(sibling, kMenuItemIdKey);
             if (siblingIdObj) {
               MenuItemID siblingId = [siblingIdObj longValue];
               // Find the corresponding MenuItem in the parent menu's items
@@ -507,7 +511,7 @@ std::shared_ptr<Menu> Menu::Create() {
   auto menu = std::shared_ptr<Menu>(new Menu());
   menu->pimpl_ = std::make_unique<Impl>(nsMenu);
   menu->id = g_next_menu_id++;
-  objc_setAssociatedObject(nsMenu, @"menuId", [NSNumber numberWithLong:menu->id],
+  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:menu->id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   // 设置默认的 Block 处理器，直接发送事件
   menu->pimpl_->delegate_.openedBlock = ^(MenuID menu_id) {
@@ -531,7 +535,7 @@ std::shared_ptr<Menu> Menu::Create() {
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
   NSMenu* nsMenu = (__bridge NSMenu*)native_menu;
-  objc_setAssociatedObject(nsMenu, @"menuId", [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
