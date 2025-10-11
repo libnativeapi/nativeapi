@@ -7,12 +7,14 @@ using nativeapi::DisplayAddedEvent;
 using nativeapi::DisplayManager;
 using nativeapi::DisplayRemovedEvent;
 using nativeapi::Menu;
+using nativeapi::MenuClosedEvent;
 using nativeapi::MenuItem;
 using nativeapi::MenuItemClickedEvent;
 using nativeapi::MenuItemState;
 using nativeapi::MenuItemSubmenuClosedEvent;
 using nativeapi::MenuItemSubmenuOpenedEvent;
 using nativeapi::MenuItemType;
+using nativeapi::MenuOpenedEvent;
 using nativeapi::TrayIcon;
 using nativeapi::TrayIconClickedEvent;
 using nativeapi::TrayIconDoubleClickedEvent;
@@ -85,9 +87,20 @@ int main() {
     std::cout << "Tray Title: "
               << (title.has_value() ? title.value() : "(no title)")
               << std::endl;
+    tray_icon.SetVisible(true);
 
     // Create context menu
     auto context_menu = Menu::Create();
+
+    context_menu->AddListener<MenuOpenedEvent>(
+        [](const MenuOpenedEvent& event) {
+          std::cout << "Menu opened" << std::endl;
+        });
+
+    context_menu->AddListener<MenuClosedEvent>(
+        [](const MenuClosedEvent& event) {
+          std::cout << "Menu closed" << std::endl;
+        });
 
     // Add menu items
     auto show_window_item =

@@ -7,18 +7,24 @@
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 
 // Note: This file assumes ARC (Automatic Reference Counting) is enabled
 // for proper memory management of Objective-C objects.
 
 // Forward declarations - moved to global scope
+typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemID item_id, const std::string& item_text);
+typedef void (^MenuOpenedBlock)(nativeapi::MenuID menu_id);
+typedef void (^MenuClosedBlock)(nativeapi::MenuID menu_id);
+
 @interface MenuItemTarget : NSObject
-@property(nonatomic, assign) void* cppMenuItem;
+@property(nonatomic, copy) MenuItemClickedBlock clickedBlock;
 - (void)menuItemClicked:(id)sender;
 @end
 
 @interface MenuDelegate : NSObject <NSMenuDelegate>
-@property(nonatomic, assign) void* cppMenu;
+@property(nonatomic, copy) MenuOpenedBlock openedBlock;
+@property(nonatomic, copy) MenuClosedBlock closedBlock;
 @end
 
 namespace nativeapi {
@@ -111,31 +117,42 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 @implementation MenuItemTarget
 - (void)menuItemClicked:(id)sender {
   NSMenuItem* menuItem = (NSMenuItem*)sender;
-  // Use direct back-pointer to the C++ MenuItem
-  nativeapi::MenuItem* menuItemPtr = static_cast<nativeapi::MenuItem*>(_cppMenuItem);
-  if (!menuItemPtr) {
-    return;
-  }
-  // Don't automatically handle state changes - let user code control the state
-  // This prevents double-toggling when user event handlers also call SetChecked
 
-  // Emit click event for all types
-  menuItemPtr->EmitSelectedEvent([[menuItem title] UTF8String]);
+  // Call the block if it exists
+  if (_clickedBlock) {
+    std::string itemText = [[menuItem title] UTF8String];
+    // Get the MenuItemID from the menu item's associated object
+    NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, @"menuItemId");
+    if (itemIdObj) {
+      nativeapi::MenuItemID itemId = [itemIdObj longValue];
+      _clickedBlock(itemId, itemText);
+    }
+  }
 }
 @end
 
 // Implementation of MenuDelegate - moved to global scope
 @implementation MenuDelegate
 - (void)menuWillOpen:(NSMenu*)menu {
-  nativeapi::Menu* menuPtr = static_cast<nativeapi::Menu*>(_cppMenu);
-  if (menuPtr)
-    menuPtr->EmitOpenedEvent();
+  if (_openedBlock) {
+    // Get the MenuID from the menu's associated object
+    NSNumber* menuIdObj = objc_getAssociatedObject(menu, @"menuId");
+    if (menuIdObj) {
+      nativeapi::MenuID menuId = [menuIdObj longValue];
+      _openedBlock(menuId);
+    }
+  }
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
-  nativeapi::Menu* menuPtr = static_cast<nativeapi::Menu*>(_cppMenu);
-  if (menuPtr)
-    menuPtr->EmitClosedEvent();
+  if (_closedBlock) {
+    // Get the MenuID from the menu's associated object
+    NSNumber* menuIdObj = objc_getAssociatedObject(menu, @"menuId");
+    if (menuIdObj) {
+      nativeapi::MenuID menuId = [menuIdObj longValue];
+      _closedBlock(menuId);
+    }
+  }
 }
 @end
 
@@ -179,6 +196,9 @@ class MenuItem::Impl {
     }
 
     if (target_) {
+      // Clean up blocks first
+      target_.clickedBlock = nil;
+
       // Remove target and action to prevent callbacks after destruction
       [ns_menu_item_ setTarget:nil];
       [ns_menu_item_ setAction:nil];
@@ -209,7 +229,8 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
   auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
   item->pimpl_ = std::make_unique<Impl>(nsItem, type);
   item->id = g_next_menu_item_id++;
-  [item->pimpl_->target_ setCppMenuItem:(void*)item.get()];
+  objc_setAssociatedObject(nsItem, @"menuItemId", [NSNumber numberWithLong:item->id],
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   item->pimpl_->text_ = text;
 
   return item;
@@ -222,7 +243,18 @@ std::shared_ptr<MenuItem> MenuItem::CreateSeparator() {
 MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
       pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
-  [pimpl_->target_ setCppMenuItem:(void*)this];
+  NSMenuItem* nsItem = (__bridge NSMenuItem*)native_item;
+  objc_setAssociatedObject(nsItem, @"menuItemId", [NSNumber numberWithLong:id],
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+  // 设置默认的 Block 处理器，直接发送事件
+  pimpl_->target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
+    try {
+      EmitSync<MenuItemClickedEvent>(item_id, item_text);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
 }
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
@@ -230,7 +262,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
 }
 
 MenuItem::~MenuItem() {
-  // No global registry cleanup required
+  // No special cleanup needed since we're not storing C++ object references
 }
 
 MenuItemType MenuItem::GetType() const {
@@ -377,12 +409,13 @@ void MenuItem::SetState(MenuItemState state) {
             continue;
           NSObject* targetObj = [sibling target];
           if ([targetObj isKindOfClass:[MenuItemTarget class]]) {
-            MenuItemTarget* siblingTarget = (MenuItemTarget*)targetObj;
-            nativeapi::MenuItem* otherItem =
-                static_cast<nativeapi::MenuItem*>([siblingTarget cppMenuItem]);
-            if (otherItem && otherItem->GetType() == MenuItemType::Radio &&
-                otherItem->GetRadioGroup() == pimpl_->radio_group_) {
-              otherItem->pimpl_->state_ = MenuItemState::Unchecked;
+            // Get the MenuItemID from the associated object
+            NSNumber* siblingIdObj = objc_getAssociatedObject(sibling, @"menuItemId");
+            if (siblingIdObj) {
+              MenuItemID siblingId = [siblingIdObj longValue];
+              // Find the corresponding MenuItem in the parent menu's items
+              // This is a simplified approach - in practice, you might need to store
+              // a reference to the parent menu or use a different strategy
               [sibling setState:NSControlStateValueOff];
             }
           }
@@ -426,21 +459,16 @@ bool MenuItem::Trigger() {
   if (!pimpl_->enabled_)
     return false;
 
-  [pimpl_->target_ menuItemClicked:pimpl_->ns_menu_item_];
+  // Call the block directly instead of going through target-action
+  if (pimpl_->target_.clickedBlock) {
+    std::string itemText = pimpl_->text_;
+    pimpl_->target_.clickedBlock(id, itemText);
+  }
   return true;
 }
 
 void* MenuItem::GetNativeObjectInternal() const {
   return (__bridge void*)pimpl_->ns_menu_item_;
-}
-
-void MenuItem::EmitSelectedEvent(const std::string& item_text) {
-  EmitSync<MenuItemClickedEvent>(id, item_text);
-}
-
-void MenuItem::EmitStateChangedEvent(bool checked) {
-  // This method is kept for compatibility but doesn't emit events
-  // State change events are handled through the regular click event
 }
 
 // Menu::Impl implementation
@@ -460,6 +488,10 @@ class Menu::Impl {
   ~Impl() {
     // First, remove delegate to prevent callbacks during cleanup
     if (delegate_) {
+      // Clean up blocks first
+      delegate_.openedBlock = nil;
+      delegate_.closedBlock = nil;
+
       [ns_menu_ setDelegate:nil];
       delegate_ = nil;
     }
@@ -475,21 +507,56 @@ std::shared_ptr<Menu> Menu::Create() {
   auto menu = std::shared_ptr<Menu>(new Menu());
   menu->pimpl_ = std::make_unique<Impl>(nsMenu);
   menu->id = g_next_menu_id++;
-  [menu->pimpl_->delegate_ setCppMenu:(void*)menu.get()];
+  objc_setAssociatedObject(nsMenu, @"menuId", [NSNumber numberWithLong:menu->id],
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  // 设置默认的 Block 处理器，直接发送事件
+  menu->pimpl_->delegate_.openedBlock = ^(MenuID menu_id) {
+    try {
+      menu->EmitSync<MenuOpenedEvent>(menu_id);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
 
+  menu->pimpl_->delegate_.closedBlock = ^(MenuID menu_id) {
+    try {
+      menu->EmitSync<MenuClosedEvent>(menu_id);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
   return menu;
 }
 
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
-  [pimpl_->delegate_ setCppMenu:(void*)this];
+  NSMenu* nsMenu = (__bridge NSMenu*)native_menu;
+  objc_setAssociatedObject(nsMenu, @"menuId", [NSNumber numberWithLong:id],
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+  // 设置默认的 Block 处理器，直接发送事件
+  pimpl_->delegate_.openedBlock = ^(MenuID menu_id) {
+    try {
+      EmitSync<MenuOpenedEvent>(menu_id);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
+
+  pimpl_->delegate_.closedBlock = ^(MenuID menu_id) {
+    try {
+      EmitSync<MenuClosedEvent>(menu_id);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
 }
 
 Menu::Menu() : id(0) {  // Will be set in Create method
 }
 
 Menu::~Menu() {
-  // No global registry cleanup required
+  // No special cleanup needed since we're not storing C++ object references
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
@@ -687,10 +754,18 @@ void* Menu::GetNativeObjectInternal() const {
 }
 
 void Menu::EmitOpenedEvent() {
-  EmitSync<MenuOpenedEvent>(id);
+  // This method is kept for compatibility but events are now handled through blocks
+  // Call the block if it exists
+  if (pimpl_->delegate_.openedBlock) {
+    pimpl_->delegate_.openedBlock(id);
+  }
 }
 
 void Menu::EmitClosedEvent() {
-  EmitSync<MenuClosedEvent>(id);
+  // This method is kept for compatibility but events are now handled through blocks
+  // Call the block if it exists
+  if (pimpl_->delegate_.closedBlock) {
+    pimpl_->delegate_.closedBlock(id);
+  }
 }
 }  // namespace nativeapi

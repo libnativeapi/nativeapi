@@ -333,8 +333,8 @@ bool TrayIcon::OpenContextMenu() {
     return false;
   }
 
-  // Set our menu delegate to handle menu close events
-  [nativeMenu setDelegate:pimpl_->menu_delegate_];
+  //  // Set our menu delegate to handle menu close events
+  //  [nativeMenu setDelegate:pimpl_->menu_delegate_];
 
   // Set the menu to the status item (like Swift version)
   pimpl_->ns_status_item_.menu = nativeMenu;

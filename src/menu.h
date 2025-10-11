@@ -447,26 +447,6 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    */
   bool Trigger();
 
-  /**
-   * @brief Emit a menu item selected event.
-   *
-   * This method is used internally by platform implementations to
-   * emit selection events when a menu item is clicked.
-   *
-   * @param item_text The text of the selected menu item
-   */
-  void EmitSelectedEvent(const std::string& item_text);
-
-  /**
-   * @brief Emit a menu item state changed event.
-   *
-   * This method is used internally by platform implementations to
-   * emit state change events when a checkable menu item's state changes.
-   *
-   * @param checked The new checked state of the menu item
-   */
-  void EmitStateChangedEvent(bool checked);
-
  protected:
   /**
    * @brief Internal method to get the platform-specific native menu item object.
