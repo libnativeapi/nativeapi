@@ -28,7 +28,7 @@ TrayManager::~TrayManager() {
     auto tray = pair.second;
     if (tray) {
       try {
-        tray->Hide();
+        tray->SetVisible(false);
       } catch (...) {
         // Ignore exceptions during cleanup
       }
@@ -61,6 +61,8 @@ std::shared_ptr<TrayIcon> TrayManager::Create() {
 
   NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
   NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
+
+  std::cout << status_item.visible << std::endl;
 
   auto tray = std::make_shared<TrayIcon>((__bridge void*)status_item);
   tray->id = next_tray_id_++;

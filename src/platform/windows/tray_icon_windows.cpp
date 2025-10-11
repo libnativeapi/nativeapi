@@ -204,23 +204,28 @@ Rectangle TrayIcon::GetBounds() {
   return bounds;
 }
 
-bool TrayIcon::Show() {
-  if (pimpl_->hwnd_ && !pimpl_->visible_) {
+bool TrayIcon::SetVisible(bool visible) {
+  if (!pimpl_->hwnd_) {
+    return false;
+  }
+
+  if (visible && !pimpl_->visible_) {
+    // Show the tray icon
     if (Shell_NotifyIcon(NIM_ADD, &pimpl_->nid_) == TRUE) {
       pimpl_->visible_ = true;
       return true;
     }
-  }
-  return false;
-}
-
-bool TrayIcon::Hide() {
-  if (pimpl_->hwnd_ && pimpl_->visible_) {
+  } else if (!visible && pimpl_->visible_) {
+    // Hide the tray icon
     if (Shell_NotifyIcon(NIM_DELETE, &pimpl_->nid_) == TRUE) {
       pimpl_->visible_ = false;
       return true;
     }
+  } else {
+    // Already in the desired state
+    return true;
   }
+  
   return false;
 }
 

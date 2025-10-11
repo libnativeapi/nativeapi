@@ -25,10 +25,10 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), delegate_(nil), menu_delegate_(nil), visible_(false) {}
+  Impl() : ns_status_item_(nil), delegate_(nil), menu_delegate_(nil) {}
 
   Impl(NSStatusItem* status_item)
-      : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil), visible_(false) {
+      : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];
@@ -82,9 +82,6 @@ class TrayIcon::Impl {
   TrayIconDelegate* delegate_;
   TrayIconMenuDelegate* menu_delegate_;
   std::shared_ptr<Menu> context_menu_;
-  std::string title_;
-  std::string tooltip_;
-  bool visible_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
@@ -164,30 +161,46 @@ void TrayIcon::SetIcon(std::string icon) {
   }
 }
 
-void TrayIcon::SetTitle(std::string title) {
-  pimpl_->title_ = title;
-
+void TrayIcon::SetTitle(std::optional<std::string> title) {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
-    NSString* titleString = [NSString stringWithUTF8String:title.c_str()];
-    [pimpl_->ns_status_item_.button setTitle:titleString];
+    if (title.has_value()) {
+      NSString* titleString = [NSString stringWithUTF8String:title.value().c_str()];
+      [pimpl_->ns_status_item_.button setTitle:titleString];
+    } else {
+      [pimpl_->ns_status_item_.button setTitle:@""];
+    }
   }
 }
 
-std::string TrayIcon::GetTitle() {
-  return pimpl_->title_;
+std::optional<std::string> TrayIcon::GetTitle() {
+  if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
+    NSString* titleString = [pimpl_->ns_status_item_.button title];
+    if (titleString && [titleString length] > 0) {
+      return std::string([titleString UTF8String]);
+    }
+  }
+  return std::nullopt;
 }
 
-void TrayIcon::SetTooltip(std::string tooltip) {
-  pimpl_->tooltip_ = tooltip;
-
+void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
-    NSString* tooltipString = [NSString stringWithUTF8String:tooltip.c_str()];
-    [pimpl_->ns_status_item_.button setToolTip:tooltipString];
+    if (tooltip.has_value()) {
+      NSString* tooltipString = [NSString stringWithUTF8String:tooltip.value().c_str()];
+      [pimpl_->ns_status_item_.button setToolTip:tooltipString];
+    } else {
+      [pimpl_->ns_status_item_.button setToolTip:nil];
+    }
   }
 }
 
-std::string TrayIcon::GetTooltip() {
-  return pimpl_->tooltip_;
+std::optional<std::string> TrayIcon::GetTooltip() {
+  if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
+    NSString* tooltipString = [pimpl_->ns_status_item_.button toolTip];
+    if (tooltipString && [tooltipString length] > 0) {
+      return std::string([tooltipString UTF8String]);
+    }
+  }
+  return std::nullopt;
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
@@ -224,29 +237,20 @@ Rectangle TrayIcon::GetBounds() {
   return bounds;
 }
 
-bool TrayIcon::Show() {
-  if (pimpl_->ns_status_item_) {
-    [pimpl_->ns_status_item_ setVisible:YES];
-    pimpl_->visible_ = true;
-    return true;
+bool TrayIcon::SetVisible(bool visible) {
+  if (!pimpl_->ns_status_item_) {
+    return false;
   }
-  return false;
-}
 
-bool TrayIcon::Hide() {
-  if (pimpl_->ns_status_item_) {
-    [pimpl_->ns_status_item_ setVisible:NO];
-    pimpl_->visible_ = false;
-    return true;
-  }
-  return false;
+  [pimpl_->ns_status_item_ setVisible:visible ? YES : NO];
+  return true;
 }
 
 bool TrayIcon::IsVisible() {
   if (pimpl_->ns_status_item_) {
     return [pimpl_->ns_status_item_ isVisible] == YES;
   }
-  return pimpl_->visible_;
+  return false;
 }
 
 bool TrayIcon::OpenContextMenu(double x, double y) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string>
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
@@ -128,19 +129,19 @@ class TrayIcon : public EventEmitter {
    * is displayed next to the icon in the status bar. On other platforms,
    * this may be used internally for identification purposes.
    *
-   * @param title The title text to display
+   * @param title The title text to display, or std::nullopt to clear the title
    *
    * @note On Windows and most Linux desktop environments, tray icons
    *       do not display title text directly.
    */
-  void SetTitle(std::string title);
+  void SetTitle(std::optional<std::string> title);
 
   /**
    * @brief Get the current title text of the tray icon.
    *
-   * @return The current title text as a string
+   * @return The current title text as an optional string, or std::nullopt if no title is set
    */
-  std::string GetTitle();
+  std::optional<std::string> GetTitle();
 
   /**
    * @brief Set the tooltip text for the tray icon.
@@ -149,21 +150,22 @@ class TrayIcon : public EventEmitter {
    * This is supported on all platforms and is useful for providing
    * additional context about the application's current state.
    *
-   * @param tooltip The tooltip text to display on hover
+   * @param tooltip The tooltip text to display on hover, or std::nullopt to clear the tooltip
    *
    * @example
    * ```cpp
    * trayIcon->SetTooltip("MyApp - Status: Connected");
+   * trayIcon->SetTooltip(std::nullopt); // Clear tooltip
    * ```
    */
-  void SetTooltip(std::string tooltip);
+  void SetTooltip(std::optional<std::string> tooltip);
 
   /**
    * @brief Get the current tooltip text of the tray icon.
    *
-   * @return The current tooltip text as a string
+   * @return The current tooltip text as an optional string, or std::nullopt if no tooltip is set
    */
-  std::string GetTooltip();
+  std::optional<std::string> GetTooltip();
 
   /**
    * @brief Set the context menu for the tray icon.
@@ -213,28 +215,28 @@ class TrayIcon : public EventEmitter {
   Rectangle GetBounds();
 
   /**
-   * @brief Show the tray icon in the system tray.
+   * @brief Set the visibility of the tray icon in the system tray.
    *
-   * Makes the tray icon visible in the system notification area.
-   * If the icon is already visible, this method has no effect.
+   * Controls whether the tray icon is visible in the system notification area.
+   * This method replaces the previous Show() and Hide() methods for a more
+   * unified interface.
    *
-   * @return true if the icon was successfully shown, false otherwise
+   * @param visible true to make the icon visible, false to hide it
+   * @return true if the visibility was successfully changed, false otherwise
    *
    * @note On some platforms, showing a tray icon may fail if the
    *       system tray is not available or if there are too many icons.
-   */
-  bool Show();
-
-  /**
-   * @brief Hide the tray icon from the system tray.
    *
-   * Removes the tray icon from the system notification area without
-   * destroying the TrayIcon object. The icon can be shown again later
-   * using Show().
+   * @example
+   * ```cpp
+   * // Show the tray icon
+   * trayIcon->SetVisible(true);
    *
-   * @return true if the icon was successfully hidden, false otherwise
+   * // Hide the tray icon
+   * trayIcon->SetVisible(false);
+   * ```
    */
-  bool Hide();
+  bool SetVisible(bool visible);
 
   /**
    * @brief Check if the tray icon is currently visible.

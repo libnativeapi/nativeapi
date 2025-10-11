@@ -108,7 +108,7 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon);
 /**
  * Set the title text for the tray icon
  * @param tray_icon The tray icon
- * @param title The title text to set
+ * @param title The title text to set, or NULL to clear the title
  */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title);
@@ -116,7 +116,7 @@ void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title)
 /**
  * Get the title text of the tray icon
  * @param tray_icon The tray icon
- * @return The title text, or NULL if error. Caller must free the returned
+ * @return The title text, or NULL if no title is set or error. Caller must free the returned
  * string.
  */
 FFI_PLUGIN_EXPORT
@@ -125,7 +125,7 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon);
 /**
  * Set the tooltip text for the tray icon
  * @param tray_icon The tray icon
- * @param tooltip The tooltip text to set
+ * @param tooltip The tooltip text to set, or NULL to clear the tooltip
  */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip);
@@ -133,7 +133,7 @@ void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tool
 /**
  * Get the tooltip text of the tray icon
  * @param tray_icon The tray icon
- * @return The tooltip text, or NULL if error. Caller must free the returned
+ * @return The tooltip text, or NULL if no tooltip is set or error. Caller must free the returned
  * string.
  */
 FFI_PLUGIN_EXPORT
@@ -165,20 +165,13 @@ FFI_PLUGIN_EXPORT
 bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds);
 
 /**
- * Show the tray icon in the system tray
+ * Set the visibility of the tray icon in the system tray
  * @param tray_icon The tray icon
- * @return true if shown successfully, false otherwise
+ * @param visible true to show the icon, false to hide it
+ * @return true if visibility was changed successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_show(native_tray_icon_t tray_icon);
-
-/**
- * Hide the tray icon from the system tray
- * @param tray_icon The tray icon
- * @return true if hidden successfully, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_tray_icon_hide(native_tray_icon_t tray_icon);
+bool native_tray_icon_set_visible(native_tray_icon_t tray_icon, bool visible);
 
 /**
  * Check if the tray icon is currently visible

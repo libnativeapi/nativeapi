@@ -85,12 +85,16 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon) {
 
 void native_tray_icon_set_title(native_tray_icon_t tray_icon,
                                 const char* title) {
-  if (!tray_icon || !title)
+  if (!tray_icon)
     return;
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    tray_icon_ptr->SetTitle(title);
+    if (title) {
+      tray_icon_ptr->SetTitle(std::string(title));
+    } else {
+      tray_icon_ptr->SetTitle(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -102,7 +106,12 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return to_c_str(tray_icon_ptr->GetTitle());
+    auto title = tray_icon_ptr->GetTitle();
+    if (title.has_value()) {
+      return to_c_str(title.value());
+    } else {
+      return nullptr;
+    }
   } catch (...) {
     return nullptr;
   }
@@ -110,12 +119,16 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon) {
 
 void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon,
                                   const char* tooltip) {
-  if (!tray_icon || !tooltip)
+  if (!tray_icon)
     return;
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    tray_icon_ptr->SetTooltip(tooltip);
+    if (tooltip) {
+      tray_icon_ptr->SetTooltip(std::string(tooltip));
+    } else {
+      tray_icon_ptr->SetTooltip(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -127,7 +140,12 @@ char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return to_c_str(tray_icon_ptr->GetTooltip());
+    auto tooltip = tray_icon_ptr->GetTooltip();
+    if (tooltip.has_value()) {
+      return to_c_str(tooltip.value());
+    } else {
+      return nullptr;
+    }
   } catch (...) {
     return nullptr;
   }
@@ -190,25 +208,13 @@ bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_show(native_tray_icon_t tray_icon) {
+bool native_tray_icon_set_visible(native_tray_icon_t tray_icon, bool visible) {
   if (!tray_icon)
     return false;
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return tray_icon_ptr->Show();
-  } catch (...) {
-    return false;
-  }
-}
-
-bool native_tray_icon_hide(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return false;
-
-  try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return tray_icon_ptr->Hide();
+    return tray_icon_ptr->SetVisible(visible);
   } catch (...) {
     return false;
   }

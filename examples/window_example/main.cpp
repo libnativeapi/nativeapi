@@ -81,9 +81,8 @@ int main() {
         "XFg23zDhiRuqUXbBi1whJ9enqSQUWa7x3IcWHH0xDhLfUVYSpsWt6LMfZQwwX/"
         "wLVwWPG97osM9Wf7Df6GGOwnsP4BQFiPuOZ8wJUAAAAASUVORK5CYII=");
     std::cout << "Tray ID: " << tray_icon.id << std::endl;
-    std::cout << "Tray Title: " << tray_icon.GetTitle() << std::endl;
-
-    tray_icon.Show();
+    auto title = tray_icon.GetTitle();
+    std::cout << "Tray Title: " << (title.has_value() ? title.value() : "(no title)") << std::endl;
 
     // Create context menu
     auto context_menu = Menu::Create();

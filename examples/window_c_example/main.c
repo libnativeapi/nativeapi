@@ -349,7 +349,7 @@ int main() {
         native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED, on_tray_icon_right_clicked, NULL);
         native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED, on_tray_icon_double_clicked, NULL);
 
-        native_tray_icon_show(g_tray_icon);
+        native_tray_icon_set_visible(g_tray_icon, true);
     } else {
         fprintf(stderr, "Failed to create tray.\n");
     }

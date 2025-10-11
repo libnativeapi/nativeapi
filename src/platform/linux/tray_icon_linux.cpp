@@ -151,24 +151,21 @@ Rectangle TrayIcon::GetBounds() {
   return bounds;
 }
 
-bool TrayIcon::Show() {
-  if (pimpl_->app_indicator_) {
+bool TrayIcon::SetVisible(bool visible) {
+  if (!pimpl_->app_indicator_) {
+    return false;
+  }
+
+  if (visible) {
     app_indicator_set_status(pimpl_->app_indicator_,
                              APP_INDICATOR_STATUS_ACTIVE);
-    pimpl_->visible_ = true;
-    return true;
-  }
-  return false;
-}
-
-bool TrayIcon::Hide() {
-  if (pimpl_->app_indicator_) {
+  } else {
     app_indicator_set_status(pimpl_->app_indicator_,
                              APP_INDICATOR_STATUS_PASSIVE);
-    pimpl_->visible_ = false;
-    return true;
   }
-  return false;
+  
+  pimpl_->visible_ = visible;
+  return true;
 }
 
 bool TrayIcon::IsVisible() {

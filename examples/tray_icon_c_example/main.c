@@ -188,7 +188,7 @@ int main() {
                                 on_tray_double_clicked, NULL);
 
   // Show the tray icon
-  if (native_tray_icon_show(tray_icon)) {
+  if (native_tray_icon_set_visible(tray_icon, true)) {
     printf("Tray icon is now visible\n");
   } else {
     printf("Warning: Failed to show tray icon\n");

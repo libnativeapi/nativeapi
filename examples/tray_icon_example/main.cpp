@@ -120,7 +120,7 @@ int main() {
   trayIcon->SetContextMenu(context_menu);
 
   // Show the tray icon
-  if (trayIcon->Show()) {
+  if (trayIcon->SetVisible(true)) {
     std::cout << "Tray icon is now visible!" << std::endl;
   } else {
     std::cerr << "Failed to show tray icon!" << std::endl;
@@ -170,7 +170,7 @@ int main() {
   }
 
   // Hide the tray icon before exiting
-  trayIcon->Hide();
+  trayIcon->SetVisible(false);
   std::cout << "Exiting TrayIcon Example..." << std::endl;
 
   // Cleanup
