@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
 #include "display.h"
-#include "event.h"
-#include "geometry.h"
+
+#include "foundation/event.h"
+#include "foundation/geometry.h"
 
 namespace nativeapi {
 

@@ -1,6 +1,6 @@
 #include "../../tray_icon.h"
 #include "../../menu.h"
-#include "../../geometry.h"
+#include "../../foundation/geometry.h"
 #include "../../tray_icon_event.h"
 
 #import <Cocoa/Cocoa.h>

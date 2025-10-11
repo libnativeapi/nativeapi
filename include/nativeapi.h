@@ -1,13 +1,13 @@
 #pragma once
 
+#include "../src/foundation/event.h"
+#include "../src/foundation/event_emitter.h"
 #include "../src/accessibility_manager.h"
 #include "../src/app_runner.h"
 #include "../src/display.h"
 #include "../src/display_event.h"
 #include "../src/display_manager.h"
-#include "../src/event.h"
-#include "../src/event_dispatcher.h"
-#include "../src/geometry.h"
+#include "../src/foundation/geometry.h"
 #include "../src/keyboard_event.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"

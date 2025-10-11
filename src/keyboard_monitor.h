@@ -4,8 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "event_dispatcher.h"
-#include "event_emitter.h"
+#include "foundation/event_emitter.h"
 #include "keyboard_event.h"
 
 namespace nativeapi {
@@ -46,8 +45,8 @@ class KeyboardMonitor: public EventEmitter {
   // Check if the keyboard monitor is monitoring
   bool IsMonitoring() const;
 
-  // Get access to the event dispatcher for internal use
-  EventDispatcher& GetInternalEventDispatcher();
+  // Get access to the event emitter for internal use
+  EventEmitter& GetInternalEventEmitter();
 
  private:
   class Impl;

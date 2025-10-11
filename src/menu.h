@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "event.h"
-#include "event_emitter.h"
-#include "geometry.h"
+#include "foundation/event.h"
+#include "foundation/event_emitter.h"
+#include "foundation/geometry.h"
 #include "menu_event.h"
 #include "foundation/native_object_provider.h"
 

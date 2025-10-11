@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include "foundation/native_object_provider.h"
-#include "geometry.h"
+#include "foundation/geometry.h"
 
 namespace nativeapi {
 

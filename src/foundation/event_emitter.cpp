@@ -1,19 +1,19 @@
-#include "event_dispatcher.h"
+#include "event_emitter.h"
 
 #include <algorithm>
 #include <iostream>
 
 namespace nativeapi {
 
-EventDispatcher::EventDispatcher()
+EventEmitter::EventEmitter()
     : running_(false), stop_requested_(false), next_listener_id_(1) {}
 
-EventDispatcher::~EventDispatcher() {
+EventEmitter::~EventEmitter() {
   Stop();
 }
 
-size_t EventDispatcher::AddListener(std::type_index event_type,
-                                    EventListener* listener) {
+size_t EventEmitter::AddListener(std::type_index event_type,
+                                 EventListener* listener) {
   if (!listener) {
     return 0;  // Invalid listener
   }
@@ -26,7 +26,7 @@ size_t EventDispatcher::AddListener(std::type_index event_type,
   return listener_id;
 }
 
-bool EventDispatcher::RemoveListener(size_t listener_id) {
+bool EventEmitter::RemoveListener(size_t listener_id) {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
 
   for (auto& [event_type, listener_list] : listeners_) {
@@ -44,18 +44,18 @@ bool EventDispatcher::RemoveListener(size_t listener_id) {
   return false;
 }
 
-void EventDispatcher::RemoveAllListeners(std::type_index event_type) {
+void EventEmitter::RemoveAllListeners(std::type_index event_type) {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   listeners_[event_type].clear();
 }
 
-void EventDispatcher::RemoveAllListeners() {
+void EventEmitter::RemoveAllListeners() {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   listeners_.clear();
   callback_listeners_.clear();
 }
 
-void EventDispatcher::DispatchSync(const Event& event) {
+void EventEmitter::EmitSync(const Event& event) {
   std::type_index event_type = typeid(event);
   std::vector<EventListener*> listeners_copy;
 
@@ -83,7 +83,7 @@ void EventDispatcher::DispatchSync(const Event& event) {
   }
 }
 
-void EventDispatcher::DispatchAsync(std::unique_ptr<Event> event) {
+void EventEmitter::EmitAsync(std::unique_ptr<Event> event) {
   if (!event) {
     return;
   }
@@ -101,7 +101,7 @@ void EventDispatcher::DispatchAsync(std::unique_ptr<Event> event) {
   queue_condition_.notify_one();
 }
 
-void EventDispatcher::Start() {
+void EventEmitter::Start() {
   if (running_.load()) {
     return;  // Already running
   }
@@ -109,10 +109,10 @@ void EventDispatcher::Start() {
   stop_requested_.store(false);
   running_.store(true);
 
-  worker_thread_ = std::thread(&EventDispatcher::ProcessAsyncEvents, this);
+  worker_thread_ = std::thread(&EventEmitter::ProcessAsyncEvents, this);
 }
 
-void EventDispatcher::Stop() {
+void EventEmitter::Stop() {
   if (!running_.load()) {
     return;  // Not running
   }
@@ -133,17 +133,17 @@ void EventDispatcher::Stop() {
   }
 }
 
-bool EventDispatcher::IsRunning() const {
+bool EventEmitter::IsRunning() const {
   return running_.load();
 }
 
-size_t EventDispatcher::GetListenerCount(std::type_index event_type) const {
+size_t EventEmitter::GetListenerCount(std::type_index event_type) const {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   auto it = listeners_.find(event_type);
   return (it != listeners_.end()) ? it->second.size() : 0;
 }
 
-size_t EventDispatcher::GetTotalListenerCount() const {
+size_t EventEmitter::GetTotalListenerCount() const {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   size_t total = 0;
   for (const auto& [event_type, listener_list] : listeners_) {
@@ -152,7 +152,7 @@ size_t EventDispatcher::GetTotalListenerCount() const {
   return total;
 }
 
-void EventDispatcher::ProcessAsyncEvents() {
+void EventEmitter::ProcessAsyncEvents() {
   while (running_.load()) {
     std::unique_ptr<Event> event;
 
@@ -175,7 +175,7 @@ void EventDispatcher::ProcessAsyncEvents() {
 
     // Dispatch the event if we have one
     if (event) {
-      DispatchSync(*event);
+      EmitSync(*event);
     }
   }
 }

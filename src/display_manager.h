@@ -7,9 +7,9 @@
 
 #include "display.h"
 #include "display_event.h"
-#include "event.h"
-#include "event_emitter.h"
-#include "geometry.h"
+#include "foundation/event.h"
+#include "foundation/event_emitter.h"
+#include "foundation/geometry.h"
 
 namespace nativeapi {
 

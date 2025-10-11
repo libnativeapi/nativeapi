@@ -34,14 +34,14 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lP
       return CallNextHookEx(nullptr, nCode, wParam, lParam);
     }
     
-    auto& dispatcher = g_current_monitor->GetInternalEventDispatcher();
+    auto& emitter = g_current_monitor->GetInternalEventEmitter();
     
     if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
       KeyPressedEvent key_event(pKeyboard->vkCode);
-      dispatcher.DispatchSync(key_event);
+      emitter.EmitSync(key_event);
     } else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
       KeyReleasedEvent key_event(pKeyboard->vkCode);
-      dispatcher.DispatchSync(key_event);
+      emitter.EmitSync(key_event);
     }
     
     // Check for modifier key changes
@@ -72,7 +72,7 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lP
     static uint32_t last_modifier_keys = 0;
     if (modifier_keys != last_modifier_keys) {
       ModifierKeysChangedEvent modifier_event(modifier_keys);
-      dispatcher.DispatchSync(modifier_event);
+      emitter.EmitSync(modifier_event);
       last_modifier_keys = modifier_keys;
     }
   }
@@ -121,8 +121,8 @@ bool KeyboardMonitor::IsMonitoring() const {
   return impl_->hook_ != nullptr;
 }
 
-EventDispatcher& KeyboardMonitor::GetInternalEventDispatcher() {
-  return GetEventDispatcher();
+EventEmitter& KeyboardMonitor::GetInternalEventEmitter() {
+  return *this;
 }
 
 }  // namespace nativeapi

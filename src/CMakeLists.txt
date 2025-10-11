@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Common source files
 file(GLOB COMMON_SOURCES "*.cpp")
+file(GLOB FOUNDATION_SOURCES "foundation/*.cpp")
 list(FILTER COMMON_SOURCES EXCLUDE REGEX "platform/*")
 
 # C API source files
@@ -41,6 +42,7 @@ endif()
 # Add library target
 add_library(nativeapi STATIC
   ${COMMON_SOURCES}
+  ${FOUNDATION_SOURCES}
   ${PLATFORM_SOURCES}
   ${CAPI_SOURCES}
 )

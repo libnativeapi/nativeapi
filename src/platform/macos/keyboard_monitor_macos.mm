@@ -30,8 +30,8 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
                                         CGEventType type,
                                         CGEventRef event,
                                         void* refcon) {
-  auto* event_dispatcher = static_cast<EventDispatcher*>(refcon);
-  if (!event_dispatcher)
+  auto* event_emitter = static_cast<EventEmitter*>(refcon);
+  if (!event_emitter)
     return event;
 
   // Get the key code
@@ -39,10 +39,10 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
 
   if (type == kCGEventKeyDown) {
     KeyPressedEvent key_event(keyCode);
-    event_dispatcher->DispatchSync(key_event);
+    event_emitter->EmitSync(key_event);
   } else if (type == kCGEventKeyUp) {
     KeyReleasedEvent key_event(keyCode);
-    event_dispatcher->DispatchSync(key_event);
+    event_emitter->EmitSync(key_event);
   } else if (type == kCGEventFlagsChanged) {
     CGEventFlags flags = CGEventGetFlags(event);
     uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
@@ -68,7 +68,7 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
       modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
     }
     ModifierKeysChangedEvent modifier_event(modifier_keys);
-    event_dispatcher->DispatchSync(modifier_event);
+    event_emitter->EmitSync(modifier_event);
   }
   return event;
 }
@@ -89,7 +89,7 @@ void KeyboardMonitor::Start() {
                        kCGEventTapOptionDefault,  // Default options
                        eventMask,                 // Monitor key down, up, and flags changed events
                        keyboardEventCallback,
-                       &GetEventDispatcher());  // Pass this pointer as user data
+                       this);  // Pass this pointer as user data
 
   if (impl_->eventTap == nullptr) {
     std::cerr << "Failed to create event tap" << std::endl;

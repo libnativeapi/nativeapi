@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "event.h"
+#include "foundation/event.h"
 #include "tray_icon.h"
 
 namespace nativeapi {

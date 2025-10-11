@@ -17,21 +17,38 @@
 namespace nativeapi {
 
 /**
- * Generic event dispatcher that supports both synchronous and asynchronous
- * event dispatching. It maintains listeners for different event types and
- * can dispatch events either immediately or queue them for later processing.
+ * Base class that provides event emission capabilities.
+ * Classes that inherit from EventEmitter can easily add listener management
+ * and event dispatching functionality. Supports both synchronous and asynchronous
+ * event dispatching with thread-safe listener management.
+ *
+ * Example usage:
+ *
+ * class MyClass : public EventEmitter {
+ * public:
+ *   void DoSomething() {
+ *     // Emit an event synchronously
+ *     EmitSync<MyEvent>("some data");
+ *
+ *     // Or emit asynchronously
+ *     EmitAsync<MyEvent>("some data");
+ *   }
+ * };
+ *
+ * MyClass obj;
+ * obj.AddListener<MyEvent>([](const MyEvent& event) {
+ *   // Handle the event
+ * });
  */
-class EventDispatcher {
+class EventEmitter {
  public:
-  EventDispatcher();
-  ~EventDispatcher();
+  EventEmitter();
+  virtual ~EventEmitter();
 
   /**
-   * Add a listener for a specific event type.
-   * The listener will be called whenever an event of that type is dispatched.
+   * Add a typed event listener for a specific event type.
    *
-   * @param listener Pointer to the event listener (must remain valid until
-   * removed)
+   * @param listener Pointer to the event listener (must remain valid until removed)
    * @return A unique listener ID that can be used to remove the listener
    */
   template <typename EventType>
@@ -78,43 +95,29 @@ class EventDispatcher {
   }
 
   /**
-   * Remove all listeners.
+   * Remove all listeners for all event types.
    */
   void RemoveAllListeners();
 
   /**
-   * Dispatch an event synchronously to all registered listeners.
-   * This will call all listeners immediately on the current thread.
-   *
-   * @param event The event to dispatch
+   * Get the number of listeners registered for a specific event type.
    */
-  void DispatchSync(const Event& event);
-
-  /**
-   * Dispatch an event synchronously using perfect forwarding.
-   * This creates the event object and dispatches it immediately.
-   */
-  template <typename EventType, typename... Args>
-  void DispatchSync(Args&&... args) {
-    EventType event(std::forward<Args>(args)...);
-    DispatchSync(event);
+  template <typename EventType>
+  size_t GetListenerCount() const {
+    return GetListenerCount(TypedEvent<EventType>::GetStaticType());
   }
 
   /**
-   * Queue an event for asynchronous dispatch.
-   * The event will be dispatched on the background thread.
-   *
-   * @param event The event to queue (will be copied)
+   * Get the total number of registered listeners.
    */
-  void DispatchAsync(std::unique_ptr<Event> event);
+  size_t GetTotalListenerCount() const;
 
   /**
-   * Queue an event for asynchronous dispatch using perfect forwarding.
+   * Check if there are any listeners for a specific event type.
    */
-  template <typename EventType, typename... Args>
-  void DispatchAsync(Args&&... args) {
-    auto event = std::make_unique<EventType>(std::forward<Args>(args)...);
-    DispatchAsync(std::move(event));
+  template <typename EventType>
+  bool HasListeners() const {
+    return GetListenerCount<EventType>() > 0;
   }
 
   /**
@@ -134,17 +137,41 @@ class EventDispatcher {
   bool IsRunning() const;
 
   /**
-   * Get the number of listeners registered for a specific event type.
+   * Emit an event synchronously to all registered listeners.
+   * This is a public method for internal use by platform implementations.
+   *
+   * @param event The event to emit
    */
-  template <typename EventType>
-  size_t GetListenerCount() const {
-    return GetListenerCount(TypedEvent<EventType>::GetStaticType());
+  void EmitSync(const Event& event);
+
+ protected:
+
+  /**
+   * Emit an event synchronously using perfect forwarding.
+   * This creates the event object and emits it immediately.
+   */
+  template <typename EventType, typename... Args>
+  void EmitSync(Args&&... args) {
+    EventType event(std::forward<Args>(args)...);
+    EmitSync(event);
   }
 
   /**
-   * Get the total number of registered listeners.
+   * Emit an event asynchronously.
+   * The event will be dispatched on a background thread.
+   *
+   * @param event The event to emit (will be copied)
    */
-  size_t GetTotalListenerCount() const;
+  void EmitAsync(std::unique_ptr<Event> event);
+
+  /**
+   * Emit an event asynchronously using perfect forwarding.
+   */
+  template <typename EventType, typename... Args>
+  void EmitAsync(Args&&... args) {
+    auto event = std::make_unique<EventType>(std::forward<Args>(args)...);
+    EmitAsync(std::move(event));
+  }
 
  private:
   struct ListenerInfo {
@@ -178,5 +205,44 @@ class EventDispatcher {
   // Listener ID generation
   std::atomic<size_t> next_listener_id_;
 };
+
+/**
+ * Convenience macro to define a simple event class.
+ *
+ * Usage:
+ * DEFINE_EVENT(MyEvent) {
+ *   std::string message;
+ *   int code;
+ * };
+ */
+#define DEFINE_EVENT(EventName) \
+  class EventName : public TypedEvent<EventName>
+
+/**
+ * Helper macro to begin defining an event with custom constructor.
+ *
+ * Usage:
+ * DEFINE_EVENT_BEGIN(MyEvent)
+ *   std::string message;
+ *   int code;
+ *   MyEvent(std::string msg, int c) : message(std::move(msg)), code(c) {}
+ * DEFINE_EVENT_END();
+ */
+#define DEFINE_EVENT_BEGIN(EventName) \
+  class EventName : public TypedEvent<EventName> { \
+   public:
+
+#define DEFINE_EVENT_END() \
+  };
+
+/**
+ * Simpler macro for events with basic data members.
+ * Creates a constructor that initializes all members.
+ */
+#define SIMPLE_EVENT(EventName, ...) \
+  class EventName : public TypedEvent<EventName> { \
+   public: \
+    __VA_ARGS__ \
+  };
 
 }  // namespace nativeapi
