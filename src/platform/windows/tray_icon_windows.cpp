@@ -50,16 +50,28 @@ class TrayIcon::Impl {
     if (message == WM_USER + 1 && wParam == icon_id_) {
       switch (lParam) {
         case WM_LBUTTONUP:
-          tray_icon->HandleLeftClick();
+          try {
+            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->id, "left");
+          } catch (...) {
+            // Protect against event emission exceptions
+          }
           break;
         case WM_RBUTTONUP:
-          tray_icon->HandleRightClick();
+          try {
+            tray_icon->EmitSync<TrayIconRightClickedEvent>(tray_icon->id);
+          } catch (...) {
+            // Protect against event emission exceptions
+          }
           if (tray_icon->GetContextMenu()) {
             tray_icon->OpenContextMenu();
           }
           break;
         case WM_LBUTTONDBLCLK:
-          tray_icon->HandleDoubleClick();
+          try {
+            tray_icon->EmitSync<TrayIconDoubleClickedEvent>(tray_icon->id);
+          } catch (...) {
+            // Protect against event emission exceptions
+          }
           break;
       }
       return 0;
@@ -225,7 +237,7 @@ bool TrayIcon::SetVisible(bool visible) {
     // Already in the desired state
     return true;
   }
-  
+
   return false;
 }
 
@@ -265,31 +277,6 @@ bool TrayIcon::CloseContextMenu() {
 
   // Close the context menu
   return pimpl_->context_menu_->Close();
-}
-
-// Internal method to handle click events
-void TrayIcon::HandleLeftClick() {
-  try {
-    EmitSync<TrayIconClickedEvent>(id, "left");
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleRightClick() {
-  try {
-    EmitSync<TrayIconRightClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleDoubleClick() {
-  try {
-    EmitSync<TrayIconDoubleClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
 }
 
 // Note: Windows-specific functionality is now handled internally by the Impl

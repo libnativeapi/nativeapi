@@ -10,10 +10,16 @@
 // for proper memory management of Objective-C objects.
 
 // Forward declarations
+typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconID tray_icon_id, const std::string& button);
+typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconID tray_icon_id);
+typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconID tray_icon_id);
+
 @interface TrayIconDelegate : NSObject
 @property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
+@property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
+@property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
+@property(nonatomic, copy) TrayIconDoubleClickedBlock doubleClickedBlock;
 - (void)statusItemClicked:(id)sender;
-- (void)statusItemRightClicked:(id)sender;
 @end
 
 @interface TrayIconMenuDelegate : NSObject <NSMenuDelegate>
@@ -48,14 +54,17 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
-    // First, clean up delegates to prevent callbacks
+    // Clean up blocks first
     if (delegate_) {
-      delegate_.trayIcon = nullptr;  // Clear the raw pointer first
+      delegate_.leftClickedBlock = nil;
+      delegate_.rightClickedBlock = nil;
+      delegate_.doubleClickedBlock = nil;
+      delegate_.trayIcon = nullptr;
       delegate_ = nil;
     }
 
     if (menu_delegate_) {
-      menu_delegate_.trayIcon = nullptr;  // Clear the raw pointer first
+      menu_delegate_.trayIcon = nullptr;
       menu_delegate_ = nil;
     }
 
@@ -88,6 +97,31 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   id = -1;
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
+
+    // 设置默认的 Block 处理器，直接发送事件
+    pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
+      try {
+        EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
+
+    pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+      try {
+        EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
+
+    pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+      try {
+        EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
   }
   if (pimpl_->menu_delegate_) {
     pimpl_->menu_delegate_.trayIcon = this;
@@ -98,6 +132,31 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
   id = -1;  // Will be set by TrayManager when created
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
+
+    // 设置默认的 Block 处理器，直接发送事件
+    pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
+      try {
+        EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
+
+    pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+      try {
+        EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
+
+    pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+      try {
+        EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
   }
   if (pimpl_->menu_delegate_) {
     pimpl_->menu_delegate_.trayIcon = this;
@@ -295,35 +354,8 @@ bool TrayIcon::CloseContextMenu() {
   return pimpl_->context_menu_->Close();
 }
 
-// Internal method to handle click events
-void TrayIcon::HandleLeftClick() {
-  try {
-    EmitSync<TrayIconClickedEvent>(id, "left");
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleRightClick() {
-  try {
-    EmitSync<TrayIconRightClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleDoubleClick() {
-  try {
-    EmitSync<TrayIconDoubleClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::ClearStatusItemMenu() {
-  if (pimpl_->ns_status_item_) {
-    pimpl_->ns_status_item_.menu = nil;
-  }
+void* TrayIcon::GetNativeObjectInternal() const {
+  return (__bridge void*)pimpl_->ns_status_item_;
 }
 
 }  // namespace nativeapi
@@ -345,26 +377,25 @@ void TrayIcon::ClearStatusItemMenu() {
   if (!event)
     return;
 
-  // Check the type of click
+  // Check the type of click and call appropriate block
   if (event.type == NSEventTypeRightMouseUp ||
       (event.type == NSEventTypeLeftMouseUp &&
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
-    trayIcon->HandleRightClick();
+    if (_rightClickedBlock) {
+      _rightClickedBlock(trayIcon->id);
+    }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
-      trayIcon->HandleDoubleClick();
+      if (_doubleClickedBlock) {
+        _doubleClickedBlock(trayIcon->id);
+      }
     } else {
-      trayIcon->HandleLeftClick();
+      if (_leftClickedBlock) {
+        _leftClickedBlock(trayIcon->id, "left");
+      }
     }
-  }
-}
-
-- (void)statusItemRightClicked:(id)sender {
-  // Check if trayIcon is still valid before proceeding
-  if (_trayIcon) {
-    _trayIcon->HandleRightClick();
   }
 }
 
@@ -376,8 +407,9 @@ void TrayIcon::ClearStatusItemMenu() {
 - (void)menuDidClose:(NSMenu*)menu {
   // Check if trayIcon is still valid before proceeding
   if (_trayIcon) {
+    NSStatusItem* ns_status_item_ = (__bridge NSStatusItem*)_trayIcon->GetNativeObject();
     // Call a public method to clear the menu (we'll add this method)
-    _trayIcon->ClearStatusItemMenu();
+    ns_status_item_.menu = nil;
   }
 }
 

@@ -61,7 +61,7 @@ typedef long TrayIconID;
  * trayIcon->Show();
  * ```
  */
-class TrayIcon : public EventEmitter {
+class TrayIcon : public EventEmitter, public NativeObjectProvider {
  public:
   /**
    * @brief Default constructor for TrayIcon.
@@ -316,38 +316,16 @@ class TrayIcon : public EventEmitter {
    */
   bool CloseContextMenu();
 
+ protected:
   /**
-   * @brief Internal method to handle left mouse click events.
+   * @brief Internal method to get the platform-specific native tray icon object.
    *
-   * This method is called internally by platform-specific code
-   * when a left click event occurs on the tray icon.
-   */
-  void HandleLeftClick();
-
-  /**
-   * @brief Internal method to handle right mouse click events.
+   * This method must be implemented by platform-specific code to return
+   * the underlying native tray icon object.
    *
-   * This method is called internally by platform-specific code
-   * when a right click event occurs on the tray icon.
+   * @return Pointer to the native menu item object
    */
-  void HandleRightClick();
-
-  /**
-   * @brief Internal method to handle double click events.
-   *
-   * This method is called internally by platform-specific code
-   * when a double click event occurs on the tray icon.
-   */
-  void HandleDoubleClick();
-
-  /**
-   * @brief Clear the menu reference from the status item.
-   *
-   * This method is used internally to clean up the menu reference
-   * when the context menu is closed. It's called by the menu delegate
-   * to ensure proper cleanup.
-   */
-  void ClearStatusItemMenu();
+  void* GetNativeObjectInternal() const override;
 
  private:
   /**

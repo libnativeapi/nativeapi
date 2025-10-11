@@ -163,7 +163,7 @@ bool TrayIcon::SetVisible(bool visible) {
     app_indicator_set_status(pimpl_->app_indicator_,
                              APP_INDICATOR_STATUS_PASSIVE);
   }
-  
+
   pimpl_->visible_ = visible;
   return true;
 }
@@ -208,31 +208,6 @@ bool TrayIcon::CloseContextMenu() {
   // There's no direct way to programmatically close the menu
   // but we can return true as the operation is conceptually successful
   return true;
-}
-
-// Internal method to handle click events
-void TrayIcon::HandleLeftClick() {
-  try {
-    EmitSync<TrayIconClickedEvent>(id, "left");
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleRightClick() {
-  try {
-    EmitSync<TrayIconRightClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-}
-
-void TrayIcon::HandleDoubleClick() {
-  try {
-    EmitSync<TrayIconDoubleClickedEvent>(id);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
 }
 
 }  // namespace nativeapi

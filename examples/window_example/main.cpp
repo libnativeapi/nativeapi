@@ -82,7 +82,9 @@ int main() {
         "wLVwWPG97osM9Wf7Df6GGOwnsP4BQFiPuOZ8wJUAAAAASUVORK5CYII=");
     std::cout << "Tray ID: " << tray_icon.id << std::endl;
     auto title = tray_icon.GetTitle();
-    std::cout << "Tray Title: " << (title.has_value() ? title.value() : "(no title)") << std::endl;
+    std::cout << "Tray Title: "
+              << (title.has_value() ? title.value() : "(no title)")
+              << std::endl;
 
     // Create context menu
     auto context_menu = Menu::Create();
