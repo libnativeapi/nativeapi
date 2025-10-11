@@ -131,7 +131,7 @@ int main() {
     std::cout << "Tray icon example is now running!" << std::endl;
     std::cout << "Try clicking on the tray icon:" << std::endl;
     std::cout << "- Left click: Single click" << std::endl;
-    std::cout << "- Right click: Shows context menu" << std::endl;
+    std::cout << "- Right click: Opens context menu" << std::endl;
     std::cout << "- Double click: Quick double click" << std::endl;
     std::cout << "- Context menu: Right-click to see options including Exit" << std::endl;
     std::cout << "The application will run for 60 seconds, or until you click Exit." << std::endl;

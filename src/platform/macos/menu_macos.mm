@@ -579,7 +579,7 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
     return nullptr;
 }
 
-bool Menu::ShowAsContextMenu(double x, double y) {
+bool Menu::Open(double x, double y) {
     NSPoint point = NSMakePoint(x, y);
 
     // Convert screen coordinates to window coordinates if needed
@@ -606,9 +606,9 @@ bool Menu::ShowAsContextMenu(double x, double y) {
     return true;
 }
 
-bool Menu::ShowAsContextMenu() {
+bool Menu::Open() {
     NSPoint mouseLocation = [NSEvent mouseLocation];
-    return ShowAsContextMenu(mouseLocation.x, mouseLocation.y);
+    return Open(mouseLocation.x, mouseLocation.y);
 }
 
 bool Menu::Close() {

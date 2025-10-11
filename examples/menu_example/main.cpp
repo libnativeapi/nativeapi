@@ -101,15 +101,15 @@ int main() {
         std::cout << "Triggering exit item..." << std::endl;
         exitItem->Trigger();
         
-        // Show menu as context menu (this may not work in console applications)
-        std::cout << "\n=== Attempting to Show Context Menu ===" << std::endl;
+        // Open menu as context menu (this may not work in console applications)
+        std::cout << "\n=== Attempting to Open Context Menu ===" << std::endl;
         std::cout << "Note: Context menu display may not work in console applications" << std::endl;
         
         // Try to show at screen coordinates (100, 100)
-        if (menu->ShowAsContextMenu(100, 100)) {
-            std::cout << "Context menu shown successfully" << std::endl;
+        if (menu->Open(100, 100)) {
+            std::cout << "Context menu opened successfully" << std::endl;
         } else {
-            std::cout << "Failed to show context menu (expected in console app)" << std::endl;
+            std::cout << "Failed to open context menu (expected in console app)" << std::endl;
         }
         
         // Demonstrate submenu

@@ -503,22 +503,22 @@ FFI_PLUGIN_EXPORT
 native_menu_item_t native_menu_find_item_by_text(native_menu_t menu, const char* text);
 
 /**
- * Show the menu as a context menu at specified coordinates
+ * Open the menu as a context menu at specified coordinates
  * @param menu The menu
  * @param x The x-coordinate in screen coordinates
  * @param y The y-coordinate in screen coordinates
- * @return true if menu was shown successfully, false otherwise
+ * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_show_as_context_menu(native_menu_t menu, double x, double y);
+bool native_menu_open_at(native_menu_t menu, double x, double y);
 
 /**
- * Show the menu as a context menu at default location
+ * Open the menu as a context menu at default location
  * @param menu The menu
- * @return true if menu was shown successfully, false otherwise
+ * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_show_as_context_menu_default(native_menu_t menu);
+bool native_menu_open(native_menu_t menu);
 
 /**
  * Close the menu if it's currently showing

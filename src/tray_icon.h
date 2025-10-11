@@ -246,13 +246,13 @@ class TrayIcon : public EventEmitter {
   /**
    * @brief Programmatically display the context menu at a specified location.
    *
-   * Shows the tray icon's context menu at the given screen coordinates.
+   * Opens the tray icon's context menu at the given screen coordinates.
    * This allows for manually triggering the context menu through keyboard
    * shortcuts, other UI events, or programmatic control.
    *
-   * @param x The x-coordinate in screen coordinates where to show the menu
-   * @param y The y-coordinate in screen coordinates where to show the menu
-   * @return true if the menu was successfully shown, false otherwise
+   * @param x The x-coordinate in screen coordinates where to open the menu
+   * @param y The y-coordinate in screen coordinates where to open the menu
+   * @return true if the menu was successfully opened, false otherwise
    *
    * @note If no context menu has been set via SetContextMenu(), this method
    *       will return false. The coordinates are in screen/global coordinates,
@@ -275,11 +275,11 @@ class TrayIcon : public EventEmitter {
   /**
    * @brief Display the context menu at the tray icon's location.
    *
-   * Shows the context menu at a default position near the tray icon.
+   * Opens the context menu at a default position near the tray icon.
    * This is a convenience method that automatically determines an appropriate
    * position based on the tray icon's current location.
    *
-   * @return true if the menu was successfully shown, false otherwise
+   * @return true if the menu was successfully opened, false otherwise
    *
    * @note The exact positioning behavior may vary by platform:
    *       - macOS: Menu appears below the status item

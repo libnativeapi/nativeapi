@@ -234,7 +234,7 @@ bool TrayIcon::OpenContextMenu(double x, double y) {
   }
 
   // Open the context menu at the specified coordinates
-  return pimpl_->context_menu_->ShowAsContextMenu(x, y);
+  return pimpl_->context_menu_->Open(x, y);
 }
 
 bool TrayIcon::OpenContextMenu() {
@@ -246,11 +246,11 @@ bool TrayIcon::OpenContextMenu() {
   Rectangle bounds = GetBounds();
   if (bounds.width > 0 && bounds.height > 0) {
     // Open menu below the tray icon
-    return pimpl_->context_menu_->ShowAsContextMenu(bounds.x,
+    return pimpl_->context_menu_->Open(bounds.x,
                                                     bounds.y + bounds.height);
   } else {
     // Fall back to showing at mouse location
-    return pimpl_->context_menu_->ShowAsContextMenu();
+    return pimpl_->context_menu_->Open();
   }
 }
 

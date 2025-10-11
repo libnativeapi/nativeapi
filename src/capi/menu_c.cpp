@@ -884,25 +884,25 @@ native_menu_item_t native_menu_find_item_by_text(native_menu_t menu,
   }
 }
 
-bool native_menu_show_as_context_menu(native_menu_t menu, double x, double y) {
+bool native_menu_open_at(native_menu_t menu, double x, double y) {
   if (!menu)
     return false;
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->ShowAsContextMenu(x, y);
+    return menu_ptr->Open(x, y);
   } catch (...) {
     return false;
   }
 }
 
-bool native_menu_show_as_context_menu_default(native_menu_t menu) {
+bool native_menu_open(native_menu_t menu) {
   if (!menu)
     return false;
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->ShowAsContextMenu();
+    return menu_ptr->Open();
   } catch (...) {
     return false;
   }

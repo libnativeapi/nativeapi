@@ -529,7 +529,7 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
   return nullptr;
 }
 
-bool Menu::ShowAsContextMenu(double x, double y) {
+bool Menu::Open(double x, double y) {
   pimpl_->visible_ = true;
 
   POINT pt = {static_cast<int>(x), static_cast<int>(y)};
@@ -545,10 +545,10 @@ bool Menu::ShowAsContextMenu(double x, double y) {
   return true;
 }
 
-bool Menu::ShowAsContextMenu() {
+bool Menu::Open() {
   POINT pt;
   GetCursorPos(&pt);
-  return ShowAsContextMenu(pt.x, pt.y);
+  return Open(pt.x, pt.y);
 }
 
 bool Menu::Close() {

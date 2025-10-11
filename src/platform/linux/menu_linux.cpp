@@ -373,7 +373,7 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
   return nullptr;
 }
 
-bool Menu::ShowAsContextMenu(double x, double y) {
+bool Menu::Open(double x, double y) {
   if (pimpl_->gtk_menu_) {
     pimpl_->visible_ = true;
     gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
@@ -382,8 +382,8 @@ bool Menu::ShowAsContextMenu(double x, double y) {
   return false;
 }
 
-bool Menu::ShowAsContextMenu() {
-  return ShowAsContextMenu(0, 0); // GTK will position at pointer
+bool Menu::Open() {
+  return Open(0, 0); // GTK will position at pointer
 }
 
 bool Menu::Close() {

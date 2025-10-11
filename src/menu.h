@@ -544,8 +544,8 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
  *     std::cout << "Menu opened" << std::endl;
  * });
  *
- * // Show as context menu
- * fileMenu->ShowAsContextMenu(100, 100);
+ * // Open as context menu
+ * fileMenu->Open(100, 100);
  * ```
  */
 class Menu : public EventEmitter, public NativeObjectProvider {
@@ -721,26 +721,26 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * Shows the menu at the given position and waits for user interaction.
    * The menu will close when the user clicks outside of it or selects an item.
    *
-   * @param x The x-coordinate in screen coordinates where to show the menu
-   * @param y The y-coordinate in screen coordinates where to show the menu
-   * @return true if the menu was successfully shown, false otherwise
+   * @param x The x-coordinate in screen coordinates where to open the menu
+   * @param y The y-coordinate in screen coordinates where to open the menu
+   * @return true if the menu was successfully opened, false otherwise
    *
    * @example
    * ```cpp
-   * // Show context menu at cursor position
-   * menu->ShowAsContextMenu(mouse_x, mouse_y);
+   * // Open context menu at cursor position
+   * menu->Open(mouse_x, mouse_y);
    * ```
    */
-  bool ShowAsContextMenu(double x, double y);
+  bool Open(double x, double y);
 
   /**
    * @brief Display the menu as a context menu at the current cursor position.
    *
    * Shows the menu at the current mouse cursor location.
    *
-   * @return true if the menu was successfully shown, false otherwise
+   * @return true if the menu was successfully opened, false otherwise
    */
-  bool ShowAsContextMenu();
+  bool Open();
 
   /**
    * @brief Programmatically close the menu if it's currently showing.

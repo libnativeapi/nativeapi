@@ -172,14 +172,14 @@ int main() {
     printf("Triggering checkbox item after removing click listener...\n");
     native_menu_item_trigger(checkbox_item);
     
-    // Show menu as context menu (this may not work in console applications)
-    printf("\n=== Attempting to Show Context Menu ===\n");
+    // Open menu as context menu (this may not work in console applications)
+    printf("\n=== Attempting to Open Context Menu ===\n");
     printf("Note: Context menu display may not work in console applications\n");
     
-    if (native_menu_show_as_context_menu(menu, 100, 100)) {
-        printf("Context menu shown successfully\n");
+    if (native_menu_open_at(menu, 100, 100)) {
+        printf("Context menu opened successfully\n");
     } else {
-        printf("Failed to show context menu (expected in console app)\n");
+        printf("Failed to open context menu (expected in console app)\n");
     }
     
     // Test additional functionality

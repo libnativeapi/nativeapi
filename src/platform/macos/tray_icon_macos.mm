@@ -255,7 +255,7 @@ bool TrayIcon::OpenContextMenu(double x, double y) {
   }
 
   // Open the context menu at the specified coordinates
-  return pimpl_->context_menu_->ShowAsContextMenu(x, y);
+  return pimpl_->context_menu_->Open(x, y);
 }
 
 bool TrayIcon::OpenContextMenu() {
