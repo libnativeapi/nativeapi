@@ -30,11 +30,10 @@ inline ModifierKey operator&(ModifierKey a, ModifierKey b) {
   return static_cast<ModifierKey>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
 }
 
-class KeyboardMonitor: public EventEmitter {
+class KeyboardMonitor : public EventEmitter {
  public:
   KeyboardMonitor();
   virtual ~KeyboardMonitor();
-
 
   // Start the keyboard monitor
   void Start();

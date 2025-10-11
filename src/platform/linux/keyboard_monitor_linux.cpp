@@ -1,9 +1,9 @@
-#include <iostream>
-#include <string>
-#include <memory>
-#include <thread>
 #include <atomic>
 #include <chrono>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <thread>
 
 #include "../../keyboard_monitor.h"
 
@@ -23,14 +23,15 @@ namespace nativeapi {
 
 class KeyboardMonitor::Impl {
  public:
-  Impl(KeyboardMonitor* monitor) : monitor_(monitor), display_(nullptr), monitoring_(false) {}
+  Impl(KeyboardMonitor* monitor)
+      : monitor_(monitor), display_(nullptr), monitoring_(false) {}
 
   Display* display_;
   std::atomic<bool> monitoring_;
   std::thread monitoring_thread_;
   KeyboardMonitor* monitor_;
   int xi_opcode_;
-  
+
   void MonitoringLoop();
   void InitializeXInput();
   void CleanupXInput();
@@ -52,7 +53,8 @@ void KeyboardMonitor::Impl::InitializeXInput() {
 
   // Check for XInput extension
   int event, error;
-  if (!XQueryExtension(display_, "XInputExtension", &xi_opcode_, &event, &error)) {
+  if (!XQueryExtension(display_, "XInputExtension", &xi_opcode_, &event,
+                       &error)) {
     std::cerr << "XInput extension not available" << std::endl;
     XCloseDisplay(display_);
     display_ = nullptr;
@@ -71,14 +73,14 @@ void KeyboardMonitor::Impl::InitializeXInput() {
   // Select for keyboard events on root window
   XIEventMask eventmask;
   unsigned char mask[XIMaskLen(XI_LASTEVENT)] = {0};
-  
+
   eventmask.deviceid = XIAllMasterDevices;
   eventmask.mask_len = sizeof(mask);
   eventmask.mask = mask;
-  
+
   XISetMask(mask, XI_KeyPress);
   XISetMask(mask, XI_KeyRelease);
-  
+
   Window root = DefaultRootWindow(display_);
   if (XISelectEvents(display_, root, &eventmask, 1) != Success) {
     std::cerr << "Failed to select XI events" << std::endl;
@@ -97,13 +99,14 @@ void KeyboardMonitor::Impl::CleanupXInput() {
 
 uint32_t KeyboardMonitor::Impl::GetModifierState() {
   uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
-  
-  if (!display_) return modifier_keys;
-  
+
+  if (!display_)
+    return modifier_keys;
+
   // Query current keyboard state
   char keys[32];
   XQueryKeymap(display_, keys);
-  
+
   // Check for common modifier keycodes
   // These keycodes may vary by system, but are common defaults
   int shift_keycode = XKeysymToKeycode(display_, XK_Shift_L);
@@ -113,7 +116,7 @@ uint32_t KeyboardMonitor::Impl::GetModifierState() {
   int caps_keycode = XKeysymToKeycode(display_, XK_Caps_Lock);
   int num_keycode = XKeysymToKeycode(display_, XK_Num_Lock);
   int scroll_keycode = XKeysymToKeycode(display_, XK_Scroll_Lock);
-  
+
   // Check if keys are pressed
   if (shift_keycode && (keys[shift_keycode / 8] & (1 << (shift_keycode % 8)))) {
     modifier_keys |= static_cast<uint32_t>(ModifierKey::Shift);
@@ -133,46 +136,49 @@ uint32_t KeyboardMonitor::Impl::GetModifierState() {
   if (num_keycode && (keys[num_keycode / 8] & (1 << (num_keycode % 8)))) {
     modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
   }
-  if (scroll_keycode && (keys[scroll_keycode / 8] & (1 << (scroll_keycode % 8)))) {
+  if (scroll_keycode &&
+      (keys[scroll_keycode / 8] & (1 << (scroll_keycode % 8)))) {
     modifier_keys |= static_cast<uint32_t>(ModifierKey::ScrollLock);
   }
-  
+
   return modifier_keys;
 }
 
 void KeyboardMonitor::Impl::MonitoringLoop() {
-  if (!display_) return;
-  
+  if (!display_)
+    return;
+
   while (monitoring_) {
     // Check for pending events
     while (XPending(display_) && monitoring_) {
       XEvent event;
       XNextEvent(display_, &event);
-      
+
       // Handle XI2 events
-      if (event.xcookie.type == GenericEvent && event.xcookie.extension == xi_opcode_) {
+      if (event.xcookie.type == GenericEvent &&
+          event.xcookie.extension == xi_opcode_) {
         if (XGetEventData(display_, &event.xcookie)) {
           XIDeviceEvent* xi_event = (XIDeviceEvent*)event.xcookie.data;
-          
+
           if (xi_event->evtype == XI_KeyPress) {
             KeyPressedEvent key_event(xi_event->detail);
             monitor_->EmitSync(key_event);
-            
+
             ModifierKeysChangedEvent modifier_event(GetModifierState());
             monitor_->EmitSync(modifier_event);
           } else if (xi_event->evtype == XI_KeyRelease) {
             KeyReleasedEvent key_event(xi_event->detail);
             monitor_->EmitSync(key_event);
-            
+
             ModifierKeysChangedEvent modifier_event(GetModifierState());
             monitor_->EmitSync(modifier_event);
           }
-          
+
           XFreeEventData(display_, &event.xcookie);
         }
       }
     }
-    
+
     // Small sleep to prevent excessive CPU usage
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
@@ -182,16 +188,18 @@ void KeyboardMonitor::Start() {
   if (impl_->monitoring_) {
     return;  // Already started
   }
-  
+
   impl_->InitializeXInput();
   if (!impl_->display_) {
-    std::cerr << "Failed to initialize X11 display for keyboard monitoring" << std::endl;
+    std::cerr << "Failed to initialize X11 display for keyboard monitoring"
+              << std::endl;
     return;
   }
-  
+
   impl_->monitoring_ = true;
-  impl_->monitoring_thread_ = std::thread(&KeyboardMonitor::Impl::MonitoringLoop, impl_.get());
-  
+  impl_->monitoring_thread_ =
+      std::thread(&KeyboardMonitor::Impl::MonitoringLoop, impl_.get());
+
   std::cout << "Keyboard monitor started successfully" << std::endl;
 }
 
@@ -199,16 +207,16 @@ void KeyboardMonitor::Stop() {
   if (!impl_->monitoring_) {
     return;  // Already stopped
   }
-  
+
   impl_->monitoring_ = false;
-  
+
   // Wait for monitoring thread to finish
   if (impl_->monitoring_thread_.joinable()) {
     impl_->monitoring_thread_.join();
   }
-  
+
   impl_->CleanupXInput();
-  
+
   std::cout << "Keyboard monitor stopped successfully" << std::endl;
 }
 

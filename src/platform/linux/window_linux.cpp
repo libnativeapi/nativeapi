@@ -3,8 +3,8 @@
 #include "../../window_manager.h"
 
 // Import GTK headers
-#include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gtk/gtk.h>
 
 namespace nativeapi {
 
@@ -15,16 +15,14 @@ class Window::Impl {
   GdkWindow* gdk_window_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {
-}
+Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {
-}
+Window::Window(void* window)
+    : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {}
 
-Window::~Window() {
-}
+Window::~Window() {}
 
-WindowID Window::GetId() const{
+WindowID Window::GetId() const {
   // Use pointer address as ID since GDK doesn't provide direct window IDs
   return pimpl_->gdk_window_ ? (WindowID)pimpl_->gdk_window_ : 0;
 }
@@ -42,14 +40,16 @@ void Window::Blur() {
 }
 
 bool Window::IsFocused() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   // Check if this window is the focus window of its display
   GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
   GdkSeat* seat = gdk_display_get_default_seat(display);
   if (seat) {
     GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
     if (keyboard) {
-      GdkWindow* focus_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
+      GdkWindow* focus_window =
+          gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       return focus_window == pimpl_->gdk_window_;
     }
   }
@@ -75,7 +75,8 @@ void Window::Hide() {
 }
 
 bool Window::IsVisible() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   return gdk_window_is_visible(pimpl_->gdk_window_);
 }
 
@@ -92,7 +93,8 @@ void Window::Unmaximize() {
 }
 
 bool Window::IsMaximized() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_MAXIMIZED;
 }
@@ -110,13 +112,15 @@ void Window::Restore() {
 }
 
 bool Window::IsMinimized() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_ICONIFIED;
 }
 
 void Window::SetFullScreen(bool is_full_screen) {
-  if (!pimpl_->gdk_window_) return;
+  if (!pimpl_->gdk_window_)
+    return;
   if (is_full_screen) {
     gdk_window_fullscreen(pimpl_->gdk_window_);
   } else {
@@ -125,16 +129,16 @@ void Window::SetFullScreen(bool is_full_screen) {
 }
 
 bool Window::IsFullScreen() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_FULLSCREEN;
 }
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->gdk_window_) {
-    gdk_window_move_resize(pimpl_->gdk_window_, 
-                          (gint)bounds.x, (gint)bounds.y, 
-                          (gint)bounds.width, (gint)bounds.height);
+    gdk_window_move_resize(pimpl_->gdk_window_, (gint)bounds.x, (gint)bounds.y,
+                           (gint)bounds.width, (gint)bounds.height);
   }
 }
 
@@ -161,7 +165,8 @@ Size Window::GetSize() const {
   Size size = {0, 0};
   if (pimpl_->gdk_window_) {
     gint width, height;
-    gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &width, &height);
+    gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &width,
+                            &height);
     size.width = width;
     size.height = height;
   }
@@ -180,7 +185,8 @@ Size Window::GetContentSize() const {
 
 void Window::SetMinimumSize(Size size) {
   // GTK minimum size constraints would need to be set on the widget level
-  // For now, we'll provide a basic implementation that doesn't enforce constraints
+  // For now, we'll provide a basic implementation that doesn't enforce
+  // constraints
 }
 
 Size Window::GetMinimumSize() const {
@@ -189,11 +195,12 @@ Size Window::GetMinimumSize() const {
 
 void Window::SetMaximumSize(Size size) {
   // GTK maximum size constraints would need to be set on the widget level
-  // For now, we'll provide a basic implementation that doesn't enforce constraints
+  // For now, we'll provide a basic implementation that doesn't enforce
+  // constraints
 }
 
 Size Window::GetMaximumSize() const {
-  return Size{-1, -1}; // -1 indicates no maximum
+  return Size{-1, -1};  // -1 indicates no maximum
 }
 
 void Window::SetResizable(bool is_resizable) {
@@ -202,7 +209,7 @@ void Window::SetResizable(bool is_resizable) {
 }
 
 bool Window::IsResizable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetMovable(bool is_movable) {
@@ -211,7 +218,7 @@ void Window::SetMovable(bool is_movable) {
 }
 
 bool Window::IsMovable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetMinimizable(bool is_minimizable) {
@@ -220,7 +227,7 @@ void Window::SetMinimizable(bool is_minimizable) {
 }
 
 bool Window::IsMinimizable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetMaximizable(bool is_maximizable) {
@@ -229,7 +236,7 @@ void Window::SetMaximizable(bool is_maximizable) {
 }
 
 bool Window::IsMaximizable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetFullScreenable(bool is_full_screenable) {
@@ -237,7 +244,7 @@ void Window::SetFullScreenable(bool is_full_screenable) {
 }
 
 bool Window::IsFullScreenable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetClosable(bool is_closable) {
@@ -246,7 +253,7 @@ void Window::SetClosable(bool is_closable) {
 }
 
 bool Window::IsClosable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
@@ -256,7 +263,8 @@ void Window::SetAlwaysOnTop(bool is_always_on_top) {
 }
 
 bool Window::IsAlwaysOnTop() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_ABOVE;
 }
@@ -279,12 +287,13 @@ Point Window::GetPosition() const {
 }
 
 void Window::SetTitle(std::string title) {
-  // GDK windows don't have titles directly - this would be set on the GTK widget
-  // For now, provide stub implementation
+  // GDK windows don't have titles directly - this would be set on the GTK
+  // widget For now, provide stub implementation
 }
 
 std::string Window::GetTitle() const {
-  // GDK windows don't have titles directly - this would come from the GTK widget
+  // GDK windows don't have titles directly - this would come from the GTK
+  // widget
   return std::string();
 }
 
@@ -294,7 +303,7 @@ void Window::SetHasShadow(bool has_shadow) {
 }
 
 bool Window::HasShadow() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::SetOpacity(float opacity) {
@@ -305,7 +314,7 @@ void Window::SetOpacity(float opacity) {
 
 float Window::GetOpacity() const {
   // GDK doesn't provide a direct way to get opacity
-  return 1.0f; // Default assumption
+  return 1.0f;  // Default assumption
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
@@ -315,7 +324,8 @@ void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
 }
 
 bool Window::IsVisibleOnAllWorkspaces() const {
-  if (!pimpl_->gdk_window_) return false;
+  if (!pimpl_->gdk_window_)
+    return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_STICKY;
 }
@@ -326,7 +336,7 @@ void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
 }
 
 bool Window::IsIgnoreMouseEvents() const {
-  return false; // Default assumption
+  return false;  // Default assumption
 }
 
 void Window::SetFocusable(bool is_focusable) {
@@ -335,7 +345,7 @@ void Window::SetFocusable(bool is_focusable) {
 }
 
 bool Window::IsFocusable() const {
-  return true; // Default assumption
+  return true;  // Default assumption
 }
 
 void Window::StartDragging() {

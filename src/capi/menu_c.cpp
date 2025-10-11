@@ -238,7 +238,7 @@ char* native_menu_item_get_label(native_menu_item_t item) {
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string text = menu_item->GetLabel();
-    
+
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(text.length() + 1));
     if (result) {
@@ -269,7 +269,7 @@ char* native_menu_item_get_icon(native_menu_item_t item) {
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string icon = menu_item->GetIcon();
-    
+
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(icon.length() + 1));
     if (result) {
@@ -301,7 +301,7 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
   try {
     auto menu_item = static_cast<MenuItem*>(item);
     std::string tooltip = menu_item->GetTooltip();
-    
+
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(tooltip.length() + 1));
     if (result) {

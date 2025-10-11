@@ -7,8 +7,8 @@
 #include "foundation/event.h"
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
-#include "menu_event.h"
 #include "foundation/native_object_provider.h"
+#include "menu_event.h"
 
 namespace nativeapi {
 
@@ -191,9 +191,8 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    * auto checkbox = MenuItem::Create("Word Wrap", MenuItemType::Checkbox);
    * ```
    */
-  static std::shared_ptr<MenuItem> Create(
-      const std::string& text = "",
-      MenuItemType type = MenuItemType::Normal);
+  static std::shared_ptr<MenuItem> Create(const std::string& text = "",
+                                          MenuItemType type = MenuItemType::Normal);
 
   /**
    * @brief Factory method to create a separator menu item.
@@ -471,10 +470,10 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
  protected:
   /**
    * @brief Internal method to get the platform-specific native menu item object.
-   * 
+   *
    * This method must be implemented by platform-specific code to return
    * the underlying native menu item object.
-   * 
+   *
    * @return Pointer to the native menu item object
    */
   void* GetNativeObjectInternal() const override;
@@ -793,8 +792,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * @param icon The icon for the menu item (file path or base64 data)
    * @return Shared pointer to the created and added menu item
    */
-  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text,
-                                             const std::string& icon);
+  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text, const std::string& icon);
 
   /**
    * @brief Create a submenu item and add it to the menu.
@@ -827,10 +825,10 @@ class Menu : public EventEmitter, public NativeObjectProvider {
  protected:
   /**
    * @brief Internal method to get the platform-specific native menu object.
-   * 
+   *
    * This method must be implemented by platform-specific code to return
    * the underlying native menu object.
-   * 
+   *
    * @return Pointer to the native menu object
    */
   void* GetNativeObjectInternal() const override;

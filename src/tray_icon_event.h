@@ -31,8 +31,7 @@ class TrayIconClickedEvent : public TypedEvent<TrayIconClickedEvent> {
  */
 class TrayIconRightClickedEvent : public TypedEvent<TrayIconRightClickedEvent> {
  public:
-  TrayIconRightClickedEvent(TrayIconID tray_icon_id)
-      : tray_icon_id_(tray_icon_id) {}
+  TrayIconRightClickedEvent(TrayIconID tray_icon_id) : tray_icon_id_(tray_icon_id) {}
 
   TrayIconID GetTrayIconId() const { return tray_icon_id_; }
 
@@ -47,8 +46,7 @@ class TrayIconRightClickedEvent : public TypedEvent<TrayIconRightClickedEvent> {
  */
 class TrayIconDoubleClickedEvent : public TypedEvent<TrayIconDoubleClickedEvent> {
  public:
-  TrayIconDoubleClickedEvent(TrayIconID tray_icon_id)
-      : tray_icon_id_(tray_icon_id) {}
+  TrayIconDoubleClickedEvent(TrayIconID tray_icon_id) : tray_icon_id_(tray_icon_id) {}
 
   TrayIconID GetTrayIconId() const { return tray_icon_id_; }
 

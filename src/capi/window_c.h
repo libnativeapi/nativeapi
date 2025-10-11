@@ -52,13 +52,10 @@ FFI_PLUGIN_EXPORT
 void native_window_options_destroy(native_window_options_t* options);
 
 FFI_PLUGIN_EXPORT
-bool native_window_options_set_title(native_window_options_t* options,
-                                     const char* title);
+bool native_window_options_set_title(native_window_options_t* options, const char* title);
 
 FFI_PLUGIN_EXPORT
-void native_window_options_set_size(native_window_options_t* options,
-                                    double width,
-                                    double height);
+void native_window_options_set_size(native_window_options_t* options, double width, double height);
 
 FFI_PLUGIN_EXPORT
 void native_window_options_set_minimum_size(native_window_options_t* options,
@@ -71,8 +68,7 @@ void native_window_options_set_maximum_size(native_window_options_t* options,
                                             double height);
 
 FFI_PLUGIN_EXPORT
-void native_window_options_set_centered(native_window_options_t* options,
-                                        bool centered);
+void native_window_options_set_centered(native_window_options_t* options, bool centered);
 
 // Window basic operations
 FFI_PLUGIN_EXPORT
@@ -126,41 +122,31 @@ bool native_window_is_fullscreen(native_window_t window);
 
 // Window geometry operations
 FFI_PLUGIN_EXPORT
-void native_window_set_bounds(native_window_t window,
-                              native_rectangle_t bounds);
+void native_window_set_bounds(native_window_t window, native_rectangle_t bounds);
 
 FFI_PLUGIN_EXPORT
 native_rectangle_t native_window_get_bounds(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_size(native_window_t window,
-                            double width,
-                            double height,
-                            bool animate);
+void native_window_set_size(native_window_t window, double width, double height, bool animate);
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_size(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_content_size(native_window_t window,
-                                    double width,
-                                    double height);
+void native_window_set_content_size(native_window_t window, double width, double height);
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_content_size(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_minimum_size(native_window_t window,
-                                    double width,
-                                    double height);
+void native_window_set_minimum_size(native_window_t window, double width, double height);
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_minimum_size(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_maximum_size(native_window_t window,
-                                    double width,
-                                    double height);
+void native_window_set_maximum_size(native_window_t window, double width, double height);
 
 FFI_PLUGIN_EXPORT
 native_size_t native_window_get_maximum_size(native_window_t window);
@@ -197,8 +183,7 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_maximizable(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_fullscreenable(native_window_t window,
-                                      bool fullscreenable);
+void native_window_set_fullscreenable(native_window_t window, bool fullscreenable);
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_fullscreenable(native_window_t window);
@@ -210,8 +195,7 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_closable(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_always_on_top(native_window_t window,
-                                     bool always_on_top);
+void native_window_set_always_on_top(native_window_t window, bool always_on_top);
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_always_on_top(native_window_t window);
@@ -235,8 +219,7 @@ FFI_PLUGIN_EXPORT
 float native_window_get_opacity(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_set_visible_on_all_workspaces(native_window_t window,
-                                                 bool visible);
+void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible);
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_visible_on_all_workspaces(native_window_t window);

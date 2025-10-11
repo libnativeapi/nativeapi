@@ -6,7 +6,8 @@ namespace nativeapi {
 
 static Display CreateDisplayFromGdkMonitor(GdkMonitor* monitor,
                                            bool isFirstScreen) {
-  // Simply create Display with GdkMonitor - all properties will be read directly from the monitor
+  // Simply create Display with GdkMonitor - all properties will be read
+  // directly from the monitor
   return Display(monitor);
 }
 

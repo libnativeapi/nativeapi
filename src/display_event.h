@@ -59,16 +59,12 @@ class DisplayAddedEvent : public DisplayEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(DisplayAddedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayAddedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -88,16 +84,12 @@ class DisplayRemovedEvent : public DisplayEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(DisplayRemovedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayRemovedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -107,7 +99,7 @@ class DisplayRemovedEvent : public DisplayEvent {
  */
 class DisplayChangedEvent : public DisplayEvent {
  public:
-  DisplayChangedEvent(const Display& old_display, const Display& new_display) 
+  DisplayChangedEvent(const Display& old_display, const Display& new_display)
       : DisplayEvent(new_display), old_display_(old_display) {}
 
   /**
@@ -130,16 +122,12 @@ class DisplayChangedEvent : public DisplayEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(DisplayChangedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayChangedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 
  private:
   Display old_display_;

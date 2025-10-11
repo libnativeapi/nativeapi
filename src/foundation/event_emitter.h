@@ -145,7 +145,6 @@ class EventEmitter {
   void EmitSync(const Event& event);
 
  protected:
-
   /**
    * Emit an event synchronously using perfect forwarding.
    * This creates the event object and emits it immediately.
@@ -215,8 +214,7 @@ class EventEmitter {
  *   int code;
  * };
  */
-#define DEFINE_EVENT(EventName) \
-  class EventName : public TypedEvent<EventName>
+#define DEFINE_EVENT(EventName) class EventName : public TypedEvent<EventName>
 
 /**
  * Helper macro to begin defining an event with custom constructor.
@@ -228,21 +226,22 @@ class EventEmitter {
  *   MyEvent(std::string msg, int c) : message(std::move(msg)), code(c) {}
  * DEFINE_EVENT_END();
  */
-#define DEFINE_EVENT_BEGIN(EventName) \
+#define DEFINE_EVENT_BEGIN(EventName)              \
   class EventName : public TypedEvent<EventName> { \
    public:
 
 #define DEFINE_EVENT_END() \
-  };
+  }                        \
+  ;
 
 /**
  * Simpler macro for events with basic data members.
  * Creates a constructor that initializes all members.
  */
-#define SIMPLE_EVENT(EventName, ...) \
+#define SIMPLE_EVENT(EventName, ...)               \
   class EventName : public TypedEvent<EventName> { \
-   public: \
-    __VA_ARGS__ \
+   public:                                         \
+    __VA_ARGS__                                    \
   };
 
 }  // namespace nativeapi

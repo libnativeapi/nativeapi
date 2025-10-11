@@ -59,14 +59,12 @@ class MenuItemClickedEvent : public TypedEvent<MenuItemClickedEvent> {
   std::string item_text_;
 };
 
-
 /**
  * @brief Menu item submenu opened event.
  *
  * This event is fired when a menu item's submenu has been displayed.
  */
-class MenuItemSubmenuOpenedEvent
-    : public TypedEvent<MenuItemSubmenuOpenedEvent> {
+class MenuItemSubmenuOpenedEvent : public TypedEvent<MenuItemSubmenuOpenedEvent> {
  public:
   MenuItemSubmenuOpenedEvent(MenuItemID item_id) : item_id_(item_id) {}
 
@@ -81,8 +79,7 @@ class MenuItemSubmenuOpenedEvent
  *
  * This event is fired when a menu item's submenu has been hidden or closed.
  */
-class MenuItemSubmenuClosedEvent
-    : public TypedEvent<MenuItemSubmenuClosedEvent> {
+class MenuItemSubmenuClosedEvent : public TypedEvent<MenuItemSubmenuClosedEvent> {
  public:
   MenuItemSubmenuClosedEvent(MenuItemID item_id) : item_id_(item_id) {}
 

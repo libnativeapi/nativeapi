@@ -6,26 +6,26 @@
 #include "../../window_manager.h"
 
 // Import GTK headers
-#include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gtk/gtk.h>
 
 namespace nativeapi {
 
-// Private implementation for Linux (stub for now)  
+// Private implementation for Linux (stub for now)
 class WindowManager::Impl {
-public:
+ public:
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
-  
+
   void SetupEventMonitoring() {
     // TODO: Implement Linux-specific event monitoring using GTK signals
   }
-  
+
   void CleanupEventMonitoring() {
     // TODO: Implement Linux-specific cleanup
   }
-  
-private:
+
+ private:
   WindowManager* manager_;
 };
 
@@ -33,21 +33,22 @@ WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
   // Try to initialize GTK if not already initialized
   // In headless environments, this may fail, which is acceptable
   if (!gdk_display_get_default()) {
-    // Temporarily redirect stderr to suppress GTK warnings in headless environments
+    // Temporarily redirect stderr to suppress GTK warnings in headless
+    // environments
     FILE* original_stderr = stderr;
     freopen("/dev/null", "w", stderr);
-    
+
     gboolean gtk_result = gtk_init_check(nullptr, nullptr);
-    
+
     // Restore stderr
     fflush(stderr);
     freopen("/dev/tty", "w", stderr);
     stderr = original_stderr;
-    
+
     // gtk_init_check returns FALSE if initialization failed (e.g., no display)
     // This is acceptable for headless environments
   }
-  
+
   SetupEventMonitoring();
 }
 
@@ -84,7 +85,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowID id) {
   for (GList* l = toplevels; l != nullptr; l = l->next) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
-    
+
     if (gdk_window && (WindowID)gdk_window == id) {
       auto window = std::make_shared<Window>((void*)gdk_window);
       windows_[id] = window;
@@ -98,7 +99,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowID id) {
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<std::shared_ptr<Window>> windows;
-  
+
   GdkDisplay* display = gdk_display_get_default();
   if (!display) {
     return windows;
@@ -109,7 +110,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   for (GList* l = toplevels; l != nullptr; l = l->next) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
-    
+
     if (gdk_window) {
       WindowID window_id = (WindowID)gdk_window;
       auto it = windows_.find(window_id);
@@ -139,7 +140,8 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   if (seat) {
     GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
     if (keyboard) {
-      GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
+      GdkWindow* focused_window =
+          gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       if (focused_window) {
         WindowID window_id = (WindowID)focused_window;
         return Get(window_id);
@@ -161,7 +163,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     }
   }
   g_list_free(toplevels);
-  
+
   return nullptr;
 }
 
@@ -187,8 +189,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   // Set window size
   if (options.size.width > 0 && options.size.height > 0) {
-    gtk_window_set_default_size(GTK_WINDOW(gtk_window),
-                                options.size.width,
+    gtk_window_set_default_size(GTK_WINDOW(gtk_window), options.size.width,
                                 options.size.height);
   }
 
@@ -197,7 +198,8 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     GdkGeometry geometry;
     geometry.min_width = options.minimum_size.width;
     geometry.min_height = options.minimum_size.height;
-    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MIN_SIZE);
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry,
+                                  GDK_HINT_MIN_SIZE);
   }
 
   // Set maximum size if specified
@@ -205,7 +207,8 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     GdkGeometry geometry;
     geometry.max_width = options.maximum_size.width;
     geometry.max_height = options.maximum_size.height;
-    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MAX_SIZE);
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry,
+                                  GDK_HINT_MAX_SIZE);
   }
 
   // Center the window if requested

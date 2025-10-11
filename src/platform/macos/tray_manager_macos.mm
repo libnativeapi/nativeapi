@@ -1,11 +1,11 @@
 #include <cstring>
 #include <iostream>
-#include <string>
 #include <mutex>
+#include <string>
 
+#include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
-#include "../../menu.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -22,7 +22,7 @@ TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) 
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
-  
+
   // First, hide all tray icons to prevent further UI interactions
   for (auto& pair : trays_) {
     auto tray = pair.second;
@@ -34,7 +34,7 @@ TrayManager::~TrayManager() {
       }
     }
   }
-  
+
   // Then, clean up all tray icon menu references to prevent circular references
   for (auto& pair : trays_) {
     auto tray = pair.second;
@@ -47,7 +47,7 @@ TrayManager::~TrayManager() {
       }
     }
   }
-  
+
   // Finally, clear the container
   trays_.clear();
 }

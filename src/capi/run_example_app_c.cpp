@@ -1,6 +1,6 @@
+#include "run_example_app_c.h"
 #include <cstdlib>
 #include <memory>
-#include "run_example_app_c.h"
 
 #include "../app_runner.h"
 #include "../window_manager.h"

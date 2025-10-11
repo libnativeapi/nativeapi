@@ -13,14 +13,14 @@ namespace nativeapi {
 
 // Private implementation to hide Objective-C details
 class WindowManager::Impl {
-public:
+ public:
   Impl(WindowManager* manager);
   ~Impl();
   void SetupEventMonitoring();
   void CleanupEventMonitoring();
   void OnWindowEvent(NSWindow* window, const std::string& event_type);
 
-private:
+ private:
   WindowManager* manager_;
   NativeAPIWindowManagerDelegate* delegate_;
 };
@@ -29,7 +29,7 @@ private:
 
 // Objective-C delegate class to handle NSWindow notifications
 @interface NativeAPIWindowManagerDelegate : NSObject
-@property (nonatomic, assign) void* impl;  // Use void* instead of private class
+@property(nonatomic, assign) void* impl;  // Use void* instead of private class
 - (instancetype)initWithImpl:(void*)impl;
 @end
 
@@ -45,49 +45,49 @@ private:
 - (void)windowDidBecomeKey:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "focused");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "focused");
   }
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "blurred");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "blurred");
   }
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "minimized");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "minimized");
   }
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "restored");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "restored");
   }
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "resized");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "resized");
   }
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "moved");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "moved");
   }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
   // NSWindow* window = [notification object];
   if (_impl) {
-//    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "closing");
+    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "closing");
   }
 }
 
@@ -95,9 +95,7 @@ private:
 
 namespace nativeapi {
 
-WindowManager::Impl::Impl(WindowManager* manager)
-    : manager_(manager), delegate_(nullptr) {
-}
+WindowManager::Impl::Impl(WindowManager* manager) : manager_(manager), delegate_(nullptr) {}
 
 WindowManager::Impl::~Impl() {
   CleanupEventMonitoring();

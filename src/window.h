@@ -1,8 +1,8 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "foundation/geometry.h"
 #include "foundation/native_object_provider.h"
-#include <memory>
 
 namespace nativeapi {
 
@@ -91,10 +91,10 @@ class Window : public NativeObjectProvider {
  protected:
   /**
    * @brief Internal method to get the platform-specific native window object.
-   * 
+   *
    * This method must be implemented by platform-specific code to return
    * the underlying native window object.
-   * 
+   *
    * @return Pointer to the native window object
    */
   void* GetNativeObjectInternal() const override;

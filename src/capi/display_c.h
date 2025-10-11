@@ -64,8 +64,7 @@ FFI_PLUGIN_EXPORT
 bool native_display_is_primary(native_display_t display);
 
 FFI_PLUGIN_EXPORT
-native_display_orientation_t native_display_get_orientation(
-    native_display_t display);
+native_display_orientation_t native_display_get_orientation(native_display_t display);
 
 FFI_PLUGIN_EXPORT
 int native_display_get_refresh_rate(native_display_t display);

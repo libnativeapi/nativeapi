@@ -14,15 +14,11 @@ class Window::Impl {
   NSWindow* ns_window_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {
-}
+Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)window)) {
-}
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)window)) {}
 
-Window::~Window() {
-
-}
+Window::~Window() {}
 
 void Window::Focus() {
   [pimpl_->ns_window_ makeKeyAndOrderFront:nil];

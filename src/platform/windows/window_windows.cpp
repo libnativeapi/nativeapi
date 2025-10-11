@@ -12,15 +12,12 @@ class Window::Impl {
   HWND hwnd_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {
-}
+Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {
-}
+Window::Window(void* window)
+    : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
 
-Window::~Window() {
-
-}
+Window::~Window() {}
 
 void Window::Focus() {
   if (pimpl_->hwnd_) {
@@ -75,7 +72,8 @@ void Window::Unmaximize() {
 }
 
 bool Window::IsMaximized() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   WINDOWPLACEMENT wp = {};
   wp.length = sizeof(WINDOWPLACEMENT);
   GetWindowPlacement(pimpl_->hwnd_, &wp);
@@ -95,7 +93,8 @@ void Window::Restore() {
 }
 
 bool Window::IsMinimized() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   WINDOWPLACEMENT wp = {};
   wp.length = sizeof(WINDOWPLACEMENT);
   GetWindowPlacement(pimpl_->hwnd_, &wp);
@@ -103,27 +102,32 @@ bool Window::IsMinimized() const {
 }
 
 void Window::SetFullScreen(bool is_full_screen) {
-  if (!pimpl_->hwnd_) return;
-  
-  static WINDOWPLACEMENT g_wpPrev = { sizeof(g_wpPrev) };
+  if (!pimpl_->hwnd_)
+    return;
+
+  static WINDOWPLACEMENT g_wpPrev = {sizeof(g_wpPrev)};
   static DWORD g_dwStyle = 0;
   static DWORD g_dwExStyle = 0;
-  
+
   if (is_full_screen) {
     if (!IsFullScreen()) {
       // Save current window placement and style
       GetWindowPlacement(pimpl_->hwnd_, &g_wpPrev);
       g_dwStyle = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
       g_dwExStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
-      
+
       // Remove window decorations
-      SetWindowLong(pimpl_->hwnd_, GWL_STYLE, g_dwStyle & ~(WS_CAPTION | WS_THICKFRAME));
-      SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, g_dwExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
-      
+      SetWindowLong(pimpl_->hwnd_, GWL_STYLE,
+                    g_dwStyle & ~(WS_CAPTION | WS_THICKFRAME));
+      SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE,
+                    g_dwExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
+                                    WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+
       // Get monitor info
-      MONITORINFO mi = { sizeof(mi) };
-      GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
-      
+      MONITORINFO mi = {sizeof(mi)};
+      GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST),
+                     &mi);
+
       // Set window to cover entire monitor
       SetWindowPos(pimpl_->hwnd_, nullptr, mi.rcMonitor.left, mi.rcMonitor.top,
                    mi.rcMonitor.right - mi.rcMonitor.left,
@@ -137,21 +141,24 @@ void Window::SetFullScreen(bool is_full_screen) {
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, g_dwExStyle);
       SetWindowPlacement(pimpl_->hwnd_, &g_wpPrev);
       SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                       SWP_FRAMECHANGED);
     }
   }
 }
 
 bool Window::IsFullScreen() const {
-  if (!pimpl_->hwnd_) return false;
-  
+  if (!pimpl_->hwnd_)
+    return false;
+
   RECT windowRect, monitorRect;
   GetWindowRect(pimpl_->hwnd_, &windowRect);
-  
-  MONITORINFO mi = { sizeof(mi) };
-  GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
+
+  MONITORINFO mi = {sizeof(mi)};
+  GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST),
+                 &mi);
   monitorRect = mi.rcMonitor;
-  
+
   return (windowRect.left == monitorRect.left &&
           windowRect.top == monitorRect.top &&
           windowRect.right == monitorRect.right &&
@@ -160,10 +167,9 @@ bool Window::IsFullScreen() const {
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr,
-                 static_cast<int>(bounds.x), static_cast<int>(bounds.y),
-                 static_cast<int>(bounds.width), static_cast<int>(bounds.height),
-                 SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(bounds.x),
+                 static_cast<int>(bounds.y), static_cast<int>(bounds.width),
+                 static_cast<int>(bounds.height), SWP_NOZORDER);
   }
 }
 
@@ -184,9 +190,8 @@ void Window::SetSize(Size size, bool animate) {
   if (pimpl_->hwnd_) {
     // Windows doesn't have built-in animation for window resizing
     // Animation would require custom implementation
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
-                 static_cast<int>(size.width), static_cast<int>(size.height),
-                 SWP_NOMOVE | SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width),
+                 static_cast<int>(size.height), SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -206,11 +211,11 @@ void Window::SetContentSize(Size size) {
     RECT windowRect, clientRect;
     GetWindowRect(pimpl_->hwnd_, &windowRect);
     GetClientRect(pimpl_->hwnd_, &clientRect);
-    
+
     // Calculate the difference between window and client area
     int borderWidth = (windowRect.right - windowRect.left) - clientRect.right;
     int borderHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
-    
+
     SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
                  static_cast<int>(size.width) + borderWidth,
                  static_cast<int>(size.height) + borderHeight,
@@ -246,7 +251,8 @@ void Window::SetMaximumSize(Size size) {
 
 Size Window::GetMaximumSize() const {
   // Return default maximum size (screen size)
-  return {static_cast<double>(GetSystemMetrics(SM_CXSCREEN)), static_cast<double>(GetSystemMetrics(SM_CYSCREEN))};
+  return {static_cast<double>(GetSystemMetrics(SM_CXSCREEN)),
+          static_cast<double>(GetSystemMetrics(SM_CYSCREEN))};
 }
 
 void Window::SetResizable(bool is_resizable) {
@@ -264,7 +270,8 @@ void Window::SetResizable(bool is_resizable) {
 }
 
 bool Window::IsResizable() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG style = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
   return (style & WS_THICKFRAME) != 0;
 }
@@ -294,7 +301,8 @@ void Window::SetMinimizable(bool is_minimizable) {
 }
 
 bool Window::IsMinimizable() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG style = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
   return (style & WS_MINIMIZEBOX) != 0;
 }
@@ -314,7 +322,8 @@ void Window::SetMaximizable(bool is_maximizable) {
 }
 
 bool Window::IsMaximizable() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG style = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
   return (style & WS_MAXIMIZEBOX) != 0;
 }
@@ -325,7 +334,7 @@ void Window::SetFullScreenable(bool is_full_screenable) {
 }
 
 bool Window::IsFullScreenable() const {
-  return true; // All Windows windows can go fullscreen
+  return true;  // All Windows windows can go fullscreen
 }
 
 void Window::SetClosable(bool is_closable) {
@@ -343,29 +352,31 @@ void Window::SetClosable(bool is_closable) {
 }
 
 bool Window::IsClosable() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG style = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
   return (style & WS_SYSMENU) != 0;
 }
 
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST,
-                 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(pimpl_->hwnd_,
+                 is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE);
   }
 }
 
 bool Window::IsAlwaysOnTop() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
   return (exStyle & WS_EX_TOPMOST) != 0;
 }
 
 void Window::SetPosition(Point point) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr,
-                 static_cast<int>(point.x), static_cast<int>(point.y),
-                 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(point.x),
+                 static_cast<int>(point.y), 0, 0, SWP_NOSIZE | SWP_NOZORDER);
   }
 }
 
@@ -387,11 +398,13 @@ void Window::SetTitle(std::string title) {
 }
 
 std::string Window::GetTitle() const {
-  if (!pimpl_->hwnd_) return "";
-  
+  if (!pimpl_->hwnd_)
+    return "";
+
   int length = GetWindowTextLength(pimpl_->hwnd_);
-  if (length == 0) return "";
-  
+  if (length == 0)
+    return "";
+
   std::string title(length, '\0');
   GetWindowText(pimpl_->hwnd_, &title[0], length + 1);
   return title;
@@ -403,17 +416,18 @@ void Window::SetHasShadow(bool has_shadow) {
 }
 
 bool Window::HasShadow() const {
-  return true; // Windows typically have shadows by default
+  return true;  // Windows typically have shadows by default
 }
 
 void Window::SetOpacity(float opacity) {
   if (pimpl_->hwnd_) {
     LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
-    
+
     if (opacity < 1.0f) {
       // Enable layered window and set opacity
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
-      SetLayeredWindowAttributes(pimpl_->hwnd_, 0, static_cast<BYTE>(opacity * 255), LWA_ALPHA);
+      SetLayeredWindowAttributes(pimpl_->hwnd_, 0,
+                                 static_cast<BYTE>(opacity * 255), LWA_ALPHA);
     } else {
       // Disable layered window
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
@@ -422,8 +436,9 @@ void Window::SetOpacity(float opacity) {
 }
 
 float Window::GetOpacity() const {
-  if (!pimpl_->hwnd_) return 1.0f;
-  
+  if (!pimpl_->hwnd_)
+    return 1.0f;
+
   LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
   if (exStyle & WS_EX_LAYERED) {
     BYTE alpha;
@@ -440,7 +455,7 @@ void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
 }
 
 bool Window::IsVisibleOnAllWorkspaces() const {
-  return false; // Not supported on Windows by default
+  return false;  // Not supported on Windows by default
 }
 
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
@@ -456,7 +471,8 @@ void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
 }
 
 bool Window::IsIgnoreMouseEvents() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
   return (exStyle & WS_EX_TRANSPARENT) != 0;
 }
@@ -467,7 +483,8 @@ void Window::SetFocusable(bool is_focusable) {
 }
 
 bool Window::IsFocusable() const {
-  if (!pimpl_->hwnd_) return false;
+  if (!pimpl_->hwnd_)
+    return false;
   LONG style = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
   return (style & WS_DISABLED) == 0;
 }
@@ -485,7 +502,8 @@ void Window::StartResizing() {
 }
 
 WindowID Window::GetId() const {
-  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_) : -1;
+  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_)
+                                 : -1;
 }
 
 void* Window::GetNativeObjectInternal() const {

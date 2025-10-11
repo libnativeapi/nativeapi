@@ -246,8 +246,7 @@ bool TrayIcon::OpenContextMenu() {
   Rectangle bounds = GetBounds();
   if (bounds.width > 0 && bounds.height > 0) {
     // Open menu below the tray icon
-    return pimpl_->context_menu_->Open(bounds.x,
-                                                    bounds.y + bounds.height);
+    return pimpl_->context_menu_->Open(bounds.x, bounds.y + bounds.height);
   } else {
     // Fall back to showing at mouse location
     return pimpl_->context_menu_->Open();

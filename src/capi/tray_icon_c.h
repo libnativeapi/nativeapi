@@ -61,8 +61,7 @@ typedef enum {
 /**
  * Event callback function type
  */
-typedef void (*native_tray_icon_event_callback_t)(const void* event,
-                                                  void* user_data);
+typedef void (*native_tray_icon_event_callback_t)(const void* event, void* user_data);
 
 /**
  * TrayIcon operations
@@ -112,8 +111,7 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon);
  * @param title The title text to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_title(native_tray_icon_t tray_icon,
-                                const char* title);
+void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title);
 
 /**
  * Get the title text of the tray icon
@@ -130,8 +128,7 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon);
  * @param tooltip The tooltip text to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon,
-                                  const char* tooltip);
+void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip);
 
 /**
  * Get the tooltip text of the tray icon
@@ -148,8 +145,7 @@ char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon);
  * @param menu The context menu to set
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon,
-                                       native_menu_t menu);
+void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu);
 
 /**
  * Get the context menu of the tray icon
@@ -166,8 +162,7 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon);
  * @return true if bounds were retrieved successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon,
-                                 native_rectangle_t* bounds);
+bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds);
 
 /**
  * Show the tray icon in the system tray
@@ -214,8 +209,7 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
  * @return true if the listener was found and removed, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
-                                      int listener_id);
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id);
 
 /**
  * Open the context menu at specified coordinates
@@ -225,9 +219,7 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
  * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon,
-                                           double x,
-                                           double y);
+bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon, double x, double y);
 
 /**
  * Open the context menu at default location

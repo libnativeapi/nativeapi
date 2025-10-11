@@ -1,11 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
-#include <chrono>
 
 namespace nativeapi {
 
@@ -19,9 +19,7 @@ class Event {
   virtual ~Event() = default;
 
   // Get the time when this event was created
-  std::chrono::steady_clock::time_point GetTimestamp() const {
-    return timestamp_;
-  }
+  std::chrono::steady_clock::time_point GetTimestamp() const { return timestamp_; }
 
   // Get a string representation of the event type (for debugging)
   virtual std::string GetTypeName() const = 0;
@@ -34,20 +32,14 @@ class Event {
  * Template for typed events. This provides type safety and automatic
  * type identification for events.
  */
-template<typename T>
+template <typename T>
 class TypedEvent : public Event {
  public:
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(T));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(T)); }
 
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 
-  std::string GetTypeName() const override {
-    return typeid(T).name();
-  }
+  std::string GetTypeName() const override { return typeid(T).name(); }
 };
 
 /**
@@ -57,7 +49,7 @@ class TypedEvent : public Event {
 class EventListener {
  public:
   virtual ~EventListener() = default;
-  
+
   /**
    * Handle an event. Implementations should check the event type
    * and cast appropriately.
@@ -69,7 +61,7 @@ class EventListener {
  * Template for typed event listeners. This provides type safety
  * by automatically casting events to the correct type.
  */
-template<typename EventType>
+template <typename EventType>
 class TypedEventListener : public EventListener {
  public:
   virtual ~TypedEventListener() = default;
@@ -91,13 +83,12 @@ class TypedEventListener : public EventListener {
  * Callback-based event handler that wraps std::function callbacks.
  * This allows using lambda functions or function pointers as event handlers.
  */
-template<typename EventType>
+template <typename EventType>
 class CallbackEventListener : public TypedEventListener<EventType> {
  public:
   using CallbackType = std::function<void(const EventType&)>;
 
-  explicit CallbackEventListener(CallbackType callback) 
-      : callback_(std::move(callback)) {}
+  explicit CallbackEventListener(CallbackType callback) : callback_(std::move(callback)) {}
 
   void OnTypedEvent(const EventType& event) override {
     if (callback_) {

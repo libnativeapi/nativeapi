@@ -6,27 +6,27 @@
 
 // Import headers
 #ifdef __has_include
-  #if __has_include(<gtk/gtk.h>)
-    #include <gtk/gtk.h>
-    #define HAS_GTK 1
-  #else
-    #define HAS_GTK 0
-  #endif
+#if __has_include(<gtk/gtk.h>)
+#include <gtk/gtk.h>
+#define HAS_GTK 1
 #else
-  // Fallback for older compilers
-  #define HAS_GTK 0
+#define HAS_GTK 0
+#endif
+#else
+// Fallback for older compilers
+#define HAS_GTK 0
 #endif
 
 #ifdef __has_include
-  #if __has_include(<libayatana-appindicator/app-indicator.h>)
-    #include <libayatana-appindicator/app-indicator.h>
-    #define HAS_AYATANA_APPINDICATOR 1
-  #else
-    #define HAS_AYATANA_APPINDICATOR 0
-  #endif
+#if __has_include(<libayatana-appindicator/app-indicator.h>)
+#include <libayatana-appindicator/app-indicator.h>
+#define HAS_AYATANA_APPINDICATOR 1
 #else
-  // Fallback for older compilers
-  #define HAS_AYATANA_APPINDICATOR 0
+#define HAS_AYATANA_APPINDICATOR 0
+#endif
+#else
+// Fallback for older compilers
+#define HAS_AYATANA_APPINDICATOR 0
 #endif
 
 namespace nativeapi {
@@ -37,7 +37,8 @@ class TrayManager::Impl {
   ~Impl() {}
 };
 
-TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) {}
+TrayManager::TrayManager()
+    : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) {}
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -67,14 +68,13 @@ std::shared_ptr<TrayIcon> TrayManager::Create() {
 #if HAS_GTK && HAS_AYATANA_APPINDICATOR
   // Create a unique ID for this tray icon
   std::string indicator_id = "nativeapi-tray-" + std::to_string(next_tray_id_);
-  
+
   // Create a new tray using AppIndicator
-  AppIndicator* app_indicator = app_indicator_new(
-    indicator_id.c_str(),
-    "application-default-icon",  // Default icon name
-    APP_INDICATOR_CATEGORY_APPLICATION_STATUS
-  );
-  
+  AppIndicator* app_indicator =
+      app_indicator_new(indicator_id.c_str(),
+                        "application-default-icon",  // Default icon name
+                        APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+
   if (!app_indicator) {
     return nullptr;
   }
@@ -116,7 +116,8 @@ bool TrayManager::Destroy(TrayIconID id) {
   auto it = trays_.find(id);
   if (it != trays_.end()) {
     // Remove the tray icon from our container
-    // The shared_ptr will automatically clean up when the last reference is released
+    // The shared_ptr will automatically clean up when the last reference is
+    // released
     trays_.erase(it);
     return true;
   }

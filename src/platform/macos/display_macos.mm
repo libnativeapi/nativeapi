@@ -11,7 +11,7 @@ struct NSRectExt {
   static CGPoint topLeft(NSRect rect) {
     NSRect primaryScreenFrame = [[NSScreen screens][0] frame];
     return CGPointMake(rect.origin.x,
-                      primaryScreenFrame.size.height - rect.origin.y - rect.size.height);
+                       primaryScreenFrame.size.height - rect.origin.y - rect.size.height);
   }
 };
 
@@ -50,7 +50,8 @@ Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
     NSScreen* screen = (__bridge NSScreen*)display;
     if (screen && [screen isKindOfClass:[NSScreen class]]) {
       pimpl_->ns_screen_ = screen;
-      pimpl_->display_id_ = [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
+      pimpl_->display_id_ =
+          [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
     } else {
       // Try CGDirectDisplayID
       CGDirectDisplayID displayID = *(CGDirectDisplayID*)display;
@@ -95,13 +96,15 @@ void* Display::GetNativeObjectInternal() const {
 
 // Getters - directly read from NSScreen
 std::string Display::GetId() const {
-  if (!pimpl_->ns_screen_) return "";
+  if (!pimpl_->ns_screen_)
+    return "";
   NSString* screenId = [NSString stringWithFormat:@"%@", @(pimpl_->display_id_)];
   return [screenId UTF8String];
 }
 
 std::string Display::GetName() const {
-  if (!pimpl_->ns_screen_) return "";
+  if (!pimpl_->ns_screen_)
+    return "";
   NSString* displayName;
   if (@available(macOS 10.15, *)) {
     displayName = [pimpl_->ns_screen_ localizedName];
@@ -112,7 +115,8 @@ std::string Display::GetName() const {
 }
 
 Point Display::GetPosition() const {
-  if (!pimpl_->ns_screen_) return {0.0, 0.0};
+  if (!pimpl_->ns_screen_)
+    return {0.0, 0.0};
   NSRect frame = [pimpl_->ns_screen_ frame];
 
   // Convert from bottom-left (macOS default) to top-left coordinate system
@@ -122,42 +126,47 @@ Point Display::GetPosition() const {
 }
 
 Size Display::GetSize() const {
-  if (!pimpl_->ns_screen_) return {0.0, 0.0};
+  if (!pimpl_->ns_screen_)
+    return {0.0, 0.0};
   NSRect frame = [pimpl_->ns_screen_ frame];
   return {frame.size.width, frame.size.height};
 }
 
 Rectangle Display::GetWorkArea() const {
-  if (!pimpl_->ns_screen_) return {0.0, 0.0, 0.0, 0.0};
+  if (!pimpl_->ns_screen_)
+    return {0.0, 0.0, 0.0, 0.0};
   NSRect visibleFrame = [pimpl_->ns_screen_ visibleFrame];
 
   // Convert from bottom-left (macOS default) to top-left coordinate system
   CGPoint topLeft = NSRectExt::topLeft(visibleFrame);
 
-  return {topLeft.x, topLeft.y,
-          visibleFrame.size.width, visibleFrame.size.height};
+  return {topLeft.x, topLeft.y, visibleFrame.size.width, visibleFrame.size.height};
 }
 
 double Display::GetScaleFactor() const {
-  if (!pimpl_->ns_screen_) return 1.0;
+  if (!pimpl_->ns_screen_)
+    return 1.0;
   return [pimpl_->ns_screen_ backingScaleFactor];
 }
 
 bool Display::IsPrimary() const {
-  if (!pimpl_->ns_screen_) return false;
+  if (!pimpl_->ns_screen_)
+    return false;
   NSArray<NSScreen*>* screens = [NSScreen screens];
   return screens.count > 0 && screens[0] == pimpl_->ns_screen_;
 }
 
 DisplayOrientation Display::GetOrientation() const {
-  if (!pimpl_->ns_screen_) return DisplayOrientation::kPortrait;
+  if (!pimpl_->ns_screen_)
+    return DisplayOrientation::kPortrait;
   NSRect frame = [pimpl_->ns_screen_ frame];
-  return (frame.size.width > frame.size.height) ?
-    DisplayOrientation::kLandscape : DisplayOrientation::kPortrait;
+  return (frame.size.width > frame.size.height) ? DisplayOrientation::kLandscape
+                                                : DisplayOrientation::kPortrait;
 }
 
 int Display::GetRefreshRate() const {
-  if (!pimpl_->ns_screen_) return 60;
+  if (!pimpl_->ns_screen_)
+    return 60;
   CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode(pimpl_->display_id_);
   if (displayMode) {
     double refreshRate = CGDisplayModeGetRefreshRate(displayMode);
@@ -168,9 +177,7 @@ int Display::GetRefreshRate() const {
 }
 
 int Display::GetBitDepth() const {
-  return 32; // Default for modern displays
+  return 32;  // Default for modern displays
 }
-
-
 
 }  // namespace nativeapi

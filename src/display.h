@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "foundation/native_object_provider.h"
 #include "foundation/geometry.h"
+#include "foundation/native_object_provider.h"
 
 namespace nativeapi {
 

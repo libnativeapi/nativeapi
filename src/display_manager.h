@@ -13,8 +13,6 @@
 
 namespace nativeapi {
 
-
-
 /**
  * DisplayManager is a singleton that manages all displays on the system.
  *

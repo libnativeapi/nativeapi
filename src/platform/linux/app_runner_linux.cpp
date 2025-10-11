@@ -4,14 +4,14 @@
 #include "../../window.h"
 
 // Import GTK headers
-#include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gtk/gtk.h>
 
 namespace nativeapi {
 
 // Private implementation for Linux using GTK
 class AppRunner::Impl {
-public:
+ public:
   Impl() {
     // GTK initialization is handled by WindowManager
     // No need to initialize again here
@@ -34,7 +34,8 @@ public:
       return -1;
     }
 
-    std::cout << "Starting application with window ID: " << window->GetId() << std::endl;
+    std::cout << "Starting application with window ID: " << window->GetId()
+              << std::endl;
 
     // Connect to the window destroy signal to quit the main loop
     // when the window is closed
@@ -47,7 +48,8 @@ public:
 
         if (gdk_window && (WindowID)gdk_window == window->GetId()) {
           // Connect destroy signal to quit the main loop
-          g_signal_connect(gtk_window, "destroy", G_CALLBACK(gtk_main_quit), nullptr);
+          g_signal_connect(gtk_window, "destroy", G_CALLBACK(gtk_main_quit),
+                           nullptr);
           break;
         }
       }
@@ -64,8 +66,7 @@ public:
 };
 
 // AppRunner implementation
-AppRunner::AppRunner() : pimpl_(std::make_unique<Impl>()) {
-}
+AppRunner::AppRunner() : pimpl_(std::make_unique<Impl>()) {}
 
 AppRunner::~AppRunner() = default;
 

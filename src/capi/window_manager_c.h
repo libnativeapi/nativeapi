@@ -100,7 +100,8 @@ bool native_window_manager_destroy(native_window_id_t window_id);
  * @return Registration ID, or -1 on failure
  */
 FFI_PLUGIN_EXPORT
-int native_window_manager_register_event_callback(native_window_event_callback_t callback, void* user_data);
+int native_window_manager_register_event_callback(native_window_event_callback_t callback,
+                                                  void* user_data);
 
 /**
  * Unregister a window event callback

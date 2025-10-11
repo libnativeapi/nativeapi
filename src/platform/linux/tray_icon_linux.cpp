@@ -1,9 +1,9 @@
-#include <iostream>
-#include <string>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <libayatana-appindicator/app-indicator.h>
+#include <iostream>
+#include <string>
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -13,10 +13,16 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl(AppIndicator* indicator) : app_indicator_(indicator), title_(""), tooltip_(""), context_menu_(nullptr), visible_(false) {}
+  Impl(AppIndicator* indicator)
+      : app_indicator_(indicator),
+        title_(""),
+        tooltip_(""),
+        context_menu_(nullptr),
+        visible_(false) {}
 
   AppIndicator* app_indicator_;
-  std::shared_ptr<Menu> context_menu_;  // Store menu shared_ptr to keep it alive
+  std::shared_ptr<Menu>
+      context_menu_;  // Store menu shared_ptr to keep it alive
   std::string title_;
   std::string tooltip_;
   bool visible_;
@@ -26,7 +32,8 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
   id = -1;
 }
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((AppIndicator*)tray)) {
+TrayIcon::TrayIcon(void* tray)
+    : pimpl_(std::make_unique<Impl>((AppIndicator*)tray)) {
   id = -1;  // Will be set by TrayManager when created
   // Make the indicator visible by default
   if (pimpl_->app_indicator_) {
@@ -60,14 +67,19 @@ void TrayIcon::SetIcon(std::string icon) {
       if (decoded_data) {
         // Create a temporary file path
         const char* temp_dir = g_get_tmp_dir();
-        std::string temp_path = std::string(temp_dir) + "/nativeapi_tray_icon_" + std::to_string(id) + ".png";
-        
+        std::string temp_path = std::string(temp_dir) +
+                                "/nativeapi_tray_icon_" + std::to_string(id) +
+                                ".png";
+
         // Write to file
         GError* error = nullptr;
-        if (g_file_set_contents(temp_path.c_str(), (const gchar*)decoded_data, decoded_len, &error)) {
-          app_indicator_set_icon_full(pimpl_->app_indicator_, temp_path.c_str(), "Tray Icon");
+        if (g_file_set_contents(temp_path.c_str(), (const gchar*)decoded_data,
+                                decoded_len, &error)) {
+          app_indicator_set_icon_full(pimpl_->app_indicator_, temp_path.c_str(),
+                                      "Tray Icon");
         } else if (error) {
-          std::cerr << "Error saving icon to temp file: " << error->message << std::endl;
+          std::cerr << "Error saving icon to temp file: " << error->message
+                    << std::endl;
           g_error_free(error);
         }
 
@@ -78,17 +90,20 @@ void TrayIcon::SetIcon(std::string icon) {
     // Use the icon as a file path or stock icon name
     if (g_file_test(icon.c_str(), G_FILE_TEST_EXISTS)) {
       // It's a file path
-      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(), "Tray Icon");
+      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(),
+                                  "Tray Icon");
     } else {
       // Try as a stock icon name
-      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(), "Tray Icon");
+      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(),
+                                  "Tray Icon");
     }
   }
 }
 
 void TrayIcon::SetTitle(std::string title) {
   pimpl_->title_ = title;
-  // AppIndicator uses the title as the accessible name and in some desktop environments
+  // AppIndicator uses the title as the accessible name and in some desktop
+  // environments
   if (pimpl_->app_indicator_) {
     app_indicator_set_title(pimpl_->app_indicator_, title.c_str());
   }
@@ -138,7 +153,8 @@ Rectangle TrayIcon::GetBounds() {
 
 bool TrayIcon::Show() {
   if (pimpl_->app_indicator_) {
-    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_ACTIVE);
+    app_indicator_set_status(pimpl_->app_indicator_,
+                             APP_INDICATOR_STATUS_ACTIVE);
     pimpl_->visible_ = true;
     return true;
   }
@@ -147,7 +163,8 @@ bool TrayIcon::Show() {
 
 bool TrayIcon::Hide() {
   if (pimpl_->app_indicator_) {
-    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_PASSIVE);
+    app_indicator_set_status(pimpl_->app_indicator_,
+                             APP_INDICATOR_STATUS_PASSIVE);
     pimpl_->visible_ = false;
     return true;
   }
@@ -156,7 +173,8 @@ bool TrayIcon::Hide() {
 
 bool TrayIcon::IsVisible() {
   if (pimpl_->app_indicator_) {
-    AppIndicatorStatus status = app_indicator_get_status(pimpl_->app_indicator_);
+    AppIndicatorStatus status =
+        app_indicator_get_status(pimpl_->app_indicator_);
     return status == APP_INDICATOR_STATUS_ACTIVE;
   }
   return false;
@@ -179,13 +197,14 @@ bool TrayIcon::OpenContextMenu() {
   }
 
   // AppIndicator shows context menu automatically on right-click
-  // We don't need to manually show it as it's managed by the indicator framework
+  // We don't need to manually show it as it's managed by the indicator
+  // framework
   return true;
 }
 
 bool TrayIcon::CloseContextMenu() {
   if (!pimpl_->context_menu_) {
-    return true; // No menu to close, consider success
+    return true;  // No menu to close, consider success
   }
 
   // AppIndicator manages menu visibility automatically

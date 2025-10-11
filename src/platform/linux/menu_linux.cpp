@@ -1,12 +1,12 @@
-#include <iostream>
-#include <string>
-#include <memory>
+#include <gtk/gtk.h>
+#include <algorithm>
 #include <atomic>
+#include <cctype>
+#include <iostream>
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <algorithm>
-#include <cctype>
-#include <gtk/gtk.h>
 #include "../../menu.h"
 
 namespace nativeapi {
@@ -22,8 +22,18 @@ static std::unordered_map<MenuID, Menu*> g_menu_registry;
 // Private implementation class for MenuItem
 class MenuItem::Impl {
  public:
-  Impl(GtkWidget* menu_item, MenuItemType type) : gtk_menu_item_(menu_item), title_(""), icon_(""), tooltip_(""), type_(type), enabled_(true), visible_(true), state_(MenuItemState::Unchecked), radio_group_(-1), accelerator_("", KeyboardAccelerator::None) {}
-  
+  Impl(GtkWidget* menu_item, MenuItemType type)
+      : gtk_menu_item_(menu_item),
+        title_(""),
+        icon_(""),
+        tooltip_(""),
+        type_(type),
+        enabled_(true),
+        visible_(true),
+        state_(MenuItemState::Unchecked),
+        radio_group_(-1),
+        accelerator_("", KeyboardAccelerator::None) {}
+
   GtkWidget* gtk_menu_item_;
   std::string title_;
   std::string icon_;
@@ -38,9 +48,10 @@ class MenuItem::Impl {
 };
 
 // MenuItem static factory methods
-std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType type) {
+std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text,
+                                           MenuItemType type) {
   GtkWidget* gtk_item = nullptr;
-  
+
   switch (type) {
     case MenuItemType::Separator:
       gtk_item = gtk_separator_menu_item_new();
@@ -57,15 +68,15 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
       gtk_item = gtk_menu_item_new_with_label(text.c_str());
       break;
   }
-  
+
   auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
   item->pimpl_ = std::unique_ptr<Impl>(new Impl(gtk_item, type));
   item->id = g_next_menu_item_id++;
   item->pimpl_->title_ = text;
-  
+
   // Register the MenuItem for event emission
   g_menu_item_registry[item->id] = item.get();
-  
+
   return item;
 }
 
@@ -77,7 +88,8 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(0) {
   // Constructor body - id will be set in Create method
 }
 
-MenuItem::MenuItem(void* menu_item) : pimpl_(new Impl((GtkWidget*)menu_item, MenuItemType::Normal)) {
+MenuItem::MenuItem(void* menu_item)
+    : pimpl_(new Impl((GtkWidget*)menu_item, MenuItemType::Normal)) {
   id = g_next_menu_item_id++;
   g_menu_item_registry[id] = this;
 }
@@ -93,7 +105,8 @@ MenuItemType MenuItem::GetType() const {
 void MenuItem::SetLabel(const std::string& label) {
   pimpl_->title_ = label;
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
-    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), label.c_str());
+    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_),
+                            label.c_str());
   }
 }
 
@@ -162,10 +175,12 @@ void MenuItem::SetState(MenuItemState state) {
   if (pimpl_->gtk_menu_item_) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
     }
   }
 }
@@ -186,7 +201,8 @@ int MenuItem::GetRadioGroup() const {
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
   pimpl_->submenu_ = submenu;
   if (pimpl_->gtk_menu_item_ && submenu) {
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), (GtkWidget*)submenu->GetNativeObject());
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_),
+                              (GtkWidget*)submenu->GetNativeObject());
   }
 }
 
@@ -202,7 +218,8 @@ void MenuItem::RemoveSubmenu() {
 }
 
 bool MenuItem::Trigger() {
-  if (!pimpl_->enabled_) return false;
+  if (!pimpl_->enabled_)
+    return false;
   if (pimpl_->gtk_menu_item_) {
     g_signal_emit_by_name(pimpl_->gtk_menu_item_, "activate");
     return true;
@@ -226,7 +243,7 @@ void MenuItem::EmitStateChangedEvent(bool checked) {
 class Menu::Impl {
  public:
   Impl(GtkWidget* menu) : gtk_menu_(menu), enabled_(true), visible_(false) {}
-  
+
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
@@ -239,10 +256,10 @@ std::shared_ptr<Menu> Menu::Create() {
   auto menu = std::shared_ptr<Menu>(new Menu());
   menu->pimpl_ = std::unique_ptr<Impl>(new Impl(gtk_menu));
   menu->id = g_next_menu_id++;
-  
+
   // Register the Menu for event emission
   g_menu_registry[menu->id] = menu.get();
-  
+
   return menu;
 }
 
@@ -266,21 +283,24 @@ Menu::~Menu() {
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (pimpl_->gtk_menu_ && item && item->GetNativeObject()) {
     pimpl_->items_.push_back(item);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
+    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_),
+                          (GtkWidget*)item->GetNativeObject());
   }
 }
 
 void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
-  if (!item) return;
-  
+  if (!item)
+    return;
+
   if (index >= pimpl_->items_.size()) {
     AddItem(item);
     return;
   }
-  
+
   pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
   if (pimpl_->gtk_menu_ && item->GetNativeObject()) {
-    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject(), index);
+    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_),
+                          (GtkWidget*)item->GetNativeObject(), index);
   }
 }
 
@@ -289,7 +309,8 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
     auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
     if (it != pimpl_->items_.end()) {
       pimpl_->items_.erase(it);
-      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
+      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_),
+                           (GtkWidget*)item->GetNativeObject());
       return true;
     }
   }
@@ -353,7 +374,8 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
+std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
+                                               bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
     std::string item_text = item->GetLabel();
     if (case_sensitive) {
@@ -363,8 +385,10 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
     } else {
       std::string lower_item_text = item_text;
       std::string lower_search_text = text;
-      std::transform(lower_item_text.begin(), lower_item_text.end(), lower_item_text.begin(), ::tolower);
-      std::transform(lower_search_text.begin(), lower_search_text.end(), lower_search_text.begin(), ::tolower);
+      std::transform(lower_item_text.begin(), lower_item_text.end(),
+                     lower_item_text.begin(), ::tolower);
+      std::transform(lower_search_text.begin(), lower_search_text.end(),
+                     lower_search_text.begin(), ::tolower);
       if (lower_item_text == lower_search_text) {
         return item;
       }
@@ -383,7 +407,7 @@ bool Menu::Open(double x, double y) {
 }
 
 bool Menu::Open() {
-  return Open(0, 0); // GTK will position at pointer
+  return Open(0, 0);  // GTK will position at pointer
 }
 
 bool Menu::Close() {
@@ -416,14 +440,17 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
   return item;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text, const std::string& icon) {
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text,
+                                                 const std::string& icon) {
   auto item = MenuItem::Create(text, MenuItemType::Normal);
   item->SetIcon(icon);
   AddItem(item);
   return item;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text, std::shared_ptr<Menu> submenu) {
+std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(
+    const std::string& text,
+    std::shared_ptr<Menu> submenu) {
   auto item = MenuItem::Create(text, MenuItemType::Submenu);
   item->SetSubmenu(submenu);
   AddItem(item);

@@ -1,8 +1,8 @@
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 #include <iostream>
-#include <string>
 #include <mutex>
+#include <string>
 
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
@@ -13,17 +13,19 @@ namespace nativeapi {
 static const char* TRAY_WINDOW_CLASS_NAME = "NativeAPITrayWindow";
 
 // Hidden window procedure for handling tray icon messages
-static LRESULT CALLBACK TrayWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK TrayWindowProc(HWND hwnd,
+                                       UINT message,
+                                       WPARAM wParam,
+                                       LPARAM lParam) {
   // Try to find the TrayIcon instance associated with this message
-  // In a real implementation, you'd have a better way to map messages to instances
+  // In a real implementation, you'd have a better way to map messages to
+  // instances
   return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
 class TrayManager::Impl {
  public:
-  Impl() : hwnd_(nullptr), next_icon_id_(1) {
-    CreateHiddenWindow();
-  }
+  Impl() : hwnd_(nullptr), next_icon_id_(1) { CreateHiddenWindow(); }
 
   ~Impl() {
     if (hwnd_) {
@@ -34,34 +36,31 @@ class TrayManager::Impl {
 
   void CreateHiddenWindow() {
     HINSTANCE hInstance = GetModuleHandle(nullptr);
-    
+
     // Register window class
     WNDCLASS wc = {};
     wc.lpfnWndProc = TrayWindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = TRAY_WINDOW_CLASS_NAME;
-    
+
     if (!RegisterClass(&wc)) {
       DWORD error = GetLastError();
       if (error != ERROR_CLASS_ALREADY_EXISTS) {
-        std::cerr << "Failed to register tray window class. Error: " << error << std::endl;
+        std::cerr << "Failed to register tray window class. Error: " << error
+                  << std::endl;
         return;
       }
     }
-    
+
     // Create hidden window
-    hwnd_ = CreateWindow(
-        TRAY_WINDOW_CLASS_NAME,
-        "NativeAPI Tray Window",
-        0,
-        0, 0, 0, 0,
-        HWND_MESSAGE, // Message-only window
-        nullptr,
-        hInstance,
-        nullptr);
-    
+    hwnd_ = CreateWindow(TRAY_WINDOW_CLASS_NAME, "NativeAPI Tray Window", 0, 0,
+                         0, 0, 0,
+                         HWND_MESSAGE,  // Message-only window
+                         nullptr, hInstance, nullptr);
+
     if (!hwnd_) {
-      std::cerr << "Failed to create tray window. Error: " << GetLastError() << std::endl;
+      std::cerr << "Failed to create tray window. Error: " << GetLastError()
+                << std::endl;
     }
   }
 
@@ -69,7 +68,8 @@ class TrayManager::Impl {
   UINT next_icon_id_;
 };
 
-TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) {}
+TrayManager::TrayManager()
+    : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) {}
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -84,7 +84,7 @@ TrayManager::~TrayManager() {
 }
 
 bool TrayManager::IsSupported() {
-  return true; // Windows always supports system tray
+  return true;  // Windows always supports system tray
 }
 
 std::shared_ptr<TrayIcon> TrayManager::Create() {
@@ -97,12 +97,13 @@ std::shared_ptr<TrayIcon> TrayManager::Create() {
 
   auto tray = std::make_shared<TrayIcon>();
   tray->id = next_tray_id_++;
-  
-  // Windows-specific initialization is now handled internally by the TrayIcon implementation
-  // The platform-specific details are encapsulated within the PIMPL pattern
+
+  // Windows-specific initialization is now handled internally by the TrayIcon
+  // implementation The platform-specific details are encapsulated within the
+  // PIMPL pattern
   UINT icon_id = pimpl_->next_icon_id_++;
   // Platform-specific setup is handled in the TrayIcon constructor and methods
-  
+
   trays_[tray->id] = tray;
 
   return tray;
@@ -134,7 +135,8 @@ bool TrayManager::Destroy(TrayIconID id) {
   auto it = trays_.find(id);
   if (it != trays_.end()) {
     // Remove the tray icon from our container
-    // The shared_ptr will automatically clean up when the last reference is released
+    // The shared_ptr will automatically clean up when the last reference is
+    // released
     trays_.erase(it);
     return true;
   }

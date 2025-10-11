@@ -89,7 +89,6 @@ typedef struct {
   native_menu_item_id_t item_id;
 } native_menu_item_submenu_closed_event_t;
 
-
 /**
  * Menu item list structure
  */
@@ -111,7 +110,6 @@ typedef struct {
 typedef struct {
   native_menu_id_t menu_id;
 } native_menu_closed_event_t;
-
 
 /**
  * Event listener registration function types
@@ -233,7 +231,8 @@ char* native_menu_item_get_tooltip(native_menu_item_t item);
  * @param accelerator The keyboard accelerator to set
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_accelerator(native_menu_item_t item, const native_keyboard_accelerator_t* accelerator);
+void native_menu_item_set_accelerator(native_menu_item_t item,
+                                      const native_keyboard_accelerator_t* accelerator);
 
 /**
  * Get the keyboard accelerator of a menu item
@@ -242,7 +241,8 @@ void native_menu_item_set_accelerator(native_menu_item_t item, const native_keyb
  * @return true if accelerator exists, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_item_get_accelerator(native_menu_item_t item, native_keyboard_accelerator_t* accelerator);
+bool native_menu_item_get_accelerator(native_menu_item_t item,
+                                      native_keyboard_accelerator_t* accelerator);
 
 /**
  * Remove the keyboard accelerator from a menu item
@@ -347,7 +347,10 @@ void native_menu_item_remove_submenu(native_menu_item_t item);
  * @return A listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_event_type_t event_type, native_menu_item_event_callback_t callback, void* user_data);
+int native_menu_item_add_listener(native_menu_item_t item,
+                                  native_menu_item_event_type_t event_type,
+                                  native_menu_item_event_callback_t callback,
+                                  void* user_data);
 
 /**
  * Remove event listener from a menu item
@@ -357,7 +360,6 @@ int native_menu_item_add_listener(native_menu_item_t item, native_menu_item_even
  */
 FFI_PLUGIN_EXPORT
 bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id);
-
 
 /**
  * Programmatically trigger a menu item
@@ -561,7 +563,10 @@ bool native_menu_is_enabled(native_menu_t menu);
  * @return A listener ID that can be used to remove the listener, or -1 on error
  */
 FFI_PLUGIN_EXPORT
-int native_menu_add_listener(native_menu_t menu, native_menu_event_type_t event_type, native_menu_event_callback_t callback, void* user_data);
+int native_menu_add_listener(native_menu_t menu,
+                             native_menu_event_type_t event_type,
+                             native_menu_event_callback_t callback,
+                             void* user_data);
 
 /**
  * Remove event listener from a menu
@@ -572,7 +577,6 @@ int native_menu_add_listener(native_menu_t menu, native_menu_event_type_t event_
 FFI_PLUGIN_EXPORT
 bool native_menu_remove_listener(native_menu_t menu, int listener_id);
 
-
 /**
  * Create and add a menu item in one operation
  * @param menu The menu
@@ -581,7 +585,9 @@ bool native_menu_remove_listener(native_menu_t menu, int listener_id);
  * @return The created menu item handle
  */
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_create_and_add_item(native_menu_t menu, const char* text, native_menu_item_type_t type);
+native_menu_item_t native_menu_create_and_add_item(native_menu_t menu,
+                                                   const char* text,
+                                                   native_menu_item_type_t type);
 
 /**
  * Create and add a submenu item in one operation
@@ -591,7 +597,9 @@ native_menu_item_t native_menu_create_and_add_item(native_menu_t menu, const cha
  * @return The created menu item handle
  */
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_create_and_add_submenu(native_menu_t menu, const char* text, native_menu_t submenu);
+native_menu_item_t native_menu_create_and_add_submenu(native_menu_t menu,
+                                                      const char* text,
+                                                      native_menu_t submenu);
 
 /**
  * Utility functions

@@ -59,16 +59,12 @@ class WindowCreatedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowCreatedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowCreatedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -88,16 +84,12 @@ class WindowClosedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowClosedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowClosedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -117,16 +109,12 @@ class WindowFocusedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowFocusedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowFocusedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -146,16 +134,12 @@ class WindowBlurredEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowBlurredEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowBlurredEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -175,16 +159,12 @@ class WindowMinimizedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowMinimizedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowMinimizedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -204,16 +184,12 @@ class WindowMaximizedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowMaximizedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowMaximizedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -234,16 +210,12 @@ class WindowRestoredEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowRestoredEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowRestoredEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -270,16 +242,12 @@ class WindowMovedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowMovedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowMovedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 
  private:
   Point new_position_;
@@ -309,16 +277,12 @@ class WindowResizedEvent : public WindowEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(WindowResizedEvent));
-  }
+  static std::type_index GetStaticType() { return std::type_index(typeid(WindowResizedEvent)); }
 
   /**
    * Get the type index for this event instance
    */
-  std::type_index GetType() const {
-    return GetStaticType();
-  }
+  std::type_index GetType() const { return GetStaticType(); }
 
  private:
   Size new_size_;

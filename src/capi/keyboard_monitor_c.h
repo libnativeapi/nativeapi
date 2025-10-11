@@ -41,8 +41,7 @@ typedef void (*native_key_released_callback_t)(int keycode, void* user_data);
  * @param modifier_keys Bitwise OR of active modifier keys
  * @param user_data User-provided data passed to the callback
  */
-typedef void (*native_modifier_keys_changed_callback_t)(uint32_t modifier_keys,
-                                                        void* user_data);
+typedef void (*native_modifier_keys_changed_callback_t)(uint32_t modifier_keys, void* user_data);
 
 /**
  * Opaque handle to keyboard monitor instance
@@ -97,8 +96,7 @@ bool native_keyboard_monitor_stop(native_keyboard_monitor_t* monitor);
  * @param monitor Pointer to keyboard monitor instance
  * @return true if monitoring is active, false otherwise
  */
-bool native_keyboard_monitor_is_monitoring(
-    const native_keyboard_monitor_t* monitor);
+bool native_keyboard_monitor_is_monitoring(const native_keyboard_monitor_t* monitor);
 
 #ifdef __cplusplus
 }

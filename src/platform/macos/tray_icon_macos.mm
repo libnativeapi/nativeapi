@@ -1,6 +1,6 @@
-#include "../../tray_icon.h"
-#include "../../menu.h"
 #include "../../foundation/geometry.h"
+#include "../../menu.h"
+#include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
 
 #import <Cocoa/Cocoa.h>
@@ -11,13 +11,13 @@
 
 // Forward declarations
 @interface TrayIconDelegate : NSObject
-@property (nonatomic, assign) nativeapi::TrayIcon* trayIcon;
+@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
 - (void)statusItemClicked:(id)sender;
 - (void)statusItemRightClicked:(id)sender;
 @end
 
 @interface TrayIconMenuDelegate : NSObject <NSMenuDelegate>
-@property (nonatomic, assign) nativeapi::TrayIcon* trayIcon;
+@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
 @end
 
 namespace nativeapi {
@@ -27,15 +27,16 @@ class TrayIcon::Impl {
  public:
   Impl() : ns_status_item_(nil), delegate_(nil), menu_delegate_(nil), visible_(false) {}
 
-  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil), visible_(false) {
+  Impl(NSStatusItem* status_item)
+      : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil), visible_(false) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];
-      delegate_.trayIcon = nullptr; // Will be set later
+      delegate_.trayIcon = nullptr;  // Will be set later
 
       // Create menu delegate
       menu_delegate_ = [[TrayIconMenuDelegate alloc] init];
-      menu_delegate_.trayIcon = nullptr; // Will be set later
+      menu_delegate_.trayIcon = nullptr;  // Will be set later
 
       // Set up click handlers
       [status_item.button setTarget:delegate_];
@@ -97,7 +98,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
 }
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
-  id = -1; // Will be set by TrayManager when created
+  id = -1;  // Will be set by TrayManager when created
   if (pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = this;
   }
@@ -111,7 +112,6 @@ TrayIcon::~TrayIcon() {
   if (pimpl_ && pimpl_->delegate_) {
     pimpl_->delegate_.trayIcon = nullptr;
   }
-
 }
 
 void TrayIcon::SetIcon(std::string icon) {
@@ -130,9 +130,9 @@ void TrayIcon::SetIcon(std::string icon) {
 
       // Convert base64 to NSData
       NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
-      NSData* imageData = [[NSData alloc]
-          initWithBase64EncodedString:base64String
-                              options:NSDataBase64DecodingIgnoreUnknownCharacters];
+      NSData* imageData =
+          [[NSData alloc] initWithBase64EncodedString:base64String
+                                              options:NSDataBase64DecodingIgnoreUnknownCharacters];
 
       if (imageData) {
         // Create image from data
@@ -284,7 +284,7 @@ bool TrayIcon::OpenContextMenu() {
 
 bool TrayIcon::CloseContextMenu() {
   if (!pimpl_->context_menu_) {
-    return true; // No menu to close, consider success
+    return true;  // No menu to close, consider success
   }
 
   // Close the context menu
@@ -322,25 +322,29 @@ void TrayIcon::ClearStatusItemMenu() {
   }
 }
 
-} // namespace nativeapi
+}  // namespace nativeapi
 
 // Implementation of TrayIconDelegate
 @implementation TrayIconDelegate
 
 - (void)statusItemClicked:(id)sender {
   // Check if trayIcon is still valid before proceeding
-  if (!_trayIcon) return;
+  if (!_trayIcon)
+    return;
 
   // Create a local reference to prevent race conditions
   nativeapi::TrayIcon* trayIcon = _trayIcon;
-  if (!trayIcon) return;
+  if (!trayIcon)
+    return;
 
   NSEvent* event = [NSApp currentEvent];
-  if (!event) return;
+  if (!event)
+    return;
 
   // Check the type of click
   if (event.type == NSEventTypeRightMouseUp ||
-      (event.type == NSEventTypeLeftMouseUp && (event.modifierFlags & NSEventModifierFlagControl))) {
+      (event.type == NSEventTypeLeftMouseUp &&
+       (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     trayIcon->HandleRightClick();
   } else if (event.type == NSEventTypeLeftMouseUp) {
@@ -365,7 +369,7 @@ void TrayIcon::ClearStatusItemMenu() {
 // Implementation of TrayIconMenuDelegate
 @implementation TrayIconMenuDelegate
 
-- (void)menuDidClose:(NSMenu *)menu {
+- (void)menuDidClose:(NSMenu*)menu {
   // Check if trayIcon is still valid before proceeding
   if (_trayIcon) {
     // Call a public method to clear the menu (we'll add this method)

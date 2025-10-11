@@ -5,29 +5,29 @@ namespace nativeapi {
 
 // Forward declaration of the implementation class
 class AppRunner::Impl {
-public:
+ public:
   Impl() = default;
   ~Impl() = default;
-  
+
   int Run(std::shared_ptr<Window> window) {
     if (!window) {
       return -1;
     }
-    
+
     // Show the window
     window->Show();
-    
+
     // Get the HWND for message loop filtering (optional)
     HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-    
+
     // Start the Windows message loop
     MSG msg = {};
     int exit_code = 0;
-    
+
     while (true) {
       // Get message from the message queue
       BOOL result = GetMessage(&msg, nullptr, 0, 0);
-      
+
       if (result == -1) {
         // Error occurred
         exit_code = -1;
@@ -42,13 +42,12 @@ public:
         DispatchMessage(&msg);
       }
     }
-    
+
     return exit_code;
   }
 };
 
-AppRunner::AppRunner() : pimpl_(std::make_unique<Impl>()) {
-}
+AppRunner::AppRunner() : pimpl_(std::make_unique<Impl>()) {}
 
 AppRunner::~AppRunner() = default;
 
