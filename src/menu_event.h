@@ -15,11 +15,13 @@ typedef long MenuItemID;
  *
  * This event is fired when a menu has been displayed.
  */
-class MenuOpenedEvent : public TypedEvent<MenuOpenedEvent> {
+class MenuOpenedEvent : public Event {
  public:
   MenuOpenedEvent(MenuID menu_id) : menu_id_(menu_id) {}
 
   MenuID GetMenuId() const { return menu_id_; }
+
+  std::string GetTypeName() const override { return "MenuOpenedEvent"; }
 
  private:
   MenuID menu_id_;
@@ -30,11 +32,13 @@ class MenuOpenedEvent : public TypedEvent<MenuOpenedEvent> {
  *
  * This event is fired when a menu has been hidden or closed.
  */
-class MenuClosedEvent : public TypedEvent<MenuClosedEvent> {
+class MenuClosedEvent : public Event {
  public:
   MenuClosedEvent(MenuID menu_id) : menu_id_(menu_id) {}
 
   MenuID GetMenuId() const { return menu_id_; }
+
+  std::string GetTypeName() const override { return "MenuClosedEvent"; }
 
  private:
   MenuID menu_id_;
@@ -46,13 +50,15 @@ class MenuClosedEvent : public TypedEvent<MenuClosedEvent> {
  * This event is fired when a menu item is clicked or activated.
  * Contains information about which menu item was clicked.
  */
-class MenuItemClickedEvent : public TypedEvent<MenuItemClickedEvent> {
+class MenuItemClickedEvent : public Event {
  public:
   MenuItemClickedEvent(MenuItemID item_id, const std::string& item_text)
       : item_id_(item_id), item_text_(item_text) {}
 
   MenuItemID GetItemId() const { return item_id_; }
   const std::string& GetItemText() const { return item_text_; }
+
+  std::string GetTypeName() const override { return "MenuItemClickedEvent"; }
 
  private:
   MenuItemID item_id_;
@@ -64,11 +70,13 @@ class MenuItemClickedEvent : public TypedEvent<MenuItemClickedEvent> {
  *
  * This event is fired when a menu item's submenu has been displayed.
  */
-class MenuItemSubmenuOpenedEvent : public TypedEvent<MenuItemSubmenuOpenedEvent> {
+class MenuItemSubmenuOpenedEvent : public Event {
  public:
   MenuItemSubmenuOpenedEvent(MenuItemID item_id) : item_id_(item_id) {}
 
   MenuItemID GetItemId() const { return item_id_; }
+
+  std::string GetTypeName() const override { return "MenuItemSubmenuOpenedEvent"; }
 
  private:
   MenuItemID item_id_;
@@ -79,11 +87,13 @@ class MenuItemSubmenuOpenedEvent : public TypedEvent<MenuItemSubmenuOpenedEvent>
  *
  * This event is fired when a menu item's submenu has been hidden or closed.
  */
-class MenuItemSubmenuClosedEvent : public TypedEvent<MenuItemSubmenuClosedEvent> {
+class MenuItemSubmenuClosedEvent : public Event {
  public:
   MenuItemSubmenuClosedEvent(MenuItemID item_id) : item_id_(item_id) {}
 
   MenuItemID GetItemId() const { return item_id_; }
+
+  std::string GetTypeName() const override { return "MenuItemSubmenuClosedEvent"; }
 
  private:
   MenuItemID item_id_;

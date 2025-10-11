@@ -22,27 +22,18 @@ typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconID tray_icon_id);
 - (void)statusItemClicked:(id)sender;
 @end
 
-@interface TrayIconMenuDelegate : NSObject <NSMenuDelegate>
-@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
-@end
-
 namespace nativeapi {
 
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), delegate_(nil), menu_delegate_(nil) {}
+  Impl() : ns_status_item_(nil), delegate_(nil) {}
 
-  Impl(NSStatusItem* status_item)
-      : ns_status_item_(status_item), delegate_(nil), menu_delegate_(nil) {
+  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];
       delegate_.trayIcon = nullptr;  // Will be set later
-
-      // Create menu delegate
-      menu_delegate_ = [[TrayIconMenuDelegate alloc] init];
-      menu_delegate_.trayIcon = nullptr;  // Will be set later
 
       // Set up click handlers
       [status_item.button setTarget:delegate_];
@@ -61,11 +52,6 @@ class TrayIcon::Impl {
       delegate_.doubleClickedBlock = nil;
       delegate_.trayIcon = nullptr;
       delegate_ = nil;
-    }
-
-    if (menu_delegate_) {
-      menu_delegate_.trayIcon = nullptr;
-      menu_delegate_ = nil;
     }
 
     // Then clean up the status item
@@ -89,7 +75,6 @@ class TrayIcon::Impl {
 
   NSStatusItem* ns_status_item_;
   TrayIconDelegate* delegate_;
-  TrayIconMenuDelegate* menu_delegate_;
   std::shared_ptr<Menu> context_menu_;
 };
 
@@ -123,9 +108,6 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
       }
     };
   }
-  if (pimpl_->menu_delegate_) {
-    pimpl_->menu_delegate_.trayIcon = this;
-  }
 }
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
@@ -157,9 +139,6 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
         // Protect against event emission exceptions
       }
     };
-  }
-  if (pimpl_->menu_delegate_) {
-    pimpl_->menu_delegate_.trayIcon = this;
   }
 }
 
@@ -268,6 +247,12 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   // macOS to take over click handling and prevent our custom click events
   // Instead, we'll show the menu manually in our click handler
   pimpl_->context_menu_ = menu;
+  auto pimpl_raw = pimpl_.get();
+  pimpl_->context_menu_->AddListener<MenuClosedEvent>([pimpl_raw](const MenuClosedEvent& event) {
+    if (pimpl_raw && pimpl_raw->ns_status_item_) {
+      pimpl_raw->ns_status_item_.menu = nil;
+    }
+  });
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
@@ -396,20 +381,6 @@ void* TrayIcon::GetNativeObjectInternal() const {
         _leftClickedBlock(trayIcon->id, "left");
       }
     }
-  }
-}
-
-@end
-
-// Implementation of TrayIconMenuDelegate
-@implementation TrayIconMenuDelegate
-
-- (void)menuDidClose:(NSMenu*)menu {
-  // Check if trayIcon is still valid before proceeding
-  if (_trayIcon) {
-    NSStatusItem* ns_status_item_ = (__bridge NSStatusItem*)_trayIcon->GetNativeObject();
-    // Call a public method to clear the menu (we'll add this method)
-    ns_status_item_.menu = nil;
   }
 }
 

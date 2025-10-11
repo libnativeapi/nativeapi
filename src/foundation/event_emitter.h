@@ -52,8 +52,21 @@ class EventEmitter {
    * @return A unique listener ID that can be used to remove the listener
    */
   template <typename EventType>
-  size_t AddListener(TypedEventListener<EventType>* listener) {
-    return AddListener(TypedEvent<EventType>::GetStaticType(), listener);
+  size_t AddListener(EventListener<EventType>* listener) {
+    // Create a wrapper that handles the type conversion
+    struct TypedListenerWrapper : public EventListenerBase {
+      EventListener<EventType>* listener_;
+
+      TypedListenerWrapper(EventListener<EventType>* listener) : listener_(listener) {}
+
+      void OnEvent(const Event& event) override {
+        if (auto typed_event = dynamic_cast<const EventType*>(&event)) {
+          listener_->OnEvent(*typed_event);
+        }
+      }
+    };
+
+    return AddListener(typeid(EventType), std::make_unique<TypedListenerWrapper>(listener));
   }
 
   /**
@@ -64,18 +77,22 @@ class EventEmitter {
    */
   template <typename EventType>
   size_t AddListener(std::function<void(const EventType&)> callback) {
-    auto callback_listener =
-        std::make_unique<CallbackEventListener<EventType>>(std::move(callback));
-    auto listener_ptr = callback_listener.get();
+    // Create a wrapper that handles the callback and type conversion
+    struct CallbackListenerWrapper : public EventListenerBase {
+      std::function<void(const EventType&)> callback_;
 
-    // Store the callback listener first, then add it
-    {
-      std::lock_guard<std::mutex> lock(listeners_mutex_);
-      callback_listeners_.emplace_back(std::move(callback_listener));
-    }
+      CallbackListenerWrapper(std::function<void(const EventType&)> callback)
+          : callback_(std::move(callback)) {}
 
-    // Use the type-erased method to avoid infinite recursion
-    return AddListener(TypedEvent<EventType>::GetStaticType(), listener_ptr);
+      void OnEvent(const Event& event) override {
+        if (auto typed_event = dynamic_cast<const EventType*>(&event)) {
+          callback_(*typed_event);
+        }
+      }
+    };
+
+    return AddListener(typeid(EventType),
+                       std::make_unique<CallbackListenerWrapper>(std::move(callback)));
   }
 
   /**
@@ -91,7 +108,7 @@ class EventEmitter {
    */
   template <typename EventType>
   void RemoveAllListeners() {
-    RemoveAllListeners(TypedEvent<EventType>::GetStaticType());
+    RemoveAllListeners(typeid(EventType));
   }
 
   /**
@@ -104,7 +121,7 @@ class EventEmitter {
    */
   template <typename EventType>
   size_t GetListenerCount() const {
-    return GetListenerCount(TypedEvent<EventType>::GetStaticType());
+    return GetListenerCount(typeid(EventType));
   }
 
   /**
@@ -173,13 +190,19 @@ class EventEmitter {
   }
 
  private:
+  // Base interface for type-erased listeners
+  struct EventListenerBase {
+    virtual ~EventListenerBase() = default;
+    virtual void OnEvent(const Event& event) = 0;
+  };
+
   struct ListenerInfo {
-    EventListener* listener;
+    std::unique_ptr<EventListenerBase> listener;
     size_t id;
   };
 
   // Type-erased methods for internal use
-  size_t AddListener(std::type_index event_type, EventListener* listener);
+  size_t AddListener(std::type_index event_type, std::unique_ptr<EventListenerBase> listener);
   void RemoveAllListeners(std::type_index event_type);
   size_t GetListenerCount(std::type_index event_type) const;
 
@@ -191,7 +214,7 @@ class EventEmitter {
   std::unordered_map<std::type_index, std::vector<ListenerInfo>> listeners_;
 
   // Storage for callback listeners to manage their lifetime
-  std::vector<std::unique_ptr<EventListener>> callback_listeners_;
+  std::vector<std::unique_ptr<EventListenerBase>> callback_listeners_;
 
   // Async event processing
   std::mutex queue_mutex_;
@@ -212,9 +235,10 @@ class EventEmitter {
  * DEFINE_EVENT(MyEvent) {
  *   std::string message;
  *   int code;
+ *   std::string GetTypeName() const override { return "MyEvent"; }
  * };
  */
-#define DEFINE_EVENT(EventName) class EventName : public TypedEvent<EventName>
+#define DEFINE_EVENT(EventName) class EventName : public Event
 
 /**
  * Helper macro to begin defining an event with custom constructor.
@@ -224,10 +248,11 @@ class EventEmitter {
  *   std::string message;
  *   int code;
  *   MyEvent(std::string msg, int c) : message(std::move(msg)), code(c) {}
+ *   std::string GetTypeName() const override { return "MyEvent"; }
  * DEFINE_EVENT_END();
  */
-#define DEFINE_EVENT_BEGIN(EventName)              \
-  class EventName : public TypedEvent<EventName> { \
+#define DEFINE_EVENT_BEGIN(EventName) \
+  class EventName : public Event {    \
    public:
 
 #define DEFINE_EVENT_END() \
@@ -237,11 +262,12 @@ class EventEmitter {
 /**
  * Simpler macro for events with basic data members.
  * Creates a constructor that initializes all members.
+ * Note: You must implement GetTypeName() in the class body.
  */
-#define SIMPLE_EVENT(EventName, ...)               \
-  class EventName : public TypedEvent<EventName> { \
-   public:                                         \
-    __VA_ARGS__                                    \
+#define SIMPLE_EVENT(EventName, ...) \
+  class EventName : public Event {   \
+   public:                           \
+    __VA_ARGS__                      \
   };
 
 }  // namespace nativeapi

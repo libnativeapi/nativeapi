@@ -4,8 +4,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <typeindex>
-#include <unordered_map>
 
 namespace nativeapi {
 
@@ -29,68 +27,67 @@ class Event {
 };
 
 /**
- * Template for typed events. This provides type safety and automatic
- * type identification for events.
+ * Generic event listener interface providing type-safe event handling.
+ *
+ * This interface supports both generic and specific event handling:
+ * - Use EventListener<Event> to handle all event types (requires manual type checking)
+ * - Use EventListener<SpecificEventType> for compile-time type safety with specific events
+ *
+ * Example:
+ * ```cpp
+ * class MyListener : public EventListener<MyCustomEvent> {
+ * public:
+ *   void OnEvent(const MyCustomEvent& event) override {
+ *     // Handle the event with full type safety
+ *   }
+ * };
+ * ```
  */
 template <typename T>
-class TypedEvent : public Event {
- public:
-  static std::type_index GetStaticType() { return std::type_index(typeid(T)); }
-
-  std::type_index GetType() const { return GetStaticType(); }
-
-  std::string GetTypeName() const override { return typeid(T).name(); }
-};
-
-/**
- * Generic event listener interface that can handle any event type.
- * This is the base interface for the observer pattern.
- */
 class EventListener {
  public:
   virtual ~EventListener() = default;
 
   /**
-   * Handle an event. Implementations should check the event type
-   * and cast appropriately.
+   * Handles an incoming event of type T.
+   *
+   * The event parameter is guaranteed to be of type T or a subtype.
+   * Implementation should process the event according to the listener's logic.
    */
-  virtual void OnEvent(const Event& event) = 0;
+  virtual void OnEvent(const T& event) = 0;
 };
 
 /**
- * Template for typed event listeners. This provides type safety
- * by automatically casting events to the correct type.
+ * A callback-based event listener that wraps function callbacks into the EventListener interface.
+ *
+ * This implementation allows using function references, lambda functions, or any callable
+ * as event handlers without requiring a full class implementation. It's particularly useful
+ * for simple event handling scenarios or when you want to use inline functions.
+ *
+ * Example usage:
+ * ```cpp
+ * // Using a lambda function
+ * auto listener = std::make_unique<CallbackEventListener<MyEvent>>(
+ *     [](const MyEvent& event) { std::cout << "Received: " << event << std::endl; });
+ *
+ * // Using a function reference
+ * void handleMyEvent(const MyEvent& event) { // handle event }
+ * auto listener = std::make_unique<CallbackEventListener<MyEvent>>(handleMyEvent);
+ * ```
  */
-template <typename EventType>
-class TypedEventListener : public EventListener {
+template <typename T>
+class CallbackEventListener : public EventListener<T> {
  public:
-  virtual ~TypedEventListener() = default;
-
-  void OnEvent(const Event& event) override {
-    // Check if this is the correct event type
-    if (auto typed_event = dynamic_cast<const EventType*>(&event)) {
-      OnTypedEvent(*typed_event);
-    }
-  }
+  using CallbackType = std::function<void(const T&)>;
 
   /**
-   * Handle a typed event. Subclasses should override this method.
+   * Creates a new callback-based event listener with the specified callback function.
+   *
+   * The callback must accept a single parameter of type T and return void.
    */
-  virtual void OnTypedEvent(const EventType& event) = 0;
-};
-
-/**
- * Callback-based event handler that wraps std::function callbacks.
- * This allows using lambda functions or function pointers as event handlers.
- */
-template <typename EventType>
-class CallbackEventListener : public TypedEventListener<EventType> {
- public:
-  using CallbackType = std::function<void(const EventType&)>;
-
   explicit CallbackEventListener(CallbackType callback) : callback_(std::move(callback)) {}
 
-  void OnTypedEvent(const EventType& event) override {
+  void OnEvent(const T& event) override {
     if (callback_) {
       callback_(event);
     }

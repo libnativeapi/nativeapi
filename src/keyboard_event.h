@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <typeindex>
 
 #include "foundation/event.h"
 
@@ -58,12 +57,6 @@ class KeyPressedEvent : public KeyboardEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() { return std::type_index(typeid(KeyPressedEvent)); }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -83,12 +76,6 @@ class KeyReleasedEvent : public KeyboardEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() { return std::type_index(typeid(KeyReleasedEvent)); }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -115,14 +102,6 @@ class ModifierKeysChangedEvent : public KeyboardEvent {
   /**
    * Get the static type index for this event type
    */
-  static std::type_index GetStaticType() {
-    return std::type_index(typeid(ModifierKeysChangedEvent));
-  }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 
  private:
   uint32_t modifier_keys_;

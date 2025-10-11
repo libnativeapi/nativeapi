@@ -55,16 +55,6 @@ class DisplayAddedEvent : public DisplayEvent {
    * Get a string representation of the event type
    */
   std::string GetTypeName() const override { return "DisplayAddedEvent"; }
-
-  /**
-   * Get the static type index for this event type
-   */
-  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayAddedEvent)); }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -80,16 +70,6 @@ class DisplayRemovedEvent : public DisplayEvent {
    * Get a string representation of the event type
    */
   std::string GetTypeName() const override { return "DisplayRemovedEvent"; }
-
-  /**
-   * Get the static type index for this event type
-   */
-  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayRemovedEvent)); }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 };
 
 /**
@@ -118,16 +98,6 @@ class DisplayChangedEvent : public DisplayEvent {
    * Get a string representation of the event type
    */
   std::string GetTypeName() const override { return "DisplayChangedEvent"; }
-
-  /**
-   * Get the static type index for this event type
-   */
-  static std::type_index GetStaticType() { return std::type_index(typeid(DisplayChangedEvent)); }
-
-  /**
-   * Get the type index for this event instance
-   */
-  std::type_index GetType() const { return GetStaticType(); }
 
  private:
   Display old_display_;

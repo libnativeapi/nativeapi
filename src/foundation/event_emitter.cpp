@@ -13,7 +13,7 @@ EventEmitter::~EventEmitter() {
 }
 
 size_t EventEmitter::AddListener(std::type_index event_type,
-                                 EventListener* listener) {
+                                 std::unique_ptr<EventListenerBase> listener) {
   if (!listener) {
     return 0;  // Invalid listener
   }
@@ -21,7 +21,7 @@ size_t EventEmitter::AddListener(std::type_index event_type,
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   size_t listener_id = next_listener_id_.fetch_add(1);
 
-  listeners_[event_type].push_back({listener, listener_id});
+  listeners_[event_type].push_back({std::move(listener), listener_id});
 
   return listener_id;
 }
@@ -57,7 +57,7 @@ void EventEmitter::RemoveAllListeners() {
 
 void EventEmitter::EmitSync(const Event& event) {
   std::type_index event_type = typeid(event);
-  std::vector<EventListener*> listeners_copy;
+  std::vector<EventListenerBase*> listeners_copy;
 
   // Copy listeners to avoid holding the lock during dispatch
   {
@@ -66,7 +66,7 @@ void EventEmitter::EmitSync(const Event& event) {
     if (it != listeners_.end()) {
       listeners_copy.reserve(it->second.size());
       for (const auto& info : it->second) {
-        listeners_copy.push_back(info.listener);
+        listeners_copy.push_back(info.listener.get());
       }
     }
   }
