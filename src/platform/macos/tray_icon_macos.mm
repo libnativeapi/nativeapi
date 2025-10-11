@@ -27,9 +27,9 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), delegate_(nil) {}
+  Impl() : ns_status_item_(nil), delegate_(nil), menu_closed_listener_id_(0) {}
 
-  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil) {
+  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil), menu_closed_listener_id_(0) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];
@@ -45,6 +45,12 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
+    // Remove the menu closed listener before cleaning up
+    if (context_menu_ && menu_closed_listener_id_ != 0) {
+      context_menu_->RemoveListener(menu_closed_listener_id_);
+      menu_closed_listener_id_ = 0;
+    }
+
     // Clean up blocks first
     if (delegate_) {
       delegate_.leftClickedBlock = nil;
@@ -76,6 +82,7 @@ class TrayIcon::Impl {
   NSStatusItem* ns_status_item_;
   TrayIconDelegate* delegate_;
   std::shared_ptr<Menu> context_menu_;
+  size_t menu_closed_listener_id_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
@@ -242,17 +249,27 @@ std::optional<std::string> TrayIcon::GetTooltip() {
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
+  // Remove previous menu listener if it exists
+  if (pimpl_->context_menu_ && pimpl_->menu_closed_listener_id_ != 0) {
+    pimpl_->context_menu_->RemoveListener(pimpl_->menu_closed_listener_id_);
+    pimpl_->menu_closed_listener_id_ = 0;
+  }
+
   // Store the menu reference
   // Don't set the menu directly to the status item, as this would cause
   // macOS to take over click handling and prevent our custom click events
   // Instead, we'll show the menu manually in our click handler
   pimpl_->context_menu_ = menu;
-  auto pimpl_raw = pimpl_.get();
-  pimpl_->context_menu_->AddListener<MenuClosedEvent>([pimpl_raw](const MenuClosedEvent& event) {
-    if (pimpl_raw && pimpl_raw->ns_status_item_) {
-      pimpl_raw->ns_status_item_.menu = nil;
-    }
-  });
+
+  if (pimpl_->context_menu_) {
+    auto pimpl_raw = pimpl_.get();
+    pimpl_->menu_closed_listener_id_ = pimpl_->context_menu_->AddListener<MenuClosedEvent>(
+        [pimpl_raw](const MenuClosedEvent& event) {
+          if (pimpl_raw && pimpl_raw->ns_status_item_) {
+            pimpl_raw->ns_status_item_.menu = nil;
+          }
+        });
+  }
 }
 
 std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
