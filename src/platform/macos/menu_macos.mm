@@ -790,28 +790,59 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
 }
 
 bool Menu::Open(double x, double y) {
-  NSPoint point = NSMakePoint(x, y);
+  // Get the main window
+  NSWindow* mainWindow = [[NSApplication sharedApplication] mainWindow];
+  if (!mainWindow) {
+    // Fallback to key window if main window is not available
+    mainWindow = [[NSApplication sharedApplication] keyWindow];
+  }
 
-  // Convert screen coordinates to window coordinates if needed
-  NSEvent* event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                                      location:point
-                                 modifierFlags:0
-                                     timestamp:0
-                                  windowNumber:0
-                                       context:nil
-                                   eventNumber:0
-                                    clickCount:1
-                                      pressure:1.0];
+  if (!mainWindow) {
+    // If still no window, use the old implementation
+    NSPoint point = NSMakePoint(x, y);
+    NSEvent* event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                                        location:point
+                                   modifierFlags:0
+                                       timestamp:0
+                                    windowNumber:0
+                                         context:nil
+                                     eventNumber:0
+                                      clickCount:1
+                                        pressure:1.0];
+
+    pimpl_->visible_ = true;
+
+    @autoreleasepool {
+      NSView* dummyView = [[NSView alloc] init];
+      [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
+    }
+
+    pimpl_->visible_ = false;
+    return true;
+  }
+
+  NSView* contentView = [mainWindow contentView];
+  if (!contentView) {
+    return false;
+  }
+
+  // Convert coordinates if the content view is not flipped
+  // In macOS, the default coordinate system has origin at bottom-left
+  // If view is not flipped, we need to convert from top-left origin
+  CGFloat finalY = y;
+  if (![contentView isFlipped]) {
+    CGFloat frameHeight = [contentView frame].size.height;
+    finalY = frameHeight - y;
+  }
+
+  NSPoint point = NSMakePoint(x, finalY);
 
   pimpl_->visible_ = true;
 
-  @autoreleasepool {
-    // Create a dummy view to avoid the nil warning
-    NSView* dummyView = [[NSView alloc] init];
-    [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
-  }
-
-  pimpl_->visible_ = false;
+  // Use dispatch to ensure menu popup happens on the main run loop
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:contentView];
+  });
 
   return true;
 }
