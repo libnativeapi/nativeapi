@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <memory>
 #include "../../app_runner.h"
 
 namespace nativeapi {

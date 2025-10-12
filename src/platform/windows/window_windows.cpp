@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <iostream>
+#include <string>
 #include "../../window.h"
 #include "../../window_manager.h"
 

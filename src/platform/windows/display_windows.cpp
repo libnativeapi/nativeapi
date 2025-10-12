@@ -1,5 +1,6 @@
 #include "../../display.h"
 
+#include <string>
 #include <windows.h>
 
 namespace nativeapi {
