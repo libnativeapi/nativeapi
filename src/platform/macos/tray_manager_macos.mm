@@ -56,17 +56,6 @@ bool TrayManager::IsSupported() {
   return true;
 }
 
-std::shared_ptr<TrayIcon> TrayManager::Create() {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  // Create tray icon with platform-specific initialization handled internally
-  auto tray = std::make_shared<TrayIcon>();
-  tray->id = next_tray_id_++;
-  trays_[tray->id] = tray;
-
-  return tray;
-}
-
 std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconID id) {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -85,19 +74,6 @@ std::vector<std::shared_ptr<TrayIcon>> TrayManager::GetAll() {
     trays.push_back(pair.second);
   }
   return trays;
-}
-
-bool TrayManager::Destroy(TrayIconID id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  auto it = trays_.find(id);
-  if (it != trays_.end()) {
-    // Remove the tray icon from our container
-    // The shared_ptr will automatically clean up when the last reference is released
-    trays_.erase(it);
-    return true;
-  }
-  return false;
 }
 
 }  // namespace nativeapi

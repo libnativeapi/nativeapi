@@ -42,7 +42,7 @@ int main() {
   options.centered = true;
   std::shared_ptr<Window> window_ptr = window_manager.Create(options);
 
-  std::shared_ptr<TrayIcon> tray_icon_ptr = tray_manager.Create();
+  std::shared_ptr<TrayIcon> tray_icon_ptr = std::make_shared<TrayIcon>();
   if (tray_icon_ptr != nullptr) {
     TrayIcon& tray_icon = *tray_icon_ptr;
     tray_icon.SetIcon(

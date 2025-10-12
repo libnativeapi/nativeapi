@@ -58,7 +58,7 @@ typedef long TrayIconID;
  * trayIcon->SetContextMenu(menu);
  *
  * // Show the tray icon
- * trayIcon->Show();
+ * trayIcon->SetVisible(true);
  * ```
  */
 class TrayIcon : public EventEmitter, public NativeObjectProvider {

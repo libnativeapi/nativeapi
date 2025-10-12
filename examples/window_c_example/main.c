@@ -290,7 +290,7 @@ int main() {
     native_window_options_destroy(options);
 
     // Create tray icon
-    g_tray_icon = native_tray_manager_create();
+    g_tray_icon = native_tray_icon_create();
     if (g_tray_icon != NULL) {
         native_tray_icon_set_icon(g_tray_icon,
             "data:image/png;base64,"

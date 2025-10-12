@@ -10,15 +10,17 @@
 namespace nativeapi {
 
 /**
- * @brief TrayManager is a singleton class that manages all system tray icons.
+ * @brief TrayManager is a singleton class that provides system tray functionality.
  *
- * This class provides a centralized way to create, manage, and destroy system
- * tray icons. It ensures that there's only one instance of the tray manager
- * throughout the application lifetime and provides thread-safe operations for
- * managing tray icons.
+ * This class provides centralized access to system tray capabilities and
+ * manages existing tray icons. It ensures that there's only one instance of
+ * the tray manager throughout the application lifetime and provides thread-safe
+ * operations for accessing tray icons.
  *
  * @note This class is implemented as a singleton to ensure consistent
- * management of system tray resources across the entire application.
+ * access to system tray resources across the entire application.
+ * @note TrayIcon instances should be created directly using std::make_shared<TrayIcon>()
+ * rather than through this manager.
  */
 class TrayManager {
  public:
@@ -53,19 +55,6 @@ class TrayManager {
   bool IsSupported();
 
   /**
-   * @brief Create a new system tray icon.
-   *
-   * Creates a new tray icon instance with platform-specific initialization
-   * and registers it with the manager. The tray icon will be assigned a
-   * unique ID for future reference.
-   *
-   * @return Shared pointer to the newly created TrayIcon instance
-   * @note The returned tray icon is automatically managed by this TrayManager
-   * @thread_safety This method is thread-safe
-   */
-  std::shared_ptr<TrayIcon> Create();
-
-  /**
    * @brief Get a tray icon by its unique ID.
    *
    * Retrieves a previously created tray icon using its assigned ID.
@@ -86,19 +75,6 @@ class TrayManager {
    * @thread_safety This method is thread-safe
    */
   std::vector<std::shared_ptr<TrayIcon>> GetAll();
-
-  /**
-   * @brief Destroy a tray icon by its ID.
-   *
-   * Removes and destroys a tray icon identified by its unique ID.
-   * This will remove the icon from the system tray and clean up
-   * associated resources.
-   *
-   * @param id The unique identifier of the tray icon to destroy
-   * @return true if the tray icon was found and destroyed, false otherwise
-   * @thread_safety This method is thread-safe
-   */
-  bool Destroy(TrayIconID id);
 
   // Prevent copy construction and assignment to maintain singleton property
   TrayManager(const TrayManager&) = delete;

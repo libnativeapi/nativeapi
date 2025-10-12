@@ -27,15 +27,15 @@ int main() {
   [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
 #endif
 
-  // Get TrayManager instance (singleton pattern)
+  // Check if tray icons are supported
   TrayManager& trayManager = TrayManager::GetInstance();
   if (!trayManager.IsSupported()) {
     std::cerr << "Tray icons are not supported on this platform!" << std::endl;
     return 1;
   }
 
-  // Create a tray icon
-  auto trayIcon = trayManager.Create();
+  // Create a tray icon directly
+  auto trayIcon = std::make_shared<TrayIcon>();
   if (!trayIcon) {
     std::cerr << "Failed to create tray icon!" << std::endl;
     return 1;

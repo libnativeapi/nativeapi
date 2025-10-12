@@ -160,7 +160,7 @@ int main() {
   }
 
   // Create tray icon
-  native_tray_icon_t tray_icon = native_tray_manager_create();
+  native_tray_icon_t tray_icon = native_tray_icon_create();
   if (!tray_icon) {
     printf("Error: Failed to create tray icon!\n");
     native_menu_destroy(menu);

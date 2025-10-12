@@ -36,13 +36,6 @@ FFI_PLUGIN_EXPORT
 bool native_tray_manager_is_supported(void);
 
 /**
- * Create a new tray icon
- * @return Tray icon handle, or NULL if creation failed
- */
-FFI_PLUGIN_EXPORT
-native_tray_icon_t native_tray_manager_create(void);
-
-/**
  * Get a tray icon by its ID
  * @param tray_icon_id The tray icon ID
  * @return Tray icon handle, or NULL if not found
@@ -56,14 +49,6 @@ native_tray_icon_t native_tray_manager_get(native_tray_icon_id_t tray_icon_id);
  */
 FFI_PLUGIN_EXPORT
 native_tray_icon_list_t native_tray_manager_get_all(void);
-
-/**
- * Destroy a tray icon by its ID
- * @param tray_icon_id The tray icon ID to destroy
- * @return true if tray icon was found and destroyed, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_tray_manager_destroy(native_tray_icon_id_t tray_icon_id);
 
 /**
  * Utility functions
