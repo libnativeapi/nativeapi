@@ -158,7 +158,7 @@ native_menu_item_t native_menu_item_create(const char* text,
     return nullptr;
 
   try {
-    auto item = MenuItem::Create(text, convert_menu_item_type(type));
+    auto item = std::make_shared<MenuItem>(text, convert_menu_item_type(type));
     void* handle = item.get();
     g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
     return static_cast<native_menu_item_t>(handle);
@@ -169,7 +169,7 @@ native_menu_item_t native_menu_item_create(const char* text,
 
 native_menu_item_t native_menu_item_create_separator(void) {
   try {
-    auto item = MenuItem::CreateSeparator();
+    auto item = std::make_shared<MenuItem>("", MenuItemType::Separator);
     void* handle = item.get();
     g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
     return static_cast<native_menu_item_t>(handle);
@@ -220,12 +220,16 @@ native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item) {
 }
 
 void native_menu_item_set_label(native_menu_item_t item, const char* label) {
-  if (!item || !label)
+  if (!item)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetLabel(label);
+    if (label) {
+      menu_item->SetLabel(std::string(label));
+    } else {
+      menu_item->SetLabel(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -237,7 +241,13 @@ char* native_menu_item_get_label(native_menu_item_t item) {
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    std::string text = menu_item->GetLabel();
+    auto textOpt = menu_item->GetLabel();
+
+    if (!textOpt.has_value()) {
+      return nullptr;
+    }
+
+    const std::string& text = textOpt.value();
 
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(text.length() + 1));
@@ -251,12 +261,16 @@ char* native_menu_item_get_label(native_menu_item_t item) {
 }
 
 void native_menu_item_set_icon(native_menu_item_t item, const char* icon) {
-  if (!item || !icon)
+  if (!item)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetIcon(icon);
+    if (icon) {
+      menu_item->SetIcon(std::string(icon));
+    } else {
+      menu_item->SetIcon(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -268,7 +282,13 @@ char* native_menu_item_get_icon(native_menu_item_t item) {
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    std::string icon = menu_item->GetIcon();
+    auto iconOpt = menu_item->GetIcon();
+
+    if (!iconOpt.has_value()) {
+      return nullptr;
+    }
+
+    const std::string& icon = iconOpt.value();
 
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(icon.length() + 1));
@@ -283,12 +303,16 @@ char* native_menu_item_get_icon(native_menu_item_t item) {
 
 void native_menu_item_set_tooltip(native_menu_item_t item,
                                   const char* tooltip) {
-  if (!item || !tooltip)
+  if (!item)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetTooltip(tooltip);
+    if (tooltip) {
+      menu_item->SetTooltip(std::string(tooltip));
+    } else {
+      menu_item->SetTooltip(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -300,7 +324,13 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    std::string tooltip = menu_item->GetTooltip();
+    auto tooltipOpt = menu_item->GetTooltip();
+
+    if (!tooltipOpt.has_value()) {
+      return nullptr;
+    }
+
+    const std::string& tooltip = tooltipOpt.value();
 
     // Allocate C string and copy content
     char* result = static_cast<char*>(malloc(tooltip.length() + 1));
@@ -630,7 +660,7 @@ bool native_menu_item_trigger(native_menu_item_t item) {
 
 native_menu_t native_menu_create(void) {
   try {
-    auto menu = Menu::Create();
+    auto menu = std::make_shared<Menu>();
     void* handle = menu.get();
     g_menus[handle] = menu;  // Store shared_ptr to keep object alive
     return static_cast<native_menu_t>(handle);

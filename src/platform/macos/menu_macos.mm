@@ -1,5 +1,6 @@
 #include <atomic>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 #include "../../menu.h"
@@ -168,9 +169,9 @@ class MenuItem::Impl {
   NSMenuItem* ns_menu_item_;
   MenuItemTarget* target_;
   MenuItemType type_;
-  std::string text_;
-  std::string icon_;
-  std::string tooltip_;
+  std::optional<std::string> text_;
+  std::optional<std::string> icon_;
+  std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
   bool enabled_;
@@ -212,7 +213,7 @@ class MenuItem::Impl {
 };
 
 // MenuItem implementation
-std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType type) {
+MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_item_id++) {
   NSMenuItem* nsItem = nullptr;
 
   switch (type) {
@@ -230,18 +231,19 @@ std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text, MenuItemType
       break;
   }
 
-  auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
-  item->pimpl_ = std::make_unique<Impl>(nsItem, type);
-  item->id = g_next_menu_item_id++;
-  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:item->id],
+  pimpl_ = std::make_unique<Impl>(nsItem, type);
+  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-  item->pimpl_->text_ = text;
+  pimpl_->text_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
-  return item;
-}
-
-std::shared_ptr<MenuItem> MenuItem::CreateSeparator() {
-  return Create("", MenuItemType::Separator);
+  // 设置默认的 Block 处理器，直接发送事件
+  pimpl_->target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
+    try {
+      EmitSync<MenuItemClickedEvent>(item_id, item_text);
+    } catch (...) {
+      // Protect against event emission exceptions
+    }
+  };
 }
 
 MenuItem::MenuItem(void* native_item)
@@ -261,10 +263,6 @@ MenuItem::MenuItem(void* native_item)
   };
 }
 
-MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(0) {  // Will be set in Create method
-}
-
 MenuItem::~MenuItem() {
   // No special cleanup needed since we're not storing C++ object references
 }
@@ -273,45 +271,53 @@ MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
-void MenuItem::SetLabel(const std::string& label) {
+void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->text_ = label;
-  [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:label.c_str()]];
+  if (label.has_value()) {
+    [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:label->c_str()]];
+  } else {
+    [pimpl_->ns_menu_item_ setTitle:@""];
+  }
 }
 
-std::string MenuItem::GetLabel() const {
+std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->text_;
 }
 
-void MenuItem::SetIcon(const std::string& icon) {
+void MenuItem::SetIcon(const std::optional<std::string>& icon) {
   pimpl_->icon_ = icon;
 
   NSImage* image = nil;
 
-  // Check if the icon is a base64 string
-  if (icon.find("data:image") != std::string::npos) {
-    // Extract the base64 part
-    size_t pos = icon.find("base64,");
-    if (pos != std::string::npos) {
-      std::string base64Icon = icon.substr(pos + 7);
+  if (icon.has_value()) {
+    const std::string& iconStr = icon.value();
 
-      // Convert base64 to NSData
-      NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
-      NSData* imageData =
-          [[NSData alloc] initWithBase64EncodedString:base64String
-                                              options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    // Check if the icon is a base64 string
+    if (iconStr.find("data:image") != std::string::npos) {
+      // Extract the base64 part
+      size_t pos = iconStr.find("base64,");
+      if (pos != std::string::npos) {
+        std::string base64Icon = iconStr.substr(pos + 7);
 
-      if (imageData) {
-        image = [[NSImage alloc] initWithData:imageData];
+        // Convert base64 to NSData
+        NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
+        NSData* imageData = [[NSData alloc]
+            initWithBase64EncodedString:base64String
+                                options:NSDataBase64DecodingIgnoreUnknownCharacters];
+
+        if (imageData) {
+          image = [[NSImage alloc] initWithData:imageData];
+        }
       }
-    }
-  } else if (!icon.empty()) {
-    // Try to load as file path first
-    NSString* iconPath = [NSString stringWithUTF8String:icon.c_str()];
-    image = [[NSImage alloc] initWithContentsOfFile:iconPath];
+    } else if (!iconStr.empty()) {
+      // Try to load as file path first
+      NSString* iconPath = [NSString stringWithUTF8String:iconStr.c_str()];
+      image = [[NSImage alloc] initWithContentsOfFile:iconPath];
 
-    // If that fails, try as named image
-    if (!image) {
-      image = [NSImage imageNamed:iconPath];
+      // If that fails, try as named image
+      if (!image) {
+        image = [NSImage imageNamed:iconPath];
+      }
     }
   }
 
@@ -325,16 +331,20 @@ void MenuItem::SetIcon(const std::string& icon) {
   }
 }
 
-std::string MenuItem::GetIcon() const {
+std::optional<std::string> MenuItem::GetIcon() const {
   return pimpl_->icon_;
 }
 
-void MenuItem::SetTooltip(const std::string& tooltip) {
+void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {
   pimpl_->tooltip_ = tooltip;
-  [pimpl_->ns_menu_item_ setToolTip:[NSString stringWithUTF8String:tooltip.c_str()]];
+  if (tooltip.has_value()) {
+    [pimpl_->ns_menu_item_ setToolTip:[NSString stringWithUTF8String:tooltip->c_str()]];
+  } else {
+    [pimpl_->ns_menu_item_ setToolTip:nil];
+  }
 }
 
-std::string MenuItem::GetTooltip() const {
+std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
@@ -465,7 +475,7 @@ bool MenuItem::Trigger() {
 
   // Call the block directly instead of going through target-action
   if (pimpl_->target_.clickedBlock) {
-    std::string itemText = pimpl_->text_;
+    std::string itemText = pimpl_->text_.value_or("");
     pimpl_->target_.clickedBlock(id, itemText);
   }
   return true;
@@ -506,30 +516,27 @@ class Menu::Impl {
 };
 
 // Menu implementation
-std::shared_ptr<Menu> Menu::Create() {
+Menu::Menu() : id(g_next_menu_id++) {
   NSMenu* nsMenu = [[NSMenu alloc] init];
-  auto menu = std::shared_ptr<Menu>(new Menu());
-  menu->pimpl_ = std::make_unique<Impl>(nsMenu);
-  menu->id = g_next_menu_id++;
-  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:menu->id],
+  pimpl_ = std::make_unique<Impl>(nsMenu);
+  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   // 设置默认的 Block 处理器，直接发送事件
-  menu->pimpl_->delegate_.openedBlock = ^(MenuID menu_id) {
+  pimpl_->delegate_.openedBlock = ^(MenuID menu_id) {
     try {
-      menu->EmitSync<MenuOpenedEvent>(menu_id);
+      EmitSync<MenuOpenedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
   };
 
-  menu->pimpl_->delegate_.closedBlock = ^(MenuID menu_id) {
+  pimpl_->delegate_.closedBlock = ^(MenuID menu_id) {
     try {
-      menu->EmitSync<MenuClosedEvent>(menu_id);
+      EmitSync<MenuClosedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
   };
-  return menu;
 }
 
 Menu::Menu(void* native_menu)
@@ -554,9 +561,6 @@ Menu::Menu(void* native_menu)
       // Protect against event emission exceptions
     }
   };
-}
-
-Menu::Menu() : id(0) {  // Will be set in Create method
 }
 
 Menu::~Menu() {
@@ -624,12 +628,12 @@ void Menu::Clear() {
 }
 
 void Menu::AddSeparator() {
-  auto separator = MenuItem::CreateSeparator();
+  auto separator = std::make_shared<MenuItem>("", MenuItemType::Separator);
   AddItem(separator);
 }
 
 void Menu::InsertSeparator(size_t index) {
-  auto separator = MenuItem::CreateSeparator();
+  auto separator = std::make_shared<MenuItem>("", MenuItemType::Separator);
   InsertItem(index, separator);
 }
 
@@ -658,7 +662,12 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
-    std::string itemText = item->GetLabel();
+    auto itemTextOpt = item->GetLabel();
+    if (!itemTextOpt.has_value()) {
+      continue;
+    }
+
+    const std::string& itemText = itemTextOpt.value();
     if (case_sensitive) {
       if (itemText == text)
         return item;
@@ -733,21 +742,24 @@ bool Menu::IsEnabled() const {
 }
 
 std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
-  auto item = MenuItem::Create(text, MenuItemType::Normal);
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
   AddItem(item);
   return item;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text, const std::string& icon) {
-  auto item = MenuItem::Create(text, MenuItemType::Normal);
-  item->SetIcon(icon);
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text,
+                                                 const std::optional<std::string>& icon) {
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
+  if (icon.has_value()) {
+    item->SetIcon(icon);
+  }
   AddItem(item);
   return item;
 }
 
 std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text,
                                                     std::shared_ptr<Menu> submenu) {
-  auto item = MenuItem::Create(text, MenuItemType::Submenu);
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Submenu);
   item->SetSubmenu(submenu);
   AddItem(item);
   return item;

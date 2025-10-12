@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include "foundation/event.h"
@@ -154,7 +155,7 @@ class Menu;
  * @example
  * ```cpp
  * // Create a normal menu item
- * auto item = MenuItem::Create("Open File", MenuItemType::Normal);
+ * auto item = std::make_shared<MenuItem>("Open File", MenuItemType::Normal);
  * item->SetIcon("data:image/png;base64,...");
  * item->SetAccelerator(KeyboardAccelerator("O", KeyboardAccelerator::Ctrl));
  * item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event)
@@ -164,7 +165,7 @@ class Menu;
  * });
  *
  * // Create a checkbox item
- * auto checkbox = MenuItem::Create("Show Toolbar", MenuItemType::Checkbox);
+ * auto checkbox = std::make_shared<MenuItem>("Show Toolbar", MenuItemType::Checkbox);
  * checkbox->SetChecked(true);
  * checkbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent&
  * event) { std::cout << "Toolbar clicked, handle state change manually" <<
@@ -175,33 +176,21 @@ class Menu;
 class MenuItem : public EventEmitter, public NativeObjectProvider {
  public:
   /**
-   * @brief Factory method to create a new menu item.
+   * @brief Constructor to create a new menu item.
    *
    * Creates a menu item of the specified type with the given text.
-   * This is the preferred way to create menu items.
    *
    * @param text The display text for the menu item
    * @param type The type of menu item to create
-   * @return Shared pointer to the created menu item
    *
    * @example
    * ```cpp
-   * auto item = MenuItem::Create("File", MenuItemType::Normal);
-   * auto separator = MenuItem::Create("", MenuItemType::Separator);
-   * auto checkbox = MenuItem::Create("Word Wrap", MenuItemType::Checkbox);
+   * auto item = std::make_shared<MenuItem>("File", MenuItemType::Normal);
+   * auto separator = std::make_shared<MenuItem>("", MenuItemType::Separator);
+   * auto checkbox = std::make_shared<MenuItem>("Word Wrap", MenuItemType::Checkbox);
    * ```
    */
-  static std::shared_ptr<MenuItem> Create(const std::string& text = "",
-                                          MenuItemType type = MenuItemType::Normal);
-
-  /**
-   * @brief Factory method to create a separator menu item.
-   *
-   * Convenience method for creating separator items.
-   *
-   * @return Shared pointer to a separator menu item
-   */
-  static std::shared_ptr<MenuItem> CreateSeparator();
+  MenuItem(const std::string& text = "", MenuItemType type = MenuItemType::Normal);
 
   /**
    * @brief Constructor that wraps an existing platform-specific menu item.
@@ -243,22 +232,23 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    * ampersand characters (&) can be used to indicate mnemonics
    * (keyboard navigation keys).
    *
-   * @param label The label to display
+   * @param label The label to display (optional)
    *
    * @example
    * ```cpp
    * item->SetLabel("&File");  // 'F' becomes the mnemonic on Windows/Linux
    * item->SetLabel("Open Recent");
+   * item->SetLabel(std::nullopt);  // Clear the label
    * ```
    */
-  void SetLabel(const std::string& label);
+  void SetLabel(const std::optional<std::string>& label);
 
   /**
    * @brief Get the current display label of the menu item.
    *
-   * @return The current label as a string
+   * @return The current label as an optional string
    */
-  std::string GetLabel() const;
+  std::optional<std::string> GetLabel() const;
 
   /**
    * @brief Set the icon for the menu item.
@@ -267,7 +257,7 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    * image string. Base64 strings should be prefixed with the data URI
    * scheme (e.g., "data:image/png;base64,iVBORw0KGgo...").
    *
-   * @param icon File path to an icon image or base64-encoded image data
+   * @param icon File path to an icon image or base64-encoded image data (optional)
    *
    * @note Supported formats depend on the platform:
    *       - macOS: PNG, JPEG, GIF, TIFF, BMP
@@ -284,16 +274,19 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    *
    * // Using system icons (platform-dependent)
    * item->SetIcon("folder");  // May work on some systems
+   *
+   * // Remove icon
+   * item->SetIcon(std::nullopt);
    * ```
    */
-  void SetIcon(const std::string& icon);
+  void SetIcon(const std::optional<std::string>& icon);
 
   /**
    * @brief Get the current icon of the menu item.
    *
-   * @return The current icon path or data as a string
+   * @return The current icon path or data as an optional string
    */
-  std::string GetIcon() const;
+  std::optional<std::string> GetIcon() const;
 
   /**
    * @brief Set the tooltip text for the menu item.
@@ -301,16 +294,16 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    * The tooltip may appear when the user hovers over the menu item,
    * depending on the platform and menu context.
    *
-   * @param tooltip The tooltip text to display
+   * @param tooltip The tooltip text to display (optional)
    */
-  void SetTooltip(const std::string& tooltip);
+  void SetTooltip(const std::optional<std::string>& tooltip);
 
   /**
    * @brief Get the current tooltip text of the menu item.
    *
-   * @return The current tooltip text as a string
+   * @return The current tooltip text as an optional string
    */
-  std::string GetTooltip() const;
+  std::optional<std::string> GetTooltip() const;
 
   /**
    * @brief Set the keyboard accelerator for the menu item.
@@ -462,14 +455,6 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
   friend class Menu;
 
   /**
-   * @brief Private constructor for factory methods.
-   *
-   * @param text Initial text for the menu item
-   * @param type Type of menu item to create
-   */
-  MenuItem(const std::string& text, MenuItemType type);
-
-  /**
    * @brief Private implementation class using the PIMPL idiom.
    */
   class Impl;
@@ -502,20 +487,20 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
  * @example
  * ```cpp
  * // Create a file menu
- * auto fileMenu = Menu::Create();
+ * auto fileMenu = std::make_shared<Menu>();
  *
  * // Add items to the menu
- * auto newItem = MenuItem::Create("New", MenuItemType::Normal);
+ * auto newItem = std::make_shared<MenuItem>("New", MenuItemType::Normal);
  * newItem->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
  * fileMenu->AddItem(newItem);
  *
- * auto openItem = MenuItem::Create("Open", MenuItemType::Normal);
+ * auto openItem = std::make_shared<MenuItem>("Open", MenuItemType::Normal);
  * openItem->SetAccelerator(KeyboardAccelerator("O",
  * KeyboardAccelerator::Ctrl)); fileMenu->AddItem(openItem);
  *
  * fileMenu->AddSeparator();
  *
- * auto exitItem = MenuItem::Create("Exit", MenuItemType::Normal);
+ * auto exitItem = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
  * fileMenu->AddItem(exitItem);
  *
  * // Listen to menu events
@@ -530,14 +515,11 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
 class Menu : public EventEmitter, public NativeObjectProvider {
  public:
   /**
-   * @brief Factory method to create a new menu.
+   * @brief Constructor to create a new menu.
    *
    * Creates an empty menu that can be populated with menu items.
-   * This is the preferred way to create menus.
-   *
-   * @return Shared pointer to the created menu
    */
-  static std::shared_ptr<Menu> Create();
+  Menu();
 
   /**
    * @brief Constructor that wraps an existing platform-specific menu.
@@ -574,7 +556,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * auto item = MenuItem::Create("Save");
+   * auto item = std::make_shared<MenuItem>("Save");
    * menu->AddItem(item);
    * ```
    */
@@ -769,10 +751,11 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * and adds it to the menu in one operation.
    *
    * @param text The text for the menu item
-   * @param icon The icon for the menu item (file path or base64 data)
+   * @param icon The icon for the menu item (file path or base64 data, optional)
    * @return Shared pointer to the created and added menu item
    */
-  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text, const std::string& icon);
+  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text,
+                                             const std::optional<std::string>& icon);
 
   /**
    * @brief Create a submenu item and add it to the menu.
@@ -814,11 +797,6 @@ class Menu : public EventEmitter, public NativeObjectProvider {
   void* GetNativeObjectInternal() const override;
 
  private:
-  /**
-   * @brief Private constructor for factory methods.
-   */
-  Menu();
-
   /**
    * @brief Private implementation class using the PIMPL idiom.
    */

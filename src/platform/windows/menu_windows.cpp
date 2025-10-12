@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <atomic>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 #include "../../menu.h"
@@ -102,9 +103,9 @@ class MenuItem::Impl {
   HMENU parent_menu_;
   UINT menu_item_id_;
   MenuItemType type_;
-  std::string text_;
-  std::string icon_;
-  std::string tooltip_;
+  std::optional<std::string> text_;
+  std::optional<std::string> icon_;
+  std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
   bool enabled_;
@@ -168,38 +169,39 @@ MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
-void MenuItem::SetLabel(const std::string& label) {
+void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->text_ = label;
   if (pimpl_->parent_menu_) {
     MENUITEMINFO mii = {};
     mii.cbSize = sizeof(MENUITEMINFO);
     mii.fMask = MIIM_STRING;
-    mii.dwTypeData = const_cast<LPSTR>(label.c_str());
+    const char* labelStr = label.has_value() ? label->c_str() : "";
+    mii.dwTypeData = const_cast<LPSTR>(labelStr);
     SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
   }
 }
 
-std::string MenuItem::GetLabel() const {
+std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->text_;
 }
 
-void MenuItem::SetIcon(const std::string& icon) {
+void MenuItem::SetIcon(const std::optional<std::string>& icon) {
   pimpl_->icon_ = icon;
   // Windows menu icons would require HBITMAP handling
   // This is a placeholder implementation
 }
 
-std::string MenuItem::GetIcon() const {
+std::optional<std::string> MenuItem::GetIcon() const {
   return pimpl_->icon_;
 }
 
-void MenuItem::SetTooltip(const std::string& tooltip) {
+void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {
   pimpl_->tooltip_ = tooltip;
   // Windows doesn't have built-in tooltip support for menu items
   // This would require custom implementation
 }
 
-std::string MenuItem::GetTooltip() const {
+std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
@@ -405,7 +407,9 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     menuId = reinterpret_cast<UINT_PTR>(subMenu);
   }
 
-  AppendMenu(pimpl_->hmenu_, flags, menuId, item->GetLabel().c_str());
+  auto labelOpt = item->GetLabel();
+  const char* labelStr = labelOpt.has_value() ? labelOpt->c_str() : "";
+  AppendMenu(pimpl_->hmenu_, flags, menuId, labelStr);
 
   // Update the item's impl with menu info
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
@@ -428,8 +432,10 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
     flags = MF_SEPARATOR | MF_BYPOSITION;
   }
 
+  auto labelOpt = item->GetLabel();
+  const char* labelStr = labelOpt.has_value() ? labelOpt->c_str() : "";
   InsertMenu(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id,
-             item->GetLabel().c_str());
+             labelStr);
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
   item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
@@ -511,7 +517,12 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
                                                bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
-    std::string itemText = item->GetLabel();
+    auto itemTextOpt = item->GetLabel();
+    if (!itemTextOpt.has_value()) {
+      continue;
+    }
+
+    const std::string& itemText = itemTextOpt.value();
     if (case_sensitive) {
       if (itemText == text)
         return item;
@@ -582,10 +593,13 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
   return item;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text,
-                                                 const std::string& icon) {
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(
+    const std::string& text,
+    const std::optional<std::string>& icon) {
   auto item = MenuItem::Create(text, MenuItemType::Normal);
-  item->SetIcon(icon);
+  if (icon.has_value()) {
+    item->SetIcon(icon);
+  }
   AddItem(item);
   return item;
 }

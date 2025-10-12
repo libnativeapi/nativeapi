@@ -55,6 +55,16 @@ cmake ..
 cmake --build . --config Release
 ```
 
+## Development
+
+### Code Formatting
+
+Format the codebase using clang-format:
+
+```bash
+clang-format -i **/*.cpp **/*.h **/*.mm
+```
+
 ## Language Bindings
 
 Currently available language bindings for nativeapi:

@@ -72,10 +72,11 @@ int main() {
       });
 
   // Create context menu
-  auto context_menu = Menu::Create();
+  auto context_menu = std::make_shared<Menu>();
 
   // Add menu items
-  auto status_item = MenuItem::Create("Status: Running", MenuItemType::Normal);
+  auto status_item =
+      std::make_shared<MenuItem>("Status: Running", MenuItemType::Normal);
   status_item->AddListener<MenuItemClickedEvent>(
       [](const MenuItemClickedEvent& event) {
         std::cout << "Status clicked from context menu" << std::endl;
@@ -86,7 +87,8 @@ int main() {
   context_menu->AddSeparator();
 
   // Add settings item
-  auto settings_item = MenuItem::Create("Settings...", MenuItemType::Normal);
+  auto settings_item =
+      std::make_shared<MenuItem>("Settings...", MenuItemType::Normal);
   settings_item->AddListener<MenuItemClickedEvent>(
       [](const MenuItemClickedEvent& event) {
         std::cout << "Settings clicked from context menu" << std::endl;
@@ -95,7 +97,7 @@ int main() {
   context_menu->AddItem(settings_item);
 
   // Add about item
-  auto about_item = MenuItem::Create("About", MenuItemType::Normal);
+  auto about_item = std::make_shared<MenuItem>("About", MenuItemType::Normal);
   about_item->AddListener<MenuItemClickedEvent>(
       [](const MenuItemClickedEvent& event) {
         std::cout << "About clicked from context menu" << std::endl;
@@ -107,7 +109,7 @@ int main() {
   context_menu->AddSeparator();
 
   // Add exit item
-  auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
+  auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
   bool* should_exit = new bool(false);
   exit_item->AddListener<MenuItemClickedEvent>(
       [should_exit](const MenuItemClickedEvent& event) {

@@ -29,7 +29,8 @@ class TrayIcon::Impl {
  public:
   Impl() : ns_status_item_(nil), delegate_(nil), menu_closed_listener_id_(0) {}
 
-  Impl(NSStatusItem* status_item) : ns_status_item_(status_item), delegate_(nil), menu_closed_listener_id_(0) {
+  Impl(NSStatusItem* status_item)
+      : ns_status_item_(status_item), delegate_(nil), menu_closed_listener_id_(0) {
     if (status_item) {
       // Create and set up delegate
       delegate_ = [[TrayIconDelegate alloc] init];

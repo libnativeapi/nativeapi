@@ -4,6 +4,7 @@
 #include <cctype>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -35,9 +36,9 @@ class MenuItem::Impl {
         accelerator_("", KeyboardAccelerator::None) {}
 
   GtkWidget* gtk_menu_item_;
-  std::string title_;
-  std::string icon_;
-  std::string tooltip_;
+  std::optional<std::string> title_;
+  std::optional<std::string> icon_;
+  std::optional<std::string> tooltip_;
   MenuItemType type_;
   bool enabled_;
   bool visible_;
@@ -102,35 +103,39 @@ MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
-void MenuItem::SetLabel(const std::string& label) {
+void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->title_ = label;
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
-    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_),
-                            label.c_str());
+    const char* labelStr = label.has_value() ? label->c_str() : "";
+    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), labelStr);
   }
 }
 
-std::string MenuItem::GetLabel() const {
+std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->title_;
 }
 
-void MenuItem::SetIcon(const std::string& icon) {
+void MenuItem::SetIcon(const std::optional<std::string>& icon) {
   pimpl_->icon_ = icon;
   // TODO: Implement icon setting for GTK menu item
 }
 
-std::string MenuItem::GetIcon() const {
+std::optional<std::string> MenuItem::GetIcon() const {
   return pimpl_->icon_;
 }
 
-void MenuItem::SetTooltip(const std::string& tooltip) {
+void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {
   pimpl_->tooltip_ = tooltip;
   if (pimpl_->gtk_menu_item_) {
-    gtk_widget_set_tooltip_text(pimpl_->gtk_menu_item_, tooltip.c_str());
+    if (tooltip.has_value()) {
+      gtk_widget_set_tooltip_text(pimpl_->gtk_menu_item_, tooltip->c_str());
+    } else {
+      gtk_widget_set_tooltip_text(pimpl_->gtk_menu_item_, nullptr);
+    }
   }
 }
 
-std::string MenuItem::GetTooltip() const {
+std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
@@ -377,7 +382,12 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
                                                bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
-    std::string item_text = item->GetLabel();
+    auto itemTextOpt = item->GetLabel();
+    if (!itemTextOpt.has_value()) {
+      continue;
+    }
+
+    const std::string& item_text = itemTextOpt.value();
     if (case_sensitive) {
       if (item_text == text) {
         return item;
@@ -440,10 +450,13 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
   return item;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text,
-                                                 const std::string& icon) {
+std::shared_ptr<MenuItem> Menu::CreateAndAddItem(
+    const std::string& text,
+    const std::optional<std::string>& icon) {
   auto item = MenuItem::Create(text, MenuItemType::Normal);
-  item->SetIcon(icon);
+  if (icon.has_value()) {
+    item->SetIcon(icon);
+  }
   AddItem(item);
   return item;
 }

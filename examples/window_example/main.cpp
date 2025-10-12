@@ -90,7 +90,7 @@ int main() {
     tray_icon.SetVisible(true);
 
     // Create context menu
-    auto context_menu = Menu::Create();
+    auto context_menu = std::make_shared<Menu>();
 
     context_menu->AddListener<MenuOpenedEvent>(
         [](const MenuOpenedEvent& event) {
@@ -104,7 +104,7 @@ int main() {
 
     // Add menu items
     auto show_window_item =
-        MenuItem::Create("Show Window", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Show Window", MenuItemType::Normal);
     show_window_item->AddListener<MenuItemClickedEvent>(
         [window_ptr](const MenuItemClickedEvent& event) {
           std::cout << "Show Window clicked from context menu" << std::endl;
@@ -116,7 +116,7 @@ int main() {
     context_menu->AddItem(show_window_item);
 
     auto hide_window_item =
-        MenuItem::Create("Hide Window", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Hide Window", MenuItemType::Normal);
     hide_window_item->AddListener<MenuItemClickedEvent>(
         [window_ptr](const MenuItemClickedEvent& event) {
           std::cout << "Hide Window clicked from context menu" << std::endl;
@@ -130,7 +130,7 @@ int main() {
     context_menu->AddSeparator();
 
     // Add about item
-    auto about_item = MenuItem::Create("About", MenuItemType::Normal);
+    auto about_item = std::make_shared<MenuItem>("About", MenuItemType::Normal);
     about_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "About clicked from context menu" << std::endl;
@@ -139,11 +139,11 @@ int main() {
     context_menu->AddItem(about_item);
 
     // Create Tools submenu with submenu event handling
-    auto tools_submenu = Menu::Create();
+    auto tools_submenu = std::make_shared<Menu>();
 
     // Add items to tools submenu
     auto clear_cache_item =
-        MenuItem::Create("Clear Cache", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Clear Cache", MenuItemType::Normal);
     clear_cache_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "Clear Cache clicked from submenu" << std::endl;
@@ -151,7 +151,7 @@ int main() {
     tools_submenu->AddItem(clear_cache_item);
 
     auto reset_settings_item =
-        MenuItem::Create("Reset Settings", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Reset Settings", MenuItemType::Normal);
     reset_settings_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "Reset Settings clicked from submenu" << std::endl;
@@ -161,7 +161,7 @@ int main() {
     tools_submenu->AddSeparator();
 
     auto debug_mode_item =
-        MenuItem::Create("Debug Mode", MenuItemType::Checkbox);
+        std::make_shared<MenuItem>("Debug Mode", MenuItemType::Checkbox);
     debug_mode_item->SetState(MenuItemState::Unchecked);
     debug_mode_item->AddListener<MenuItemClickedEvent>(
         [debug_mode_item](const MenuItemClickedEvent& event) {
@@ -178,7 +178,8 @@ int main() {
     tools_submenu->AddItem(debug_mode_item);
 
     // Create the submenu parent item
-    auto tools_item = MenuItem::Create("Tools", MenuItemType::Submenu);
+    auto tools_item =
+        std::make_shared<MenuItem>("Tools", MenuItemType::Submenu);
     tools_item->SetSubmenu(tools_submenu);
 
     // Add submenu event listeners
@@ -201,12 +202,12 @@ int main() {
 
     // Add preferences section (not a submenu, just a label)
     auto preferences_item =
-        MenuItem::Create("Preferences", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Preferences", MenuItemType::Normal);
     context_menu->AddItem(preferences_item);
 
     // Add checkbox menu items
     auto auto_start_item =
-        MenuItem::Create("Auto Start", MenuItemType::Checkbox);
+        std::make_shared<MenuItem>("Auto Start", MenuItemType::Checkbox);
     auto_start_item->SetState(MenuItemState::Checked);  // Initially checked
     auto_start_item->AddListener<MenuItemClickedEvent>(
         [auto_start_item](const MenuItemClickedEvent& event) {
@@ -222,8 +223,8 @@ int main() {
         });
     context_menu->AddItem(auto_start_item);
 
-    auto notifications_item =
-        MenuItem::Create("Show Notifications", MenuItemType::Checkbox);
+    auto notifications_item = std::make_shared<MenuItem>(
+        "Show Notifications", MenuItemType::Checkbox);
     notifications_item->SetState(
         MenuItemState::Unchecked);  // Initially unchecked
     notifications_item->AddListener<MenuItemClickedEvent>(
@@ -241,7 +242,8 @@ int main() {
     context_menu->AddItem(notifications_item);
 
     // Add three-state checkbox example
-    auto sync_item = MenuItem::Create("Sync Status", MenuItemType::Checkbox);
+    auto sync_item =
+        std::make_shared<MenuItem>("Sync Status", MenuItemType::Checkbox);
     sync_item->SetState(MenuItemState::Mixed);  // Initially mixed/indeterminate
     sync_item->AddListener<MenuItemClickedEvent>(
         [sync_item](const MenuItemClickedEvent& event) {
@@ -275,11 +277,12 @@ int main() {
     context_menu->AddSeparator();
 
     // Add radio button group for theme selection
-    auto theme_label = MenuItem::Create("Theme:", MenuItemType::Normal);
+    auto theme_label =
+        std::make_shared<MenuItem>("Theme:", MenuItemType::Normal);
     context_menu->AddItem(theme_label);
 
     auto light_theme_item =
-        MenuItem::Create("Light Theme", MenuItemType::Radio);
+        std::make_shared<MenuItem>("Light Theme", MenuItemType::Radio);
     light_theme_item->SetRadioGroup(0);                  // Group 0
     light_theme_item->SetState(MenuItemState::Checked);  // Default selection
     light_theme_item->AddListener<MenuItemClickedEvent>(
@@ -289,7 +292,8 @@ int main() {
         });
     context_menu->AddItem(light_theme_item);
 
-    auto dark_theme_item = MenuItem::Create("Dark Theme", MenuItemType::Radio);
+    auto dark_theme_item =
+        std::make_shared<MenuItem>("Dark Theme", MenuItemType::Radio);
     dark_theme_item->SetRadioGroup(0);  // Same group as light theme
     dark_theme_item->AddListener<MenuItemClickedEvent>(
         [dark_theme_item](const MenuItemClickedEvent& event) {
@@ -298,7 +302,8 @@ int main() {
         });
     context_menu->AddItem(dark_theme_item);
 
-    auto auto_theme_item = MenuItem::Create("Auto Theme", MenuItemType::Radio);
+    auto auto_theme_item =
+        std::make_shared<MenuItem>("Auto Theme", MenuItemType::Radio);
     auto_theme_item->SetRadioGroup(0);  // Same group
     auto_theme_item->AddListener<MenuItemClickedEvent>(
         [auto_theme_item](const MenuItemClickedEvent& event) {
@@ -311,7 +316,7 @@ int main() {
     context_menu->AddSeparator();
 
     // Add exit item
-    auto exit_item = MenuItem::Create("Exit", MenuItemType::Normal);
+    auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
     exit_item->AddListener<MenuItemClickedEvent>(
         [&window_manager](const MenuItemClickedEvent& event) {
           std::cout << "Exit clicked from context menu" << std::endl;

@@ -11,16 +11,21 @@ int main() {
 
   try {
     // Create a menu
-    auto menu = Menu::Create();
+    auto menu = std::make_shared<Menu>();
     std::cout << "Created menu with ID: " << menu->id << std::endl;
 
     // Create menu items with different types
-    auto fileItem = MenuItem::Create("New File", MenuItemType::Normal);
-    auto separatorItem = MenuItem::CreateSeparator();
-    auto checkboxItem = MenuItem::Create("Word Wrap", MenuItemType::Checkbox);
-    auto radioItem1 = MenuItem::Create("View Mode 1", MenuItemType::Radio);
-    auto radioItem2 = MenuItem::Create("View Mode 2", MenuItemType::Radio);
-    auto exitItem = MenuItem::Create("Exit", MenuItemType::Normal);
+    auto fileItem =
+        std::make_shared<MenuItem>("New File", MenuItemType::Normal);
+    auto separatorItem =
+        std::make_shared<MenuItem>("", MenuItemType::Separator);
+    auto checkboxItem =
+        std::make_shared<MenuItem>("Word Wrap", MenuItemType::Checkbox);
+    auto radioItem1 =
+        std::make_shared<MenuItem>("View Mode 1", MenuItemType::Radio);
+    auto radioItem2 =
+        std::make_shared<MenuItem>("View Mode 2", MenuItemType::Radio);
+    auto exitItem = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
 
     // Set up radio group
     radioItem1->SetRadioGroup(1);
@@ -127,11 +132,11 @@ int main() {
 
     // Demonstrate submenu
     std::cout << "\n=== Testing Submenu ===" << std::endl;
-    auto submenu = Menu::Create();
+    auto submenu = std::make_shared<Menu>();
     auto submenuItem1 =
-        MenuItem::Create("Submenu Item 1", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Submenu Item 1", MenuItemType::Normal);
     auto submenuItem2 =
-        MenuItem::Create("Submenu Item 2", MenuItemType::Normal);
+        std::make_shared<MenuItem>("Submenu Item 2", MenuItemType::Normal);
 
     submenuItem1->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
@@ -148,7 +153,8 @@ int main() {
     submenu->AddItem(submenuItem1);
     submenu->AddItem(submenuItem2);
 
-    auto submenuParent = MenuItem::Create("Tools", MenuItemType::Submenu);
+    auto submenuParent =
+        std::make_shared<MenuItem>("Tools", MenuItemType::Submenu);
     submenuParent->SetSubmenu(submenu);
 
     // Add submenu event listeners
