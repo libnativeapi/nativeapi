@@ -8,6 +8,7 @@
 #include "../src/foundation/event.h"
 #include "../src/foundation/event_emitter.h"
 #include "../src/foundation/geometry.h"
+#include "../src/foundation/id_allocator.h"
 #include "../src/keyboard_event.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"

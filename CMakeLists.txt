@@ -8,6 +8,7 @@ add_subdirectory(src)
 # Add example programs subdirectory
 add_subdirectory(examples/display_example)
 add_subdirectory(examples/display_c_example)
+add_subdirectory(examples/id_allocator_example)
 add_subdirectory(examples/keyboard_example)
 add_subdirectory(examples/menu_example)
 add_subdirectory(examples/menu_c_example)

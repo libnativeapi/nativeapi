@@ -2,6 +2,8 @@
 
 A modern cross-platform C++ library providing seamless, unified access to native system APIs across multiple platforms.
 
+🚧 Work in Progress: This package is currently under active development.
+
 ## Requirements
 
 ### Build Requirements
