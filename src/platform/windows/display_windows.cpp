@@ -1,6 +1,7 @@
 #include "../../display.h"
 
 #include <windows.h>
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -47,10 +48,10 @@ void* Display::GetNativeObjectInternal() const {
 }
 
 // Helper function to get monitor info
-MONITORINFOEX GetMonitorInfo(HMONITOR hMonitor) {
-  MONITORINFOEX monitorInfo;
-  monitorInfo.cbSize = sizeof(MONITORINFOEX);
-  GetMonitorInfo(hMonitor, &monitorInfo);
+MONITORINFOEXW GetMonitorInfoEx(HMONITOR hMonitor) {
+  MONITORINFOEXW monitorInfo;
+  monitorInfo.cbSize = sizeof(MONITORINFOEXW);
+  GetMonitorInfoW(hMonitor, &monitorInfo);
   return monitorInfo;
 }
 
@@ -64,14 +65,14 @@ std::string Display::GetId() const {
 std::string Display::GetName() const {
   if (!pimpl_->h_monitor_)
     return "";
-  MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
-  return monitorInfo.szDevice;
+  MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
+  return WCharArrayToString(monitorInfo.szDevice);
 }
 
 Point Display::GetPosition() const {
   if (!pimpl_->h_monitor_)
     return {0.0, 0.0};
-  MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
+  MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT rect = monitorInfo.rcMonitor;
   return {static_cast<double>(rect.left), static_cast<double>(rect.top)};
 }
@@ -79,7 +80,7 @@ Point Display::GetPosition() const {
 Size Display::GetSize() const {
   if (!pimpl_->h_monitor_)
     return {0.0, 0.0};
-  MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
+  MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT rect = monitorInfo.rcMonitor;
   return {static_cast<double>(rect.right - rect.left),
           static_cast<double>(rect.bottom - rect.top)};
@@ -88,7 +89,7 @@ Size Display::GetSize() const {
 Rectangle Display::GetWorkArea() const {
   if (!pimpl_->h_monitor_)
     return {0.0, 0.0, 0.0, 0.0};
-  MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
+  MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT workRect = monitorInfo.rcWork;
   return {static_cast<double>(workRect.left), static_cast<double>(workRect.top),
           static_cast<double>(workRect.right - workRect.left),
@@ -111,7 +112,7 @@ double Display::GetScaleFactor() const {
 bool Display::IsPrimary() const {
   if (!pimpl_->h_monitor_)
     return false;
-  MONITORINFOEX monitorInfo = GetMonitorInfo(pimpl_->h_monitor_);
+  MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   return (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
 }
 

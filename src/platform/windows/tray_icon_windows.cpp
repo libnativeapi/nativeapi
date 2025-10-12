@@ -7,6 +7,7 @@
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -80,7 +81,7 @@ class TrayIcon::Impl {
 
   ~Impl() {
     if (hwnd_) {
-      Shell_NotifyIcon(NIM_DELETE, &nid_);
+      Shell_NotifyIconW(NIM_DELETE, &nid_);
     }
     if (icon_handle_) {
       DestroyIcon(icon_handle_);
@@ -102,18 +103,20 @@ TrayIcon::TrayIcon() : id(-1), pimpl_(std::make_unique<Impl>()) {
   static UINT next_class_id = 1;
   std::string class_name =
       "NativeAPITrayIcon_" + std::to_string(next_class_id++);
+  std::wstring wclass_name = StringToWString(class_name);
 
-  WNDCLASS wc = {};
+  WNDCLASSW wc = {};
   wc.lpfnWndProc = DefWindowProc;
   wc.hInstance = hInstance;
-  wc.lpszClassName = class_name.c_str();
+  wc.lpszClassName = wclass_name.c_str();
 
-  if (RegisterClass(&wc)) {
+  if (RegisterClassW(&wc)) {
     // Create hidden message-only window
+    std::wstring wtitle = StringToWString("NativeAPI Tray Icon");
     HWND hwnd =
-        CreateWindow(class_name.c_str(), "NativeAPI Tray Icon", 0, 0, 0, 0, 0,
-                     HWND_MESSAGE,  // Message-only window
-                     nullptr, hInstance, nullptr);
+        CreateWindowW(wclass_name.c_str(), wtitle.c_str(), 0, 0, 0, 0, 0,
+                      HWND_MESSAGE,  // Message-only window
+                      nullptr, hInstance, nullptr);
 
     if (hwnd) {
       // Generate unique icon ID
@@ -148,12 +151,13 @@ void TrayIcon::SetIcon(std::string icon) {
     hIcon = LoadIcon(nullptr, IDI_APPLICATION);
   } else if (!icon.empty()) {
     // Try to load as file path first
-    hIcon = (HICON)LoadImage(nullptr, icon.c_str(), IMAGE_ICON, 16, 16,
-                             LR_LOADFROMFILE);
+    std::wstring wicon = StringToWString(icon);
+    hIcon = (HICON)LoadImageW(nullptr, wicon.c_str(), IMAGE_ICON, 16, 16,
+                              LR_LOADFROMFILE);
 
     // If file path failed, try as resource
     if (!hIcon) {
-      hIcon = LoadIcon(GetModuleHandle(nullptr), icon.c_str());
+      hIcon = LoadIconW(GetModuleHandle(nullptr), wicon.c_str());
     }
 
     // If still failed, use default application icon
@@ -176,7 +180,7 @@ void TrayIcon::SetIcon(std::string icon) {
 
     // Update the icon if it's currently visible
     if (IsVisible()) {
-      Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
+      Shell_NotifyIconW(NIM_MODIFY, &pimpl_->nid_);
     }
   }
 }
@@ -193,21 +197,21 @@ std::optional<std::string> TrayIcon::GetTitle() {
 
 void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->hwnd_) {
-    const char* tooltip_str = tooltip.has_value() ? tooltip->c_str() : "";
-    strncpy_s(pimpl_->nid_.szTip, tooltip_str,
-              sizeof(pimpl_->nid_.szTip) - 1);
-    pimpl_->nid_.szTip[sizeof(pimpl_->nid_.szTip) - 1] = '\0';
+    std::string tooltip_str = tooltip.has_value() ? *tooltip : "";
+    std::wstring wtooltip = StringToWString(tooltip_str);
+    wcsncpy_s(pimpl_->nid_.szTip, _countof(pimpl_->nid_.szTip), 
+              wtooltip.c_str(), _TRUNCATE);
 
     // Update if icon is visible (check if hIcon is set as indicator)
     if (pimpl_->nid_.hIcon) {
-      Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
+      Shell_NotifyIconW(NIM_MODIFY, &pimpl_->nid_);
     }
   }
 }
 
 std::optional<std::string> TrayIcon::GetTooltip() {
-  if (pimpl_->hwnd_ && pimpl_->nid_.szTip[0] != '\0') {
-    return std::string(pimpl_->nid_.szTip);
+  if (pimpl_->hwnd_ && pimpl_->nid_.szTip[0] != L'\0') {
+    return WCharArrayToString(pimpl_->nid_.szTip);
   }
   return std::nullopt;
 }
@@ -251,10 +255,10 @@ bool TrayIcon::SetVisible(bool visible) {
 
   if (visible && !currently_visible) {
     // Show the tray icon
-    return Shell_NotifyIcon(NIM_ADD, &pimpl_->nid_) == TRUE;
+    return Shell_NotifyIconW(NIM_ADD, &pimpl_->nid_) == TRUE;
   } else if (!visible && currently_visible) {
     // Hide the tray icon
-    return Shell_NotifyIcon(NIM_DELETE, &pimpl_->nid_) == TRUE;
+    return Shell_NotifyIconW(NIM_DELETE, &pimpl_->nid_) == TRUE;
   } else {
     // Already in the desired state
     return true;

@@ -5,6 +5,7 @@
 #include <vector>
 #include "../../menu.h"
 #include "../../menu_event.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -148,12 +149,13 @@ MenuItemType MenuItem::GetType() const {
 void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->text_ = label;
   if (pimpl_->parent_menu_) {
-    MENUITEMINFO mii = {};
-    mii.cbSize = sizeof(MENUITEMINFO);
+    MENUITEMINFOW mii = {};
+    mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_STRING;
-    const char* labelStr = label.has_value() ? label->c_str() : "";
-    mii.dwTypeData = const_cast<LPSTR>(labelStr);
-    SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    std::string labelStr = label.has_value() ? *label : "";
+    std::wstring wLabelStr = StringToWString(labelStr);
+    mii.dwTypeData = const_cast<LPWSTR>(wLabelStr.c_str());
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
   }
 }
 
@@ -261,11 +263,11 @@ int MenuItem::GetRadioGroup() const {
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
   pimpl_->submenu_ = submenu;
   if (pimpl_->parent_menu_ && submenu) {
-    MENUITEMINFO mii = {};
-    mii.cbSize = sizeof(MENUITEMINFO);
+    MENUITEMINFOW mii = {};
+    mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_SUBMENU;
     mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeObject());
-    SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
   }
 }
 
@@ -276,11 +278,11 @@ std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
 void MenuItem::RemoveSubmenu() {
   pimpl_->submenu_.reset();
   if (pimpl_->parent_menu_) {
-    MENUITEMINFO mii = {};
-    mii.cbSize = sizeof(MENUITEMINFO);
+    MENUITEMINFOW mii = {};
+    mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_SUBMENU;
     mii.hSubMenu = nullptr;
-    SetMenuItemInfo(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
   }
 }
 
@@ -355,8 +357,9 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   }
 
   auto labelOpt = item->GetLabel();
-  const char* labelStr = labelOpt.has_value() ? labelOpt->c_str() : "";
-  AppendMenu(pimpl_->hmenu_, flags, menuId, labelStr);
+  std::string labelStr = labelOpt.has_value() ? *labelOpt : "";
+  std::wstring wLabelStr = StringToWString(labelStr);
+  AppendMenuW(pimpl_->hmenu_, flags, menuId, wLabelStr.c_str());
 
   // Update the item's impl with menu info
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
@@ -380,9 +383,10 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   }
 
   auto labelOpt = item->GetLabel();
-  const char* labelStr = labelOpt.has_value() ? labelOpt->c_str() : "";
-  InsertMenu(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id,
-             labelStr);
+  std::string labelStr = labelOpt.has_value() ? *labelOpt : "";
+  std::wstring wLabelStr = StringToWString(labelStr);
+  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id,
+              wLabelStr.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
   item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);

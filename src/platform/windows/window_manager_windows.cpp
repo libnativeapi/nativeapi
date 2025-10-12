@@ -5,6 +5,7 @@
 #include "../../window.h"
 #include "../../window_event.h"
 #include "../../window_manager.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -114,17 +115,17 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   // Register window class if not already registered
   static bool class_registered = false;
-  const char* class_name = "NativeAPIWindow";
+  static std::wstring wclass_name = StringToWString("NativeAPIWindow");
 
   if (!class_registered) {
-    WNDCLASS wc = {};
+    WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
-    wc.lpszClassName = class_name;
+    wc.lpszClassName = wclass_name.c_str();
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
-    if (RegisterClass(&wc)) {
+    if (RegisterClassW(&wc)) {
       class_registered = true;
     } else {
       DWORD error = GetLastError();
@@ -140,12 +141,13 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   // Create the window
   DWORD style = WS_OVERLAPPEDWINDOW;
   DWORD exStyle = 0;
+  std::wstring wtitle = StringToWString(options.title);
 
-  HWND hwnd = CreateWindowEx(exStyle, class_name, options.title.c_str(), style,
-                             CW_USEDEFAULT, CW_USEDEFAULT,
-                             static_cast<int>(options.size.width),
-                             static_cast<int>(options.size.height), nullptr,
-                             nullptr, hInstance, nullptr);
+  HWND hwnd = CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(), style,
+                              CW_USEDEFAULT, CW_USEDEFAULT,
+                              static_cast<int>(options.size.width),
+                              static_cast<int>(options.size.height), nullptr,
+                              nullptr, hInstance, nullptr);
 
   if (!hwnd) {
     std::cerr << "Failed to create window. Error: " << GetLastError()

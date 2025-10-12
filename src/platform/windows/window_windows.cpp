@@ -2,6 +2,7 @@
 #include <iostream>
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -393,7 +394,8 @@ Point Window::GetPosition() const {
 
 void Window::SetTitle(std::string title) {
   if (pimpl_->hwnd_) {
-    SetWindowText(pimpl_->hwnd_, title.c_str());
+    std::wstring wtitle = StringToWString(title);
+    SetWindowTextW(pimpl_->hwnd_, wtitle.c_str());
   }
 }
 
@@ -401,13 +403,14 @@ std::string Window::GetTitle() const {
   if (!pimpl_->hwnd_)
     return "";
 
-  int length = GetWindowTextLength(pimpl_->hwnd_);
+  int length = GetWindowTextLengthW(pimpl_->hwnd_);
   if (length == 0)
     return "";
 
-  std::string title(length, '\0');
-  GetWindowText(pimpl_->hwnd_, &title[0], length + 1);
-  return title;
+  std::wstring wtitle(length + 1, L'\0');
+  GetWindowTextW(pimpl_->hwnd_, &wtitle[0], length + 1);
+  wtitle.resize(length);
+  return WStringToString(wtitle);
 }
 
 void Window::SetHasShadow(bool has_shadow) {
