@@ -20,8 +20,8 @@ class TrayIcon::Impl {
   Impl(HWND hwnd, UINT icon_id)
       : hwnd_(hwnd), icon_id_(icon_id), icon_handle_(nullptr) {
     // Initialize NOTIFYICONDATA structure
-    ZeroMemory(&nid_, sizeof(NOTIFYICONDATA));
-    nid_.cbSize = sizeof(NOTIFYICONDATA);
+    ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
+    nid_.cbSize = sizeof(NOTIFYICONDATAW);
     nid_.hWnd = hwnd_;
     nid_.uID = icon_id_;
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
@@ -34,8 +34,8 @@ class TrayIcon::Impl {
     icon_id_ = icon_id;
 
     // Re-initialize NOTIFYICONDATA structure
-    ZeroMemory(&nid_, sizeof(NOTIFYICONDATA));
-    nid_.cbSize = sizeof(NOTIFYICONDATA);
+    ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
+    nid_.cbSize = sizeof(NOTIFYICONDATAW);
     nid_.hWnd = hwnd_;
     nid_.uID = icon_id_;
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
@@ -90,7 +90,7 @@ class TrayIcon::Impl {
 
   HWND hwnd_;
   UINT icon_id_;
-  NOTIFYICONDATA nid_;
+  NOTIFYICONDATAW nid_;
   std::shared_ptr<Menu> context_menu_;
   HICON icon_handle_;
 };

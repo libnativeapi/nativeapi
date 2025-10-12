@@ -51,17 +51,8 @@ AppRunner::AppRunner() : pimpl_(std::make_unique<Impl>()) {}
 
 AppRunner::~AppRunner() = default;
 
-AppRunner& AppRunner::GetInstance() {
-  static AppRunner instance;
-  return instance;
-}
-
 int AppRunner::Run(std::shared_ptr<Window> window) {
   return pimpl_->Run(window);
-}
-
-int RunApp(std::shared_ptr<Window> window) {
-  return AppRunner::GetInstance().Run(window);
 }
 
 }  // namespace nativeapi
