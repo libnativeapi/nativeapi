@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 #include <libayatana-appindicator/app-indicator.h>
 #include <iostream>
+#include <optional>
 #include <string>
 #include "../../menu.h"
 #include "../../tray_icon.h"
@@ -15,16 +16,16 @@ class TrayIcon::Impl {
  public:
   Impl(AppIndicator* indicator)
       : app_indicator_(indicator),
-        title_(""),
-        tooltip_(""),
+        title_(std::nullopt),
+        tooltip_(std::nullopt),
         context_menu_(nullptr),
         visible_(false) {}
 
   AppIndicator* app_indicator_;
   std::shared_ptr<Menu>
       context_menu_;  // Store menu shared_ptr to keep it alive
-  std::string title_;
-  std::string tooltip_;
+  std::optional<std::string> title_;
+  std::optional<std::string> tooltip_;
   bool visible_;
 };
 
@@ -119,27 +120,28 @@ void TrayIcon::SetIcon(std::string icon) {
   }
 }
 
-void TrayIcon::SetTitle(std::string title) {
+void TrayIcon::SetTitle(std::optional<std::string> title) {
   pimpl_->title_ = title;
   // AppIndicator uses the title as the accessible name and in some desktop
   // environments
   if (pimpl_->app_indicator_) {
-    app_indicator_set_title(pimpl_->app_indicator_, title.c_str());
+    const char* title_str = title.has_value() ? title->c_str() : "";
+    app_indicator_set_title(pimpl_->app_indicator_, title_str);
   }
 }
 
-std::string TrayIcon::GetTitle() {
+std::optional<std::string> TrayIcon::GetTitle() {
   return pimpl_->title_;
 }
 
-void TrayIcon::SetTooltip(std::string tooltip) {
+void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   pimpl_->tooltip_ = tooltip;
   // AppIndicator doesn't have direct tooltip support like GtkStatusIcon
   // The tooltip functionality is typically handled through the title
   // or through custom menu items. We'll store it for potential future use.
 }
 
-std::string TrayIcon::GetTooltip() {
+std::optional<std::string> TrayIcon::GetTooltip() {
   return pimpl_->tooltip_;
 }
 
@@ -227,6 +229,10 @@ bool TrayIcon::CloseContextMenu() {
   // There's no direct way to programmatically close the menu
   // but we can return true as the operation is conceptually successful
   return true;
+}
+
+void* TrayIcon::GetNativeObjectInternal() const {
+  return static_cast<void*>(pimpl_->app_indicator_);
 }
 
 }  // namespace nativeapi
