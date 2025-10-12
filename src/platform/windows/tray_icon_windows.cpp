@@ -1,10 +1,9 @@
-#include <shellapi.h>
 #include <windows.h>
-#include <iostream>
+#include <shellapi.h>
+#include <memory>
 #include <string>
-#include <vector>
 
-#include "../../geometry.h"
+#include "../../foundation/geometry.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -15,10 +14,10 @@ namespace nativeapi {
 class TrayIcon::Impl {
  public:
   Impl()
-      : hwnd_(nullptr), icon_id_(0), visible_(false), icon_handle_(nullptr) {}
+      : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {}
 
   Impl(HWND hwnd, UINT icon_id)
-      : hwnd_(hwnd), icon_id_(icon_id), visible_(false), icon_handle_(nullptr) {
+      : hwnd_(hwnd), icon_id_(icon_id), icon_handle_(nullptr) {
     // Initialize NOTIFYICONDATA structure
     ZeroMemory(&nid_, sizeof(NOTIFYICONDATA));
     nid_.cbSize = sizeof(NOTIFYICONDATA);
@@ -80,7 +79,7 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
-    if (visible_) {
+    if (hwnd_) {
       Shell_NotifyIcon(NIM_DELETE, &nid_);
     }
     if (icon_handle_) {
@@ -92,15 +91,10 @@ class TrayIcon::Impl {
   UINT icon_id_;
   NOTIFYICONDATA nid_;
   std::shared_ptr<Menu> context_menu_;
-  std::string title_;
-  std::string tooltip_;
-  bool visible_;
   HICON icon_handle_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
-  id = -1;
-
+TrayIcon::TrayIcon() : id(-1), pimpl_(std::make_unique<Impl>()) {
   // Create a hidden window for this tray icon
   HINSTANCE hInstance = GetModuleHandle(nullptr);
 
@@ -132,8 +126,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   }
 }
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {
-  id = -1;  // Will be set by TrayManager when created
+TrayIcon::TrayIcon(void* tray) : id(-1), pimpl_(std::make_unique<Impl>()) {
   // In a real implementation, you'd extract HWND and icon ID from the tray
   // parameter For now, this constructor is mainly used by TrayManager for
   // creating uninitialized icons
@@ -181,39 +174,42 @@ void TrayIcon::SetIcon(std::string icon) {
     pimpl_->icon_handle_ = hIcon;
     pimpl_->nid_.hIcon = hIcon;
 
-    if (pimpl_->visible_) {
+    // Update the icon if it's currently visible
+    if (IsVisible()) {
       Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
     }
   }
 }
 
-void TrayIcon::SetTitle(std::string title) {
-  pimpl_->title_ = title;
-  // Windows tray icons don't have a separate title, only tooltip
-  // We'll use title as part of the tooltip
-  SetTooltip(title);
+void TrayIcon::SetTitle(std::optional<std::string> title) {
+  (void)title;  // Unused on Windows
+  // Windows tray icons don't support title
 }
 
-std::string TrayIcon::GetTitle() {
-  return pimpl_->title_;
+std::optional<std::string> TrayIcon::GetTitle() {
+  // Windows tray icons don't support title
+  return std::nullopt;
 }
 
-void TrayIcon::SetTooltip(std::string tooltip) {
-  pimpl_->tooltip_ = tooltip;
-
+void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->hwnd_) {
-    strncpy_s(pimpl_->nid_.szTip, tooltip.c_str(),
+    const char* tooltip_str = tooltip.has_value() ? tooltip->c_str() : "";
+    strncpy_s(pimpl_->nid_.szTip, tooltip_str,
               sizeof(pimpl_->nid_.szTip) - 1);
     pimpl_->nid_.szTip[sizeof(pimpl_->nid_.szTip) - 1] = '\0';
 
-    if (pimpl_->visible_) {
+    // Update if icon is visible (check if hIcon is set as indicator)
+    if (pimpl_->nid_.hIcon) {
       Shell_NotifyIcon(NIM_MODIFY, &pimpl_->nid_);
     }
   }
 }
 
-std::string TrayIcon::GetTooltip() {
-  return pimpl_->tooltip_;
+std::optional<std::string> TrayIcon::GetTooltip() {
+  if (pimpl_->hwnd_ && pimpl_->nid_.szTip[0] != '\0') {
+    return std::string(pimpl_->nid_.szTip);
+  }
+  return std::nullopt;
 }
 
 void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
@@ -227,7 +223,7 @@ std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
 Rectangle TrayIcon::GetBounds() {
   Rectangle bounds = {0, 0, 0, 0};
 
-  if (pimpl_->hwnd_ && pimpl_->visible_) {
+  if (pimpl_->hwnd_ && IsVisible()) {
     RECT rect;
     NOTIFYICONIDENTIFIER niid = {};
     niid.cbSize = sizeof(NOTIFYICONIDENTIFIER);
@@ -251,28 +247,33 @@ bool TrayIcon::SetVisible(bool visible) {
     return false;
   }
 
-  if (visible && !pimpl_->visible_) {
+  bool currently_visible = IsVisible();
+
+  if (visible && !currently_visible) {
     // Show the tray icon
-    if (Shell_NotifyIcon(NIM_ADD, &pimpl_->nid_) == TRUE) {
-      pimpl_->visible_ = true;
-      return true;
-    }
-  } else if (!visible && pimpl_->visible_) {
+    return Shell_NotifyIcon(NIM_ADD, &pimpl_->nid_) == TRUE;
+  } else if (!visible && currently_visible) {
     // Hide the tray icon
-    if (Shell_NotifyIcon(NIM_DELETE, &pimpl_->nid_) == TRUE) {
-      pimpl_->visible_ = false;
-      return true;
-    }
+    return Shell_NotifyIcon(NIM_DELETE, &pimpl_->nid_) == TRUE;
   } else {
     // Already in the desired state
     return true;
   }
-
-  return false;
 }
 
 bool TrayIcon::IsVisible() {
-  return pimpl_->visible_;
+  if (!pimpl_->hwnd_) {
+    return false;
+  }
+
+  // Check if the tray icon is visible by querying its bounds
+  NOTIFYICONIDENTIFIER niid = {};
+  niid.cbSize = sizeof(NOTIFYICONIDENTIFIER);
+  niid.hWnd = pimpl_->hwnd_;
+  niid.uID = pimpl_->icon_id_;
+
+  RECT rect;
+  return Shell_NotifyIconGetRect(&niid, &rect) == S_OK;
 }
 
 bool TrayIcon::OpenContextMenu(double x, double y) {
@@ -307,6 +308,10 @@ bool TrayIcon::CloseContextMenu() {
 
   // Close the context menu
   return pimpl_->context_menu_->Close();
+}
+
+void* TrayIcon::GetNativeObjectInternal() const {
+  return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->icon_id_));
 }
 
 // Note: Windows-specific functionality is now handled internally by the Impl

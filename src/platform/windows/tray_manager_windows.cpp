@@ -1,75 +1,19 @@
-#include <shellapi.h>
-#include <windows.h>
-#include <iostream>
+#include <memory>
 #include <mutex>
-#include <string>
 
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
 
 namespace nativeapi {
 
-// Hidden window class name for tray icon messages
-static const char* TRAY_WINDOW_CLASS_NAME = "NativeAPITrayWindow";
-
-// Hidden window procedure for handling tray icon messages
-static LRESULT CALLBACK TrayWindowProc(HWND hwnd,
-                                       UINT message,
-                                       WPARAM wParam,
-                                       LPARAM lParam) {
-  // Try to find the TrayIcon instance associated with this message
-  // In a real implementation, you'd have a better way to map messages to
-  // instances
-  return DefWindowProc(hwnd, message, wParam, lParam);
-}
-
+// Define the Impl class for Windows (empty for now, as Windows doesn't need platform-specific data)
 class TrayManager::Impl {
  public:
-  Impl() : hwnd_(nullptr), next_icon_id_(1) { CreateHiddenWindow(); }
-
-  ~Impl() {
-    if (hwnd_) {
-      DestroyWindow(hwnd_);
-    }
-    UnregisterClass(TRAY_WINDOW_CLASS_NAME, GetModuleHandle(nullptr));
-  }
-
-  void CreateHiddenWindow() {
-    HINSTANCE hInstance = GetModuleHandle(nullptr);
-
-    // Register window class
-    WNDCLASS wc = {};
-    wc.lpfnWndProc = TrayWindowProc;
-    wc.hInstance = hInstance;
-    wc.lpszClassName = TRAY_WINDOW_CLASS_NAME;
-
-    if (!RegisterClass(&wc)) {
-      DWORD error = GetLastError();
-      if (error != ERROR_CLASS_ALREADY_EXISTS) {
-        std::cerr << "Failed to register tray window class. Error: " << error
-                  << std::endl;
-        return;
-      }
-    }
-
-    // Create hidden window
-    hwnd_ = CreateWindow(TRAY_WINDOW_CLASS_NAME, "NativeAPI Tray Window", 0, 0,
-                         0, 0, 0,
-                         HWND_MESSAGE,  // Message-only window
-                         nullptr, hInstance, nullptr);
-
-    if (!hwnd_) {
-      std::cerr << "Failed to create tray window. Error: " << GetLastError()
-                << std::endl;
-    }
-  }
-
-  HWND hwnd_;
-  UINT next_icon_id_;
+  Impl() {}
+  ~Impl() {}
 };
 
-TrayManager::TrayManager()
-    : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) {}
+TrayManager::TrayManager() : pimpl_(std::make_unique<Impl>()), next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);

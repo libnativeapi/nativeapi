@@ -1,9 +1,7 @@
 #include <windows.h>
-#include <algorithm>
 #include <atomic>
-#include <iostream>
+#include <memory>
 #include <optional>
-#include <unordered_map>
 #include <vector>
 #include "../../menu.h"
 #include "../../menu_event.h"
@@ -14,9 +12,6 @@ namespace nativeapi {
 static std::atomic<MenuItemID> g_next_menu_item_id{1};
 static std::atomic<MenuID> g_next_menu_id{1};
 
-// Global registry to map native objects to C++ objects for event emission
-static std::unordered_map<MenuItemID, MenuItem*> g_menu_item_registry;
-static std::unordered_map<MenuID, Menu*> g_menu_registry;
 
 // Helper function to convert KeyboardAccelerator to Windows accelerator
 std::pair<UINT, UINT> ConvertAccelerator(
@@ -131,38 +126,19 @@ class MenuItem::Impl {
   }
 };
 
-// MenuItem implementation
-std::shared_ptr<MenuItem> MenuItem::Create(const std::string& text,
-                                           MenuItemType type) {
-  auto item = std::shared_ptr<MenuItem>(new MenuItem(text, type));
-  item->pimpl_ = std::make_unique<Impl>(nullptr, 0, type);
-  item->id = g_next_menu_item_id++;
-  item->pimpl_->text_ = text;
-
-  // Register the MenuItem for event emission
-  g_menu_item_registry[item->id] = item.get();
-
-  return item;
-}
-
-std::shared_ptr<MenuItem> MenuItem::CreateSeparator() {
-  return Create("", MenuItemType::Separator);
-}
 
 MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
       pimpl_(std::make_unique<Impl>(nullptr, 0, MenuItemType::Normal)) {
-  // Register the MenuItem for event emission
-  g_menu_item_registry[id] = this;
 }
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(0) {  // Will be set in Create method
+    : id(g_next_menu_item_id++),
+      pimpl_(std::make_unique<Impl>(nullptr, 0, type)) {
+  pimpl_->text_ = text;
 }
 
 MenuItem::~MenuItem() {
-  // Unregister from event registry
-  g_menu_item_registry.erase(id);
 }
 
 MenuItemType MenuItem::GetType() const {
@@ -262,17 +238,10 @@ void MenuItem::SetState(MenuItemState state) {
     // Handle radio button group logic
     if (pimpl_->type_ == MenuItemType::Radio &&
         state == MenuItemState::Checked && pimpl_->radio_group_ >= 0) {
-      for (auto& pair : g_menu_item_registry) {
-        MenuItem* otherItem = pair.second;
-        if (otherItem != this && otherItem->GetType() == MenuItemType::Radio &&
-            otherItem->GetRadioGroup() == pimpl_->radio_group_) {
-          otherItem->pimpl_->state_ = MenuItemState::Unchecked;
-          if (otherItem->pimpl_->parent_menu_) {
-            CheckMenuItem(otherItem->pimpl_->parent_menu_,
-                          otherItem->pimpl_->menu_item_id_, MF_UNCHECKED);
-          }
-        }
-      }
+      // Note: Radio group logic would need to be implemented differently
+      // without global registry. This could be done by maintaining group
+      // information in the parent menu or through other means.
+      // For now, this functionality is disabled.
     }
   }
 }
@@ -319,20 +288,17 @@ bool MenuItem::Trigger() {
   if (!pimpl_->enabled_)
     return false;
 
-  EmitSelectedEvent(pimpl_->text_);
+  try {
+    std::string text = pimpl_->text_.has_value() ? pimpl_->text_.value() : "";
+    EmitSync<MenuItemClickedEvent>(id, text);
+  } catch (...) {
+    // Protect against event emission exceptions
+  }
   return true;
 }
 
 void* MenuItem::GetNativeObjectInternal() const {
   return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->menu_item_id_));
-}
-
-void MenuItem::EmitSelectedEvent(const std::string& item_text) {
-  EmitSync<MenuItemClickedEvent>(id, item_text);
-}
-
-void MenuItem::EmitStateChangedEvent(bool checked) {
-  // This method is kept for compatibility
 }
 
 // Menu::Impl implementation
@@ -352,36 +318,17 @@ class Menu::Impl {
   }
 };
 
-// Menu implementation
-std::shared_ptr<Menu> Menu::Create() {
-  HMENU hmenu = CreatePopupMenu();
-  if (!hmenu) {
-    return nullptr;
-  }
-
-  auto menu = std::shared_ptr<Menu>(new Menu());
-  menu->pimpl_ = std::make_unique<Impl>(hmenu);
-  menu->id = g_next_menu_id++;
-
-  // Register the Menu for event emission
-  g_menu_registry[menu->id] = menu.get();
-
-  return menu;
-}
 
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++),
       pimpl_(std::make_unique<Impl>(static_cast<HMENU>(native_menu))) {
-  // Register the Menu for event emission
-  g_menu_registry[id] = this;
 }
 
-Menu::Menu() : id(0) {  // Will be set in Create method
+Menu::Menu() : id(g_next_menu_id++),
+               pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {
 }
 
 Menu::~Menu() {
-  // Unregister from event registry
-  g_menu_registry.erase(id);
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
@@ -482,12 +429,12 @@ void Menu::Clear() {
 }
 
 void Menu::AddSeparator() {
-  auto separator = MenuItem::CreateSeparator();
+  auto separator = std::make_shared<MenuItem>("", MenuItemType::Separator);
   AddItem(separator);
 }
 
 void Menu::InsertSeparator(size_t index) {
-  auto separator = MenuItem::CreateSeparator();
+  auto separator = std::make_shared<MenuItem>("", MenuItemType::Separator);
   InsertItem(index, separator);
 }
 
@@ -588,7 +535,7 @@ bool Menu::IsEnabled() const {
 }
 
 std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
-  auto item = MenuItem::Create(text, MenuItemType::Normal);
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
   AddItem(item);
   return item;
 }
@@ -596,7 +543,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
 std::shared_ptr<MenuItem> Menu::CreateAndAddItem(
     const std::string& text,
     const std::optional<std::string>& icon) {
-  auto item = MenuItem::Create(text, MenuItemType::Normal);
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
   if (icon.has_value()) {
     item->SetIcon(icon);
   }
@@ -607,7 +554,7 @@ std::shared_ptr<MenuItem> Menu::CreateAndAddItem(
 std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(
     const std::string& text,
     std::shared_ptr<Menu> submenu) {
-  auto item = MenuItem::Create(text, MenuItemType::Submenu);
+  auto item = std::make_shared<MenuItem>(text, MenuItemType::Submenu);
   item->SetSubmenu(submenu);
   AddItem(item);
   return item;
