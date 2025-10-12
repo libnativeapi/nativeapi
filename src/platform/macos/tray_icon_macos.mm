@@ -14,7 +14,7 @@ typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconID tray_icon_id, const s
 typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconID tray_icon_id);
 typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconID tray_icon_id);
 
-@interface TrayIconDelegate : NSObject
+@interface NSStatusBarButtonTarget : NSObject
 @property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
 @property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
 @property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
@@ -27,17 +27,19 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), delegate_(nil), menu_closed_listener_id_(0) {}
+  Impl() : ns_status_item_(nil), ns_status_bar_button_target_(nil), menu_closed_listener_id_(0) {}
 
   Impl(NSStatusItem* status_item)
-      : ns_status_item_(status_item), delegate_(nil), menu_closed_listener_id_(0) {
+      : ns_status_item_(status_item),
+        ns_status_bar_button_target_(nil),
+        menu_closed_listener_id_(0) {
     if (status_item) {
-      // Create and set up delegate
-      delegate_ = [[TrayIconDelegate alloc] init];
-      delegate_.trayIcon = nullptr;  // Will be set later
+      // Create and set up button target
+      ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
+      ns_status_bar_button_target_.trayIcon = nullptr;  // Will be set later
 
       // Set up click handlers
-      [status_item.button setTarget:delegate_];
+      [status_item.button setTarget:ns_status_bar_button_target_];
       [status_item.button setAction:@selector(statusItemClicked:)];
 
       // Enable right-click handling
@@ -53,12 +55,12 @@ class TrayIcon::Impl {
     }
 
     // Clean up blocks first
-    if (delegate_) {
-      delegate_.leftClickedBlock = nil;
-      delegate_.rightClickedBlock = nil;
-      delegate_.doubleClickedBlock = nil;
-      delegate_.trayIcon = nullptr;
-      delegate_ = nil;
+    if (ns_status_bar_button_target_) {
+      ns_status_bar_button_target_.leftClickedBlock = nil;
+      ns_status_bar_button_target_.rightClickedBlock = nil;
+      ns_status_bar_button_target_.doubleClickedBlock = nil;
+      ns_status_bar_button_target_.trayIcon = nullptr;
+      ns_status_bar_button_target_ = nil;
     }
 
     // Then clean up the status item
@@ -81,7 +83,7 @@ class TrayIcon::Impl {
   }
 
   NSStatusItem* ns_status_item_;
-  TrayIconDelegate* delegate_;
+  NSStatusBarButtonTarget* ns_status_bar_button_target_;
   std::shared_ptr<Menu> context_menu_;
   size_t menu_closed_listener_id_;
 };
@@ -97,19 +99,20 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
     // Reinitialize the Impl with the created status item
     pimpl_ = std::make_unique<Impl>(status_item);
 
-    if (pimpl_->delegate_) {
-      pimpl_->delegate_.trayIcon = this;
+    if (pimpl_->ns_status_bar_button_target_) {
+      pimpl_->ns_status_bar_button_target_.trayIcon = this;
 
       // 设置默认的 Block 处理器，直接发送事件
-      pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
-        try {
-          EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
-        } catch (...) {
-          // Protect against event emission exceptions
-        }
-      };
+      pimpl_->ns_status_bar_button_target_.leftClickedBlock =
+          ^(TrayIconID tray_icon_id, const std::string& button) {
+            try {
+              EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+            } catch (...) {
+              // Protect against event emission exceptions
+            }
+          };
 
-      pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+      pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
         try {
           EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
         } catch (...) {
@@ -117,7 +120,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
         }
       };
 
-      pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+      pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
         try {
           EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
         } catch (...) {
@@ -130,19 +133,20 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
   id = -1;  // Will be set by TrayManager when created
-  if (pimpl_->delegate_) {
-    pimpl_->delegate_.trayIcon = this;
+  if (pimpl_->ns_status_bar_button_target_) {
+    pimpl_->ns_status_bar_button_target_.trayIcon = this;
 
     // 设置默认的 Block 处理器，直接发送事件
-    pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
-      try {
-        EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
-    };
+    pimpl_->ns_status_bar_button_target_.leftClickedBlock =
+        ^(TrayIconID tray_icon_id, const std::string& button) {
+          try {
+            EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+          } catch (...) {
+            // Protect against event emission exceptions
+          }
+        };
 
-    pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
       try {
         EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
       } catch (...) {
@@ -150,7 +154,7 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
       }
     };
 
-    pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
       try {
         EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
       } catch (...) {
@@ -161,9 +165,9 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
 }
 
 TrayIcon::~TrayIcon() {
-  // Clear the delegate's reference to this object before destruction
-  if (pimpl_ && pimpl_->delegate_) {
-    pimpl_->delegate_.trayIcon = nullptr;
+  // Clear the button target's reference to this object before destruction
+  if (pimpl_ && pimpl_->ns_status_bar_button_target_) {
+    pimpl_->ns_status_bar_button_target_.trayIcon = nullptr;
   }
 }
 
@@ -373,8 +377,8 @@ void* TrayIcon::GetNativeObjectInternal() const {
 
 }  // namespace nativeapi
 
-// Implementation of TrayIconDelegate
-@implementation TrayIconDelegate
+// Implementation of NSStatusBarButtonTarget
+@implementation NSStatusBarButtonTarget
 
 - (void)statusItemClicked:(id)sender {
   // Check if trayIcon is still valid before proceeding

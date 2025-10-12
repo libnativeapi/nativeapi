@@ -22,12 +22,12 @@ typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemID item_id, const std::s
 typedef void (^MenuOpenedBlock)(nativeapi::MenuID menu_id);
 typedef void (^MenuClosedBlock)(nativeapi::MenuID menu_id);
 
-@interface MenuItemTarget : NSObject
+@interface NSMenuItemTarget : NSObject
 @property(nonatomic, copy) MenuItemClickedBlock clickedBlock;
 - (void)menuItemClicked:(id)sender;
 @end
 
-@interface MenuDelegate : NSObject <NSMenuDelegate>
+@interface NSMenuDelegateImpl : NSObject <NSMenuDelegate>
 @property(nonatomic, copy) MenuOpenedBlock openedBlock;
 @property(nonatomic, copy) MenuClosedBlock closedBlock;
 @end
@@ -118,45 +118,71 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
 }  // namespace nativeapi
 
-// Implementation of MenuItemTarget - moved to global scope
-@implementation MenuItemTarget
+// Implementation of NSMenuItemTarget - moved to global scope
+@implementation NSMenuItemTarget
 - (void)menuItemClicked:(id)sender {
-  NSMenuItem* menuItem = (NSMenuItem*)sender;
+  @try {
+    NSMenuItem* menuItem = (NSMenuItem*)sender;
+    if (!menuItem)
+      return;
 
-  // Call the block if it exists
-  if (_clickedBlock) {
-    std::string itemText = [[menuItem title] UTF8String];
-    // Get the MenuItemID from the menu item's associated object
-    NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, kMenuItemIdKey);
-    if (itemIdObj) {
-      nativeapi::MenuItemID itemId = [itemIdObj longValue];
-      _clickedBlock(itemId, itemText);
+    // Call the block if it exists
+    if (_clickedBlock) {
+      NSString* title = [menuItem title];
+      std::string itemText = title ? [title UTF8String] : "";
+
+      // Get the MenuItemID from the menu item's associated object
+      NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, kMenuItemIdKey);
+      if (itemIdObj) {
+        nativeapi::MenuItemID itemId = [itemIdObj longValue];
+        _clickedBlock(itemId, itemText);
+      }
     }
+  } @catch (NSException* exception) {
+    // Log the exception but don't crash
+    NSLog(@"Exception in menuItemClicked: %@", [exception reason]);
   }
 }
+
 @end
 
-// Implementation of MenuDelegate - moved to global scope
-@implementation MenuDelegate
+// Implementation of NSMenuDelegateImpl - moved to global scope
+@implementation NSMenuDelegateImpl
 - (void)menuWillOpen:(NSMenu*)menu {
-  if (_openedBlock) {
-    // Get the MenuID from the menu's associated object
-    NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
-    if (menuIdObj) {
-      nativeapi::MenuID menuId = [menuIdObj longValue];
-      _openedBlock(menuId);
+  @try {
+    if (!menu)
+      return;
+
+    if (_openedBlock) {
+      // Get the MenuID from the menu's associated object
+      NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
+      if (menuIdObj) {
+        nativeapi::MenuID menuId = [menuIdObj longValue];
+        _openedBlock(menuId);
+      }
     }
+  } @catch (NSException* exception) {
+    // Log the exception but don't crash
+    NSLog(@"Exception in menuWillOpen: %@", [exception reason]);
   }
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
-  if (_closedBlock) {
-    // Get the MenuID from the menu's associated object
-    NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
-    if (menuIdObj) {
-      nativeapi::MenuID menuId = [menuIdObj longValue];
-      _closedBlock(menuId);
+  @try {
+    if (!menu)
+      return;
+
+    if (_closedBlock) {
+      // Get the MenuID from the menu's associated object
+      NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
+      if (menuIdObj) {
+        nativeapi::MenuID menuId = [menuIdObj longValue];
+        _closedBlock(menuId);
+      }
     }
+  } @catch (NSException* exception) {
+    // Log the exception but don't crash
+    NSLog(@"Exception in menuDidClose: %@", [exception reason]);
   }
 }
 @end
@@ -167,7 +193,7 @@ namespace nativeapi {
 class MenuItem::Impl {
  public:
   NSMenuItem* ns_menu_item_;
-  MenuItemTarget* target_;
+  NSMenuItemTarget* ns_menu_item_target_;
   MenuItemType type_;
   std::optional<std::string> text_;
   std::optional<std::string> icon_;
@@ -179,35 +205,51 @@ class MenuItem::Impl {
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
+  size_t submenu_opened_listener_id_;
+  size_t submenu_closed_listener_id_;
+  MenuItemID menu_item_id_;
 
   Impl(NSMenuItem* menu_item, MenuItemType type)
       : ns_menu_item_(menu_item),
-        target_([[MenuItemTarget alloc] init]),
+        ns_menu_item_target_([[NSMenuItemTarget alloc] init]),
         type_(type),
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
         enabled_(true),
         visible_(true),
         state_(MenuItemState::Unchecked),
-        radio_group_(-1) {
-    [ns_menu_item_ setTarget:target_];
+        radio_group_(-1),
+        submenu_opened_listener_id_(0),
+        submenu_closed_listener_id_(0),
+        menu_item_id_(-1) {
+    [ns_menu_item_ setTarget:ns_menu_item_target_];
     [ns_menu_item_ setAction:@selector(menuItemClicked:)];
   }
 
   ~Impl() {
-    // First, clean up submenu reference
+    // First, remove submenu listeners before cleaning up submenu reference
+    if (submenu_ && submenu_opened_listener_id_ != 0) {
+      submenu_->RemoveListener(submenu_opened_listener_id_);
+      submenu_opened_listener_id_ = 0;
+    }
+    if (submenu_ && submenu_closed_listener_id_ != 0) {
+      submenu_->RemoveListener(submenu_closed_listener_id_);
+      submenu_closed_listener_id_ = 0;
+    }
+
+    // Then clean up submenu reference
     if (submenu_) {
       submenu_.reset();
     }
 
-    if (target_) {
+    if (ns_menu_item_target_) {
       // Clean up blocks first
-      target_.clickedBlock = nil;
+      ns_menu_item_target_.clickedBlock = nil;
 
       // Remove target and action to prevent callbacks after destruction
       [ns_menu_item_ setTarget:nil];
       [ns_menu_item_ setAction:nil];
-      target_ = nil;
+      ns_menu_item_target_ = nil;
     }
   }
 };
@@ -232,12 +274,13 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_
   }
 
   pimpl_ = std::make_unique<Impl>(nsItem, type);
+  pimpl_->menu_item_id_ = id;
   objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   pimpl_->text_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
     try {
       EmitSync<MenuItemClickedEvent>(item_id, item_text);
     } catch (...) {
@@ -250,11 +293,12 @@ MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
       pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
   NSMenuItem* nsItem = (__bridge NSMenuItem*)native_item;
+  pimpl_->menu_item_id_ = id;
   objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemID item_id, const std::string& item_text) {
     try {
       EmitSync<MenuItemClickedEvent>(item_id, item_text);
     } catch (...) {
@@ -422,7 +466,7 @@ void MenuItem::SetState(MenuItemState state) {
           if (sibling == pimpl_->ns_menu_item_)
             continue;
           NSObject* targetObj = [sibling target];
-          if ([targetObj isKindOfClass:[MenuItemTarget class]]) {
+          if ([targetObj isKindOfClass:[NSMenuItemTarget class]]) {
             // Get the MenuItemID from the associated object
             NSNumber* siblingIdObj = objc_getAssociatedObject(sibling, kMenuItemIdKey);
             if (siblingIdObj) {
@@ -452,11 +496,59 @@ int MenuItem::GetRadioGroup() const {
 }
 
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
-  pimpl_->submenu_ = submenu;
-  if (submenu) {
-    [pimpl_->ns_menu_item_ setSubmenu:(__bridge NSMenu*)submenu->GetNativeObject()];
-  } else {
-    [pimpl_->ns_menu_item_ setSubmenu:nil];
+  try {
+    pimpl_->submenu_ = submenu;
+    if (submenu) {
+      NSMenu* nsSubmenu = (__bridge NSMenu*)submenu->GetNativeObject();
+      if (nsSubmenu) {
+        [pimpl_->ns_menu_item_ setSubmenu:nsSubmenu];
+
+        // Remove previous submenu listeners if they exist
+        if (pimpl_->submenu_opened_listener_id_ != 0) {
+          submenu->RemoveListener(pimpl_->submenu_opened_listener_id_);
+          pimpl_->submenu_opened_listener_id_ = 0;
+        }
+        if (pimpl_->submenu_closed_listener_id_ != 0) {
+          submenu->RemoveListener(pimpl_->submenu_closed_listener_id_);
+          pimpl_->submenu_closed_listener_id_ = 0;
+        }
+
+        // Add event listeners to forward submenu events
+        MenuItemID menu_item_id = id;
+        MenuItem* self = this;
+        pimpl_->submenu_opened_listener_id_ = submenu->AddListener<MenuOpenedEvent>(
+            [self, menu_item_id](const MenuOpenedEvent& event) {
+              try {
+                self->EmitSync<MenuItemSubmenuOpenedEvent>(menu_item_id);
+              } catch (...) {
+                // Protect against event emission exceptions
+              }
+            });
+
+        pimpl_->submenu_closed_listener_id_ = submenu->AddListener<MenuClosedEvent>(
+            [self, menu_item_id](const MenuClosedEvent& event) {
+              try {
+                self->EmitSync<MenuItemSubmenuClosedEvent>(menu_item_id);
+              } catch (...) {
+                // Protect against event emission exceptions
+              }
+            });
+      }
+    } else {
+      // Remove listeners when submenu is cleared
+      if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
+        pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
+        pimpl_->submenu_opened_listener_id_ = 0;
+      }
+      if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
+        pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
+        pimpl_->submenu_closed_listener_id_ = 0;
+      }
+      [pimpl_->ns_menu_item_ setSubmenu:nil];
+    }
+  } catch (...) {
+    // Handle C++ exceptions
+    NSLog(@"Exception in SetSubmenu");
   }
 }
 
@@ -465,6 +557,16 @@ std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
 }
 
 void MenuItem::RemoveSubmenu() {
+  // Remove listeners before clearing submenu reference
+  if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
+    pimpl_->submenu_opened_listener_id_ = 0;
+  }
+  if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
+    pimpl_->submenu_closed_listener_id_ = 0;
+  }
+
   pimpl_->submenu_.reset();
   [pimpl_->ns_menu_item_ setSubmenu:nil];
 }
@@ -474,9 +576,9 @@ bool MenuItem::Trigger() {
     return false;
 
   // Call the block directly instead of going through target-action
-  if (pimpl_->target_.clickedBlock) {
+  if (pimpl_->ns_menu_item_target_.clickedBlock) {
     std::string itemText = pimpl_->text_.value_or("");
-    pimpl_->target_.clickedBlock(id, itemText);
+    pimpl_->ns_menu_item_target_.clickedBlock(id, itemText);
   }
   return true;
 }
@@ -489,13 +591,13 @@ void* MenuItem::GetNativeObjectInternal() const {
 class Menu::Impl {
  public:
   NSMenu* ns_menu_;
-  MenuDelegate* delegate_;
+  NSMenuDelegateImpl* delegate_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
   bool visible_;
 
   Impl(NSMenu* menu)
-      : ns_menu_(menu), delegate_([[MenuDelegate alloc] init]), enabled_(true), visible_(false) {
+      : ns_menu_(menu), delegate_([[NSMenuDelegateImpl alloc] init]), enabled_(true), visible_(false) {
     [ns_menu_ setDelegate:delegate_];
   }
 
