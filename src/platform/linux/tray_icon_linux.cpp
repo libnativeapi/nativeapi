@@ -30,6 +30,25 @@ class TrayIcon::Impl {
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
   id = -1;
+
+#if HAS_GTK && HAS_AYATANA_APPINDICATOR
+  // Create a unique ID for this tray icon
+  static int next_indicator_id = 1;
+  std::string indicator_id =
+      "nativeapi-tray-" + std::to_string(next_indicator_id++);
+
+  // Create a new tray using AppIndicator
+  AppIndicator* app_indicator =
+      app_indicator_new(indicator_id.c_str(),
+                        "application-default-icon",  // Default icon name
+                        APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+
+  if (app_indicator) {
+    // Reinitialize the Impl with the created indicator
+    pimpl_ = std::make_unique<Impl>(app_indicator);
+    pimpl_->visible_ = true;
+  }
+#endif
 }
 
 TrayIcon::TrayIcon(void* tray)

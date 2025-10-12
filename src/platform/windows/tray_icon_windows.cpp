@@ -100,6 +100,36 @@ class TrayIcon::Impl {
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   id = -1;
+
+  // Create a hidden window for this tray icon
+  HINSTANCE hInstance = GetModuleHandle(nullptr);
+
+  // Register window class for this tray icon
+  static UINT next_class_id = 1;
+  std::string class_name =
+      "NativeAPITrayIcon_" + std::to_string(next_class_id++);
+
+  WNDCLASS wc = {};
+  wc.lpfnWndProc = DefWindowProc;
+  wc.hInstance = hInstance;
+  wc.lpszClassName = class_name.c_str();
+
+  if (RegisterClass(&wc)) {
+    // Create hidden message-only window
+    HWND hwnd =
+        CreateWindow(class_name.c_str(), "NativeAPI Tray Icon", 0, 0, 0, 0, 0,
+                     HWND_MESSAGE,  // Message-only window
+                     nullptr, hInstance, nullptr);
+
+    if (hwnd) {
+      // Generate unique icon ID
+      static UINT next_icon_id = 1;
+      UINT icon_id = next_icon_id++;
+
+      // Reinitialize the Impl with the created window and icon ID
+      pimpl_ = std::make_unique<Impl>(hwnd, icon_id);
+    }
+  }
 }
 
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {

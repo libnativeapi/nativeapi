@@ -66,8 +66,9 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
   /**
    * @brief Default constructor for TrayIcon.
    *
-   * Creates a new tray icon instance with default settings.
-   * The icon will not be visible until Show() is called.
+   * Creates a new tray icon instance with platform-specific initialization.
+   * The icon will not be visible until SetVisible(true) is called.
+   * This constructor handles all platform-specific setup internally.
    */
   TrayIcon();
 

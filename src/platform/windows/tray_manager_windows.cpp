@@ -90,20 +90,9 @@ bool TrayManager::IsSupported() {
 std::shared_ptr<TrayIcon> TrayManager::Create() {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (!pimpl_->hwnd_) {
-    std::cerr << "TrayManager: Hidden window not available" << std::endl;
-    return nullptr;
-  }
-
+  // Create tray icon with platform-specific initialization handled internally
   auto tray = std::make_shared<TrayIcon>();
   tray->id = next_tray_id_++;
-
-  // Windows-specific initialization is now handled internally by the TrayIcon
-  // implementation The platform-specific details are encapsulated within the
-  // PIMPL pattern
-  UINT icon_id = pimpl_->next_icon_id_++;
-  // Platform-specific setup is handled in the TrayIcon constructor and methods
-
   trays_[tray->id] = tray;
 
   return tray;

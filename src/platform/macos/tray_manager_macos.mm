@@ -59,12 +59,8 @@ bool TrayManager::IsSupported() {
 std::shared_ptr<TrayIcon> TrayManager::Create() {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
-  NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
-
-  std::cout << status_item.visible << std::endl;
-
-  auto tray = std::make_shared<TrayIcon>((__bridge void*)status_item);
+  // Create tray icon with platform-specific initialization handled internally
+  auto tray = std::make_shared<TrayIcon>();
   tray->id = next_tray_id_++;
   trays_[tray->id] = tray;
 

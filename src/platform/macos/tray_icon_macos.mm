@@ -88,33 +88,43 @@ class TrayIcon::Impl {
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   id = -1;
-  if (pimpl_->delegate_) {
-    pimpl_->delegate_.trayIcon = this;
 
-    // 设置默认的 Block 处理器，直接发送事件
-    pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
-      try {
-        EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
-    };
+  // Create platform-specific NSStatusItem
+  NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
+  NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
 
-    pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
-      try {
-        EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
-    };
+  if (status_item) {
+    // Reinitialize the Impl with the created status item
+    pimpl_ = std::make_unique<Impl>(status_item);
 
-    pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
-      try {
-        EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
-    };
+    if (pimpl_->delegate_) {
+      pimpl_->delegate_.trayIcon = this;
+
+      // 设置默认的 Block 处理器，直接发送事件
+      pimpl_->delegate_.leftClickedBlock = ^(TrayIconID tray_icon_id, const std::string& button) {
+        try {
+          EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+        } catch (...) {
+          // Protect against event emission exceptions
+        }
+      };
+
+      pimpl_->delegate_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+        try {
+          EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
+        } catch (...) {
+          // Protect against event emission exceptions
+        }
+      };
+
+      pimpl_->delegate_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+        try {
+          EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
+        } catch (...) {
+          // Protect against event emission exceptions
+        }
+      };
+    }
   }
 }
 

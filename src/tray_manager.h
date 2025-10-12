@@ -55,8 +55,9 @@ class TrayManager {
   /**
    * @brief Create a new system tray icon.
    *
-   * Creates a new tray icon instance and registers it with the manager.
-   * The tray icon will be assigned a unique ID for future reference.
+   * Creates a new tray icon instance with platform-specific initialization
+   * and registers it with the manager. The tray icon will be assigned a
+   * unique ID for future reference.
    *
    * @return Shared pointer to the newly created TrayIcon instance
    * @note The returned tray icon is automatically managed by this TrayManager

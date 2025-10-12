@@ -66,20 +66,8 @@ std::shared_ptr<TrayIcon> TrayManager::Create() {
   std::lock_guard<std::mutex> lock(mutex_);
 
 #if HAS_GTK && HAS_AYATANA_APPINDICATOR
-  // Create a unique ID for this tray icon
-  std::string indicator_id = "nativeapi-tray-" + std::to_string(next_tray_id_);
-
-  // Create a new tray using AppIndicator
-  AppIndicator* app_indicator =
-      app_indicator_new(indicator_id.c_str(),
-                        "application-default-icon",  // Default icon name
-                        APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
-
-  if (!app_indicator) {
-    return nullptr;
-  }
-
-  auto tray = std::make_shared<TrayIcon>((void*)app_indicator);
+  // Create tray icon with platform-specific initialization handled internally
+  auto tray = std::make_shared<TrayIcon>();
   tray->id = next_tray_id_++;
   trays_[tray->id] = tray;
 
