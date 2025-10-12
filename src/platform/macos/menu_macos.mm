@@ -597,7 +597,10 @@ class Menu::Impl {
   bool visible_;
 
   Impl(NSMenu* menu)
-      : ns_menu_(menu), delegate_([[NSMenuDelegateImpl alloc] init]), enabled_(true), visible_(false) {
+      : ns_menu_(menu),
+        delegate_([[NSMenuDelegateImpl alloc] init]),
+        enabled_(true),
+        visible_(false) {
     [ns_menu_ setDelegate:delegate_];
   }
 

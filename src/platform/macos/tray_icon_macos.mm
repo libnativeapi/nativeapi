@@ -27,8 +27,6 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : ns_status_item_(nil), ns_status_bar_button_target_(nil), menu_closed_listener_id_(0) {}
-
   Impl(NSStatusItem* status_item)
       : ns_status_item_(status_item),
         ns_status_bar_button_target_(nil),
@@ -88,7 +86,7 @@ class TrayIcon::Impl {
   size_t menu_closed_listener_id_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
+TrayIcon::TrayIcon() {
   id = -1;
 
   // Create platform-specific NSStatusItem
@@ -96,7 +94,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
 
   if (status_item) {
-    // Reinitialize the Impl with the created status item
+    // Initialize the Impl with the created status item
     pimpl_ = std::make_unique<Impl>(status_item);
 
     if (pimpl_->ns_status_bar_button_target_) {
@@ -128,6 +126,9 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
         }
       };
     }
+  } else {
+    // If status_item creation failed, create Impl with nil
+    pimpl_ = std::make_unique<Impl>(nil);
   }
 }
 

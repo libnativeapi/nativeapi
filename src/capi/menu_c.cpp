@@ -4,18 +4,11 @@
 #include <cstring>
 #include <map>
 #include <memory>
-#include <unordered_map>
+#include <optional>
+#include "../global_registry.h"
 #include "../menu.h"
 
 using namespace nativeapi;
-
-// Template function to create and manage global registries for different object
-// types Uses heap allocation to avoid destruction order issues at program exit
-template <typename T>
-static auto& globalRegistry() {
-  static auto* instance = new std::unordered_map<void*, std::shared_ptr<T>>();
-  return *instance;
-}
 
 // Global registry instances for managing MenuItem and Menu object lifetimes
 static auto& g_menu_items = globalRegistry<MenuItem>();
@@ -1142,23 +1135,6 @@ void native_menu_item_list_free(native_menu_item_list_t list) {
   if (list.items) {
     free(list.items);
   }
-}
-
-// Implementation of cleanup function
-void cleanup_at_exit() {
-  // Clear all event listeners first to prevent callbacks during cleanup
-  g_menu_item_listeners.clear();
-  g_menu_listeners.clear();
-
-  // Note: We intentionally do NOT clear g_menu_items and g_menus here
-  // because they are now managed by function-local static pointers that
-  // won't be destroyed during normal exit, preventing double-free issues.
-  // The memory will be cleaned up by the OS when the process terminates.
-}
-
-// Cleanup functions to ensure proper resource management
-void native_menu_cleanup_all(void) {
-  cleanup_at_exit();
 }
 
 char* native_keyboard_accelerator_to_string(

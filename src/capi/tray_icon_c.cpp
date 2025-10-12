@@ -2,6 +2,8 @@
 #include <cstring>
 #include <map>
 #include <memory>
+#include <optional>
+#include "../global_registry.h"
 #include "../tray_icon.h"
 #include "../tray_icon_event.h"
 #include "string_utils_c.h"
@@ -22,12 +24,17 @@ static std::map<native_tray_icon_t,
     g_tray_icon_listeners;
 static std::atomic<int> g_tray_icon_next_listener_id{1};
 
+// Global registry instance for managing TrayIcon object lifetimes
+static auto& g_tray_icons = globalRegistry<TrayIcon>();
+
 // TrayIcon C API Implementation
 
 native_tray_icon_t native_tray_icon_create(void) {
   try {
     auto tray_icon = std::make_shared<TrayIcon>();
-    return static_cast<native_tray_icon_t>(tray_icon.get());
+    void* handle = tray_icon.get();
+    g_tray_icons[handle] = tray_icon;  // Store shared_ptr to keep object alive
+    return static_cast<native_tray_icon_t>(handle);
   } catch (...) {
     return nullptr;
   }
@@ -39,7 +46,9 @@ native_tray_icon_t native_tray_icon_create_from_native(void* native_tray) {
 
   try {
     auto tray_icon = std::make_shared<TrayIcon>(native_tray);
-    return static_cast<native_tray_icon_t>(tray_icon.get());
+    void* handle = tray_icon.get();
+    g_tray_icons[handle] = tray_icon;  // Store shared_ptr to keep object alive
+    return static_cast<native_tray_icon_t>(handle);
   } catch (...) {
     return nullptr;
   }
@@ -49,14 +58,17 @@ void native_tray_icon_destroy(native_tray_icon_t tray_icon) {
   if (!tray_icon)
     return;
 
-  // Clean up listeners
-  auto it = g_tray_icon_listeners.find(tray_icon);
-  if (it != g_tray_icon_listeners.end()) {
-    g_tray_icon_listeners.erase(it);
+  // Remove event listeners first
+  auto listeners_it = g_tray_icon_listeners.find(tray_icon);
+  if (listeners_it != g_tray_icon_listeners.end()) {
+    g_tray_icon_listeners.erase(listeners_it);
   }
 
-  // Note: The actual TrayIcon object is managed by shared_ptr
-  // This just removes our reference to it
+  // Remove from global storage - this will release the shared_ptr
+  auto tray_icon_it = g_tray_icons.find(tray_icon);
+  if (tray_icon_it != g_tray_icons.end()) {
+    g_tray_icons.erase(tray_icon_it);
+  }
 }
 
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
