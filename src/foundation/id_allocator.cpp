@@ -31,10 +31,10 @@ uint32_t IdAllocator::GetSequence(IdType id) {
 bool IdAllocator::IsValid(IdType id) {
   // Extract type value from high 8 bits
   const uint32_t type_value = (id & kTypeMask) >> kTypeShift;
-  
+
   // Extract sequence number from low 24 bits
   const uint32_t seq = id & kSequenceMask;
-  
+
   // ID is valid if:
   // 1. Type value is in valid range [kMinTypeValue, kMaxTypeValue] (1-10)
   // 2. Sequence number is non-zero (0 is reserved for kInvalidId)
@@ -47,10 +47,10 @@ bool IdAllocator::IsValid(IdType id) {
 std::pair<uint32_t, uint32_t> IdAllocator::Decompose(IdType id) {
   // Extract type value from high 8 bits (bits 31-24)
   const uint32_t type_value = (id & kTypeMask) >> kTypeShift;
-  
+
   // Extract sequence number from low 24 bits (bits 23-0)
   const uint32_t sequence = id & kSequenceMask;
-  
+
   // Return both components as a pair
   return {type_value, sequence};
 }

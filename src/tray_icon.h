@@ -5,11 +5,12 @@
 #include <string>
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
+#include "foundation/id_allocator.h"
 #include "menu.h"
 
 namespace nativeapi {
 
-typedef long TrayIconID;
+typedef IdAllocator::IdType TrayIconId;
 
 /**
  * @brief TrayIcon represents a system tray icon (notification area icon).
@@ -96,7 +97,7 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    * This ID is assigned by the TrayManager when the icon is created
    * and can be used to reference the icon in subsequent operations.
    */
-  TrayIconID id;
+  TrayIconId id;
 
   /**
    * @brief Set the icon image for the tray icon.

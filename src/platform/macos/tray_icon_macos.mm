@@ -1,3 +1,4 @@
+#include <optional>
 #include "../../foundation/geometry.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
@@ -10,9 +11,9 @@
 // for proper memory management of Objective-C objects.
 
 // Forward declarations
-typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconID tray_icon_id, const std::string& button);
-typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconID tray_icon_id);
-typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconID tray_icon_id);
+typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconId tray_icon_id, const std::string& button);
+typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconId tray_icon_id);
+typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 
 @interface NSStatusBarButtonTarget : NSObject
 @property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
@@ -86,60 +87,30 @@ class TrayIcon::Impl {
   size_t menu_closed_listener_id_;
 };
 
-TrayIcon::TrayIcon() {
-  id = -1;
+TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
 
-  // Create platform-specific NSStatusItem
-  NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
-  NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
+TrayIcon::TrayIcon(void* tray) {
+  id = IdAllocator::Allocate<TrayIcon>();
 
-  if (status_item) {
-    // Initialize the Impl with the created status item
-    pimpl_ = std::make_unique<Impl>(status_item);
+  NSStatusItem* status_item = nullptr;
 
-    if (pimpl_->ns_status_bar_button_target_) {
-      pimpl_->ns_status_bar_button_target_.trayIcon = this;
-
-      // 设置默认的 Block 处理器，直接发送事件
-      pimpl_->ns_status_bar_button_target_.leftClickedBlock =
-          ^(TrayIconID tray_icon_id, const std::string& button) {
-            try {
-              EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
-            } catch (...) {
-              // Protect against event emission exceptions
-            }
-          };
-
-      pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
-        try {
-          EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
-        } catch (...) {
-          // Protect against event emission exceptions
-        }
-      };
-
-      pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
-        try {
-          EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
-        } catch (...) {
-          // Protect against event emission exceptions
-        }
-      };
-    }
+  if (tray == nullptr) {
+    // Create platform-specific NSStatusItem
+    NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
+    status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
   } else {
-    // If status_item creation failed, create Impl with nil
-    pimpl_ = std::make_unique<Impl>(nil);
+    status_item = (__bridge NSStatusItem*)tray;
   }
-}
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatusItem*)tray)) {
-  id = -1;  // Will be set by TrayManager when created
+  // Initialize the Impl with the status item
+  pimpl_ = std::make_unique<Impl>(status_item);
+
   if (pimpl_->ns_status_bar_button_target_) {
     pimpl_->ns_status_bar_button_target_.trayIcon = this;
 
     // 设置默认的 Block 处理器，直接发送事件
     pimpl_->ns_status_bar_button_target_.leftClickedBlock =
-        ^(TrayIconID tray_icon_id, const std::string& button) {
+        ^(TrayIconId tray_icon_id, const std::string& button) {
           try {
             EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
           } catch (...) {
@@ -147,7 +118,7 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
           }
         };
 
-    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconID tray_icon_id) {
+    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconId tray_icon_id) {
       try {
         EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
       } catch (...) {
@@ -155,7 +126,7 @@ TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((__bridge NSStatu
       }
     };
 
-    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconID tray_icon_id) {
+    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconId tray_icon_id) {
       try {
         EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
       } catch (...) {

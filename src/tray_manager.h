@@ -63,7 +63,7 @@ class TrayManager {
    * @return Shared pointer to the TrayIcon if found, nullptr otherwise
    * @thread_safety This method is thread-safe
    */
-  std::shared_ptr<TrayIcon> Get(TrayIconID id);
+  std::shared_ptr<TrayIcon> Get(TrayIconId id);
 
   /**
    * @brief Get all managed tray icons.
@@ -106,7 +106,7 @@ class TrayManager {
    * Maps tray icon IDs to their corresponding TrayIcon instances
    * for efficient lookup and management.
    */
-  std::unordered_map<TrayIconID, std::shared_ptr<TrayIcon>> trays_;
+  std::unordered_map<TrayIconId, std::shared_ptr<TrayIcon>> trays_;
 
   /**
    * @brief ID generator for creating unique tray icon identifiers.
@@ -114,7 +114,7 @@ class TrayManager {
    * Maintains the next available ID to assign to newly created tray icons.
    * This ensures each tray icon has a unique identifier.
    */
-  TrayIconID next_tray_id_;
+  TrayIconId next_tray_id_;
 
   /**
    * @brief Mutex for thread-safe operations.

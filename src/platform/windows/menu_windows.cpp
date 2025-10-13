@@ -13,7 +13,6 @@ namespace nativeapi {
 static std::atomic<MenuItemID> g_next_menu_item_id{1};
 static std::atomic<MenuID> g_next_menu_id{1};
 
-
 // Helper function to convert KeyboardAccelerator to Windows accelerator
 std::pair<UINT, UINT> ConvertAccelerator(
     const KeyboardAccelerator& accelerator) {
@@ -127,11 +126,9 @@ class MenuItem::Impl {
   }
 };
 
-
 MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
-      pimpl_(std::make_unique<Impl>(nullptr, 0, MenuItemType::Normal)) {
-}
+      pimpl_(std::make_unique<Impl>(nullptr, 0, MenuItemType::Normal)) {}
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
     : id(g_next_menu_item_id++),
@@ -139,8 +136,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
   pimpl_->text_ = text;
 }
 
-MenuItem::~MenuItem() {
-}
+MenuItem::~MenuItem() {}
 
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
@@ -320,18 +316,14 @@ class Menu::Impl {
   }
 };
 
-
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++),
-      pimpl_(std::make_unique<Impl>(static_cast<HMENU>(native_menu))) {
-}
+      pimpl_(std::make_unique<Impl>(static_cast<HMENU>(native_menu))) {}
 
-Menu::Menu() : id(g_next_menu_id++),
-               pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {
-}
+Menu::Menu()
+    : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {}
 
-Menu::~Menu() {
-}
+Menu::~Menu() {}
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (!item)

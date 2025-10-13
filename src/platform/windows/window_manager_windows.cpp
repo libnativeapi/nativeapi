@@ -143,8 +143,8 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   DWORD exStyle = 0;
   std::wstring wtitle = StringToWString(options.title);
 
-  HWND hwnd = CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(), style,
-                              CW_USEDEFAULT, CW_USEDEFAULT,
+  HWND hwnd = CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(),
+                              style, CW_USEDEFAULT, CW_USEDEFAULT,
                               static_cast<int>(options.size.width),
                               static_cast<int>(options.size.height), nullptr,
                               nullptr, hInstance, nullptr);

@@ -1,5 +1,5 @@
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 #include <memory>
 #include <string>
 
@@ -14,8 +14,7 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl()
-      : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {}
+  Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {}
 
   Impl(HWND hwnd, UINT icon_id)
       : hwnd_(hwnd), icon_id_(icon_id), icon_handle_(nullptr) {
@@ -199,7 +198,7 @@ void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->hwnd_) {
     std::string tooltip_str = tooltip.has_value() ? *tooltip : "";
     std::wstring wtooltip = StringToWString(tooltip_str);
-    wcsncpy_s(pimpl_->nid_.szTip, _countof(pimpl_->nid_.szTip), 
+    wcsncpy_s(pimpl_->nid_.szTip, _countof(pimpl_->nid_.szTip),
               wtooltip.c_str(), _TRUNCATE);
 
     // Update if icon is visible (check if hIcon is set as indicator)

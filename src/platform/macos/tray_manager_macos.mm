@@ -56,7 +56,7 @@ bool TrayManager::IsSupported() {
   return true;
 }
 
-std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconID id) {
+std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconId id) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   auto it = trays_.find(id);

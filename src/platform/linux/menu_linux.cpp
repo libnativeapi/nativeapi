@@ -85,8 +85,8 @@ MenuItem::MenuItem(void* menu_item)
     : id(g_next_menu_item_id++),
       pimpl_(new Impl((GtkWidget*)menu_item, MenuItemType::Normal)) {
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
-    const char* label = gtk_menu_item_get_label(
-        GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
+    const char* label =
+        gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
     if (label && label[0] != '\0') {
       pimpl_->title_ = std::string(label);
     } else {

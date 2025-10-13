@@ -13,16 +13,16 @@ namespace nativeapi {
  */
 class TrayIconClickedEvent : public Event {
  public:
-  TrayIconClickedEvent(TrayIconID tray_icon_id, const std::string& button)
+  TrayIconClickedEvent(TrayIconId tray_icon_id, const std::string& button)
       : tray_icon_id_(tray_icon_id), button_(button) {}
 
-  TrayIconID GetTrayIconId() const { return tray_icon_id_; }
+  TrayIconId GetTrayIconId() const { return tray_icon_id_; }
   const std::string& GetButton() const { return button_; }
 
   std::string GetTypeName() const override { return "TrayIconClickedEvent"; }
 
  private:
-  TrayIconID tray_icon_id_;
+  TrayIconId tray_icon_id_;
   std::string button_;
 };
 
@@ -33,14 +33,14 @@ class TrayIconClickedEvent : public Event {
  */
 class TrayIconRightClickedEvent : public Event {
  public:
-  TrayIconRightClickedEvent(TrayIconID tray_icon_id) : tray_icon_id_(tray_icon_id) {}
+  TrayIconRightClickedEvent(TrayIconId tray_icon_id) : tray_icon_id_(tray_icon_id) {}
 
-  TrayIconID GetTrayIconId() const { return tray_icon_id_; }
+  TrayIconId GetTrayIconId() const { return tray_icon_id_; }
 
   std::string GetTypeName() const override { return "TrayIconRightClickedEvent"; }
 
  private:
-  TrayIconID tray_icon_id_;
+  TrayIconId tray_icon_id_;
 };
 
 /**
@@ -50,14 +50,14 @@ class TrayIconRightClickedEvent : public Event {
  */
 class TrayIconDoubleClickedEvent : public Event {
  public:
-  TrayIconDoubleClickedEvent(TrayIconID tray_icon_id) : tray_icon_id_(tray_icon_id) {}
+  TrayIconDoubleClickedEvent(TrayIconId tray_icon_id) : tray_icon_id_(tray_icon_id) {}
 
-  TrayIconID GetTrayIconId() const { return tray_icon_id_; }
+  TrayIconId GetTrayIconId() const { return tray_icon_id_; }
 
   std::string GetTypeName() const override { return "TrayIconDoubleClickedEvent"; }
 
  private:
-  TrayIconID tray_icon_id_;
+  TrayIconId tray_icon_id_;
 };
 
 }  // namespace nativeapi

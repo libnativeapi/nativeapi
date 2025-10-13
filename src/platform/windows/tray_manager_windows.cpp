@@ -6,14 +6,16 @@
 
 namespace nativeapi {
 
-// Define the Impl class for Windows (empty for now, as Windows doesn't need platform-specific data)
+// Define the Impl class for Windows (empty for now, as Windows doesn't need
+// platform-specific data)
 class TrayManager::Impl {
  public:
   Impl() {}
   ~Impl() {}
 };
 
-TrayManager::TrayManager() : pimpl_(std::make_unique<Impl>()), next_tray_id_(1) {}
+TrayManager::TrayManager()
+    : pimpl_(std::make_unique<Impl>()), next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -31,7 +33,7 @@ bool TrayManager::IsSupported() {
   return true;  // Windows always supports system tray
 }
 
-std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconID id) {
+std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconId id) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   auto it = trays_.find(id);

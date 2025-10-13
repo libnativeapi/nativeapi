@@ -44,12 +44,9 @@ class IdAllocator {
   /// Bit layout specification: [ type:8 | sequence:24 ]
   /// High 8 bits store the type identifier, low 24 bits store the sequence
   /// number
-  static constexpr uint32_t kTypeBits =
-      8;  ///< Number of bits allocated for type information
-  static constexpr uint32_t kSequenceBits =
-      24;  ///< Number of bits allocated for sequence numbers
-  static constexpr uint32_t kTypeShift =
-      24;  ///< Bit shift amount to extract type from ID
+  static constexpr uint32_t kTypeBits = 8;       ///< Number of bits allocated for type information
+  static constexpr uint32_t kSequenceBits = 24;  ///< Number of bits allocated for sequence numbers
+  static constexpr uint32_t kTypeShift = 24;     ///< Bit shift amount to extract type from ID
   static constexpr uint32_t kTypeMask =
       0xFF000000u;  ///< Bit mask to extract type bits (high 8 bits)
   static constexpr uint32_t kSequenceMask =
@@ -91,8 +88,7 @@ class IdAllocator {
     // once
     static uint32_t type_value = []() {
       // Atomically get the next available type value
-      uint32_t value =
-          GetNextTypeCounter().fetch_add(1, std::memory_order_relaxed);
+      uint32_t value = GetNextTypeCounter().fetch_add(1, std::memory_order_relaxed);
       if (value > kMaxTypeValue) {
         // Handle overflow - this shouldn't happen in practice with only 10
         // types but provides safety in case of programming errors
@@ -120,8 +116,7 @@ class IdAllocator {
     // Using relaxed memory ordering is safe here because we only need
     // atomicity, not ordering guarantees between different operations. This
     // provides optimal performance while maintaining thread safety.
-    uint32_t sequence =
-        GetCounter<T>().fetch_add(1, std::memory_order_relaxed) + 1u;
+    uint32_t sequence = GetCounter<T>().fetch_add(1, std::memory_order_relaxed) + 1u;
 
     // Check for overflow: if sequence wraps around to 0 in the low 24 bits,
     // treat as allocation failure to avoid returning kInvalidId
