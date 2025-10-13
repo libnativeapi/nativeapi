@@ -733,57 +733,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    */
   bool IsEnabled() const;
 
-  /**
-   * @brief Create a standard menu item and add it to the menu.
-   *
-   * Convenience method that creates a normal menu item with the given
-   * text and adds it to the menu in one operation.
-   *
-   * @param text The text for the menu item
-   * @return Shared pointer to the created and added menu item
-   */
-  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text);
 
-  /**
-   * @brief Create a menu item with icon and add it to the menu.
-   *
-   * Convenience method that creates a normal menu item with text and icon
-   * and adds it to the menu in one operation.
-   *
-   * @param text The text for the menu item
-   * @param icon The icon for the menu item (file path or base64 data, optional)
-   * @return Shared pointer to the created and added menu item
-   */
-  std::shared_ptr<MenuItem> CreateAndAddItem(const std::string& text,
-                                             const std::optional<std::string>& icon);
-
-  /**
-   * @brief Create a submenu item and add it to the menu.
-   *
-   * Convenience method that creates a submenu item and adds it to the menu.
-   *
-   * @param text The text for the submenu item
-   * @param submenu The submenu to attach
-   * @return Shared pointer to the created and added submenu item
-   */
-  std::shared_ptr<MenuItem> CreateAndAddSubmenu(const std::string& text,
-                                                std::shared_ptr<Menu> submenu);
-
-  /**
-   * @brief Emit a menu opened event.
-   *
-   * This is primarily used by platform implementations to
-   * emit events when a menu has been opened.
-   */
-  void EmitOpenedEvent();
-
-  /**
-   * @brief Emit a menu closed event.
-   *
-   * This is primarily used by platform implementations to
-   * emit events when a menu has been closed.
-   */
-  void EmitClosedEvent();
 
  protected:
   /**

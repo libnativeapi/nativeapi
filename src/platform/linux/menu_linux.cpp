@@ -426,42 +426,10 @@ bool Menu::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
-  AddItem(item);
-  return item;
-}
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(
-    const std::string& text,
-    const std::optional<std::string>& icon) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
-  if (icon.has_value()) {
-    item->SetIcon(icon);
-  }
-  AddItem(item);
-  return item;
-}
-
-std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(
-    const std::string& text,
-    std::shared_ptr<Menu> submenu) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Submenu);
-  item->SetSubmenu(submenu);
-  AddItem(item);
-  return item;
-}
 
 void* Menu::GetNativeObjectInternal() const {
   return (void*)pimpl_->gtk_menu_;
-}
-
-void Menu::EmitOpenedEvent() {
-  // TODO: Implement menu opened event emission for GTK
-}
-
-void Menu::EmitClosedEvent() {
-  // TODO: Implement menu closed event emission for GTK
 }
 
 }  // namespace nativeapi

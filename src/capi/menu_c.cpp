@@ -1067,67 +1067,7 @@ bool native_menu_remove_listener(native_menu_t menu, int listener_id) {
   }
 }
 
-native_menu_item_t native_menu_create_and_add_item(
-    native_menu_t menu,
-    const char* text,
-    native_menu_item_type_t type) {
-  if (!menu || !text)
-    return nullptr;
 
-  try {
-    // Verify menu exists in global storage
-    auto menu_it = g_menus.find(menu);
-    if (menu_it == g_menus.end())
-      return nullptr;
-
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto item = menu_ptr->CreateAndAddItem(text);
-    if (item) {
-      if (type != NATIVE_MENU_ITEM_TYPE_NORMAL) {
-        // The CreateAndAddItem only creates normal items, so we need to handle
-        // other types differently For now, just return the normal item - this
-        // could be enhanced later
-      }
-      // Store the created item in global storage
-      void* item_handle = item.get();
-      g_menu_items[item_handle] = item;
-      return static_cast<native_menu_item_t>(item_handle);
-    }
-    return nullptr;
-  } catch (...) {
-    return nullptr;
-  }
-}
-
-native_menu_item_t native_menu_create_and_add_submenu(native_menu_t menu,
-                                                      const char* text,
-                                                      native_menu_t submenu) {
-  if (!menu || !text || !submenu)
-    return nullptr;
-
-  try {
-    // Verify menu exists in global storage
-    auto menu_it = g_menus.find(menu);
-    if (menu_it == g_menus.end())
-      return nullptr;
-
-    auto menu_ptr = static_cast<Menu*>(menu);
-    // Get the shared_ptr from global storage instead of creating a new one
-    auto submenu_it = g_menus.find(submenu);
-    if (submenu_it != g_menus.end()) {
-      auto item = menu_ptr->CreateAndAddSubmenu(text, submenu_it->second);
-      if (item) {
-        // Store the created item in global storage
-        void* item_handle = item.get();
-        g_menu_items[item_handle] = item;
-        return static_cast<native_menu_item_t>(item_handle);
-      }
-    }
-    return nullptr;
-  } catch (...) {
-    return nullptr;
-  }
-}
 
 // Utility functions
 

@@ -151,8 +151,10 @@ int main() {
 
       // Create submenu item and add to main menu
       native_menu_item_t submenu_item =
-          native_menu_create_and_add_submenu(menu, "More Options", submenu);
+          native_menu_item_create("More Options", NATIVE_MENU_ITEM_TYPE_SUBMENU);
       if (submenu_item) {
+        native_menu_item_set_submenu(submenu_item, submenu);
+        native_menu_add_item(menu, submenu_item);
         printf("Created submenu with %zu items\n",
                native_menu_get_item_count(submenu));
       }

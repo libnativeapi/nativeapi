@@ -877,47 +877,10 @@ bool Menu::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
-  AddItem(item);
-  return item;
-}
 
-std::shared_ptr<MenuItem> Menu::CreateAndAddItem(const std::string& text,
-                                                 const std::optional<std::string>& icon) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Normal);
-  if (icon.has_value()) {
-    item->SetIcon(icon);
-  }
-  AddItem(item);
-  return item;
-}
-
-std::shared_ptr<MenuItem> Menu::CreateAndAddSubmenu(const std::string& text,
-                                                    std::shared_ptr<Menu> submenu) {
-  auto item = std::make_shared<MenuItem>(text, MenuItemType::Submenu);
-  item->SetSubmenu(submenu);
-  AddItem(item);
-  return item;
-}
 
 void* Menu::GetNativeObjectInternal() const {
   return (__bridge void*)pimpl_->ns_menu_;
 }
 
-void Menu::EmitOpenedEvent() {
-  // This method is kept for compatibility but events are now handled through blocks
-  // Call the block if it exists
-  if (pimpl_->delegate_.openedBlock) {
-    pimpl_->delegate_.openedBlock(id);
-  }
-}
-
-void Menu::EmitClosedEvent() {
-  // This method is kept for compatibility but events are now handled through blocks
-  // Call the block if it exists
-  if (pimpl_->delegate_.closedBlock) {
-    pimpl_->delegate_.closedBlock(id);
-  }
-}
 }  // namespace nativeapi

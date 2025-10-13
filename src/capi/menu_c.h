@@ -577,29 +577,7 @@ int native_menu_add_listener(native_menu_t menu,
 FFI_PLUGIN_EXPORT
 bool native_menu_remove_listener(native_menu_t menu, int listener_id);
 
-/**
- * Create and add a menu item in one operation
- * @param menu The menu
- * @param text The item text
- * @param type The item type
- * @return The created menu item handle
- */
-FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_create_and_add_item(native_menu_t menu,
-                                                   const char* text,
-                                                   native_menu_item_type_t type);
 
-/**
- * Create and add a submenu item in one operation
- * @param menu The menu
- * @param text The item text
- * @param submenu The submenu to attach
- * @return The created menu item handle
- */
-FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_create_and_add_submenu(native_menu_t menu,
-                                                      const char* text,
-                                                      native_menu_t submenu);
 
 /**
  * Utility functions
