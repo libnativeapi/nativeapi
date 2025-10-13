@@ -92,12 +92,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
   virtual ~TrayIcon();
 
   /**
-   * @brief Unique identifier for this tray icon.
+   * @brief Get the unique identifier for this tray icon.
    *
-   * This ID is assigned by the TrayManager when the icon is created
-   * and can be used to reference the icon in subsequent operations.
+   * @return The unique identifier for this tray icon
    */
-  TrayIconId id;
+  TrayIconId GetId();
 
   /**
    * @brief Set the icon image for the tray icon.

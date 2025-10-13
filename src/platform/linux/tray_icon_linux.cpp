@@ -5,6 +5,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include "../../foundation/id_allocator.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -19,7 +20,9 @@ class TrayIcon::Impl {
         title_(std::nullopt),
         tooltip_(std::nullopt),
         context_menu_(nullptr),
-        visible_(false) {}
+        visible_(false) {
+    id_ = IdAllocator::Allocate<TrayIcon>();
+  }
 
   AppIndicator* app_indicator_;
   std::shared_ptr<Menu>
@@ -27,10 +30,10 @@ class TrayIcon::Impl {
   std::optional<std::string> title_;
   std::optional<std::string> tooltip_;
   bool visible_;
+  TrayIconId id_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
-  id = -1;
 
 #if HAS_GTK && HAS_AYATANA_APPINDICATOR
   // Create a unique ID for this tray icon
@@ -54,7 +57,6 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
 
 TrayIcon::TrayIcon(void* tray)
     : pimpl_(std::make_unique<Impl>((AppIndicator*)tray)) {
-  id = -1;  // Will be set by TrayManager when created
   // Make the indicator visible by default
   if (pimpl_->app_indicator_) {
     pimpl_->visible_ = true;
@@ -65,6 +67,10 @@ TrayIcon::~TrayIcon() {
   if (pimpl_->app_indicator_) {
     g_object_unref(pimpl_->app_indicator_);
   }
+}
+
+TrayIconId TrayIcon::GetId() {
+  return pimpl_->id_;
 }
 
 void TrayIcon::SetIcon(std::string icon) {
@@ -88,7 +94,7 @@ void TrayIcon::SetIcon(std::string icon) {
         // Create a temporary file path
         const char* temp_dir = g_get_tmp_dir();
         std::string temp_path = std::string(temp_dir) +
-                                "/nativeapi_tray_icon_" + std::to_string(id) +
+                                "/nativeapi_tray_icon_" + std::to_string(GetId()) +
                                 ".png";
 
         // Write to file

@@ -6,6 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
+#import <objc/runtime.h>
 
 // Note: This file assumes ARC (Automatic Reference Counting) is enabled
 // for proper memory management of Objective-C objects.
@@ -15,11 +16,14 @@ typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconId tray_icon_id, const s
 typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 
+// Key for associated object to store tray icon ID
+static const void* kTrayIconIdKey = &kTrayIconIdKey;
+
 @interface NSStatusBarButtonTarget : NSObject
-@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
 @property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
 @property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
 @property(nonatomic, copy) TrayIconDoubleClickedBlock doubleClickedBlock;
+@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
 - (void)statusItemClicked:(id)sender;
 @end
 
@@ -33,6 +37,18 @@ class TrayIcon::Impl {
         ns_status_bar_button_target_(nil),
         menu_closed_listener_id_(0) {
     if (status_item) {
+      // Check if ID already exists in the associated object
+      NSNumber* allocatedId = objc_getAssociatedObject(status_item, kTrayIconIdKey);
+      if (allocatedId) {
+        // Reuse allocated ID
+        id_ = [allocatedId longValue];
+      } else {
+        // Allocate new ID and store it
+        id_ = IdAllocator::Allocate<TrayIcon>();
+        objc_setAssociatedObject(status_item, kTrayIconIdKey, [NSNumber numberWithLong:id_],
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      }
+
       // Create and set up button target
       ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
       ns_status_bar_button_target_.trayIcon = nullptr;  // Will be set later
@@ -71,6 +87,11 @@ class TrayIcon::Impl {
       }
       // Clear menu reference
       ns_status_item_.menu = nil;
+
+      // Clean up associated object
+      objc_setAssociatedObject(ns_status_item_, kTrayIconIdKey, nil,
+                               OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
       [[NSStatusBar systemStatusBar] removeStatusItem:ns_status_item_];
       ns_status_item_ = nil;
     }
@@ -83,6 +104,8 @@ class TrayIcon::Impl {
 
   NSStatusItem* ns_status_item_;
   NSStatusBarButtonTarget* ns_status_bar_button_target_;
+
+  TrayIconId id_;
   std::shared_ptr<Menu> context_menu_;
   size_t menu_closed_listener_id_;
 };
@@ -90,8 +113,6 @@ class TrayIcon::Impl {
 TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
 
 TrayIcon::TrayIcon(void* tray) {
-  id = IdAllocator::Allocate<TrayIcon>();
-
   NSStatusItem* status_item = nullptr;
 
   if (tray == nullptr) {
@@ -141,6 +162,10 @@ TrayIcon::~TrayIcon() {
   if (pimpl_ && pimpl_->ns_status_bar_button_target_) {
     pimpl_->ns_status_bar_button_target_.trayIcon = nullptr;
   }
+}
+
+TrayIconId TrayIcon::GetId() {
+  return pimpl_->id_;
 }
 
 void TrayIcon::SetIcon(std::string icon) {
@@ -354,11 +379,11 @@ void* TrayIcon::GetNativeObjectInternal() const {
 
 - (void)statusItemClicked:(id)sender {
   // Check if trayIcon is still valid before proceeding
-  if (!_trayIcon)
+  if (!self.trayIcon)
     return;
 
   // Create a local reference to prevent race conditions
-  nativeapi::TrayIcon* trayIcon = _trayIcon;
+  nativeapi::TrayIcon* trayIcon = self.trayIcon;
   if (!trayIcon)
     return;
 
@@ -372,17 +397,17 @@ void* TrayIcon::GetNativeObjectInternal() const {
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     if (_rightClickedBlock) {
-      _rightClickedBlock(trayIcon->id);
+      _rightClickedBlock(trayIcon->GetId());
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
       if (_doubleClickedBlock) {
-        _doubleClickedBlock(trayIcon->id);
+        _doubleClickedBlock(trayIcon->GetId());
       }
     } else {
       if (_leftClickedBlock) {
-        _leftClickedBlock(trayIcon->id, "left");
+        _leftClickedBlock(trayIcon->GetId(), "left");
       }
     }
   }

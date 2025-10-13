@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../../foundation/geometry.h"
+#include "../../foundation/id_allocator.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -14,10 +15,13 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
-  Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {}
+  Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {
+    id_ = IdAllocator::Allocate<TrayIcon>();
+  }
 
   Impl(HWND hwnd, UINT icon_id)
       : hwnd_(hwnd), icon_id_(icon_id), icon_handle_(nullptr) {
+    id_ = IdAllocator::Allocate<TrayIcon>();
     // Initialize NOTIFYICONDATA structure
     ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
     nid_.cbSize = sizeof(NOTIFYICONDATAW);
@@ -50,14 +54,14 @@ class TrayIcon::Impl {
       switch (lParam) {
         case WM_LBUTTONUP:
           try {
-            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->id, "left");
+            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->GetId(), "left");
           } catch (...) {
             // Protect against event emission exceptions
           }
           break;
         case WM_RBUTTONUP:
           try {
-            tray_icon->EmitSync<TrayIconRightClickedEvent>(tray_icon->id);
+            tray_icon->EmitSync<TrayIconRightClickedEvent>(tray_icon->GetId());
           } catch (...) {
             // Protect against event emission exceptions
           }
@@ -67,7 +71,7 @@ class TrayIcon::Impl {
           break;
         case WM_LBUTTONDBLCLK:
           try {
-            tray_icon->EmitSync<TrayIconDoubleClickedEvent>(tray_icon->id);
+            tray_icon->EmitSync<TrayIconDoubleClickedEvent>(tray_icon->GetId());
           } catch (...) {
             // Protect against event emission exceptions
           }
@@ -92,9 +96,10 @@ class TrayIcon::Impl {
   NOTIFYICONDATAW nid_;
   std::shared_ptr<Menu> context_menu_;
   HICON icon_handle_;
+  TrayIconId id_;
 };
 
-TrayIcon::TrayIcon() : id(-1), pimpl_(std::make_unique<Impl>()) {
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   // Create a hidden window for this tray icon
   HINSTANCE hInstance = GetModuleHandle(nullptr);
 
@@ -128,13 +133,17 @@ TrayIcon::TrayIcon() : id(-1), pimpl_(std::make_unique<Impl>()) {
   }
 }
 
-TrayIcon::TrayIcon(void* tray) : id(-1), pimpl_(std::make_unique<Impl>()) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {
   // In a real implementation, you'd extract HWND and icon ID from the tray
   // parameter For now, this constructor is mainly used by TrayManager for
   // creating uninitialized icons
 }
 
 TrayIcon::~TrayIcon() {}
+
+TrayIconId TrayIcon::GetId() {
+  return pimpl_->id_;
+}
 
 void TrayIcon::SetIcon(std::string icon) {
   if (!pimpl_->hwnd_) {

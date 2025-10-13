@@ -77,7 +77,7 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    return tray_icon_ptr->id;
+    return tray_icon_ptr->GetId();
   } catch (...) {
     return -1;
   }
