@@ -13,12 +13,12 @@
 namespace nativeapi {
 
 // Global ID generators
-static std::atomic<MenuItemID> g_next_menu_item_id{1};
-static std::atomic<MenuID> g_next_menu_id{1};
+static std::atomic<MenuItemId> g_next_menu_item_id{1};
+static std::atomic<MenuId> g_next_menu_id{1};
 
 // Global registry to map native objects to C++ objects for event emission
-static std::unordered_map<MenuItemID, MenuItem*> g_menu_item_registry;
-static std::unordered_map<MenuID, Menu*> g_menu_registry;
+static std::unordered_map<MenuItemId, MenuItem*> g_menu_item_registry;
+static std::unordered_map<MenuId, Menu*> g_menu_registry;
 
 // Private implementation class for MenuItem
 class MenuItem::Impl {
@@ -304,7 +304,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
   return false;
 }
 
-bool Menu::RemoveItemById(MenuItemID item_id) {
+bool Menu::RemoveItemById(MenuItemId item_id) {
   for (auto& item : pimpl_->items_) {
     if (item->id == item_id) {
       return RemoveItem(item);
@@ -348,7 +348,7 @@ std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
   return nullptr;
 }
 
-std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemID item_id) const {
+std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
   for (const auto& item : pimpl_->items_) {
     if (item->id == item_id) {
       return item;

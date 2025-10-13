@@ -13,8 +13,8 @@
 
 namespace nativeapi {
 
-typedef long MenuID;
-typedef long MenuItemID;
+typedef long MenuId;
+typedef long MenuItemId;
 
 /**
  * @brief Enumeration of different menu item types.
@@ -216,7 +216,7 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
    * This ID is assigned when the item is created and can be used to
    * reference the item in event handlers and other operations.
    */
-  MenuItemID id;
+  MenuItemId id;
 
   /**
    * @brief Get the type of this menu item.
@@ -545,7 +545,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * This ID is assigned when the menu is created and can be used to
    * reference the menu in various operations.
    */
-  MenuID id;
+  MenuId id;
 
   /**
    * @brief Add a menu item to the end of the menu.
@@ -592,7 +592,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * @param item_id The ID of the menu item to remove
    * @return true if the item was found and removed, false otherwise
    */
-  bool RemoveItemById(MenuItemID item_id);
+  bool RemoveItemById(MenuItemId item_id);
 
   /**
    * @brief Remove a menu item at a specific position.
@@ -652,7 +652,7 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * @param item_id The ID of the menu item to find
    * @return Shared pointer to the menu item, or nullptr if not found
    */
-  std::shared_ptr<MenuItem> GetItemById(MenuItemID item_id) const;
+  std::shared_ptr<MenuItem> GetItemById(MenuItemId item_id) const;
 
   /**
    * @brief Get all menu items in the menu.

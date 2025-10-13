@@ -10,8 +10,8 @@
 namespace nativeapi {
 
 // Global ID generators
-static std::atomic<MenuItemID> g_next_menu_item_id{1};
-static std::atomic<MenuID> g_next_menu_id{1};
+static std::atomic<MenuItemId> g_next_menu_item_id{1};
+static std::atomic<MenuId> g_next_menu_id{1};
 
 // Helper function to convert KeyboardAccelerator to Windows accelerator
 std::pair<UINT, UINT> ConvertAccelerator(
@@ -397,7 +397,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
   return false;
 }
 
-bool Menu::RemoveItemById(MenuItemID item_id) {
+bool Menu::RemoveItemById(MenuItemId item_id) {
   for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
     if ((*it)->id == item_id) {
       RemoveMenu(pimpl_->hmenu_, item_id, MF_BYCOMMAND);
@@ -444,7 +444,7 @@ std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
   return pimpl_->items_[index];
 }
 
-std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemID item_id) const {
+std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
   for (const auto& item : pimpl_->items_) {
     if (item->id == item_id) {
       return item;

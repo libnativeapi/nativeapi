@@ -7,8 +7,8 @@
 namespace nativeapi {
 
 // Forward declarations for menu types
-typedef long MenuID;
-typedef long MenuItemID;
+typedef long MenuId;
+typedef long MenuItemId;
 
 /**
  * @brief Menu opened event.
@@ -17,14 +17,14 @@ typedef long MenuItemID;
  */
 class MenuOpenedEvent : public Event {
  public:
-  MenuOpenedEvent(MenuID menu_id) : menu_id_(menu_id) {}
+  MenuOpenedEvent(MenuId menu_id) : menu_id_(menu_id) {}
 
-  MenuID GetMenuId() const { return menu_id_; }
+  MenuId GetMenuId() const { return menu_id_; }
 
   std::string GetTypeName() const override { return "MenuOpenedEvent"; }
 
  private:
-  MenuID menu_id_;
+  MenuId menu_id_;
 };
 
 /**
@@ -34,14 +34,14 @@ class MenuOpenedEvent : public Event {
  */
 class MenuClosedEvent : public Event {
  public:
-  MenuClosedEvent(MenuID menu_id) : menu_id_(menu_id) {}
+  MenuClosedEvent(MenuId menu_id) : menu_id_(menu_id) {}
 
-  MenuID GetMenuId() const { return menu_id_; }
+  MenuId GetMenuId() const { return menu_id_; }
 
   std::string GetTypeName() const override { return "MenuClosedEvent"; }
 
  private:
-  MenuID menu_id_;
+  MenuId menu_id_;
 };
 
 /**
@@ -52,16 +52,16 @@ class MenuClosedEvent : public Event {
  */
 class MenuItemClickedEvent : public Event {
  public:
-  MenuItemClickedEvent(MenuItemID item_id, const std::string& item_text)
+  MenuItemClickedEvent(MenuItemId item_id, const std::string& item_text)
       : item_id_(item_id), item_text_(item_text) {}
 
-  MenuItemID GetItemId() const { return item_id_; }
+  MenuItemId GetItemId() const { return item_id_; }
   const std::string& GetItemText() const { return item_text_; }
 
   std::string GetTypeName() const override { return "MenuItemClickedEvent"; }
 
  private:
-  MenuItemID item_id_;
+  MenuItemId item_id_;
   std::string item_text_;
 };
 
@@ -72,14 +72,14 @@ class MenuItemClickedEvent : public Event {
  */
 class MenuItemSubmenuOpenedEvent : public Event {
  public:
-  MenuItemSubmenuOpenedEvent(MenuItemID item_id) : item_id_(item_id) {}
+  MenuItemSubmenuOpenedEvent(MenuItemId item_id) : item_id_(item_id) {}
 
-  MenuItemID GetItemId() const { return item_id_; }
+  MenuItemId GetItemId() const { return item_id_; }
 
   std::string GetTypeName() const override { return "MenuItemSubmenuOpenedEvent"; }
 
  private:
-  MenuItemID item_id_;
+  MenuItemId item_id_;
 };
 
 /**
@@ -89,14 +89,14 @@ class MenuItemSubmenuOpenedEvent : public Event {
  */
 class MenuItemSubmenuClosedEvent : public Event {
  public:
-  MenuItemSubmenuClosedEvent(MenuItemID item_id) : item_id_(item_id) {}
+  MenuItemSubmenuClosedEvent(MenuItemId item_id) : item_id_(item_id) {}
 
-  MenuItemID GetItemId() const { return item_id_; }
+  MenuItemId GetItemId() const { return item_id_; }
 
   std::string GetTypeName() const override { return "MenuItemSubmenuClosedEvent"; }
 
  private:
-  MenuItemID item_id_;
+  MenuItemId item_id_;
 };
 
 }  // namespace nativeapi
