@@ -77,26 +77,23 @@ void native_image_destroy(native_image_t image) {
 }
 
 // Get the size of an image in pixels
-void native_image_get_size(native_image_t image,
-                           double* width,
-                           double* height) {
-  if (!image || !width || !height) {
-    if (width)
-      *width = 0.0;
-    if (height)
-      *height = 0.0;
-    return;
+native_size_t native_image_get_size(native_image_t image) {
+  native_size_t result = {0.0, 0.0};
+
+  if (!image) {
+    return result;
   }
 
   try {
     auto img = static_cast<std::shared_ptr<Image>*>(image);
     auto size = (*img)->GetSize();
-    *width = size.width;
-    *height = size.height;
+    result.width = size.width;
+    result.height = size.height;
   } catch (...) {
-    *width = 0.0;
-    *height = 0.0;
+    // Return zero size on error
   }
+
+  return result;
 }
 
 // Get the image format string for debugging purposes

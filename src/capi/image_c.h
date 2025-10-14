@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "geometry_c.h"
+
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
 #else
@@ -57,11 +59,10 @@ void native_image_destroy(native_image_t image);
 /**
  * Get the size of an image in pixels
  * @param image The image
- * @param width Pointer to store the width (will be set to 0 if invalid)
- * @param height Pointer to store the height (will be set to 0 if invalid)
+ * @return Size of the image (width and height will be 0 if invalid)
  */
 FFI_PLUGIN_EXPORT
-void native_image_get_size(native_image_t image, double* width, double* height);
+native_size_t native_image_get_size(native_image_t image);
 
 /**
  * Get the image format string for debugging purposes
