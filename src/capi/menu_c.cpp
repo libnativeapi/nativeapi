@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include "../global_registry.h"
+#include "../image.h"
 #include "../menu.h"
 
 using namespace nativeapi;
@@ -253,42 +254,38 @@ char* native_menu_item_get_label(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_icon(native_menu_item_t item, const char* icon) {
+void native_menu_item_set_icon(native_menu_item_t item, native_image_t image) {
   if (!item)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    if (icon) {
-      menu_item->SetIcon(std::string(icon));
+    if (image) {
+      // Extract the shared_ptr from the native_image_t handle
+      auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
+      menu_item->SetIcon(*image_ptr);
     } else {
-      menu_item->SetIcon(std::nullopt);
+      menu_item->SetIcon(nullptr);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-char* native_menu_item_get_icon(native_menu_item_t item) {
+native_image_t native_menu_item_get_icon(native_menu_item_t item) {
   if (!item)
     return nullptr;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    auto iconOpt = menu_item->GetIcon();
+    auto image = menu_item->GetIcon();
 
-    if (!iconOpt.has_value()) {
+    if (!image) {
       return nullptr;
     }
 
-    const std::string& icon = iconOpt.value();
-
-    // Allocate C string and copy content
-    char* result = static_cast<char*>(malloc(icon.length() + 1));
-    if (result) {
-      strcpy(result, icon.c_str());
-    }
-    return result;
+    // Create a new shared_ptr wrapper for the C API
+    return new std::shared_ptr<Image>(image);
   } catch (...) {
     return nullptr;
   }

@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
 #include "string_utils_windows.h"
@@ -99,7 +100,7 @@ class MenuItem::Impl {
   UINT menu_item_id_;
   MenuItemType type_;
   std::optional<std::string> text_;
-  std::optional<std::string> icon_;
+  std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
@@ -159,14 +160,14 @@ std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->text_;
 }
 
-void MenuItem::SetIcon(const std::optional<std::string>& icon) {
-  pimpl_->icon_ = icon;
+void MenuItem::SetIcon(std::shared_ptr<Image> image) {
+  pimpl_->image_ = image;
   // Windows menu icons would require HBITMAP handling
   // This is a placeholder implementation
 }
 
-std::optional<std::string> MenuItem::GetIcon() const {
-  return pimpl_->icon_;
+std::shared_ptr<Image> MenuItem::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {

@@ -3,6 +3,7 @@
 #include <memory>
 #include <thread>
 
+#include "../../src/image.h"
 #include "../../src/menu.h"
 #include "../../src/tray_icon.h"
 #include "../../src/tray_icon_event.h"
@@ -46,7 +47,8 @@ int main() {
   trayIcon->SetTooltip("This is a test tray icon");
 
   // Try to set a system icon (using a system-provided icon)
-  trayIcon->SetIcon("NSImageNameStatusAvailable");
+  auto icon = nativeapi::Image::FromSystemIcon("NSImageNameStatusAvailable");
+  trayIcon->SetIcon(icon);
 
   // Set up event listeners
   trayIcon->AddListener<TrayIconClickedEvent>(

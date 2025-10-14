@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include "../../foundation/id_allocator.h"
+#include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -15,6 +16,8 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
+  std::shared_ptr<Image> image_;
+  
   Impl(AppIndicator* indicator)
       : app_indicator_(indicator),
         title_(std::nullopt),
@@ -72,57 +75,28 @@ TrayIconId TrayIcon::GetId() {
   return pimpl_->id_;
 }
 
-void TrayIcon::SetIcon(std::string icon) {
+void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (!pimpl_->app_indicator_) {
     return;
   }
 
-  // Check if the icon is a base64 string
-  if (icon.find("data:image") != std::string::npos) {
-    // For base64 images, we need to save them to a temporary file
-    // since AppIndicator expects file paths or stock icon names
-    size_t pos = icon.find("base64,");
-    if (pos != std::string::npos) {
-      std::string base64Icon = icon.substr(pos + 7);
+  // Store the image reference
+  pimpl_->image_ = image;
 
-      // Decode base64 data
-      gsize decoded_len;
-      guchar* decoded_data = g_base64_decode(base64Icon.c_str(), &decoded_len);
-
-      if (decoded_data) {
-        // Create a temporary file path
-        const char* temp_dir = g_get_tmp_dir();
-        std::string temp_path = std::string(temp_dir) +
-                                "/nativeapi_tray_icon_" +
-                                std::to_string(GetId()) + ".png";
-
-        // Write to file
-        GError* error = nullptr;
-        if (g_file_set_contents(temp_path.c_str(), (const gchar*)decoded_data,
-                                decoded_len, &error)) {
-          app_indicator_set_icon_full(pimpl_->app_indicator_, temp_path.c_str(),
-                                      "Tray Icon");
-        } else if (error) {
-          std::cerr << "Error saving icon to temp file: " << error->message
-                    << std::endl;
-          g_error_free(error);
-        }
-
-        g_free(decoded_data);
-      }
-    }
+  if (image) {
+    // For now, use a placeholder implementation
+    // TODO: Implement proper Image to file conversion
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon",
+                                "Tray Icon");
   } else {
-    // Use the icon as a file path or stock icon name
-    if (g_file_test(icon.c_str(), G_FILE_TEST_EXISTS)) {
-      // It's a file path
-      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(),
-                                  "Tray Icon");
-    } else {
-      // Try as a stock icon name
-      app_indicator_set_icon_full(pimpl_->app_indicator_, icon.c_str(),
-                                  "Tray Icon");
-    }
+    // Use default icon
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon",
+                                "Tray Icon");
   }
+}
+
+std::shared_ptr<Image> TrayIcon::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void TrayIcon::SetTitle(std::optional<std::string> title) {

@@ -45,7 +45,7 @@ int main() {
   std::shared_ptr<TrayIcon> tray_icon_ptr = std::make_shared<TrayIcon>();
   if (tray_icon_ptr != nullptr) {
     TrayIcon& tray_icon = *tray_icon_ptr;
-    tray_icon.SetIcon(
+    auto icon = nativeapi::Image::FromBase64(
         "data:image/"
         "png;base64,"
         "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABGdBTUEAALGPC/"
@@ -82,6 +82,7 @@ int main() {
         "WVy6ENA/1l/"
         "XFg23zDhiRuqUXbBi1whJ9enqSQUWa7x3IcWHH0xDhLfUVYSpsWt6LMfZQwwX/"
         "wLVwWPG97osM9Wf7Df6GGOwnsP4BQFiPuOZ8wJUAAAAASUVORK5CYII=");
+    tray_icon.SetIcon(icon);
     std::cout << "Tray ID: " << tray_icon.GetId() << std::endl;
     auto title = tray_icon.GetTitle();
     std::cout << "Tray Title: "

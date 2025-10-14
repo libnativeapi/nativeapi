@@ -5,6 +5,7 @@
 
 #include "../../foundation/geometry.h"
 #include "../../foundation/id_allocator.h"
+#include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -15,6 +16,8 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
+  std::shared_ptr<Image> image_;
+  
   Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {
     id_ = IdAllocator::Allocate<TrayIcon>();
   }
@@ -146,33 +149,20 @@ TrayIconId TrayIcon::GetId() {
   return pimpl_->id_;
 }
 
-void TrayIcon::SetIcon(std::string icon) {
+void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (!pimpl_->hwnd_) {
     return;
   }
 
+  // Store the image reference
+  pimpl_->image_ = image;
+
   HICON hIcon = nullptr;
 
-  // Check if the icon is a base64 string
-  if (icon.find("data:image") == 0) {
-    // For base64 icons, we'd need to decode and create HICON
-    // This is a placeholder implementation
+  if (image) {
+    // For now, use default application icon
+    // TODO: Convert Image object to HICON
     hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-  } else if (!icon.empty()) {
-    // Try to load as file path first
-    std::wstring wicon = StringToWString(icon);
-    hIcon = (HICON)LoadImageW(nullptr, wicon.c_str(), IMAGE_ICON, 16, 16,
-                              LR_LOADFROMFILE);
-
-    // If file path failed, try as resource
-    if (!hIcon) {
-      hIcon = LoadIconW(GetModuleHandle(nullptr), wicon.c_str());
-    }
-
-    // If still failed, use default application icon
-    if (!hIcon) {
-      hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-    }
   } else {
     // Use default application icon
     hIcon = LoadIcon(nullptr, IDI_APPLICATION);
@@ -192,6 +182,10 @@ void TrayIcon::SetIcon(std::string icon) {
       Shell_NotifyIconW(NIM_MODIFY, &pimpl_->nid_);
     }
   }
+}
+
+std::shared_ptr<Image> TrayIcon::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void TrayIcon::SetTitle(std::optional<std::string> title) {

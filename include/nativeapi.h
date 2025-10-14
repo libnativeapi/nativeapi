@@ -18,6 +18,7 @@
 #include "../src/window.h"
 #include "../src/window_event.h"
 #include "../src/window_manager.h"
+#include "../src/image.h"
 
 // Include necessary headers for C API
 #include "../src/capi/accessibility_manager_c.h"
@@ -33,3 +34,4 @@
 #include "../src/capi/tray_manager_c.h"
 #include "../src/capi/window_c.h"
 #include "../src/capi/window_manager_c.h"
+#include "../src/capi/image_c.h"

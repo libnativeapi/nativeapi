@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "../../image.h"
 #include "../../menu.h"
 
 namespace nativeapi {
@@ -26,7 +27,6 @@ class MenuItem::Impl {
   Impl(GtkWidget* menu_item, MenuItemType type)
       : gtk_menu_item_(menu_item),
         title_(""),
-        icon_(""),
         tooltip_(""),
         type_(type),
         enabled_(true),
@@ -37,7 +37,7 @@ class MenuItem::Impl {
 
   GtkWidget* gtk_menu_item_;
   std::optional<std::string> title_;
-  std::optional<std::string> icon_;
+  std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   MenuItemType type_;
   bool enabled_;
@@ -116,13 +116,13 @@ std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->title_;
 }
 
-void MenuItem::SetIcon(const std::optional<std::string>& icon) {
-  pimpl_->icon_ = icon;
+void MenuItem::SetIcon(std::shared_ptr<Image> image) {
+  pimpl_->image_ = image;
   // TODO: Implement icon setting for GTK menu item
 }
 
-std::optional<std::string> MenuItem::GetIcon() const {
-  return pimpl_->icon_;
+std::shared_ptr<Image> MenuItem::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {

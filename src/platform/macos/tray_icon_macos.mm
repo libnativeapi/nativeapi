@@ -1,5 +1,6 @@
 #include <optional>
 #include "../../foundation/geometry.h"
+#include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
@@ -32,6 +33,8 @@ namespace nativeapi {
 // Private implementation class
 class TrayIcon::Impl {
  public:
+  std::shared_ptr<Image> image_;
+  
   Impl(NSStatusItem* status_item)
       : ns_status_item_(status_item),
         ns_status_bar_button_target_(nil),
@@ -168,54 +171,38 @@ TrayIconId TrayIcon::GetId() {
   return pimpl_->id_;
 }
 
-void TrayIcon::SetIcon(std::string icon) {
+void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (!pimpl_->ns_status_item_ || !pimpl_->ns_status_item_.button) {
     return;
   }
 
-  NSImage* image = nil;
+  // Store the image reference
+  pimpl_->image_ = image;
 
-  // Check if the icon is a base64 string
-  if (icon.find("data:image") == 0) {
-    // Extract the base64 part
-    size_t pos = icon.find("base64,");
-    if (pos != std::string::npos) {
-      std::string base64Icon = icon.substr(pos + 7);
-
-      // Convert base64 to NSData
-      NSString* base64_string = [NSString stringWithUTF8String:base64Icon.c_str()];
-      NSData* image_data =
-          [[NSData alloc] initWithBase64EncodedString:base64_string
-                                              options:NSDataBase64DecodingIgnoreUnknownCharacters];
-
-      if (image_data) {
-        // Create image from data
-        image = [[NSImage alloc] initWithData:image_data];
-      }
-    }
-  } else if (!icon.empty()) {
-    // Try as file path first
-    NSString* icon_path = [NSString stringWithUTF8String:icon.c_str()];
-    image = [[NSImage alloc] initWithContentsOfFile:icon_path];
-
-    // If file path failed, try as system image name
-    if (!image) {
-      image = [NSImage imageNamed:icon_path];
-    }
-  }
+  NSImage* ns_image = nil;
 
   if (image) {
+    // For now, use a placeholder implementation
+    // TODO: Implement proper Image to NSImage conversion
+    ns_image = [NSImage imageNamed:@"NSImageNameStatusAvailable"];
+  }
+
+  if (ns_image) {
     // Set appropriate size for status bar
-    [image setSize:NSMakeSize(18, 18)];
+    [ns_image setSize:NSMakeSize(18, 18)];
     // Make it template image for proper appearance in dark mode
-    [image setTemplate:YES];
+    [ns_image setTemplate:YES];
 
     // Set the image to the button
-    [pimpl_->ns_status_item_.button setImage:image];
+    [pimpl_->ns_status_item_.button setImage:ns_image];
   } else {
     // Clear the image if no valid icon is provided
     [pimpl_->ns_status_item_.button setImage:nil];
   }
+}
+
+std::shared_ptr<Image> TrayIcon::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void TrayIcon::SetTitle(std::optional<std::string> title) {

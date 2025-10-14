@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include "../global_registry.h"
+#include "../image.h"
 #include "../tray_icon.h"
 #include "../tray_icon_event.h"
 #include "string_utils_c.h"
@@ -83,15 +84,40 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon) {
-  if (!tray_icon || !icon)
+void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image) {
+  if (!tray_icon)
     return;
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    tray_icon_ptr->SetIcon(icon);
+    if (image) {
+      // Extract the shared_ptr from the native_image_t handle
+      auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
+      tray_icon_ptr->SetIcon(*image_ptr);
+    } else {
+      tray_icon_ptr->SetIcon(nullptr);
+    }
   } catch (...) {
     // Ignore exceptions
+  }
+}
+
+native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon) {
+  if (!tray_icon)
+    return nullptr;
+
+  try {
+    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    auto image = tray_icon_ptr->GetIcon();
+
+    if (!image) {
+      return nullptr;
+    }
+
+    // Create a new shared_ptr wrapper for the C API
+    return new std::shared_ptr<Image>(image);
+  } catch (...) {
+    return nullptr;
   }
 }
 

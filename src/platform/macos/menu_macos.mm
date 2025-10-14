@@ -3,6 +3,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
 
@@ -196,7 +197,7 @@ class MenuItem::Impl {
   NSMenuItemTarget* ns_menu_item_target_;
   MenuItemType type_;
   std::optional<std::string> text_;
-  std::optional<std::string> icon_;
+  std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
@@ -328,55 +329,29 @@ std::optional<std::string> MenuItem::GetLabel() const {
   return pimpl_->text_;
 }
 
-void MenuItem::SetIcon(const std::optional<std::string>& icon) {
-  pimpl_->icon_ = icon;
+void MenuItem::SetIcon(std::shared_ptr<Image> image) {
+  pimpl_->image_ = image;
 
-  NSImage* image = nil;
-
-  if (icon.has_value()) {
-    const std::string& iconStr = icon.value();
-
-    // Check if the icon is a base64 string
-    if (iconStr.find("data:image") != std::string::npos) {
-      // Extract the base64 part
-      size_t pos = iconStr.find("base64,");
-      if (pos != std::string::npos) {
-        std::string base64Icon = iconStr.substr(pos + 7);
-
-        // Convert base64 to NSData
-        NSString* base64_string = [NSString stringWithUTF8String:base64Icon.c_str()];
-        NSData* image_data = [[NSData alloc]
-            initWithBase64EncodedString:base64_string
-                                options:NSDataBase64DecodingIgnoreUnknownCharacters];
-
-        if (image_data) {
-          image = [[NSImage alloc] initWithData:image_data];
-        }
-      }
-    } else if (!iconStr.empty()) {
-      // Try to load as file path first
-      NSString* icon_path = [NSString stringWithUTF8String:iconStr.c_str()];
-      image = [[NSImage alloc] initWithContentsOfFile:icon_path];
-
-      // If that fails, try as named image
-      if (!image) {
-        image = [NSImage imageNamed:icon_path];
-      }
-    }
-  }
+  NSImage* ns_image = nil;
 
   if (image) {
-    [image setSize:NSMakeSize(16, 16)];  // Standard menu item icon size
-    [image setTemplate:YES];
-    [pimpl_->ns_menu_item_ setImage:image];
+    // For now, use a placeholder implementation
+    // TODO: Implement proper Image to NSImage conversion
+    ns_image = [NSImage imageNamed:@"NSImageNameStatusAvailable"];
+  }
+
+  if (ns_image) {
+    [ns_image setSize:NSMakeSize(16, 16)];  // Standard menu item icon size
+    [ns_image setTemplate:YES];
+    [pimpl_->ns_menu_item_ setImage:ns_image];
   } else {
     // Clear the image if no valid icon is provided
     [pimpl_->ns_menu_item_ setImage:nil];
   }
 }
 
-std::optional<std::string> MenuItem::GetIcon() const {
-  return pimpl_->icon_;
+std::shared_ptr<Image> MenuItem::GetIcon() const {
+  return pimpl_->image_;
 }
 
 void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {

@@ -10,28 +10,6 @@
 namespace nativeapi {
 
 /**
- * @brief Image source type enumeration.
- *
- * Defines the different ways an image can be initialized.
- */
-enum class ImageSourceType {
-  /**
-   * Image is loaded from a file path on disk.
-   */
-  FilePath,
-
-  /**
-   * Image is initialized from base64-encoded data.
-   */
-  Base64,
-
-  /**
-   * Image is a platform-specific system icon.
-   */
-  SystemIcon
-};
-
-/**
  * @brief Image class for cross-platform image handling.
  *
  * This class provides a unified interface for working with images across
@@ -93,6 +71,13 @@ enum class ImageSourceType {
  */
 class Image : public NativeObjectProvider {
  public:
+  /**
+   * @brief Default constructor.
+   *
+   * Creates an empty image instance.
+   */
+  Image();
+
   /**
    * @brief Destructor.
    *
