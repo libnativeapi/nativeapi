@@ -27,48 +27,48 @@ std::pair<UINT, UINT> ConvertAccelerator(
       key = static_cast<UINT>(c);
     } else {
       // Special keys
-      std::string keyStr = accelerator.key;
-      if (keyStr == "F1")
+      std::string key_str = accelerator.key;
+      if (key_str == "F1")
         key = VK_F1;
-      else if (keyStr == "F2")
+      else if (key_str == "F2")
         key = VK_F2;
-      else if (keyStr == "F3")
+      else if (key_str == "F3")
         key = VK_F3;
-      else if (keyStr == "F4")
+      else if (key_str == "F4")
         key = VK_F4;
-      else if (keyStr == "F5")
+      else if (key_str == "F5")
         key = VK_F5;
-      else if (keyStr == "F6")
+      else if (key_str == "F6")
         key = VK_F6;
-      else if (keyStr == "F7")
+      else if (key_str == "F7")
         key = VK_F7;
-      else if (keyStr == "F8")
+      else if (key_str == "F8")
         key = VK_F8;
-      else if (keyStr == "F9")
+      else if (key_str == "F9")
         key = VK_F9;
-      else if (keyStr == "F10")
+      else if (key_str == "F10")
         key = VK_F10;
-      else if (keyStr == "F11")
+      else if (key_str == "F11")
         key = VK_F11;
-      else if (keyStr == "F12")
+      else if (key_str == "F12")
         key = VK_F12;
-      else if (keyStr == "Enter" || keyStr == "Return")
+      else if (key_str == "Enter" || key_str == "Return")
         key = VK_RETURN;
-      else if (keyStr == "Tab")
+      else if (key_str == "Tab")
         key = VK_TAB;
-      else if (keyStr == "Space")
+      else if (key_str == "Space")
         key = VK_SPACE;
-      else if (keyStr == "Escape")
+      else if (key_str == "Escape")
         key = VK_ESCAPE;
-      else if (keyStr == "Delete" || keyStr == "Backspace")
+      else if (key_str == "Delete" || key_str == "Backspace")
         key = VK_BACK;
-      else if (keyStr == "ArrowUp")
+      else if (key_str == "ArrowUp")
         key = VK_UP;
-      else if (keyStr == "ArrowDown")
+      else if (key_str == "ArrowDown")
         key = VK_DOWN;
-      else if (keyStr == "ArrowLeft")
+      else if (key_str == "ArrowLeft")
         key = VK_LEFT;
-      else if (keyStr == "ArrowRight")
+      else if (key_str == "ArrowRight")
         key = VK_RIGHT;
     }
   }
@@ -148,9 +148,9 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
     MENUITEMINFOW mii = {};
     mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_STRING;
-    std::string labelStr = label.has_value() ? *label : "";
-    std::wstring wLabelStr = StringToWString(labelStr);
-    mii.dwTypeData = const_cast<LPWSTR>(wLabelStr.c_str());
+    std::string label_str = label.has_value() ? *label : "";
+    std::wstring w_label_str = StringToWString(label_str);
+    mii.dwTypeData = const_cast<LPWSTR>(w_label_str.c_str());
     SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
   }
 }
@@ -226,11 +226,11 @@ void MenuItem::SetState(MenuItemState state) {
     pimpl_->state_ = state;
 
     if (pimpl_->parent_menu_) {
-      UINT checkState = MF_UNCHECKED;
+      UINT check_state = MF_UNCHECKED;
       if (state == MenuItemState::Checked) {
-        checkState = MF_CHECKED;
+        check_state = MF_CHECKED;
       }
-      CheckMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_, checkState);
+      CheckMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_, check_state);
     }
 
     // Handle radio button group logic
@@ -340,18 +340,18 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     flags |= MF_UNCHECKED;
   }
 
-  UINT_PTR menuId = item->id;
-  HMENU subMenu = nullptr;
+  UINT_PTR menu_id = item->id;
+  HMENU sub_menu = nullptr;
   if (item->GetSubmenu()) {
-    subMenu = static_cast<HMENU>(item->GetSubmenu()->GetNativeObject());
+    sub_menu = static_cast<HMENU>(item->GetSubmenu()->GetNativeObject());
     flags |= MF_POPUP;
-    menuId = reinterpret_cast<UINT_PTR>(subMenu);
+    menu_id = reinterpret_cast<UINT_PTR>(sub_menu);
   }
 
-  auto labelOpt = item->GetLabel();
-  std::string labelStr = labelOpt.has_value() ? *labelOpt : "";
-  std::wstring wLabelStr = StringToWString(labelStr);
-  AppendMenuW(pimpl_->hmenu_, flags, menuId, wLabelStr.c_str());
+  auto label_opt = item->GetLabel();
+  std::string label_str = label_opt.has_value() ? *label_opt : "";
+  std::wstring w_label_str = StringToWString(label_str);
+  AppendMenuW(pimpl_->hmenu_, flags, menu_id, w_label_str.c_str());
 
   // Update the item's impl with menu info
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
@@ -374,11 +374,11 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
     flags = MF_SEPARATOR | MF_BYPOSITION;
   }
 
-  auto labelOpt = item->GetLabel();
-  std::string labelStr = labelOpt.has_value() ? *labelOpt : "";
-  std::wstring wLabelStr = StringToWString(labelStr);
+  auto label_opt = item->GetLabel();
+  std::string label_str = label_opt.has_value() ? *label_opt : "";
+  std::wstring w_label_str = StringToWString(label_str);
   InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id,
-              wLabelStr.c_str());
+              w_label_str.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
   item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
@@ -460,23 +460,23 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
                                                bool case_sensitive) const {
   for (const auto& item : pimpl_->items_) {
-    auto itemTextOpt = item->GetLabel();
-    if (!itemTextOpt.has_value()) {
+    auto item_text_opt = item->GetLabel();
+    if (!item_text_opt.has_value()) {
       continue;
     }
 
-    const std::string& itemText = itemTextOpt.value();
+    const std::string& item_text = item_text_opt.value();
     if (case_sensitive) {
-      if (itemText == text)
+      if (item_text == text)
         return item;
     } else {
-      std::string lowerItemText = itemText;
-      std::string lowerSearchText = text;
-      std::transform(lowerItemText.begin(), lowerItemText.end(),
-                     lowerItemText.begin(), ::tolower);
-      std::transform(lowerSearchText.begin(), lowerSearchText.end(),
-                     lowerSearchText.begin(), ::tolower);
-      if (lowerItemText == lowerSearchText)
+      std::string lower_item_text = item_text;
+      std::string lower_search_text = text;
+      std::transform(lower_item_text.begin(), lower_item_text.end(),
+                     lower_item_text.begin(), ::tolower);
+      std::transform(lower_search_text.begin(), lower_search_text.end(),
+                     lower_search_text.begin(), ::tolower);
+      if (lower_item_text == lower_search_text)
         return item;
     }
   }

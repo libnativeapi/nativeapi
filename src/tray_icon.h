@@ -35,31 +35,31 @@ typedef IdAllocator::IdType TrayIconId;
  * @example
  * ```cpp
  * // Create a tray icon
- * auto trayIcon = std::make_shared<TrayIcon>();
- * trayIcon->SetIcon("path/to/icon.png");
- * trayIcon->SetTooltip("My Application");
+ * auto tray_icon = std::make_shared<TrayIcon>();
+ * tray_icon->SetIcon("path/to/icon.png");
+ * tray_icon->SetTooltip("My Application");
  *
  * // Set up event listeners
- * trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent&
+ * tray_icon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent&
  * event) {
  *     // Handle left click - show/hide main window
- *     mainWindow->IsVisible() ? mainWindow->Hide() : mainWindow->Show();
+ *     main_window->IsVisible() ? main_window->Hide() : main_window->Show();
  * });
  *
- * trayIcon->AddListener<TrayIconRightClickedEvent>([](const
+ * tray_icon->AddListener<TrayIconRightClickedEvent>([](const
  * TrayIconRightClickedEvent& event) {
  *     // Handle right click - open context menu
- *     trayIcon->OpenContextMenu();
+ *     tray_icon->OpenContextMenu();
  * });
  *
  * // Set up a context menu
  * Menu menu;
  * auto item = menu.CreateItem("Exit");
  * menu.AddItem(item);
- * trayIcon->SetContextMenu(menu);
+ * tray_icon->SetContextMenu(menu);
  *
  * // Show the tray icon
- * trayIcon->SetVisible(true);
+ * tray_icon->SetVisible(true);
  * ```
  */
 class TrayIcon : public EventEmitter, public NativeObjectProvider {
@@ -114,11 +114,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * // Using file path
-   * trayIcon->SetIcon("/path/to/icon.png");
+ * // Using file path
+ * tray_icon->SetIcon("/path/to/icon.png");
    *
-   * // Using base64 data
-   * trayIcon->SetIcon("data:image/png;base64,iVBORw0KGgo...");
+ * // Using base64 data
+ * tray_icon->SetIcon("data:image/png;base64,iVBORw0KGgo...");
    * ```
    */
   void SetIcon(std::string icon);
@@ -155,8 +155,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * trayIcon->SetTooltip("MyApp - Status: Connected");
-   * trayIcon->SetTooltip(std::nullopt); // Clear tooltip
+ * tray_icon->SetTooltip("MyApp - Status: Connected");
+ * tray_icon->SetTooltip(std::nullopt); // Clear tooltip
    * ```
    */
   void SetTooltip(std::optional<std::string> tooltip);
@@ -182,11 +182,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * Menu contextMenu;
-   * contextMenu.AddItem(contextMenu.CreateItem("Show Window"));
-   * contextMenu.AddSeparator();
-   * contextMenu.AddItem(contextMenu.CreateItem("Exit"));
-   * trayIcon->SetContextMenu(contextMenu);
+ * Menu context_menu;
+ * context_menu.AddItem(context_menu.CreateItem("Show Window"));
+ * context_menu.AddSeparator();
+ * context_menu.AddItem(context_menu.CreateItem("Exit"));
+ * tray_icon->SetContextMenu(context_menu);
    * ```
    */
   void SetContextMenu(std::shared_ptr<Menu> menu);
@@ -230,11 +230,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * // Show the tray icon
-   * trayIcon->SetVisible(true);
+ * // Show the tray icon
+ * tray_icon->SetVisible(true);
    *
-   * // Hide the tray icon
-   * trayIcon->SetVisible(false);
+ * // Hide the tray icon
+ * tray_icon->SetVisible(false);
    * ```
    */
   bool SetVisible(bool visible);
@@ -263,14 +263,14 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * // Open context menu at current cursor position
-   * POINT cursor;
-   * GetCursorPos(&cursor);  // Windows example
-   * trayIcon->OpenContextMenu(cursor.x, cursor.y);
+ * // Open context menu at current cursor position
+ * POINT cursor;
+ * GetCursorPos(&cursor);  // Windows example
+ * tray_icon->OpenContextMenu(cursor.x, cursor.y);
    *
-   * // Open context menu near the tray icon
-   * Rectangle bounds = trayIcon->GetBounds();
-   * trayIcon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
+ * // Open context menu near the tray icon
+ * Rectangle bounds = tray_icon->GetBounds();
+ * tray_icon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
    * ```
    */
   bool OpenContextMenu(double x, double y);
@@ -291,8 +291,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * // Open context menu at default location
-   * trayIcon->OpenContextMenu();
+ * // Open context menu at default location
+ * tray_icon->OpenContextMenu();
    * ```
    */
   bool OpenContextMenu();
@@ -311,8 +311,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
-   * // Close the context menu programmatically
-   * trayIcon->CloseContextMenu();
+ * // Close the context menu programmatically
+ * tray_icon->CloseContextMenu();
    * ```
    */
   bool CloseContextMenu();

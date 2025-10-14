@@ -15,40 +15,40 @@ int main() {
     std::cout << "Created menu with ID: " << menu->id << std::endl;
 
     // Create menu items with different types
-    auto fileItem =
+    auto file_item =
         std::make_shared<MenuItem>("New File", MenuItemType::Normal);
-    auto separatorItem =
+    auto separator_item =
         std::make_shared<MenuItem>("", MenuItemType::Separator);
-    auto checkboxItem =
+    auto checkbox_item =
         std::make_shared<MenuItem>("Word Wrap", MenuItemType::Checkbox);
-    auto radioItem1 =
+    auto radio_item1 =
         std::make_shared<MenuItem>("View Mode 1", MenuItemType::Radio);
-    auto radioItem2 =
+    auto radio_item2 =
         std::make_shared<MenuItem>("View Mode 2", MenuItemType::Radio);
-    auto exitItem = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
+    auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
 
     // Set up radio group
-    radioItem1->SetRadioGroup(1);
-    radioItem2->SetRadioGroup(1);
-    radioItem1->SetState(MenuItemState::Checked);
+    radio_item1->SetRadioGroup(1);
+    radio_item2->SetRadioGroup(1);
+    radio_item1->SetState(MenuItemState::Checked);
 
     // Set keyboard accelerators
-    fileItem->SetAccelerator(
+    file_item->SetAccelerator(
         KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
-    exitItem->SetAccelerator(
+    exit_item->SetAccelerator(
         KeyboardAccelerator("Q", KeyboardAccelerator::Ctrl));
 
     // Add event listeners using the new event system
     std::cout << "Setting up event listeners..." << std::endl;
 
     // Listen to menu item selection events
-    fileItem->AddListener<MenuItemClickedEvent>(
+    file_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Menu item clicked: " << event.GetItemText()
                     << " (ID: " << event.GetItemId() << ")" << std::endl;
         });
 
-    checkboxItem->AddListener<MenuItemClickedEvent>(
+    checkbox_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Checkbox item clicked: " << event.GetItemText()
                     << " (ID: " << event.GetItemId()
@@ -57,19 +57,19 @@ int main() {
 
     // Note: State management is now handled by the application
 
-    radioItem1->AddListener<MenuItemClickedEvent>(
+    radio_item1->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Radio item 1 clicked: ID " << event.GetItemId()
                     << " - Handle state manually" << std::endl;
         });
 
-    radioItem2->AddListener<MenuItemClickedEvent>(
+    radio_item2->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Radio item 2 clicked: ID " << event.GetItemId()
                     << " - Handle state manually" << std::endl;
         });
 
-    exitItem->AddListener<MenuItemClickedEvent>(
+    exit_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Exit item clicked: " << event.GetItemText()
                     << std::endl;
@@ -86,14 +86,14 @@ int main() {
     });
 
     // Add items to menu
-    menu->AddItem(fileItem);
-    menu->AddItem(separatorItem);
-    menu->AddItem(checkboxItem);
+    menu->AddItem(file_item);
+    menu->AddItem(separator_item);
+    menu->AddItem(checkbox_item);
     menu->AddSeparator();
-    menu->AddItem(radioItem1);
-    menu->AddItem(radioItem2);
+    menu->AddItem(radio_item1);
+    menu->AddItem(radio_item2);
     menu->AddSeparator();
-    menu->AddItem(exitItem);
+    menu->AddItem(exit_item);
 
     std::cout << "Menu created with " << menu->GetItemCount() << " items"
               << std::endl;
@@ -102,19 +102,19 @@ int main() {
     std::cout << "\n=== Testing Programmatic Event Triggering ===" << std::endl;
 
     std::cout << "Triggering file item..." << std::endl;
-    fileItem->Trigger();
+    file_item->Trigger();
 
     std::cout << "Triggering checkbox item..." << std::endl;
-    checkboxItem->Trigger();
+    checkbox_item->Trigger();
 
     std::cout << "Triggering checkbox item again..." << std::endl;
-    checkboxItem->Trigger();
+    checkbox_item->Trigger();
 
     std::cout << "Switching radio button..." << std::endl;
-    radioItem2->Trigger();
+    radio_item2->Trigger();
 
     std::cout << "Triggering exit item..." << std::endl;
-    exitItem->Trigger();
+    exit_item->Trigger();
 
     // Open menu as context menu (this may not work in console applications)
     std::cout << "\n=== Attempting to Open Context Menu ===" << std::endl;
@@ -133,52 +133,52 @@ int main() {
     // Demonstrate submenu
     std::cout << "\n=== Testing Submenu ===" << std::endl;
     auto submenu = std::make_shared<Menu>();
-    auto submenuItem1 =
+    auto submenu_item1 =
         std::make_shared<MenuItem>("Submenu Item 1", MenuItemType::Normal);
-    auto submenuItem2 =
+    auto submenu_item2 =
         std::make_shared<MenuItem>("Submenu Item 2", MenuItemType::Normal);
 
-    submenuItem1->AddListener<MenuItemClickedEvent>(
+    submenu_item1->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText()
                     << std::endl;
         });
 
-    submenuItem2->AddListener<MenuItemClickedEvent>(
+    submenu_item2->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
           std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText()
                     << std::endl;
         });
 
-    submenu->AddItem(submenuItem1);
-    submenu->AddItem(submenuItem2);
+    submenu->AddItem(submenu_item1);
+    submenu->AddItem(submenu_item2);
 
-    auto submenuParent =
+    auto submenu_parent =
         std::make_shared<MenuItem>("Tools", MenuItemType::Submenu);
-    submenuParent->SetSubmenu(submenu);
+    submenu_parent->SetSubmenu(submenu);
 
     // Add submenu event listeners
-    submenuParent->AddListener<MenuItemSubmenuOpenedEvent>(
+    submenu_parent->AddListener<MenuItemSubmenuOpenedEvent>(
         [](const MenuItemSubmenuOpenedEvent& event) {
           std::cout << "[EVENT] Submenu opened: ID " << event.GetItemId()
                     << std::endl;
         });
 
-    submenuParent->AddListener<MenuItemSubmenuClosedEvent>(
+    submenu_parent->AddListener<MenuItemSubmenuClosedEvent>(
         [](const MenuItemSubmenuClosedEvent& event) {
           std::cout << "[EVENT] Submenu closed: ID " << event.GetItemId()
                     << std::endl;
         });
 
-    menu->AddItem(submenuParent);
+    menu->AddItem(submenu_parent);
 
     std::cout << "Added submenu with " << submenu->GetItemCount() << " items"
               << std::endl;
 
     // Test submenu items
     std::cout << "Triggering submenu items..." << std::endl;
-    submenuItem1->Trigger();
-    submenuItem2->Trigger();
+    submenu_item1->Trigger();
+    submenu_item2->Trigger();
 
     std::cout << "\n=== Event System Demo Complete ===" << std::endl;
     std::cout << "This example demonstrates:" << std::endl;

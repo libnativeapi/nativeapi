@@ -42,78 +42,78 @@ static std::atomic<MenuId> g_next_menu_id{1};
 
 // Helper function to convert KeyboardAccelerator to NSString and modifier mask
 std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& accelerator) {
-  NSString* keyEquivalent = @"";
-  NSUInteger modifierMask = 0;
+  NSString* key_equivalent = @"";
+  NSUInteger modifier_mask = 0;
 
   // Convert key
   if (!accelerator.key.empty()) {
     if (accelerator.key.length() == 1) {
       // Single character key
       char c = std::tolower(accelerator.key[0]);
-      keyEquivalent = [NSString stringWithFormat:@"%c", c];
+      key_equivalent = [NSString stringWithFormat:@"%c", c];
     } else {
       // Special keys
       std::string key = accelerator.key;
       if (key == "F1")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF1FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF1FunctionKey];
       else if (key == "F2")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF2FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF2FunctionKey];
       else if (key == "F3")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF3FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF3FunctionKey];
       else if (key == "F4")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF4FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF4FunctionKey];
       else if (key == "F5")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF5FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF5FunctionKey];
       else if (key == "F6")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
       else if (key == "F7")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF7FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF7FunctionKey];
       else if (key == "F8")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF8FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF8FunctionKey];
       else if (key == "F9")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF9FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF9FunctionKey];
       else if (key == "F10")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF10FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF10FunctionKey];
       else if (key == "F11")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF11FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF11FunctionKey];
       else if (key == "F12")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF12FunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSF12FunctionKey];
       else if (key == "Enter" || key == "Return")
-        keyEquivalent = @"\r";
+        key_equivalent = @"\r";
       else if (key == "Tab")
-        keyEquivalent = @"\t";
+        key_equivalent = @"\t";
       else if (key == "Space")
-        keyEquivalent = @" ";
+        key_equivalent = @" ";
       else if (key == "Escape")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)0x1B];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)0x1B];
       else if (key == "Delete" || key == "Backspace")
-        keyEquivalent = @"\b";
+        key_equivalent = @"\b";
       else if (key == "ArrowUp")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSUpArrowFunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSUpArrowFunctionKey];
       else if (key == "ArrowDown")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSDownArrowFunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSDownArrowFunctionKey];
       else if (key == "ArrowLeft")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSLeftArrowFunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSLeftArrowFunctionKey];
       else if (key == "ArrowRight")
-        keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSRightArrowFunctionKey];
+        key_equivalent = [NSString stringWithFormat:@"%C", (unichar)NSRightArrowFunctionKey];
     }
   }
 
   // Convert modifiers
   if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
-    modifierMask |= NSEventModifierFlagControl;
+    modifier_mask |= NSEventModifierFlagControl;
   }
   if (accelerator.modifiers & KeyboardAccelerator::Alt) {
-    modifierMask |= NSEventModifierFlagOption;
+    modifier_mask |= NSEventModifierFlagOption;
   }
   if (accelerator.modifiers & KeyboardAccelerator::Shift) {
-    modifierMask |= NSEventModifierFlagShift;
+    modifier_mask |= NSEventModifierFlagShift;
   }
   if (accelerator.modifiers & KeyboardAccelerator::Meta) {
-    modifierMask |= NSEventModifierFlagCommand;
+    modifier_mask |= NSEventModifierFlagCommand;
   }
 
-  return std::make_pair(keyEquivalent, modifierMask);
+  return std::make_pair(key_equivalent, modifier_mask);
 }
 
 }  // namespace nativeapi
@@ -122,20 +122,20 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 @implementation NSMenuItemTarget
 - (void)menuItemClicked:(id)sender {
   @try {
-    NSMenuItem* menuItem = (NSMenuItem*)sender;
-    if (!menuItem)
+    NSMenuItem* menu_item = (NSMenuItem*)sender;
+    if (!menu_item)
       return;
 
     // Call the block if it exists
     if (_clickedBlock) {
-      NSString* title = [menuItem title];
-      std::string itemText = title ? [title UTF8String] : "";
+      NSString* title = [menu_item title];
+      std::string item_text = title ? [title UTF8String] : "";
 
       // Get the MenuItemId from the menu item's associated object
-      NSNumber* itemIdObj = objc_getAssociatedObject(menuItem, kMenuItemIdKey);
-      if (itemIdObj) {
-        nativeapi::MenuItemId itemId = [itemIdObj longValue];
-        _clickedBlock(itemId, itemText);
+      NSNumber* item_id_obj = objc_getAssociatedObject(menu_item, kMenuItemIdKey);
+      if (item_id_obj) {
+        nativeapi::MenuItemId item_id = [item_id_obj longValue];
+        _clickedBlock(item_id, item_text);
       }
     }
   } @catch (NSException* exception) {
@@ -155,10 +155,10 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
     if (_openedBlock) {
       // Get the MenuId from the menu's associated object
-      NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
-      if (menuIdObj) {
-        nativeapi::MenuId menuId = [menuIdObj longValue];
-        _openedBlock(menuId);
+      NSNumber* menu_id_obj = objc_getAssociatedObject(menu, kMenuIdKey);
+      if (menu_id_obj) {
+        nativeapi::MenuId menu_id = [menu_id_obj longValue];
+        _openedBlock(menu_id);
       }
     }
   } @catch (NSException* exception) {
@@ -174,10 +174,10 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
     if (_closedBlock) {
       // Get the MenuId from the menu's associated object
-      NSNumber* menuIdObj = objc_getAssociatedObject(menu, kMenuIdKey);
-      if (menuIdObj) {
-        nativeapi::MenuId menuId = [menuIdObj longValue];
-        _closedBlock(menuId);
+      NSNumber* menu_id_obj = objc_getAssociatedObject(menu, kMenuIdKey);
+      if (menu_id_obj) {
+        nativeapi::MenuId menu_id = [menu_id_obj longValue];
+        _closedBlock(menu_id);
       }
     }
   } @catch (NSException* exception) {
@@ -256,26 +256,26 @@ class MenuItem::Impl {
 
 // MenuItem implementation
 MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_item_id++) {
-  NSMenuItem* nsItem = nullptr;
+  NSMenuItem* ns_item = nullptr;
 
   switch (type) {
     case MenuItemType::Separator:
-      nsItem = [NSMenuItem separatorItem];
+      ns_item = [NSMenuItem separatorItem];
       break;
     case MenuItemType::Normal:
     case MenuItemType::Checkbox:
     case MenuItemType::Radio:
     case MenuItemType::Submenu:
     default:
-      nsItem = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()]
+      ns_item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()]
                                           action:nil
                                    keyEquivalent:@""];
       break;
   }
 
-  pimpl_ = std::make_unique<Impl>(nsItem, type);
+  pimpl_ = std::make_unique<Impl>(ns_item, type);
   pimpl_->menu_item_id_ = id;
-  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   pimpl_->text_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
@@ -292,9 +292,9 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_
 MenuItem::MenuItem(void* native_item)
     : id(g_next_menu_item_id++),
       pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
-  NSMenuItem* nsItem = (__bridge NSMenuItem*)native_item;
+  NSMenuItem* ns_item = (__bridge NSMenuItem*)native_item;
   pimpl_->menu_item_id_ = id;
-  objc_setAssociatedObject(nsItem, kMenuItemIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
@@ -344,23 +344,23 @@ void MenuItem::SetIcon(const std::optional<std::string>& icon) {
         std::string base64Icon = iconStr.substr(pos + 7);
 
         // Convert base64 to NSData
-        NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
-        NSData* imageData = [[NSData alloc]
-            initWithBase64EncodedString:base64String
+        NSString* base64_string = [NSString stringWithUTF8String:base64Icon.c_str()];
+        NSData* image_data = [[NSData alloc]
+            initWithBase64EncodedString:base64_string
                                 options:NSDataBase64DecodingIgnoreUnknownCharacters];
 
-        if (imageData) {
-          image = [[NSImage alloc] initWithData:imageData];
+        if (image_data) {
+          image = [[NSImage alloc] initWithData:image_data];
         }
       }
     } else if (!iconStr.empty()) {
       // Try to load as file path first
-      NSString* iconPath = [NSString stringWithUTF8String:iconStr.c_str()];
-      image = [[NSImage alloc] initWithContentsOfFile:iconPath];
+      NSString* icon_path = [NSString stringWithUTF8String:iconStr.c_str()];
+      image = [[NSImage alloc] initWithContentsOfFile:icon_path];
 
       // If that fails, try as named image
       if (!image) {
-        image = [NSImage imageNamed:iconPath];
+        image = [NSImage imageNamed:icon_path];
       }
     }
   }
@@ -396,9 +396,9 @@ void MenuItem::SetAccelerator(const KeyboardAccelerator& accelerator) {
   pimpl_->accelerator_ = accelerator;
   pimpl_->has_accelerator_ = true;
 
-  auto keyAndModifier = ConvertAccelerator(accelerator);
-  [pimpl_->ns_menu_item_ setKeyEquivalent:keyAndModifier.first];
-  [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:keyAndModifier.second];
+  auto key_and_modifier = ConvertAccelerator(accelerator);
+  [pimpl_->ns_menu_item_ setKeyEquivalent:key_and_modifier.first];
+  [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:key_and_modifier.second];
 }
 
 KeyboardAccelerator MenuItem::GetAccelerator() const {
@@ -443,34 +443,34 @@ void MenuItem::SetState(MenuItemState state) {
     pimpl_->state_ = state;
 
     // Set the appropriate NSControlStateValue
-    NSControlStateValue nsState;
+    NSControlStateValue ns_state;
     switch (state) {
       case MenuItemState::Unchecked:
-        nsState = NSControlStateValueOff;
+        ns_state = NSControlStateValueOff;
         break;
       case MenuItemState::Checked:
-        nsState = NSControlStateValueOn;
+        ns_state = NSControlStateValueOn;
         break;
       case MenuItemState::Mixed:
-        nsState = NSControlStateValueMixed;
+        ns_state = NSControlStateValueMixed;
         break;
     }
-    [pimpl_->ns_menu_item_ setState:nsState];
+    [pimpl_->ns_menu_item_ setState:ns_state];
 
     // Handle radio button group logic - uncheck siblings in the same NSMenu
     if (pimpl_->type_ == MenuItemType::Radio && state == MenuItemState::Checked &&
         pimpl_->radio_group_ >= 0) {
-      NSMenu* parentMenu = [pimpl_->ns_menu_item_ menu];
-      if (parentMenu) {
-        for (NSMenuItem* sibling in [parentMenu itemArray]) {
+      NSMenu* parent_menu = [pimpl_->ns_menu_item_ menu];
+      if (parent_menu) {
+        for (NSMenuItem* sibling in [parent_menu itemArray]) {
           if (sibling == pimpl_->ns_menu_item_)
             continue;
-          NSObject* targetObj = [sibling target];
-          if ([targetObj isKindOfClass:[NSMenuItemTarget class]]) {
+          NSObject* target_obj = [sibling target];
+          if ([target_obj isKindOfClass:[NSMenuItemTarget class]]) {
             // Get the MenuItemId from the associated object
-            NSNumber* siblingIdObj = objc_getAssociatedObject(sibling, kMenuItemIdKey);
-            if (siblingIdObj) {
-              MenuItemId siblingId = [siblingIdObj longValue];
+            NSNumber* sibling_id_obj = objc_getAssociatedObject(sibling, kMenuItemIdKey);
+            if (sibling_id_obj) {
+              MenuItemId sibling_id = [sibling_id_obj longValue];
               // Find the corresponding MenuItem in the parent menu's items
               // This is a simplified approach - in practice, you might need to store
               // a reference to the parent menu or use a different strategy
@@ -499,9 +499,9 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
   try {
     pimpl_->submenu_ = submenu;
     if (submenu) {
-      NSMenu* nsSubmenu = (__bridge NSMenu*)submenu->GetNativeObject();
-      if (nsSubmenu) {
-        [pimpl_->ns_menu_item_ setSubmenu:nsSubmenu];
+      NSMenu* ns_submenu = (__bridge NSMenu*)submenu->GetNativeObject();
+      if (ns_submenu) {
+        [pimpl_->ns_menu_item_ setSubmenu:ns_submenu];
 
         // Remove previous submenu listeners if they exist
         if (pimpl_->submenu_opened_listener_id_ != 0) {
@@ -622,9 +622,9 @@ class Menu::Impl {
 
 // Menu implementation
 Menu::Menu() : id(g_next_menu_id++) {
-  NSMenu* nsMenu = [[NSMenu alloc] init];
-  pimpl_ = std::make_unique<Impl>(nsMenu);
-  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:id],
+  NSMenu* ns_menu = [[NSMenu alloc] init];
+  pimpl_ = std::make_unique<Impl>(ns_menu);
+  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
@@ -646,8 +646,8 @@ Menu::Menu() : id(g_next_menu_id++) {
 
 Menu::Menu(void* native_menu)
     : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
-  NSMenu* nsMenu = (__bridge NSMenu*)native_menu;
-  objc_setAssociatedObject(nsMenu, kMenuIdKey, [NSNumber numberWithLong:id],
+  NSMenu* ns_menu = (__bridge NSMenu*)native_menu;
+  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithLong:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
@@ -791,13 +791,13 @@ std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool cas
 
 bool Menu::Open(double x, double y) {
   // Get the main window
-  NSWindow* mainWindow = [[NSApplication sharedApplication] mainWindow];
-  if (!mainWindow) {
+  NSWindow* main_window = [[NSApplication sharedApplication] mainWindow];
+  if (!main_window) {
     // Fallback to key window if main window is not available
-    mainWindow = [[NSApplication sharedApplication] keyWindow];
+    main_window = [[NSApplication sharedApplication] keyWindow];
   }
 
-  if (!mainWindow) {
+  if (!main_window) {
     // If still no window, use the old implementation
     NSPoint point = NSMakePoint(x, y);
     NSEvent* event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
@@ -813,43 +813,43 @@ bool Menu::Open(double x, double y) {
     pimpl_->visible_ = true;
 
     @autoreleasepool {
-      NSView* dummyView = [[NSView alloc] init];
-      [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummyView];
+      NSView* dummy_view = [[NSView alloc] init];
+      [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummy_view];
     }
 
     pimpl_->visible_ = false;
     return true;
   }
 
-  NSView* contentView = [mainWindow contentView];
-  if (!contentView) {
+  NSView* content_view = [main_window contentView];
+  if (!content_view) {
     return false;
   }
 
   // Convert coordinates if the content view is not flipped
   // In macOS, the default coordinate system has origin at bottom-left
   // If view is not flipped, we need to convert from top-left origin
-  CGFloat finalY = y;
-  if (![contentView isFlipped]) {
-    CGFloat frameHeight = [contentView frame].size.height;
-    finalY = frameHeight - y;
+  CGFloat final_y = y;
+  if (![content_view isFlipped]) {
+    CGFloat frame_height = [content_view frame].size.height;
+    final_y = frame_height - y;
   }
 
-  NSPoint point = NSMakePoint(x, finalY);
+  NSPoint point = NSMakePoint(x, final_y);
 
   pimpl_->visible_ = true;
 
   // Use dispatch to ensure menu popup happens on the main run loop
   dispatch_async(dispatch_get_main_queue(), ^{
-    [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:contentView];
+    [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:content_view];
   });
 
   return true;
 }
 
 bool Menu::Open() {
-  NSPoint mouseLocation = [NSEvent mouseLocation];
-  return Open(mouseLocation.x, mouseLocation.y);
+  NSPoint mouse_location = [NSEvent mouseLocation];
+  return Open(mouse_location.x, mouse_location.y);
 }
 
 bool Menu::Close() {

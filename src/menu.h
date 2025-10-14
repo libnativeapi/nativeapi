@@ -487,29 +487,29 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
  * @example
  * ```cpp
  * // Create a file menu
- * auto fileMenu = std::make_shared<Menu>();
+ * auto file_menu = std::make_shared<Menu>();
  *
  * // Add items to the menu
- * auto newItem = std::make_shared<MenuItem>("New", MenuItemType::Normal);
- * newItem->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
- * fileMenu->AddItem(newItem);
+ * auto new_item = std::make_shared<MenuItem>("New", MenuItemType::Normal);
+ * new_item->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
+ * file_menu->AddItem(new_item);
  *
- * auto openItem = std::make_shared<MenuItem>("Open", MenuItemType::Normal);
- * openItem->SetAccelerator(KeyboardAccelerator("O",
- * KeyboardAccelerator::Ctrl)); fileMenu->AddItem(openItem);
+ * auto open_item = std::make_shared<MenuItem>("Open", MenuItemType::Normal);
+ * open_item->SetAccelerator(KeyboardAccelerator("O",
+ * KeyboardAccelerator::Ctrl)); file_menu->AddItem(open_item);
  *
- * fileMenu->AddSeparator();
+ * file_menu->AddSeparator();
  *
- * auto exitItem = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
- * fileMenu->AddItem(exitItem);
+ * auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
+ * file_menu->AddItem(exit_item);
  *
  * // Listen to menu events
- * fileMenu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {
+ * file_menu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {
  *     std::cout << "Menu opened" << std::endl;
  * });
  *
  * // Open as context menu
- * fileMenu->Open(100, 100);
+ * file_menu->Open(100, 100);
  * ```
  */
 class Menu : public EventEmitter, public NativeObjectProvider {

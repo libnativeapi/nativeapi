@@ -23,7 +23,7 @@ static const void* kTrayIconIdKey = &kTrayIconIdKey;
 @property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
 @property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
 @property(nonatomic, copy) TrayIconDoubleClickedBlock doubleClickedBlock;
-@property(nonatomic, assign) nativeapi::TrayIcon* trayIcon;
+@property(nonatomic, assign) nativeapi::TrayIcon* tray_icon;
 - (void)statusItemClicked:(id)sender;
 @end
 
@@ -38,10 +38,10 @@ class TrayIcon::Impl {
         menu_closed_listener_id_(0) {
     if (status_item) {
       // Check if ID already exists in the associated object
-      NSNumber* allocatedId = objc_getAssociatedObject(status_item, kTrayIconIdKey);
-      if (allocatedId) {
+      NSNumber* allocated_id = objc_getAssociatedObject(status_item, kTrayIconIdKey);
+      if (allocated_id) {
         // Reuse allocated ID
-        id_ = [allocatedId longValue];
+        id_ = [allocated_id longValue];
       } else {
         // Allocate new ID and store it
         id_ = IdAllocator::Allocate<TrayIcon>();
@@ -51,7 +51,7 @@ class TrayIcon::Impl {
 
       // Create and set up button target
       ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
-      ns_status_bar_button_target_.trayIcon = nullptr;  // Will be set later
+      ns_status_bar_button_target_.tray_icon = nullptr;  // Will be set later
 
       // Set up click handlers
       [status_item.button setTarget:ns_status_bar_button_target_];
@@ -74,7 +74,7 @@ class TrayIcon::Impl {
       ns_status_bar_button_target_.leftClickedBlock = nil;
       ns_status_bar_button_target_.rightClickedBlock = nil;
       ns_status_bar_button_target_.doubleClickedBlock = nil;
-      ns_status_bar_button_target_.trayIcon = nullptr;
+      ns_status_bar_button_target_.tray_icon = nullptr;
       ns_status_bar_button_target_ = nil;
     }
 
@@ -127,7 +127,7 @@ TrayIcon::TrayIcon(void* tray) {
   pimpl_ = std::make_unique<Impl>(status_item);
 
   if (pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.trayIcon = this;
+    pimpl_->ns_status_bar_button_target_.tray_icon = this;
 
     // 设置默认的 Block 处理器，直接发送事件
     pimpl_->ns_status_bar_button_target_.leftClickedBlock =
@@ -160,7 +160,7 @@ TrayIcon::TrayIcon(void* tray) {
 TrayIcon::~TrayIcon() {
   // Clear the button target's reference to this object before destruction
   if (pimpl_ && pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.trayIcon = nullptr;
+    pimpl_->ns_status_bar_button_target_.tray_icon = nullptr;
   }
 }
 
@@ -183,24 +183,24 @@ void TrayIcon::SetIcon(std::string icon) {
       std::string base64Icon = icon.substr(pos + 7);
 
       // Convert base64 to NSData
-      NSString* base64String = [NSString stringWithUTF8String:base64Icon.c_str()];
-      NSData* imageData =
-          [[NSData alloc] initWithBase64EncodedString:base64String
+      NSString* base64_string = [NSString stringWithUTF8String:base64Icon.c_str()];
+      NSData* image_data =
+          [[NSData alloc] initWithBase64EncodedString:base64_string
                                               options:NSDataBase64DecodingIgnoreUnknownCharacters];
 
-      if (imageData) {
+      if (image_data) {
         // Create image from data
-        image = [[NSImage alloc] initWithData:imageData];
+        image = [[NSImage alloc] initWithData:image_data];
       }
     }
   } else if (!icon.empty()) {
     // Try as file path first
-    NSString* iconPath = [NSString stringWithUTF8String:icon.c_str()];
-    image = [[NSImage alloc] initWithContentsOfFile:iconPath];
+    NSString* icon_path = [NSString stringWithUTF8String:icon.c_str()];
+    image = [[NSImage alloc] initWithContentsOfFile:icon_path];
 
     // If file path failed, try as system image name
     if (!image) {
-      image = [NSImage imageNamed:iconPath];
+      image = [NSImage imageNamed:icon_path];
     }
   }
 
@@ -221,8 +221,8 @@ void TrayIcon::SetIcon(std::string icon) {
 void TrayIcon::SetTitle(std::optional<std::string> title) {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
     if (title.has_value()) {
-      NSString* titleString = [NSString stringWithUTF8String:title.value().c_str()];
-      [pimpl_->ns_status_item_.button setTitle:titleString];
+      NSString* title_string = [NSString stringWithUTF8String:title.value().c_str()];
+      [pimpl_->ns_status_item_.button setTitle:title_string];
     } else {
       [pimpl_->ns_status_item_.button setTitle:@""];
     }
@@ -231,9 +231,9 @@ void TrayIcon::SetTitle(std::optional<std::string> title) {
 
 std::optional<std::string> TrayIcon::GetTitle() {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
-    NSString* titleString = [pimpl_->ns_status_item_.button title];
-    if (titleString && [titleString length] > 0) {
-      return std::string([titleString UTF8String]);
+    NSString* title_string = [pimpl_->ns_status_item_.button title];
+    if (title_string && [title_string length] > 0) {
+      return std::string([title_string UTF8String]);
     }
   }
   return std::nullopt;
@@ -242,8 +242,8 @@ std::optional<std::string> TrayIcon::GetTitle() {
 void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
     if (tooltip.has_value()) {
-      NSString* tooltipString = [NSString stringWithUTF8String:tooltip.value().c_str()];
-      [pimpl_->ns_status_item_.button setToolTip:tooltipString];
+      NSString* tooltip_string = [NSString stringWithUTF8String:tooltip.value().c_str()];
+      [pimpl_->ns_status_item_.button setToolTip:tooltip_string];
     } else {
       [pimpl_->ns_status_item_.button setToolTip:nil];
     }
@@ -252,9 +252,9 @@ void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
 
 std::optional<std::string> TrayIcon::GetTooltip() {
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
-    NSString* tooltipString = [pimpl_->ns_status_item_.button toolTip];
-    if (tooltipString && [tooltipString length] > 0) {
-      return std::string([tooltipString UTF8String]);
+    NSString* tooltip_string = [pimpl_->ns_status_item_.button toolTip];
+    if (tooltip_string && [tooltip_string length] > 0) {
+      return std::string([tooltip_string UTF8String]);
     }
   }
   return std::nullopt;
@@ -293,18 +293,18 @@ Rectangle TrayIcon::GetBounds() {
 
   if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
     NSStatusBarButton* button = pimpl_->ns_status_item_.button;
-    NSRect buttonFrame = button.frame;
-    NSRect screenFrame = [button convertRect:buttonFrame toView:nil];
-    NSRect windowFrame = [button.window convertRectToScreen:screenFrame];
+    NSRect button_frame = button.frame;
+    NSRect screen_frame = [button convertRect:button_frame toView:nil];
+    NSRect window_frame = [button.window convertRectToScreen:screen_frame];
 
     // Convert from Cocoa coordinates (bottom-left origin) to standard coordinates (top-left origin)
     NSScreen* screen = [NSScreen mainScreen];
-    CGFloat screenHeight = screen.frame.size.height;
+    CGFloat screen_height = screen.frame.size.height;
 
-    bounds.x = windowFrame.origin.x;
-    bounds.y = screenHeight - windowFrame.origin.y - windowFrame.size.height;
-    bounds.width = windowFrame.size.width;
-    bounds.height = windowFrame.size.height;
+    bounds.x = window_frame.origin.x;
+    bounds.y = screen_height - window_frame.origin.y - window_frame.size.height;
+    bounds.width = window_frame.size.width;
+    bounds.height = window_frame.size.height;
   }
 
   return bounds;
@@ -342,8 +342,8 @@ bool TrayIcon::OpenContextMenu() {
 
   // Use the Swift approach: set menu to status item and simulate click
   // Get the native NSMenu object from our Menu wrapper
-  NSMenu* nativeMenu = (__bridge NSMenu*)pimpl_->context_menu_->GetNativeObject();
-  if (!nativeMenu) {
+  NSMenu* native_menu = (__bridge NSMenu*)pimpl_->context_menu_->GetNativeObject();
+  if (!native_menu) {
     return false;
   }
 
@@ -351,7 +351,7 @@ bool TrayIcon::OpenContextMenu() {
   //  [nativeMenu setDelegate:pimpl_->menu_delegate_];
 
   // Set the menu to the status item (like Swift version)
-  pimpl_->ns_status_item_.menu = nativeMenu;
+  pimpl_->ns_status_item_.menu = native_menu;
 
   // Simulate a click to show the menu (like Swift version)
   [pimpl_->ns_status_item_.button performClick:nil];
@@ -378,13 +378,13 @@ void* TrayIcon::GetNativeObjectInternal() const {
 @implementation NSStatusBarButtonTarget
 
 - (void)statusItemClicked:(id)sender {
-  // Check if trayIcon is still valid before proceeding
-  if (!self.trayIcon)
+  // Check if tray_icon is still valid before proceeding
+  if (!self.tray_icon)
     return;
 
   // Create a local reference to prevent race conditions
-  nativeapi::TrayIcon* trayIcon = self.trayIcon;
-  if (!trayIcon)
+  nativeapi::TrayIcon* tray_icon = self.tray_icon;
+  if (!tray_icon)
     return;
 
   NSEvent* event = [NSApp currentEvent];
@@ -397,17 +397,17 @@ void* TrayIcon::GetNativeObjectInternal() const {
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     if (_rightClickedBlock) {
-      _rightClickedBlock(trayIcon->GetId());
+      _rightClickedBlock(tray_icon->GetId());
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
       if (_doubleClickedBlock) {
-        _doubleClickedBlock(trayIcon->GetId());
+        _doubleClickedBlock(tray_icon->GetId());
       }
     } else {
       if (_leftClickedBlock) {
-        _leftClickedBlock(trayIcon->GetId(), "left");
+        _leftClickedBlock(tray_icon->GetId(), "left");
       }
     }
   }
