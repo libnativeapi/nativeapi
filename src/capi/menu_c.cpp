@@ -1067,8 +1067,6 @@ bool native_menu_remove_listener(native_menu_t menu, int listener_id) {
   }
 }
 
-
-
 // Utility functions
 
 void native_menu_item_list_free(native_menu_item_list_t list) {

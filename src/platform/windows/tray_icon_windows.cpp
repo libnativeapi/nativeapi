@@ -1,5 +1,5 @@
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 #include <memory>
 #include <string>
 
@@ -54,7 +54,8 @@ class TrayIcon::Impl {
       switch (lParam) {
         case WM_LBUTTONUP:
           try {
-            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->GetId(), "left");
+            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->GetId(),
+                                                      "left");
           } catch (...) {
             // Protect against event emission exceptions
           }

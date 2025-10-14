@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 #include "geometry_c.h"
+#include "image_c.h"
 #include "menu_c.h"
 
 /**
@@ -98,12 +99,21 @@ FFI_PLUGIN_EXPORT
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon);
 
 /**
- * Set the icon image for the tray icon
+ * Set the icon image for the tray icon using an Image object
  * @param tray_icon The tray icon
- * @param icon Path to icon file or base64 encoded image data
+ * @param image The Image object to set as the icon, or NULL to clear the icon
  */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_icon(native_tray_icon_t tray_icon, const char* icon);
+void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image);
+
+/**
+ * Get the current icon image of the tray icon
+ * @param tray_icon The tray icon
+ * @return The Image object, or NULL if no icon is set. Caller must call
+ *         native_image_destroy() when done.
+ */
+FFI_PLUGIN_EXPORT
+native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon);
 
 /**
  * Set the title text for the tray icon
@@ -116,8 +126,8 @@ void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title)
 /**
  * Get the title text of the tray icon
  * @param tray_icon The tray icon
- * @return The title text, or NULL if no title is set or error. Caller must free the returned
- * string.
+ * @return The title text, or NULL if no title is set or error. Caller must free
+ * the returned string.
  */
 FFI_PLUGIN_EXPORT
 char* native_tray_icon_get_title(native_tray_icon_t tray_icon);
@@ -133,8 +143,8 @@ void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tool
 /**
  * Get the tooltip text of the tray icon
  * @param tray_icon The tray icon
- * @return The tooltip text, or NULL if no tooltip is set or error. Caller must free the returned
- * string.
+ * @return The tooltip text, or NULL if no tooltip is set or error. Caller must
+ * free the returned string.
  */
 FFI_PLUGIN_EXPORT
 char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon);

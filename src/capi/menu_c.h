@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 #include "geometry_c.h"
+#include "image_c.h"
 
 /**
  * Opaque handles for menu objects
@@ -194,20 +195,21 @@ FFI_PLUGIN_EXPORT
 char* native_menu_item_get_label(native_menu_item_t item);
 
 /**
- * Set the icon of a menu item
+ * Set the icon of a menu item using an Image object
  * @param item The menu item
- * @param icon Path to icon file or base64 data
+ * @param image The Image object to set as the icon, or NULL to clear the icon
  */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_icon(native_menu_item_t item, const char* icon);
+void native_menu_item_set_icon(native_menu_item_t item, native_image_t image);
 
 /**
- * Get the icon of a menu item
+ * Get the current icon image of the menu item
  * @param item The menu item
- * @return The icon path/data string (caller must free), or NULL if item is invalid or no icon set
+ * @return The Image object, or NULL if no icon is set. Caller must call
+ *         native_image_destroy() when done.
  */
 FFI_PLUGIN_EXPORT
-char* native_menu_item_get_icon(native_menu_item_t item);
+native_image_t native_menu_item_get_icon(native_menu_item_t item);
 
 /**
  * Set the tooltip of a menu item
@@ -576,8 +578,6 @@ int native_menu_add_listener(native_menu_t menu,
  */
 FFI_PLUGIN_EXPORT
 bool native_menu_remove_listener(native_menu_t menu, int listener_id);
-
-
 
 /**
  * Utility functions

@@ -530,8 +530,6 @@ bool Menu::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-
-
 void* Menu::GetNativeObjectInternal() const {
   return pimpl_->hmenu_;
 }

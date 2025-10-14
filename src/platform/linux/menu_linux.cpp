@@ -426,8 +426,6 @@ bool Menu::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-
-
 void* Menu::GetNativeObjectInternal() const {
   return (void*)pimpl_->gtk_menu_;
 }

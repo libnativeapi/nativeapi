@@ -268,8 +268,8 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_
     case MenuItemType::Submenu:
     default:
       ns_item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()]
-                                          action:nil
-                                   keyEquivalent:@""];
+                                           action:nil
+                                    keyEquivalent:@""];
       break;
   }
 
@@ -876,8 +876,6 @@ void Menu::SetEnabled(bool enabled) {
 bool Menu::IsEnabled() const {
   return pimpl_->enabled_;
 }
-
-
 
 void* Menu::GetNativeObjectInternal() const {
   return (__bridge void*)pimpl_->ns_menu_;

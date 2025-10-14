@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include "foundation/event_emitter.h"
@@ -9,6 +10,8 @@
 #include "menu.h"
 
 namespace nativeapi {
+
+class Image;
 
 typedef IdAllocator::IdType TrayIconId;
 
@@ -99,29 +102,40 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
   TrayIconId GetId();
 
   /**
-   * @brief Set the icon image for the tray icon.
+   * @brief Set the icon image for the tray icon using an Image object.
    *
-   * The icon can be specified as either a file path or a base64-encoded
-   * image string. Base64 strings should be prefixed with the data URI
-   * scheme (e.g., "data:image/png;base64,iVBORw0KGgo...").
+   * This is the preferred method for setting the tray icon image as it
+   * provides type safety and better control over image handling.
    *
-   * @param icon File path to an icon image or base64-encoded image data
-   *
-   * @note Supported formats depend on the platform:
-   *       - macOS: PNG, JPEG, GIF, TIFF, BMP
-   *       - Windows: ICO, PNG, BMP
-   *       - Linux: PNG, XPM, SVG (depends on desktop environment)
+   * @param image Shared pointer to an Image object, or nullptr to clear the icon
    *
    * @example
    * ```cpp
- * // Using file path
- * tray_icon->SetIcon("/path/to/icon.png");
+   * // Using file path
+   * auto icon = Image::FromFile("/path/to/icon.png");
+   * trayIcon->SetIcon(icon);
    *
- * // Using base64 data
- * tray_icon->SetIcon("data:image/png;base64,iVBORw0KGgo...");
+   * // Using base64 data
+   * auto icon = Image::FromBase64("data:image/png;base64,iVBORw0KGgo...");
+   * trayIcon->SetIcon(icon);
+   *
+   * // Using raw RGBA data
+   * std::vector<uint8_t> pixels = {...};
+   * auto icon = Image::FromRawData(pixels.data(), 32, 32, ImagePixelFormat::RGBA32);
+   * trayIcon->SetIcon(icon);
+   *
+   * // Clear icon
+   * trayIcon->SetIcon(nullptr);
    * ```
    */
-  void SetIcon(std::string icon);
+  void SetIcon(std::shared_ptr<Image> image);
+
+  /**
+   * @brief Get the current icon image of the tray icon.
+   *
+   * @return A shared pointer to the current Image object, or nullptr if no icon is set
+   */
+  std::shared_ptr<Image> GetIcon() const;
 
   /**
    * @brief Set the title text for the tray icon.
@@ -155,8 +169,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * tray_icon->SetTooltip("MyApp - Status: Connected");
- * tray_icon->SetTooltip(std::nullopt); // Clear tooltip
+   * tray_icon->SetTooltip("MyApp - Status: Connected");
+   * tray_icon->SetTooltip(std::nullopt); // Clear tooltip
    * ```
    */
   void SetTooltip(std::optional<std::string> tooltip);
@@ -182,11 +196,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * Menu context_menu;
- * context_menu.AddItem(context_menu.CreateItem("Show Window"));
- * context_menu.AddSeparator();
- * context_menu.AddItem(context_menu.CreateItem("Exit"));
- * tray_icon->SetContextMenu(context_menu);
+   * Menu context_menu;
+   * context_menu.AddItem(context_menu.CreateItem("Show Window"));
+   * context_menu.AddSeparator();
+   * context_menu.AddItem(context_menu.CreateItem("Exit"));
+   * tray_icon->SetContextMenu(context_menu);
    * ```
    */
   void SetContextMenu(std::shared_ptr<Menu> menu);
@@ -230,11 +244,11 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * // Show the tray icon
- * tray_icon->SetVisible(true);
+   * // Show the tray icon
+   * tray_icon->SetVisible(true);
    *
- * // Hide the tray icon
- * tray_icon->SetVisible(false);
+   * // Hide the tray icon
+   * tray_icon->SetVisible(false);
    * ```
    */
   bool SetVisible(bool visible);
@@ -263,14 +277,14 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * // Open context menu at current cursor position
- * POINT cursor;
- * GetCursorPos(&cursor);  // Windows example
- * tray_icon->OpenContextMenu(cursor.x, cursor.y);
+   * // Open context menu at current cursor position
+   * POINT cursor;
+   * GetCursorPos(&cursor);  // Windows example
+   * tray_icon->OpenContextMenu(cursor.x, cursor.y);
    *
- * // Open context menu near the tray icon
- * Rectangle bounds = tray_icon->GetBounds();
- * tray_icon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
+   * // Open context menu near the tray icon
+   * Rectangle bounds = tray_icon->GetBounds();
+   * tray_icon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
    * ```
    */
   bool OpenContextMenu(double x, double y);
@@ -291,8 +305,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * // Open context menu at default location
- * tray_icon->OpenContextMenu();
+   * // Open context menu at default location
+   * tray_icon->OpenContextMenu();
    * ```
    */
   bool OpenContextMenu();
@@ -311,8 +325,8 @@ class TrayIcon : public EventEmitter, public NativeObjectProvider {
    *
    * @example
    * ```cpp
- * // Close the context menu programmatically
- * tray_icon->CloseContextMenu();
+   * // Close the context menu programmatically
+   * tray_icon->CloseContextMenu();
    * ```
    */
   bool CloseContextMenu();

@@ -34,7 +34,6 @@ class TrayIcon::Impl {
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
-
 #if HAS_GTK && HAS_AYATANA_APPINDICATOR
   // Create a unique ID for this tray icon
   static int next_indicator_id = 1;
@@ -94,8 +93,8 @@ void TrayIcon::SetIcon(std::string icon) {
         // Create a temporary file path
         const char* temp_dir = g_get_tmp_dir();
         std::string temp_path = std::string(temp_dir) +
-                                "/nativeapi_tray_icon_" + std::to_string(GetId()) +
-                                ".png";
+                                "/nativeapi_tray_icon_" +
+                                std::to_string(GetId()) + ".png";
 
         // Write to file
         GError* error = nullptr;

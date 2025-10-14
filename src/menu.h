@@ -13,6 +13,8 @@
 
 namespace nativeapi {
 
+class Image;
+
 typedef long MenuId;
 typedef long MenuItemId;
 
@@ -251,42 +253,39 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
   std::optional<std::string> GetLabel() const;
 
   /**
-   * @brief Set the icon for the menu item.
+   * @brief Set the icon for the menu item using an Image object.
    *
-   * The icon can be specified as either a file path or a base64-encoded
-   * image string. Base64 strings should be prefixed with the data URI
-   * scheme (e.g., "data:image/png;base64,iVBORw0KGgo...").
+   * This is the preferred method for setting the menu item icon as it
+   * provides type safety and better control over image handling.
    *
-   * @param icon File path to an icon image or base64-encoded image data (optional)
-   *
-   * @note Supported formats depend on the platform:
-   *       - macOS: PNG, JPEG, GIF, TIFF, BMP
-   *       - Windows: ICO, PNG, BMP
-   *       - Linux: PNG, XPM, SVG (depends on desktop environment)
+   * @param image Shared pointer to an Image object, or nullptr to clear the icon
    *
    * @example
    * ```cpp
    * // Using file path
-   * item->SetIcon("/path/to/icon.png");
+   * auto icon = Image::FromFile("/path/to/icon.png");
+   * item->SetIcon(icon);
    *
    * // Using base64 data
-   * item->SetIcon("data:image/png;base64,iVBORw0KGgo...");
+   * auto icon = Image::FromBase64("data:image/png;base64,iVBORw0KGgo...");
+   * item->SetIcon(icon);
    *
-   * // Using system icons (platform-dependent)
-   * item->SetIcon("folder");  // May work on some systems
+   * // Using system icon
+   * auto icon = Image::FromSystemIcon("folder");
+   * item->SetIcon(icon);
    *
-   * // Remove icon
-   * item->SetIcon(std::nullopt);
+   * // Clear icon
+   * item->SetIcon(nullptr);
    * ```
    */
-  void SetIcon(const std::optional<std::string>& icon);
+  void SetIcon(std::shared_ptr<Image> image);
 
   /**
-   * @brief Get the current icon of the menu item.
+   * @brief Get the current icon image of the menu item.
    *
-   * @return The current icon path or data as an optional string
+   * @return A shared pointer to the current Image object, or nullptr if no icon is set
    */
-  std::optional<std::string> GetIcon() const;
+  std::shared_ptr<Image> GetIcon() const;
 
   /**
    * @brief Set the tooltip text for the menu item.
@@ -732,8 +731,6 @@ class Menu : public EventEmitter, public NativeObjectProvider {
    * @return true if the menu is enabled, false if disabled
    */
   bool IsEnabled() const;
-
-
 
  protected:
   /**
