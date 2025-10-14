@@ -17,7 +17,7 @@ namespace nativeapi {
 class TrayIcon::Impl {
  public:
   std::shared_ptr<Image> image_;
-  
+
   Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {
     id_ = IdAllocator::Allocate<TrayIcon>();
   }

@@ -9,6 +9,7 @@
 #include "../src/foundation/event_emitter.h"
 #include "../src/foundation/geometry.h"
 #include "../src/foundation/id_allocator.h"
+#include "../src/image.h"
 #include "../src/keyboard_event.h"
 #include "../src/keyboard_monitor.h"
 #include "../src/menu.h"
@@ -18,7 +19,6 @@
 #include "../src/window.h"
 #include "../src/window_event.h"
 #include "../src/window_manager.h"
-#include "../src/image.h"
 
 // Include necessary headers for C API
 #include "../src/capi/accessibility_manager_c.h"
@@ -26,6 +26,7 @@
 #include "../src/capi/display_c.h"
 #include "../src/capi/display_manager_c.h"
 #include "../src/capi/geometry_c.h"
+#include "../src/capi/image_c.h"
 #include "../src/capi/keyboard_monitor_c.h"
 #include "../src/capi/menu_c.h"
 #include "../src/capi/run_example_app_c.h"
@@ -34,4 +35,3 @@
 #include "../src/capi/tray_manager_c.h"
 #include "../src/capi/window_c.h"
 #include "../src/capi/window_manager_c.h"
-#include "../src/capi/image_c.h"

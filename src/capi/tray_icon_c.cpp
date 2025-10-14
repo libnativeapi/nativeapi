@@ -84,7 +84,8 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image) {
+void native_tray_icon_set_icon(native_tray_icon_t tray_icon,
+                               native_image_t image) {
   if (!tray_icon)
     return;
 

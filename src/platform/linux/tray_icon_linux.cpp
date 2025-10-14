@@ -17,7 +17,7 @@ namespace nativeapi {
 class TrayIcon::Impl {
  public:
   std::shared_ptr<Image> image_;
-  
+
   Impl(AppIndicator* indicator)
       : app_indicator_(indicator),
         title_(std::nullopt),
@@ -86,12 +86,12 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (image) {
     // For now, use a placeholder implementation
     // TODO: Implement proper Image to file conversion
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon",
-                                "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
   } else {
     // Use default icon
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon",
-                                "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
   }
 }
 

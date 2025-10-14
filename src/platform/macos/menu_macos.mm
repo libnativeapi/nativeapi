@@ -335,9 +335,8 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
   NSImage* ns_image = nil;
 
   if (image) {
-    // For now, use a placeholder implementation
-    // TODO: Implement proper Image to NSImage conversion
-    ns_image = [NSImage imageNamed:@"NSImageNameStatusAvailable"];
+    // Get NSImage directly from Image object using GetNativeObject
+    ns_image = (__bridge NSImage*)image->GetNativeObject();
   }
 
   if (ns_image) {

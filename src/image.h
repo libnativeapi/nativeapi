@@ -72,13 +72,6 @@ namespace nativeapi {
 class Image : public NativeObjectProvider {
  public:
   /**
-   * @brief Default constructor.
-   *
-   * Creates an empty image instance.
-   */
-  Image();
-
-  /**
    * @brief Destructor.
    *
    * Cleans up the image and releases any associated platform-specific
@@ -244,6 +237,14 @@ class Image : public NativeObjectProvider {
   void* GetNativeObjectInternal() const override;
 
  private:
+  /**
+   * @brief Private default constructor for use by factory methods.
+   *
+   * This constructor is private to prevent direct instantiation of Image objects.
+   * Use the static factory methods (FromFile, FromBase64, FromSystemIcon) instead.
+   */
+  Image();
+
   /**
    * @brief Private implementation class using the PIMPL idiom.
    *
