@@ -13,9 +13,9 @@ namespace nativeapi {
  * Provides unique IDs for different object types with thread-safe allocation.
  *
  * ID Structure (32 bits):
- * ┌────────────┬──────────────────────────┐
- * │  Type (8)  │    Sequence (24)         │
- * └────────────┴──────────────────────────┘
+ * +------------+--------------------------+
+ * |  Type (8)  |    Sequence (24)         |
+ * +------------+--------------------------+
  * Bits: 31-24     23-0
  *
  * Field Details:
