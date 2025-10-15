@@ -44,7 +44,7 @@ class TrayIcon::Impl {
       NSNumber* allocated_id = objc_getAssociatedObject(status_item, kTrayIconIdKey);
       if (allocated_id) {
         // Reuse allocated ID
-        id_ = [allocated_id longValue];
+        id_ = static_cast<TrayIconId>([allocated_id longValue]);
       } else {
         // Allocate new ID and store it
         id_ = IdAllocator::Allocate<TrayIcon>();

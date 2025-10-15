@@ -444,7 +444,6 @@ void MenuItem::SetState(MenuItemState state) {
             // Get the MenuItemId from the associated object
             NSNumber* sibling_id_obj = objc_getAssociatedObject(sibling, kMenuItemIdKey);
             if (sibling_id_obj) {
-              MenuItemId sibling_id = [sibling_id_obj longValue];
               // Find the corresponding MenuItem in the parent menu's items
               // This is a simplified approach - in practice, you might need to store
               // a reference to the parent menu or use a different strategy

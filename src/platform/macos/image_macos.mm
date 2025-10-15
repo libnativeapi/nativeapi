@@ -20,9 +20,6 @@ class Image::Impl {
   Impl() : ns_image_(nil), size_({0, 0}), format_("Unknown") {}
 
   ~Impl() {
-    if (ns_image_) {
-      [ns_image_ release];
-    }
   }
 
   Impl(const Impl& other)
@@ -34,9 +31,6 @@ class Image::Impl {
 
   Impl& operator=(const Impl& other) {
     if (this != &other) {
-      if (ns_image_) {
-        [ns_image_ release];
-      }
       ns_image_ = nil;
       source_ = other.source_;
       size_ = other.size_;
@@ -124,10 +118,7 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
 
       // Default assumption for base64 images
       image->pimpl_->format_ = "PNG";
-
-      [imageData release];
     } else {
-      [imageData release];
       return nullptr;
     }
   } else {
@@ -179,7 +170,6 @@ std::string Image::ToBase64() const {
   }
 
   NSData* pngData = [bitmapRep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
-  [bitmapRep release];
 
   if (!pngData) {
     return "";
@@ -226,7 +216,6 @@ bool Image::SaveToFile(const std::string& file_path) const {
   }
 
   NSData* imageData = [bitmapRep representationUsingType:fileType properties:properties];
-  [bitmapRep release];
 
   if (!imageData) {
     return false;
