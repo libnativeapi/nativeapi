@@ -1,15 +1,25 @@
+#include <iostream>
+#include <optional>
+#include <string>
+#include <unistd.h>
+
+// Platform-specific includes for Linux
+#ifdef __linux__
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <libayatana-appindicator/app-indicator.h>
-#include <iostream>
-#include <optional>
-#include <string>
+#define HAS_GTK 1
+#define HAS_AYATANA_APPINDICATOR 1
+#else
+#define HAS_GTK 0
+#define HAS_AYATANA_APPINDICATOR 0
+#endif
+
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
-#include "../../tray_icon_event.h"
 
 namespace nativeapi {
 
@@ -67,7 +77,9 @@ TrayIcon::TrayIcon(void* tray)
 
 TrayIcon::~TrayIcon() {
   if (pimpl_->app_indicator_) {
+    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_PASSIVE);
     g_object_unref(pimpl_->app_indicator_);
+    pimpl_->app_indicator_ = nullptr;
   }
 }
 
@@ -83,15 +95,55 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   // Store the image reference
   pimpl_->image_ = image;
 
-  if (image) {
-    // For now, use a placeholder implementation
-    // TODO: Implement proper Image to file conversion
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+  // If no image provided, use default icon
+  if (!image) {
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    return;
+  }
+
+  // Get the native GdkPixbuf object
+  GdkPixbuf* pixbuf = static_cast<GdkPixbuf*>(image->GetNativeObject());
+  if (!pixbuf) {
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    return;
+  }
+
+  // Create temporary PNG file
+  char temp_path[] = "/tmp/tray_icon_XXXXXX";
+  int fd = mkstemp(temp_path);
+  if (fd == -1) {
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    return;
+  }
+  close(fd);
+  
+  // Append .png extension
+  std::string png_path(temp_path);
+  png_path += ".png";
+  
+  // Save pixbuf to PNG file
+  GError* error = nullptr;
+  gboolean success = gdk_pixbuf_save(pixbuf, png_path.c_str(), "png", &error, nullptr);
+  
+  // Always clean up the original temporary file
+  unlink(temp_path);
+  
+  if (error) {
+    g_error_free(error);
+  }
+  
+  if (success) {
+    // Set the icon and schedule cleanup
+    app_indicator_set_icon_full(pimpl_->app_indicator_, png_path.c_str(), "");
+    g_timeout_add(5000, [](gpointer data) -> gboolean {
+      unlink(static_cast<char*>(data));
+      g_free(data);
+      return FALSE; // Don't repeat
+    }, g_strdup(png_path.c_str()));
   } else {
-    // Use default icon
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+    // Fallback to default icon
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    unlink(png_path.c_str());
   }
 }
 
@@ -105,7 +157,7 @@ void TrayIcon::SetTitle(std::optional<std::string> title) {
   // environments
   if (pimpl_->app_indicator_) {
     const char* title_str = title.has_value() ? title->c_str() : "";
-    app_indicator_set_title(pimpl_->app_indicator_, title_str);
+    app_indicator_set_label(pimpl_->app_indicator_, title_str, NULL);
   }
 }
 
@@ -132,6 +184,7 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   if (pimpl_->app_indicator_ && menu && menu->GetNativeObject()) {
     GtkMenu* gtk_menu = static_cast<GtkMenu*>(menu->GetNativeObject());
     app_indicator_set_menu(pimpl_->app_indicator_, gtk_menu);
+    gtk_widget_show_all(GTK_WIDGET(gtk_menu));
   }
 }
 
