@@ -1,6 +1,6 @@
+#include <comdef.h>
 #include <windows.h>
 #include <gdiplus.h>
-#include <comdef.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,12 +11,18 @@
 
 namespace nativeapi {
 
+// Forward declaration for Windows-specific helper function
+HICON ImageToHICON(const Image* image, int width, int height);
+
 // Helper function to convert std::string to std::wstring
 static std::wstring StringToWString(const std::string& str) {
-  if (str.empty()) return std::wstring();
-  int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+  if (str.empty())
+    return std::wstring();
+  int size_needed =
+      MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
   std::wstring wstrTo(size_needed, 0);
-  MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+  MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0],
+                      size_needed);
   return wstrTo;
 }
 
@@ -29,7 +35,8 @@ static int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
   if (size == 0)
     return -1;
 
-  Gdiplus::ImageCodecInfo* pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
+  Gdiplus::ImageCodecInfo* pImageCodecInfo =
+      (Gdiplus::ImageCodecInfo*)(malloc(size));
   if (pImageCodecInfo == NULL)
     return -1;
 
@@ -64,11 +71,14 @@ class Image::Impl {
   }
 
   Impl(const Impl& other)
-      : bitmap_(nullptr), source_(other.source_), size_(other.size_), format_(other.format_) {
+      : bitmap_(nullptr),
+        source_(other.source_),
+        size_(other.size_),
+        format_(other.format_) {
     if (other.bitmap_) {
-      bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(), 
-                                      other.bitmap_->GetHeight(), 
-                                      other.bitmap_->GetPixelFormat());
+      bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(),
+                                     other.bitmap_->GetHeight(),
+                                     other.bitmap_->GetPixelFormat());
     }
   }
 
@@ -83,8 +93,8 @@ class Image::Impl {
       format_ = other.format_;
       if (other.bitmap_) {
         bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(),
-                                        other.bitmap_->GetHeight(),
-                                        other.bitmap_->GetPixelFormat());
+                                       other.bitmap_->GetHeight(),
+                                       other.bitmap_->GetPixelFormat());
       }
     }
     return *this;
@@ -109,7 +119,8 @@ Image::Image() : pimpl_(std::make_unique<Impl>()) {
 
 Image::~Image() = default;
 
-Image::Image(const Image& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Image::Image(const Image& other)
+    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Image::Image(Image&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
 
@@ -127,7 +138,8 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
     // Get actual image size
     UINT width = bitmap->GetWidth();
     UINT height = bitmap->GetHeight();
-    image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
+    image->pimpl_->size_ = {static_cast<double>(width),
+                            static_cast<double>(height)};
 
     // Determine format from file extension
     size_t dotPos = file_path.find_last_of('.');
@@ -167,20 +179,20 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
 // Helper function to decode base64
 static std::vector<unsigned char> DecodeBase64(const std::string& base64_data) {
   std::vector<unsigned char> result;
-  
+
   // Calculate the expected output size
   DWORD dwOutLen = 0;
-  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64,
-                            NULL, &dwOutLen, NULL, NULL)) {
+  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64, NULL,
+                            &dwOutLen, NULL, NULL)) {
     return result;
   }
-  
+
   result.resize(dwOutLen);
   if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64,
                             result.data(), &dwOutLen, NULL, NULL)) {
     result.clear();
   }
-  
+
   return result;
 }
 
@@ -197,7 +209,7 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
 
   // Decode base64
   std::vector<unsigned char> imageData = DecodeBase64(cleanBase64);
-  
+
   if (!imageData.empty()) {
     // Create IStream from memory
     HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, imageData.size());
@@ -206,12 +218,12 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
       if (pMem) {
         memcpy(pMem, imageData.data(), imageData.size());
         GlobalUnlock(hMem);
-        
+
         IStream* pStream = nullptr;
         if (CreateStreamOnHGlobal(hMem, TRUE, &pStream) == S_OK) {
           Gdiplus::Bitmap* bitmap = Gdiplus::Bitmap::FromStream(pStream);
           pStream->Release();
-          
+
           if (bitmap && bitmap->GetLastStatus() == Gdiplus::Ok) {
             image->pimpl_->bitmap_ = bitmap;
             image->pimpl_->source_ = base64_data;
@@ -253,7 +265,7 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
   auto image = std::shared_ptr<Image>(new Image());
 
   HICON hIcon = nullptr;
-  
+
   // Try to load predefined system icons
   if (icon_name == "IDI_APPLICATION" || icon_name == "application") {
     hIcon = LoadIcon(NULL, IDI_APPLICATION);
@@ -273,7 +285,7 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
 
   if (hIcon) {
     Gdiplus::Bitmap* bitmap = Gdiplus::Bitmap::FromHICON(hIcon);
-    
+
     if (bitmap && bitmap->GetLastStatus() == Gdiplus::Ok) {
       image->pimpl_->bitmap_ = bitmap;
       image->pimpl_->source_ = icon_name;
@@ -281,7 +293,8 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
       // Get actual image size
       UINT width = bitmap->GetWidth();
       UINT height = bitmap->GetHeight();
-      image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
+      image->pimpl_->size_ = {static_cast<double>(width),
+                              static_cast<double>(height)};
       image->pimpl_->format_ = "System";
     } else {
       if (bitmap) {
@@ -307,17 +320,20 @@ std::string Image::GetFormat() const {
 // Helper function to encode to base64
 static std::string EncodeBase64(const unsigned char* data, size_t length) {
   DWORD dwOutLen = 0;
-  if (!CryptBinaryToStringA((BYTE*)data, length, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
-                            NULL, &dwOutLen)) {
+  DWORD dwLength = static_cast<DWORD>(length);
+  if (!CryptBinaryToStringA((BYTE*)data, dwLength,
+                            CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL,
+                            &dwOutLen)) {
     return "";
   }
-  
+
   std::string result(dwOutLen, '\0');
-  if (!CryptBinaryToStringA((BYTE*)data, length, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+  if (!CryptBinaryToStringA((BYTE*)data, dwLength,
+                            CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
                             &result[0], &dwOutLen)) {
     return "";
   }
-  
+
   // Remove trailing null characters
   result.resize(dwOutLen - 1);
   return result;
@@ -358,7 +374,7 @@ std::string Image::ToBase64() const {
   // Read stream data
   LARGE_INTEGER li = {0};
   pStream->Seek(li, STREAM_SEEK_SET, NULL);
-  
+
   std::vector<unsigned char> buffer(statstg.cbSize.LowPart);
   ULONG bytesRead = 0;
   pStream->Read(buffer.data(), statstg.cbSize.LowPart, &bytesRead);
@@ -381,14 +397,14 @@ bool Image::SaveToFile(const std::string& file_path) const {
   // Determine file type from extension
   size_t dotPos = file_path.find_last_of('.');
   std::wstring mimeType = L"image/png";  // default
-  
+
   if (dotPos != std::string::npos) {
     std::string extension = file_path.substr(dotPos + 1);
     // Convert to lowercase
     for (auto& c : extension) {
       c = std::tolower(c);
     }
-    
+
     if (extension == "jpg" || extension == "jpeg") {
       mimeType = L"image/jpeg";
     } else if (extension == "png") {
@@ -414,18 +430,20 @@ bool Image::SaveToFile(const std::string& file_path) const {
   // Set quality for JPEG
   Gdiplus::EncoderParameters encoderParams;
   ULONG quality = 90;
-  
+
   if (mimeType == L"image/jpeg") {
     encoderParams.Count = 1;
     encoderParams.Parameter[0].Guid = Gdiplus::EncoderQuality;
     encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].NumberOfValues = 1;
     encoderParams.Parameter[0].Value = &quality;
-    
-    Gdiplus::Status status = pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, &encoderParams);
+
+    Gdiplus::Status status =
+        pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, &encoderParams);
     return status == Gdiplus::Ok;
   } else {
-    Gdiplus::Status status = pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, NULL);
+    Gdiplus::Status status =
+        pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, NULL);
     return status == Gdiplus::Ok;
   }
 }
@@ -434,5 +452,42 @@ void* Image::GetNativeObjectInternal() const {
   return pimpl_->bitmap_;
 }
 
-}  // namespace nativeapi
+// Windows-specific helper function to convert Image to HICON
+// Uses only the public GetNativeObject() API to avoid private access
+HICON ImageToHICON(const Image* image, int width, int height) {
+  if (!image) {
+    return nullptr;
+  }
 
+  // Retrieve native bitmap via public API
+  void* native = image->GetNativeObject();
+  Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(native);
+  if (!bitmap) {
+    return nullptr;
+  }
+
+  // Scale bitmap if necessary
+  Gdiplus::Bitmap* scaledBitmap = bitmap;
+  bool needsScaling = (bitmap->GetWidth() != static_cast<UINT>(width) ||
+                       bitmap->GetHeight() != static_cast<UINT>(height));
+
+  if (needsScaling) {
+    scaledBitmap = new Gdiplus::Bitmap(width, height, bitmap->GetPixelFormat());
+    Gdiplus::Graphics graphics(scaledBitmap);
+    graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+    graphics.DrawImage(bitmap, 0, 0, width, height);
+  }
+
+  // Convert to HICON
+  HICON hIcon = nullptr;
+  scaledBitmap->GetHICON(&hIcon);
+
+  // Clean up scaled bitmap if we created one
+  if (needsScaling && scaledBitmap) {
+    delete scaledBitmap;
+  }
+
+  return hIcon;
+}
+
+}  // namespace nativeapi

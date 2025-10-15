@@ -1,6 +1,6 @@
-#include <gtk/gtk.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
+#include <gtk/gtk.h>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -27,7 +27,10 @@ class Image::Impl {
   }
 
   Impl(const Impl& other)
-      : pixbuf_(nullptr), source_(other.source_), size_(other.size_), format_(other.format_) {
+      : pixbuf_(nullptr),
+        source_(other.source_),
+        size_(other.size_),
+        format_(other.format_) {
     if (other.pixbuf_) {
       pixbuf_ = gdk_pixbuf_copy(other.pixbuf_);
     }
@@ -54,7 +57,8 @@ Image::Image() : pimpl_(std::make_unique<Impl>()) {}
 
 Image::~Image() = default;
 
-Image::Image(const Image& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Image::Image(const Image& other)
+    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Image::Image(Image&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
 
@@ -71,7 +75,8 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
     // Get actual image size
     int width = gdk_pixbuf_get_width(pixbuf);
     int height = gdk_pixbuf_get_height(pixbuf);
-    image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
+    image->pimpl_->size_ = {static_cast<double>(width),
+                            static_cast<double>(height)};
 
     // Determine format from file extension
     size_t dotPos = file_path.find_last_of('.');
@@ -115,15 +120,15 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
 // Helper function to decode base64
 static std::vector<unsigned char> DecodeBase64(const std::string& base64_data) {
   std::vector<unsigned char> result;
-  
+
   gsize out_len = 0;
   guchar* decoded = g_base64_decode(base64_data.c_str(), &out_len);
-  
+
   if (decoded && out_len > 0) {
     result.assign(decoded, decoded + out_len);
     g_free(decoded);
   }
-  
+
   return result;
 }
 
@@ -139,15 +144,15 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
 
   // Decode base64
   std::vector<unsigned char> imageData = DecodeBase64(cleanBase64);
-  
+
   if (!imageData.empty()) {
     GError* error = nullptr;
     GInputStream* stream = g_memory_input_stream_new_from_data(
         imageData.data(), imageData.size(), nullptr);
-    
+
     GdkPixbuf* pixbuf = gdk_pixbuf_new_from_stream(stream, nullptr, &error);
     g_object_unref(stream);
-    
+
     if (pixbuf) {
       image->pimpl_->pixbuf_ = pixbuf;
       image->pimpl_->source_ = base64_data;
@@ -189,7 +194,7 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
   if (icon_info) {
     GError* error = nullptr;
     GdkPixbuf* pixbuf = gtk_icon_info_load_icon(icon_info, &error);
-    
+
     if (pixbuf) {
       image->pimpl_->pixbuf_ = pixbuf;
       image->pimpl_->source_ = icon_name;
@@ -197,7 +202,8 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
       // Get actual image size
       int width = gdk_pixbuf_get_width(pixbuf);
       int height = gdk_pixbuf_get_height(pixbuf);
-      image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
+      image->pimpl_->size_ = {static_cast<double>(width),
+                              static_cast<double>(height)};
       image->pimpl_->format_ = "System";
     } else {
       if (error) {
@@ -206,7 +212,7 @@ std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
       g_object_unref(icon_info);
       return nullptr;
     }
-    
+
     g_object_unref(icon_info);
   } else {
     return nullptr;
@@ -255,7 +261,8 @@ std::string Image::ToBase64() const {
   }
 
   // Convert to base64
-  std::string base64String = EncodeBase64(reinterpret_cast<unsigned char*>(buffer), buffer_size);
+  std::string base64String =
+      EncodeBase64(reinterpret_cast<unsigned char*>(buffer), buffer_size);
   g_free(buffer);
 
   return "data:image/png;base64," + base64String;
@@ -269,14 +276,14 @@ bool Image::SaveToFile(const std::string& file_path) const {
   // Determine file type from extension
   size_t dotPos = file_path.find_last_of('.');
   std::string type = "png";  // default
-  
+
   if (dotPos != std::string::npos) {
     std::string extension = file_path.substr(dotPos + 1);
     // Convert to lowercase
     for (auto& c : extension) {
       c = std::tolower(c);
     }
-    
+
     if (extension == "jpg" || extension == "jpeg") {
       type = "jpeg";
     } else if (extension == "png") {
@@ -292,7 +299,7 @@ bool Image::SaveToFile(const std::string& file_path) const {
 
   GError* error = nullptr;
   gboolean success = FALSE;
-  
+
   if (type == "jpeg") {
     // For JPEG, specify quality
     success = gdk_pixbuf_save(pimpl_->pixbuf_, file_path.c_str(), type.c_str(),
@@ -314,4 +321,3 @@ void* Image::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

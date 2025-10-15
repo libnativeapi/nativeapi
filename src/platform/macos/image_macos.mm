@@ -19,8 +19,7 @@ class Image::Impl {
 
   Impl() : ns_image_(nil), size_({0, 0}), format_("Unknown") {}
 
-  ~Impl() {
-  }
+  ~Impl() {}
 
   Impl(const Impl& other)
       : ns_image_(nil), source_(other.source_), size_(other.size_), format_(other.format_) {

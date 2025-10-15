@@ -16,7 +16,8 @@ bool native_tray_manager_is_supported(void) {
 
 native_tray_icon_t native_tray_manager_get(native_tray_icon_id_t tray_icon_id) {
   try {
-    auto tray_icon = TrayManager::GetInstance().Get(static_cast<TrayIconId>(tray_icon_id));
+    auto tray_icon =
+        TrayManager::GetInstance().Get(static_cast<TrayIconId>(tray_icon_id));
     return tray_icon ? static_cast<native_tray_icon_t>(tray_icon.get())
                      : nullptr;
   } catch (...) {

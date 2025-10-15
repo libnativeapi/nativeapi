@@ -13,6 +13,10 @@
 
 namespace nativeapi {
 
+// Forward declaration for Windows-specific helper function from
+// image_windows.cpp
+HICON ImageToHICON(const Image* image, int width, int height);
+
 // Private implementation class
 class TrayIcon::Impl {
  public:
@@ -160,11 +164,21 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   HICON hIcon = nullptr;
 
   if (image) {
-    // For now, use default application icon
-    // TODO: Convert Image object to HICON
-    hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    // Get system tray icon size (following Windows guidelines)
+    int iconWidth = GetSystemMetrics(SM_CXSMICON);
+    int iconHeight = GetSystemMetrics(SM_CYSMICON);
+
+    // Use the helper function to convert Image to HICON
+    // This handles file paths efficiently (like tray_manager_plugin.cpp)
+    // and falls back to bitmap conversion when needed
+    hIcon = ImageToHICON(image.get(), iconWidth, iconHeight);
+
+    // Fallback to default icon if conversion failed
+    if (!hIcon) {
+      hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    }
   } else {
-    // Use default application icon
+    // Use default application icon when no image is provided
     hIcon = LoadIcon(nullptr, IDI_APPLICATION);
   }
 
