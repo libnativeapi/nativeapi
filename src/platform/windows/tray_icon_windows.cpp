@@ -1,5 +1,7 @@
+// clang-format off
 #include <windows.h>
 #include <shellapi.h>
+// clang-format on
 #include <memory>
 #include <string>
 
@@ -10,6 +12,7 @@
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
 #include "string_utils_windows.h"
+#include "window_proc_delegate_manager.h"
 
 namespace nativeapi {
 
@@ -36,7 +39,13 @@ class TrayIcon::Impl {
     nid_.uID = icon_id_;
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
+
+    window_proc_id_ = WindowProcDelegateManager::GetInstance().RegisterDelegate(
+        [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return HandleWindowProc(hwnd, message, wparam, lparam);
+        });
   }
+
 
   // Windows-specific method to set internal data
   void SetWindowsData(HWND hwnd, UINT icon_id) {
@@ -91,6 +100,7 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
+    WindowProcDelegateManager::GetInstance().UnregisterDelegate(window_proc_id_);
     if (hwnd_) {
       Shell_NotifyIconW(NIM_DELETE, &nid_);
     }
@@ -99,6 +109,16 @@ class TrayIcon::Impl {
     }
   }
 
+  // Handle window procedure delegate
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+    if (message == WM_USER + 1 && wparam == icon_id_) {
+      // This is handled by HandleWindowsMessage, but we need to return a value
+      return 0;
+    }
+    return std::nullopt; // Let default window procedure handle it
+  }
+
+  int window_proc_id_;
   HWND hwnd_;
   UINT icon_id_;
   NOTIFYICONDATAW nid_;
