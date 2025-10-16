@@ -1,82 +1,63 @@
 #include <gtk/gtk.h>
 #include <algorithm>
-#include <atomic>
 #include <cctype>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
+#include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
 
 namespace nativeapi {
 
-// Global ID generators
-static std::atomic<MenuItemId> g_next_menu_item_id{1};
-static std::atomic<MenuId> g_next_menu_id{1};
-
-// Global registry to map native objects to C++ objects for event emission
-static std::unordered_map<MenuItemId, MenuItem*> g_menu_item_registry;
-static std::unordered_map<MenuId, Menu*> g_menu_registry;
-
 // GTK signal handlers → Event emission
 static void OnGtkMenuItemActivate(GtkMenuItem* /*item*/, gpointer user_data) {
-  MenuItemId item_id = static_cast<MenuItemId>(GPOINTER_TO_SIZE(user_data));
-  auto it = g_menu_item_registry.find(item_id);
-  if (it == g_menu_item_registry.end()) {
+  MenuItem* menu_item = static_cast<MenuItem*>(user_data);
+  if (!menu_item) {
     return;
   }
-  MenuItem* menu_item = it->second;
   std::string text = "";
   if (auto label = menu_item->GetLabel(); label.has_value()) {
     text = *label;
   }
-  menu_item->EmitSync(MenuItemClickedEvent(item_id, text));
+  menu_item->EmitSync(MenuItemClickedEvent(menu_item->id, text));
 }
 
 static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
-  MenuId menu_id = static_cast<MenuId>(GPOINTER_TO_SIZE(user_data));
-  auto it = g_menu_registry.find(menu_id);
-  if (it == g_menu_registry.end()) {
+  Menu* menu_obj = static_cast<Menu*>(user_data);
+  if (!menu_obj) {
     return;
   }
-  Menu* menu_obj = it->second;
-  menu_obj->EmitSync(MenuOpenedEvent(menu_id));
+  menu_obj->EmitSync(MenuOpenedEvent(menu_obj->id));
 }
 
 static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
-  MenuId menu_id = static_cast<MenuId>(GPOINTER_TO_SIZE(user_data));
-  auto it = g_menu_registry.find(menu_id);
-  if (it == g_menu_registry.end()) {
+  Menu* menu_obj = static_cast<Menu*>(user_data);
+  if (!menu_obj) {
     return;
   }
-  Menu* menu_obj = it->second;
-  menu_obj->EmitSync(MenuClosedEvent(menu_id));
+  menu_obj->EmitSync(MenuClosedEvent(menu_obj->id));
 }
 
 static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
-  MenuItemId item_id = static_cast<MenuItemId>(GPOINTER_TO_SIZE(user_data));
-  auto it = g_menu_item_registry.find(item_id);
-  if (it == g_menu_item_registry.end()) {
+  MenuItem* menu_item = static_cast<MenuItem*>(user_data);
+  if (!menu_item) {
     return;
   }
-  MenuItem* menu_item = it->second;
   // Emit submenu opened on the item
-  menu_item->EmitSync(MenuItemSubmenuOpenedEvent(item_id));
+  menu_item->EmitSync(MenuItemSubmenuOpenedEvent(menu_item->id));
 }
 
 static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
-  MenuItemId item_id = static_cast<MenuItemId>(GPOINTER_TO_SIZE(user_data));
-  auto it = g_menu_item_registry.find(item_id);
-  if (it == g_menu_item_registry.end()) {
+  MenuItem* menu_item = static_cast<MenuItem*>(user_data);
+  if (!menu_item) {
     return;
   }
-  MenuItem* menu_item = it->second;
   // Emit submenu closed on the item
-  menu_item->EmitSync(MenuItemSubmenuClosedEvent(item_id));
+  menu_item->EmitSync(MenuItemSubmenuClosedEvent(menu_item->id));
 }
 
 // Private implementation class for MenuItem
@@ -107,7 +88,7 @@ class MenuItem::Impl {
 };
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(g_next_menu_item_id++) {
+    : id(IdAllocator::Allocate<MenuItem>()) {
   GtkWidget* gtk_item = nullptr;
 
   switch (type) {
@@ -135,19 +116,15 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
     pimpl_->title_.reset();
   }
 
-  // Register the MenuItem for event emission
-  g_menu_item_registry[id] = this;
-
   // Connect activation signal for click events (except separators)
   if (gtk_item && type != MenuItemType::Separator) {
     g_signal_connect(G_OBJECT(gtk_item), "activate",
-                     G_CALLBACK(OnGtkMenuItemActivate),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuItemActivate), this);
   }
 }
 
 MenuItem::MenuItem(void* menu_item)
-    : id(g_next_menu_item_id++),
+    : id(IdAllocator::Allocate<MenuItem>()),
       pimpl_(new Impl((GtkWidget*)menu_item, MenuItemType::Normal)) {
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
     const char* label =
@@ -158,18 +135,14 @@ MenuItem::MenuItem(void* menu_item)
       pimpl_->title_.reset();
     }
   }
-  g_menu_item_registry[id] = this;
 
   if (pimpl_->gtk_menu_item_) {
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
-                     G_CALLBACK(OnGtkMenuItemActivate),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuItemActivate), this);
   }
 }
 
-MenuItem::~MenuItem() {
-  g_menu_item_registry.erase(id);
-}
+MenuItem::~MenuItem() {}
 
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
@@ -281,15 +254,14 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_),
                               (GtkWidget*)submenu->GetNativeObject());
 
-    // Emit submenu open/close events on the parent item when submenu shows/hides
+    // Emit submenu open/close events on the parent item when submenu
+    // shows/hides
     GtkWidget* submenu_widget = (GtkWidget*)submenu->GetNativeObject();
     if (submenu_widget) {
       g_signal_connect(G_OBJECT(submenu_widget), "show",
-                       G_CALLBACK(OnGtkSubmenuShow),
-                       GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                       G_CALLBACK(OnGtkSubmenuShow), this);
       g_signal_connect(G_OBJECT(submenu_widget), "hide",
-                       G_CALLBACK(OnGtkSubmenuHide),
-                       GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                       G_CALLBACK(OnGtkSubmenuHide), this);
     }
   }
 }
@@ -331,38 +303,28 @@ class Menu::Impl {
 };
 
 Menu::Menu()
-    : id(g_next_menu_id++),
+    : id(IdAllocator::Allocate<Menu>()),
       pimpl_(std::unique_ptr<Impl>(new Impl(gtk_menu_new()))) {
-  g_menu_registry[id] = this;
-
   // Connect menu show/hide to emit open/close events
   if (pimpl_->gtk_menu_) {
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
-                     G_CALLBACK(OnGtkMenuShow),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuShow), this);
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide",
-                     G_CALLBACK(OnGtkMenuHide),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuHide), this);
   }
 }
 
 Menu::Menu(void* menu)
-    : id(g_next_menu_id++), pimpl_(new Impl((GtkWidget*)menu)) {
-  g_menu_registry[id] = this;
-
+    : id(IdAllocator::Allocate<Menu>()), pimpl_(new Impl((GtkWidget*)menu)) {
   if (pimpl_->gtk_menu_) {
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
-                     G_CALLBACK(OnGtkMenuShow),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuShow), this);
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide",
-                     G_CALLBACK(OnGtkMenuHide),
-                     GSIZE_TO_POINTER(static_cast<gsize>(id)));
+                     G_CALLBACK(OnGtkMenuHide), this);
   }
 }
 
 Menu::~Menu() {
-  // Unregister from event registry
-  g_menu_registry.erase(id);
   if (pimpl_->gtk_menu_) {
     g_object_unref(pimpl_->gtk_menu_);
   }

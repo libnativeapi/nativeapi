@@ -1,7 +1,7 @@
+#include <unistd.h>
 #include <iostream>
 #include <optional>
 #include <string>
-#include <unistd.h>
 
 // Platform-specific includes for Linux
 #ifdef __linux__
@@ -77,7 +77,8 @@ TrayIcon::TrayIcon(void* tray)
 
 TrayIcon::~TrayIcon() {
   if (pimpl_->app_indicator_) {
-    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_PASSIVE);
+    app_indicator_set_status(pimpl_->app_indicator_,
+                             APP_INDICATOR_STATUS_PASSIVE);
     g_object_unref(pimpl_->app_indicator_);
     pimpl_->app_indicator_ = nullptr;
   }
@@ -97,14 +98,16 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
 
   // If no image provided, use default icon
   if (!image) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
     return;
   }
 
   // Get the native GdkPixbuf object
   GdkPixbuf* pixbuf = static_cast<GdkPixbuf*>(image->GetNativeObject());
   if (!pixbuf) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
     return;
   }
 
@@ -112,37 +115,43 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   char temp_path[] = "/tmp/tray_icon_XXXXXX";
   int fd = mkstemp(temp_path);
   if (fd == -1) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
     return;
   }
   close(fd);
-  
+
   // Append .png extension
   std::string png_path(temp_path);
   png_path += ".png";
-  
+
   // Save pixbuf to PNG file
   GError* error = nullptr;
-  gboolean success = gdk_pixbuf_save(pixbuf, png_path.c_str(), "png", &error, nullptr);
-  
+  gboolean success =
+      gdk_pixbuf_save(pixbuf, png_path.c_str(), "png", &error, nullptr);
+
   // Always clean up the original temporary file
   unlink(temp_path);
-  
+
   if (error) {
     g_error_free(error);
   }
-  
+
   if (success) {
     // Set the icon and schedule cleanup
     app_indicator_set_icon_full(pimpl_->app_indicator_, png_path.c_str(), "");
-    g_timeout_add(5000, [](gpointer data) -> gboolean {
-      unlink(static_cast<char*>(data));
-      g_free(data);
-      return FALSE; // Don't repeat
-    }, g_strdup(png_path.c_str()));
+    g_timeout_add(
+        5000,
+        [](gpointer data) -> gboolean {
+          unlink(static_cast<char*>(data));
+          g_free(data);
+          return FALSE;  // Don't repeat
+        },
+        g_strdup(png_path.c_str()));
   } else {
     // Fallback to default icon
-    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_,
+                                "application-default-icon", "Tray Icon");
     unlink(png_path.c_str());
   }
 }

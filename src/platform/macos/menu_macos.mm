@@ -1,8 +1,8 @@
-#include <atomic>
 #include <iostream>
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
@@ -34,10 +34,6 @@ typedef void (^MenuClosedBlock)(nativeapi::MenuId menu_id);
 @end
 
 namespace nativeapi {
-
-// Global ID generators
-static std::atomic<MenuItemId> g_next_menu_item_id{1};
-static std::atomic<MenuId> g_next_menu_id{1};
 
 // Removed global registries; events are dispatched via direct back-pointers
 
@@ -256,7 +252,8 @@ class MenuItem::Impl {
 };
 
 // MenuItem implementation
-MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_item_id++) {
+MenuItem::MenuItem(const std::string& text, MenuItemType type)
+    : id(IdAllocator::Allocate<MenuItem>()) {
   NSMenuItem* ns_item = nullptr;
 
   switch (type) {
@@ -276,7 +273,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_
 
   pimpl_ = std::make_unique<Impl>(ns_item, type);
   pimpl_->menu_item_id_ = id;
-  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   pimpl_->text_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
@@ -291,11 +288,11 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) : id(g_next_menu_
 }
 
 MenuItem::MenuItem(void* native_item)
-    : id(g_next_menu_item_id++),
+    : id(IdAllocator::Allocate<MenuItem>()),
       pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
   NSMenuItem* ns_item = (__bridge NSMenuItem*)native_item;
   pimpl_->menu_item_id_ = id;
-  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
@@ -594,10 +591,10 @@ class Menu::Impl {
 };
 
 // Menu implementation
-Menu::Menu() : id(g_next_menu_id++) {
+Menu::Menu() : id(IdAllocator::Allocate<Menu>()) {
   NSMenu* ns_menu = [[NSMenu alloc] init];
   pimpl_ = std::make_unique<Impl>(ns_menu);
-  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
@@ -618,9 +615,10 @@ Menu::Menu() : id(g_next_menu_id++) {
 }
 
 Menu::Menu(void* native_menu)
-    : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
+    : id(IdAllocator::Allocate<Menu>()),
+      pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
   NSMenu* ns_menu = (__bridge NSMenu*)native_menu;
-  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithLong:id],
+  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件

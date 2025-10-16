@@ -1,18 +1,14 @@
 #include <windows.h>
-#include <atomic>
 #include <memory>
 #include <optional>
 #include <vector>
+#include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
 #include "string_utils_windows.h"
 
 namespace nativeapi {
-
-// Global ID generators
-static std::atomic<MenuItemId> g_next_menu_item_id{1};
-static std::atomic<MenuId> g_next_menu_id{1};
 
 // Helper function to convert KeyboardAccelerator to Windows accelerator
 std::pair<UINT, UINT> ConvertAccelerator(
@@ -128,11 +124,11 @@ class MenuItem::Impl {
 };
 
 MenuItem::MenuItem(void* native_item)
-    : id(g_next_menu_item_id++),
+    : id(IdAllocator::Allocate<MenuItem>()),
       pimpl_(std::make_unique<Impl>(nullptr, 0, MenuItemType::Normal)) {}
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(g_next_menu_item_id++),
+    : id(IdAllocator::Allocate<MenuItem>()),
       pimpl_(std::make_unique<Impl>(nullptr, 0, type)) {
   pimpl_->text_ = text;
 }
@@ -318,11 +314,12 @@ class Menu::Impl {
 };
 
 Menu::Menu(void* native_menu)
-    : id(g_next_menu_id++),
+    : id(IdAllocator::Allocate<Menu>()),
       pimpl_(std::make_unique<Impl>(static_cast<HMENU>(native_menu))) {}
 
 Menu::Menu()
-    : id(g_next_menu_id++), pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {}
+    : id(IdAllocator::Allocate<Menu>()),
+      pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {}
 
 Menu::~Menu() {}
 

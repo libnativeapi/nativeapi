@@ -8,6 +8,7 @@
 #include "foundation/event.h"
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
+#include "foundation/id_allocator.h"
 #include "foundation/native_object_provider.h"
 #include "menu_event.h"
 
@@ -15,8 +16,8 @@ namespace nativeapi {
 
 class Image;
 
-typedef long MenuId;
-typedef long MenuItemId;
+typedef IdAllocator::IdType MenuId;
+typedef IdAllocator::IdType MenuItemId;
 
 /**
  * @brief Enumeration of different menu item types.

@@ -3,12 +3,13 @@
 #include <string>
 
 #include "foundation/event.h"
+#include "foundation/id_allocator.h"
 
 namespace nativeapi {
 
 // Forward declarations for menu types
-typedef long MenuId;
-typedef long MenuItemId;
+typedef IdAllocator::IdType MenuId;
+typedef IdAllocator::IdType MenuItemId;
 
 /**
  * @brief Menu opened event.
