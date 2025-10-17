@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "../app_runner.h"
+#include "../window_manager.h"
 
 using namespace nativeapi;
 
@@ -17,13 +18,14 @@ static std::shared_ptr<Window> GetWindowFromHandle(
     return nullptr;
   }
 
-  // Assuming native_window_handle structure from window_c.cpp
-  struct native_window_handle {
-    std::shared_ptr<Window> window;
-  };
-
-  auto* handle = reinterpret_cast<native_window_handle*>(window_handle);
-  return handle->window;
+  // The window_handle is a raw pointer to Window (as returned by window.get())
+  // We need to get the shared_ptr from WindowManager
+  auto* window_ptr = static_cast<Window*>(window_handle);
+  WindowID window_id = window_ptr->GetId();
+  
+  // Retrieve the shared_ptr from WindowManager
+  auto& manager = WindowManager::GetInstance();
+  return manager.Get(window_id);
 }
 
 extern "C" {
