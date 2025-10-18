@@ -150,8 +150,8 @@ int main() {
       native_menu_add_item(submenu, sub_item2);
 
       // Create submenu item and add to main menu
-      native_menu_item_t submenu_item =
-          native_menu_item_create("More Options", NATIVE_MENU_ITEM_TYPE_SUBMENU);
+      native_menu_item_t submenu_item = native_menu_item_create(
+          "More Options", NATIVE_MENU_ITEM_TYPE_SUBMENU);
       if (submenu_item) {
         native_menu_item_set_submenu(submenu_item, submenu);
         native_menu_add_item(menu, submenu_item);

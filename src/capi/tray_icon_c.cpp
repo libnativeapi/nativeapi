@@ -25,16 +25,16 @@ static std::map<native_tray_icon_t,
     g_tray_icon_listeners;
 static std::atomic<int> g_tray_icon_next_listener_id{1};
 
-// Global registry instance for managing TrayIcon object lifetimes
-static auto& g_tray_icons = globalRegistry<TrayIcon>();
-
 // TrayIcon C API Implementation
 
 native_tray_icon_t native_tray_icon_create(void) {
   try {
     auto tray_icon = std::make_shared<TrayIcon>();
     void* handle = tray_icon.get();
-    g_tray_icons[handle] = tray_icon;  // Store shared_ptr to keep object alive
+
+    // Store the shared_ptr in the registry to keep the object alive
+    GlobalRegistry<TrayIcon>().Register(handle, tray_icon);
+
     return static_cast<native_tray_icon_t>(handle);
   } catch (...) {
     return nullptr;
@@ -48,7 +48,10 @@ native_tray_icon_t native_tray_icon_create_from_native(void* native_tray) {
   try {
     auto tray_icon = std::make_shared<TrayIcon>(native_tray);
     void* handle = tray_icon.get();
-    g_tray_icons[handle] = tray_icon;  // Store shared_ptr to keep object alive
+
+    // Store the shared_ptr in the registry to keep the object alive
+    GlobalRegistry<TrayIcon>().Register(handle, tray_icon);
+
     return static_cast<native_tray_icon_t>(handle);
   } catch (...) {
     return nullptr;
@@ -65,15 +68,16 @@ void native_tray_icon_destroy(native_tray_icon_t tray_icon) {
     g_tray_icon_listeners.erase(listeners_it);
   }
 
-  // Remove from global storage - this will release the shared_ptr
-  auto tray_icon_it = g_tray_icons.find(tray_icon);
-  if (tray_icon_it != g_tray_icons.end()) {
-    g_tray_icons.erase(tray_icon_it);
-  }
+  // Unregister from registry - this will also destroy the object
+  GlobalRegistry<TrayIcon>().Unregister(tray_icon);
 }
 
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   if (!tray_icon)
+    return -1;
+
+  // Verify the tray icon exists in the registry
+  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
     return -1;
 
   try {
@@ -87,6 +91,10 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
 void native_tray_icon_set_icon(native_tray_icon_t tray_icon,
                                native_image_t image) {
   if (!tray_icon)
+    return;
+
+  // Verify the tray icon exists in the registry
+  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
     return;
 
   try {
@@ -278,6 +286,10 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
   if (!tray_icon || !callback)
     return -1;
 
+  // Verify the tray icon exists in the registry
+  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
+    return -1;
+
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
 
@@ -348,6 +360,10 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
 bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
                                       int listener_id) {
   if (!tray_icon)
+    return false;
+
+  // Verify the tray icon exists in the registry
+  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
     return false;
 
   try {

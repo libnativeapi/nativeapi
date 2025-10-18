@@ -22,7 +22,7 @@ static std::shared_ptr<Window> GetWindowFromHandle(
   // We need to get the shared_ptr from WindowManager
   auto* window_ptr = static_cast<Window*>(window_handle);
   WindowID window_id = window_ptr->GetId();
-  
+
   // Retrieve the shared_ptr from WindowManager
   auto& manager = WindowManager::GetInstance();
   return manager.Get(window_id);

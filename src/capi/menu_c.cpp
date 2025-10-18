@@ -11,10 +11,6 @@
 
 using namespace nativeapi;
 
-// Global registry instances for managing MenuItem and Menu object lifetimes
-static auto& g_menu_items = globalRegistry<MenuItem>();
-static auto& g_menus = globalRegistry<Menu>();
-
 // Internal structures to manage event listeners
 
 // Event listener data structures
@@ -154,7 +150,10 @@ native_menu_item_t native_menu_item_create(const char* text,
   try {
     auto item = std::make_shared<MenuItem>(text, convert_menu_item_type(type));
     void* handle = item.get();
-    g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
+
+    // Store the shared_ptr in the registry to keep the object alive
+    GlobalRegistry<MenuItem>().Register(handle, item);
+
     return static_cast<native_menu_item_t>(handle);
   } catch (...) {
     return nullptr;
@@ -165,7 +164,10 @@ native_menu_item_t native_menu_item_create_separator(void) {
   try {
     auto item = std::make_shared<MenuItem>("", MenuItemType::Separator);
     void* handle = item.get();
-    g_menu_items[handle] = item;  // Store shared_ptr to keep object alive
+
+    // Store the shared_ptr in the registry to keep the object alive
+    GlobalRegistry<MenuItem>().Register(handle, item);
+
     return static_cast<native_menu_item_t>(handle);
   } catch (...) {
     return nullptr;
@@ -182,15 +184,16 @@ void native_menu_item_destroy(native_menu_item_t item) {
     g_menu_item_listeners.erase(listeners_it);
   }
 
-  // Remove from global storage - this will release the shared_ptr
-  auto item_it = g_menu_items.find(item);
-  if (item_it != g_menu_items.end()) {
-    g_menu_items.erase(item_it);
-  }
+  // Unregister from registry - this will also destroy the object
+  GlobalRegistry<MenuItem>().Unregister(item);
 }
 
 native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item) {
   if (!item)
+    return -1;
+
+  // Verify the item exists in the registry
+  if (!GlobalRegistry<MenuItem>().Contains(item))
     return -1;
 
   try {
@@ -486,15 +489,14 @@ void native_menu_item_set_submenu(native_menu_item_t item,
 
   try {
     // Verify item exists in global storage
-    auto item_it = g_menu_items.find(item);
-    if (item_it == g_menu_items.end())
+    if (!GlobalRegistry<MenuItem>().Contains(item))
       return;
 
     auto menu_item = static_cast<MenuItem*>(item);
     // Get the shared_ptr from global storage instead of creating a new one
-    auto menu_it = g_menus.find(submenu);
-    if (menu_it != g_menus.end()) {
-      menu_item->SetSubmenu(menu_it->second);
+    auto submenu_ptr = GlobalRegistry<Menu>().Get(submenu);
+    if (submenu_ptr) {
+      menu_item->SetSubmenu(submenu_ptr);
     }
   } catch (...) {
     // Ignore exceptions
@@ -652,7 +654,10 @@ native_menu_t native_menu_create(void) {
   try {
     auto menu = std::make_shared<Menu>();
     void* handle = menu.get();
-    g_menus[handle] = menu;  // Store shared_ptr to keep object alive
+
+    // Store the shared_ptr in the registry to keep the object alive
+    GlobalRegistry<Menu>().Register(handle, menu);
+
     return static_cast<native_menu_t>(handle);
   } catch (...) {
     return nullptr;
@@ -669,15 +674,16 @@ void native_menu_destroy(native_menu_t menu) {
     g_menu_listeners.erase(listeners_it);
   }
 
-  // Remove from global storage - this will release the shared_ptr
-  auto menu_it = g_menus.find(menu);
-  if (menu_it != g_menus.end()) {
-    g_menus.erase(menu_it);
-  }
+  // Unregister from registry - this will also destroy the object
+  GlobalRegistry<Menu>().Unregister(menu);
 }
 
 native_menu_id_t native_menu_get_id(native_menu_t menu) {
   if (!menu)
+    return -1;
+
+  // Verify the menu exists in the registry
+  if (!GlobalRegistry<Menu>().Contains(menu))
     return -1;
 
   try {
@@ -694,15 +700,14 @@ void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
 
   try {
     // Verify menu exists in global storage
-    auto menu_it = g_menus.find(menu);
-    if (menu_it == g_menus.end())
+    if (!GlobalRegistry<Menu>().Contains(menu))
       return;
 
     auto menu_ptr = static_cast<Menu*>(menu);
     // Get the shared_ptr from global storage instead of creating a new one
-    auto item_it = g_menu_items.find(item);
-    if (item_it != g_menu_items.end()) {
-      menu_ptr->AddItem(item_it->second);
+    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
+    if (item_ptr) {
+      menu_ptr->AddItem(item_ptr);
     }
   } catch (...) {
     // Ignore exceptions
@@ -717,15 +722,14 @@ void native_menu_insert_item(native_menu_t menu,
 
   try {
     // Verify menu exists in global storage
-    auto menu_it = g_menus.find(menu);
-    if (menu_it == g_menus.end())
+    if (!GlobalRegistry<Menu>().Contains(menu))
       return;
 
     auto menu_ptr = static_cast<Menu*>(menu);
     // Get the shared_ptr from global storage instead of creating a new one
-    auto item_it = g_menu_items.find(item);
-    if (item_it != g_menu_items.end()) {
-      menu_ptr->InsertItem(index, item_it->second);
+    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
+    if (item_ptr) {
+      menu_ptr->InsertItem(index, item_ptr);
     }
   } catch (...) {
     // Ignore exceptions
@@ -738,15 +742,14 @@ bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item) {
 
   try {
     // Verify menu exists in global storage
-    auto menu_it = g_menus.find(menu);
-    if (menu_it == g_menus.end())
+    if (!GlobalRegistry<Menu>().Contains(menu))
       return false;
 
     auto menu_ptr = static_cast<Menu*>(menu);
     // Get the shared_ptr from global storage instead of creating a new one
-    auto item_it = g_menu_items.find(item);
-    if (item_it != g_menu_items.end()) {
-      return menu_ptr->RemoveItem(item_it->second);
+    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
+    if (item_ptr) {
+      return menu_ptr->RemoveItem(item_ptr);
     }
     return false;
   } catch (...) {

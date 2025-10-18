@@ -305,9 +305,7 @@ MenuItem::MenuItem(void* native_item)
   };
 }
 
-MenuItem::~MenuItem() {
-  // No special cleanup needed since we're not storing C++ object references
-}
+MenuItem::~MenuItem() {}
 
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
@@ -596,6 +594,7 @@ Menu::Menu() : id(IdAllocator::Allocate<Menu>()) {
   pimpl_ = std::make_unique<Impl>(ns_menu);
   objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
     try {
@@ -639,9 +638,7 @@ Menu::Menu(void* native_menu)
   };
 }
 
-Menu::~Menu() {
-  // No special cleanup needed since we're not storing C++ object references
-}
+Menu::~Menu() {}
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (!item)

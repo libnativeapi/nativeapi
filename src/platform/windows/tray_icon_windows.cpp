@@ -46,7 +46,6 @@ class TrayIcon::Impl {
         });
   }
 
-
   // Windows-specific method to set internal data
   void SetWindowsData(HWND hwnd, UINT icon_id) {
     hwnd_ = hwnd;
@@ -100,7 +99,8 @@ class TrayIcon::Impl {
   }
 
   ~Impl() {
-    WindowProcDelegateManager::GetInstance().UnregisterDelegate(window_proc_id_);
+    WindowProcDelegateManager::GetInstance().UnregisterDelegate(
+        window_proc_id_);
     if (hwnd_) {
       Shell_NotifyIconW(NIM_DELETE, &nid_);
     }
@@ -110,12 +110,15 @@ class TrayIcon::Impl {
   }
 
   // Handle window procedure delegate
-  std::optional<LRESULT> HandleWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd,
+                                          UINT message,
+                                          WPARAM wparam,
+                                          LPARAM lparam) {
     if (message == WM_USER + 1 && wparam == icon_id_) {
       // This is handled by HandleWindowsMessage, but we need to return a value
       return 0;
     }
-    return std::nullopt; // Let default window procedure handle it
+    return std::nullopt;  // Let default window procedure handle it
   }
 
   int window_proc_id_;
