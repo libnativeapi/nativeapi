@@ -25,10 +25,27 @@ class WindowProcDelegateManager {
   // found
   bool UnregisterDelegate(int id);
 
+  // Internal WindowProc function that dispatches messages to registered delegates
+  static LRESULT CALLBACK InternalWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
  private:
+  // Get the top level window handle
+  HWND GetTopLevelWindow();
+
+  // Setup internal WindowProc for the top level window
+  void SetupInternalWindowProc();
+
+  // Restore original WindowProc when no delegates are registered
+  void RestoreOriginalWindowProc();
+
   mutable std::mutex mutex_;
   std::unordered_map<int, WindowProcDelegate> delegates_;
   int next_id_ = 1;
+  
+  // Store original WindowProc and window handle
+  HWND top_level_window_ = nullptr;
+  WNDPROC original_window_proc_ = nullptr;
+  bool window_proc_hooked_ = false;
 };
 
 }  // namespace nativeapi
