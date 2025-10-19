@@ -65,7 +65,7 @@ void WindowManager::CleanupEventMonitoring() {
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {
-  EmitSync(event);
+  Emit(event);
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowID id) {

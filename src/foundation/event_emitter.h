@@ -28,7 +28,7 @@ namespace nativeapi {
  * public:
  *   void DoSomething() {
  *     // Emit an event synchronously
- *     EmitSync<MyEvent>("some data");
+ *     Emit<MyEvent>("some data");
  *
  *     // Or emit asynchronously
  *     EmitAsync<MyEvent>("some data");
@@ -159,7 +159,7 @@ class EventEmitter {
    *
    * @param event The event to emit
    */
-  void EmitSync(const Event& event);
+  void Emit(const Event& event);
 
  protected:
   /**
@@ -167,9 +167,9 @@ class EventEmitter {
    * This creates the event object and emits it immediately.
    */
   template <typename EventType, typename... Args>
-  void EmitSync(Args&&... args) {
+  void Emit(Args&&... args) {
     EventType event(std::forward<Args>(args)...);
-    EmitSync(event);
+    Emit(event);
   }
 
   /**
@@ -213,9 +213,6 @@ class EventEmitter {
   mutable std::mutex listeners_mutex_;
   std::unordered_map<std::type_index, std::vector<ListenerInfo>> listeners_;
 
-  // Storage for callback listeners to manage their lifetime
-  std::vector<std::unique_ptr<EventListenerBase>> callback_listeners_;
-
   // Async event processing
   std::mutex queue_mutex_;
   std::queue<std::unique_ptr<Event>> event_queue_;
@@ -227,47 +224,5 @@ class EventEmitter {
   // Listener ID generation
   std::atomic<size_t> next_listener_id_;
 };
-
-/**
- * Convenience macro to define a simple event class.
- *
- * Usage:
- * DEFINE_EVENT(MyEvent) {
- *   std::string message;
- *   int code;
- *   std::string GetTypeName() const override { return "MyEvent"; }
- * };
- */
-#define DEFINE_EVENT(EventName) class EventName : public Event
-
-/**
- * Helper macro to begin defining an event with custom constructor.
- *
- * Usage:
- * DEFINE_EVENT_BEGIN(MyEvent)
- *   std::string message;
- *   int code;
- *   MyEvent(std::string msg, int c) : message(std::move(msg)), code(c) {}
- *   std::string GetTypeName() const override { return "MyEvent"; }
- * DEFINE_EVENT_END();
- */
-#define DEFINE_EVENT_BEGIN(EventName) \
-  class EventName : public Event {    \
-   public:
-
-#define DEFINE_EVENT_END() \
-  }                        \
-  ;
-
-/**
- * Simpler macro for events with basic data members.
- * Creates a constructor that initializes all members.
- * Note: You must implement GetTypeName() in the class body.
- */
-#define SIMPLE_EVENT(EventName, ...) \
-  class EventName : public Event {   \
-   public:                           \
-    __VA_ARGS__                      \
-  };
 
 }  // namespace nativeapi

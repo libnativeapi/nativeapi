@@ -106,7 +106,7 @@ void WindowManager::CleanupEventMonitoring() {
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {
-  EmitSync(event);
+  Emit(event);
 }
 
 // Create a new window with the given options

@@ -136,7 +136,7 @@ TrayIcon::TrayIcon(void* tray) {
     pimpl_->ns_status_bar_button_target_.leftClickedBlock =
         ^(TrayIconId tray_icon_id, const std::string& button) {
           try {
-            EmitSync<TrayIconClickedEvent>(tray_icon_id, button);
+            Emit<TrayIconClickedEvent>(tray_icon_id, button);
           } catch (...) {
             // Protect against event emission exceptions
           }
@@ -144,7 +144,7 @@ TrayIcon::TrayIcon(void* tray) {
 
     pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconId tray_icon_id) {
       try {
-        EmitSync<TrayIconRightClickedEvent>(tray_icon_id);
+        Emit<TrayIconRightClickedEvent>(tray_icon_id);
       } catch (...) {
         // Protect against event emission exceptions
       }
@@ -152,7 +152,7 @@ TrayIcon::TrayIcon(void* tray) {
 
     pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconId tray_icon_id) {
       try {
-        EmitSync<TrayIconDoubleClickedEvent>(tray_icon_id);
+        Emit<TrayIconDoubleClickedEvent>(tray_icon_id);
       } catch (...) {
         // Protect against event emission exceptions
       }

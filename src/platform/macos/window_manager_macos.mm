@@ -193,7 +193,7 @@ void WindowManager::CleanupEventMonitoring() {
 }
 
 void WindowManager::DispatchWindowEvent(const Event& event) {
-  EmitSync(event);  // Use Dispatch instead of DispatchSync
+  Emit(event);  // Use Dispatch instead of DispatchSync
 }
 
 // Create a new window with the given options.

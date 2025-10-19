@@ -39,10 +39,10 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
 
   if (type == kCGEventKeyDown) {
     KeyPressedEvent key_event(keyCode);
-    event_emitter->EmitSync(key_event);
+    event_emitter->Emit(key_event);
   } else if (type == kCGEventKeyUp) {
     KeyReleasedEvent key_event(keyCode);
-    event_emitter->EmitSync(key_event);
+    event_emitter->Emit(key_event);
   } else if (type == kCGEventFlagsChanged) {
     CGEventFlags flags = CGEventGetFlags(event);
     uint32_t modifier_keys = static_cast<uint32_t>(ModifierKey::None);
@@ -68,7 +68,7 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
       modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
     }
     ModifierKeysChangedEvent modifier_event(modifier_keys);
-    event_emitter->EmitSync(modifier_event);
+    event_emitter->Emit(modifier_event);
   }
   return event;
 }

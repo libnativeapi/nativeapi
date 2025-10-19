@@ -52,10 +52,9 @@ void EventEmitter::RemoveAllListeners(std::type_index event_type) {
 void EventEmitter::RemoveAllListeners() {
   std::lock_guard<std::mutex> lock(listeners_mutex_);
   listeners_.clear();
-  callback_listeners_.clear();
 }
 
-void EventEmitter::EmitSync(const Event& event) {
+void EventEmitter::Emit(const Event& event) {
   std::type_index event_type = typeid(event);
   std::vector<EventListenerBase*> listeners_copy;
 
@@ -175,7 +174,7 @@ void EventEmitter::ProcessAsyncEvents() {
 
     // Dispatch the event if we have one
     if (event) {
-      EmitSync(*event);
+      Emit(*event);
     }
   }
 }

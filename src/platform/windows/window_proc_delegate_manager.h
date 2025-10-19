@@ -41,7 +41,7 @@ class WindowProcDelegateManager {
   mutable std::mutex mutex_;
   std::unordered_map<int, WindowProcDelegate> delegates_;
   int next_id_ = 1;
-  
+
   // Store original WindowProc and window handle
   HWND top_level_window_ = nullptr;
   WNDPROC original_window_proc_ = nullptr;

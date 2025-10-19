@@ -162,16 +162,16 @@ void KeyboardMonitor::Impl::MonitoringLoop() {
 
           if (xi_event->evtype == XI_KeyPress) {
             KeyPressedEvent key_event(xi_event->detail);
-            monitor_->EmitSync(key_event);
+            monitor_->Emit(key_event);
 
             ModifierKeysChangedEvent modifier_event(GetModifierState());
-            monitor_->EmitSync(modifier_event);
+            monitor_->Emit(modifier_event);
           } else if (xi_event->evtype == XI_KeyRelease) {
             KeyReleasedEvent key_event(xi_event->detail);
-            monitor_->EmitSync(key_event);
+            monitor_->Emit(key_event);
 
             ModifierKeysChangedEvent modifier_event(GetModifierState());
-            monitor_->EmitSync(modifier_event);
+            monitor_->Emit(modifier_event);
           }
 
           XFreeEventData(display_, &event.xcookie);

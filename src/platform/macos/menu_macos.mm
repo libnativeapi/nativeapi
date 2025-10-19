@@ -280,7 +280,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_text) {
     try {
-      EmitSync<MenuItemClickedEvent>(item_id, item_text);
+      Emit<MenuItemClickedEvent>(item_id, item_text);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -298,7 +298,7 @@ MenuItem::MenuItem(void* native_item)
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_text) {
     try {
-      EmitSync<MenuItemClickedEvent>(item_id, item_text);
+      Emit<MenuItemClickedEvent>(item_id, item_text);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -487,7 +487,7 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
         pimpl_->submenu_opened_listener_id_ = submenu->AddListener<MenuOpenedEvent>(
             [self, menu_item_id](const MenuOpenedEvent& event) {
               try {
-                self->EmitSync<MenuItemSubmenuOpenedEvent>(menu_item_id);
+                self->Emit<MenuItemSubmenuOpenedEvent>(menu_item_id);
               } catch (...) {
                 // Protect against event emission exceptions
               }
@@ -496,7 +496,7 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
         pimpl_->submenu_closed_listener_id_ = submenu->AddListener<MenuClosedEvent>(
             [self, menu_item_id](const MenuClosedEvent& event) {
               try {
-                self->EmitSync<MenuItemSubmenuClosedEvent>(menu_item_id);
+                self->Emit<MenuItemSubmenuClosedEvent>(menu_item_id);
               } catch (...) {
                 // Protect against event emission exceptions
               }
@@ -598,7 +598,7 @@ Menu::Menu() : id(IdAllocator::Allocate<Menu>()) {
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
     try {
-      EmitSync<MenuOpenedEvent>(menu_id);
+      Emit<MenuOpenedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -606,7 +606,7 @@ Menu::Menu() : id(IdAllocator::Allocate<Menu>()) {
 
   pimpl_->delegate_.closedBlock = ^(MenuId menu_id) {
     try {
-      EmitSync<MenuClosedEvent>(menu_id);
+      Emit<MenuClosedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -623,7 +623,7 @@ Menu::Menu(void* native_menu)
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
     try {
-      EmitSync<MenuOpenedEvent>(menu_id);
+      Emit<MenuOpenedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -631,7 +631,7 @@ Menu::Menu(void* native_menu)
 
   pimpl_->delegate_.closedBlock = ^(MenuId menu_id) {
     try {
-      EmitSync<MenuClosedEvent>(menu_id);
+      Emit<MenuClosedEvent>(menu_id);
     } catch (...) {
       // Protect against event emission exceptions
     }

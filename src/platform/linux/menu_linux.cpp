@@ -23,7 +23,7 @@ static void OnGtkMenuItemActivate(GtkMenuItem* /*item*/, gpointer user_data) {
   if (auto label = menu_item->GetLabel(); label.has_value()) {
     text = *label;
   }
-  menu_item->EmitSync(MenuItemClickedEvent(menu_item->id, text));
+  menu_item->Emit(MenuItemClickedEvent(menu_item->id, text));
 }
 
 static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
@@ -31,7 +31,7 @@ static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
   if (!menu_obj) {
     return;
   }
-  menu_obj->EmitSync(MenuOpenedEvent(menu_obj->id));
+  menu_obj->Emit(MenuOpenedEvent(menu_obj->id));
 }
 
 static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
@@ -39,7 +39,7 @@ static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
   if (!menu_obj) {
     return;
   }
-  menu_obj->EmitSync(MenuClosedEvent(menu_obj->id));
+  menu_obj->Emit(MenuClosedEvent(menu_obj->id));
 }
 
 static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
@@ -48,7 +48,7 @@ static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
     return;
   }
   // Emit submenu opened on the item
-  menu_item->EmitSync(MenuItemSubmenuOpenedEvent(menu_item->id));
+  menu_item->Emit(MenuItemSubmenuOpenedEvent(menu_item->id));
 }
 
 static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
@@ -57,7 +57,7 @@ static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
     return;
   }
   // Emit submenu closed on the item
-  menu_item->EmitSync(MenuItemSubmenuClosedEvent(menu_item->id));
+  menu_item->Emit(MenuItemSubmenuClosedEvent(menu_item->id));
 }
 
 // Private implementation class for MenuItem

@@ -40,10 +40,10 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode,
 
     if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
       KeyPressedEvent key_event(pKeyboard->vkCode);
-      emitter.EmitSync(key_event);
+      emitter.Emit(key_event);
     } else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
       KeyReleasedEvent key_event(pKeyboard->vkCode);
-      emitter.EmitSync(key_event);
+      emitter.Emit(key_event);
     }
 
     // Check for modifier key changes
@@ -75,7 +75,7 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode,
     static uint32_t last_modifier_keys = 0;
     if (modifier_keys != last_modifier_keys) {
       ModifierKeysChangedEvent modifier_event(modifier_keys);
-      emitter.EmitSync(modifier_event);
+      emitter.Emit(modifier_event);
       last_modifier_keys = modifier_keys;
     }
   }

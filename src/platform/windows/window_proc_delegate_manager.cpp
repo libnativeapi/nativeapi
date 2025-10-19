@@ -1,6 +1,7 @@
 #include "window_proc_delegate_manager.h"
 #include <windows.h>
 #include <iostream>
+#include <vector>
 
 namespace nativeapi {
 
@@ -14,11 +15,25 @@ LRESULT CALLBACK WindowProcDelegateManager::InternalWindowProc(HWND hwnd,
                                                                WPARAM wparam,
                                                                LPARAM lparam) {
   WindowProcDelegateManager& manager = GetInstance();
-  std::lock_guard<std::mutex> lock(manager.mutex_);
 
-  // Dispatch message to all registered delegates
-  for (const auto& pair : manager.delegates_) {
-    const auto& delegate = pair.second;
+  // Copy delegates while holding the lock to avoid holding lock during delegate
+  // execution
+  std::vector<WindowProcDelegate> delegates_copy;
+  WNDPROC original_proc = nullptr;
+
+  {
+    std::lock_guard<std::mutex> lock(manager.mutex_);
+    delegates_copy.reserve(manager.delegates_.size());
+    for (const auto& pair : manager.delegates_) {
+      if (pair.second) {
+        delegates_copy.push_back(pair.second);
+      }
+    }
+    original_proc = manager.original_window_proc_;
+  }
+
+  // Dispatch message to all registered delegates (without holding the lock)
+  for (const auto& delegate : delegates_copy) {
     if (delegate) {
       auto result = delegate(hwnd, message, wparam, lparam);
       if (result.has_value()) {
@@ -28,9 +43,8 @@ LRESULT CALLBACK WindowProcDelegateManager::InternalWindowProc(HWND hwnd,
   }
 
   // If no delegate handled the message, call the original WindowProc
-  if (manager.original_window_proc_) {
-    return CallWindowProc(manager.original_window_proc_, hwnd, message, wparam,
-                          lparam);
+  if (original_proc) {
+    return CallWindowProc(original_proc, hwnd, message, wparam, lparam);
   }
 
   // Fallback to DefWindowProc if no original proc is available

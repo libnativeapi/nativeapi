@@ -37,7 +37,7 @@ DisplayManager::DisplayManager() {
                   old_ids.insert(d.GetId());
                 for (const auto& d : new_displays) {
                   if (old_ids.find(d.GetId()) == old_ids.end()) {
-                    EmitSync<DisplayAddedEvent>(d);
+                    Emit<DisplayAddedEvent>(d);
                   }
                 }
 
@@ -47,7 +47,7 @@ DisplayManager::DisplayManager() {
                   new_ids.insert(d.GetId());
                 for (const auto& d : old_displays) {
                   if (new_ids.find(d.GetId()) == new_ids.end()) {
-                    EmitSync<DisplayRemovedEvent>(d);
+                    Emit<DisplayRemovedEvent>(d);
                   }
                 }
 

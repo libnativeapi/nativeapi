@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <shellapi.h>
 // clang-format on
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -60,44 +61,6 @@ class TrayIcon::Impl {
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
   }
 
-  // Windows-specific message handler
-  LRESULT HandleWindowsMessage(UINT message,
-                               WPARAM wParam,
-                               LPARAM lParam,
-                               TrayIcon* tray_icon) {
-    if (message == WM_USER + 1 && wParam == icon_id_) {
-      switch (lParam) {
-        case WM_LBUTTONUP:
-          try {
-            tray_icon->EmitSync<TrayIconClickedEvent>(tray_icon->GetId(),
-                                                      "left");
-          } catch (...) {
-            // Protect against event emission exceptions
-          }
-          break;
-        case WM_RBUTTONUP:
-          try {
-            tray_icon->EmitSync<TrayIconRightClickedEvent>(tray_icon->GetId());
-          } catch (...) {
-            // Protect against event emission exceptions
-          }
-          if (tray_icon->GetContextMenu()) {
-            tray_icon->OpenContextMenu();
-          }
-          break;
-        case WM_LBUTTONDBLCLK:
-          try {
-            tray_icon->EmitSync<TrayIconDoubleClickedEvent>(tray_icon->GetId());
-          } catch (...) {
-            // Protect against event emission exceptions
-          }
-          break;
-      }
-      return 0;
-    }
-    return DefWindowProc(hwnd_, message, wParam, lParam);
-  }
-
   ~Impl() {
     WindowProcDelegateManager::GetInstance().UnregisterDelegate(
         window_proc_id_);
@@ -115,7 +78,16 @@ class TrayIcon::Impl {
                                           WPARAM wparam,
                                           LPARAM lparam) {
     if (message == WM_USER + 1 && wparam == icon_id_) {
-      // This is handled by HandleWindowsMessage, but we need to return a value
+      if (lparam == WM_LBUTTONUP) {
+        std::cout << "TrayIcon: Left button clicked, icon_id = " << icon_id_
+                  << std::endl;
+      } else if (lparam == WM_RBUTTONUP) {
+        std::cout << "TrayIcon: Right button clicked, icon_id = " << icon_id_
+                  << std::endl;
+      } else if (lparam == WM_LBUTTONDBLCLK) {
+        std::cout << "TrayIcon: Left button double-clicked, icon_id = "
+                  << icon_id_ << std::endl;
+      }
       return 0;
     }
     return std::nullopt;  // Let default window procedure handle it
@@ -146,21 +118,25 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
   wc.lpszClassName = wclass_name.c_str();
 
   if (RegisterClassW(&wc)) {
-    // Create hidden message-only window
-    std::wstring wtitle = StringToWString("NativeAPI Tray Icon");
-    HWND hwnd =
-        CreateWindowW(wclass_name.c_str(), wtitle.c_str(), 0, 0, 0, 0, 0,
-                      HWND_MESSAGE,  // Message-only window
-                      nullptr, hInstance, nullptr);
+    // Don't create a new window for the tray icon.
+    // Try to get an existing window handle from different methods.
+    HWND hwnd = GetForegroundWindow();
+    if (!hwnd || !IsWindow(hwnd)) {
+      hwnd = GetActiveWindow();
+    }
+    if (!hwnd || !IsWindow(hwnd)) {
+      hwnd = FindWindow(nullptr, nullptr);
+    }
 
-    if (hwnd) {
+    if (hwnd && IsWindow(hwnd)) {
       // Generate unique icon ID
       static UINT next_icon_id = 1;
       UINT icon_id = next_icon_id++;
 
-      // Reinitialize the Impl with the created window and icon ID
+      // Reinitialize the Impl with the found window and icon ID
       pimpl_ = std::make_unique<Impl>(hwnd, icon_id);
     }
+    // else: Failed to get HWND, keep pimpl_ as default (uninitialized)
   }
 }
 
@@ -357,10 +333,5 @@ bool TrayIcon::CloseContextMenu() {
 void* TrayIcon::GetNativeObjectInternal() const {
   return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->icon_id_));
 }
-
-// Note: Windows-specific functionality is now handled internally by the Impl
-// class The SetWindowsData and HandleWindowsMessage methods have been moved to
-// the Impl class to maintain proper encapsulation and avoid exposing
-// platform-specific details in the public API
 
 }  // namespace nativeapi

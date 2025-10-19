@@ -285,7 +285,7 @@ bool MenuItem::Trigger() {
 
   try {
     std::string text = pimpl_->text_.has_value() ? pimpl_->text_.value() : "";
-    EmitSync<MenuItemClickedEvent>(id, text);
+    Emit<MenuItemClickedEvent>(id, text);
   } catch (...) {
     // Protect against event emission exceptions
   }
