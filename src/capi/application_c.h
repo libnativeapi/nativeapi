@@ -10,6 +10,8 @@
 #define FFI_PLUGIN_EXPORT
 #endif
 
+#include "window_c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,7 +40,6 @@ typedef struct {
   int exit_code;  // For EXITING event
 } native_application_event_t;
 
-
 /**
  * @brief Application event callback function type
  */
@@ -53,15 +54,6 @@ FFI_PLUGIN_EXPORT
 native_application_t native_application_get_instance(void);
 
 /**
- * @brief Initialize the application
- *
- * @param app Application handle (must not be NULL)
- * @return true if initialization succeeded, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_application_initialize(native_application_t app);
-
-/**
  * @brief Run the application main event loop
  *
  * @param app Application handle (must not be NULL)
@@ -69,6 +61,16 @@ bool native_application_initialize(native_application_t app);
  */
 FFI_PLUGIN_EXPORT
 int native_application_run(native_application_t app);
+
+/**
+ * @brief Run the application with the specified window
+ *
+ * @param app Application handle (must not be NULL)
+ * @param window Window handle (must not be NULL)
+ * @return Exit code of the application (0 for success)
+ */
+FFI_PLUGIN_EXPORT
+int native_application_run_with_window(native_application_t app, native_window_t window);
 
 /**
  * @brief Request the application to quit
@@ -87,7 +89,6 @@ void native_application_quit(native_application_t app, int exit_code);
  */
 FFI_PLUGIN_EXPORT
 bool native_application_is_running(native_application_t app);
-
 
 /**
  * @brief Check if this is a single instance application
@@ -139,6 +140,18 @@ size_t native_application_add_event_listener(native_application_t app,
 FFI_PLUGIN_EXPORT
 bool native_application_remove_event_listener(native_application_t app, size_t listener_id);
 
+/**
+ * @brief Convenience function to run the application with the specified window
+ *
+ * This is equivalent to calling native_application_run_with_window with the singleton instance.
+ * This function provides a simple way to run an application without explicitly
+ * accessing the singleton.
+ *
+ * @param window Window handle (must not be NULL)
+ * @return Exit code of the application (0 for success)
+ */
+FFI_PLUGIN_EXPORT
+int native_run_app(native_window_t window);
 
 #ifdef __cplusplus
 }

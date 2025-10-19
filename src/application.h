@@ -13,7 +13,6 @@
 
 namespace nativeapi {
 
-
 /**
  * @brief Application is a singleton class that manages the application lifecycle
  *
@@ -50,7 +49,7 @@ class Application : public EventEmitter<ApplicationEvent> {
    * @code
    * // Usage example:
    * auto& app = Application::GetInstance();
-   * app.Initialize(options);
+   * int exit_code = app.Run();
    * @endcode
    */
   static Application& GetInstance();
@@ -62,26 +61,6 @@ class Application : public EventEmitter<ApplicationEvent> {
    * This is automatically called when the application terminates.
    */
   virtual ~Application();
-
-  /**
-   * @brief Initialize the application
-   *
-   * Sets up the application with default configuration. This method
-   * should be called before any other application operations. It sets up
-   * platform-specific initialization and emits an ApplicationStartedEvent.
-   *
-   * @return true if initialization succeeded, false otherwise
-   *
-   * @throws std::runtime_error if initialization fails due to system limitations
-   *
-   * @code
-   * auto& app = Application::GetInstance();
-   * if (app.Initialize()) {
-   *     // Application initialized successfully
-   * }
-   * @endcode
-   */
-  bool Initialize();
 
   /**
    * @brief Run the application main event loop
@@ -98,6 +77,24 @@ class Application : public EventEmitter<ApplicationEvent> {
    * @endcode
    */
   int Run();
+
+  /**
+   * @brief Run the application with the specified window
+   *
+   * Starts the main event loop with the given window and blocks until the
+   * application exits. This method sets the window as the primary window
+   * and starts the event loop.
+   *
+   * @param window The window to run the application with
+   * @return Exit code of the application (0 for success)
+   *
+   * @code
+   * auto& app = Application::GetInstance();
+   * auto window = WindowManager::GetInstance().Create(options);
+   * int exit_code = app.Run(window);
+   * @endcode
+   */
+  int Run(std::shared_ptr<Window> window);
 
   /**
    * @brief Request the application to quit
@@ -120,7 +117,6 @@ class Application : public EventEmitter<ApplicationEvent> {
    * @return true if the application is running, false otherwise
    */
   bool IsRunning() const;
-
 
   /**
    * @brief Check if this is a single instance application
@@ -191,12 +187,11 @@ class Application : public EventEmitter<ApplicationEvent> {
    */
   std::vector<std::shared_ptr<Window>> GetAllWindows() const;
 
-
  private:
   /**
    * @brief Private constructor to enforce singleton pattern
    *
-   * Initializes the Application instance and sets up platform-specific
+   * Automatically initializes the Application instance and sets up platform-specific
    * event monitoring. This constructor is private to prevent direct instantiation.
    */
   Application();
@@ -216,7 +211,6 @@ class Application : public EventEmitter<ApplicationEvent> {
   class Impl;
   std::unique_ptr<Impl> pimpl_;
 
-
   /**
    * @brief Application state
    */
@@ -229,15 +223,24 @@ class Application : public EventEmitter<ApplicationEvent> {
    */
   std::shared_ptr<Window> primary_window_;
 
-  /**
-   * @brief Clean up platform-specific event monitoring
-   *
-   * Stops event monitoring and cleans up associated resources.
-   * This is called during destruction.
-   */
-  void CleanupEventMonitoring();
-
  private:
 };
+
+/**
+ * @brief Convenience function to run the application with the specified window
+ *
+ * This is equivalent to calling Application::GetInstance().Run(window).
+ * This function provides a simple way to run an application without
+ * explicitly accessing the singleton.
+ *
+ * @param window The window to run the application with
+ * @return Exit code of the application (0 for success)
+ *
+ * @code
+ * auto window = WindowManager::GetInstance().Create(options);
+ * int exit_code = RunApp(window);
+ * @endcode
+ */
+int RunApp(std::shared_ptr<Window> window);
 
 }  // namespace nativeapi

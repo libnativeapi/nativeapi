@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "../application.h"
+#include "../window_manager.h"
 
 using namespace nativeapi;
 
@@ -54,7 +55,6 @@ class CApplicationEventListener {
           event.exit_code = 0;
           DispatchEvent(event);
         });
-
   }
 
  private:
@@ -68,22 +68,14 @@ class CApplicationEventListener {
 };
 
 // Global registry for event listeners
-static std::unordered_map<size_t, std::unique_ptr<CApplicationEventListener>> g_listeners;
+static std::unordered_map<size_t, std::unique_ptr<CApplicationEventListener>>
+    g_listeners;
 static size_t g_next_listener_id = 1;
 
 extern "C" {
 
 native_application_t native_application_get_instance(void) {
   return &Application::GetInstance();
-}
-
-bool native_application_initialize(native_application_t app) {
-  if (!app) {
-    return false;
-  }
-
-  Application* cpp_app = static_cast<Application*>(app);
-  return cpp_app->Initialize();
 }
 
 int native_application_run(native_application_t app) {
@@ -93,6 +85,29 @@ int native_application_run(native_application_t app) {
 
   Application* cpp_app = static_cast<Application*>(app);
   return cpp_app->Run();
+}
+
+int native_application_run_with_window(native_application_t app,
+                                       native_window_t window) {
+  if (!app || !window) {
+    return -1;
+  }
+
+  Application* cpp_app = static_cast<Application*>(app);
+
+  // Convert native_window_t back to shared_ptr<Window>
+  Window* window_ptr = static_cast<Window*>(window);
+  WindowID window_id = window_ptr->GetId();
+
+  // Retrieve the shared_ptr from WindowManager
+  auto& manager = WindowManager::GetInstance();
+  auto window_shared = manager.Get(window_id);
+
+  if (!window_shared) {
+    return -1;
+  }
+
+  return cpp_app->Run(window_shared);
 }
 
 void native_application_quit(native_application_t app, int exit_code) {
@@ -113,7 +128,6 @@ bool native_application_is_running(native_application_t app) {
   return cpp_app->IsRunning();
 }
 
-
 bool native_application_is_single_instance(native_application_t app) {
   if (!app) {
     return false;
@@ -123,7 +137,8 @@ bool native_application_is_single_instance(native_application_t app) {
   return cpp_app->IsSingleInstance();
 }
 
-bool native_application_set_icon(native_application_t app, const char* icon_path) {
+bool native_application_set_icon(native_application_t app,
+                                 const char* icon_path) {
   if (!app || !icon_path) {
     return false;
   }
@@ -132,7 +147,8 @@ bool native_application_set_icon(native_application_t app, const char* icon_path
   return cpp_app->SetIcon(icon_path);
 }
 
-bool native_application_set_dock_icon_visible(native_application_t app, bool visible) {
+bool native_application_set_dock_icon_visible(native_application_t app,
+                                              bool visible) {
   if (!app) {
     return false;
   }
@@ -141,19 +157,22 @@ bool native_application_set_dock_icon_visible(native_application_t app, bool vis
   return cpp_app->SetDockIconVisible(visible);
 }
 
-size_t native_application_add_event_listener(native_application_t app,
-                                            native_application_event_callback_t callback) {
+size_t native_application_add_event_listener(
+    native_application_t app,
+    native_application_event_callback_t callback) {
   if (!app || !callback) {
     return 0;
   }
 
   size_t listener_id = g_next_listener_id++;
-  g_listeners[listener_id] = std::make_unique<CApplicationEventListener>(callback);
-  
+  g_listeners[listener_id] =
+      std::make_unique<CApplicationEventListener>(callback);
+
   return listener_id;
 }
 
-bool native_application_remove_event_listener(native_application_t app, size_t listener_id) {
+bool native_application_remove_event_listener(native_application_t app,
+                                              size_t listener_id) {
   if (!app || listener_id == 0) {
     return false;
   }
@@ -163,9 +182,13 @@ bool native_application_remove_event_listener(native_application_t app, size_t l
     g_listeners.erase(it);
     return true;
   }
-  
+
   return false;
 }
 
+int native_run_app(native_window_t window) {
+  native_application_t app = native_application_get_instance();
+  return native_application_run_with_window(app, window);
+}
 
 }  // extern "C"

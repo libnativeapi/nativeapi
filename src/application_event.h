@@ -31,7 +31,7 @@ class ApplicationStartedEvent : public ApplicationEvent {
 class ApplicationExitingEvent : public ApplicationEvent {
  public:
   ApplicationExitingEvent(int exit_code) : exit_code_(exit_code) {}
-  
+
   int GetExitCode() const { return exit_code_; }
   std::string GetTypeName() const override { return "ApplicationExitingEvent"; }
 
@@ -65,6 +65,5 @@ class ApplicationQuitRequestedEvent : public ApplicationEvent {
   ApplicationQuitRequestedEvent() = default;
   std::string GetTypeName() const override { return "ApplicationQuitRequestedEvent"; }
 };
-
 
 }  // namespace nativeapi

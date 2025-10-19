@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include "../app_runner.h"
+#include "../application.h"
 #include "../window_manager.h"
 
 using namespace nativeapi;
@@ -18,6 +18,7 @@ int native_run_example_app() {
   std::shared_ptr<Window> window_ptr =
       WindowManager::GetInstance().Create(options);
   // Run the main event loop
-  int exit_code = RunApp(window_ptr);
+  auto& app = Application::GetInstance();
+  int exit_code = app.Run(window_ptr);
   return exit_code;
 }

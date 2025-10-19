@@ -1,11 +1,11 @@
-#include <gtk/gtk.h>
-#include <glib.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <glib.h>
+#include <gtk/gtk.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "../../application.h"
 #include "../../menu.h"
@@ -15,7 +15,8 @@ namespace nativeapi {
 
 class Application::Impl {
  public:
-  Impl(Application* app) : app_(app), gtk_app_(nullptr), lock_file_handle_(-1) {}
+  Impl(Application* app)
+      : app_(app), gtk_app_(nullptr), lock_file_handle_(-1) {}
   ~Impl() = default;
 
   bool Initialize() {
@@ -23,14 +24,16 @@ class Application::Impl {
     gtk_init(nullptr, nullptr);
 
     // Create GTK application with default ID
-    gtk_app_ = gtk_application_new("com.nativeapi.application", G_APPLICATION_FLAGS_NONE);
-    
+    gtk_app_ = gtk_application_new("com.nativeapi.application",
+                                   G_APPLICATION_FLAGS_NONE);
+
     if (!gtk_app_) {
       return false;
     }
 
     // Set default application name
-    g_object_set(gtk_app_, "application-name", "NativeAPI Application", nullptr);
+    g_object_set(gtk_app_, "application-name", "NativeAPI Application",
+                 nullptr);
 
     // Connect to GTK application signals
     g_signal_connect(gtk_app_, "startup", G_CALLBACK(OnStartup), this);
@@ -43,13 +46,29 @@ class Application::Impl {
   int Run() {
     // Run the GTK main loop
     int status = g_application_run(G_APPLICATION(gtk_app_), 0, nullptr);
-    
+
     return status;
   }
 
-  void Quit(int exit_code) {
-    g_application_quit(G_APPLICATION(gtk_app_));
+  int Run(std::shared_ptr<Window> window) {
+    if (!window) {
+      return -1;
+    }
+
+    // Set the window as primary window
+    app_->SetPrimaryWindow(window);
+
+    // Show the window
+    window->Show();
+    window->Focus();
+
+    // Run the GTK main loop
+    int status = g_application_run(G_APPLICATION(gtk_app_), 0, nullptr);
+
+    return status;
   }
+
+  void Quit(int exit_code) { g_application_quit(G_APPLICATION(gtk_app_)); }
 
   bool SetIcon(const std::string& icon_path) {
     if (icon_path.empty()) {
@@ -64,7 +83,7 @@ class Application::Impl {
 
     // Set application icon
     gtk_window_set_default_icon(pixbuf);
-    
+
     g_object_unref(pixbuf);
     return true;
   }
@@ -88,10 +107,9 @@ class Application::Impl {
 
     // Set the application menu
     gtk_application_set_app_menu(gtk_app_, GTK_MENU_MODEL(gtk_menu));
-    
+
     return true;
   }
-
 
   void CleanupEventMonitoring() {
     // Clean up Linux-specific event monitoring
@@ -99,7 +117,7 @@ class Application::Impl {
       close(lock_file_handle_);
       lock_file_handle_ = -1;
     }
-    
+
     if (gtk_app_) {
       g_object_unref(gtk_app_);
       gtk_app_ = nullptr;
@@ -113,7 +131,7 @@ class Application::Impl {
 
   static void OnStartup(GApplication* app, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
-    
+
     // Emit application started event
     ApplicationStartedEvent event;
     impl->app_->Emit(event);
@@ -121,7 +139,7 @@ class Application::Impl {
 
   static void OnActivate(GApplication* app, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
-    
+
     // Emit application activated event
     ApplicationActivatedEvent event;
     impl->app_->Emit(event);
@@ -129,61 +147,68 @@ class Application::Impl {
 
   static void OnShutdown(GApplication* app, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
-    
+
     // Emit application exiting event
     ApplicationExitingEvent event(0);
     impl->app_->Emit(event);
   }
 };
 
-Application::Application() 
-    : initialized_(false), running_(false), exit_code_(0), pimpl_(std::make_unique<Impl>(this)) {
+Application::Application()
+    : initialized_(true),
+      running_(false),
+      exit_code_(0),
+      pimpl_(std::make_unique<Impl>(this)) {
+  // Perform platform-specific initialization automatically
+  pimpl_->Initialize();
+
+  // Emit application started event
+  Emit<ApplicationStartedEvent>();
 }
 
 Application::~Application() {
-  CleanupEventMonitoring();
-}
-
-bool Application::Initialize() {
-  if (initialized_) {
-    return false;  // Already initialized
-  }
-  
-  // Perform platform-specific initialization
-  bool success = pimpl_->Initialize();
-  
-  if (success) {
-    initialized_ = true;
-    Emit<ApplicationStartedEvent>();
-  }
-  
-  return success;
+  // Clean up platform-specific event monitoring
+  pimpl_->CleanupEventMonitoring();
 }
 
 int Application::Run() {
-  if (!initialized_) {
-    return -1;  // Not initialized
+  running_ = true;
+
+  // Start the platform-specific main event loop
+  int result = pimpl_->Run();
+
+  running_ = false;
+
+  // Emit exit event
+  Emit<ApplicationExitingEvent>(result);
+
+  return result;
+}
+
+int Application::Run(std::shared_ptr<Window> window) {
+  if (!window) {
+    return -1;  // Invalid window
   }
 
   running_ = true;
-  
-  // Start the platform-specific main event loop
-  int result = pimpl_->Run();
-  
+
+  // Start the platform-specific main event loop with window
+  int result = pimpl_->Run(window);
+
   running_ = false;
-  
+
   // Emit exit event
   Emit<ApplicationExitingEvent>(result);
-  
+
   return result;
 }
 
 void Application::Quit(int exit_code) {
   exit_code_ = exit_code;
-  
+
   // Emit quit requested event
   Emit<ApplicationQuitRequestedEvent>();
-  
+
   // Request platform-specific quit
   pimpl_->Quit(exit_code);
 }
@@ -191,7 +216,6 @@ void Application::Quit(int exit_code) {
 bool Application::IsRunning() const {
   return running_;
 }
-
 
 bool Application::IsSingleInstance() const {
   return false;
@@ -220,10 +244,6 @@ void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
 std::vector<std::shared_ptr<Window>> Application::GetAllWindows() const {
   auto& window_manager = WindowManager::GetInstance();
   return window_manager.GetAll();
-}
-
-void Application::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
 }
 
 }  // namespace nativeapi

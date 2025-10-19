@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../src/capi/app_runner_c.h"
+#include "../../src/capi/application_c.h"
 #include "../../src/capi/menu_c.h"
 
 // Event callback functions

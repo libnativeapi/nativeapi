@@ -10,7 +10,8 @@ void on_application_event(const native_application_event_t* event) {
       printf("Application started event received\n");
       break;
     case NATIVE_APPLICATION_EVENT_EXITING:
-      printf("Application exiting event received with exit code: %d\n", event->exit_code);
+      printf("Application exiting event received with exit code: %d\n",
+             event->exit_code);
       break;
     case NATIVE_APPLICATION_EVENT_ACTIVATED:
       printf("Application activated event received\n");
@@ -44,10 +45,12 @@ int main() {
   }
 
   printf("Application initialized successfully\n");
-  printf("Single instance: %s\n", native_application_is_single_instance(app) ? "Yes" : "No");
+  printf("Single instance: %s\n",
+         native_application_is_single_instance(app) ? "Yes" : "No");
 
   // Add event listener
-  size_t listener_id = native_application_add_event_listener(app, on_application_event);
+  size_t listener_id =
+      native_application_add_event_listener(app, on_application_event);
   if (listener_id == 0) {
     fprintf(stderr, "Failed to add event listener\n");
     return 1;
@@ -60,7 +63,8 @@ int main() {
     return 1;
   }
 
-  native_window_options_set_title(window_options, "Application C Example Window");
+  native_window_options_set_title(window_options,
+                                  "Application C Example Window");
   native_window_options_set_size(window_options, 400.0, 300.0);
 
   native_window_t window = native_window_manager_create(window_options);

@@ -1,17 +1,17 @@
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
-#include <string>
-#include <vector>
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <string>
+#include <vector>
 
 #include "../../application.h"
 #include "../../menu.h"
 #include "../../window_manager.h"
 
 @interface NativeApplicationDelegate : NSObject <NSApplicationDelegate>
-@property (nonatomic, assign) nativeapi::Application* app;
+@property(nonatomic, assign) nativeapi::Application* app;
 @end
 
 @implementation NativeApplicationDelegate
@@ -44,11 +44,10 @@
   // Emit quit requested event
   nativeapi::ApplicationQuitRequestedEvent event;
   self.app->Emit(event);
-  
+
   // Allow termination
   return NSTerminateNow;
 }
-
 
 @end
 
@@ -85,13 +84,29 @@ class Application::Impl {
   int Run() {
     // Start the main event loop
     [NSApp run];
-    
+
     return 0;
   }
 
-  void Quit(int exit_code) {
-    [NSApp terminate:nil];
+  int Run(std::shared_ptr<Window> window) {
+    if (!window) {
+      return -1;
+    }
+
+    // Set the window as primary window
+    app_->SetPrimaryWindow(window);
+
+    // Show the window
+    window->Show();
+    window->Focus();
+
+    // Start the main event loop
+    [NSApp run];
+
+    return 0;
   }
+
+  void Quit(int exit_code) { [NSApp terminate:nil]; }
 
   bool SetIcon(const std::string& icon_path) {
     if (icon_path.empty()) {
@@ -100,7 +115,7 @@ class Application::Impl {
 
     NSString* path = [NSString stringWithUTF8String:icon_path.c_str()];
     NSImage* icon = [[NSImage alloc] initWithContentsOfFile:path];
-    
+
     if (!icon) {
       return false;
     }
@@ -131,10 +146,9 @@ class Application::Impl {
 
     // Set the application menu
     [NSApp setMainMenu:ns_menu];
-    
+
     return true;
   }
-
 
   void CleanupEventMonitoring() {
     // Clean up macOS-specific event monitoring
@@ -142,7 +156,7 @@ class Application::Impl {
       close(lock_file_handle_);
       lock_file_handle_ = -1;
     }
-    
+
     if (delegate_) {
       [NSApp setDelegate:nil];
       delegate_ = nil;
@@ -155,54 +169,58 @@ class Application::Impl {
   int lock_file_handle_ = -1;
 };
 
-Application::Application() 
-    : initialized_(false), running_(false), exit_code_(0), pimpl_(std::make_unique<Impl>(this)) {
+Application::Application()
+    : initialized_(true), running_(false), exit_code_(0), pimpl_(std::make_unique<Impl>(this)) {
+  // Perform platform-specific initialization automatically
+  pimpl_->Initialize();
+
+  // Emit application started event
+  Emit<ApplicationStartedEvent>();
 }
 
 Application::~Application() {
-  CleanupEventMonitoring();
-}
-
-bool Application::Initialize() {
-  if (initialized_) {
-    return false;  // Already initialized
-  }
-  
-  // Perform platform-specific initialization
-  bool success = pimpl_->Initialize();
-  
-  if (success) {
-    initialized_ = true;
-    Emit<ApplicationStartedEvent>();
-  }
-  
-  return success;
+  // Clean up platform-specific event monitoring
+  pimpl_->CleanupEventMonitoring();
 }
 
 int Application::Run() {
-  if (!initialized_) {
-    return -1;  // Not initialized
+  running_ = true;
+
+  // Start the platform-specific main event loop
+  int result = pimpl_->Run();
+
+  running_ = false;
+
+  // Emit exit event
+  Emit<ApplicationExitingEvent>(result);
+
+  return result;
+}
+
+int Application::Run(std::shared_ptr<Window> window) {
+  if (!window) {
+    return -1;  // Invalid window
   }
 
   running_ = true;
-  
-  // Start the platform-specific main event loop
-  int result = pimpl_->Run();
-  
+
+  // Start the platform-specific main event loop with window
+  int result = pimpl_->Run(window);
+
   running_ = false;
-  
+
   // Emit exit event
   Emit<ApplicationExitingEvent>(result);
-  
+
   return result;
 }
 
 void Application::Quit(int exit_code) {
   exit_code_ = exit_code;
-  
+
   // Emit quit requested event
   Emit<ApplicationQuitRequestedEvent>();
-  
+
   // Request platform-specific quit
   pimpl_->Quit(exit_code);
 }
@@ -210,7 +228,6 @@ void Application::Quit(int exit_code) {
 bool Application::IsRunning() const {
   return running_;
 }
-
 
 bool Application::IsSingleInstance() const {
   return false;
@@ -239,10 +256,6 @@ void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
 std::vector<std::shared_ptr<Window>> Application::GetAllWindows() const {
   auto& window_manager = WindowManager::GetInstance();
   return window_manager.GetAll();
-}
-
-void Application::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
 }
 
 }  // namespace nativeapi

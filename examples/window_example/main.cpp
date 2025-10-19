@@ -1,7 +1,7 @@
 #include <iostream>
 #include "nativeapi.h"
 
-using nativeapi::AppRunner;
+using nativeapi::Application;
 using nativeapi::Display;
 using nativeapi::DisplayAddedEvent;
 using nativeapi::DisplayManager;
@@ -371,7 +371,8 @@ int main() {
                   << std::endl;
       });
 
-  RunApp(window_ptr);
+  auto& app = Application::GetInstance();
+  app.Run(window_ptr);
 
   return 0;
 }

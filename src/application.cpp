@@ -7,4 +7,8 @@ Application& Application::GetInstance() {
   return instance;
 }
 
+int RunApp(std::shared_ptr<Window> window) {
+  return Application::GetInstance().Run(window);
+}
+
 }  // namespace nativeapi

@@ -11,14 +11,9 @@ int main() {
   // Get the Application singleton
   auto& app = Application::GetInstance();
 
-  // Initialize the application
-  if (!app.Initialize()) {
-    std::cerr << "Failed to initialize application" << std::endl;
-    return 1;
-  }
-
-  std::cout << "Application initialized successfully" << std::endl;
-  std::cout << "Single instance: " << (app.IsSingleInstance() ? "Yes" : "No") << std::endl;
+  std::cout << "Application initialized automatically" << std::endl;
+  std::cout << "Single instance: " << (app.IsSingleInstance() ? "Yes" : "No")
+            << std::endl;
 
   // Add event listeners
   auto started_listener = app.AddListener<ApplicationStartedEvent>(
@@ -41,10 +36,9 @@ int main() {
         std::cout << "Application deactivated event received" << std::endl;
       });
 
-
   // Create a simple window
   auto& window_manager = WindowManager::GetInstance();
-  
+
   WindowOptions window_options;
   window_options.title = "Application Example Window";
 
