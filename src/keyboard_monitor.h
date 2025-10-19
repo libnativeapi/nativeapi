@@ -45,7 +45,7 @@ class KeyboardMonitor : public EventEmitter<KeyboardEvent> {
   bool IsMonitoring() const;
 
   // Get access to the event emitter for internal use
-  EventEmitter& GetInternalEventEmitter();
+  EventEmitter<KeyboardEvent>& GetInternalEventEmitter();
 
  private:
   class Impl;

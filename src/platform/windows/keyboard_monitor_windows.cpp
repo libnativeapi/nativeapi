@@ -123,7 +123,7 @@ bool KeyboardMonitor::IsMonitoring() const {
   return impl_->hook_ != nullptr;
 }
 
-EventEmitter& KeyboardMonitor::GetInternalEventEmitter() {
+EventEmitter<KeyboardEvent>& KeyboardMonitor::GetInternalEventEmitter() {
   return *this;
 }
 
