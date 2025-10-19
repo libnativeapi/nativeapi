@@ -2,8 +2,10 @@
 #include <windows.h>
 #include <shellapi.h>
 // clang-format on
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "../../foundation/geometry.h"
@@ -26,18 +28,34 @@ class TrayIcon::Impl {
  public:
   std::shared_ptr<Image> image_;
 
-  Impl() : hwnd_(nullptr), icon_id_(0), icon_handle_(nullptr) {
-    id_ = IdAllocator::Allocate<TrayIcon>();
+  // Callback function types
+  using ClickedCallback = std::function<void(TrayIconId, const std::string&)>;
+  using RightClickedCallback = std::function<void(TrayIconId)>;
+  using DoubleClickedCallback = std::function<void(TrayIconId)>;
+
+  Impl()
+      : hwnd_(nullptr),
+        icon_handle_(nullptr),
+        owns_window_(false) {
+    tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
-  Impl(HWND hwnd, UINT icon_id)
-      : hwnd_(hwnd), icon_id_(icon_id), icon_handle_(nullptr) {
-    id_ = IdAllocator::Allocate<TrayIcon>();
+  Impl(HWND hwnd, bool owns_window,
+       ClickedCallback clicked_callback,
+       RightClickedCallback right_clicked_callback,
+       DoubleClickedCallback double_clicked_callback)
+      : hwnd_(hwnd),
+        icon_handle_(nullptr),
+        owns_window_(owns_window),
+        clicked_callback_(std::move(clicked_callback)),
+        right_clicked_callback_(std::move(right_clicked_callback)),
+        double_clicked_callback_(std::move(double_clicked_callback)) {
+    tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
     // Initialize NOTIFYICONDATA structure
     ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
     nid_.cbSize = sizeof(NOTIFYICONDATAW);
     nid_.hWnd = hwnd_;
-    nid_.uID = icon_id_;
+    nid_.uID = static_cast<UINT>(tray_icon_id_);  // Use tray_icon_id_ directly
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
 
@@ -47,25 +65,15 @@ class TrayIcon::Impl {
         });
   }
 
-  // Windows-specific method to set internal data
-  void SetWindowsData(HWND hwnd, UINT icon_id) {
-    hwnd_ = hwnd;
-    icon_id_ = icon_id;
-
-    // Re-initialize NOTIFYICONDATA structure
-    ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
-    nid_.cbSize = sizeof(NOTIFYICONDATAW);
-    nid_.hWnd = hwnd_;
-    nid_.uID = icon_id_;
-    nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
-  }
-
   ~Impl() {
     WindowProcDelegateManager::GetInstance().UnregisterDelegate(
         window_proc_id_);
     if (hwnd_) {
       Shell_NotifyIconW(NIM_DELETE, &nid_);
+      // Destroy the window if we own it
+      if (owns_window_) {
+        DestroyWindow(hwnd_);
+      }
     }
     if (icon_handle_) {
       DestroyIcon(icon_handle_);
@@ -77,16 +85,28 @@ class TrayIcon::Impl {
                                           UINT message,
                                           WPARAM wparam,
                                           LPARAM lparam) {
-    if (message == WM_USER + 1 && wparam == icon_id_) {
+    if (message == WM_USER + 1 && wparam == static_cast<WPARAM>(tray_icon_id_)) {
       if (lparam == WM_LBUTTONUP) {
-        std::cout << "TrayIcon: Left button clicked, icon_id = " << icon_id_
+        std::cout << "TrayIcon: Left button clicked, tray_icon_id = " << tray_icon_id_
                   << std::endl;
+        // Call clicked callback
+        if (clicked_callback_) {
+          clicked_callback_(tray_icon_id_, "left");
+        }
       } else if (lparam == WM_RBUTTONUP) {
-        std::cout << "TrayIcon: Right button clicked, icon_id = " << icon_id_
+        std::cout << "TrayIcon: Right button clicked, tray_icon_id = " << tray_icon_id_
                   << std::endl;
+        // Call right clicked callback
+        if (right_clicked_callback_) {
+          right_clicked_callback_(tray_icon_id_);
+        }
       } else if (lparam == WM_LBUTTONDBLCLK) {
-        std::cout << "TrayIcon: Left button double-clicked, icon_id = "
-                  << icon_id_ << std::endl;
+        std::cout << "TrayIcon: Left button double-clicked, tray_icon_id = "
+                  << tray_icon_id_ << std::endl;
+        // Call double clicked callback
+        if (double_clicked_callback_) {
+          double_clicked_callback_(tray_icon_id_);
+        }
       }
       return 0;
     }
@@ -95,61 +115,97 @@ class TrayIcon::Impl {
 
   int window_proc_id_;
   HWND hwnd_;
-  UINT icon_id_;
   NOTIFYICONDATAW nid_;
   std::shared_ptr<Menu> context_menu_;
   HICON icon_handle_;
-  TrayIconId id_;
+  TrayIconId tray_icon_id_;
+  bool owns_window_;  // Whether we created the window and should destroy it
+
+  // Callback functions for event emission
+  ClickedCallback clicked_callback_;
+  RightClickedCallback right_clicked_callback_;
+  DoubleClickedCallback double_clicked_callback_;
 };
 
-TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
-  // Create a hidden window for this tray icon
-  HINSTANCE hInstance = GetModuleHandle(nullptr);
+TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
 
-  // Register window class for this tray icon
-  static UINT next_class_id = 1;
-  std::string class_name =
-      "NativeAPITrayIcon_" + std::to_string(next_class_id++);
-  std::wstring wclass_name = StringToWString(class_name);
+TrayIcon::TrayIcon(void* native_tray_icon) {
+  HWND hwnd = nullptr;
+  bool owns_window = false;
 
-  WNDCLASSW wc = {};
-  wc.lpfnWndProc = DefWindowProc;
-  wc.hInstance = hInstance;
-  wc.lpszClassName = wclass_name.c_str();
+  if (native_tray_icon == nullptr) {
+    // Create a new tray icon - need a window handle for receiving messages
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
-  if (RegisterClassW(&wc)) {
-    // Don't create a new window for the tray icon.
-    // Try to get an existing window handle from different methods.
-    HWND hwnd = GetForegroundWindow();
-    if (!hwnd || !IsWindow(hwnd)) {
-      hwnd = GetActiveWindow();
+    // Register window class for message-only window (once per process)
+    static bool class_registered = false;
+    static std::wstring class_name = L"NativeAPITrayIconWindow";
+
+    if (!class_registered) {
+      WNDCLASSW wc = {};
+      // Use WindowProcDelegateManager to route messages to registered delegates
+      wc.lpfnWndProc = WindowProcDelegateManager::InternalWindowProc;
+      wc.hInstance = hInstance;
+      wc.lpszClassName = class_name.c_str();
+
+      if (RegisterClassW(&wc)) {
+        class_registered = true;
+      }
     }
-    if (!hwnd || !IsWindow(hwnd)) {
-      hwnd = FindWindow(nullptr, nullptr);
-    }
 
-    if (hwnd && IsWindow(hwnd)) {
-      // Generate unique icon ID
-      static UINT next_icon_id = 1;
-      UINT icon_id = next_icon_id++;
+    // Create a message-only window (HWND_MESSAGE as parent)
+    if (class_registered) {
+      hwnd = CreateWindowExW(
+          0,                   // Extended styles
+          class_name.c_str(),  // Window class
+          L"",                 // Window title (empty for message-only window)
+          0,                   // Window style
+          0, 0, 0, 0,          // Position and size (ignored for message-only)
+          HWND_MESSAGE,        // Parent: message-only window
+          nullptr,             // Menu
+          hInstance,           // Instance
+          nullptr);            // Additional data
 
-      // Reinitialize the Impl with the found window and icon ID
-      pimpl_ = std::make_unique<Impl>(hwnd, icon_id);
+      if (hwnd) {
+        owns_window = true;
+      }
     }
-    // else: Failed to get HWND, keep pimpl_ as default (uninitialized)
+  } else {
+    // Wrap existing native tray icon
+    // In a real implementation, you'd extract HWND from the tray parameter
+    // For now, this is mainly used by TrayManager for creating uninitialized icons
   }
-}
 
-TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {
-  // In a real implementation, you'd extract HWND and icon ID from the tray
-  // parameter For now, this constructor is mainly used by TrayManager for
-  // creating uninitialized icons
+  // Initialize the Impl with the window handle
+  // The tray_icon_id will be allocated inside Impl constructor
+  if (hwnd) {
+    // Create callback functions that emit events
+    auto clicked_callback = [this](TrayIconId id, const std::string& button) {
+      this->Emit<TrayIconClickedEvent>(id, button);
+    };
+
+    auto right_clicked_callback = [this](TrayIconId id) {
+      this->Emit<TrayIconRightClickedEvent>(id);
+    };
+
+    auto double_clicked_callback = [this](TrayIconId id) {
+      this->Emit<TrayIconDoubleClickedEvent>(id);
+    };
+
+    pimpl_ = std::make_unique<Impl>(hwnd, owns_window,
+                                   std::move(clicked_callback),
+                                   std::move(right_clicked_callback),
+                                   std::move(double_clicked_callback));
+  } else {
+    // Failed to create window, create uninitialized Impl
+    pimpl_ = std::make_unique<Impl>();
+  }
 }
 
 TrayIcon::~TrayIcon() {}
 
 TrayIconId TrayIcon::GetId() {
-  return pimpl_->id_;
+  return pimpl_->tray_icon_id_;
 }
 
 void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
@@ -248,7 +304,7 @@ Rectangle TrayIcon::GetBounds() {
     NOTIFYICONIDENTIFIER niid = {};
     niid.cbSize = sizeof(NOTIFYICONIDENTIFIER);
     niid.hWnd = pimpl_->hwnd_;
-    niid.uID = pimpl_->icon_id_;
+    niid.uID = static_cast<UINT>(pimpl_->tray_icon_id_);
 
     // Get the rectangle of the notification icon
     if (Shell_NotifyIconGetRect(&niid, &rect) == S_OK) {
@@ -290,7 +346,7 @@ bool TrayIcon::IsVisible() {
   NOTIFYICONIDENTIFIER niid = {};
   niid.cbSize = sizeof(NOTIFYICONIDENTIFIER);
   niid.hWnd = pimpl_->hwnd_;
-  niid.uID = pimpl_->icon_id_;
+  niid.uID = static_cast<UINT>(pimpl_->tray_icon_id_);
 
   RECT rect;
   return Shell_NotifyIconGetRect(&niid, &rect) == S_OK;
@@ -331,7 +387,7 @@ bool TrayIcon::CloseContextMenu() {
 }
 
 void* TrayIcon::GetNativeObjectInternal() const {
-  return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->icon_id_));
+  return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->tray_icon_id_));
 }
 
 }  // namespace nativeapi

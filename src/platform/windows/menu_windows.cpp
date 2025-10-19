@@ -485,13 +485,21 @@ bool Menu::Open(double x, double y) {
   pimpl_->visible_ = true;
 
   POINT pt = {static_cast<int>(x), static_cast<int>(y)};
-  HWND hwnd = GetActiveWindow();
+  // Try to get the foreground window first
+  HWND hwnd = GetForegroundWindow();
   if (!hwnd) {
-    hwnd = GetDesktopWindow();
+    hwnd = GetActiveWindow();
+    return hwnd;
+  }
+
+  // If still no window, try to find any top-level window
+  if (!hwnd) {
+    hwnd = FindWindow(nullptr, nullptr);
   }
 
   // Show the context menu
-  TrackPopupMenu(pimpl_->hmenu_, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, nullptr);
+  TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0,
+                 hwnd, nullptr);
 
   pimpl_->visible_ = false;
   return true;
