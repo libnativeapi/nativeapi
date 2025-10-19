@@ -141,17 +141,17 @@ class EventEmitter {
    * Start the background thread for asynchronous event processing.
    * This is called automatically when needed, but can be called explicitly.
    */
-  void Start();
+  void StartAsyncProcessing();
 
   /**
    * Stop the background thread and clear the event queue.
    */
-  void Stop();
+  void StopAsyncProcessing();
 
   /**
    * Check if the background thread is running.
    */
-  bool IsRunning() const;
+  bool IsAsyncProcessing() const;
 
   /**
    * Emit an event synchronously to all registered listeners.
@@ -176,7 +176,7 @@ class EventEmitter {
    * Emit an event asynchronously.
    * The event will be dispatched on a background thread.
    *
-   * @param event The event to emit (will be copied)
+   * @param event The event to emit (will be moved)
    */
   void EmitAsync(std::unique_ptr<Event> event);
 

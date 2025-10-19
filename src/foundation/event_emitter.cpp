@@ -9,7 +9,7 @@ EventEmitter::EventEmitter()
     : running_(false), stop_requested_(false), next_listener_id_(1) {}
 
 EventEmitter::~EventEmitter() {
-  Stop();
+  StopAsyncProcessing();
 }
 
 size_t EventEmitter::AddListener(std::type_index event_type,
@@ -89,7 +89,7 @@ void EventEmitter::EmitAsync(std::unique_ptr<Event> event) {
 
   // Start the worker thread if not already running
   if (!running_.load()) {
-    Start();
+    StartAsyncProcessing();
   }
 
   {
@@ -100,7 +100,7 @@ void EventEmitter::EmitAsync(std::unique_ptr<Event> event) {
   queue_condition_.notify_one();
 }
 
-void EventEmitter::Start() {
+void EventEmitter::StartAsyncProcessing() {
   if (running_.load()) {
     return;  // Already running
   }
@@ -111,7 +111,7 @@ void EventEmitter::Start() {
   worker_thread_ = std::thread(&EventEmitter::ProcessAsyncEvents, this);
 }
 
-void EventEmitter::Stop() {
+void EventEmitter::StopAsyncProcessing() {
   if (!running_.load()) {
     return;  // Not running
   }
@@ -132,7 +132,7 @@ void EventEmitter::Stop() {
   }
 }
 
-bool EventEmitter::IsRunning() const {
+bool EventEmitter::IsAsyncProcessing() const {
   return running_.load();
 }
 
