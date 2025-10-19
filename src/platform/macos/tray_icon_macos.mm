@@ -13,9 +13,9 @@
 // for proper memory management of Objective-C objects.
 
 // Forward declarations
-typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconId tray_icon_id);
-typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconId tray_icon_id);
-typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconId tray_icon_id);
+typedef void (^TrayIconClickedBlock)(void);
+typedef void (^TrayIconRightClickedBlock)(void);
+typedef void (^TrayIconDoubleClickedBlock)(void);
 
 // Key for associated object to store tray icon ID
 static const void* kTrayIconIdKey = &kTrayIconIdKey;
@@ -24,8 +24,7 @@ static const void* kTrayIconIdKey = &kTrayIconIdKey;
 @property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
 @property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
 @property(nonatomic, copy) TrayIconDoubleClickedBlock doubleClickedBlock;
-@property(nonatomic, assign) nativeapi::TrayIcon* tray_icon;
-- (void)statusItemClicked:(id)sender;
+- (void)handleStatusItemEvent:(id)sender;
 @end
 
 namespace nativeapi {
@@ -54,11 +53,10 @@ class TrayIcon::Impl {
 
       // Create and set up button target
       ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
-      ns_status_bar_button_target_.tray_icon = nullptr;  // Will be set later
 
-      // Set up click handlers
+      // Set up event handlers
       [status_item.button setTarget:ns_status_bar_button_target_];
-      [status_item.button setAction:@selector(statusItemClicked:)];
+      [status_item.button setAction:@selector(handleStatusItemEvent:)];
 
       // Enable right-click handling
       [status_item.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
@@ -77,7 +75,6 @@ class TrayIcon::Impl {
       ns_status_bar_button_target_.leftClickedBlock = nil;
       ns_status_bar_button_target_.rightClickedBlock = nil;
       ns_status_bar_button_target_.doubleClickedBlock = nil;
-      ns_status_bar_button_target_.tray_icon = nullptr;
       ns_status_bar_button_target_ = nil;
     }
 
@@ -129,42 +126,23 @@ TrayIcon::TrayIcon(void* tray) {
   // Initialize the Impl with the status item
   pimpl_ = std::make_unique<Impl>(status_item);
 
+  // Set up click handlers
   if (pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.tray_icon = this;
-
-    // 设置默认的 Block 处理器，直接发送事件
-    pimpl_->ns_status_bar_button_target_.leftClickedBlock = ^(TrayIconId tray_icon_id) {
-      try {
-        Emit<TrayIconClickedEvent>(tray_icon_id);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
+    pimpl_->ns_status_bar_button_target_.leftClickedBlock = ^{
+      Emit<TrayIconClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconId tray_icon_id) {
-      try {
-        Emit<TrayIconRightClickedEvent>(tray_icon_id);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
+    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^{
+      Emit<TrayIconRightClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^(TrayIconId tray_icon_id) {
-      try {
-        Emit<TrayIconDoubleClickedEvent>(tray_icon_id);
-      } catch (...) {
-        // Protect against event emission exceptions
-      }
+    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^{
+      Emit<TrayIconDoubleClickedEvent>(pimpl_->id_);
     };
   }
 }
 
-TrayIcon::~TrayIcon() {
-  // Clear the button target's reference to this object before destruction
-  if (pimpl_ && pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.tray_icon = nullptr;
-  }
-}
+TrayIcon::~TrayIcon() = default;
 
 TrayIconId TrayIcon::GetId() {
   return pimpl_->id_;
@@ -362,16 +340,7 @@ void* TrayIcon::GetNativeObjectInternal() const {
 // Implementation of NSStatusBarButtonTarget
 @implementation NSStatusBarButtonTarget
 
-- (void)statusItemClicked:(id)sender {
-  // Check if tray_icon is still valid before proceeding
-  if (!self.tray_icon)
-    return;
-
-  // Create a local reference to prevent race conditions
-  nativeapi::TrayIcon* tray_icon = self.tray_icon;
-  if (!tray_icon)
-    return;
-
+- (void)handleStatusItemEvent:(id)sender {
   NSEvent* event = [NSApp currentEvent];
   if (!event)
     return;
@@ -382,17 +351,17 @@ void* TrayIcon::GetNativeObjectInternal() const {
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
     if (_rightClickedBlock) {
-      _rightClickedBlock(tray_icon->GetId());
+      _rightClickedBlock();
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
       if (_doubleClickedBlock) {
-        _doubleClickedBlock(tray_icon->GetId());
+        _doubleClickedBlock();
       }
     } else {
       if (_leftClickedBlock) {
-        _leftClickedBlock(tray_icon->GetId());
+        _leftClickedBlock();
       }
     }
   }
