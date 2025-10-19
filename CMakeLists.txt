@@ -6,6 +6,8 @@ project(nativeapi_library VERSION 0.0.1 LANGUAGES CXX C)
 add_subdirectory(src)
 
 # Add example programs subdirectory
+add_subdirectory(examples/application_example)
+add_subdirectory(examples/application_c_example)
 add_subdirectory(examples/display_example)
 add_subdirectory(examples/display_c_example)
 add_subdirectory(examples/id_allocator_example)

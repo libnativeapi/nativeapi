@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef __cplusplus
+// C++ API headers
 #include "../src/accessibility_manager.h"
+#include "../src/application.h"
+#include "../src/application_event.h"
 #include "../src/app_runner.h"
 #include "../src/display.h"
 #include "../src/display_event.h"
@@ -19,9 +23,11 @@
 #include "../src/window.h"
 #include "../src/window_event.h"
 #include "../src/window_manager.h"
+#endif
 
-// Include necessary headers for C API
+// C API headers (available for both C and C++)
 #include "../src/capi/accessibility_manager_c.h"
+#include "../src/capi/application_c.h"
 #include "../src/capi/app_runner_c.h"
 #include "../src/capi/display_c.h"
 #include "../src/capi/display_manager_c.h"
