@@ -589,34 +589,21 @@ class Menu::Impl {
 };
 
 // Menu implementation
-Menu::Menu() : id(IdAllocator::Allocate<Menu>()) {
-  NSMenu* ns_menu = [[NSMenu alloc] init];
+Menu::Menu() : Menu(nullptr) {}
+
+Menu::Menu(void* native_menu) : id(IdAllocator::Allocate<Menu>()) {
+  NSMenu* ns_menu = nullptr;
+
+  if (native_menu == nullptr) {
+    // Create new platform object
+    ns_menu = [[NSMenu alloc] init];
+  } else {
+    // Wrap existing platform object
+    ns_menu = (__bridge NSMenu*)native_menu;
+  }
+
+  // All initialization logic in one place
   pimpl_ = std::make_unique<Impl>(ns_menu);
-  objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
-                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-  // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
-    try {
-      Emit<MenuOpenedEvent>(menu_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
-  };
-
-  pimpl_->delegate_.closedBlock = ^(MenuId menu_id) {
-    try {
-      Emit<MenuClosedEvent>(menu_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
-  };
-}
-
-Menu::Menu(void* native_menu)
-    : id(IdAllocator::Allocate<Menu>()),
-      pimpl_(std::make_unique<Impl>((__bridge NSMenu*)native_menu)) {
-  NSMenu* ns_menu = (__bridge NSMenu*)native_menu;
   objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
