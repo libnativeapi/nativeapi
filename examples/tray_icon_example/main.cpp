@@ -46,10 +46,6 @@ int main() {
   trayIcon->SetTitle("Test App");
   trayIcon->SetTooltip("This is a test tray icon");
 
-  // Try to set a system icon (using a system-provided icon)
-  auto icon = nativeapi::Image::FromSystemIcon("NSImageNameStatusAvailable");
-  trayIcon->SetIcon(icon);
-
   // Set up event listeners
   trayIcon->AddListener<TrayIconClickedEvent>(
       [](const TrayIconClickedEvent& event) {

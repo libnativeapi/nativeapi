@@ -178,49 +178,6 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
   return image;
 }
 
-std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
-  auto image = std::shared_ptr<Image>(new Image());
-
-  // Try to load icon from the current icon theme
-  GtkIconTheme* icon_theme = gtk_icon_theme_get_default();
-  if (!icon_theme) {
-    return nullptr;
-  }
-
-  // Try to load icon at default size (48x48)
-  GtkIconInfo* icon_info = gtk_icon_theme_lookup_icon(
-      icon_theme, icon_name.c_str(), 48, GTK_ICON_LOOKUP_FORCE_SIZE);
-
-  if (icon_info) {
-    GError* error = nullptr;
-    GdkPixbuf* pixbuf = gtk_icon_info_load_icon(icon_info, &error);
-
-    if (pixbuf) {
-      image->pimpl_->pixbuf_ = pixbuf;
-      image->pimpl_->source_ = icon_name;
-
-      // Get actual image size
-      int width = gdk_pixbuf_get_width(pixbuf);
-      int height = gdk_pixbuf_get_height(pixbuf);
-      image->pimpl_->size_ = {static_cast<double>(width),
-                              static_cast<double>(height)};
-      image->pimpl_->format_ = "System";
-    } else {
-      if (error) {
-        g_error_free(error);
-      }
-      g_object_unref(icon_info);
-      return nullptr;
-    }
-
-    g_object_unref(icon_info);
-  } else {
-    return nullptr;
-  }
-
-  return image;
-}
-
 Size Image::GetSize() const {
   return pimpl_->size_;
 }

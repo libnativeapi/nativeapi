@@ -48,27 +48,6 @@ native_image_t native_image_from_base64(const char* base64_data) {
   return nullptr;
 }
 
-// Create an image from a platform-specific system icon
-native_image_t native_image_from_system_icon(const char* icon_name) {
-  if (!icon_name) {
-    return nullptr;
-  }
-
-  try {
-    auto image = Image::FromSystemIcon(icon_name);
-    if (image) {
-      auto size = image->GetSize();
-      if (size.width > 0 && size.height > 0) {
-        return new std::shared_ptr<Image>(image);
-      }
-    }
-  } catch (...) {
-    // Handle exceptions
-  }
-
-  return nullptr;
-}
-
 // Destroy an image and release its resources
 void native_image_destroy(native_image_t image) {
   if (image) {

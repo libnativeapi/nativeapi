@@ -1,8 +1,8 @@
 #include <windows.h>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <vector>
-#include <iostream>
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
@@ -92,7 +92,6 @@ HWND GetMainWindowForCurrentThread() {
 
   // First try to get the foreground window
   HWND hwnd = nullptr;
-
 
   // Use EnumWindows to find the main window
   struct EnumData {

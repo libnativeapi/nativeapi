@@ -22,7 +22,6 @@ namespace nativeapi {
  * Features:
  * - Load images from file paths
  * - Load images from base64-encoded strings
- * - Platform-specific system icon support
  * - Automatic format detection and conversion
  * - Memory-efficient internal representation
  *
@@ -30,7 +29,7 @@ namespace nativeapi {
  * implementation details and ensure binary compatibility.
  *
  * @note All Image instances must be created using static factory methods
- * (FromFile, FromBase64, FromSystemIcon). Empty/null images are represented
+ * (FromFile, FromBase64). Empty/null images are represented
  * using std::shared_ptr<Image>{nullptr}.
  *
  * @note Assignment operations are not supported to avoid resource management
@@ -145,31 +144,6 @@ class Image : public NativeObjectProvider {
    * ```
    */
   static std::shared_ptr<Image> FromBase64(const std::string& base64_data);
-
-  /**
-   * @brief Create an image from a platform-specific system icon.
-   *
-   * Creates an image using a system-provided icon identifier. The available
-   * icons and their identifiers are platform-specific.
-   *
-   * @param icon_name Platform-specific system icon name/identifier
-   * @return A shared pointer to the created Image, or nullptr if icon not found
-   *
-   * @note System icon names vary by platform:
-   *       - macOS: NSImage names (e.g., "NSApplicationIcon", "NSFolder")
-   *       - Windows: System icon IDs (e.g., "IDI_APPLICATION", "IDI_WARNING")
-   *       - Linux: FreeDesktop icon names (e.g., "application-exit", "folder")
-   *
-   * @example
-   * ```cpp
-   * // macOS
-   * auto image = Image::FromSystemIcon("NSApplicationIcon");
-   *
-   * // Cross-platform generic names (if supported)
-   * auto warningIcon = Image::FromSystemIcon("warning");
-   * ```
-   */
-  static std::shared_ptr<Image> FromSystemIcon(const std::string& icon_name);
 
   /**
    * @brief Get the size of the image in pixels.

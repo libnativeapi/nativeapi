@@ -33,14 +33,12 @@ class TrayIcon::Impl {
   using RightClickedCallback = std::function<void(TrayIconId)>;
   using DoubleClickedCallback = std::function<void(TrayIconId)>;
 
-  Impl()
-      : hwnd_(nullptr),
-        icon_handle_(nullptr),
-        owns_window_(false) {
+  Impl() : hwnd_(nullptr), icon_handle_(nullptr), owns_window_(false) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
-  Impl(HWND hwnd, bool owns_window,
+  Impl(HWND hwnd,
+       bool owns_window,
        ClickedCallback clicked_callback,
        RightClickedCallback right_clicked_callback,
        DoubleClickedCallback double_clicked_callback)
@@ -85,17 +83,18 @@ class TrayIcon::Impl {
                                           UINT message,
                                           WPARAM wparam,
                                           LPARAM lparam) {
-    if (message == WM_USER + 1 && wparam == static_cast<WPARAM>(tray_icon_id_)) {
+    if (message == WM_USER + 1 &&
+        wparam == static_cast<WPARAM>(tray_icon_id_)) {
       if (lparam == WM_LBUTTONUP) {
-        std::cout << "TrayIcon: Left button clicked, tray_icon_id = " << tray_icon_id_
-                  << std::endl;
+        std::cout << "TrayIcon: Left button clicked, tray_icon_id = "
+                  << tray_icon_id_ << std::endl;
         // Call clicked callback
         if (clicked_callback_) {
           clicked_callback_(tray_icon_id_);
         }
       } else if (lparam == WM_RBUTTONUP) {
-        std::cout << "TrayIcon: Right button clicked, tray_icon_id = " << tray_icon_id_
-                  << std::endl;
+        std::cout << "TrayIcon: Right button clicked, tray_icon_id = "
+                  << tray_icon_id_ << std::endl;
         // Call right clicked callback
         if (right_clicked_callback_) {
           right_clicked_callback_(tray_icon_id_);
@@ -173,7 +172,8 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
   } else {
     // Wrap existing native tray icon
     // In a real implementation, you'd extract HWND from the tray parameter
-    // For now, this is mainly used by TrayManager for creating uninitialized icons
+    // For now, this is mainly used by TrayManager for creating uninitialized
+    // icons
   }
 
   // Initialize the Impl with the window handle
@@ -192,10 +192,9 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
       this->Emit<TrayIconDoubleClickedEvent>(id);
     };
 
-    pimpl_ = std::make_unique<Impl>(hwnd, owns_window,
-                                   std::move(clicked_callback),
-                                   std::move(right_clicked_callback),
-                                   std::move(double_clicked_callback));
+    pimpl_ = std::make_unique<Impl>(
+        hwnd, owns_window, std::move(clicked_callback),
+        std::move(right_clicked_callback), std::move(double_clicked_callback));
   } else {
     // Failed to create window, create uninitialized Impl
     pimpl_ = std::make_unique<Impl>();

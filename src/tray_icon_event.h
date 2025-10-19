@@ -28,8 +28,7 @@ class TrayIconEvent : public Event {
  */
 class TrayIconClickedEvent : public TrayIconEvent {
  public:
-  TrayIconClickedEvent(TrayIconId tray_icon_id)
-      : tray_icon_id_(tray_icon_id) {}
+  TrayIconClickedEvent(TrayIconId tray_icon_id) : tray_icon_id_(tray_icon_id) {}
 
   TrayIconId GetTrayIconId() const { return tray_icon_id_; }
 

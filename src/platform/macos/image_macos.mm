@@ -127,27 +127,6 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
   return image;
 }
 
-std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
-  auto image = std::shared_ptr<Image>(new Image());
-
-  NSString* nsIconName = [NSString stringWithUTF8String:icon_name.c_str()];
-  NSImage* nsImage = [NSImage imageWithSystemSymbolName:nsIconName accessibilityDescription:nil];
-
-  if (nsImage) {
-    image->pimpl_->ns_image_ = [nsImage copy];
-    image->pimpl_->source_ = icon_name;
-
-    // Get actual image size
-    NSSize nsSize = [nsImage size];
-    image->pimpl_->size_ = {static_cast<double>(nsSize.width), static_cast<double>(nsSize.height)};
-    image->pimpl_->format_ = "System";
-  } else {
-    return nullptr;
-  }
-
-  return image;
-}
-
 Size Image::GetSize() const {
   return pimpl_->size_;
 }

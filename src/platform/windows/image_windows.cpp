@@ -260,55 +260,6 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
   return image;
 }
 
-std::shared_ptr<Image> Image::FromSystemIcon(const std::string& icon_name) {
-  EnsureGdiplusInitialized();
-  auto image = std::shared_ptr<Image>(new Image());
-
-  HICON hIcon = nullptr;
-
-  // Try to load predefined system icons
-  if (icon_name == "IDI_APPLICATION" || icon_name == "application") {
-    hIcon = LoadIcon(NULL, IDI_APPLICATION);
-  } else if (icon_name == "IDI_ERROR" || icon_name == "error") {
-    hIcon = LoadIcon(NULL, IDI_ERROR);
-  } else if (icon_name == "IDI_QUESTION" || icon_name == "question") {
-    hIcon = LoadIcon(NULL, IDI_QUESTION);
-  } else if (icon_name == "IDI_WARNING" || icon_name == "warning") {
-    hIcon = LoadIcon(NULL, IDI_WARNING);
-  } else if (icon_name == "IDI_INFORMATION" || icon_name == "information") {
-    hIcon = LoadIcon(NULL, IDI_INFORMATION);
-  } else if (icon_name == "IDI_WINLOGO" || icon_name == "winlogo") {
-    hIcon = LoadIcon(NULL, IDI_WINLOGO);
-  } else if (icon_name == "IDI_SHIELD" || icon_name == "shield") {
-    hIcon = LoadIcon(NULL, IDI_SHIELD);
-  }
-
-  if (hIcon) {
-    Gdiplus::Bitmap* bitmap = Gdiplus::Bitmap::FromHICON(hIcon);
-
-    if (bitmap && bitmap->GetLastStatus() == Gdiplus::Ok) {
-      image->pimpl_->bitmap_ = bitmap;
-      image->pimpl_->source_ = icon_name;
-
-      // Get actual image size
-      UINT width = bitmap->GetWidth();
-      UINT height = bitmap->GetHeight();
-      image->pimpl_->size_ = {static_cast<double>(width),
-                              static_cast<double>(height)};
-      image->pimpl_->format_ = "System";
-    } else {
-      if (bitmap) {
-        delete bitmap;
-      }
-      return nullptr;
-    }
-  } else {
-    return nullptr;
-  }
-
-  return image;
-}
-
 Size Image::GetSize() const {
   return pimpl_->size_;
 }

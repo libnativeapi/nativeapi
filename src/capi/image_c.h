@@ -42,14 +42,6 @@ FFI_PLUGIN_EXPORT
 native_image_t native_image_from_base64(const char* base64_data);
 
 /**
- * Create an image from a platform-specific system icon
- * @param icon_name Platform-specific system icon name/identifier
- * @return Image handle, or NULL if icon not found
- */
-FFI_PLUGIN_EXPORT
-native_image_t native_image_from_system_icon(const char* icon_name);
-
-/**
  * Destroy an image and release its resources
  * @param image The image to destroy
  */
