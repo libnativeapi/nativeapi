@@ -1,0 +1,152 @@
+---
+alwaysApply: true
+description: Generic event system architecture and usage patterns
+---
+
+# Generic Event System Rules
+
+This project uses a comprehensive, type-safe event system built on top of C++ templates and inheritance. Understanding this system is crucial for working with any event-driven components.
+
+## Core Architecture
+
+### Base Event Class
+
+All events inherit from [Event](mdc:src/foundation/event.h) which provides:
+
+- Automatic timestamp generation
+- Virtual `GetTypeName()` method for debugging
+- Type-safe event hierarchy
+
+### Event Emitter Pattern
+
+Classes that emit events inherit from `EventEmitter<BaseEventType>` from [event_emitter.h](mdc:src/foundation/event_emitter.h):
+
+- Provides compile-time type safety
+- Supports both synchronous and asynchronous event emission
+- Thread-safe listener management
+- Automatic background thread management for async events
+
+## Event Types
+
+Events are organized into hierarchies based on their domain. Each hierarchy has a base event class that other specific events inherit from. This provides type safety and allows listeners to register for either specific events or entire categories.
+
+## Usage Patterns
+
+### Creating Event Classes
+
+```cpp
+class MyCustomEvent : public Event {
+public:
+    MyCustomEvent(const std::string& data) : data_(data) {}
+
+    const std::string& GetData() const { return data_; }
+    std::string GetTypeName() const override { return "MyCustomEvent"; }
+
+private:
+    std::string data_;
+};
+```
+
+### Creating Event Emitters
+
+```cpp
+class MyClass : public EventEmitter<MyCustomEvent> {
+public:
+    void DoSomething() {
+        // Synchronous emission
+        Emit<MyCustomEvent>("some data");
+
+        // Asynchronous emission
+        EmitAsync<MyCustomEvent>("async data");
+    }
+};
+```
+
+### Adding Event Listeners
+
+```cpp
+// Using lambda functions
+auto listener_id = emitter.AddListener<MyCustomEvent>(
+    [](const MyCustomEvent& event) {
+        std::cout << "Received: " << event.GetData() << std::endl;
+    }
+);
+
+// Using custom listener class
+class MyListener : public EventListener<MyCustomEvent> {
+public:
+    void OnEvent(const MyCustomEvent& event) override {
+        // Handle event
+    }
+};
+
+MyListener listener;
+auto listener_id = emitter.AddListener<MyCustomEvent>(&listener);
+```
+
+### Removing Listeners
+
+```cpp
+// Remove by ID
+emitter.RemoveListener(listener_id);
+
+// Remove all listeners for specific event type
+emitter.RemoveAllListeners<MyCustomEvent>();
+
+// Remove all listeners
+emitter.RemoveAllListeners();
+```
+
+## Best Practices
+
+1. **Always inherit from appropriate base event class** - Don't inherit directly from `Event` unless creating a new event hierarchy
+2. **Use specific event types** - Prefer `EventListener<SpecificEvent>` over `EventListener<Event>` for type safety
+3. **Implement GetTypeName()** - Always override this method for debugging purposes
+4. **Use const references** - Event handlers should accept `const EventType&` parameters
+5. **Manage listener lifetimes** - Ensure listener objects remain valid while registered
+6. **Prefer async emission for heavy operations** - Use `EmitAsync` for events that might trigger expensive operations
+7. **Use RAII for listener management** - Store listener IDs and remove them in destructors
+
+## Thread Safety
+
+- Event emission is thread-safe
+- Listener registration/removal is thread-safe
+- Async event processing uses a dedicated background thread
+- Event handlers may be called from different threads depending on emission method
+
+## Common Patterns
+
+### Singleton Event Emitters
+
+Many managers (WindowManager, DisplayManager) are singletons that emit events:
+
+```cpp
+auto& manager = WindowManager::GetInstance();
+manager.AddListener<WindowCreatedEvent>([](const WindowCreatedEvent& event) {
+    // Handle window creation
+});
+```
+
+### Event Forwarding
+
+Platform-specific implementations often forward system events to the generic event system:
+
+```cpp
+void PlatformWindow::OnSystemEvent(const SystemEvent& sys_event) {
+    // Convert to generic event and emit
+    WindowEvent generic_event(sys_event.GetWindowId());
+    emitter_.Emit(generic_event);
+}
+```
+
+### Event Filtering
+
+Listeners can filter events by checking specific types:
+
+```cpp
+emitter.AddListener<WindowEvent>([](const WindowEvent& event) {
+    if (auto moved_event = dynamic_cast<const WindowMovedEvent*>(&event)) {
+        // Handle only window moved events
+    }
+});
+```
