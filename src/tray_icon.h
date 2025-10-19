@@ -8,6 +8,7 @@
 #include "foundation/geometry.h"
 #include "foundation/id_allocator.h"
 #include "menu.h"
+#include "tray_icon_event.h"
 
 namespace nativeapi {
 
@@ -65,7 +66,7 @@ typedef IdAllocator::IdType TrayIconId;
  * tray_icon->SetVisible(true);
  * ```
  */
-class TrayIcon : public EventEmitter, public NativeObjectProvider {
+class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider {
  public:
   /**
    * @brief Default constructor for TrayIcon.

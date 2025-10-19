@@ -64,7 +64,7 @@ void WindowManager::CleanupEventMonitoring() {
   pimpl_->CleanupEventMonitoring();
 }
 
-void WindowManager::DispatchWindowEvent(const Event& event) {
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
   Emit(event);
 }
 

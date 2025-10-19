@@ -1,6 +1,6 @@
 #include <comdef.h>
-#include <windows.h>
 #include <gdiplus.h>
+#include <windows.h>
 #include <memory>
 #include <string>
 #include <vector>

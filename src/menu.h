@@ -176,7 +176,7 @@ class Menu;
  * });
  * ```
  */
-class MenuItem : public EventEmitter, public NativeObjectProvider {
+class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
  public:
   /**
    * @brief Constructor to create a new menu item.
@@ -512,7 +512,7 @@ class MenuItem : public EventEmitter, public NativeObjectProvider {
  * file_menu->Open(100, 100);
  * ```
  */
-class Menu : public EventEmitter, public NativeObjectProvider {
+class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
  public:
   /**
    * @brief Constructor to create a new menu.

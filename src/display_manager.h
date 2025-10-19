@@ -35,7 +35,7 @@ namespace nativeapi {
  * Display primary = manager.GetPrimary();
  * @endcode
  */
-class DisplayManager : public EventEmitter {
+class DisplayManager : public EventEmitter<DisplayEvent> {
  public:
   /**
    * Get the singleton instance of DisplayManager

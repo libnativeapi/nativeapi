@@ -12,11 +12,23 @@ typedef IdAllocator::IdType MenuId;
 typedef IdAllocator::IdType MenuItemId;
 
 /**
+ * @brief Base class for all menu-related events.
+ *
+ * This class provides common functionality for menu events.
+ */
+class MenuEvent : public Event {
+ public:
+  virtual ~MenuEvent() = default;
+
+  std::string GetTypeName() const override { return "MenuEvent"; }
+};
+
+/**
  * @brief Menu opened event.
  *
  * This event is fired when a menu has been displayed.
  */
-class MenuOpenedEvent : public Event {
+class MenuOpenedEvent : public MenuEvent {
  public:
   MenuOpenedEvent(MenuId menu_id) : menu_id_(menu_id) {}
 
@@ -33,7 +45,7 @@ class MenuOpenedEvent : public Event {
  *
  * This event is fired when a menu has been hidden or closed.
  */
-class MenuClosedEvent : public Event {
+class MenuClosedEvent : public MenuEvent {
  public:
   MenuClosedEvent(MenuId menu_id) : menu_id_(menu_id) {}
 
@@ -51,7 +63,7 @@ class MenuClosedEvent : public Event {
  * This event is fired when a menu item is clicked or activated.
  * Contains information about which menu item was clicked.
  */
-class MenuItemClickedEvent : public Event {
+class MenuItemClickedEvent : public MenuEvent {
  public:
   MenuItemClickedEvent(MenuItemId item_id, const std::string& item_text)
       : item_id_(item_id), item_text_(item_text) {}
@@ -71,7 +83,7 @@ class MenuItemClickedEvent : public Event {
  *
  * This event is fired when a menu item's submenu has been displayed.
  */
-class MenuItemSubmenuOpenedEvent : public Event {
+class MenuItemSubmenuOpenedEvent : public MenuEvent {
  public:
   MenuItemSubmenuOpenedEvent(MenuItemId item_id) : item_id_(item_id) {}
 
@@ -88,7 +100,7 @@ class MenuItemSubmenuOpenedEvent : public Event {
  *
  * This event is fired when a menu item's submenu has been hidden or closed.
  */
-class MenuItemSubmenuClosedEvent : public Event {
+class MenuItemSubmenuClosedEvent : public MenuEvent {
  public:
   MenuItemSubmenuClosedEvent(MenuItemId item_id) : item_id_(item_id) {}
 

@@ -30,7 +30,7 @@ static CGEventRef keyboardEventCallback(CGEventTapProxy proxy,
                                         CGEventType type,
                                         CGEventRef event,
                                         void* refcon) {
-  auto* event_emitter = static_cast<EventEmitter*>(refcon);
+  auto* event_emitter = static_cast<EventEmitter<KeyboardEvent>*>(refcon);
   if (!event_emitter)
     return event;
 

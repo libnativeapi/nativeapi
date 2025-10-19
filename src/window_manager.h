@@ -31,7 +31,7 @@ namespace nativeapi {
  * @note This class is thread-safe for singleton access, but individual operations
  *       may require additional synchronization depending on the platform implementation.
  */
-class WindowManager : public EventEmitter {
+class WindowManager : public EventEmitter<WindowEvent> {
  public:
   /**
    * @brief Get the singleton instance of WindowManager
@@ -221,7 +221,7 @@ class WindowManager : public EventEmitter {
    *
    * @param event The window event to dispatch
    */
-  void DispatchWindowEvent(const Event& event);
+  void DispatchWindowEvent(const WindowEvent& event);
 };
 
 }  // namespace nativeapi
