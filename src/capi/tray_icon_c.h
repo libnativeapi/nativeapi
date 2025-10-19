@@ -33,7 +33,6 @@ typedef long native_tray_icon_id_t;
  */
 typedef struct {
   native_tray_icon_id_t tray_icon_id;
-  char button[16];  // "left", "right", etc.
 } native_tray_icon_clicked_event_t;
 
 /**

@@ -13,7 +13,7 @@
 // for proper memory management of Objective-C objects.
 
 // Forward declarations
-typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconId tray_icon_id, const std::string& button);
+typedef void (^TrayIconClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 typedef void (^TrayIconRightClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 typedef void (^TrayIconDoubleClickedBlock)(nativeapi::TrayIconId tray_icon_id);
 
@@ -133,14 +133,13 @@ TrayIcon::TrayIcon(void* tray) {
     pimpl_->ns_status_bar_button_target_.tray_icon = this;
 
     // 设置默认的 Block 处理器，直接发送事件
-    pimpl_->ns_status_bar_button_target_.leftClickedBlock =
-        ^(TrayIconId tray_icon_id, const std::string& button) {
-          try {
-            Emit<TrayIconClickedEvent>(tray_icon_id, button);
-          } catch (...) {
-            // Protect against event emission exceptions
-          }
-        };
+    pimpl_->ns_status_bar_button_target_.leftClickedBlock = ^(TrayIconId tray_icon_id) {
+      try {
+        Emit<TrayIconClickedEvent>(tray_icon_id);
+      } catch (...) {
+        // Protect against event emission exceptions
+      }
+    };
 
     pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^(TrayIconId tray_icon_id) {
       try {
@@ -393,7 +392,7 @@ void* TrayIcon::GetNativeObjectInternal() const {
       }
     } else {
       if (_leftClickedBlock) {
-        _leftClickedBlock(tray_icon->GetId(), "left");
+        _leftClickedBlock(tray_icon->GetId());
       }
     }
   }

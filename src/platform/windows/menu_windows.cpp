@@ -2,6 +2,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <iostream>
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
@@ -83,6 +84,71 @@ std::pair<UINT, UINT> ConvertAccelerator(
   // Note: Windows doesn't have a direct equivalent for Meta key in accelerators
 
   return std::make_pair(key, modifiers);
+}
+
+// Helper function to get the main window for the current thread
+HWND GetMainWindowForCurrentThread() {
+  static HWND main_window = nullptr;
+
+  // First try to get the foreground window
+  HWND hwnd = nullptr;
+
+
+  // Use EnumWindows to find the main window
+  struct EnumData {
+    HWND main_window;
+    DWORD current_thread_id;
+  };
+
+  EnumData data = {nullptr, GetCurrentThreadId()};
+
+  EnumWindows(
+      [](HWND hwnd, LPARAM lParam) -> BOOL {
+        EnumData* data = reinterpret_cast<EnumData*>(lParam);
+
+        // Check if window belongs to current thread
+        DWORD window_thread_id = GetWindowThreadProcessId(hwnd, nullptr);
+        if (window_thread_id != data->current_thread_id) {
+          return TRUE;  // Continue enumeration
+        }
+
+        // Check if window is visible and not a tool window
+        if (!IsWindowVisible(hwnd)) {
+          return TRUE;  // Continue enumeration
+        }
+
+        // Skip tool windows
+        if (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) {
+          return TRUE;  // Continue enumeration
+        }
+
+        // Skip message-only windows
+        if (hwnd == HWND_MESSAGE) {
+          return TRUE;  // Continue enumeration
+        }
+
+        // Check if it's a main window (has a title bar, not a child window)
+        if (GetParent(hwnd) != nullptr) {
+          return TRUE;  // Continue enumeration
+        }
+
+        // Found a candidate main window
+        data->main_window = hwnd;
+        return FALSE;  // Stop enumeration
+      },
+      reinterpret_cast<LPARAM>(&data));
+
+  if (data.main_window) {
+    return data.main_window;
+  }
+
+  // Fallback: try to find any top-level window
+  hwnd = FindWindow(nullptr, nullptr);
+  if (hwnd && IsWindow(hwnd)) {
+    return hwnd;
+  }
+
+  return nullptr;
 }
 
 }  // namespace nativeapi
@@ -485,17 +551,8 @@ bool Menu::Open(double x, double y) {
   pimpl_->visible_ = true;
 
   POINT pt = {static_cast<int>(x), static_cast<int>(y)};
-  // Try to get the foreground window first
-  HWND hwnd = GetForegroundWindow();
-  if (!hwnd) {
-    hwnd = GetActiveWindow();
-    return hwnd;
-  }
-
-  // If still no window, try to find any top-level window
-  if (!hwnd) {
-    hwnd = FindWindow(nullptr, nullptr);
-  }
+  // Use the helper function to get the main window for current thread
+  HWND hwnd = GetMainWindowForCurrentThread();
 
   // Show the context menu
   TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0,

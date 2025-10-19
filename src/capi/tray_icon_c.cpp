@@ -312,9 +312,6 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
               if (listener_data && listener_data->callback) {
                 native_tray_icon_clicked_event_t c_event;
                 c_event.tray_icon_id = event.GetTrayIconId();
-                strncpy(c_event.button, event.GetButton().c_str(),
-                        sizeof(c_event.button) - 1);
-                c_event.button[sizeof(c_event.button) - 1] = '\0';
                 listener_data->callback(&c_event, listener_data->user_data);
               }
             });

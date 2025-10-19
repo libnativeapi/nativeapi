@@ -29,7 +29,7 @@ class TrayIcon::Impl {
   std::shared_ptr<Image> image_;
 
   // Callback function types
-  using ClickedCallback = std::function<void(TrayIconId, const std::string&)>;
+  using ClickedCallback = std::function<void(TrayIconId)>;
   using RightClickedCallback = std::function<void(TrayIconId)>;
   using DoubleClickedCallback = std::function<void(TrayIconId)>;
 
@@ -91,7 +91,7 @@ class TrayIcon::Impl {
                   << std::endl;
         // Call clicked callback
         if (clicked_callback_) {
-          clicked_callback_(tray_icon_id_, "left");
+          clicked_callback_(tray_icon_id_);
         }
       } else if (lparam == WM_RBUTTONUP) {
         std::cout << "TrayIcon: Right button clicked, tray_icon_id = " << tray_icon_id_
@@ -180,8 +180,8 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
   // The tray_icon_id will be allocated inside Impl constructor
   if (hwnd) {
     // Create callback functions that emit events
-    auto clicked_callback = [this](TrayIconId id, const std::string& button) {
-      this->Emit<TrayIconClickedEvent>(id, button);
+    auto clicked_callback = [this](TrayIconId id) {
+      this->Emit<TrayIconClickedEvent>(id);
     };
 
     auto right_clicked_callback = [this](TrayIconId id) {

@@ -28,17 +28,15 @@ class TrayIconEvent : public Event {
  */
 class TrayIconClickedEvent : public TrayIconEvent {
  public:
-  TrayIconClickedEvent(TrayIconId tray_icon_id, const std::string& button)
-      : tray_icon_id_(tray_icon_id), button_(button) {}
+  TrayIconClickedEvent(TrayIconId tray_icon_id)
+      : tray_icon_id_(tray_icon_id) {}
 
   TrayIconId GetTrayIconId() const { return tray_icon_id_; }
-  const std::string& GetButton() const { return button_; }
 
   std::string GetTypeName() const override { return "TrayIconClickedEvent"; }
 
  private:
   TrayIconId tray_icon_id_;
-  std::string button_;
 };
 
 /**

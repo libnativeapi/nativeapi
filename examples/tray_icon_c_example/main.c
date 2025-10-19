@@ -33,8 +33,7 @@ void on_menu_item_clicked(const void* event, void* user_data) {
 void on_tray_clicked(const void* event, void* user_data) {
   const native_tray_icon_clicked_event_t* clicked_event =
       (const native_tray_icon_clicked_event_t*)event;
-  printf("Tray icon clicked! ID=%ld, Button='%s'\n",
-         clicked_event->tray_icon_id, clicked_event->button);
+  printf("Tray icon clicked! ID=%ld\n", clicked_event->tray_icon_id);
 }
 
 void on_tray_right_clicked(const void* event, void* user_data) {
