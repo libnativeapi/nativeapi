@@ -25,7 +25,7 @@ class Application::Impl {
 
     // Create GTK application with default ID
     gtk_app_ = gtk_application_new("com.nativeapi.application",
-                                   G_APPLICATION_FLAGS_NONE);
+                                   G_APPLICATION_DEFAULT_FLAGS);
 
     if (!gtk_app_) {
       return false;
@@ -105,10 +105,13 @@ class Application::Impl {
       return false;
     }
 
-    // Set the application menu
-    gtk_application_set_app_menu(gtk_app_, GTK_MENU_MODEL(gtk_menu));
-
-    return true;
+    // Note: gtk_application_set_app_menu expects GMenuModel, but our Menu
+    // class uses legacy GtkMenu widgets. Setting application menu bar is not
+    // supported with legacy menus in GTK3. Users should add menu bars directly
+    // to their windows instead.
+    // TODO: Consider implementing GMenuModel-based menus in the future.
+    
+    return false;  // Not supported with legacy GtkMenu
   }
 
   void CleanupEventMonitoring() {
