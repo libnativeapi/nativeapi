@@ -1,5 +1,7 @@
-#include <shellapi.h>
+// clang-format off
 #include <windows.h>
+#include <shellapi.h>
+// clang-format on
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,8 +19,7 @@ class Application::Impl {
 
   bool Initialize() {
     // Initialize COM
-    HRESULT hr =
-        CoInitializeEx(nullptr, COINIT_APPMODEL | COINIT_DISABLE_OLE1DDE);
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(hr)) {
       return false;
     }
@@ -100,9 +101,9 @@ class Application::Impl {
     // Convert to wide string
     std::wstring wide_path(icon_path.begin(), icon_path.end());
 
-    // Load icon from file
+    // Load icon from file using LoadImageW for wide strings
     HICON icon =
-        static_cast<HICON>(LoadImage(nullptr, wide_path.c_str(), IMAGE_ICON, 0,
+        static_cast<HICON>(LoadImageW(nullptr, wide_path.c_str(), IMAGE_ICON, 0,
                                      0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
 
     if (!icon) {

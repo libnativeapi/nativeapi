@@ -69,24 +69,24 @@ int main() {
   // Create keyboard monitor
   g_monitor = native_keyboard_monitor_create();
   if (!g_monitor) {
-    std::cout << "❌ Failed to create keyboard monitor\n";
+    std::cout << "Failed to create keyboard monitor\n";
     return 1;
   }
-  std::cout << "✅ Keyboard monitor created successfully\n";
+  std::cout << "Keyboard monitor created successfully\n";
 
   // Set up callbacks
   if (!native_keyboard_monitor_set_callbacks(
           g_monitor, on_key_pressed, on_key_released, on_modifier_keys_changed,
           nullptr)) {
-    std::cout << "❌ Failed to set callbacks\n";
+    std::cout << "Failed to set callbacks\n";
     native_keyboard_monitor_destroy(g_monitor);
     return 1;
   }
-  std::cout << "✅ Callbacks set successfully\n";
+  std::cout << "Callbacks set successfully\n";
 
   // Start monitoring
   if (!native_keyboard_monitor_start(g_monitor)) {
-    std::cout << "❌ Failed to start keyboard monitoring\n";
+    std::cout << "Failed to start keyboard monitoring\n";
     native_keyboard_monitor_destroy(g_monitor);
     return 1;
   }

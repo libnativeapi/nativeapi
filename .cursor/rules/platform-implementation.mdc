@@ -43,7 +43,10 @@ Each platform file defines the `Impl` class declared in the cross-platform heade
 #### Windows Example ([platform/windows/window_windows.cpp](mdc:src/platform/windows))
 
 ```cpp
+// clang-format off
 #include <windows.h>
+#include <shellapi.h>
+// clang-format on
 #include "../../window.h"
 
 namespace nativeapi {
@@ -279,7 +282,10 @@ Managers also use PIMPL for platform event monitoring:
 
 ```cpp
 // window_manager_windows.cpp
+// clang-format off
 #include <windows.h>
+#include <shellapi.h>
+// clang-format on
 #include "../../window_manager.h"
 
 namespace nativeapi {
@@ -543,6 +549,32 @@ Use example applications for manual testing:
 - [examples/menu_example/](mdc:examples/menu_example)
 - [examples/tray_icon_example/](mdc:examples/tray_icon_example)
 
+## Windows Platform Header Rules
+
+For all Windows platform implementation files, follow these header inclusion and formatting rules:
+
+### Header Ordering
+
+Always include `windows.h` before `shellapi.h`:
+
+```cpp
+// clang-format off
+#include <windows.h>
+#include <shellapi.h>
+// clang-format on
+```
+
+### Formatting Control
+
+Use `// clang-format off` and `// clang-format on` comments to disable automatic formatting for Windows-specific includes. This prevents formatters from reordering platform-specific headers that must be included in a specific order.
+
+### Rationale
+
+- `windows.h` defines fundamental Windows types and macros
+- `shellapi.h` depends on definitions from `windows.h`
+- Header order matters for Windows API compilation
+- Disabling formatting preserves the required inclusion order
+
 ## Best Practices
 
 1. **Validate handles** - Always check for null/nil/nullptr before using
@@ -552,6 +584,7 @@ Use example applications for manual testing:
 5. **Keep implementations similar** - Same structure across platforms for maintainability
 6. **Document platform quirks** - Note any platform-specific behavior differences
 7. **Test thoroughly** - Each platform has unique edge cases
+8. **Follow Windows header ordering** - Always include `windows.h` before `shellapi.h` with formatting disabled
 
 ## Common Pitfalls
 
