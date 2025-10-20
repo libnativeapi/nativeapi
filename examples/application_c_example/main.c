@@ -38,13 +38,7 @@ int main() {
     return 1;
   }
 
-  // Initialize the application
-  if (!native_application_initialize(app)) {
-    fprintf(stderr, "Failed to initialize application\n");
-    return 1;
-  }
-
-  printf("Application initialized successfully\n");
+  printf("Application instance obtained successfully\n");
   printf("Single instance: %s\n",
          native_application_is_single_instance(app) ? "Yes" : "No");
 

@@ -282,17 +282,6 @@ bool native_window_manager_unregister_event_callback(int registration_id) {
 }
 
 FFI_PLUGIN_EXPORT
-bool native_window_manager_initialize(void) {
-  try {
-    // Access the singleton to ensure it's initialized
-    WindowManager::GetInstance();
-    return true;
-  } catch (...) {
-    return false;
-  }
-}
-
-FFI_PLUGIN_EXPORT
 void native_window_manager_shutdown(void) {
   std::lock_guard<std::mutex> lock(g_callback_mutex);
 

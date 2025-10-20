@@ -338,9 +338,6 @@ native_menu_t create_context_menu(void) {
 }
 
 int main() {
-  // Initialize managers
-  native_window_manager_initialize();
-
   // Create a new window with options
   native_window_options_t* options = native_window_options_create();
   native_window_options_set_title(options, "Window Example");

@@ -112,13 +112,6 @@ FFI_PLUGIN_EXPORT
 bool native_window_manager_unregister_event_callback(int registration_id);
 
 /**
- * Initialize the window manager (called automatically on first use)
- * @return true on success, false on failure
- */
-FFI_PLUGIN_EXPORT
-bool native_window_manager_initialize(void);
-
-/**
  * Shutdown the window manager and cleanup resources
  */
 FFI_PLUGIN_EXPORT
