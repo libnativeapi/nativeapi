@@ -15,7 +15,7 @@
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
 #include "string_utils_windows.h"
-#include "window_proc_delegate_manager.h"
+#include "window_message_dispatcher.h"
 
 namespace nativeapi {
 
@@ -57,15 +57,18 @@ class TrayIcon::Impl {
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
 
-    window_proc_id_ = WindowProcDelegateManager::GetInstance().RegisterDelegate(
-        [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+    window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        hwnd, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
           return HandleWindowProc(hwnd, message, wparam, lparam);
         });
   }
 
   ~Impl() {
-    WindowProcDelegateManager::GetInstance().UnregisterDelegate(
-        window_proc_id_);
+    // Unregister window procedure handler
+    if (window_proc_handle_id_ != -1) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
+    }
+
     if (hwnd_) {
       Shell_NotifyIconW(NIM_DELETE, &nid_);
       // Destroy the window if we own it
@@ -112,7 +115,7 @@ class TrayIcon::Impl {
     return std::nullopt;  // Let default window procedure handle it
   }
 
-  int window_proc_id_;
+  int window_proc_handle_id_;
   HWND hwnd_;
   NOTIFYICONDATAW nid_;
   std::shared_ptr<Menu> context_menu_;
@@ -142,8 +145,8 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
 
     if (!class_registered) {
       WNDCLASSW wc = {};
-      // Use WindowProcDelegateManager to route messages to registered delegates
-      wc.lpfnWndProc = WindowProcDelegateManager::InternalWindowProc;
+      // Use WindowMessageDispatcher to route messages to registered handlers
+      wc.lpfnWndProc = WindowMessageDispatcher::DispatchWindowProc;
       wc.hInstance = hInstance;
       wc.lpszClassName = class_name.c_str();
 

@@ -1,0 +1,154 @@
+#include "window_message_dispatcher.h"
+#include <algorithm>
+#include <vector>
+
+namespace nativeapi {
+
+WindowMessageDispatcher& WindowMessageDispatcher::GetInstance() {
+  static WindowMessageDispatcher instance;
+  return instance;
+}
+
+WindowMessageDispatcher::~WindowMessageDispatcher() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Uninstall all hooks before destruction
+  for (const auto& [hwnd, _] : original_procs_) {
+    UninstallHook(hwnd);
+  }
+  original_procs_.clear();
+}
+
+int WindowMessageDispatcher::RegisterHandler(WindowMessageHandler handler) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  int id = next_id_++;
+  handlers_[id] = {std::move(handler), HWND(0)};  // HWND(0) for global handler
+  return id;
+}
+
+int WindowMessageDispatcher::RegisterHandler(HWND hwnd,
+                                             WindowMessageHandler handler) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  int id = next_id_++;
+  handlers_[id] = {std::move(handler), hwnd};
+
+  // Install hook for this window if not already installed
+  if (original_procs_.find(hwnd) == original_procs_.end()) {
+    InstallHook(hwnd);
+  }
+
+  return id;
+}
+
+bool WindowMessageDispatcher::UnregisterHandler(int id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto it = handlers_.find(id);
+  if (it == handlers_.end()) {
+    return false;
+  }
+
+  HWND target_hwnd = it->second.target_hwnd;
+  handlers_.erase(it);
+
+  // Check if this was the last handler for this window
+  if (target_hwnd != HWND(0)) {
+    bool has_other_handlers = std::any_of(
+        handlers_.begin(), handlers_.end(), [target_hwnd](const auto& pair) {
+          return pair.second.target_hwnd == target_hwnd;
+        });
+
+    if (!has_other_handlers) {
+      UninstallHook(target_hwnd);
+    }
+  }
+
+  return true;
+}
+
+LRESULT CALLBACK WindowMessageDispatcher::DispatchWindowProc(HWND hwnd,
+                                                             UINT msg,
+                                                             WPARAM wparam,
+                                                             LPARAM lparam) {
+  auto& dispatcher = GetInstance();
+
+  // Get original window procedure and copy handlers while holding lock
+  WNDPROC original_proc = nullptr;
+  std::vector<std::pair<int, HandlerEntry>> handlers_vector;
+
+  {
+    std::lock_guard<std::mutex> lock(dispatcher.mutex_);
+
+    // Get original window procedure
+    auto proc_it = dispatcher.original_procs_.find(hwnd);
+    if (proc_it == dispatcher.original_procs_.end()) {
+      return DefWindowProc(hwnd, msg, wparam, lparam);
+    }
+
+    original_proc = proc_it->second;
+
+    // Copy handlers while holding lock (to avoid deadlock when handlers call
+    // back)
+    handlers_vector.assign(dispatcher.handlers_.begin(),
+                           dispatcher.handlers_.end());
+  }
+
+  // Try handlers in reverse order (most recently registered first)
+  // Process handlers without holding the mutex to avoid deadlock
+  for (auto it = handlers_vector.rbegin(); it != handlers_vector.rend(); ++it) {
+    const auto& [id, entry] = *it;
+
+    // Check if this handler applies to this window
+    if (entry.target_hwnd == HWND(0) || entry.target_hwnd == hwnd) {
+      auto result = entry.handler(hwnd, msg, wparam, lparam);
+      if (result.has_value()) {
+        return result.value();
+      }
+    }
+  }
+
+  // No handler consumed the message, call original procedure
+  return CallWindowProc(original_proc, hwnd, msg, wparam, lparam);
+}
+
+bool WindowMessageDispatcher::InstallHook(HWND hwnd) {
+  if (!hwnd || !IsWindow(hwnd)) {
+    return false;
+  }
+
+  // Get current window procedure
+  WNDPROC current_proc =
+      reinterpret_cast<WNDPROC>(GetWindowLongPtr(hwnd, GWLP_WNDPROC));
+  if (!current_proc) {
+    return false;
+  }
+
+  // Store original procedure
+  original_procs_[hwnd] = current_proc;
+
+  // Install our dispatcher as the new window procedure
+  SetWindowLongPtr(hwnd, GWLP_WNDPROC,
+                   reinterpret_cast<LONG_PTR>(DispatchWindowProc));
+
+  return true;
+}
+
+void WindowMessageDispatcher::UninstallHook(HWND hwnd) {
+  auto it = original_procs_.find(hwnd);
+  if (it == original_procs_.end()) {
+    return;
+  }
+
+  WNDPROC original_proc = it->second;
+
+  // Restore original window procedure
+  SetWindowLongPtr(hwnd, GWLP_WNDPROC,
+                   reinterpret_cast<LONG_PTR>(original_proc));
+
+  // Remove from our tracking
+  original_procs_.erase(it);
+}
+
+}  // namespace nativeapi
