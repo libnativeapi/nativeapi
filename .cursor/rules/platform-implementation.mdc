@@ -501,23 +501,13 @@ inline std::string WStringToString(const std::wstring& wstr) {
 
 ## Platform Detection
 
-### Preprocessor Macros
+Platform-specific implementations are automatically selected by the build system based on the target platform. Each platform implementation lives in its own directory:
 
-```cpp
-#if defined(_WIN32) || defined(_WIN64)
-    // Windows code
-#elif defined(__APPLE__)
-    // macOS code
-    #include <TargetConditionals.h>
-    #if TARGET_OS_MAC
-        // macOS desktop code
-    #endif
-#elif defined(__linux__)
-    // Linux code
-#else
-    #error "Unsupported platform"
-#endif
-```
+- **Windows**: `platform/windows/` - Uses Win32 API
+- **macOS**: `platform/macos/` - Uses Cocoa/AppKit  
+- **Linux**: `platform/linux/` - Uses GTK 3.0
+
+No preprocessor macros are needed since each platform has separate implementation files.
 
 ### CMake Platform Selection
 
@@ -591,18 +581,16 @@ Use `// clang-format off` and `// clang-format on` comments to disable automatic
 ### ❌ Don't Mix Platform Code
 
 ```cpp
-// Bad - mixing platform APIs
-#ifdef _WIN32
-    HWND hwnd = ...;
-#elif __APPLE__
-    HWND hwnd = ...;  // Error: HWND doesn't exist on macOS
-#endif
+// Bad - mixing platform APIs in same file
+HWND hwnd = ...;
+NSWindow* window = ...;  // Error: mixing Windows and macOS APIs
 ```
 
 ```cpp
-// Good - separate files
-// window_windows.cpp uses HWND
-// window_macos.mm uses NSWindow*
+// Good - separate platform implementation files
+// platform/windows/window_windows.cpp uses HWND
+// platform/macos/window_macos.mm uses NSWindow*
+// platform/linux/window_linux.cpp uses GtkWidget*
 ```
 
 ### ❌ Don't Leak Platform Types to Public API

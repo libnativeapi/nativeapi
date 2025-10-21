@@ -160,7 +160,7 @@ void* Window::GetNativeObjectInternal() const {
 
 ### Cross-Platform Usage
 
-Users can access native objects when they need platform-specific functionality:
+Users can access native objects when they need platform-specific functionality. Since platform-specific implementations are separated into `/platform/{windows|macos|linux}` directories, users should cast the native handle to the appropriate platform-specific type:
 
 ```cpp
 #include <nativeapi.h>
@@ -173,41 +173,33 @@ auto window = manager.Create(options);
 // Get native handle
 void* native = window->GetNativeObject();
 
-// Cast to platform-specific type based on compile-time platform
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(native);
-    // Use Win32 API with hwnd
-    SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
-    
-#elif defined(__APPLE__)
-    NSWindow* nswindow = static_cast<NSWindow*>(native);
-    // Use Cocoa API with nswindow
-    [nswindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-    
-#elif defined(__linux__)
-    GtkWidget* gtkwindow = static_cast<GtkWidget*>(native);
-    // Use GTK API with gtkwindow
-    gtk_window_set_keep_above(GTK_WINDOW(gtkwindow), TRUE);
-#endif
+// Cast to platform-specific type
+// Windows: HWND
+// macOS: NSWindow*
+// Linux: GtkWidget* (GtkWindow)
 ```
 
-### Runtime Platform Detection
+### Platform-Specific Usage Examples
 
-For libraries that need to work across platforms:
-
+#### Windows Implementation
 ```cpp
-void* native = window->GetNativeObject();
+// In Windows-specific code
+HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
+```
 
-#if defined(_WIN32)
-    HWND hwnd = static_cast<HWND>(native);
-    // Windows-specific code
-#elif defined(__APPLE__)
-    NSWindow* nswindow = static_cast<NSWindow*>(native);
-    // macOS-specific code
-#elif defined(__linux__)
-    GtkWidget* gtkwindow = static_cast<GtkWidget*>(native);
-    // Linux-specific code
-#endif
+#### macOS Implementation
+```objc
+// In macOS-specific code
+NSWindow* nswindow = static_cast<NSWindow*>(window->GetNativeObject());
+[nswindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+```
+
+#### Linux Implementation
+```cpp
+// In Linux-specific code
+GtkWidget* gtkwindow = static_cast<GtkWidget*>(window->GetNativeObject());
+gtk_window_set_keep_above(GTK_WINDOW(gtkwindow), TRUE);
 ```
 
 ## Classes Using NativeObjectProvider
@@ -229,28 +221,42 @@ The following classes inherit from NativeObjectProvider:
 ```cpp
 // User wants to make window transparent (not in cross-platform API)
 auto window = manager.Create(options);
+void* native = window->GetNativeObject();
 
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-    
-    // Enable transparency using Win32 API
-    SetWindowLongPtr(hwnd, GWL_EXSTYLE, 
-                     GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-    SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 128, LWA_ALPHA);
-    
-#elif defined(__APPLE__)
-    NSWindow* nswindow = static_cast<NSWindow*>(window->GetNativeObject());
-    
-    // Enable transparency using Cocoa API
-    [nswindow setOpaque:NO];
-    [nswindow setBackgroundColor:[NSColor colorWithRed:0 green:0 blue:0 alpha:0.5]];
-    
-#elif defined(__linux__)
-    GtkWidget* gtkwindow = static_cast<GtkWidget*>(window->GetNativeObject());
-    
-    // Enable transparency using GTK API
-    gtk_widget_set_opacity(gtkwindow, 0.5);
-#endif
+// Platform-specific implementations would be in separate files:
+// - Windows: platform/windows/window_windows.cpp
+// - macOS: platform/macos/window_macos.mm  
+// - Linux: platform/linux/window_linux.cpp
+```
+
+#### Windows Implementation
+```cpp
+// In platform/windows/window_windows.cpp
+HWND hwnd = static_cast<HWND>(native);
+
+// Enable transparency using Win32 API
+SetWindowLongPtr(hwnd, GWL_EXSTYLE, 
+                 GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 128, LWA_ALPHA);
+```
+
+#### macOS Implementation
+```objc
+// In platform/macos/window_macos.mm
+NSWindow* nswindow = static_cast<NSWindow*>(native);
+
+// Enable transparency using Cocoa API
+[nswindow setOpaque:NO];
+[nswindow setBackgroundColor:[NSColor colorWithRed:0 green:0 blue:0 alpha:0.5]];
+```
+
+#### Linux Implementation
+```cpp
+// In platform/linux/window_linux.cpp
+GtkWidget* gtkwindow = static_cast<GtkWidget*>(native);
+
+// Enable transparency using GTK API
+gtk_widget_set_opacity(gtkwindow, 0.5);
 ```
 
 ### Use Case 2: Integrating with Third-Party Libraries
@@ -258,21 +264,32 @@ auto window = manager.Create(options);
 ```cpp
 // Embedding a web view that expects native window handle
 auto window = manager.Create(options);
+void* native = window->GetNativeObject();
 
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-    WebView2::Create(hwnd, ...);
-    
-#elif defined(__APPLE__)
-    NSWindow* nswindow = static_cast<NSWindow*>(window->GetNativeObject());
-    WKWebView* webview = [[WKWebView alloc] initWithFrame:[nswindow contentView].bounds];
-    [[nswindow contentView] addSubview:webview];
-    
-#elif defined(__linux__)
-    GtkWidget* gtkwindow = static_cast<GtkWidget*>(window->GetNativeObject());
-    GtkWidget* webview = webkit_web_view_new();
-    gtk_container_add(GTK_CONTAINER(gtkwindow), webview);
-#endif
+// Platform-specific implementations would be in separate files
+```
+
+#### Windows Implementation
+```cpp
+// In platform/windows/window_windows.cpp
+HWND hwnd = static_cast<HWND>(native);
+WebView2::Create(hwnd, ...);
+```
+
+#### macOS Implementation
+```objc
+// In platform/macos/window_macos.mm
+NSWindow* nswindow = static_cast<NSWindow*>(native);
+WKWebView* webview = [[WKWebView alloc] initWithFrame:[nswindow contentView].bounds];
+[[nswindow contentView] addSubview:webview];
+```
+
+#### Linux Implementation
+```cpp
+// In platform/linux/window_linux.cpp
+GtkWidget* gtkwindow = static_cast<GtkWidget*>(native);
+GtkWidget* webview = webkit_web_view_new();
+gtk_container_add(GTK_CONTAINER(gtkwindow), webview);
 ```
 
 ### Use Case 3: Platform-Specific Menu Customization
@@ -282,15 +299,18 @@ auto menu = std::make_shared<Menu>();
 auto item = std::make_shared<MenuItem>("File");
 menu->AddItem(item);
 
-#ifdef __APPLE__
-    // Add macOS-specific menu behavior
-    NSMenu* nsmenu = static_cast<NSMenu*>(menu->GetNativeObject());
-    [nsmenu setAutoenablesItems:NO];
-    
-    NSMenuItem* nsitem = static_cast<NSMenuItem*>(item->GetNativeObject());
-    [nsitem setTarget:customTarget];
-    [nsitem setAction:@selector(customAction:)];
-#endif
+// Platform-specific implementations would be in separate files
+```
+
+#### macOS Implementation
+```objc
+// In platform/macos/menu_macos.mm
+NSMenu* nsmenu = static_cast<NSMenu*>(menu->GetNativeObject());
+[nsmenu setAutoenablesItems:NO];
+
+NSMenuItem* nsitem = static_cast<NSMenuItem*>(item->GetNativeObject());
+[nsitem setTarget:customTarget];
+[nsitem setAction:@selector(customAction:)];
 ```
 
 ### Use Case 4: Advanced Display Configuration
@@ -298,24 +318,32 @@ menu->AddItem(item);
 ```cpp
 auto& display_manager = DisplayManager::GetInstance();
 auto primary = display_manager.GetPrimary();
+void* native = primary.GetNativeObject();
 
-#ifdef _WIN32
-    HMONITOR hmonitor = static_cast<HMONITOR>(primary.GetNativeObject());
-    
-    MONITORINFOEX mi = {};
-    mi.cbSize = sizeof(MONITORINFOEX);
-    GetMonitorInfo(hmonitor, &mi);
-    
-    // Access device name for advanced configuration
-    std::wcout << L"Device: " << mi.szDevice << std::endl;
-    
-#elif defined(__APPLE__)
-    NSScreen* screen = static_cast<NSScreen*>(primary.GetNativeObject());
-    
-    // Access color space information
-    NSColorSpace* colorSpace = [screen colorSpace];
-    std::cout << "Color space: " << [[colorSpace localizedName] UTF8String] << std::endl;
-#endif
+// Platform-specific implementations would be in separate files
+```
+
+#### Windows Implementation
+```cpp
+// In platform/windows/display_windows.cpp
+HMONITOR hmonitor = static_cast<HMONITOR>(native);
+
+MONITORINFOEX mi = {};
+mi.cbSize = sizeof(MONITORINFOEX);
+GetMonitorInfo(hmonitor, &mi);
+
+// Access device name for advanced configuration
+std::wcout << L"Device: " << mi.szDevice << std::endl;
+```
+
+#### macOS Implementation
+```objc
+// In platform/macos/display_macos.mm
+NSScreen* screen = static_cast<NSScreen*>(native);
+
+// Access color space information
+NSColorSpace* colorSpace = [screen colorSpace];
+std::cout << "Color space: " << [[colorSpace localizedName] UTF8String] << std::endl;
 ```
 
 ## Design Considerations
@@ -354,13 +382,37 @@ if (!native) {
     return;
 }
 
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(native);
-    if (!IsWindow(hwnd)) {
-        // Handle invalid window
-        return;
-    }
-#endif
+// Platform-specific validation would be in separate implementation files
+```
+
+#### Windows Implementation
+```cpp
+// In platform/windows/window_windows.cpp
+HWND hwnd = static_cast<HWND>(native);
+if (!IsWindow(hwnd)) {
+    // Handle invalid window
+    return;
+}
+```
+
+#### macOS Implementation
+```objc
+// In platform/macos/window_macos.mm
+NSWindow* nswindow = static_cast<NSWindow*>(native);
+if (!nswindow || ![nswindow isKindOfClass:[NSWindow class]]) {
+    // Handle invalid window
+    return;
+}
+```
+
+#### Linux Implementation
+```cpp
+// In platform/linux/window_linux.cpp
+GtkWidget* gtkwindow = static_cast<GtkWidget*>(native);
+if (!GTK_IS_WINDOW(gtkwindow)) {
+    // Handle invalid window
+    return;
+}
 ```
 
 ### Lifetime Considerations
@@ -384,7 +436,7 @@ manager.Destroy(window->GetId());
 1. **Document native types** - Comment what type is returned on each platform
 2. **Validate before casting** - Check for null, platform-specific validity
 3. **Don't store native handles** - They may become invalid when wrapper is destroyed
-4. **Use platform guards** - Always use `#ifdef` to ensure correct platform
+4. **Separate platform implementations** - Keep platform-specific code in `/platform/{windows|macos|linux}` directories
 5. **Prefer cross-platform API** - Only use native handles when absolutely necessary
 6. **Thread safety** - Native APIs may have threading restrictions
 7. **Keep it simple** - Minimize platform-specific code in user code
@@ -413,12 +465,10 @@ When documenting APIs that return native objects:
  * ```cpp
  * void* native = window->GetNativeObject();
  * 
- * #ifdef _WIN32
- *     HWND hwnd = static_cast<HWND>(native);
- *     if (hwnd && IsWindow(hwnd)) {
- *         SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
- *     }
- * #endif
+ * // Platform-specific implementations would be in separate files:
+ * // Windows: platform/windows/window_windows.cpp
+ * // macOS: platform/macos/window_macos.mm
+ * // Linux: platform/linux/window_linux.cpp
  * ```
  */
 void* GetNativeObject() const;
@@ -430,38 +480,33 @@ void* GetNativeObject() const;
 
 ```cpp
 // Bad - wrong type for platform
-#ifdef _WIN32
-    NSWindow* window = static_cast<NSWindow*>(native);  // Error!
-#endif
+// In Windows implementation file, casting to macOS type
+NSWindow* window = static_cast<NSWindow*>(native);  // Error!
 
 // Good - correct type for platform
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(native);
-#endif
+// In platform/windows/window_windows.cpp
+HWND hwnd = static_cast<HWND>(native);
 ```
 
-### ❌ Don't Forget Platform Guards
+### ❌ Don't Mix Platform Code
 
 ```cpp
-// Bad - assumes Windows
+// Bad - mixing platform APIs in same file
 HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+NSWindow* nswindow = static_cast<NSWindow*>(window->GetNativeObject());  // Wrong!
 
-// Good - platform-specific
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-#elif defined(__APPLE__)
-    NSWindow* nswindow = static_cast<NSWindow*>(window->GetNativeObject());
-#endif
+// Good - separate platform implementations
+// Windows: platform/windows/window_windows.cpp
+// macOS: platform/macos/window_macos.mm
 ```
 
 ### ❌ Don't Manage Native Lifetime Manually
 
 ```cpp
 // Bad - trying to destroy native object directly
-#ifdef _WIN32
-    HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-    DestroyWindow(hwnd);  // Wrapper still thinks it owns this!
-#endif
+// In platform/windows/window_windows.cpp
+HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+DestroyWindow(hwnd);  // Wrapper still thinks it owns this!
 
 // Good - let wrapper manage lifetime
 manager.Destroy(window->GetId());
