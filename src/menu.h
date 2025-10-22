@@ -214,12 +214,14 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
   virtual ~MenuItem();
 
   /**
-   * @brief Unique identifier for this menu item.
+   * @brief Get the unique identifier for this menu item.
    *
    * This ID is assigned when the item is created and can be used to
    * reference the item in event handlers and other operations.
+   *
+   * @return The unique identifier for this menu item
    */
-  MenuItemId id;
+  MenuItemId GetId() const;
 
   /**
    * @brief Get the type of this menu item.
@@ -540,12 +542,14 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
   virtual ~Menu();
 
   /**
-   * @brief Unique identifier for this menu.
+   * @brief Get the unique identifier for this menu.
    *
    * This ID is assigned when the menu is created and can be used to
    * reference the menu in various operations.
+   *
+   * @return The unique identifier for this menu
    */
-  MenuId id;
+  MenuId GetId() const;
 
   /**
    * @brief Add a menu item to the end of the menu.
@@ -662,18 +666,6 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * @return Vector of shared pointers to all menu items
    */
   std::vector<std::shared_ptr<MenuItem>> GetAllItems() const;
-
-  /**
-   * @brief Find a menu item by its text.
-   *
-   * Searches for the first menu item with matching text.
-   *
-   * @param text The text to search for
-   * @param case_sensitive Whether the search should be case-sensitive
-   * @return Shared pointer to the menu item, or nullptr if not found
-   */
-  std::shared_ptr<MenuItem> FindItemByText(const std::string& text,
-                                           bool case_sensitive = true) const;
 
   /**
    * @brief Display the menu as a context menu at the specified screen

@@ -19,7 +19,7 @@ static const void* kMenuItemIdKey = &kMenuItemIdKey;
 static const void* kMenuIdKey = &kMenuIdKey;
 
 // Forward declarations - moved to global scope
-typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemId item_id, const std::string& item_text);
+typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemId item_id, const std::string& item_label);
 typedef void (^MenuOpenedBlock)(nativeapi::MenuId menu_id);
 typedef void (^MenuClosedBlock)(nativeapi::MenuId menu_id);
 
@@ -126,13 +126,13 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     // Call the block if it exists
     if (_clickedBlock) {
       NSString* title = [menu_item title];
-      std::string item_text = title ? [title UTF8String] : "";
+      std::string item_label = title ? [title UTF8String] : "";
 
       // Get the MenuItemId from the menu item's associated object
       NSNumber* item_id_obj = objc_getAssociatedObject(menu_item, kMenuItemIdKey);
       if (item_id_obj) {
         nativeapi::MenuItemId item_id = [item_id_obj longValue];
-        _clickedBlock(item_id, item_text);
+        _clickedBlock(item_id, item_label);
       }
     }
   } @catch (NSException* exception) {
@@ -189,10 +189,11 @@ namespace nativeapi {
 // MenuItem::Impl implementation
 class MenuItem::Impl {
  public:
+  MenuItemId id_;
   NSMenuItem* ns_menu_item_;
   NSMenuItemTarget* ns_menu_item_target_;
   MenuItemType type_;
-  std::optional<std::string> text_;
+  std::optional<std::string> label_;
   std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
@@ -204,10 +205,10 @@ class MenuItem::Impl {
   std::shared_ptr<Menu> submenu_;
   size_t submenu_opened_listener_id_;
   size_t submenu_closed_listener_id_;
-  MenuItemId menu_item_id_;
 
-  Impl(NSMenuItem* menu_item, MenuItemType type)
-      : ns_menu_item_(menu_item),
+  Impl(MenuItemId id, NSMenuItem* menu_item, MenuItemType type)
+      : id_(id),
+        ns_menu_item_(menu_item),
         ns_menu_item_target_([[NSMenuItemTarget alloc] init]),
         type_(type),
         accelerator_("", KeyboardAccelerator::None),
@@ -217,8 +218,7 @@ class MenuItem::Impl {
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
         submenu_opened_listener_id_(0),
-        submenu_closed_listener_id_(0),
-        menu_item_id_(-1) {
+        submenu_closed_listener_id_(0) {
     [ns_menu_item_ setTarget:ns_menu_item_target_];
     [ns_menu_item_ setAction:@selector(menuItemClicked:)];
   }
@@ -252,8 +252,8 @@ class MenuItem::Impl {
 };
 
 // MenuItem implementation
-MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(IdAllocator::Allocate<MenuItem>()) {
+MenuItem::MenuItem(const std::string& text, MenuItemType type) {
+  MenuItemId id = IdAllocator::Allocate<MenuItem>();
   NSMenuItem* ns_item = nullptr;
 
   switch (type) {
@@ -271,34 +271,32 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
       break;
   }
 
-  pimpl_ = std::make_unique<Impl>(ns_item, type);
-  pimpl_->menu_item_id_ = id;
+  pimpl_ = std::make_unique<Impl>(id, ns_item, type);
   objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-  pimpl_->text_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
+  pimpl_->label_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_text) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_label) {
     try {
-      Emit<MenuItemClickedEvent>(item_id, item_text);
+      Emit<MenuItemClickedEvent>(item_id, item_label);
     } catch (...) {
       // Protect against event emission exceptions
     }
   };
 }
 
-MenuItem::MenuItem(void* native_item)
-    : id(IdAllocator::Allocate<MenuItem>()),
-      pimpl_(std::make_unique<Impl>((__bridge NSMenuItem*)native_item, MenuItemType::Normal)) {
+MenuItem::MenuItem(void* native_item) {
+  MenuItemId id = IdAllocator::Allocate<MenuItem>();
   NSMenuItem* ns_item = (__bridge NSMenuItem*)native_item;
-  pimpl_->menu_item_id_ = id;
+  pimpl_ = std::make_unique<Impl>(id, (__bridge NSMenuItem*)native_item, MenuItemType::Normal);
   objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_text) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_label) {
     try {
-      Emit<MenuItemClickedEvent>(item_id, item_text);
+      Emit<MenuItemClickedEvent>(item_id, item_label);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -307,12 +305,16 @@ MenuItem::MenuItem(void* native_item)
 
 MenuItem::~MenuItem() {}
 
+MenuItemId MenuItem::GetId() const {
+  return pimpl_->id_;
+}
+
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
 void MenuItem::SetLabel(const std::optional<std::string>& label) {
-  pimpl_->text_ = label;
+  pimpl_->label_ = label;
   if (label.has_value()) {
     [pimpl_->ns_menu_item_ setTitle:[NSString stringWithUTF8String:label->c_str()]];
   } else {
@@ -321,7 +323,7 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
 }
 
 std::optional<std::string> MenuItem::GetLabel() const {
-  return pimpl_->text_;
+  return pimpl_->label_;
 }
 
 void MenuItem::SetIcon(std::shared_ptr<Image> image) {
@@ -482,7 +484,7 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
         }
 
         // Add event listeners to forward submenu events
-        MenuItemId menu_item_id = id;
+        MenuItemId menu_item_id = pimpl_->id_;
         MenuItem* self = this;
         pimpl_->submenu_opened_listener_id_ = submenu->AddListener<MenuOpenedEvent>(
             [self, menu_item_id](const MenuOpenedEvent& event) {
@@ -545,8 +547,8 @@ bool MenuItem::Trigger() {
 
   // Call the block directly instead of going through target-action
   if (pimpl_->ns_menu_item_target_.clickedBlock) {
-    std::string itemText = pimpl_->text_.value_or("");
-    pimpl_->ns_menu_item_target_.clickedBlock(id, itemText);
+    std::string itemText = pimpl_->label_.value_or("");
+    pimpl_->ns_menu_item_target_.clickedBlock(pimpl_->id_, itemText);
   }
   return true;
 }
@@ -558,14 +560,16 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Menu::Impl implementation
 class Menu::Impl {
  public:
+  MenuId id_;
   NSMenu* ns_menu_;
   NSMenuDelegateImpl* delegate_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
   bool visible_;
 
-  Impl(NSMenu* menu)
-      : ns_menu_(menu),
+  Impl(MenuId id, NSMenu* menu)
+      : id_(id),
+        ns_menu_(menu),
         delegate_([[NSMenuDelegateImpl alloc] init]),
         enabled_(true),
         visible_(false) {
@@ -591,7 +595,8 @@ class Menu::Impl {
 // Menu implementation
 Menu::Menu() : Menu(nullptr) {}
 
-Menu::Menu(void* native_menu) : id(IdAllocator::Allocate<Menu>()) {
+Menu::Menu(void* native_menu) {
+  MenuId id = IdAllocator::Allocate<Menu>();
   NSMenu* ns_menu = nullptr;
 
   if (native_menu == nullptr) {
@@ -603,7 +608,7 @@ Menu::Menu(void* native_menu) : id(IdAllocator::Allocate<Menu>()) {
   }
 
   // All initialization logic in one place
-  pimpl_ = std::make_unique<Impl>(ns_menu);
+  pimpl_ = std::make_unique<Impl>(id, ns_menu);
   objc_setAssociatedObject(ns_menu, kMenuIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
@@ -626,6 +631,10 @@ Menu::Menu(void* native_menu) : id(IdAllocator::Allocate<Menu>()) {
 }
 
 Menu::~Menu() {}
+
+MenuId Menu::GetId() const {
+  return pimpl_->id_;
+}
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (!item)
@@ -663,7 +672,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
 bool Menu::RemoveItemById(MenuItemId item_id) {
   for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
-    if ((*it)->id == item_id) {
+    if ((*it)->GetId() == item_id) {
       [pimpl_->ns_menu_ removeItem:(__bridge NSMenuItem*)(*it)->GetNativeObject()];
       pimpl_->items_.erase(it);
       return true;
@@ -709,7 +718,7 @@ std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
 
 std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
   for (const auto& item : pimpl_->items_) {
-    if (item->id == item_id) {
+    if (item->GetId() == item_id) {
       return item;
     }
   }
@@ -718,30 +727,6 @@ std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
 
 std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
-}
-
-std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text, bool case_sensitive) const {
-  for (const auto& item : pimpl_->items_) {
-    auto itemTextOpt = item->GetLabel();
-    if (!itemTextOpt.has_value()) {
-      continue;
-    }
-
-    const std::string& itemText = itemTextOpt.value();
-    if (case_sensitive) {
-      if (itemText == text)
-        return item;
-    } else {
-      std::string lowerItemText = itemText;
-      std::string lowerSearchText = text;
-      std::transform(lowerItemText.begin(), lowerItemText.end(), lowerItemText.begin(), ::tolower);
-      std::transform(lowerSearchText.begin(), lowerSearchText.end(), lowerSearchText.begin(),
-                     ::tolower);
-      if (lowerItemText == lowerSearchText)
-        return item;
-    }
-  }
-  return nullptr;
 }
 
 bool Menu::Open(double x, double y) {

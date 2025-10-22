@@ -23,7 +23,7 @@ static void OnGtkMenuItemActivate(GtkMenuItem* /*item*/, gpointer user_data) {
   if (auto label = menu_item->GetLabel(); label.has_value()) {
     text = *label;
   }
-  menu_item->Emit(MenuItemClickedEvent(menu_item->id, text));
+  menu_item->Emit(MenuItemClickedEvent(menu_item->GetId(), text));
 }
 
 static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
@@ -31,7 +31,7 @@ static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
   if (!menu_obj) {
     return;
   }
-  menu_obj->Emit(MenuOpenedEvent(menu_obj->id));
+  menu_obj->Emit(MenuOpenedEvent(menu_obj->GetId()));
 }
 
 static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
@@ -39,7 +39,7 @@ static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
   if (!menu_obj) {
     return;
   }
-  menu_obj->Emit(MenuClosedEvent(menu_obj->id));
+  menu_obj->Emit(MenuClosedEvent(menu_obj->GetId()));
 }
 
 static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
@@ -48,7 +48,7 @@ static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
     return;
   }
   // Emit submenu opened on the item
-  menu_item->Emit(MenuItemSubmenuOpenedEvent(menu_item->id));
+  menu_item->Emit(MenuItemSubmenuOpenedEvent(menu_item->GetId()));
 }
 
 static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
@@ -57,14 +57,15 @@ static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
     return;
   }
   // Emit submenu closed on the item
-  menu_item->Emit(MenuItemSubmenuClosedEvent(menu_item->id));
+  menu_item->Emit(MenuItemSubmenuClosedEvent(menu_item->GetId()));
 }
 
 // Private implementation class for MenuItem
 class MenuItem::Impl {
  public:
-  Impl(GtkWidget* menu_item, MenuItemType type)
-      : gtk_menu_item_(menu_item),
+  Impl(MenuItemId id, GtkWidget* menu_item, MenuItemType type)
+      : id_(id),
+        gtk_menu_item_(menu_item),
         title_(""),
         tooltip_(""),
         type_(type),
@@ -74,6 +75,7 @@ class MenuItem::Impl {
         radio_group_(-1),
         accelerator_("", KeyboardAccelerator::None) {}
 
+  MenuItemId id_;
   GtkWidget* gtk_menu_item_;
   std::optional<std::string> title_;
   std::shared_ptr<Image> image_;
@@ -87,8 +89,8 @@ class MenuItem::Impl {
   std::shared_ptr<Menu> submenu_;
 };
 
-MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(IdAllocator::Allocate<MenuItem>()) {
+MenuItem::MenuItem(const std::string& text, MenuItemType type) {
+  MenuItemId id = IdAllocator::Allocate<MenuItem>();
   GtkWidget* gtk_item = nullptr;
 
   switch (type) {
@@ -108,7 +110,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
       break;
   }
 
-  pimpl_ = std::unique_ptr<Impl>(new Impl(gtk_item, type));
+  pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_item, type));
 
   if (!text.empty()) {
     pimpl_->title_ = text;
@@ -123,9 +125,9 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type)
   }
 }
 
-MenuItem::MenuItem(void* menu_item)
-    : id(IdAllocator::Allocate<MenuItem>()),
-      pimpl_(new Impl((GtkWidget*)menu_item, MenuItemType::Normal)) {
+MenuItem::MenuItem(void* menu_item) {
+  MenuItemId id = IdAllocator::Allocate<MenuItem>();
+  pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu_item, MenuItemType::Normal));
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
     const char* label =
         gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
@@ -143,6 +145,10 @@ MenuItem::MenuItem(void* menu_item)
 }
 
 MenuItem::~MenuItem() {}
+
+MenuItemId MenuItem::GetId() const {
+  return pimpl_->id_;
+}
 
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
@@ -294,17 +300,18 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Private implementation class for Menu
 class Menu::Impl {
  public:
-  Impl(GtkWidget* menu) : gtk_menu_(menu), enabled_(true), visible_(false) {}
+  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu), enabled_(true), visible_(false) {}
 
+  MenuId id_;
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
   bool visible_;
 };
 
-Menu::Menu()
-    : id(IdAllocator::Allocate<Menu>()),
-      pimpl_(std::unique_ptr<Impl>(new Impl(gtk_menu_new()))) {
+Menu::Menu() {
+  MenuId id = IdAllocator::Allocate<Menu>();
+  pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_menu_new()));
   // Connect menu show/hide to emit open/close events
   if (pimpl_->gtk_menu_) {
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
@@ -314,8 +321,9 @@ Menu::Menu()
   }
 }
 
-Menu::Menu(void* menu)
-    : id(IdAllocator::Allocate<Menu>()), pimpl_(new Impl((GtkWidget*)menu)) {
+Menu::Menu(void* menu) {
+  MenuId id = IdAllocator::Allocate<Menu>();
+  pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu));
   if (pimpl_->gtk_menu_) {
     g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
                      G_CALLBACK(OnGtkMenuShow), this);
@@ -328,6 +336,10 @@ Menu::~Menu() {
   if (pimpl_->gtk_menu_) {
     g_object_unref(pimpl_->gtk_menu_);
   }
+}
+
+MenuId Menu::GetId() const {
+  return pimpl_->id_;
 }
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
@@ -369,7 +381,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
 bool Menu::RemoveItemById(MenuItemId item_id) {
   for (auto& item : pimpl_->items_) {
-    if (item->id == item_id) {
+    if (item->GetId() == item_id) {
       return RemoveItem(item);
     }
   }
@@ -413,7 +425,7 @@ std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
 
 std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
   for (const auto& item : pimpl_->items_) {
-    if (item->id == item_id) {
+    if (item->GetId() == item_id) {
       return item;
     }
   }
@@ -422,34 +434,6 @@ std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
 
 std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
-}
-
-std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
-                                               bool case_sensitive) const {
-  for (const auto& item : pimpl_->items_) {
-    auto itemTextOpt = item->GetLabel();
-    if (!itemTextOpt.has_value()) {
-      continue;
-    }
-
-    const std::string& item_text = itemTextOpt.value();
-    if (case_sensitive) {
-      if (item_text == text) {
-        return item;
-      }
-    } else {
-      std::string lower_item_text = item_text;
-      std::string lower_search_text = text;
-      std::transform(lower_item_text.begin(), lower_item_text.end(),
-                     lower_item_text.begin(), ::tolower);
-      std::transform(lower_search_text.begin(), lower_search_text.end(),
-                     lower_search_text.begin(), ::tolower);
-      if (lower_item_text == lower_search_text) {
-        return item;
-      }
-    }
-  }
-  return nullptr;
 }
 
 bool Menu::Open(double x, double y) {

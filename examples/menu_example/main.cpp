@@ -12,7 +12,7 @@ int main() {
   try {
     // Create a menu
     auto menu = std::make_shared<Menu>();
-    std::cout << "Created menu with ID: " << menu->id << std::endl;
+    std::cout << "Created menu with ID: " << menu->GetId() << std::endl;
 
     // Create menu items with different types
     auto file_item =

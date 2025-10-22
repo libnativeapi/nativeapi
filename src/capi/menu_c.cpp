@@ -198,7 +198,7 @@ native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item) {
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->id;
+    return menu_item->GetId();
   } catch (...) {
     return -1;
   }
@@ -688,7 +688,7 @@ native_menu_id_t native_menu_get_id(native_menu_t menu) {
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->id;
+    return menu_ptr->GetId();
   } catch (...) {
     return -1;
   }
@@ -890,20 +890,6 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
       result.count = 0;
     }
     return result;
-  }
-}
-
-native_menu_item_t native_menu_find_item_by_text(native_menu_t menu,
-                                                 const char* text) {
-  if (!menu || !text)
-    return nullptr;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto item = menu_ptr->FindItemByText(text);
-    return item ? static_cast<native_menu_item_t>(item.get()) : nullptr;
-  } catch (...) {
-    return nullptr;
   }
 }
 

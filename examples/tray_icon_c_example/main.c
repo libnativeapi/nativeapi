@@ -202,23 +202,6 @@ int main() {
            bounds.x, bounds.y, bounds.width, bounds.height);
   }
 
-  // Demonstrate menu item lookup
-  native_menu_item_t found_item = native_menu_find_item_by_text(menu, "Exit");
-  if (found_item) {
-    printf("Found 'Exit' menu item with ID: %ld\n",
-           native_menu_item_get_id(found_item));
-
-    // Get accelerator info
-    native_keyboard_accelerator_t accel;
-    if (native_menu_item_get_accelerator(found_item, &accel)) {
-      char* accel_str = native_keyboard_accelerator_to_string(&accel);
-      if (accel_str) {
-        printf("Exit item accelerator: %s\n", accel_str);
-        free_c_str(accel_str);  // Free the allocated string
-      }
-    }
-  }
-
   // Show all managed tray icons
   native_tray_icon_list_t tray_list = native_tray_manager_get_all();
   printf("Total managed tray icons: %zu\n", tray_list.count);

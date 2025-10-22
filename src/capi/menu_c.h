@@ -498,15 +498,6 @@ FFI_PLUGIN_EXPORT
 native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
 
 /**
- * Find a menu item by text
- * @param menu The menu
- * @param text The text to search for
- * @return The first menu item with matching text, or NULL if not found
- */
-FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_find_item_by_text(native_menu_t menu, const char* text);
-
-/**
  * Open the menu as a context menu at specified coordinates
  * @param menu The menu
  * @param x The x-coordinate in screen coordinates

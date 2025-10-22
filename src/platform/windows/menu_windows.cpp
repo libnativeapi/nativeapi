@@ -90,10 +90,10 @@ std::pair<UINT, UINT> ConvertAccelerator(
 // MenuItem::Impl implementation
 class MenuItem::Impl {
  public:
+  MenuItemId id_;
   HMENU parent_menu_;
-  UINT menu_item_id_;
   MenuItemType type_;
-  std::optional<std::string> text_;
+  std::optional<std::string> label_;
   std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
@@ -104,9 +104,9 @@ class MenuItem::Impl {
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
 
-  Impl(HMENU parent_menu, UINT menu_item_id, MenuItemType type)
-      : parent_menu_(parent_menu),
-        menu_item_id_(menu_item_id),
+  Impl(MenuItemId id, HMENU parent_menu, MenuItemType type)
+      : id_(id),
+        parent_menu_(parent_menu),
         type_(type),
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
@@ -122,23 +122,25 @@ class MenuItem::Impl {
 };
 
 MenuItem::MenuItem(void* native_item)
-    : id(IdAllocator::Allocate<MenuItem>()),
-      pimpl_(std::make_unique<Impl>(nullptr, 0, MenuItemType::Normal)) {}
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, MenuItemType::Normal)) {}
 
 MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : id(IdAllocator::Allocate<MenuItem>()),
-      pimpl_(std::make_unique<Impl>(nullptr, 0, type)) {
-  pimpl_->text_ = text;
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, type)) {
+  pimpl_->label_ = text;
 }
 
 MenuItem::~MenuItem() {}
+
+MenuItemId MenuItem::GetId() const {
+  return pimpl_->id_;
+}
 
 MenuItemType MenuItem::GetType() const {
   return pimpl_->type_;
 }
 
 void MenuItem::SetLabel(const std::optional<std::string>& label) {
-  pimpl_->text_ = label;
+  pimpl_->label_ = label;
   if (pimpl_->parent_menu_) {
     MENUITEMINFOW mii = {};
     mii.cbSize = sizeof(MENUITEMINFOW);
@@ -146,12 +148,12 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
     std::string label_str = label.has_value() ? *label : "";
     std::wstring w_label_str = StringToWString(label_str);
     mii.dwTypeData = const_cast<LPWSTR>(w_label_str.c_str());
-    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
   }
 }
 
 std::optional<std::string> MenuItem::GetLabel() const {
-  return pimpl_->text_;
+  return pimpl_->label_;
 }
 
 void MenuItem::SetIcon(std::shared_ptr<Image> image) {
@@ -196,7 +198,7 @@ void MenuItem::RemoveAccelerator() {
 void MenuItem::SetEnabled(bool enabled) {
   pimpl_->enabled_ = enabled;
   if (pimpl_->parent_menu_) {
-    EnableMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_,
+    EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_,
                    enabled ? MF_ENABLED : MF_GRAYED);
   }
 }
@@ -225,7 +227,7 @@ void MenuItem::SetState(MenuItemState state) {
       if (state == MenuItemState::Checked) {
         check_state = MF_CHECKED;
       }
-      CheckMenuItem(pimpl_->parent_menu_, pimpl_->menu_item_id_, check_state);
+      CheckMenuItem(pimpl_->parent_menu_, pimpl_->id_, check_state);
     }
 
     // Handle radio button group logic
@@ -258,7 +260,7 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_SUBMENU;
     mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeObject());
-    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
   }
 }
 
@@ -273,7 +275,7 @@ void MenuItem::RemoveSubmenu() {
     mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_SUBMENU;
     mii.hSubMenu = nullptr;
-    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->menu_item_id_, FALSE, &mii);
+    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
   }
 }
 
@@ -282,7 +284,7 @@ bool MenuItem::Trigger() {
     return false;
 
   try {
-    std::string text = pimpl_->text_.has_value() ? pimpl_->text_.value() : "";
+    std::string text = pimpl_->label_.has_value() ? pimpl_->label_.value() : "";
     Emit<MenuItemClickedEvent>(id, text);
   } catch (...) {
     // Protect against event emission exceptions
@@ -291,35 +293,96 @@ bool MenuItem::Trigger() {
 }
 
 void* MenuItem::GetNativeObjectInternal() const {
-  return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->menu_item_id_));
+  return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->id_));
 }
 
 // Menu::Impl implementation
 class Menu::Impl {
  public:
+  MenuId id_;
   HMENU hmenu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
   bool visible_;
+  int window_proc_handle_id_;
 
-  Impl(HMENU menu) : hmenu_(menu), enabled_(true), visible_(false) {}
+  Impl(MenuId id, HMENU menu)
+      : id_(id),
+        hmenu_(menu),
+        enabled_(true),
+        visible_(false),
+        window_proc_handle_id_(-1) {}
 
   ~Impl() {
+    // Unregister window procedure handler
+    if (window_proc_handle_id_ != -1) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(
+          window_proc_handle_id_);
+    }
+
     if (hmenu_) {
       DestroyMenu(hmenu_);
     }
   }
+
+  // Handle window procedure delegate for menu commands
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd,
+                                          UINT message,
+                                          WPARAM wparam,
+                                          LPARAM lparam) {
+    std::cout << "Menu: HandleWindowProc, message = " << message << std::endl;
+    if (message == WM_COMMAND) {
+      UINT menu_item_id = LOWORD(wparam);
+
+      std::cout << "Menu: HandleWindowProc, menu_item_id = " << menu_item_id << std::endl;
+
+      // Find the menu item by Windows menu item ID
+      for (const auto& item : items_) {
+        if (item->pimpl_->id_ == menu_item_id) {
+          std::cout << "Menu: Item clicked, menu_item_id = " << menu_item_id << std::endl;
+          // Call Trigger() to emit the event
+          item->Trigger();
+          return 0;
+        }
+      }
+    }
+    return std::nullopt;  // Let default window procedure handle it
+  }
 };
 
 Menu::Menu(void* native_menu)
-    : id(IdAllocator::Allocate<Menu>()),
-      pimpl_(std::make_unique<Impl>(static_cast<HMENU>(native_menu))) {}
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), static_cast<HMENU>(native_menu))) {
+  // Register window procedure handler for menu commands
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (host_window) {
+    pimpl_->window_proc_handle_id_ =
+        WindowMessageDispatcher::GetInstance().RegisterHandler(
+            host_window,
+            [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+            });
+  }
+}
 
 Menu::Menu()
-    : id(IdAllocator::Allocate<Menu>()),
-      pimpl_(std::make_unique<Impl>(CreatePopupMenu())) {}
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), CreatePopupMenu())) {
+  // Register window procedure handler for menu commands
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (host_window) {
+    pimpl_->window_proc_handle_id_ =
+        WindowMessageDispatcher::GetInstance().RegisterHandler(
+            host_window,
+            [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+            });
+  }
+}
 
 Menu::~Menu() {}
+
+MenuId Menu::GetId() const {
+  return pimpl_->id_;
+}
 
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (!item)
@@ -336,7 +399,7 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
     flags |= MF_UNCHECKED;
   }
 
-  UINT_PTR menu_id = item->id;
+  UINT_PTR menu_id = item->GetId();
   HMENU sub_menu = nullptr;
   if (item->GetSubmenu()) {
     sub_menu = static_cast<HMENU>(item->GetSubmenu()->GetNativeObject());
@@ -351,7 +414,6 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
 
   // Update the item's impl with menu info
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
-  item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
 }
 
 void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
@@ -373,11 +435,10 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   auto label_opt = item->GetLabel();
   std::string label_str = label_opt.has_value() ? *label_opt : "";
   std::wstring w_label_str = StringToWString(label_str);
-  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->id,
-              w_label_str.c_str());
+  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->GetId(),
+      w_label_str.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
-  item->pimpl_->menu_item_id_ = static_cast<UINT>(item->id);
 }
 
 bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
@@ -386,7 +447,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
   auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
   if (it != pimpl_->items_.end()) {
-    RemoveMenu(pimpl_->hmenu_, item->id, MF_BYCOMMAND);
+    RemoveMenu(pimpl_->hmenu_, item->GetId(), MF_BYCOMMAND);
     pimpl_->items_.erase(it);
     return true;
   }
@@ -395,7 +456,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
 
 bool Menu::RemoveItemById(MenuItemId item_id) {
   for (auto it = pimpl_->items_.begin(); it != pimpl_->items_.end(); ++it) {
-    if ((*it)->id == item_id) {
+    if ((*it)->GetId() == item_id) {
       RemoveMenu(pimpl_->hmenu_, item_id, MF_BYCOMMAND);
       pimpl_->items_.erase(it);
       return true;
@@ -442,7 +503,7 @@ std::shared_ptr<MenuItem> Menu::GetItemAt(size_t index) const {
 
 std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
   for (const auto& item : pimpl_->items_) {
-    if (item->id == item_id) {
+    if (item->GetId() == item_id) {
       return item;
     }
   }
@@ -451,32 +512,6 @@ std::shared_ptr<MenuItem> Menu::GetItemById(MenuItemId item_id) const {
 
 std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
-}
-
-std::shared_ptr<MenuItem> Menu::FindItemByText(const std::string& text,
-                                               bool case_sensitive) const {
-  for (const auto& item : pimpl_->items_) {
-    auto item_text_opt = item->GetLabel();
-    if (!item_text_opt.has_value()) {
-      continue;
-    }
-
-    const std::string& item_text = item_text_opt.value();
-    if (case_sensitive) {
-      if (item_text == text)
-        return item;
-    } else {
-      std::string lower_item_text = item_text;
-      std::string lower_search_text = text;
-      std::transform(lower_item_text.begin(), lower_item_text.end(),
-                     lower_item_text.begin(), ::tolower);
-      std::transform(lower_search_text.begin(), lower_search_text.end(),
-                     lower_search_text.begin(), ::tolower);
-      if (lower_item_text == lower_search_text)
-        return item;
-    }
-  }
-  return nullptr;
 }
 
 bool Menu::Open(double x, double y) {
