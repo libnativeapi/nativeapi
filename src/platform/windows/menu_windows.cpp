@@ -8,6 +8,7 @@
 #include "../../menu.h"
 #include "../../menu_event.h"
 #include "string_utils_windows.h"
+#include "window_message_dispatcher.h"
 
 namespace nativeapi {
 
@@ -85,74 +86,6 @@ std::pair<UINT, UINT> ConvertAccelerator(
 
   return std::make_pair(key, modifiers);
 }
-
-// Helper function to get the main window for the current thread
-HWND GetMainWindowForCurrentThread() {
-  static HWND main_window = nullptr;
-
-  // First try to get the foreground window
-  HWND hwnd = nullptr;
-
-  // Use EnumWindows to find the main window
-  struct EnumData {
-    HWND main_window;
-    DWORD current_thread_id;
-  };
-
-  EnumData data = {nullptr, GetCurrentThreadId()};
-
-  EnumWindows(
-      [](HWND hwnd, LPARAM lParam) -> BOOL {
-        EnumData* data = reinterpret_cast<EnumData*>(lParam);
-
-        // Check if window belongs to current thread
-        DWORD window_thread_id = GetWindowThreadProcessId(hwnd, nullptr);
-        if (window_thread_id != data->current_thread_id) {
-          return TRUE;  // Continue enumeration
-        }
-
-        // Check if window is visible and not a tool window
-        if (!IsWindowVisible(hwnd)) {
-          return TRUE;  // Continue enumeration
-        }
-
-        // Skip tool windows
-        if (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) {
-          return TRUE;  // Continue enumeration
-        }
-
-        // Skip message-only windows
-        if (hwnd == HWND_MESSAGE) {
-          return TRUE;  // Continue enumeration
-        }
-
-        // Check if it's a main window (has a title bar, not a child window)
-        if (GetParent(hwnd) != nullptr) {
-          return TRUE;  // Continue enumeration
-        }
-
-        // Found a candidate main window
-        data->main_window = hwnd;
-        return FALSE;  // Stop enumeration
-      },
-      reinterpret_cast<LPARAM>(&data));
-
-  if (data.main_window) {
-    return data.main_window;
-  }
-
-  // Fallback: try to find any top-level window
-  hwnd = FindWindow(nullptr, nullptr);
-  if (hwnd && IsWindow(hwnd)) {
-    return hwnd;
-  }
-
-  return nullptr;
-}
-
-}  // namespace nativeapi
-
-namespace nativeapi {
 
 // MenuItem::Impl implementation
 class MenuItem::Impl {
@@ -550,12 +483,20 @@ bool Menu::Open(double x, double y) {
   pimpl_->visible_ = true;
 
   POINT pt = {static_cast<int>(x), static_cast<int>(y)};
-  // Use the helper function to get the main window for current thread
-  HWND hwnd = GetMainWindowForCurrentThread();
 
-  // Show the context menu
+  // Get the host window for menus
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (!host_window) {
+    pimpl_->visible_ = false;
+    return false;
+  }
+
+  // Set the host window as foreground to ensure menu can be displayed
+  SetForegroundWindow(host_window);
+
+  // Show the context menu using the host window
   TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0,
-                 hwnd, nullptr);
+                 host_window, nullptr);
 
   pimpl_->visible_ = false;
   return true;

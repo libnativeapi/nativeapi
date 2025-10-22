@@ -33,18 +33,16 @@ class TrayIcon::Impl {
   using RightClickedCallback = std::function<void(TrayIconId)>;
   using DoubleClickedCallback = std::function<void(TrayIconId)>;
 
-  Impl() : hwnd_(nullptr), icon_handle_(nullptr), owns_window_(false) {
+  Impl() : hwnd_(nullptr), icon_handle_(nullptr) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
   Impl(HWND hwnd,
-       bool owns_window,
        ClickedCallback clicked_callback,
        RightClickedCallback right_clicked_callback,
        DoubleClickedCallback double_clicked_callback)
       : hwnd_(hwnd),
         icon_handle_(nullptr),
-        owns_window_(owns_window),
         clicked_callback_(std::move(clicked_callback)),
         right_clicked_callback_(std::move(right_clicked_callback)),
         double_clicked_callback_(std::move(double_clicked_callback)) {
@@ -71,10 +69,7 @@ class TrayIcon::Impl {
 
     if (hwnd_) {
       Shell_NotifyIconW(NIM_DELETE, &nid_);
-      // Destroy the window if we own it
-      if (owns_window_) {
-        DestroyWindow(hwnd_);
-      }
+      // Note: We don't destroy the shared host window
     }
     if (icon_handle_) {
       DestroyIcon(icon_handle_);
@@ -121,7 +116,6 @@ class TrayIcon::Impl {
   std::shared_ptr<Menu> context_menu_;
   HICON icon_handle_;
   TrayIconId tray_icon_id_;
-  bool owns_window_;  // Whether we created the window and should destroy it
 
   // Callback functions for event emission
   ClickedCallback clicked_callback_;
@@ -133,45 +127,10 @@ TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
 
 TrayIcon::TrayIcon(void* native_tray_icon) {
   HWND hwnd = nullptr;
-  bool owns_window = false;
 
   if (native_tray_icon == nullptr) {
-    // Create a new tray icon - need a window handle for receiving messages
-    HINSTANCE hInstance = GetModuleHandle(nullptr);
-
-    // Register window class for message-only window (once per process)
-    static bool class_registered = false;
-    static std::wstring class_name = L"NativeAPITrayIconWindow";
-
-    if (!class_registered) {
-      WNDCLASSW wc = {};
-      // Use WindowMessageDispatcher to route messages to registered handlers
-      wc.lpfnWndProc = WindowMessageDispatcher::DispatchWindowProc;
-      wc.hInstance = hInstance;
-      wc.lpszClassName = class_name.c_str();
-
-      if (RegisterClassW(&wc)) {
-        class_registered = true;
-      }
-    }
-
-    // Create a message-only window (HWND_MESSAGE as parent)
-    if (class_registered) {
-      hwnd = CreateWindowExW(
-          0,                   // Extended styles
-          class_name.c_str(),  // Window class
-          L"",                 // Window title (empty for message-only window)
-          0,                   // Window style
-          0, 0, 0, 0,          // Position and size (ignored for message-only)
-          HWND_MESSAGE,        // Parent: message-only window
-          nullptr,             // Menu
-          hInstance,           // Instance
-          nullptr);            // Additional data
-
-      if (hwnd) {
-        owns_window = true;
-      }
-    }
+    // Use the shared host window from WindowMessageDispatcher
+    hwnd = WindowMessageDispatcher::GetInstance().GetHostWindow();
   } else {
     // Wrap existing native tray icon
     // In a real implementation, you'd extract HWND from the tray parameter
@@ -196,7 +155,7 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
     };
 
     pimpl_ = std::make_unique<Impl>(
-        hwnd, owns_window, std::move(clicked_callback),
+        hwnd, std::move(clicked_callback),
         std::move(right_clicked_callback), std::move(double_clicked_callback));
   } else {
     // Failed to create window, create uninitialized Impl

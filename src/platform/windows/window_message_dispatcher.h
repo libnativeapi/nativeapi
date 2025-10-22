@@ -99,6 +99,16 @@ class WindowMessageDispatcher {
   bool UnregisterHandler(int id);
 
   /**
+   * @brief Get a host window for tray icons and menus.
+   *
+   * This method provides a hidden window that can be used as a parent
+   * for tray icons and menus. The window is created once and reused.
+   *
+   * @return HWND Host window handle, or nullptr if creation failed
+   */
+  HWND GetHostWindow();
+
+  /**
    * @brief Internal window procedure function used for message dispatching.
    *
    * This function is installed as the window procedure for windows that have
@@ -152,6 +162,8 @@ class WindowMessageDispatcher {
   std::unordered_map<HWND, WNDPROC> original_procs_;
   ///< Next available handler ID
   int next_id_ = 1;
+  ///< Host window for tray icons and menus
+  HWND host_window_ = nullptr;
 };
 
 }  // namespace nativeapi
