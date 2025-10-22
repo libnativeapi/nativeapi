@@ -328,12 +328,44 @@ class Menu::Impl {
     }
   }
 
-  // Handle window procedure delegate for menu commands
+  // Handle window procedure delegate for menu commands and menu lifecycle events
   std::optional<LRESULT> HandleWindowProc(HWND hwnd,
                                           UINT message,
                                           WPARAM wparam,
-                                          LPARAM lparam) {
-    if (message == WM_COMMAND) {
+                                          LPARAM lparam,
+                                          Menu* menu) {
+    // Handle menu lifecycle events
+    if (message == WM_INITMENUPOPUP) {
+      // wParam contains the HMENU handle of the popup menu being opened
+      HMENU popup_menu = reinterpret_cast<HMENU>(wparam);
+      
+      if (popup_menu == hmenu_) {
+        // This is our menu being opened
+        visible_ = true;
+        
+        // Emit menu opened event
+        try {
+          menu->Emit<MenuOpenedEvent>(id_);
+        } catch (...) {
+          // Protect against event emission exceptions
+        }
+      }
+    } else if (message == WM_UNINITMENUPOPUP) {
+      // wParam contains the HMENU handle of the popup menu being closed
+      HMENU popup_menu = reinterpret_cast<HMENU>(wparam);
+      
+      if (popup_menu == hmenu_) {
+        // This is our menu being closed
+        visible_ = false;
+        
+        // Emit menu closed event
+        try {
+          menu->Emit<MenuClosedEvent>(id_);
+        } catch (...) {
+          // Protect against event emission exceptions
+        }
+      }
+    } else if (message == WM_COMMAND) {
       // For WM_COMMAND from menus, wparam contains the menu item ID
       // When using popup menus (TrackPopupMenu), the full 32-bit ID is
       // preserved in wparam, unlike menu bars which only use 16-bit IDs
@@ -375,14 +407,14 @@ class Menu::Impl {
 Menu::Menu(void* native_menu)
     : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
                                     static_cast<HMENU>(native_menu))) {
-  // Register window procedure handler for menu commands
+  // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
     pimpl_->window_proc_handle_id_ =
         WindowMessageDispatcher::GetInstance().RegisterHandler(
             host_window,
             [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
             });
   }
 }
@@ -390,14 +422,14 @@ Menu::Menu(void* native_menu)
 Menu::Menu()
     : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
                                     CreatePopupMenu())) {
-  // Register window procedure handler for menu commands
+  // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
     pimpl_->window_proc_handle_id_ =
         WindowMessageDispatcher::GetInstance().RegisterHandler(
             host_window,
             [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
             });
   }
 }
@@ -539,14 +571,11 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 }
 
 bool Menu::Open(double x, double y) {
-  pimpl_->visible_ = true;
-
   POINT pt = {static_cast<int>(x), static_cast<int>(y)};
 
   // Get the host window for menus
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (!host_window) {
-    pimpl_->visible_ = false;
     return false;
   }
 
@@ -554,10 +583,12 @@ bool Menu::Open(double x, double y) {
   SetForegroundWindow(host_window);
 
   // Show the context menu using the host window
+  // Note: TrackPopupMenu is a blocking call
+  // - WM_INITMENUPOPUP is sent when the menu opens (triggers MenuOpenedEvent)
+  // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers MenuClosedEvent)
   TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0,
                  host_window, nullptr);
 
-  pimpl_->visible_ = false;
   return true;
 }
 
@@ -569,8 +600,12 @@ bool Menu::Open() {
 
 bool Menu::Close() {
   if (pimpl_->visible_) {
-    // Windows automatically closes popup menus when user clicks elsewhere
-    pimpl_->visible_ = false;
+    // Send WM_CANCELMODE to close any open menus
+    HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+    if (host_window) {
+      // This will close the menu and trigger WM_UNINITMENUPOPUP
+      SendMessage(host_window, WM_CANCELMODE, 0, 0);
+    }
     return true;
   }
   return false;
