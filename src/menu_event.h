@@ -65,17 +65,14 @@ class MenuClosedEvent : public MenuEvent {
  */
 class MenuItemClickedEvent : public MenuEvent {
  public:
-  MenuItemClickedEvent(MenuItemId item_id, const std::string& item_text)
-      : item_id_(item_id), item_text_(item_text) {}
+  MenuItemClickedEvent(MenuItemId item_id) : item_id_(item_id) {}
 
   MenuItemId GetItemId() const { return item_id_; }
-  const std::string& GetItemText() const { return item_text_; }
 
   std::string GetTypeName() const override { return "MenuItemClickedEvent"; }
 
  private:
   MenuItemId item_id_;
-  std::string item_text_;
 };
 
 /**

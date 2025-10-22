@@ -19,11 +19,7 @@ static void OnGtkMenuItemActivate(GtkMenuItem* /*item*/, gpointer user_data) {
   if (!menu_item) {
     return;
   }
-  std::string text = "";
-  if (auto label = menu_item->GetLabel(); label.has_value()) {
-    text = *label;
-  }
-  menu_item->Emit(MenuItemClickedEvent(menu_item->GetId(), text));
+  menu_item->Emit(MenuItemClickedEvent(menu_item->GetId()));
 }
 
 static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {

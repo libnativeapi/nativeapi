@@ -284,8 +284,7 @@ bool MenuItem::Trigger() {
     return false;
 
   try {
-    std::string text = pimpl_->label_.has_value() ? pimpl_->label_.value() : "";
-    Emit<MenuItemClickedEvent>(id, text);
+    Emit<MenuItemClickedEvent>(pimpl_->id_);
   } catch (...) {
     // Protect against event emission exceptions
   }

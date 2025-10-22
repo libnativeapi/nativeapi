@@ -19,7 +19,7 @@ static const void* kMenuItemIdKey = &kMenuItemIdKey;
 static const void* kMenuIdKey = &kMenuIdKey;
 
 // Forward declarations - moved to global scope
-typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemId item_id, const std::string& item_label);
+typedef void (^MenuItemClickedBlock)(nativeapi::MenuItemId item_id);
 typedef void (^MenuOpenedBlock)(nativeapi::MenuId menu_id);
 typedef void (^MenuClosedBlock)(nativeapi::MenuId menu_id);
 
@@ -125,14 +125,11 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
 
     // Call the block if it exists
     if (_clickedBlock) {
-      NSString* title = [menu_item title];
-      std::string item_label = title ? [title UTF8String] : "";
-
       // Get the MenuItemId from the menu item's associated object
       NSNumber* item_id_obj = objc_getAssociatedObject(menu_item, kMenuItemIdKey);
       if (item_id_obj) {
         nativeapi::MenuItemId item_id = [item_id_obj longValue];
-        _clickedBlock(item_id, item_label);
+        _clickedBlock(item_id);
       }
     }
   } @catch (NSException* exception) {
@@ -277,9 +274,9 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) {
   pimpl_->label_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_label) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id) {
     try {
-      Emit<MenuItemClickedEvent>(item_id, item_label);
+      Emit<MenuItemClickedEvent>(item_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -294,9 +291,9 @@ MenuItem::MenuItem(void* native_item) {
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   // 设置默认的 Block 处理器，直接发送事件
-  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id, const std::string& item_label) {
+  pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id) {
     try {
-      Emit<MenuItemClickedEvent>(item_id, item_label);
+      Emit<MenuItemClickedEvent>(item_id);
     } catch (...) {
       // Protect against event emission exceptions
     }
@@ -547,8 +544,7 @@ bool MenuItem::Trigger() {
 
   // Call the block directly instead of going through target-action
   if (pimpl_->ns_menu_item_target_.clickedBlock) {
-    std::string itemText = pimpl_->label_.value_or("");
-    pimpl_->ns_menu_item_target_.clickedBlock(pimpl_->id_, itemText);
+    pimpl_->ns_menu_item_target_.clickedBlock(pimpl_->id_);
   }
   return true;
 }
