@@ -73,7 +73,6 @@ typedef struct {
  */
 typedef struct {
   native_menu_item_id_t item_id;
-  char item_text[256];
 } native_menu_item_clicked_event_t;
 
 /**

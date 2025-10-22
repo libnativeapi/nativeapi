@@ -15,17 +15,20 @@
 #include "../../src/capi/tray_icon_c.h"
 #include "../../src/capi/tray_manager_c.h"
 
+// Menu item IDs (stored globally for identification)
+static native_menu_item_id_t exit_item_id = -1;
+static native_menu_item_id_t show_message_item_id = -1;
+
 // Event callback functions
 void on_menu_item_clicked(const void* event, void* user_data) {
   const native_menu_item_clicked_event_t* clicked_event =
       (const native_menu_item_clicked_event_t*)event;
-  printf("Menu item clicked: ID=%ld, Text='%s'\n", clicked_event->item_id,
-         clicked_event->item_text);
+  printf("Menu item clicked: ID=%ld\n", clicked_event->item_id);
 
-  if (strcmp(clicked_event->item_text, "Exit") == 0) {
+  if (clicked_event->item_id == exit_item_id) {
     printf("Exiting application...\n");
     exit(0);
-  } else if (strcmp(clicked_event->item_text, "Show Message") == 0) {
+  } else if (clicked_event->item_id == show_message_item_id) {
     printf("Hello from tray menu!\n");
   }
 }
@@ -98,6 +101,10 @@ int main() {
     native_menu_destroy(menu);
     return 1;
   }
+
+  // Store menu item IDs for later identification
+  show_message_item_id = native_menu_item_get_id(item1);
+  exit_item_id = native_menu_item_get_id(exit_item);
 
   // Set up menu item properties
   native_menu_item_set_enabled(item1, true);

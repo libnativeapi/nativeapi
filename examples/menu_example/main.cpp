@@ -44,13 +44,13 @@ int main() {
     // Listen to menu item selection events
     file_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
-          std::cout << "[EVENT] Menu item clicked: " << event.GetItemText()
+          std::cout << "[EVENT] Menu item clicked: New File"
                     << " (ID: " << event.GetItemId() << ")" << std::endl;
         });
 
     checkbox_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
-          std::cout << "[EVENT] Checkbox item clicked: " << event.GetItemText()
+          std::cout << "[EVENT] Checkbox item clicked: Word Wrap"
                     << " (ID: " << event.GetItemId()
                     << ") - Handle state manually" << std::endl;
         });
@@ -71,7 +71,7 @@ int main() {
 
     exit_item->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
-          std::cout << "[EVENT] Exit item clicked: " << event.GetItemText()
+          std::cout << "[EVENT] Exit item clicked: Exit"
                     << std::endl;
           std::cout << "Application should exit now..." << std::endl;
         });
@@ -140,13 +140,13 @@ int main() {
 
     submenu_item1->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
-          std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText()
+          std::cout << "[EVENT] Submenu item clicked: Submenu Item 1"
                     << std::endl;
         });
 
     submenu_item2->AddListener<MenuItemClickedEvent>(
         [](const MenuItemClickedEvent& event) {
-          std::cout << "[EVENT] Submenu item clicked: " << event.GetItemText()
+          std::cout << "[EVENT] Submenu item clicked: Submenu Item 2"
                     << std::endl;
         });
 

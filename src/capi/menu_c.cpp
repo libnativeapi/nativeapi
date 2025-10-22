@@ -560,9 +560,6 @@ int native_menu_item_add_listener(native_menu_item_t item,
               if (listener_it != item_it->second.end()) {
                 native_menu_item_clicked_event_t c_event = {};
                 c_event.item_id = event.GetItemId();
-                strncpy(c_event.item_text, event.GetItemText().c_str(),
-                        sizeof(c_event.item_text) - 1);
-                c_event.item_text[sizeof(c_event.item_text) - 1] = '\0';
 
                 listener_it->second->callback(&c_event,
                                               listener_it->second->user_data);

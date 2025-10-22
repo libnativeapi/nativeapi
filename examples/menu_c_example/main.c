@@ -10,8 +10,8 @@ void on_menu_item_clicked(const void* event, void* user_data) {
       (const native_menu_item_clicked_event_t*)event;
   const char* item_name = (const char*)user_data;
 
-  printf("[EVENT] Menu item clicked: %s (ID: %ld, Text: %s)\n", item_name,
-         clicked_event->item_id, clicked_event->item_text);
+  printf("[EVENT] Menu item clicked: %s (ID: %ld)\n", item_name,
+         clicked_event->item_id);
 }
 
 void on_menu_item_submenu_opened(const void* event, void* user_data) {
