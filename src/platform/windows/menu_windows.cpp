@@ -122,11 +122,15 @@ class MenuItem::Impl {
 };
 
 MenuItem::MenuItem(void* native_item)
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, MenuItemType::Normal)) {}
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(),
+                                    nullptr,
+                                    MenuItemType::Normal)) {}
 
-MenuItem::MenuItem(const std::string& text, MenuItemType type)
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, type)) {
-  pimpl_->label_ = text;
+MenuItem::MenuItem(const std::string& label, MenuItemType type)
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(),
+                                    nullptr,
+                                    type)) {
+  pimpl_->label_ = label;
 }
 
 MenuItem::~MenuItem() {}
@@ -329,20 +333,39 @@ class Menu::Impl {
                                           UINT message,
                                           WPARAM wparam,
                                           LPARAM lparam) {
-    std::cout << "Menu: HandleWindowProc, message = " << message << std::endl;
     if (message == WM_COMMAND) {
-      UINT menu_item_id = LOWORD(wparam);
+      // For WM_COMMAND from menus, wparam contains the menu item ID
+      // When using popup menus (TrackPopupMenu), the full 32-bit ID is
+      // preserved in wparam, unlike menu bars which only use 16-bit IDs
+      WORD hiword = HIWORD(wparam);
+      WORD loword = LOWORD(wparam);
 
-      std::cout << "Menu: HandleWindowProc, menu_item_id = " << menu_item_id << std::endl;
+      std::cout << "Menu: WM_COMMAND - HIWORD=" << hiword
+                << ", LOWORD=" << loword << std::endl;
 
-      // Find the menu item by Windows menu item ID
-      for (const auto& item : items_) {
-        if (item->pimpl_->id_ == menu_item_id) {
-          std::cout << "Menu: Item clicked, menu_item_id = " << menu_item_id << std::endl;
-          // Call Trigger() to emit the event
-          item->Trigger();
-          return 0;
+      // For popup menus, lparam is NULL and wparam contains menu item ID
+      if (lparam == 0) {
+        // Reconstruct the full 32-bit menu item ID from wparam
+        // wparam for menus contains the full ID we passed to AppendMenuW
+        MenuItemId menu_item_id = static_cast<MenuItemId>(wparam);
+
+        std::cout << "Menu: Looking for menu item with ID = " << menu_item_id
+                  << " (0x" << std::hex << menu_item_id << std::dec << ")"
+                  << std::endl;
+
+        // Find the menu item by IdAllocator-generated ID
+        for (const auto& item : items_) {
+          if (item->pimpl_->id_ == menu_item_id) {
+            std::cout << "Menu: Item clicked, ID = " << menu_item_id
+                      << std::endl;
+            // Call Trigger() to emit the event
+            item->Trigger();
+            return 0;
+          }
         }
+
+        std::cout << "Menu: No matching menu item found for ID " << menu_item_id
+                  << std::endl;
       }
     }
     return std::nullopt;  // Let default window procedure handle it
@@ -350,7 +373,8 @@ class Menu::Impl {
 };
 
 Menu::Menu(void* native_menu)
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), static_cast<HMENU>(native_menu))) {
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
+                                    static_cast<HMENU>(native_menu))) {
   // Register window procedure handler for menu commands
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
@@ -364,7 +388,8 @@ Menu::Menu(void* native_menu)
 }
 
 Menu::Menu()
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), CreatePopupMenu())) {
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
+                                    CreatePopupMenu())) {
   // Register window procedure handler for menu commands
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
@@ -435,7 +460,7 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   std::string label_str = label_opt.has_value() ? *label_opt : "";
   std::wstring w_label_str = StringToWString(label_str);
   InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->GetId(),
-      w_label_str.c_str());
+              w_label_str.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
 }
