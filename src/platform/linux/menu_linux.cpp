@@ -83,7 +83,7 @@ class MenuItem::Impl {
   std::shared_ptr<Menu> submenu_;
 };
 
-MenuItem::MenuItem(const std::string& text, MenuItemType type) {
+MenuItem::MenuItem(const std::string& label, MenuItemType type) {
   MenuItemId id = IdAllocator::Allocate<MenuItem>();
   GtkWidget* gtk_item = nullptr;
 
@@ -92,22 +92,22 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) {
       gtk_item = gtk_separator_menu_item_new();
       break;
     case MenuItemType::Checkbox:
-      gtk_item = gtk_check_menu_item_new_with_label(text.c_str());
+      gtk_item = gtk_check_menu_item_new_with_label(label.c_str());
       break;
     case MenuItemType::Radio:
-      gtk_item = gtk_radio_menu_item_new_with_label(nullptr, text.c_str());
+      gtk_item = gtk_radio_menu_item_new_with_label(nullptr, label.c_str());
       break;
     case MenuItemType::Normal:
     case MenuItemType::Submenu:
     default:
-      gtk_item = gtk_menu_item_new_with_label(text.c_str());
+      gtk_item = gtk_menu_item_new_with_label(label.c_str());
       break;
   }
 
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_item, type));
 
-  if (!text.empty()) {
-    pimpl_->title_ = text;
+  if (!label.empty()) {
+    pimpl_->title_ = label;
   } else {
     pimpl_->title_.reset();
   }

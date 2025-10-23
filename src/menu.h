@@ -193,7 +193,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * auto checkbox = std::make_shared<MenuItem>("Word Wrap", MenuItemType::Checkbox);
    * ```
    */
-  MenuItem(const std::string& text = "", MenuItemType type = MenuItemType::Normal);
+  MenuItem(const std::string& label = "", MenuItemType type = MenuItemType::Normal);
 
   /**
    * @brief Constructor that wraps an existing platform-specific menu item.
@@ -312,7 +312,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    *
    * The accelerator allows users to trigger the menu item using
    * keyboard shortcuts. The accelerator is typically displayed
-   * next to the menu item text.
+   * next to the menu item label.
    *
    * @param accelerator The keyboard accelerator to set
    *

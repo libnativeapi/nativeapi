@@ -140,12 +140,12 @@ typedef enum {
 
 /**
  * Create a new menu item
- * @param text The display text for the menu item
+ * @param label The display label for the menu item
  * @param type The type of menu item to create
  * @return Menu item handle, or NULL if creation failed
  */
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_item_create(const char* text, native_menu_item_type_t type);
+native_menu_item_t native_menu_item_create(const char* label, native_menu_item_type_t type);
 
 /**
  * Create a separator menu item

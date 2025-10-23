@@ -247,7 +247,7 @@ class MenuItem::Impl {
 };
 
 // MenuItem implementation
-MenuItem::MenuItem(const std::string& text, MenuItemType type) {
+MenuItem::MenuItem(const std::string& label, MenuItemType type) {
   MenuItemId id = IdAllocator::Allocate<MenuItem>();
   NSMenuItem* ns_item = nullptr;
 
@@ -260,7 +260,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) {
     case MenuItemType::Radio:
     case MenuItemType::Submenu:
     default:
-      ns_item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()]
+      ns_item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:label.c_str()]
                                            action:nil
                                     keyEquivalent:@""];
       break;
@@ -269,7 +269,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) {
   pimpl_ = std::make_unique<Impl>(id, ns_item, type);
   objc_setAssociatedObject(ns_item, kMenuItemIdKey, [NSNumber numberWithUnsignedInt:id],
                            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-  pimpl_->label_ = text.empty() ? std::nullopt : std::optional<std::string>(text);
+  pimpl_->label_ = label.empty() ? std::nullopt : std::optional<std::string>(label);
 
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id) {

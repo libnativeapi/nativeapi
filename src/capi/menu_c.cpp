@@ -140,12 +140,12 @@ static native_menu_item_state_t convert_menu_item_state(MenuItemState state) {
 
 // MenuItem C API Implementation
 
-native_menu_item_t native_menu_item_create(const char* text, native_menu_item_type_t type) {
-  if (!text)
+native_menu_item_t native_menu_item_create(const char* label, native_menu_item_type_t type) {
+  if (!label)
     return nullptr;
 
   try {
-    auto item = std::make_shared<MenuItem>(text, convert_menu_item_type(type));
+    auto item = std::make_shared<MenuItem>(label, convert_menu_item_type(type));
     void* handle = item.get();
 
     // Store the shared_ptr in the registry to keep the object alive
@@ -235,18 +235,18 @@ char* native_menu_item_get_label(native_menu_item_t item) {
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    auto textOpt = menu_item->GetLabel();
+    auto labelOpt = menu_item->GetLabel();
 
-    if (!textOpt.has_value()) {
+    if (!labelOpt.has_value()) {
       return nullptr;
     }
 
-    const std::string& text = textOpt.value();
+    const std::string& label = labelOpt.value();
 
     // Allocate C string and copy content
-    char* result = static_cast<char*>(malloc(text.length() + 1));
+    char* result = static_cast<char*>(malloc(label.length() + 1));
     if (result) {
-      strcpy(result, text.c_str());
+      strcpy(result, label.c_str());
     }
     return result;
   } catch (...) {
