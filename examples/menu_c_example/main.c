@@ -151,23 +151,11 @@ int main() {
 
   printf("Added submenu with %zu items\n", native_menu_get_item_count(submenu));
 
-  // Demonstrate programmatic triggering
-  printf("\n=== Testing Programmatic Event Triggering ===\n");
-
-  printf("Triggering file item...\n");
-  native_menu_item_trigger(file_item);
-
-  printf("Triggering checkbox item...\n");
-  native_menu_item_trigger(checkbox_item);
-
-  printf("Triggering checkbox item again...\n");
-  native_menu_item_trigger(checkbox_item);
-
-  printf("Switching radio button...\n");
-  native_menu_item_trigger(radio_item2);
-
-  printf("Triggering exit item...\n");
-  native_menu_item_trigger(exit_item);
+  // Note: Programmatic event triggering is no longer available via trigger API.
+  // Events can only be triggered through actual user interaction.
+  printf("\n=== Programmatic Event Triggering Removed ===\n");
+  printf("Note: The trigger API has been removed. Events are now only "
+         "triggered through user interaction.\n");
 
   // Demonstrate listener removal
   printf("\n=== Testing Listener Removal ===\n");
@@ -179,8 +167,8 @@ int main() {
     printf("Failed to remove checkbox click listener\n");
   }
 
-  printf("Triggering checkbox item after removing click listener...\n");
-  native_menu_item_trigger(checkbox_item);
+  printf("Checkbox item listener removed. Events will now only be triggered "
+         "through user interaction.\n");
 
   // Open menu as context menu (this may not work in console applications)
   printf("\n=== Attempting to Open Context Menu ===\n");
@@ -207,13 +195,11 @@ int main() {
                                     on_menu_item_clicked, (void*)"Additional Test 2");
 
   printf("Added multiple listeners for the same event\n");
-  printf("Triggering item with multiple listeners...\n");
-  native_menu_item_trigger(additional_item);
+  printf("Multiple listeners can be registered for the same event type.\n");
 
   // Remove one listener
   native_menu_item_remove_listener(additional_item, additional_listener1);
-  printf("Removed first listener, triggering again...\n");
-  native_menu_item_trigger(additional_item);
+  printf("Removed first listener. Remaining listener will receive events.\n");
 
   native_menu_item_destroy(additional_item);
 
@@ -228,11 +214,10 @@ int main() {
   printf(
       "5. Handling NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED and "
       "NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED\n");
-  printf("6. Programmatic event triggering\n");
-  printf("7. Event listener removal with native_menu_item_remove_listener()\n");
-  printf("8. Multiple listeners for the same event type\n");
-  printf("9. Manual state management for checkbox and radio items\n");
-  printf("10. Submenu support with event handling\n");
+  printf("6. Event listener removal with native_menu_item_remove_listener()\n");
+  printf("7. Multiple listeners for the same event type\n");
+  printf("8. Manual state management for checkbox and radio items\n");
+  printf("9. Submenu support with event handling\n");
 
   // Cleanup
   native_menu_item_destroy(file_item);

@@ -416,16 +416,6 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    */
   void RemoveSubmenu();
 
-  /**
-   * @brief Programmatically trigger this menu item.
-   *
-   * Simulates a user click on the menu item, firing the appropriate
-   * events and callbacks.
-   *
-   * @return true if the item was successfully triggered, false otherwise
-   */
-  bool Trigger();
-
  protected:
   /**
    * @brief Internal method to get the platform-specific native menu item object.

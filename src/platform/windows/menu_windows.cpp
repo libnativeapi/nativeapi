@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -100,6 +101,8 @@ class MenuItem::Impl {
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
+  int window_proc_handle_id_;
+  std::function<void(MenuItemId)> clicked_callback_;
 
   Impl(MenuItemId id, HMENU parent_menu, MenuItemType type)
       : id_(id),
@@ -108,22 +111,82 @@ class MenuItem::Impl {
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
-        radio_group_(-1) {}
+        radio_group_(-1),
+        window_proc_handle_id_(-1) {}
 
   ~Impl() {
+    // Unregister window procedure handler
+    if (window_proc_handle_id_ != -1) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
+    }
     // Windows menu items are automatically cleaned up when the menu is
     // destroyed
+  }
+
+  // Handle window procedure delegate for menu item clicks
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd,
+                                          UINT message,
+                                          WPARAM wparam,
+                                          LPARAM lparam) {
+    if (message == WM_COMMAND) {
+      // For WM_COMMAND from menus, wparam contains the menu item ID
+      // When using popup menus (TrackPopupMenu), the full 32-bit ID is
+      // preserved in wparam, unlike menu bars which only use 16-bit IDs
+      if (lparam == 0) {
+        // Reconstruct the full 32-bit menu item ID from wparam
+        MenuItemId menu_item_id = static_cast<MenuItemId>(wparam);
+
+        // Check if this is our menu item
+        if (menu_item_id == id_) {
+          std::cout << "MenuItem: Item clicked, ID = " << menu_item_id << std::endl;
+          // Call the clicked callback to emit the event
+          if (clicked_callback_) {
+            clicked_callback_(id_);
+          }
+          return 0;
+        }
+      }
+    }
+    return std::nullopt;  // Let other handlers process
   }
 };
 
 MenuItem::MenuItem(void* native_item)
     : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(),
                                     nullptr,
-                                    MenuItemType::Normal)) {}
+                                    MenuItemType::Normal)) {
+  // Set clicked callback to emit event
+  pimpl_->clicked_callback_ = [this](MenuItemId id) {
+    Emit<MenuItemClickedEvent>(id);
+  };
+  
+  // Register window procedure handler for menu item clicks
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (host_window) {
+    pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+        });
+  }
+}
 
 MenuItem::MenuItem(const std::string& label, MenuItemType type)
     : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, type)) {
   pimpl_->label_ = label;
+  
+  // Set clicked callback to emit event
+  pimpl_->clicked_callback_ = [this](MenuItemId id) {
+    Emit<MenuItemClickedEvent>(id);
+  };
+  
+  // Register window procedure handler for menu item clicks
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (host_window) {
+    pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
+        });
+  }
 }
 
 MenuItem::~MenuItem() {}
@@ -269,18 +332,6 @@ void MenuItem::RemoveSubmenu() {
   }
 }
 
-bool MenuItem::Trigger() {
-  if (!IsEnabled())
-    return false;
-
-  try {
-    Emit<MenuItemClickedEvent>(pimpl_->id_);
-  } catch (...) {
-    // Protect against event emission exceptions
-  }
-  return true;
-}
-
 void* MenuItem::GetNativeObjectInternal() const {
   return reinterpret_cast<void*>(static_cast<uintptr_t>(pimpl_->id_));
 }
@@ -292,6 +343,8 @@ class Menu::Impl {
   HMENU hmenu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   int window_proc_handle_id_;
+  std::function<void(MenuId)> opened_callback_;
+  std::function<void(MenuId)> closed_callback_;
 
   Impl(MenuId id, HMENU menu)
       : id_(id), hmenu_(menu), window_proc_handle_id_(-1) {}
@@ -307,25 +360,26 @@ class Menu::Impl {
     }
   }
 
-  // Handle window procedure delegate for menu commands and menu lifecycle
-  // events
+  // Handle window procedure delegate for menu lifecycle events
   std::optional<LRESULT> HandleWindowProc(HWND hwnd,
                                           UINT message,
                                           WPARAM wparam,
-                                          LPARAM lparam,
-                                          Menu* menu) {
-    // Handle menu lifecycle events
+                                          LPARAM lparam) {
+    // Handle menu lifecycle events only
+    // Menu item clicks are now handled by individual MenuItem instances
     if (message == WM_INITMENUPOPUP) {
       // wParam contains the HMENU handle of the popup menu being opened
       HMENU popup_menu = reinterpret_cast<HMENU>(wparam);
 
       if (popup_menu == hmenu_) {
         // This is our menu being opened
-        // Emit menu opened event
-        try {
-          menu->Emit<MenuOpenedEvent>(id_);
-        } catch (...) {
-          // Protect against event emission exceptions
+        // Emit menu opened event via callback
+        if (opened_callback_) {
+          try {
+            opened_callback_(id_);
+          } catch (...) {
+            // Protect against event emission exceptions
+          }
         }
       }
     } else if (message == WM_UNINITMENUPOPUP) {
@@ -334,68 +388,56 @@ class Menu::Impl {
 
       if (popup_menu == hmenu_) {
         // This is our menu being closed
-        // Emit menu closed event
-        try {
-          menu->Emit<MenuClosedEvent>(id_);
-        } catch (...) {
-          // Protect against event emission exceptions
-        }
-      }
-    } else if (message == WM_COMMAND) {
-      // For WM_COMMAND from menus, wparam contains the menu item ID
-      // When using popup menus (TrackPopupMenu), the full 32-bit ID is
-      // preserved in wparam, unlike menu bars which only use 16-bit IDs
-      WORD hiword = HIWORD(wparam);
-      WORD loword = LOWORD(wparam);
-
-      std::cout << "Menu: WM_COMMAND - HIWORD=" << hiword << ", LOWORD=" << loword << std::endl;
-
-      // For popup menus, lparam is NULL and wparam contains menu item ID
-      if (lparam == 0) {
-        // Reconstruct the full 32-bit menu item ID from wparam
-        // wparam for menus contains the full ID we passed to AppendMenuW
-        MenuItemId menu_item_id = static_cast<MenuItemId>(wparam);
-
-        std::cout << "Menu: Looking for menu item with ID = " << menu_item_id << " (0x" << std::hex
-                  << menu_item_id << std::dec << ")" << std::endl;
-
-        // Find the menu item by IdAllocator-generated ID
-        for (const auto& item : items_) {
-          if (item->pimpl_->id_ == menu_item_id) {
-            std::cout << "Menu: Item clicked, ID = " << menu_item_id << std::endl;
-            // Call Trigger() to emit the event
-            item->Trigger();
-            return 0;
+        // Emit menu closed event via callback
+        if (closed_callback_) {
+          try {
+            closed_callback_(id_);
+          } catch (...) {
+            // Protect against event emission exceptions
           }
         }
-
-        std::cout << "Menu: No matching menu item found for ID " << menu_item_id << std::endl;
       }
     }
-    return std::nullopt;  // Let default window procedure handle it
+    return std::nullopt;  // Let other handlers (including MenuItem handlers) process it
   }
 };
 
 Menu::Menu(void* native_menu)
     : pimpl_(
           std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), static_cast<HMENU>(native_menu))) {
+  // Set callbacks to emit events
+  pimpl_->opened_callback_ = [this](MenuId id) {
+    Emit<MenuOpenedEvent>(id);
+  };
+  pimpl_->closed_callback_ = [this](MenuId id) {
+    Emit<MenuClosedEvent>(id);
+  };
+  
   // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
     pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
         host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
         });
   }
 }
 
 Menu::Menu() : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), CreatePopupMenu())) {
+  // Set callbacks to emit events
+  pimpl_->opened_callback_ = [this](MenuId id) {
+    Emit<MenuOpenedEvent>(id);
+  };
+  pimpl_->closed_callback_ = [this](MenuId id) {
+    Emit<MenuClosedEvent>(id);
+  };
+  
   // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
     pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
         host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam);
         });
   }
 }

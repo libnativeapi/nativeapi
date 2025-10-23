@@ -347,14 +347,6 @@ FFI_PLUGIN_EXPORT
 bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id);
 
 /**
- * Programmatically trigger a menu item
- * @param item The menu item
- * @return true if triggered successfully, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_menu_item_trigger(native_menu_item_t item);
-
-/**
  * Menu operations
  */
 

@@ -83,23 +83,23 @@ int main() {
 
     std::cout << "Menu created with " << menu->GetItemCount() << " items" << std::endl;
 
-    // Demonstrate programmatic triggering
+    // Demonstrate programmatic triggering by emitting events directly
     std::cout << "\n=== Testing Programmatic Event Triggering ===" << std::endl;
 
     std::cout << "Triggering file item..." << std::endl;
-    file_item->Trigger();
+    file_item->Emit(MenuItemClickedEvent(file_item->GetId()));
 
     std::cout << "Triggering checkbox item..." << std::endl;
-    checkbox_item->Trigger();
+    checkbox_item->Emit(MenuItemClickedEvent(checkbox_item->GetId()));
 
     std::cout << "Triggering checkbox item again..." << std::endl;
-    checkbox_item->Trigger();
+    checkbox_item->Emit(MenuItemClickedEvent(checkbox_item->GetId()));
 
     std::cout << "Switching radio button..." << std::endl;
-    radio_item2->Trigger();
+    radio_item2->Emit(MenuItemClickedEvent(radio_item2->GetId()));
 
     std::cout << "Triggering exit item..." << std::endl;
-    exit_item->Trigger();
+    exit_item->Emit(MenuItemClickedEvent(exit_item->GetId()));
 
     // Open menu as context menu (this may not work in console applications)
     std::cout << "\n=== Attempting to Open Context Menu ===" << std::endl;
@@ -149,8 +149,8 @@ int main() {
 
     // Test submenu items
     std::cout << "Triggering submenu items..." << std::endl;
-    submenu_item1->Trigger();
-    submenu_item2->Trigger();
+    submenu_item1->Emit(MenuItemClickedEvent(submenu_item1->GetId()));
+    submenu_item2->Emit(MenuItemClickedEvent(submenu_item2->GetId()));
 
     std::cout << "\n=== Event System Demo Complete ===" << std::endl;
     std::cout << "This example demonstrates:" << std::endl;
@@ -161,7 +161,7 @@ int main() {
     std::cout << "5. Handling MenuItemSubmenuOpenedEvent and "
                  "MenuItemSubmenuClosedEvent"
               << std::endl;
-    std::cout << "6. Programmatic event triggering" << std::endl;
+    std::cout << "6. Programmatic event emission using Emit()" << std::endl;
     std::cout << "7. Submenu support with event propagation" << std::endl;
 
   } catch (const std::exception& e) {

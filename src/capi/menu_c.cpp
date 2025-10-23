@@ -596,18 +596,6 @@ bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id) 
   }
 }
 
-bool native_menu_item_trigger(native_menu_item_t item) {
-  if (!item)
-    return false;
-
-  try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->Trigger();
-  } catch (...) {
-    return false;
-  }
-}
-
 // Menu C API Implementation
 
 native_menu_t native_menu_create(void) {

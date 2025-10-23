@@ -260,16 +260,6 @@ void MenuItem::RemoveSubmenu() {
   }
 }
 
-bool MenuItem::Trigger() {
-  if (!IsEnabled())
-    return false;
-  if (pimpl_->gtk_menu_item_) {
-    g_signal_emit_by_name(pimpl_->gtk_menu_item_, "activate");
-    return true;
-  }
-  return false;
-}
-
 void* MenuItem::GetNativeObjectInternal() const {
   return (void*)pimpl_->gtk_menu_item_;
 }

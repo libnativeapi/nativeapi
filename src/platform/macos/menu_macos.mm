@@ -524,17 +524,6 @@ void MenuItem::RemoveSubmenu() {
   [pimpl_->ns_menu_item_ setSubmenu:nil];
 }
 
-bool MenuItem::Trigger() {
-  if (!IsEnabled())
-    return false;
-
-  // Call the block directly instead of going through target-action
-  if (pimpl_->ns_menu_item_target_.clickedBlock) {
-    pimpl_->ns_menu_item_target_.clickedBlock(pimpl_->id_);
-  }
-  return true;
-}
-
 void* MenuItem::GetNativeObjectInternal() const {
   return (__bridge void*)pimpl_->ns_menu_item_;
 }
