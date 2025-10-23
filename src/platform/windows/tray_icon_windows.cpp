@@ -33,7 +33,7 @@ class TrayIcon::Impl {
   using RightClickedCallback = std::function<void(TrayIconId)>;
   using DoubleClickedCallback = std::function<void(TrayIconId)>;
 
-  Impl() : hwnd_(nullptr), icon_handle_(nullptr) {
+  Impl() : hwnd_(nullptr), icon_handle_(nullptr), window_proc_handle_id_(-1), event_monitoring_setup_(false) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
@@ -43,9 +43,11 @@ class TrayIcon::Impl {
        DoubleClickedCallback double_clicked_callback)
       : hwnd_(hwnd),
         icon_handle_(nullptr),
+        window_proc_handle_id_(-1),
         clicked_callback_(std::move(clicked_callback)),
         right_clicked_callback_(std::move(right_clicked_callback)),
-        double_clicked_callback_(std::move(double_clicked_callback)) {
+        double_clicked_callback_(std::move(double_clicked_callback)),
+        event_monitoring_setup_(false) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
     // Initialize NOTIFYICONDATA structure
     ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
@@ -55,16 +57,14 @@ class TrayIcon::Impl {
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
 
-    window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
-        hwnd, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-          return HandleWindowProc(hwnd, message, wparam, lparam);
-        });
+    // Event monitoring will be set up when first listener is added
+    // via StartEventListening() override
   }
 
   ~Impl() {
-    // Unregister window procedure handler
-    if (window_proc_handle_id_ != -1) {
-      WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
+    // Clean up event monitoring if it was set up
+    if (event_monitoring_setup_) {
+      CleanupEventMonitoring();
     }
 
     if (hwnd_) {
@@ -105,12 +105,45 @@ class TrayIcon::Impl {
     return std::nullopt;  // Let default window procedure handle it
   }
 
+  void SetupEventMonitoring() {
+    if (event_monitoring_setup_) {
+      return;  // Already set up
+    }
+
+    if (!hwnd_) {
+      return;
+    }
+
+    // Register window procedure handler
+    window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        hwnd_, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return HandleWindowProc(hwnd, message, wparam, lparam);
+        });
+
+    event_monitoring_setup_ = true;
+  }
+
+  void CleanupEventMonitoring() {
+    if (!event_monitoring_setup_) {
+      return;  // Not set up
+    }
+
+    // Unregister window procedure handler
+    if (window_proc_handle_id_ != -1) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
+      window_proc_handle_id_ = -1;
+    }
+
+    event_monitoring_setup_ = false;
+  }
+
   int window_proc_handle_id_;
   HWND hwnd_;
   NOTIFYICONDATAW nid_;
   std::shared_ptr<Menu> context_menu_;
   HICON icon_handle_;
   TrayIconId tray_icon_id_;
+  bool event_monitoring_setup_;
 
   // Callback functions for event emission
   ClickedCallback clicked_callback_;
@@ -157,6 +190,18 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
 }
 
 TrayIcon::~TrayIcon() {}
+
+void TrayIcon::StartEventListening() {
+  // Called automatically when first listener is added
+  // Set up platform event monitoring
+  pimpl_->SetupEventMonitoring();
+}
+
+void TrayIcon::StopEventListening() {
+  // Called automatically when last listener is removed
+  // Clean up platform event monitoring
+  pimpl_->CleanupEventMonitoring();
+}
 
 TrayIconId TrayIcon::GetId() {
   return pimpl_->tray_icon_id_;

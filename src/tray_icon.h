@@ -334,6 +334,24 @@ class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider
 
  protected:
   /**
+   * @brief Called when the first listener is added.
+   *
+   * Subclasses can override this to start platform-specific event monitoring.
+   * This is called automatically by the EventEmitter when transitioning from
+   * 0 to 1+ listeners.
+   */
+  void StartEventListening() override;
+
+  /**
+   * @brief Called when the last listener is removed.
+   *
+   * Subclasses can override this to stop platform-specific event monitoring.
+   * This is called automatically by the EventEmitter when transitioning from
+   * 1+ to 0 listeners.
+   */
+  void StopEventListening() override;
+
+  /**
    * @brief Internal method to get the platform-specific native tray icon object.
    *
    * This method must be implemented by platform-specific code to return

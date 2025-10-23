@@ -21,9 +21,9 @@ typedef void (^TrayIconDoubleClickedBlock)(void);
 static const void* kTrayIconIdKey = &kTrayIconIdKey;
 
 @interface NSStatusBarButtonTarget : NSObject
-@property(nonatomic, copy) TrayIconClickedBlock leftClickedBlock;
-@property(nonatomic, copy) TrayIconRightClickedBlock rightClickedBlock;
-@property(nonatomic, copy) TrayIconDoubleClickedBlock doubleClickedBlock;
+@property(nonatomic, copy) TrayIconClickedBlock left_clicked_callback;
+@property(nonatomic, copy) TrayIconRightClickedBlock right_clicked_callback;
+@property(nonatomic, copy) TrayIconDoubleClickedBlock double_clicked_callback;
 - (void)handleStatusItemEvent:(id)sender;
 @end
 
@@ -37,7 +37,8 @@ class TrayIcon::Impl {
   Impl(NSStatusItem* status_item)
       : ns_status_item_(status_item),
         ns_status_bar_button_target_(nil),
-        menu_closed_listener_id_(0) {
+        menu_closed_listener_id_(0),
+        click_handler_setup_(false) {
     if (status_item) {
       // Check if ID already exists in the associated object
       NSNumber* allocated_id = objc_getAssociatedObject(status_item, kTrayIconIdKey);
@@ -50,16 +51,6 @@ class TrayIcon::Impl {
         objc_setAssociatedObject(status_item, kTrayIconIdKey, [NSNumber numberWithLong:id_],
                                  OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       }
-
-      // Create and set up button target
-      ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
-
-      // Set up event handlers
-      [status_item.button setTarget:ns_status_bar_button_target_];
-      [status_item.button setAction:@selector(handleStatusItemEvent:)];
-
-      // Enable right-click handling
-      [status_item.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
     }
   }
 
@@ -70,21 +61,13 @@ class TrayIcon::Impl {
       menu_closed_listener_id_ = 0;
     }
 
-    // Clean up blocks first
-    if (ns_status_bar_button_target_) {
-      ns_status_bar_button_target_.leftClickedBlock = nil;
-      ns_status_bar_button_target_.rightClickedBlock = nil;
-      ns_status_bar_button_target_.doubleClickedBlock = nil;
-      ns_status_bar_button_target_ = nil;
+    // Clean up event handlers if they were set up
+    if (click_handler_setup_) {
+      CleanupEventHandlers();
     }
 
     // Then clean up the status item
     if (ns_status_item_) {
-      // Remove target and action to prevent callbacks after destruction
-      if (ns_status_item_.button) {
-        [ns_status_item_.button setTarget:nil];
-        [ns_status_item_.button setAction:nil];
-      }
       // Clear menu reference
       ns_status_item_.menu = nil;
 
@@ -102,12 +85,57 @@ class TrayIcon::Impl {
     }
   }
 
+  void SetupEventHandlers() {
+    if (click_handler_setup_) {
+      return;  // Already set up
+    }
+
+    if (!ns_status_item_ || !ns_status_item_.button) {
+      return;
+    }
+
+    // Create and set up button target
+    ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
+
+    // Set up event handlers
+    [ns_status_item_.button setTarget:ns_status_bar_button_target_];
+    [ns_status_item_.button setAction:@selector(handleStatusItemEvent:)];
+
+    // Enable right-click handling
+    [ns_status_item_.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
+
+    click_handler_setup_ = true;
+  }
+
+  void CleanupEventHandlers() {
+    if (!click_handler_setup_) {
+      return;  // Not set up
+    }
+
+    // Clean up blocks first
+    if (ns_status_bar_button_target_) {
+      ns_status_bar_button_target_.left_clicked_callback = nil;
+      ns_status_bar_button_target_.right_clicked_callback = nil;
+      ns_status_bar_button_target_.double_clicked_callback = nil;
+      ns_status_bar_button_target_ = nil;
+    }
+
+    // Remove target and action to prevent callbacks after destruction
+    if (ns_status_item_ && ns_status_item_.button) {
+      [ns_status_item_.button setTarget:nil];
+      [ns_status_item_.button setAction:nil];
+    }
+
+    click_handler_setup_ = false;
+  }
+
   NSStatusItem* ns_status_item_;
   NSStatusBarButtonTarget* ns_status_bar_button_target_;
 
   TrayIconId id_;
   std::shared_ptr<Menu> context_menu_;
   size_t menu_closed_listener_id_;
+  bool click_handler_setup_;
 };
 
 TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
@@ -126,23 +154,38 @@ TrayIcon::TrayIcon(void* tray) {
   // Initialize the Impl with the status item
   pimpl_ = std::make_unique<Impl>(status_item);
 
-  // Set up click handlers
+  // Event handlers will be set up automatically when first listener is added
+  // via StartEventListening() override
+}
+
+TrayIcon::~TrayIcon() = default;
+
+void TrayIcon::StartEventListening() {
+  // Called automatically when first listener is added
+  // Set up platform event monitoring
+  pimpl_->SetupEventHandlers();
+
+  // Set up click handler blocks
   if (pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.leftClickedBlock = ^{
+    pimpl_->ns_status_bar_button_target_.left_clicked_callback = ^{
       Emit<TrayIconClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.rightClickedBlock = ^{
+    pimpl_->ns_status_bar_button_target_.right_clicked_callback = ^{
       Emit<TrayIconRightClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.doubleClickedBlock = ^{
+    pimpl_->ns_status_bar_button_target_.double_clicked_callback = ^{
       Emit<TrayIconDoubleClickedEvent>(pimpl_->id_);
     };
   }
 }
 
-TrayIcon::~TrayIcon() = default;
+void TrayIcon::StopEventListening() {
+  // Called automatically when last listener is removed
+  // Clean up platform event monitoring
+  pimpl_->CleanupEventHandlers();
+}
 
 TrayIconId TrayIcon::GetId() {
   return pimpl_->id_;
@@ -350,18 +393,18 @@ void* TrayIcon::GetNativeObjectInternal() const {
       (event.type == NSEventTypeLeftMouseUp &&
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
-    if (_rightClickedBlock) {
-      _rightClickedBlock();
+    if (_right_clicked_callback) {
+      _right_clicked_callback();
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
-      if (_doubleClickedBlock) {
-        _doubleClickedBlock();
+      if (_double_clicked_callback) {
+        _double_clicked_callback();
       }
     } else {
-      if (_leftClickedBlock) {
-        _leftClickedBlock();
+      if (_left_clicked_callback) {
+        _left_clicked_callback();
       }
     }
   }
