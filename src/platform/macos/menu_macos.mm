@@ -195,7 +195,6 @@ class MenuItem::Impl {
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
-  bool enabled_;
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
@@ -209,7 +208,6 @@ class MenuItem::Impl {
         type_(type),
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
-        enabled_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
         submenu_opened_listener_id_(0),
@@ -382,12 +380,11 @@ void MenuItem::RemoveAccelerator() {
 }
 
 void MenuItem::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
   [pimpl_->ns_menu_item_ setEnabled:enabled];
 }
 
 bool MenuItem::IsEnabled() const {
-  return pimpl_->enabled_;
+  return [pimpl_->ns_menu_item_ isEnabled];
 }
 
 void MenuItem::SetState(MenuItemState state) {
@@ -528,7 +525,7 @@ void MenuItem::RemoveSubmenu() {
 }
 
 bool MenuItem::Trigger() {
-  if (!pimpl_->enabled_)
+  if (!IsEnabled())
     return false;
 
   // Call the block directly instead of going through target-action
@@ -549,15 +546,11 @@ class Menu::Impl {
   NSMenu* ns_menu_;
   NSMenuDelegateImpl* delegate_;
   std::vector<std::shared_ptr<MenuItem>> items_;
-  bool enabled_;
-  bool visible_;
 
   Impl(MenuId id, NSMenu* menu)
       : id_(id),
         ns_menu_(menu),
-        delegate_([[NSMenuDelegateImpl alloc] init]),
-        enabled_(true),
-        visible_(false) {
+        delegate_([[NSMenuDelegateImpl alloc] init]) {
     [ns_menu_ setDelegate:delegate_];
   }
 
@@ -735,14 +728,11 @@ bool Menu::Open(double x, double y) {
                                       clickCount:1
                                         pressure:1.0];
 
-    pimpl_->visible_ = true;
-
     @autoreleasepool {
       NSView* dummy_view = [[NSView alloc] init];
       [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummy_view];
     }
 
-    pimpl_->visible_ = false;
     return true;
   }
 
@@ -762,8 +752,6 @@ bool Menu::Open(double x, double y) {
 
   NSPoint point = NSMakePoint(x, final_y);
 
-  pimpl_->visible_ = true;
-
   // Use dispatch to ensure menu popup happens on the main run loop
   dispatch_async(dispatch_get_main_queue(), ^{
     [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:content_view];
@@ -778,24 +766,8 @@ bool Menu::Open() {
 }
 
 bool Menu::Close() {
-  if (pimpl_->visible_) {
-    [pimpl_->ns_menu_ cancelTracking];
-    pimpl_->visible_ = false;
-    return true;
-  }
-  return false;
-}
-
-void Menu::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
-  // Enable/disable all items
-  for (auto& item : pimpl_->items_) {
-    item->SetEnabled(enabled);
-  }
-}
-
-bool Menu::IsEnabled() const {
-  return pimpl_->enabled_;
+  [pimpl_->ns_menu_ cancelTracking];
+  return true;
 }
 
 void* Menu::GetNativeObjectInternal() const {

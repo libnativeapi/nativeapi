@@ -885,29 +885,6 @@ bool native_menu_close(native_menu_t menu) {
   }
 }
 
-void native_menu_set_enabled(native_menu_t menu, bool enabled) {
-  if (!menu)
-    return;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    menu_ptr->SetEnabled(enabled);
-  } catch (...) {
-    // Ignore exceptions
-  }
-}
-
-bool native_menu_is_enabled(native_menu_t menu) {
-  if (!menu)
-    return false;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->IsEnabled();
-  } catch (...) {
-    return false;
-  }
-}
 
 // New menu event listener API implementation
 int native_menu_add_listener(native_menu_t menu,

@@ -65,7 +65,6 @@ class MenuItem::Impl {
         title_(""),
         tooltip_(""),
         type_(type),
-        enabled_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
         accelerator_("", KeyboardAccelerator::None) {}
@@ -76,7 +75,6 @@ class MenuItem::Impl {
   std::shared_ptr<Image> image_;
   std::optional<std::string> tooltip_;
   MenuItemType type_;
-  bool enabled_;
   MenuItemState state_;
   int radio_group_;
   KeyboardAccelerator accelerator_;
@@ -197,14 +195,16 @@ void MenuItem::RemoveAccelerator() {
 }
 
 void MenuItem::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
   if (pimpl_->gtk_menu_item_) {
     gtk_widget_set_sensitive(pimpl_->gtk_menu_item_, enabled ? TRUE : FALSE);
   }
 }
 
 bool MenuItem::IsEnabled() const {
-  return pimpl_->enabled_;
+  if (pimpl_->gtk_menu_item_) {
+    return gtk_widget_get_sensitive(pimpl_->gtk_menu_item_) == TRUE;
+  }
+  return true;
 }
 
 void MenuItem::SetState(MenuItemState state) {
@@ -261,7 +261,7 @@ void MenuItem::RemoveSubmenu() {
 }
 
 bool MenuItem::Trigger() {
-  if (!pimpl_->enabled_)
+  if (!IsEnabled())
     return false;
   if (pimpl_->gtk_menu_item_) {
     g_signal_emit_by_name(pimpl_->gtk_menu_item_, "activate");
@@ -277,12 +277,11 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Private implementation class for Menu
 class Menu::Impl {
  public:
-  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu), enabled_(true) {}
+  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu) {}
 
   MenuId id_;
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
-  bool enabled_;
 };
 
 Menu::Menu() {
@@ -439,17 +438,6 @@ bool Menu::Close() {
     return true;
   }
   return false;
-}
-
-void Menu::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
-  if (pimpl_->gtk_menu_) {
-    gtk_widget_set_sensitive(pimpl_->gtk_menu_, enabled ? TRUE : FALSE);
-  }
-}
-
-bool Menu::IsEnabled() const {
-  return pimpl_->enabled_;
 }
 
 void* Menu::GetNativeObjectInternal() const {

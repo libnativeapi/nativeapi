@@ -97,7 +97,6 @@ class MenuItem::Impl {
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
-  bool enabled_;
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
@@ -108,7 +107,6 @@ class MenuItem::Impl {
         type_(type),
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
-        enabled_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1) {}
 
@@ -195,14 +193,19 @@ void MenuItem::RemoveAccelerator() {
 }
 
 void MenuItem::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
   if (pimpl_->parent_menu_) {
     EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_, enabled ? MF_ENABLED : MF_GRAYED);
   }
 }
 
 bool MenuItem::IsEnabled() const {
-  return pimpl_->enabled_;
+  if (pimpl_->parent_menu_) {
+    UINT state = GetMenuState(pimpl_->parent_menu_, pimpl_->id_, MF_BYCOMMAND);
+    if (state != (UINT)-1) {
+      return !(state & MF_GRAYED);
+    }
+  }
+  return true;
 }
 
 void MenuItem::SetState(MenuItemState state) {
@@ -267,7 +270,7 @@ void MenuItem::RemoveSubmenu() {
 }
 
 bool MenuItem::Trigger() {
-  if (!pimpl_->enabled_)
+  if (!IsEnabled())
     return false;
 
   try {
@@ -288,12 +291,10 @@ class Menu::Impl {
   MenuId id_;
   HMENU hmenu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
-  bool enabled_;
-  bool visible_;
   int window_proc_handle_id_;
 
   Impl(MenuId id, HMENU menu)
-      : id_(id), hmenu_(menu), enabled_(true), visible_(false), window_proc_handle_id_(-1) {}
+      : id_(id), hmenu_(menu), window_proc_handle_id_(-1) {}
 
   ~Impl() {
     // Unregister window procedure handler
@@ -320,8 +321,6 @@ class Menu::Impl {
 
       if (popup_menu == hmenu_) {
         // This is our menu being opened
-        visible_ = true;
-
         // Emit menu opened event
         try {
           menu->Emit<MenuOpenedEvent>(id_);
@@ -335,8 +334,6 @@ class Menu::Impl {
 
       if (popup_menu == hmenu_) {
         // This is our menu being closed
-        visible_ = false;
-
         // Emit menu closed event
         try {
           menu->Emit<MenuClosedEvent>(id_);
@@ -568,28 +565,14 @@ bool Menu::Open() {
 }
 
 bool Menu::Close() {
-  if (pimpl_->visible_) {
-    // Send WM_CANCELMODE to close any open menus
-    HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
-    if (host_window) {
-      // This will close the menu and trigger WM_UNINITMENUPOPUP
-      SendMessage(host_window, WM_CANCELMODE, 0, 0);
-    }
+  // Send WM_CANCELMODE to close any open menus
+  HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
+  if (host_window) {
+    // This will close the menu and trigger WM_UNINITMENUPOPUP
+    SendMessage(host_window, WM_CANCELMODE, 0, 0);
     return true;
   }
   return false;
-}
-
-void Menu::SetEnabled(bool enabled) {
-  pimpl_->enabled_ = enabled;
-  // Enable/disable all items
-  for (auto& item : pimpl_->items_) {
-    item->SetEnabled(enabled);
-  }
-}
-
-bool Menu::IsEnabled() const {
-  return pimpl_->enabled_;
 }
 
 void* Menu::GetNativeObjectInternal() const {

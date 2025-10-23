@@ -507,22 +507,6 @@ FFI_PLUGIN_EXPORT
 bool native_menu_close(native_menu_t menu);
 
 /**
- * Set the enabled state of the menu
- * @param menu The menu
- * @param enabled true to enable, false to disable
- */
-FFI_PLUGIN_EXPORT
-void native_menu_set_enabled(native_menu_t menu, bool enabled);
-
-/**
- * Check if the menu is enabled
- * @param menu The menu
- * @return true if enabled, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_menu_is_enabled(native_menu_t menu);
-
-/**
  * Add event listener for a menu
  * @param menu The menu
  * @param event_type The type of event to listen for

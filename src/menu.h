@@ -686,22 +686,6 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    */
   bool Close();
 
-  /**
-   * @brief Enable or disable the entire menu.
-   *
-   * When disabled, all menu items become non-interactive.
-   *
-   * @param enabled true to enable the menu, false to disable it
-   */
-  void SetEnabled(bool enabled);
-
-  /**
-   * @brief Check if the menu is currently enabled.
-   *
-   * @return true if the menu is enabled, false if disabled
-   */
-  bool IsEnabled() const;
-
  protected:
   /**
    * @brief Internal method to get the platform-specific native menu object.
