@@ -15,8 +15,7 @@ class Window::Impl {
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window)
-    : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
 
 Window::~Window() {}
 
@@ -118,21 +117,18 @@ void Window::SetFullScreen(bool is_full_screen) {
       g_dwExStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
 
       // Remove window decorations
-      SetWindowLong(pimpl_->hwnd_, GWL_STYLE,
-                    g_dwStyle & ~(WS_CAPTION | WS_THICKFRAME));
+      SetWindowLong(pimpl_->hwnd_, GWL_STYLE, g_dwStyle & ~(WS_CAPTION | WS_THICKFRAME));
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE,
-                    g_dwExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
-                                    WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+                    g_dwExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE |
+                                    WS_EX_STATICEDGE));
 
       // Get monitor info
       MONITORINFO mi = {sizeof(mi)};
-      GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST),
-                     &mi);
+      GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
 
       // Set window to cover entire monitor
       SetWindowPos(pimpl_->hwnd_, nullptr, mi.rcMonitor.left, mi.rcMonitor.top,
-                   mi.rcMonitor.right - mi.rcMonitor.left,
-                   mi.rcMonitor.bottom - mi.rcMonitor.top,
+                   mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
     }
   } else {
@@ -142,8 +138,7 @@ void Window::SetFullScreen(bool is_full_screen) {
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, g_dwExStyle);
       SetWindowPlacement(pimpl_->hwnd_, &g_wpPrev);
       SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
-                       SWP_FRAMECHANGED);
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
     }
   }
 }
@@ -156,21 +151,17 @@ bool Window::IsFullScreen() const {
   GetWindowRect(pimpl_->hwnd_, &windowRect);
 
   MONITORINFO mi = {sizeof(mi)};
-  GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST),
-                 &mi);
+  GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
   monitorRect = mi.rcMonitor;
 
-  return (windowRect.left == monitorRect.left &&
-          windowRect.top == monitorRect.top &&
-          windowRect.right == monitorRect.right &&
-          windowRect.bottom == monitorRect.bottom);
+  return (windowRect.left == monitorRect.left && windowRect.top == monitorRect.top &&
+          windowRect.right == monitorRect.right && windowRect.bottom == monitorRect.bottom);
 }
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(bounds.x),
-                 static_cast<int>(bounds.y), static_cast<int>(bounds.width),
-                 static_cast<int>(bounds.height), SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(bounds.x), static_cast<int>(bounds.y),
+                 static_cast<int>(bounds.width), static_cast<int>(bounds.height), SWP_NOZORDER);
   }
 }
 
@@ -217,10 +208,8 @@ void Window::SetContentSize(Size size) {
     int borderWidth = (windowRect.right - windowRect.left) - clientRect.right;
     int borderHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
 
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
-                 static_cast<int>(size.width) + borderWidth,
-                 static_cast<int>(size.height) + borderHeight,
-                 SWP_NOMOVE | SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width) + borderWidth,
+                 static_cast<int>(size.height) + borderHeight, SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -361,8 +350,7 @@ bool Window::IsClosable() const {
 
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_,
-                 is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+    SetWindowPos(pimpl_->hwnd_, is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE);
   }
 }
@@ -376,8 +364,8 @@ bool Window::IsAlwaysOnTop() const {
 
 void Window::SetPosition(Point point) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(point.x),
-                 static_cast<int>(point.y), 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(point.x), static_cast<int>(point.y), 0, 0,
+                 SWP_NOSIZE | SWP_NOZORDER);
   }
 }
 
@@ -429,8 +417,7 @@ void Window::SetOpacity(float opacity) {
     if (opacity < 1.0f) {
       // Enable layered window and set opacity
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
-      SetLayeredWindowAttributes(pimpl_->hwnd_, 0,
-                                 static_cast<BYTE>(opacity * 255), LWA_ALPHA);
+      SetLayeredWindowAttributes(pimpl_->hwnd_, 0, static_cast<BYTE>(opacity * 255), LWA_ALPHA);
     } else {
       // Disable layered window
       SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
@@ -505,8 +492,7 @@ void Window::StartResizing() {
 }
 
 WindowID Window::GetId() const {
-  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_)
-                                 : -1;
+  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_) : -1;
 }
 
 void* Window::GetNativeObjectInternal() const {

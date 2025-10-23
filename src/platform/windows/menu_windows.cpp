@@ -13,8 +13,7 @@
 namespace nativeapi {
 
 // Helper function to convert KeyboardAccelerator to Windows accelerator
-std::pair<UINT, UINT> ConvertAccelerator(
-    const KeyboardAccelerator& accelerator) {
+std::pair<UINT, UINT> ConvertAccelerator(const KeyboardAccelerator& accelerator) {
   UINT key = 0;
   UINT modifiers = 0;
 
@@ -99,7 +98,6 @@ class MenuItem::Impl {
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
   bool enabled_;
-  bool visible_;
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
@@ -111,7 +109,6 @@ class MenuItem::Impl {
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
         enabled_(true),
-        visible_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1) {}
 
@@ -127,9 +124,7 @@ MenuItem::MenuItem(void* native_item)
                                     MenuItemType::Normal)) {}
 
 MenuItem::MenuItem(const std::string& label, MenuItemType type)
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(),
-                                    nullptr,
-                                    type)) {
+    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<MenuItem>(), nullptr, type)) {
   pimpl_->label_ = label;
 }
 
@@ -202,8 +197,7 @@ void MenuItem::RemoveAccelerator() {
 void MenuItem::SetEnabled(bool enabled) {
   pimpl_->enabled_ = enabled;
   if (pimpl_->parent_menu_) {
-    EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_,
-                   enabled ? MF_ENABLED : MF_GRAYED);
+    EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_, enabled ? MF_ENABLED : MF_GRAYED);
   }
 }
 
@@ -211,19 +205,8 @@ bool MenuItem::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-void MenuItem::SetVisible(bool visible) {
-  pimpl_->visible_ = visible;
-  // Windows doesn't have direct visibility control for menu items
-  // Would need to remove/add items to simulate visibility
-}
-
-bool MenuItem::IsVisible() const {
-  return pimpl_->visible_;
-}
-
 void MenuItem::SetState(MenuItemState state) {
-  if (pimpl_->type_ == MenuItemType::Checkbox ||
-      pimpl_->type_ == MenuItemType::Radio) {
+  if (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio) {
     pimpl_->state_ = state;
 
     if (pimpl_->parent_menu_) {
@@ -235,8 +218,8 @@ void MenuItem::SetState(MenuItemState state) {
     }
 
     // Handle radio button group logic
-    if (pimpl_->type_ == MenuItemType::Radio &&
-        state == MenuItemState::Checked && pimpl_->radio_group_ >= 0) {
+    if (pimpl_->type_ == MenuItemType::Radio && state == MenuItemState::Checked &&
+        pimpl_->radio_group_ >= 0) {
       // Note: Radio group logic would need to be implemented differently
       // without global registry. This could be done by maintaining group
       // information in the parent menu or through other means.
@@ -310,17 +293,12 @@ class Menu::Impl {
   int window_proc_handle_id_;
 
   Impl(MenuId id, HMENU menu)
-      : id_(id),
-        hmenu_(menu),
-        enabled_(true),
-        visible_(false),
-        window_proc_handle_id_(-1) {}
+      : id_(id), hmenu_(menu), enabled_(true), visible_(false), window_proc_handle_id_(-1) {}
 
   ~Impl() {
     // Unregister window procedure handler
     if (window_proc_handle_id_ != -1) {
-      WindowMessageDispatcher::GetInstance().UnregisterHandler(
-          window_proc_handle_id_);
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
     }
 
     if (hmenu_) {
@@ -328,7 +306,8 @@ class Menu::Impl {
     }
   }
 
-  // Handle window procedure delegate for menu commands and menu lifecycle events
+  // Handle window procedure delegate for menu commands and menu lifecycle
+  // events
   std::optional<LRESULT> HandleWindowProc(HWND hwnd,
                                           UINT message,
                                           WPARAM wparam,
@@ -338,11 +317,11 @@ class Menu::Impl {
     if (message == WM_INITMENUPOPUP) {
       // wParam contains the HMENU handle of the popup menu being opened
       HMENU popup_menu = reinterpret_cast<HMENU>(wparam);
-      
+
       if (popup_menu == hmenu_) {
         // This is our menu being opened
         visible_ = true;
-        
+
         // Emit menu opened event
         try {
           menu->Emit<MenuOpenedEvent>(id_);
@@ -353,11 +332,11 @@ class Menu::Impl {
     } else if (message == WM_UNINITMENUPOPUP) {
       // wParam contains the HMENU handle of the popup menu being closed
       HMENU popup_menu = reinterpret_cast<HMENU>(wparam);
-      
+
       if (popup_menu == hmenu_) {
         // This is our menu being closed
         visible_ = false;
-        
+
         // Emit menu closed event
         try {
           menu->Emit<MenuClosedEvent>(id_);
@@ -372,8 +351,7 @@ class Menu::Impl {
       WORD hiword = HIWORD(wparam);
       WORD loword = LOWORD(wparam);
 
-      std::cout << "Menu: WM_COMMAND - HIWORD=" << hiword
-                << ", LOWORD=" << loword << std::endl;
+      std::cout << "Menu: WM_COMMAND - HIWORD=" << hiword << ", LOWORD=" << loword << std::endl;
 
       // For popup menus, lparam is NULL and wparam contains menu item ID
       if (lparam == 0) {
@@ -381,23 +359,20 @@ class Menu::Impl {
         // wparam for menus contains the full ID we passed to AppendMenuW
         MenuItemId menu_item_id = static_cast<MenuItemId>(wparam);
 
-        std::cout << "Menu: Looking for menu item with ID = " << menu_item_id
-                  << " (0x" << std::hex << menu_item_id << std::dec << ")"
-                  << std::endl;
+        std::cout << "Menu: Looking for menu item with ID = " << menu_item_id << " (0x" << std::hex
+                  << menu_item_id << std::dec << ")" << std::endl;
 
         // Find the menu item by IdAllocator-generated ID
         for (const auto& item : items_) {
           if (item->pimpl_->id_ == menu_item_id) {
-            std::cout << "Menu: Item clicked, ID = " << menu_item_id
-                      << std::endl;
+            std::cout << "Menu: Item clicked, ID = " << menu_item_id << std::endl;
             // Call Trigger() to emit the event
             item->Trigger();
             return 0;
           }
         }
 
-        std::cout << "Menu: No matching menu item found for ID " << menu_item_id
-                  << std::endl;
+        std::cout << "Menu: No matching menu item found for ID " << menu_item_id << std::endl;
       }
     }
     return std::nullopt;  // Let default window procedure handle it
@@ -405,32 +380,26 @@ class Menu::Impl {
 };
 
 Menu::Menu(void* native_menu)
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
-                                    static_cast<HMENU>(native_menu))) {
+    : pimpl_(
+          std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), static_cast<HMENU>(native_menu))) {
   // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
-    pimpl_->window_proc_handle_id_ =
-        WindowMessageDispatcher::GetInstance().RegisterHandler(
-            host_window,
-            [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
-            });
+    pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
+        });
   }
 }
 
-Menu::Menu()
-    : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(),
-                                    CreatePopupMenu())) {
+Menu::Menu() : pimpl_(std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), CreatePopupMenu())) {
   // Register window procedure handler for menu commands and events
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
-    pimpl_->window_proc_handle_id_ =
-        WindowMessageDispatcher::GetInstance().RegisterHandler(
-            host_window,
-            [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-              return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
-            });
+    pimpl_->window_proc_handle_id_ = WindowMessageDispatcher::GetInstance().RegisterHandler(
+        host_window, [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+          return pimpl_->HandleWindowProc(hwnd, message, wparam, lparam, this);
+        });
   }
 }
 
@@ -491,8 +460,7 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   auto label_opt = item->GetLabel();
   std::string label_str = label_opt.has_value() ? *label_opt : "";
   std::wstring w_label_str = StringToWString(label_str);
-  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->GetId(),
-              w_label_str.c_str());
+  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->GetId(), w_label_str.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
 }
@@ -585,9 +553,10 @@ bool Menu::Open(double x, double y) {
   // Show the context menu using the host window
   // Note: TrackPopupMenu is a blocking call
   // - WM_INITMENUPOPUP is sent when the menu opens (triggers MenuOpenedEvent)
-  // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers MenuClosedEvent)
-  TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0,
-                 host_window, nullptr);
+  // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers
+  // MenuClosedEvent)
+  TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, host_window,
+                 nullptr);
 
   return true;
 }
@@ -609,10 +578,6 @@ bool Menu::Close() {
     return true;
   }
   return false;
-}
-
-bool Menu::IsVisible() const {
-  return pimpl_->visible_;
 }
 
 void Menu::SetEnabled(bool enabled) {

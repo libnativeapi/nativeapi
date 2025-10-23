@@ -76,13 +76,11 @@ bool native_display_is_primary(native_display_t display) {
 }
 
 FFI_PLUGIN_EXPORT
-native_display_orientation_t native_display_get_orientation(
-    native_display_t display) {
+native_display_orientation_t native_display_get_orientation(native_display_t display) {
   if (!display)
     return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
 
-  DisplayOrientation orientation =
-      static_cast<Display*>(display)->GetOrientation();
+  DisplayOrientation orientation = static_cast<Display*>(display)->GetOrientation();
   switch (orientation) {
     case DisplayOrientation::kPortrait:
       return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;

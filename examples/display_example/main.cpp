@@ -28,8 +28,7 @@ std::string orientationToString(DisplayOrientation orientation) {
 
 int main() {
   try {
-    std::cout << "=== Native API C++ Display Example ===" << std::endl
-              << std::endl;
+    std::cout << "=== Native API C++ Display Example ===" << std::endl << std::endl;
 
     DisplayManager& displayManager = DisplayManager::GetInstance();
 
@@ -37,8 +36,7 @@ int main() {
     std::vector<Display> displays = displayManager.GetAll();
 
     if (!displays.empty()) {
-      std::cout << "Found " << displays.size() << " display(s):" << std::endl
-                << std::endl;
+      std::cout << "Found " << displays.size() << " display(s):" << std::endl << std::endl;
 
       for (size_t i = 0; i < displays.size(); i++) {
         const Display& display = displays[i];
@@ -53,39 +51,34 @@ int main() {
 
         // Position
         Point position = display.GetPosition();
-        std::cout << "  Position: (" << (int)position.x << ", "
-                  << (int)position.y << ")" << std::endl;
+        std::cout << "  Position: (" << (int)position.x << ", " << (int)position.y << ")"
+                  << std::endl;
 
         // Size
         Size size = display.GetSize();
-        std::cout << "  Size: " << (int)size.width << " x " << (int)size.height
-                  << std::endl;
+        std::cout << "  Size: " << (int)size.width << " x " << (int)size.height << std::endl;
 
         // Work Area
         Rectangle workArea = display.GetWorkArea();
-        std::cout << "  Work Area: (" << (int)workArea.x << ", "
-                  << (int)workArea.y << ") " << (int)workArea.width << " x "
-                  << (int)workArea.height << std::endl;
+        std::cout << "  Work Area: (" << (int)workArea.x << ", " << (int)workArea.y << ") "
+                  << (int)workArea.width << " x " << (int)workArea.height << std::endl;
 
         // Scale Factor
         std::cout << "  Scale Factor: " << std::fixed << std::setprecision(2)
                   << display.GetScaleFactor() << std::endl;
 
         // Primary
-        std::cout << "  Primary: " << (display.IsPrimary() ? "Yes" : "No")
-                  << std::endl;
+        std::cout << "  Primary: " << (display.IsPrimary() ? "Yes" : "No") << std::endl;
 
         // Orientation
-        std::cout << "  Orientation: "
-                  << orientationToString(display.GetOrientation()) << std::endl;
+        std::cout << "  Orientation: " << orientationToString(display.GetOrientation())
+                  << std::endl;
 
         // Refresh Rate
-        std::cout << "  Refresh Rate: " << display.GetRefreshRate() << " Hz"
-                  << std::endl;
+        std::cout << "  Refresh Rate: " << display.GetRefreshRate() << " Hz" << std::endl;
 
         // Bit Depth
-        std::cout << "  Bit Depth: " << display.GetBitDepth() << " bits"
-                  << std::endl;
+        std::cout << "  Bit Depth: " << display.GetBitDepth() << " bits" << std::endl;
 
         std::cout << std::endl;
       }
@@ -99,14 +92,13 @@ int main() {
     std::cout << "Primary display: " << primary.GetName() << std::endl;
 
     Size size = primary.GetSize();
-    std::cout << "Size: " << (int)size.width << " x " << (int)size.height
-              << std::endl;
+    std::cout << "Size: " << (int)size.width << " x " << (int)size.height << std::endl;
 
     // Test getting cursor position
     std::cout << std::endl << "=== Cursor Position ===" << std::endl;
     Point cursorPos = displayManager.GetCursorPosition();
-    std::cout << "Cursor position: (" << (int)cursorPos.x << ", "
-              << (int)cursorPos.y << ")" << std::endl;
+    std::cout << "Cursor position: (" << (int)cursorPos.x << ", " << (int)cursorPos.y << ")"
+              << std::endl;
 
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;

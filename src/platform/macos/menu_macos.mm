@@ -196,7 +196,6 @@ class MenuItem::Impl {
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
   bool enabled_;
-  bool visible_;
   MenuItemState state_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
@@ -211,7 +210,6 @@ class MenuItem::Impl {
         accelerator_("", KeyboardAccelerator::None),
         has_accelerator_(false),
         enabled_(true),
-        visible_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
         submenu_opened_listener_id_(0),
@@ -390,15 +388,6 @@ void MenuItem::SetEnabled(bool enabled) {
 
 bool MenuItem::IsEnabled() const {
   return pimpl_->enabled_;
-}
-
-void MenuItem::SetVisible(bool visible) {
-  pimpl_->visible_ = visible;
-  [pimpl_->ns_menu_item_ setHidden:!visible];
-}
-
-bool MenuItem::IsVisible() const {
-  return pimpl_->visible_;
 }
 
 void MenuItem::SetState(MenuItemState state) {
@@ -795,10 +784,6 @@ bool Menu::Close() {
     return true;
   }
   return false;
-}
-
-bool Menu::IsVisible() const {
-  return pimpl_->visible_;
 }
 
 void Menu::SetEnabled(bool enabled) {

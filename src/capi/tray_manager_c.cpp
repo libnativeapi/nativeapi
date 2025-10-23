@@ -16,10 +16,8 @@ bool native_tray_manager_is_supported(void) {
 
 native_tray_icon_t native_tray_manager_get(native_tray_icon_id_t tray_icon_id) {
   try {
-    auto tray_icon =
-        TrayManager::GetInstance().Get(static_cast<TrayIconId>(tray_icon_id));
-    return tray_icon ? static_cast<native_tray_icon_t>(tray_icon.get())
-                     : nullptr;
+    auto tray_icon = TrayManager::GetInstance().Get(static_cast<TrayIconId>(tray_icon_id));
+    return tray_icon ? static_cast<native_tray_icon_t>(tray_icon.get()) : nullptr;
   } catch (...) {
     return nullptr;
   }
@@ -35,16 +33,15 @@ native_tray_icon_list_t native_tray_manager_get_all(void) {
       return result;
     }
 
-    result.tray_icons = static_cast<native_tray_icon_t*>(
-        malloc(tray_icons.size() * sizeof(native_tray_icon_t)));
+    result.tray_icons =
+        static_cast<native_tray_icon_t*>(malloc(tray_icons.size() * sizeof(native_tray_icon_t)));
     if (!result.tray_icons) {
       return result;
     }
 
     result.count = tray_icons.size();
     for (size_t i = 0; i < tray_icons.size(); ++i) {
-      result.tray_icons[i] =
-          static_cast<native_tray_icon_t>(tray_icons[i].get());
+      result.tray_icons[i] = static_cast<native_tray_icon_t>(tray_icons[i].get());
     }
 
     return result;

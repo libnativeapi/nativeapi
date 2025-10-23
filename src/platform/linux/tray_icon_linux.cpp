@@ -38,8 +38,7 @@ class TrayIcon::Impl {
   }
 
   AppIndicator* app_indicator_;
-  std::shared_ptr<Menu>
-      context_menu_;  // Store menu shared_ptr to keep it alive
+  std::shared_ptr<Menu> context_menu_;  // Store menu shared_ptr to keep it alive
   std::optional<std::string> title_;
   std::optional<std::string> tooltip_;
   bool visible_;
@@ -50,14 +49,12 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
 #if HAS_GTK && HAS_AYATANA_APPINDICATOR
   // Create a unique ID for this tray icon
   static int next_indicator_id = 1;
-  std::string indicator_id =
-      "nativeapi-tray-" + std::to_string(next_indicator_id++);
+  std::string indicator_id = "nativeapi-tray-" + std::to_string(next_indicator_id++);
 
   // Create a new tray using AppIndicator
-  AppIndicator* app_indicator =
-      app_indicator_new(indicator_id.c_str(),
-                        "application-default-icon",  // Default icon name
-                        APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+  AppIndicator* app_indicator = app_indicator_new(indicator_id.c_str(),
+                                                  "application-default-icon",  // Default icon name
+                                                  APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 
   if (app_indicator) {
     // Reinitialize the Impl with the created indicator
@@ -67,8 +64,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
 #endif
 }
 
-TrayIcon::TrayIcon(void* tray)
-    : pimpl_(std::make_unique<Impl>((AppIndicator*)tray)) {
+TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>((AppIndicator*)tray)) {
   // Make the indicator visible by default
   if (pimpl_->app_indicator_) {
     pimpl_->visible_ = true;
@@ -77,8 +73,7 @@ TrayIcon::TrayIcon(void* tray)
 
 TrayIcon::~TrayIcon() {
   if (pimpl_->app_indicator_) {
-    app_indicator_set_status(pimpl_->app_indicator_,
-                             APP_INDICATOR_STATUS_PASSIVE);
+    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_PASSIVE);
     g_object_unref(pimpl_->app_indicator_);
     pimpl_->app_indicator_ = nullptr;
   }
@@ -98,16 +93,14 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
 
   // If no image provided, use default icon
   if (!image) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
     return;
   }
 
   // Get the native GdkPixbuf object
   GdkPixbuf* pixbuf = static_cast<GdkPixbuf*>(image->GetNativeObject());
   if (!pixbuf) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
     return;
   }
 
@@ -115,8 +108,7 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   char temp_path[] = "/tmp/tray_icon_XXXXXX";
   int fd = mkstemp(temp_path);
   if (fd == -1) {
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
     return;
   }
   close(fd);
@@ -127,8 +119,7 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
 
   // Save pixbuf to PNG file
   GError* error = nullptr;
-  gboolean success =
-      gdk_pixbuf_save(pixbuf, png_path.c_str(), "png", &error, nullptr);
+  gboolean success = gdk_pixbuf_save(pixbuf, png_path.c_str(), "png", &error, nullptr);
 
   // Always clean up the original temporary file
   unlink(temp_path);
@@ -150,8 +141,7 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
         g_strdup(png_path.c_str()));
   } else {
     // Fallback to default icon
-    app_indicator_set_icon_full(pimpl_->app_indicator_,
-                                "application-default-icon", "Tray Icon");
+    app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");
     unlink(png_path.c_str());
   }
 }
@@ -219,11 +209,9 @@ bool TrayIcon::SetVisible(bool visible) {
   }
 
   if (visible) {
-    app_indicator_set_status(pimpl_->app_indicator_,
-                             APP_INDICATOR_STATUS_ACTIVE);
+    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_ACTIVE);
   } else {
-    app_indicator_set_status(pimpl_->app_indicator_,
-                             APP_INDICATOR_STATUS_PASSIVE);
+    app_indicator_set_status(pimpl_->app_indicator_, APP_INDICATOR_STATUS_PASSIVE);
   }
 
   pimpl_->visible_ = visible;
@@ -232,8 +220,7 @@ bool TrayIcon::SetVisible(bool visible) {
 
 bool TrayIcon::IsVisible() {
   if (pimpl_->app_indicator_) {
-    AppIndicatorStatus status =
-        app_indicator_get_status(pimpl_->app_indicator_);
+    AppIndicatorStatus status = app_indicator_get_status(pimpl_->app_indicator_);
     return status == APP_INDICATOR_STATUS_ACTIVE;
   }
   return false;

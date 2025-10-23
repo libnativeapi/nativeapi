@@ -140,8 +140,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   if (seat) {
     GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
     if (keyboard) {
-      GdkWindow* focused_window =
-          gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
+      GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       if (focused_window) {
         WindowID window_id = (WindowID)focused_window;
         return Get(window_id);
@@ -189,8 +188,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   // Set window size
   if (options.size.width > 0 && options.size.height > 0) {
-    gtk_window_set_default_size(GTK_WINDOW(gtk_window), options.size.width,
-                                options.size.height);
+    gtk_window_set_default_size(GTK_WINDOW(gtk_window), options.size.width, options.size.height);
   }
 
   // Set minimum size if specified
@@ -198,8 +196,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     GdkGeometry geometry;
     geometry.min_width = options.minimum_size.width;
     geometry.min_height = options.minimum_size.height;
-    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry,
-                                  GDK_HINT_MIN_SIZE);
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MIN_SIZE);
   }
 
   // Set maximum size if specified
@@ -207,8 +204,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     GdkGeometry geometry;
     geometry.max_width = options.maximum_size.width;
     geometry.max_height = options.maximum_size.height;
-    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry,
-                                  GDK_HINT_MAX_SIZE);
+    gtk_window_set_geometry_hints(GTK_WINDOW(gtk_window), nullptr, &geometry, GDK_HINT_MAX_SIZE);
   }
 
   // Center the window if requested

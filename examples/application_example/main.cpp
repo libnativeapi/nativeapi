@@ -12,12 +12,11 @@ int main() {
   auto& app = Application::GetInstance();
 
   std::cout << "Application initialized automatically" << std::endl;
-  std::cout << "Single instance: " << (app.IsSingleInstance() ? "Yes" : "No")
-            << std::endl;
+  std::cout << "Single instance: " << (app.IsSingleInstance() ? "Yes" : "No") << std::endl;
 
   // Add event listeners
-  auto started_listener = app.AddListener<ApplicationStartedEvent>(
-      [](const ApplicationStartedEvent& event) {
+  auto started_listener =
+      app.AddListener<ApplicationStartedEvent>([](const ApplicationStartedEvent& event) {
         std::cout << "Application started event received" << std::endl;
       });
 
@@ -26,13 +25,13 @@ int main() {
         std::cout << "Application quit requested event received" << std::endl;
       });
 
-  auto activated_listener = app.AddListener<ApplicationActivatedEvent>(
-      [](const ApplicationActivatedEvent& event) {
+  auto activated_listener =
+      app.AddListener<ApplicationActivatedEvent>([](const ApplicationActivatedEvent& event) {
         std::cout << "Application activated event received" << std::endl;
       });
 
-  auto deactivated_listener = app.AddListener<ApplicationDeactivatedEvent>(
-      [](const ApplicationDeactivatedEvent& event) {
+  auto deactivated_listener =
+      app.AddListener<ApplicationDeactivatedEvent>([](const ApplicationDeactivatedEvent& event) {
         std::cout << "Application deactivated event received" << std::endl;
       });
 

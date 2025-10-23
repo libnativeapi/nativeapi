@@ -33,8 +33,7 @@ struct native_keyboard_monitor_t {
 static uint32_t convert_modifier_keys_to_c(uint32_t cpp_modifier_keys) {
   uint32_t c_modifier_keys = 0;
 
-  if (cpp_modifier_keys &
-      static_cast<uint32_t>(nativeapi::ModifierKey::Shift)) {
+  if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::Shift)) {
     c_modifier_keys |= NATIVE_MODIFIER_KEY_SHIFT;
   }
   if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::Ctrl)) {
@@ -49,16 +48,13 @@ static uint32_t convert_modifier_keys_to_c(uint32_t cpp_modifier_keys) {
   if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::Fn)) {
     c_modifier_keys |= NATIVE_MODIFIER_KEY_FN;
   }
-  if (cpp_modifier_keys &
-      static_cast<uint32_t>(nativeapi::ModifierKey::CapsLock)) {
+  if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::CapsLock)) {
     c_modifier_keys |= NATIVE_MODIFIER_KEY_CAPS_LOCK;
   }
-  if (cpp_modifier_keys &
-      static_cast<uint32_t>(nativeapi::ModifierKey::NumLock)) {
+  if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::NumLock)) {
     c_modifier_keys |= NATIVE_MODIFIER_KEY_NUM_LOCK;
   }
-  if (cpp_modifier_keys &
-      static_cast<uint32_t>(nativeapi::ModifierKey::ScrollLock)) {
+  if (cpp_modifier_keys & static_cast<uint32_t>(nativeapi::ModifierKey::ScrollLock)) {
     c_modifier_keys |= NATIVE_MODIFIER_KEY_SCROLL_LOCK;
   }
 
@@ -129,21 +125,17 @@ bool native_keyboard_monitor_set_callbacks(
       monitor->key_released_listener_id =
           monitor->cpp_monitor->AddListener<nativeapi::KeyReleasedEvent>(
               [monitor](const nativeapi::KeyReleasedEvent& event) {
-                monitor->on_key_released(event.GetKeycode(),
-                                         monitor->user_data);
+                monitor->on_key_released(event.GetKeycode(), monitor->user_data);
               });
     }
 
     if (on_modifier_keys_changed) {
       monitor->modifier_keys_listener_id =
-          monitor->cpp_monitor
-              ->AddListener<nativeapi::ModifierKeysChangedEvent>(
-                  [monitor](const nativeapi::ModifierKeysChangedEvent& event) {
-                    uint32_t c_modifier_keys =
-                        convert_modifier_keys_to_c(event.GetModifierKeys());
-                    monitor->on_modifier_keys_changed(c_modifier_keys,
-                                                      monitor->user_data);
-                  });
+          monitor->cpp_monitor->AddListener<nativeapi::ModifierKeysChangedEvent>(
+              [monitor](const nativeapi::ModifierKeysChangedEvent& event) {
+                uint32_t c_modifier_keys = convert_modifier_keys_to_c(event.GetModifierKeys());
+                monitor->on_modifier_keys_changed(c_modifier_keys, monitor->user_data);
+              });
     }
 
     return true;
@@ -178,8 +170,7 @@ bool native_keyboard_monitor_stop(native_keyboard_monitor_t* monitor) {
   }
 }
 
-bool native_keyboard_monitor_is_monitoring(
-    const native_keyboard_monitor_t* monitor) {
+bool native_keyboard_monitor_is_monitoring(const native_keyboard_monitor_t* monitor) {
   if (!monitor || !monitor->cpp_monitor) {
     return false;
   }

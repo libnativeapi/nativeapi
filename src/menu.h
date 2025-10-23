@@ -360,22 +360,6 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
   bool IsEnabled() const;
 
   /**
-   * @brief Show or hide the menu item.
-   *
-   * Hidden menu items are not displayed in the menu at all.
-   *
-   * @param visible true to show the item, false to hide it
-   */
-  void SetVisible(bool visible);
-
-  /**
-   * @brief Check if the menu item is currently visible.
-   *
-   * @return true if the item is visible, false if hidden
-   */
-  bool IsVisible() const;
-
-  /**
    * @brief Set the state of a checkbox or radio menu item.
    *
    * This method provides more control than SetChecked, allowing
@@ -701,13 +685,6 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * @return true if the menu was successfully closed, false otherwise
    */
   bool Close();
-
-  /**
-   * @brief Check if the menu is currently visible.
-   *
-   * @return true if the menu is currently showing, false otherwise
-   */
-  bool IsVisible() const;
 
   /**
    * @brief Enable or disable the entire menu.

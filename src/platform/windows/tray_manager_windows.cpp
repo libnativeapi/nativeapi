@@ -14,8 +14,7 @@ class TrayManager::Impl {
   ~Impl() {}
 };
 
-TrayManager::TrayManager()
-    : pimpl_(std::make_unique<Impl>()), next_tray_id_(1) {}
+TrayManager::TrayManager() : pimpl_(std::make_unique<Impl>()), next_tray_id_(1) {}
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);

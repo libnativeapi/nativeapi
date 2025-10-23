@@ -28,8 +28,7 @@ static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor,
 
   if (GetMonitorInfo(hMonitor, &monitorInfo)) {
     bool isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
-    displays->push_back(
-        CreateDisplayFromMonitorInfo(hMonitor, &monitorInfo, isPrimary));
+    displays->push_back(CreateDisplayFromMonitorInfo(hMonitor, &monitorInfo, isPrimary));
   }
 
   return TRUE;
@@ -47,8 +46,7 @@ DisplayManager::~DisplayManager() {
 
 std::vector<Display> DisplayManager::GetAll() {
   std::vector<Display> displays;
-  EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc,
-                      reinterpret_cast<LPARAM>(&displays));
+  EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&displays));
   return displays;
 }
 

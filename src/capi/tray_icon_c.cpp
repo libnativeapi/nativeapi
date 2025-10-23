@@ -20,8 +20,7 @@ struct TrayIconListenerData {
 };
 
 // Global maps to store listener data
-static std::map<native_tray_icon_t,
-                std::vector<std::shared_ptr<TrayIconListenerData>>>
+static std::map<native_tray_icon_t, std::vector<std::shared_ptr<TrayIconListenerData>>>
     g_tray_icon_listeners;
 static std::atomic<int> g_tray_icon_next_listener_id{1};
 
@@ -88,8 +87,7 @@ native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_icon(native_tray_icon_t tray_icon,
-                               native_image_t image) {
+void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image) {
   if (!tray_icon)
     return;
 
@@ -130,8 +128,7 @@ native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_title(native_tray_icon_t tray_icon,
-                                const char* title) {
+void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title) {
   if (!tray_icon)
     return;
 
@@ -164,8 +161,7 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon,
-                                  const char* tooltip) {
+void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip) {
   if (!tray_icon)
     return;
 
@@ -198,8 +194,7 @@ char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon) {
   }
 }
 
-void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon,
-                                       native_menu_t menu) {
+void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu) {
   if (!tray_icon)
     return;
 
@@ -235,8 +230,7 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
   }
 }
 
-bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon,
-                                 native_rectangle_t* bounds) {
+bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds) {
   if (!tray_icon || !bounds)
     return false;
 
@@ -329,15 +323,14 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
         break;
 
       case NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED:
-        cpp_listener_id =
-            tray_icon_ptr->AddListener<TrayIconDoubleClickedEvent>(
-                [listener_data](const TrayIconDoubleClickedEvent& event) {
-                  if (listener_data && listener_data->callback) {
-                    native_tray_icon_double_clicked_event_t c_event;
-                    c_event.tray_icon_id = event.GetTrayIconId();
-                    listener_data->callback(&c_event, listener_data->user_data);
-                  }
-                });
+        cpp_listener_id = tray_icon_ptr->AddListener<TrayIconDoubleClickedEvent>(
+            [listener_data](const TrayIconDoubleClickedEvent& event) {
+              if (listener_data && listener_data->callback) {
+                native_tray_icon_double_clicked_event_t c_event;
+                c_event.tray_icon_id = event.GetTrayIconId();
+                listener_data->callback(&c_event, listener_data->user_data);
+              }
+            });
         break;
 
       default:
@@ -354,8 +347,7 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
-                                      int listener_id) {
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id) {
   if (!tray_icon)
     return false;
 
@@ -384,9 +376,7 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon,
   }
 }
 
-bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon,
-                                           double x,
-                                           double y) {
+bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon, double x, double y) {
   if (!tray_icon)
     return false;
 

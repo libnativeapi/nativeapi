@@ -19,8 +19,8 @@ namespace nativeapi {
  * considered handled. If std::nullopt is returned, the message continues to
  * other handlers.
  */
-using WindowMessageHandler = std::function<
-    std::optional<LRESULT>(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)>;
+using WindowMessageHandler =
+    std::function<std::optional<LRESULT>(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)>;
 
 /**
  * @brief Singleton dispatcher for Windows message handling across multiple
@@ -122,10 +122,7 @@ class WindowMessageDispatcher {
    * @param lparam Message parameter
    * @return LRESULT Message processing result
    */
-  static LRESULT CALLBACK DispatchWindowProc(HWND hwnd,
-                                             UINT msg,
-                                             WPARAM wparam,
-                                             LPARAM lparam);
+  static LRESULT CALLBACK DispatchWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
  private:
   WindowMessageDispatcher() = default;
@@ -136,7 +133,7 @@ class WindowMessageDispatcher {
    */
   struct HandlerEntry {
     WindowMessageHandler handler;  ///< The handler function
-    HWND target_hwnd;  ///< Target window (HWND(0) for global handlers)
+    HWND target_hwnd;              ///< Target window (HWND(0) for global handlers)
   };
 
   /**

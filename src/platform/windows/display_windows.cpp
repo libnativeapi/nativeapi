@@ -22,8 +22,7 @@ Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
   }
 }
 
-Display::Display(const Display& other)
-    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Display& Display::operator=(const Display& other) {
   if (this != &other) {
@@ -82,8 +81,7 @@ Size Display::GetSize() const {
     return {0.0, 0.0};
   MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT rect = monitorInfo.rcMonitor;
-  return {static_cast<double>(rect.right - rect.left),
-          static_cast<double>(rect.bottom - rect.top)};
+  return {static_cast<double>(rect.right - rect.left), static_cast<double>(rect.bottom - rect.top)};
 }
 
 Rectangle Display::GetWorkArea() const {

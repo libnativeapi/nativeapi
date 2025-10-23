@@ -55,8 +55,7 @@ native_display_list_t native_display_manager_get_all() {
 
     return list;
   } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_all: " << e.what()
-              << std::endl;
+    std::cerr << "Error in native_display_manager_get_all: " << e.what() << std::endl;
     list.count = 0;
     list.displays = nullptr;
     return list;
@@ -70,8 +69,7 @@ native_display_t native_display_manager_get_primary() {
     auto* handle = new (std::nothrow) Display(primary_display);
     return handle;
   } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_primary: " << e.what()
-              << std::endl;
+    std::cerr << "Error in native_display_manager_get_primary: " << e.what() << std::endl;
     return nullptr;
   }
 }
@@ -86,8 +84,7 @@ native_point_t native_display_manager_get_cursor_position() {
     point.y = cursor_position.y;
     return point;
   } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_cursor_position: "
-              << e.what() << std::endl;
+    std::cerr << "Error in native_display_manager_get_cursor_position: " << e.what() << std::endl;
     return point;
   }
 }

@@ -25,9 +25,7 @@ KeyboardMonitor::~KeyboardMonitor() {
 static KeyboardMonitor* g_current_monitor = nullptr;
 
 // Low-level keyboard hook procedure
-static LRESULT CALLBACK LowLevelKeyboardProc(int nCode,
-                                             WPARAM wParam,
-                                             LPARAM lParam) {
+static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   if (nCode >= 0) {
     KBDLLHOOKSTRUCT* pKeyboard = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
@@ -58,8 +56,7 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode,
     if (GetAsyncKeyState(VK_MENU) & 0x8000) {
       modifier_keys |= static_cast<uint32_t>(ModifierKey::Alt);
     }
-    if (GetAsyncKeyState(VK_LWIN) & 0x8000 ||
-        GetAsyncKeyState(VK_RWIN) & 0x8000) {
+    if (GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000) {
       modifier_keys |= static_cast<uint32_t>(ModifierKey::Meta);
     }
     if (GetAsyncKeyState(VK_CAPITAL) & 0x0001) {
@@ -92,12 +89,11 @@ void KeyboardMonitor::Start() {
   g_current_monitor = this;
 
   // Install low-level keyboard hook
-  impl_->hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc,
-                                  GetModuleHandle(nullptr), 0);
+  impl_->hook_ =
+      SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(nullptr), 0);
 
   if (impl_->hook_ == nullptr) {
-    std::cerr << "Failed to install keyboard hook. Error: " << GetLastError()
-              << std::endl;
+    std::cerr << "Failed to install keyboard hook. Error: " << GetLastError() << std::endl;
     return;
   }
 }
@@ -114,8 +110,7 @@ void KeyboardMonitor::Stop() {
   if (UnhookWindowsHookEx(impl_->hook_)) {
     impl_->hook_ = nullptr;
   } else {
-    std::cerr << "Failed to uninstall keyboard hook. Error: " << GetLastError()
-              << std::endl;
+    std::cerr << "Failed to uninstall keyboard hook. Error: " << GetLastError() << std::endl;
   }
 }
 

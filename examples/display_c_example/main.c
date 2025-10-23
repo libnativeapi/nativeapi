@@ -36,8 +36,8 @@ int main() {
       printf("  Size: %.0f x %.0f\n", size.width, size.height);
 
       native_rectangle_t work_area = native_display_get_work_area(display);
-      printf("  Work Area: (%.0f, %.0f) %.0f x %.0f\n", work_area.x,
-             work_area.y, work_area.width, work_area.height);
+      printf("  Work Area: (%.0f, %.0f) %.0f x %.0f\n", work_area.x, work_area.y, work_area.width,
+             work_area.height);
 
       double scale_factor = native_display_get_scale_factor(display);
       printf("  Scale Factor: %.2f\n", scale_factor);
@@ -47,8 +47,7 @@ int main() {
 
       // Display orientation
       printf("  Orientation: ");
-      native_display_orientation_t orientation =
-          native_display_get_orientation(display);
+      native_display_orientation_t orientation = native_display_get_orientation(display);
       switch (orientation) {
         case NATIVE_DISPLAY_ORIENTATION_PORTRAIT:
           printf("Portrait (0°)");

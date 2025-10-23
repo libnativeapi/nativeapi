@@ -27,10 +27,7 @@ class Image::Impl {
   }
 
   Impl(const Impl& other)
-      : pixbuf_(nullptr),
-        source_(other.source_),
-        size_(other.size_),
-        format_(other.format_) {
+      : pixbuf_(nullptr), source_(other.source_), size_(other.size_), format_(other.format_) {
     if (other.pixbuf_) {
       pixbuf_ = gdk_pixbuf_copy(other.pixbuf_);
     }
@@ -57,8 +54,7 @@ Image::Image() : pimpl_(std::make_unique<Impl>()) {}
 
 Image::~Image() = default;
 
-Image::Image(const Image& other)
-    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Image::Image(const Image& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Image::Image(Image&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
 
@@ -75,8 +71,7 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
     // Get actual image size
     int width = gdk_pixbuf_get_width(pixbuf);
     int height = gdk_pixbuf_get_height(pixbuf);
-    image->pimpl_->size_ = {static_cast<double>(width),
-                            static_cast<double>(height)};
+    image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
 
     // Determine format from file extension
     size_t dotPos = file_path.find_last_of('.');
@@ -147,8 +142,8 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
 
   if (!imageData.empty()) {
     GError* error = nullptr;
-    GInputStream* stream = g_memory_input_stream_new_from_data(
-        imageData.data(), imageData.size(), nullptr);
+    GInputStream* stream =
+        g_memory_input_stream_new_from_data(imageData.data(), imageData.size(), nullptr);
 
     GdkPixbuf* pixbuf = gdk_pixbuf_new_from_stream(stream, nullptr, &error);
     g_object_unref(stream);
@@ -160,8 +155,7 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
       // Get actual image size
       int width = gdk_pixbuf_get_width(pixbuf);
       int height = gdk_pixbuf_get_height(pixbuf);
-      image->pimpl_->size_ = {static_cast<double>(width),
-                              static_cast<double>(height)};
+      image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
 
       // Default assumption for base64 images
       image->pimpl_->format_ = "PNG";
@@ -204,8 +198,8 @@ std::string Image::ToBase64() const {
   GError* error = nullptr;
 
   // Save pixbuf to PNG in memory
-  gboolean success = gdk_pixbuf_save_to_buffer(
-      pimpl_->pixbuf_, &buffer, &buffer_size, "png", &error, nullptr);
+  gboolean success =
+      gdk_pixbuf_save_to_buffer(pimpl_->pixbuf_, &buffer, &buffer_size, "png", &error, nullptr);
 
   if (!success || !buffer) {
     if (error) {
@@ -218,8 +212,7 @@ std::string Image::ToBase64() const {
   }
 
   // Convert to base64
-  std::string base64String =
-      EncodeBase64(reinterpret_cast<unsigned char*>(buffer), buffer_size);
+  std::string base64String = EncodeBase64(reinterpret_cast<unsigned char*>(buffer), buffer_size);
   g_free(buffer);
 
   return "data:image/png;base64," + base64String;
@@ -259,11 +252,10 @@ bool Image::SaveToFile(const std::string& file_path) const {
 
   if (type == "jpeg") {
     // For JPEG, specify quality
-    success = gdk_pixbuf_save(pimpl_->pixbuf_, file_path.c_str(), type.c_str(),
-                              &error, "quality", "90", nullptr);
+    success = gdk_pixbuf_save(pimpl_->pixbuf_, file_path.c_str(), type.c_str(), &error, "quality",
+                              "90", nullptr);
   } else {
-    success = gdk_pixbuf_save(pimpl_->pixbuf_, file_path.c_str(), type.c_str(),
-                              &error, nullptr);
+    success = gdk_pixbuf_save(pimpl_->pixbuf_, file_path.c_str(), type.c_str(), &error, nullptr);
   }
 
   if (error) {

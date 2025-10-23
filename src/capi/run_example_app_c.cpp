@@ -15,8 +15,7 @@ int native_run_example_app() {
   options.minimum_size = {400, 300};
   options.maximum_size = {1920, 1080};
   options.centered = true;
-  std::shared_ptr<Window> window_ptr =
-      WindowManager::GetInstance().Create(options);
+  std::shared_ptr<Window> window_ptr = WindowManager::GetInstance().Create(options);
   // Run the main event loop
   auto& app = Application::GetInstance();
   int exit_code = app.Run(window_ptr);

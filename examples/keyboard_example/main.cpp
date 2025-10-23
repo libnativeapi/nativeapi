@@ -35,8 +35,7 @@ void on_key_released(int keycode, void* user_data) {
 
 // Callback for modifier keys changed events
 void on_modifier_keys_changed(uint32_t modifier_keys, void* user_data) {
-  std::cout << "Modifier keys changed: 0x" << std::hex << modifier_keys
-            << std::dec;
+  std::cout << "Modifier keys changed: 0x" << std::hex << modifier_keys << std::dec;
 
   if (modifier_keys & NATIVE_MODIFIER_KEY_SHIFT)
     std::cout << " SHIFT";
@@ -75,9 +74,8 @@ int main() {
   std::cout << "Keyboard monitor created successfully\n";
 
   // Set up callbacks
-  if (!native_keyboard_monitor_set_callbacks(
-          g_monitor, on_key_pressed, on_key_released, on_modifier_keys_changed,
-          nullptr)) {
+  if (!native_keyboard_monitor_set_callbacks(g_monitor, on_key_pressed, on_key_released,
+                                             on_modifier_keys_changed, nullptr)) {
     std::cout << "Failed to set callbacks\n";
     native_keyboard_monitor_destroy(g_monitor);
     return 1;
@@ -94,10 +92,8 @@ int main() {
   if (native_keyboard_monitor_is_monitoring(g_monitor)) {
     std::cout << "Keyboard monitoring is now active\n";
     std::cout << "\nThis example demonstrates the KeyboardMonitor C API:\n";
-    std::cout
-        << "• native_keyboard_monitor_create() - Creates a monitor instance\n";
-    std::cout
-        << "• native_keyboard_monitor_set_callbacks() - Sets event callbacks\n";
+    std::cout << "• native_keyboard_monitor_create() - Creates a monitor instance\n";
+    std::cout << "• native_keyboard_monitor_set_callbacks() - Sets event callbacks\n";
     std::cout << "• native_keyboard_monitor_start() - Starts monitoring\n";
     std::cout << "• native_keyboard_monitor_is_monitoring() - Checks status\n";
     std::cout << "• native_keyboard_monitor_stop() - Stops monitoring\n";

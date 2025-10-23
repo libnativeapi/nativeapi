@@ -33,8 +33,7 @@ int WindowMessageDispatcher::RegisterHandler(WindowMessageHandler handler) {
   return id;
 }
 
-int WindowMessageDispatcher::RegisterHandler(HWND hwnd,
-                                             WindowMessageHandler handler) {
+int WindowMessageDispatcher::RegisterHandler(HWND hwnd, WindowMessageHandler handler) {
   // Check if hook needs to be installed (outside of lock to avoid deadlock)
   bool needs_hook = false;
   {
@@ -73,9 +72,8 @@ bool WindowMessageDispatcher::UnregisterHandler(int id) {
     // Check if this was the last handler for this window
     if (target_hwnd != HWND(0)) {
       bool has_other_handlers = std::any_of(
-          handlers_.begin(), handlers_.end(), [target_hwnd](const auto& pair) {
-            return pair.second.target_hwnd == target_hwnd;
-          });
+          handlers_.begin(), handlers_.end(),
+          [target_hwnd](const auto& pair) { return pair.second.target_hwnd == target_hwnd; });
 
       should_uninstall = !has_other_handlers;
     }
@@ -112,8 +110,7 @@ LRESULT CALLBACK WindowMessageDispatcher::DispatchWindowProc(HWND hwnd,
 
     // Copy handlers while holding lock (to avoid deadlock when handlers call
     // back)
-    handlers_vector.assign(dispatcher.handlers_.begin(),
-                           dispatcher.handlers_.end());
+    handlers_vector.assign(dispatcher.handlers_.begin(), dispatcher.handlers_.end());
   }
 
   // Try handlers in reverse order (most recently registered first)
@@ -140,8 +137,7 @@ bool WindowMessageDispatcher::InstallHook(HWND hwnd) {
   }
 
   // Get current window procedure
-  WNDPROC current_proc =
-      reinterpret_cast<WNDPROC>(GetWindowLongPtr(hwnd, GWLP_WNDPROC));
+  WNDPROC current_proc = reinterpret_cast<WNDPROC>(GetWindowLongPtr(hwnd, GWLP_WNDPROC));
   if (!current_proc) {
     return false;
   }
@@ -155,8 +151,7 @@ bool WindowMessageDispatcher::InstallHook(HWND hwnd) {
   original_procs_[hwnd] = current_proc;
 
   // Install our dispatcher as the new window procedure
-  SetWindowLongPtr(hwnd, GWLP_WNDPROC,
-                   reinterpret_cast<LONG_PTR>(DispatchWindowProc));
+  SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(DispatchWindowProc));
 
   return true;
 }
@@ -172,8 +167,7 @@ void WindowMessageDispatcher::UninstallHook(HWND hwnd) {
   // Don't restore window procedure for host window - it should keep DispatchWindowProc
   if (hwnd != host_window_) {
     // Restore original window procedure
-    SetWindowLongPtr(hwnd, GWLP_WNDPROC,
-                     reinterpret_cast<LONG_PTR>(original_proc));
+    SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(original_proc));
   }
 
   // Remove from our tracking
@@ -188,12 +182,12 @@ HWND WindowMessageDispatcher::GetHostWindow() {
 
   // Create a hidden window class for hosting
   static const wchar_t* class_name = L"NativeApiHostWindow";
-  
+
   WNDCLASSW wc = {};
   wc.lpfnWndProc = DispatchWindowProc;  // Use dispatcher for host window
   wc.hInstance = GetModuleHandle(nullptr);
   wc.lpszClassName = class_name;
-  
+
   // Register the window class (only once)
   static bool class_registered = false;
   if (!class_registered) {
@@ -205,33 +199,32 @@ HWND WindowMessageDispatcher::GetHostWindow() {
   }
 
   // Create the hidden host window (outside of lock to avoid deadlock)
-  HWND new_host_window = CreateWindowExW(
-      WS_EX_TOOLWINDOW,           // Extended style: tool window
-      class_name,                 // Window class
-      L"NativeApi Host",         // Window title
-      WS_OVERLAPPED,             // Window style: overlapped window
-      0, 0,                      // Position
-      1, 1,                      // Size (minimal)
-      HWND_MESSAGE,              // Parent: message-only window
-      nullptr,                   // Menu
-      GetModuleHandle(nullptr),  // Instance
-      nullptr                    // Additional data
+  HWND new_host_window = CreateWindowExW(WS_EX_TOOLWINDOW,   // Extended style: tool window
+                                         class_name,         // Window class
+                                         L"NativeApi Host",  // Window title
+                                         WS_OVERLAPPED,      // Window style: overlapped window
+                                         0, 0,               // Position
+                                         1, 1,               // Size (minimal)
+                                         HWND_MESSAGE,       // Parent: message-only window
+                                         nullptr,            // Menu
+                                         GetModuleHandle(nullptr),  // Instance
+                                         nullptr                    // Additional data
   );
 
   if (new_host_window) {
     // Ensure the window is hidden
     ShowWindow(new_host_window, SW_HIDE);
-    
+
     // Now acquire lock to register the window
     std::lock_guard<std::mutex> lock(mutex_);
-    
+
     // Double-check if another thread created the window while we were creating it
     if (host_window_ && IsWindow(host_window_)) {
       // Another thread won, destroy our window and use theirs
       DestroyWindow(new_host_window);
       return host_window_;
     }
-    
+
     // Register the host window in original_procs_ with DefWindowProc as fallback
     host_window_ = new_host_window;
     original_procs_[host_window_] = DefWindowProcW;

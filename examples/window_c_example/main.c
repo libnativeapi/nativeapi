@@ -73,50 +73,38 @@ void on_reset_settings_clicked(const void* event, void* user_data) {
 
 void on_debug_mode_clicked(const void* event, void* user_data) {
   native_menu_item_t debug_mode_item = (native_menu_item_t)user_data;
-  native_menu_item_state_t current_state =
-      native_menu_item_get_state(debug_mode_item);
-  native_menu_item_state_t new_state =
-      (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-          ? NATIVE_MENU_ITEM_STATE_UNCHECKED
-          : NATIVE_MENU_ITEM_STATE_CHECKED;
+  native_menu_item_state_t current_state = native_menu_item_get_state(debug_mode_item);
+  native_menu_item_state_t new_state = (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
+                                           ? NATIVE_MENU_ITEM_STATE_UNCHECKED
+                                           : NATIVE_MENU_ITEM_STATE_CHECKED;
   native_menu_item_set_state(debug_mode_item, new_state);
-  printf("Debug Mode %s\n", (new_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-                                ? "enabled"
-                                : "disabled");
+  printf("Debug Mode %s\n", (new_state == NATIVE_MENU_ITEM_STATE_CHECKED) ? "enabled" : "disabled");
 }
 
 void on_auto_start_clicked(const void* event, void* user_data) {
   native_menu_item_t auto_start_item = (native_menu_item_t)user_data;
-  native_menu_item_state_t current_state =
-      native_menu_item_get_state(auto_start_item);
-  native_menu_item_state_t new_state =
-      (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-          ? NATIVE_MENU_ITEM_STATE_UNCHECKED
-          : NATIVE_MENU_ITEM_STATE_CHECKED;
+  native_menu_item_state_t current_state = native_menu_item_get_state(auto_start_item);
+  native_menu_item_state_t new_state = (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
+                                           ? NATIVE_MENU_ITEM_STATE_UNCHECKED
+                                           : NATIVE_MENU_ITEM_STATE_CHECKED;
   native_menu_item_set_state(auto_start_item, new_state);
-  printf("Auto Start %s\n", (new_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-                                ? "enabled"
-                                : "disabled");
+  printf("Auto Start %s\n", (new_state == NATIVE_MENU_ITEM_STATE_CHECKED) ? "enabled" : "disabled");
 }
 
 void on_notifications_clicked(const void* event, void* user_data) {
   native_menu_item_t notifications_item = (native_menu_item_t)user_data;
-  native_menu_item_state_t current_state =
-      native_menu_item_get_state(notifications_item);
-  native_menu_item_state_t new_state =
-      (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-          ? NATIVE_MENU_ITEM_STATE_UNCHECKED
-          : NATIVE_MENU_ITEM_STATE_CHECKED;
+  native_menu_item_state_t current_state = native_menu_item_get_state(notifications_item);
+  native_menu_item_state_t new_state = (current_state == NATIVE_MENU_ITEM_STATE_CHECKED)
+                                           ? NATIVE_MENU_ITEM_STATE_UNCHECKED
+                                           : NATIVE_MENU_ITEM_STATE_CHECKED;
   native_menu_item_set_state(notifications_item, new_state);
-  printf("Notifications %s\n", (new_state == NATIVE_MENU_ITEM_STATE_CHECKED)
-                                   ? "enabled"
-                                   : "disabled");
+  printf("Notifications %s\n",
+         (new_state == NATIVE_MENU_ITEM_STATE_CHECKED) ? "enabled" : "disabled");
 }
 
 void on_sync_item_clicked(const void* event, void* user_data) {
   native_menu_item_t sync_item = (native_menu_item_t)user_data;
-  native_menu_item_state_t current_state =
-      native_menu_item_get_state(sync_item);
+  native_menu_item_state_t current_state = native_menu_item_get_state(sync_item);
   native_menu_item_state_t next_state;
   const char* state_name;
 
@@ -189,16 +177,14 @@ native_menu_t create_context_menu(void) {
   // Add Show Window item
   native_menu_item_t show_window_item =
       native_menu_item_create("Show Window", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(show_window_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_add_listener(show_window_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_show_window_clicked, NULL);
   native_menu_add_item(context_menu, show_window_item);
 
   // Add Hide Window item
   native_menu_item_t hide_window_item =
       native_menu_item_create("Hide Window", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(hide_window_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_add_listener(hide_window_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_hide_window_clicked, NULL);
   native_menu_add_item(context_menu, hide_window_item);
 
@@ -206,10 +192,8 @@ native_menu_t create_context_menu(void) {
   native_menu_add_separator(context_menu);
 
   // Add About item
-  native_menu_item_t about_item =
-      native_menu_item_create("About", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(about_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_about_clicked, NULL);
+  native_menu_item_t about_item = native_menu_item_create("About", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_add_listener(about_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_about_clicked, NULL);
   native_menu_add_item(context_menu, about_item);
 
   // Create Tools submenu
@@ -218,15 +202,13 @@ native_menu_t create_context_menu(void) {
   // Add items to tools submenu
   native_menu_item_t clear_cache_item =
       native_menu_item_create("Clear Cache", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(clear_cache_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_add_listener(clear_cache_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_clear_cache_clicked, NULL);
   native_menu_add_item(tools_submenu, clear_cache_item);
 
   native_menu_item_t reset_settings_item =
       native_menu_item_create("Reset Settings", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(reset_settings_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_add_listener(reset_settings_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_reset_settings_clicked, NULL);
   native_menu_add_item(tools_submenu, reset_settings_item);
 
@@ -240,16 +222,13 @@ native_menu_t create_context_menu(void) {
   native_menu_add_item(tools_submenu, debug_mode_item);
 
   // Create the submenu parent item
-  native_menu_item_t tools_item =
-      native_menu_item_create("Tools", NATIVE_MENU_ITEM_TYPE_SUBMENU);
+  native_menu_item_t tools_item = native_menu_item_create("Tools", NATIVE_MENU_ITEM_TYPE_SUBMENU);
   native_menu_item_set_submenu(tools_item, tools_submenu);
 
   // Add submenu event listeners
-  native_menu_item_add_listener(tools_item,
-                                NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED,
+  native_menu_item_add_listener(tools_item, NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED,
                                 on_tools_submenu_opened, NULL);
-  native_menu_item_add_listener(tools_item,
-                                NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED,
+  native_menu_item_add_listener(tools_item, NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED,
                                 on_tools_submenu_closed, NULL);
 
   native_menu_add_item(context_menu, tools_item);
@@ -265,47 +244,41 @@ native_menu_t create_context_menu(void) {
   // Add checkbox menu items
   native_menu_item_t auto_start_item =
       native_menu_item_create("Auto Start", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
-  native_menu_item_set_state(
-      auto_start_item, NATIVE_MENU_ITEM_STATE_CHECKED);  // Initially checked
+  native_menu_item_set_state(auto_start_item, NATIVE_MENU_ITEM_STATE_CHECKED);  // Initially checked
   native_menu_item_add_listener(auto_start_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_auto_start_clicked, auto_start_item);
   native_menu_add_item(context_menu, auto_start_item);
 
-  native_menu_item_t notifications_item = native_menu_item_create(
-      "Show Notifications", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
-  native_menu_item_set_state(
-      notifications_item,
-      NATIVE_MENU_ITEM_STATE_UNCHECKED);  // Initially unchecked
-  native_menu_item_add_listener(notifications_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_t notifications_item =
+      native_menu_item_create("Show Notifications", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
+  native_menu_item_set_state(notifications_item,
+                             NATIVE_MENU_ITEM_STATE_UNCHECKED);  // Initially unchecked
+  native_menu_item_add_listener(notifications_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_notifications_clicked, notifications_item);
   native_menu_add_item(context_menu, notifications_item);
 
   // Add three-state checkbox example
   native_menu_item_t sync_item =
       native_menu_item_create("Sync Status", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
-  native_menu_item_set_state(
-      sync_item,
-      NATIVE_MENU_ITEM_STATE_MIXED);  // Initially mixed/indeterminate
-  native_menu_item_add_listener(sync_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_sync_item_clicked, sync_item);
+  native_menu_item_set_state(sync_item,
+                             NATIVE_MENU_ITEM_STATE_MIXED);  // Initially mixed/indeterminate
+  native_menu_item_add_listener(sync_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_sync_item_clicked,
+                                sync_item);
   native_menu_add_item(context_menu, sync_item);
 
   // Add separator before radio group
   native_menu_add_separator(context_menu);
 
   // Add radio button group for theme selection
-  native_menu_item_t theme_label =
-      native_menu_item_create("Theme:", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_t theme_label = native_menu_item_create("Theme:", NATIVE_MENU_ITEM_TYPE_NORMAL);
   native_menu_add_item(context_menu, theme_label);
 
   native_menu_item_t light_theme_item =
       native_menu_item_create("Light Theme", NATIVE_MENU_ITEM_TYPE_RADIO);
   native_menu_item_set_radio_group(light_theme_item, 0);  // Group 0
-  native_menu_item_set_state(
-      light_theme_item, NATIVE_MENU_ITEM_STATE_CHECKED);  // Default selection
-  native_menu_item_add_listener(light_theme_item,
-                                NATIVE_MENU_ITEM_EVENT_CLICKED,
+  native_menu_item_set_state(light_theme_item,
+                             NATIVE_MENU_ITEM_STATE_CHECKED);  // Default selection
+  native_menu_item_add_listener(light_theme_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
                                 on_light_theme_clicked, light_theme_item);
   native_menu_add_item(context_menu, light_theme_item);
 
@@ -328,10 +301,8 @@ native_menu_t create_context_menu(void) {
   native_menu_add_separator(context_menu);
 
   // Add exit item
-  native_menu_item_t exit_item =
-      native_menu_item_create("Exit", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_exit_clicked, NULL);
+  native_menu_item_t exit_item = native_menu_item_create("Exit", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_exit_clicked, NULL);
   native_menu_add_item(context_menu, exit_item);
 
   return context_menu;
@@ -413,13 +384,11 @@ int main() {
     native_tray_icon_set_context_menu(g_tray_icon, g_context_menu);
 
     // Set up event listeners
-    native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED,
-                                  on_tray_icon_clicked, NULL);
-    native_tray_icon_add_listener(g_tray_icon,
-                                  NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED,
+    native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_icon_clicked,
+                                  NULL);
+    native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED,
                                   on_tray_icon_right_clicked, NULL);
-    native_tray_icon_add_listener(g_tray_icon,
-                                  NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED,
+    native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED,
                                   on_tray_icon_double_clicked, NULL);
 
     native_tray_icon_set_visible(g_tray_icon, true);

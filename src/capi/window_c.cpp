@@ -34,8 +34,7 @@ void native_window_options_destroy(native_window_options_t* options) {
 }
 
 FFI_PLUGIN_EXPORT
-bool native_window_options_set_title(native_window_options_t* options,
-                                     const char* title) {
+bool native_window_options_set_title(native_window_options_t* options, const char* title) {
   if (!options)
     return false;
 
@@ -57,9 +56,7 @@ bool native_window_options_set_title(native_window_options_t* options,
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_options_set_size(native_window_options_t* options,
-                                    double width,
-                                    double height) {
+void native_window_options_set_size(native_window_options_t* options, double width, double height) {
   if (!options)
     return;
   options->size.width = width;
@@ -87,8 +84,7 @@ void native_window_options_set_maximum_size(native_window_options_t* options,
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_options_set_centered(native_window_options_t* options,
-                                        bool centered) {
+void native_window_options_set_centered(native_window_options_t* options, bool centered) {
   if (!options)
     return;
   options->centered = centered;
@@ -226,8 +222,7 @@ bool native_window_is_fullscreen(native_window_t window) {
 
 // Window geometry operations
 FFI_PLUGIN_EXPORT
-void native_window_set_bounds(native_window_t window,
-                              native_rectangle_t bounds) {
+void native_window_set_bounds(native_window_t window, native_rectangle_t bounds) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
@@ -251,10 +246,7 @@ native_rectangle_t native_window_get_bounds(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_size(native_window_t window,
-                            double width,
-                            double height,
-                            bool animate) {
+void native_window_set_size(native_window_t window, double width, double height, bool animate) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
@@ -276,9 +268,7 @@ native_size_t native_window_get_size(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_content_size(native_window_t window,
-                                    double width,
-                                    double height) {
+void native_window_set_content_size(native_window_t window, double width, double height) {
   if (!window)
     return;
   nativeapi::Size size = {width, height};
@@ -300,9 +290,7 @@ native_size_t native_window_get_content_size(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_minimum_size(native_window_t window,
-                                    double width,
-                                    double height) {
+void native_window_set_minimum_size(native_window_t window, double width, double height) {
   if (!window)
     return;
   nativeapi::Size size = {width, height};
@@ -324,9 +312,7 @@ native_size_t native_window_get_minimum_size(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_maximum_size(native_window_t window,
-                                    double width,
-                                    double height) {
+void native_window_set_maximum_size(native_window_t window, double width, double height) {
   if (!window)
     return;
   nativeapi::Size size = {width, height};
@@ -435,8 +421,7 @@ bool native_window_is_maximizable(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_fullscreenable(native_window_t window,
-                                      bool fullscreenable) {
+void native_window_set_fullscreenable(native_window_t window, bool fullscreenable) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
@@ -468,8 +453,7 @@ bool native_window_is_closable(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_always_on_top(native_window_t window,
-                                     bool always_on_top) {
+void native_window_set_always_on_top(native_window_t window, bool always_on_top) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
@@ -549,8 +533,7 @@ float native_window_get_opacity(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_visible_on_all_workspaces(native_window_t window,
-                                                 bool visible) {
+void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
@@ -566,8 +549,7 @@ bool native_window_is_visible_on_all_workspaces(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
-void native_window_set_ignore_mouse_events(native_window_t window,
-                                           bool ignore) {
+void native_window_set_ignore_mouse_events(native_window_t window, bool ignore) {
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);

@@ -27,11 +27,9 @@ struct MenuEventListenerData {
 };
 
 // Global maps to store event listeners
-static std::map<native_menu_item_t,
-                std::map<int, std::unique_ptr<EventListenerData>>>
+static std::map<native_menu_item_t, std::map<int, std::unique_ptr<EventListenerData>>>
     g_menu_item_listeners;
-static std::map<native_menu_t,
-                std::map<int, std::unique_ptr<MenuEventListenerData>>>
+static std::map<native_menu_t, std::map<int, std::unique_ptr<MenuEventListenerData>>>
     g_menu_listeners;
 
 // Global listener ID counter
@@ -142,8 +140,7 @@ static native_menu_item_state_t convert_menu_item_state(MenuItemState state) {
 
 // MenuItem C API Implementation
 
-native_menu_item_t native_menu_item_create(const char* text,
-                                           native_menu_item_type_t type) {
+native_menu_item_t native_menu_item_create(const char* text, native_menu_item_type_t type) {
   if (!text)
     return nullptr;
 
@@ -294,8 +291,7 @@ native_image_t native_menu_item_get_icon(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_tooltip(native_menu_item_t item,
-                                  const char* tooltip) {
+void native_menu_item_set_tooltip(native_menu_item_t item, const char* tooltip) {
   if (!item)
     return;
 
@@ -336,25 +332,22 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_accelerator(
-    native_menu_item_t item,
-    const native_keyboard_accelerator_t* accelerator) {
+void native_menu_item_set_accelerator(native_menu_item_t item,
+                                      const native_keyboard_accelerator_t* accelerator) {
   if (!item || !accelerator)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    KeyboardAccelerator cpp_accelerator =
-        convert_keyboard_accelerator(accelerator);
+    KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
     menu_item->SetAccelerator(cpp_accelerator);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-bool native_menu_item_get_accelerator(
-    native_menu_item_t item,
-    native_keyboard_accelerator_t* accelerator) {
+bool native_menu_item_get_accelerator(native_menu_item_t item,
+                                      native_keyboard_accelerator_t* accelerator) {
   if (!item || !accelerator)
     return false;
 
@@ -409,32 +402,7 @@ bool native_menu_item_is_enabled(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_visible(native_menu_item_t item, bool visible) {
-  if (!item)
-    return;
-
-  try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetVisible(visible);
-  } catch (...) {
-    // Ignore exceptions
-  }
-}
-
-bool native_menu_item_is_visible(native_menu_item_t item) {
-  if (!item)
-    return false;
-
-  try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->IsVisible();
-  } catch (...) {
-    return false;
-  }
-}
-
-void native_menu_item_set_state(native_menu_item_t item,
-                                native_menu_item_state_t state) {
+void native_menu_item_set_state(native_menu_item_t item, native_menu_item_state_t state) {
   if (!item)
     return;
 
@@ -482,8 +450,7 @@ int native_menu_item_get_radio_group(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_submenu(native_menu_item_t item,
-                                  native_menu_t submenu) {
+void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu) {
   if (!item || !submenu)
     return;
 
@@ -561,8 +528,7 @@ int native_menu_item_add_listener(native_menu_item_t item,
                 native_menu_item_clicked_event_t c_event = {};
                 c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event,
-                                              listener_it->second->user_data);
+                listener_it->second->callback(&c_event, listener_it->second->user_data);
               }
             }
           });
@@ -577,8 +543,7 @@ int native_menu_item_add_listener(native_menu_item_t item,
                 native_menu_item_submenu_opened_event_t c_event = {};
                 c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event,
-                                              listener_it->second->user_data);
+                listener_it->second->callback(&c_event, listener_it->second->user_data);
               }
             }
           });
@@ -593,8 +558,7 @@ int native_menu_item_add_listener(native_menu_item_t item,
                 native_menu_item_submenu_closed_event_t c_event = {};
                 c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event,
-                                              listener_it->second->user_data);
+                listener_it->second->callback(&c_event, listener_it->second->user_data);
               }
             }
           });
@@ -606,8 +570,7 @@ int native_menu_item_add_listener(native_menu_item_t item,
   }
 }
 
-bool native_menu_item_remove_listener(native_menu_item_t item,
-                                      int listener_id) {
+bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id) {
   if (!item)
     return false;
 
@@ -711,9 +674,7 @@ void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
   }
 }
 
-void native_menu_insert_item(native_menu_t menu,
-                             native_menu_item_t item,
-                             size_t index) {
+void native_menu_insert_item(native_menu_t menu, native_menu_item_t item, size_t index) {
   if (!menu || !item)
     return;
 
@@ -754,8 +715,7 @@ bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item) {
   }
 }
 
-bool native_menu_remove_item_by_id(native_menu_t menu,
-                                   native_menu_item_id_t item_id) {
+bool native_menu_remove_item_by_id(native_menu_t menu, native_menu_item_id_t item_id) {
   if (!menu)
     return false;
 
@@ -840,8 +800,7 @@ native_menu_item_t native_menu_get_item_at(native_menu_t menu, size_t index) {
   }
 }
 
-native_menu_item_t native_menu_get_item_by_id(native_menu_t menu,
-                                              native_menu_item_id_t item_id) {
+native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_item_id_t item_id) {
   if (!menu)
     return nullptr;
 
@@ -868,8 +827,8 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
       return result;
     }
 
-    result.items = static_cast<native_menu_item_t*>(
-        malloc(items.size() * sizeof(native_menu_item_t)));
+    result.items =
+        static_cast<native_menu_item_t*>(malloc(items.size() * sizeof(native_menu_item_t)));
     if (!result.items) {
       return result;
     }
@@ -926,18 +885,6 @@ bool native_menu_close(native_menu_t menu) {
   }
 }
 
-bool native_menu_is_visible(native_menu_t menu) {
-  if (!menu)
-    return false;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->IsVisible();
-  } catch (...) {
-    return false;
-  }
-}
-
 void native_menu_set_enabled(native_menu_t menu, bool enabled) {
   if (!menu)
     return;
@@ -985,37 +932,33 @@ int native_menu_add_listener(native_menu_t menu,
 
     // Add the appropriate event listener based on event type
     if (event_type == NATIVE_MENU_EVENT_OPENED) {
-      menu_ptr->AddListener<MenuOpenedEvent>(
-          [menu, listener_id](const MenuOpenedEvent& event) {
-            // Find the listener data
-            auto menu_it = g_menu_listeners.find(menu);
-            if (menu_it != g_menu_listeners.end()) {
-              auto listener_it = menu_it->second.find(listener_id);
-              if (listener_it != menu_it->second.end()) {
-                native_menu_opened_event_t c_event = {};
-                c_event.menu_id = event.GetMenuId();
+      menu_ptr->AddListener<MenuOpenedEvent>([menu, listener_id](const MenuOpenedEvent& event) {
+        // Find the listener data
+        auto menu_it = g_menu_listeners.find(menu);
+        if (menu_it != g_menu_listeners.end()) {
+          auto listener_it = menu_it->second.find(listener_id);
+          if (listener_it != menu_it->second.end()) {
+            native_menu_opened_event_t c_event = {};
+            c_event.menu_id = event.GetMenuId();
 
-                listener_it->second->callback(&c_event,
-                                              listener_it->second->user_data);
-              }
-            }
-          });
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
+        }
+      });
     } else if (event_type == NATIVE_MENU_EVENT_CLOSED) {
-      menu_ptr->AddListener<MenuClosedEvent>(
-          [menu, listener_id](const MenuClosedEvent& event) {
-            // Find the listener data
-            auto menu_it = g_menu_listeners.find(menu);
-            if (menu_it != g_menu_listeners.end()) {
-              auto listener_it = menu_it->second.find(listener_id);
-              if (listener_it != menu_it->second.end()) {
-                native_menu_closed_event_t c_event = {};
-                c_event.menu_id = event.GetMenuId();
+      menu_ptr->AddListener<MenuClosedEvent>([menu, listener_id](const MenuClosedEvent& event) {
+        // Find the listener data
+        auto menu_it = g_menu_listeners.find(menu);
+        if (menu_it != g_menu_listeners.end()) {
+          auto listener_it = menu_it->second.find(listener_id);
+          if (listener_it != menu_it->second.end()) {
+            native_menu_closed_event_t c_event = {};
+            c_event.menu_id = event.GetMenuId();
 
-                listener_it->second->callback(&c_event,
-                                              listener_it->second->user_data);
-              }
-            }
-          });
+            listener_it->second->callback(&c_event, listener_it->second->user_data);
+          }
+        }
+      });
     }
 
     return listener_id;
@@ -1058,14 +1001,12 @@ void native_menu_item_list_free(native_menu_item_list_t list) {
   }
 }
 
-char* native_keyboard_accelerator_to_string(
-    const native_keyboard_accelerator_t* accelerator) {
+char* native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator) {
   if (!accelerator)
     return nullptr;
 
   try {
-    KeyboardAccelerator cpp_accelerator =
-        convert_keyboard_accelerator(accelerator);
+    KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
     std::string str = cpp_accelerator.ToString();
 
     // Allocate C string and copy content

@@ -102,17 +102,15 @@ class Application::Impl {
     std::wstring wide_path(icon_path.begin(), icon_path.end());
 
     // Load icon from file using LoadImageW for wide strings
-    HICON icon =
-        static_cast<HICON>(LoadImageW(nullptr, wide_path.c_str(), IMAGE_ICON, 0,
-                                     0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
+    HICON icon = static_cast<HICON>(
+        LoadImageW(nullptr, wide_path.c_str(), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
 
     if (!icon) {
       return false;
     }
 
     // Set application icon
-    SetClassLongPtr(GetConsoleWindow(), GCLP_HICON,
-                    reinterpret_cast<LONG_PTR>(icon));
+    SetClassLongPtr(GetConsoleWindow(), GCLP_HICON, reinterpret_cast<LONG_PTR>(icon));
 
     return true;
   }
@@ -168,10 +166,7 @@ class Application::Impl {
 };
 
 Application::Application()
-    : initialized_(true),
-      running_(false),
-      exit_code_(0),
-      pimpl_(std::make_unique<Impl>(this)) {
+    : initialized_(true), running_(false), exit_code_(0), pimpl_(std::make_unique<Impl>(this)) {
   // Perform platform-specific initialization automatically
   pimpl_->Initialize();
 

@@ -17,8 +17,7 @@ class Window::Impl {
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window)
-    : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {}
+Window::Window(void* window) : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {}
 
 Window::~Window() {}
 
@@ -48,8 +47,7 @@ bool Window::IsFocused() const {
   if (seat) {
     GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
     if (keyboard) {
-      GdkWindow* focus_window =
-          gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
+      GdkWindow* focus_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       return focus_window == pimpl_->gdk_window_;
     }
   }
@@ -137,8 +135,8 @@ bool Window::IsFullScreen() const {
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->gdk_window_) {
-    gdk_window_move_resize(pimpl_->gdk_window_, (gint)bounds.x, (gint)bounds.y,
-                           (gint)bounds.width, (gint)bounds.height);
+    gdk_window_move_resize(pimpl_->gdk_window_, (gint)bounds.x, (gint)bounds.y, (gint)bounds.width,
+                           (gint)bounds.height);
   }
 }
 
@@ -165,8 +163,7 @@ Size Window::GetSize() const {
   Size size = {0, 0};
   if (pimpl_->gdk_window_) {
     gint width, height;
-    gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &width,
-                            &height);
+    gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &width, &height);
     size.width = width;
     size.height = height;
   }

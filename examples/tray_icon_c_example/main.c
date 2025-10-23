@@ -42,26 +42,22 @@ void on_tray_clicked(const void* event, void* user_data) {
 void on_tray_right_clicked(const void* event, void* user_data) {
   const native_tray_icon_right_clicked_event_t* right_clicked_event =
       (const native_tray_icon_right_clicked_event_t*)event;
-  printf("Tray icon right clicked! ID=%ld\n",
-         right_clicked_event->tray_icon_id);
+  printf("Tray icon right clicked! ID=%ld\n", right_clicked_event->tray_icon_id);
 }
 
 void on_tray_double_clicked(const void* event, void* user_data) {
   const native_tray_icon_double_clicked_event_t* double_clicked_event =
       (const native_tray_icon_double_clicked_event_t*)event;
-  printf("Tray icon double clicked! ID=%ld\n",
-         double_clicked_event->tray_icon_id);
+  printf("Tray icon double clicked! ID=%ld\n", double_clicked_event->tray_icon_id);
 }
 
 void on_menu_opened(const void* event, void* user_data) {
-  const native_menu_opened_event_t* open_event =
-      (const native_menu_opened_event_t*)event;
+  const native_menu_opened_event_t* open_event = (const native_menu_opened_event_t*)event;
   printf("Menu opened: ID=%ld\n", open_event->menu_id);
 }
 
 void on_menu_closed(const void* event, void* user_data) {
-  const native_menu_closed_event_t* close_event =
-      (const native_menu_closed_event_t*)event;
+  const native_menu_closed_event_t* close_event = (const native_menu_closed_event_t*)event;
   printf("Menu closed: ID=%ld\n", close_event->menu_id);
 }
 
@@ -86,15 +82,12 @@ int main() {
   printf("Created menu with ID: %ld\n", native_menu_get_id(menu));
 
   // Create menu items
-  native_menu_item_t item1 =
-      native_menu_item_create("Show Message", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_t item2 =
-      native_menu_item_create("Settings", NATIVE_MENU_ITEM_TYPE_NORMAL);
-  native_menu_item_t checkbox = native_menu_item_create(
-      "Enable Notifications", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
+  native_menu_item_t item1 = native_menu_item_create("Show Message", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_t item2 = native_menu_item_create("Settings", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_t checkbox =
+      native_menu_item_create("Enable Notifications", NATIVE_MENU_ITEM_TYPE_CHECKBOX);
   native_menu_item_t separator = native_menu_item_create_separator();
-  native_menu_item_t exit_item =
-      native_menu_item_create("Exit", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_t exit_item = native_menu_item_create("Exit", NATIVE_MENU_ITEM_TYPE_NORMAL);
 
   if (!item1 || !item2 || !checkbox || !separator || !exit_item) {
     printf("Error: Failed to create menu items!\n");
@@ -111,22 +104,20 @@ int main() {
   native_menu_item_set_tooltip(item1, "Click to show a message");
 
   // Set up keyboard accelerator for exit item
-  native_keyboard_accelerator_t exit_accel = {
-      .modifiers = NATIVE_ACCELERATOR_MODIFIER_CTRL, .key = "Q"};
+  native_keyboard_accelerator_t exit_accel = {.modifiers = NATIVE_ACCELERATOR_MODIFIER_CTRL,
+                                              .key = "Q"};
   native_menu_item_set_accelerator(exit_item, &exit_accel);
 
   // Set checkbox state
   native_menu_item_set_state(checkbox, NATIVE_MENU_ITEM_STATE_CHECKED);
 
   // Set up event listeners using new API
-  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_menu_item_clicked, NULL);
-  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_CLICKED,
-                                on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(item1, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(item2, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked, NULL);
+  native_menu_item_add_listener(exit_item, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked,
+                                NULL);
+  native_menu_item_add_listener(checkbox, NATIVE_MENU_ITEM_EVENT_CLICKED, on_menu_item_clicked,
+                                NULL);
 
   // Add items to menu
   native_menu_add_item(menu, item1);
@@ -138,10 +129,8 @@ int main() {
   printf("Added %zu items to menu\n", native_menu_get_item_count(menu));
 
   // Set menu event listeners using new API
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, on_menu_opened,
-                           NULL);
-  native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, on_menu_closed,
-                           NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_OPENED, on_menu_opened, NULL);
+  native_menu_add_listener(menu, NATIVE_MENU_EVENT_CLOSED, on_menu_closed, NULL);
 
   // Create a submenu example
   native_menu_t submenu = native_menu_create();
@@ -156,13 +145,12 @@ int main() {
       native_menu_add_item(submenu, sub_item2);
 
       // Create submenu item and add to main menu
-      native_menu_item_t submenu_item = native_menu_item_create(
-          "More Options", NATIVE_MENU_ITEM_TYPE_SUBMENU);
+      native_menu_item_t submenu_item =
+          native_menu_item_create("More Options", NATIVE_MENU_ITEM_TYPE_SUBMENU);
       if (submenu_item) {
         native_menu_item_set_submenu(submenu_item, submenu);
         native_menu_add_item(menu, submenu_item);
-        printf("Created submenu with %zu items\n",
-               native_menu_get_item_count(submenu));
+        printf("Created submenu with %zu items\n", native_menu_get_item_count(submenu));
       }
     }
   }
@@ -175,24 +163,20 @@ int main() {
     return 1;
   }
 
-  printf("Created tray icon with ID: %ld\n",
-         native_tray_icon_get_id(tray_icon));
+  printf("Created tray icon with ID: %ld\n", native_tray_icon_get_id(tray_icon));
 
   // Set up tray icon properties
   native_tray_icon_set_title(tray_icon, "My App");
-  native_tray_icon_set_tooltip(tray_icon,
-                               "My Application - Right click for menu");
+  native_tray_icon_set_tooltip(tray_icon, "My Application - Right click for menu");
 
   // Set the context menu
   native_tray_icon_set_context_menu(tray_icon, menu);
 
   // Set up tray icon event listeners using new API
-  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED,
-                                on_tray_clicked, NULL);
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_clicked, NULL);
   native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED,
                                 on_tray_right_clicked, NULL);
-  native_tray_icon_add_listener(tray_icon,
-                                NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED,
+  native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED,
                                 on_tray_double_clicked, NULL);
 
   // Show the tray icon
@@ -205,8 +189,8 @@ int main() {
   // Get tray icon bounds
   native_rectangle_t bounds;
   if (native_tray_icon_get_bounds(tray_icon, &bounds)) {
-    printf("Tray icon bounds: x=%.1f, y=%.1f, width=%.1f, height=%.1f\n",
-           bounds.x, bounds.y, bounds.width, bounds.height);
+    printf("Tray icon bounds: x=%.1f, y=%.1f, width=%.1f, height=%.1f\n", bounds.x, bounds.y,
+           bounds.width, bounds.height);
   }
 
   // Show all managed tray icons

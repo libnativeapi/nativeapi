@@ -66,7 +66,6 @@ class MenuItem::Impl {
         tooltip_(""),
         type_(type),
         enabled_(true),
-        visible_(true),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
         accelerator_("", KeyboardAccelerator::None) {}
@@ -78,7 +77,6 @@ class MenuItem::Impl {
   std::optional<std::string> tooltip_;
   MenuItemType type_;
   bool enabled_;
-  bool visible_;
   MenuItemState state_;
   int radio_group_;
   KeyboardAccelerator accelerator_;
@@ -116,8 +114,7 @@ MenuItem::MenuItem(const std::string& text, MenuItemType type) {
 
   // Connect activation signal for click events (except separators)
   if (gtk_item && type != MenuItemType::Separator) {
-    g_signal_connect(G_OBJECT(gtk_item), "activate",
-                     G_CALLBACK(OnGtkMenuItemActivate), this);
+    g_signal_connect(G_OBJECT(gtk_item), "activate", G_CALLBACK(OnGtkMenuItemActivate), this);
   }
 }
 
@@ -125,8 +122,7 @@ MenuItem::MenuItem(void* menu_item) {
   MenuItemId id = IdAllocator::Allocate<MenuItem>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu_item, MenuItemType::Normal));
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
-    const char* label =
-        gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
+    const char* label = gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
     if (label && label[0] != '\0') {
       pimpl_->title_ = std::string(label);
     } else {
@@ -211,28 +207,15 @@ bool MenuItem::IsEnabled() const {
   return pimpl_->enabled_;
 }
 
-void MenuItem::SetVisible(bool visible) {
-  pimpl_->visible_ = visible;
-  if (pimpl_->gtk_menu_item_) {
-    gtk_widget_set_visible(pimpl_->gtk_menu_item_, visible ? TRUE : FALSE);
-  }
-}
-
-bool MenuItem::IsVisible() const {
-  return pimpl_->visible_;
-}
-
 void MenuItem::SetState(MenuItemState state) {
   pimpl_->state_ = state;
   if (pimpl_->gtk_menu_item_) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      gtk_check_menu_item_set_active(
-          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      gtk_check_menu_item_set_active(
-          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
     }
   }
 }
@@ -260,10 +243,8 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     // shows/hides
     GtkWidget* submenu_widget = (GtkWidget*)submenu->GetNativeObject();
     if (submenu_widget) {
-      g_signal_connect(G_OBJECT(submenu_widget), "show",
-                       G_CALLBACK(OnGtkSubmenuShow), this);
-      g_signal_connect(G_OBJECT(submenu_widget), "hide",
-                       G_CALLBACK(OnGtkSubmenuHide), this);
+      g_signal_connect(G_OBJECT(submenu_widget), "show", G_CALLBACK(OnGtkSubmenuShow), this);
+      g_signal_connect(G_OBJECT(submenu_widget), "hide", G_CALLBACK(OnGtkSubmenuHide), this);
     }
   }
 }
@@ -296,13 +277,12 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Private implementation class for Menu
 class Menu::Impl {
  public:
-  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu), enabled_(true), visible_(false) {}
+  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu), enabled_(true) {}
 
   MenuId id_;
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
   bool enabled_;
-  bool visible_;
 };
 
 Menu::Menu() {
@@ -310,10 +290,8 @@ Menu::Menu() {
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_menu_new()));
   // Connect menu show/hide to emit open/close events
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
-                     G_CALLBACK(OnGtkMenuShow), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide",
-                     G_CALLBACK(OnGtkMenuHide), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show", G_CALLBACK(OnGtkMenuShow), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide", G_CALLBACK(OnGtkMenuHide), this);
   }
 }
 
@@ -321,10 +299,8 @@ Menu::Menu(void* menu) {
   MenuId id = IdAllocator::Allocate<Menu>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu));
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show",
-                     G_CALLBACK(OnGtkMenuShow), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide",
-                     G_CALLBACK(OnGtkMenuHide), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show", G_CALLBACK(OnGtkMenuShow), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide", G_CALLBACK(OnGtkMenuHide), this);
   }
 }
 
@@ -341,8 +317,7 @@ MenuId Menu::GetId() const {
 void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (pimpl_->gtk_menu_ && item && item->GetNativeObject()) {
     pimpl_->items_.push_back(item);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_),
-                          (GtkWidget*)item->GetNativeObject());
+    gtk_menu_shell_append(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
   }
 }
 
@@ -357,8 +332,8 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
 
   pimpl_->items_.insert(pimpl_->items_.begin() + index, item);
   if (pimpl_->gtk_menu_ && item->GetNativeObject()) {
-    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_),
-                          (GtkWidget*)item->GetNativeObject(), index);
+    gtk_menu_shell_insert(GTK_MENU_SHELL(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject(),
+                          index);
   }
 }
 
@@ -367,8 +342,7 @@ bool Menu::RemoveItem(std::shared_ptr<MenuItem> item) {
     auto it = std::find(pimpl_->items_.begin(), pimpl_->items_.end(), item);
     if (it != pimpl_->items_.end()) {
       pimpl_->items_.erase(it);
-      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_),
-                           (GtkWidget*)item->GetNativeObject());
+      gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_), (GtkWidget*)item->GetNativeObject());
       return true;
     }
   }
@@ -434,7 +408,6 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 
 bool Menu::Open(double x, double y) {
   if (pimpl_->gtk_menu_) {
-    pimpl_->visible_ = true;
     gtk_widget_show_all(pimpl_->gtk_menu_);
 
     // Try to position at explicit coordinates if available
@@ -446,8 +419,7 @@ bool Menu::Open(double x, double y) {
       rect.width = 1;
       rect.height = 1;
       gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
-                             GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_NORTH_WEST,
-                             nullptr);
+                             GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_NORTH_WEST, nullptr);
     } else {
       // Fallback to pointer if root window not available
       gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
@@ -462,16 +434,11 @@ bool Menu::Open() {
 }
 
 bool Menu::Close() {
-  if (pimpl_->gtk_menu_ && pimpl_->visible_) {
+  if (pimpl_->gtk_menu_) {
     gtk_menu_popdown(GTK_MENU(pimpl_->gtk_menu_));
-    pimpl_->visible_ = false;
     return true;
   }
   return false;
-}
-
-bool Menu::IsVisible() const {
-  return pimpl_->visible_;
 }
 
 void Menu::SetEnabled(bool enabled) {

@@ -38,8 +38,7 @@ bool AccessibilityManager::IsEnabled() {
 
   // Method 2: Check for common accessibility environment variables
   const char* accessibility_enabled = g_getenv("GNOME_ACCESSIBILITY");
-  if (accessibility_enabled &&
-      g_ascii_strcasecmp(accessibility_enabled, "1") == 0) {
+  if (accessibility_enabled && g_ascii_strcasecmp(accessibility_enabled, "1") == 0) {
     return true;
   }
 

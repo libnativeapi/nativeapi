@@ -15,8 +15,7 @@ namespace nativeapi {
 
 class Application::Impl {
  public:
-  Impl(Application* app)
-      : app_(app), gtk_app_(nullptr), lock_file_handle_(-1) {}
+  Impl(Application* app) : app_(app), gtk_app_(nullptr), lock_file_handle_(-1) {}
   ~Impl() = default;
 
   bool Initialize() {
@@ -24,16 +23,14 @@ class Application::Impl {
     gtk_init(nullptr, nullptr);
 
     // Create GTK application with default ID
-    gtk_app_ = gtk_application_new("com.nativeapi.application",
-                                   G_APPLICATION_DEFAULT_FLAGS);
+    gtk_app_ = gtk_application_new("com.nativeapi.application", G_APPLICATION_DEFAULT_FLAGS);
 
     if (!gtk_app_) {
       return false;
     }
 
     // Set default application name
-    g_object_set(gtk_app_, "application-name", "NativeAPI Application",
-                 nullptr);
+    g_object_set(gtk_app_, "application-name", "NativeAPI Application", nullptr);
 
     // Connect to GTK application signals
     g_signal_connect(gtk_app_, "startup", G_CALLBACK(OnStartup), this);
@@ -110,7 +107,7 @@ class Application::Impl {
     // supported with legacy menus in GTK3. Users should add menu bars directly
     // to their windows instead.
     // TODO: Consider implementing GMenuModel-based menus in the future.
-    
+
     return false;  // Not supported with legacy GtkMenu
   }
 
@@ -158,10 +155,7 @@ class Application::Impl {
 };
 
 Application::Application()
-    : initialized_(true),
-      running_(false),
-      exit_code_(0),
-      pimpl_(std::make_unique<Impl>(this)) {
+    : initialized_(true), running_(false), exit_code_(0), pimpl_(std::make_unique<Impl>(this)) {
   // Perform platform-specific initialization automatically
   pimpl_->Initialize();
 

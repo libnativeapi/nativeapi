@@ -10,10 +10,7 @@
 namespace nativeapi {
 
 // Custom window procedure to handle window messages
-static LRESULT CALLBACK WindowProc(HWND hwnd,
-                                   UINT uMsg,
-                                   WPARAM wParam,
-                                   LPARAM lParam) {
+static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
     case WM_CLOSE:
       // User clicked the close button
@@ -75,8 +72,7 @@ class WindowManager::Impl {
     } else if (event_type == "moved") {
       RECT rect;
       GetWindowRect(hwnd, &rect);
-      Point new_position = {static_cast<double>(rect.left),
-                            static_cast<double>(rect.top)};
+      Point new_position = {static_cast<double>(rect.left), static_cast<double>(rect.top)};
       WindowMovedEvent event(window_id, new_position);
       manager_->DispatchWindowEvent(event);
     } else if (event_type == "closing") {
@@ -130,8 +126,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     } else {
       DWORD error = GetLastError();
       if (error != ERROR_CLASS_ALREADY_EXISTS) {
-        std::cerr << "Failed to register window class. Error: " << error
-                  << std::endl;
+        std::cerr << "Failed to register window class. Error: " << error << std::endl;
         return nullptr;
       }
       class_registered = true;
@@ -143,15 +138,13 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   DWORD exStyle = 0;
   std::wstring wtitle = StringToWString(options.title);
 
-  HWND hwnd = CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(),
-                              style, CW_USEDEFAULT, CW_USEDEFAULT,
-                              static_cast<int>(options.size.width),
-                              static_cast<int>(options.size.height), nullptr,
-                              nullptr, hInstance, nullptr);
+  HWND hwnd =
+      CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(), style, CW_USEDEFAULT,
+                      CW_USEDEFAULT, static_cast<int>(options.size.width),
+                      static_cast<int>(options.size.height), nullptr, nullptr, hInstance, nullptr);
 
   if (!hwnd) {
-    std::cerr << "Failed to create window. Error: " << GetLastError()
-              << std::endl;
+    std::cerr << "Failed to create window. Error: " << GetLastError() << std::endl;
     return nullptr;
   }
 

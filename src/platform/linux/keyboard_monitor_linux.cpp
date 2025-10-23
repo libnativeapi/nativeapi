@@ -23,8 +23,7 @@ namespace nativeapi {
 
 class KeyboardMonitor::Impl {
  public:
-  Impl(KeyboardMonitor* monitor)
-      : monitor_(monitor), display_(nullptr), monitoring_(false) {}
+  Impl(KeyboardMonitor* monitor) : monitor_(monitor), display_(nullptr), monitoring_(false) {}
 
   Display* display_;
   std::atomic<bool> monitoring_;
@@ -53,8 +52,7 @@ void KeyboardMonitor::Impl::InitializeXInput() {
 
   // Check for XInput extension
   int event, error;
-  if (!XQueryExtension(display_, "XInputExtension", &xi_opcode_, &event,
-                       &error)) {
+  if (!XQueryExtension(display_, "XInputExtension", &xi_opcode_, &event, &error)) {
     std::cerr << "XInput extension not available" << std::endl;
     XCloseDisplay(display_);
     display_ = nullptr;
@@ -136,8 +134,7 @@ uint32_t KeyboardMonitor::Impl::GetModifierState() {
   if (num_keycode && (keys[num_keycode / 8] & (1 << (num_keycode % 8)))) {
     modifier_keys |= static_cast<uint32_t>(ModifierKey::NumLock);
   }
-  if (scroll_keycode &&
-      (keys[scroll_keycode / 8] & (1 << (scroll_keycode % 8)))) {
+  if (scroll_keycode && (keys[scroll_keycode / 8] & (1 << (scroll_keycode % 8)))) {
     modifier_keys |= static_cast<uint32_t>(ModifierKey::ScrollLock);
   }
 
@@ -155,8 +152,7 @@ void KeyboardMonitor::Impl::MonitoringLoop() {
       XNextEvent(display_, &event);
 
       // Handle XI2 events
-      if (event.xcookie.type == GenericEvent &&
-          event.xcookie.extension == xi_opcode_) {
+      if (event.xcookie.type == GenericEvent && event.xcookie.extension == xi_opcode_) {
         if (XGetEventData(display_, &event.xcookie)) {
           XIDeviceEvent* xi_event = (XIDeviceEvent*)event.xcookie.data;
 
@@ -191,14 +187,12 @@ void KeyboardMonitor::Start() {
 
   impl_->InitializeXInput();
   if (!impl_->display_) {
-    std::cerr << "Failed to initialize X11 display for keyboard monitoring"
-              << std::endl;
+    std::cerr << "Failed to initialize X11 display for keyboard monitoring" << std::endl;
     return;
   }
 
   impl_->monitoring_ = true;
-  impl_->monitoring_thread_ =
-      std::thread(&KeyboardMonitor::Impl::MonitoringLoop, impl_.get());
+  impl_->monitoring_thread_ = std::thread(&KeyboardMonitor::Impl::MonitoringLoop, impl_.get());
 
   std::cout << "Keyboard monitor started successfully" << std::endl;
 }

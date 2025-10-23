@@ -22,8 +22,7 @@ Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
   }
 }
 
-Display::Display(const Display& other)
-    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Display& Display::operator=(const Display& other) {
   if (this != &other) {
@@ -75,8 +74,7 @@ Size Display::GetSize() const {
     return {0.0, 0.0};
   GdkRectangle geometry;
   gdk_monitor_get_geometry(pimpl_->gdk_monitor_, &geometry);
-  return {static_cast<double>(geometry.width),
-          static_cast<double>(geometry.height)};
+  return {static_cast<double>(geometry.width), static_cast<double>(geometry.height)};
 }
 
 Rectangle Display::GetWorkArea() const {
@@ -85,8 +83,7 @@ Rectangle Display::GetWorkArea() const {
   GdkRectangle workarea;
   gdk_monitor_get_workarea(pimpl_->gdk_monitor_, &workarea);
   return {static_cast<double>(workarea.x), static_cast<double>(workarea.y),
-          static_cast<double>(workarea.width),
-          static_cast<double>(workarea.height)};
+          static_cast<double>(workarea.width), static_cast<double>(workarea.height)};
 }
 
 double Display::GetScaleFactor() const {
@@ -116,8 +113,7 @@ int Display::GetRefreshRate() const {
   if (!pimpl_->gdk_monitor_)
     return 60;
   int refresh_rate = gdk_monitor_get_refresh_rate(pimpl_->gdk_monitor_);
-  return refresh_rate > 0 ? refresh_rate / 1000
-                          : 60;  // Convert from millihertz to hertz
+  return refresh_rate > 0 ? refresh_rate / 1000 : 60;  // Convert from millihertz to hertz
 }
 
 int Display::GetBitDepth() const {

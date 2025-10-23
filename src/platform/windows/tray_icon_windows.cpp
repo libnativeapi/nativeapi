@@ -77,29 +77,24 @@ class TrayIcon::Impl {
   }
 
   // Handle window procedure delegate
-  std::optional<LRESULT> HandleWindowProc(HWND hwnd,
-                                          UINT message,
-                                          WPARAM wparam,
-                                          LPARAM lparam) {
-    if (message == WM_USER + 1 &&
-        wparam == static_cast<WPARAM>(tray_icon_id_)) {
+  std::optional<LRESULT> HandleWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+    if (message == WM_USER + 1 && wparam == static_cast<WPARAM>(tray_icon_id_)) {
       if (lparam == WM_LBUTTONUP) {
-        std::cout << "TrayIcon: Left button clicked, tray_icon_id = "
-                  << tray_icon_id_ << std::endl;
+        std::cout << "TrayIcon: Left button clicked, tray_icon_id = " << tray_icon_id_ << std::endl;
         // Call clicked callback
         if (clicked_callback_) {
           clicked_callback_(tray_icon_id_);
         }
       } else if (lparam == WM_RBUTTONUP) {
-        std::cout << "TrayIcon: Right button clicked, tray_icon_id = "
-                  << tray_icon_id_ << std::endl;
+        std::cout << "TrayIcon: Right button clicked, tray_icon_id = " << tray_icon_id_
+                  << std::endl;
         // Call right clicked callback
         if (right_clicked_callback_) {
           right_clicked_callback_(tray_icon_id_);
         }
       } else if (lparam == WM_LBUTTONDBLCLK) {
-        std::cout << "TrayIcon: Left button double-clicked, tray_icon_id = "
-                  << tray_icon_id_ << std::endl;
+        std::cout << "TrayIcon: Left button double-clicked, tray_icon_id = " << tray_icon_id_
+                  << std::endl;
         // Call double clicked callback
         if (double_clicked_callback_) {
           double_clicked_callback_(tray_icon_id_);
@@ -142,9 +137,7 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
   // The tray_icon_id will be allocated inside Impl constructor
   if (hwnd) {
     // Create callback functions that emit events
-    auto clicked_callback = [this](TrayIconId id) {
-      this->Emit<TrayIconClickedEvent>(id);
-    };
+    auto clicked_callback = [this](TrayIconId id) { this->Emit<TrayIconClickedEvent>(id); };
 
     auto right_clicked_callback = [this](TrayIconId id) {
       this->Emit<TrayIconRightClickedEvent>(id);
@@ -154,9 +147,9 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
       this->Emit<TrayIconDoubleClickedEvent>(id);
     };
 
-    pimpl_ = std::make_unique<Impl>(
-        hwnd, std::move(clicked_callback),
-        std::move(right_clicked_callback), std::move(double_clicked_callback));
+    pimpl_ =
+        std::make_unique<Impl>(hwnd, std::move(clicked_callback), std::move(right_clicked_callback),
+                               std::move(double_clicked_callback));
   } else {
     // Failed to create window, create uninitialized Impl
     pimpl_ = std::make_unique<Impl>();
@@ -232,8 +225,7 @@ void TrayIcon::SetTooltip(std::optional<std::string> tooltip) {
   if (pimpl_->hwnd_) {
     std::string tooltip_str = tooltip.has_value() ? *tooltip : "";
     std::wstring wtooltip = StringToWString(tooltip_str);
-    wcsncpy_s(pimpl_->nid_.szTip, _countof(pimpl_->nid_.szTip),
-              wtooltip.c_str(), _TRUNCATE);
+    wcsncpy_s(pimpl_->nid_.szTip, _countof(pimpl_->nid_.szTip), wtooltip.c_str(), _TRUNCATE);
 
     // Update if icon is visible (check if hIcon is set as indicator)
     if (pimpl_->nid_.hIcon) {

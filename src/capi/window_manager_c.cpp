@@ -19,8 +19,7 @@ static std::unordered_map<int, EventCallbackInfo> g_event_callbacks;
 static int g_next_callback_id = 1;
 
 // Helper function to convert C++ WindowOptions to C options
-static WindowOptions ConvertToWindowOptions(
-    const native_window_options_t* options) {
+static WindowOptions ConvertToWindowOptions(const native_window_options_t* options) {
   WindowOptions cpp_options;
 
   if (options->title) {
@@ -39,8 +38,7 @@ static WindowOptions ConvertToWindowOptions(
 }
 
 // Helper function to create native_window_t from shared_ptr<Window>
-static native_window_t CreateNativeWindowHandle(
-    std::shared_ptr<Window> window) {
+static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) {
   if (!window)
     return nullptr;
   // Cast shared_ptr to void* - the WindowManager maintains the actual
@@ -68,13 +66,12 @@ class CEventListener {
     auto& manager = WindowManager::GetInstance();
 
     // Register for various window events
-    manager.AddListener<WindowCreatedEvent>(
-        [this](const WindowCreatedEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_CREATED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowCreatedEvent>([this](const WindowCreatedEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_CREATED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
     manager.AddListener<WindowClosedEvent>([this](const WindowClosedEvent& e) {
       native_window_event_t event;
@@ -83,45 +80,40 @@ class CEventListener {
       DispatchEvent(event);
     });
 
-    manager.AddListener<WindowFocusedEvent>(
-        [this](const WindowFocusedEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_FOCUSED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowFocusedEvent>([this](const WindowFocusedEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_FOCUSED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
-    manager.AddListener<WindowBlurredEvent>(
-        [this](const WindowBlurredEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_BLURRED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowBlurredEvent>([this](const WindowBlurredEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_BLURRED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
-    manager.AddListener<WindowMinimizedEvent>(
-        [this](const WindowMinimizedEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_MINIMIZED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowMinimizedEvent>([this](const WindowMinimizedEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_MINIMIZED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
-    manager.AddListener<WindowMaximizedEvent>(
-        [this](const WindowMaximizedEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_MAXIMIZED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowMaximizedEvent>([this](const WindowMaximizedEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_MAXIMIZED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
-    manager.AddListener<WindowRestoredEvent>(
-        [this](const WindowRestoredEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_RESTORED;
-          event.window_id = e.GetWindowId();
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowRestoredEvent>([this](const WindowRestoredEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_RESTORED;
+      event.window_id = e.GetWindowId();
+      DispatchEvent(event);
+    });
 
     manager.AddListener<WindowMovedEvent>([this](const WindowMovedEvent& e) {
       native_window_event_t event;
@@ -132,15 +124,14 @@ class CEventListener {
       DispatchEvent(event);
     });
 
-    manager.AddListener<WindowResizedEvent>(
-        [this](const WindowResizedEvent& e) {
-          native_window_event_t event;
-          event.type = NATIVE_WINDOW_EVENT_RESIZED;
-          event.window_id = e.GetWindowId();
-          event.data.resized.size.width = e.GetNewSize().width;
-          event.data.resized.size.height = e.GetNewSize().height;
-          DispatchEvent(event);
-        });
+    manager.AddListener<WindowResizedEvent>([this](const WindowResizedEvent& e) {
+      native_window_event_t event;
+      event.type = NATIVE_WINDOW_EVENT_RESIZED;
+      event.window_id = e.GetWindowId();
+      event.data.resized.size.width = e.GetNewSize().width;
+      event.data.resized.size.height = e.GetNewSize().height;
+      DispatchEvent(event);
+    });
   }
 };
 
@@ -148,8 +139,7 @@ static std::unique_ptr<CEventListener> g_event_listener;
 
 // Window manager operations
 FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_create(
-    const native_window_options_t* options) {
+native_window_t native_window_manager_create(const native_window_options_t* options) {
   if (!options)
     return nullptr;
 
@@ -233,9 +223,8 @@ bool native_window_manager_destroy(native_window_id_t window_id) {
 }
 
 FFI_PLUGIN_EXPORT
-int native_window_manager_register_event_callback(
-    native_window_event_callback_t callback,
-    void* user_data) {
+int native_window_manager_register_event_callback(native_window_event_callback_t callback,
+                                                  void* user_data) {
   if (!callback)
     return -1;
 

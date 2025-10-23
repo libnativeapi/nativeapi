@@ -18,11 +18,9 @@ HICON ImageToHICON(const Image* image, int width, int height);
 static std::wstring StringToWString(const std::string& str) {
   if (str.empty())
     return std::wstring();
-  int size_needed =
-      MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+  int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
   std::wstring wstrTo(size_needed, 0);
-  MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0],
-                      size_needed);
+  MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
   return wstrTo;
 }
 
@@ -35,8 +33,7 @@ static int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
   if (size == 0)
     return -1;
 
-  Gdiplus::ImageCodecInfo* pImageCodecInfo =
-      (Gdiplus::ImageCodecInfo*)(malloc(size));
+  Gdiplus::ImageCodecInfo* pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
   if (pImageCodecInfo == NULL)
     return -1;
 
@@ -71,13 +68,9 @@ class Image::Impl {
   }
 
   Impl(const Impl& other)
-      : bitmap_(nullptr),
-        source_(other.source_),
-        size_(other.size_),
-        format_(other.format_) {
+      : bitmap_(nullptr), source_(other.source_), size_(other.size_), format_(other.format_) {
     if (other.bitmap_) {
-      bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(),
-                                     other.bitmap_->GetHeight(),
+      bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(), other.bitmap_->GetHeight(),
                                      other.bitmap_->GetPixelFormat());
     }
   }
@@ -92,8 +85,7 @@ class Image::Impl {
       size_ = other.size_;
       format_ = other.format_;
       if (other.bitmap_) {
-        bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(),
-                                       other.bitmap_->GetHeight(),
+        bitmap_ = other.bitmap_->Clone(0, 0, other.bitmap_->GetWidth(), other.bitmap_->GetHeight(),
                                        other.bitmap_->GetPixelFormat());
       }
     }
@@ -119,8 +111,7 @@ Image::Image() : pimpl_(std::make_unique<Impl>()) {
 
 Image::~Image() = default;
 
-Image::Image(const Image& other)
-    : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
+Image::Image(const Image& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
 
 Image::Image(Image&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
 
@@ -138,8 +129,7 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
     // Get actual image size
     UINT width = bitmap->GetWidth();
     UINT height = bitmap->GetHeight();
-    image->pimpl_->size_ = {static_cast<double>(width),
-                            static_cast<double>(height)};
+    image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
 
     // Determine format from file extension
     size_t dotPos = file_path.find_last_of('.');
@@ -182,14 +172,14 @@ static std::vector<unsigned char> DecodeBase64(const std::string& base64_data) {
 
   // Calculate the expected output size
   DWORD dwOutLen = 0;
-  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64, NULL,
-                            &dwOutLen, NULL, NULL)) {
+  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64, NULL, &dwOutLen, NULL,
+                            NULL)) {
     return result;
   }
 
   result.resize(dwOutLen);
-  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64,
-                            result.data(), &dwOutLen, NULL, NULL)) {
+  if (!CryptStringToBinaryA(base64_data.c_str(), 0, CRYPT_STRING_BASE64, result.data(), &dwOutLen,
+                            NULL, NULL)) {
     result.clear();
   }
 
@@ -231,8 +221,7 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
             // Get actual image size
             UINT width = bitmap->GetWidth();
             UINT height = bitmap->GetHeight();
-            image->pimpl_->size_ = {static_cast<double>(width),
-                                    static_cast<double>(height)};
+            image->pimpl_->size_ = {static_cast<double>(width), static_cast<double>(height)};
 
             // Default assumption for base64 images
             image->pimpl_->format_ = "PNG";
@@ -272,15 +261,13 @@ std::string Image::GetFormat() const {
 static std::string EncodeBase64(const unsigned char* data, size_t length) {
   DWORD dwOutLen = 0;
   DWORD dwLength = static_cast<DWORD>(length);
-  if (!CryptBinaryToStringA((BYTE*)data, dwLength,
-                            CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL,
+  if (!CryptBinaryToStringA((BYTE*)data, dwLength, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL,
                             &dwOutLen)) {
     return "";
   }
 
   std::string result(dwOutLen, '\0');
-  if (!CryptBinaryToStringA((BYTE*)data, dwLength,
-                            CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+  if (!CryptBinaryToStringA((BYTE*)data, dwLength, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
                             &result[0], &dwOutLen)) {
     return "";
   }
@@ -393,8 +380,7 @@ bool Image::SaveToFile(const std::string& file_path) const {
         pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, &encoderParams);
     return status == Gdiplus::Ok;
   } else {
-    Gdiplus::Status status =
-        pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, NULL);
+    Gdiplus::Status status = pimpl_->bitmap_->Save(wFilePath.c_str(), &encoderClsid, NULL);
     return status == Gdiplus::Ok;
   }
 }

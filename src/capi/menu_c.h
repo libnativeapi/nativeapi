@@ -269,22 +269,6 @@ FFI_PLUGIN_EXPORT
 bool native_menu_item_is_enabled(native_menu_item_t item);
 
 /**
- * Set the visibility of a menu item
- * @param item The menu item
- * @param visible true to show, false to hide
- */
-FFI_PLUGIN_EXPORT
-void native_menu_item_set_visible(native_menu_item_t item, bool visible);
-
-/**
- * Check if a menu item is visible
- * @param item The menu item
- * @return true if visible, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_menu_item_is_visible(native_menu_item_t item);
-
-/**
  * Set the state of a checkbox/radio menu item
  * @param item The menu item
  * @param state The state to set (unchecked, checked, or mixed)
@@ -521,14 +505,6 @@ bool native_menu_open(native_menu_t menu);
  */
 FFI_PLUGIN_EXPORT
 bool native_menu_close(native_menu_t menu);
-
-/**
- * Check if the menu is currently visible
- * @param menu The menu
- * @return true if visible, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_menu_is_visible(native_menu_t menu);
 
 /**
  * Set the enabled state of the menu
