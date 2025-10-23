@@ -150,3 +150,188 @@ emitter.AddListener<WindowEvent>([](const WindowEvent& event) {
     }
 });
 ```
+
+### Event Listening Lifecycle Management
+
+Managers can efficiently manage platform-specific event monitoring by overriding `StartEventListening()` and `StopEventListening()` hooks. These hooks are automatically called when the first listener is added and when the last listener is removed, respectively.
+
+#### Purpose
+
+This pattern allows managers to:
+- **Lazy initialization** - Only start platform event monitoring when needed
+- **Resource efficiency** - Stop monitoring when no listeners exist
+- **Automatic management** - No manual tracking of listener count required
+
+#### Implementation Pattern
+
+```cpp
+// tray_icon.h
+class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider {
+public:
+    TrayIcon();
+    virtual ~TrayIcon();
+    
+    // ... public API ...
+
+protected:
+    // Override these to control platform event monitoring
+    void StartEventListening() override;
+    void StopEventListening() override;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> pimpl_;
+};
+
+// tray_icon.cpp
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
+    // DON'T call SetupEventMonitoring() here anymore!
+    // It will be called automatically when first listener is added
+}
+
+void TrayIcon::StartEventListening() {
+    // Called automatically when first listener is added
+    pimpl_->SetupEventMonitoring();
+}
+
+void TrayIcon::StopEventListening() {
+    // Called automatically when last listener is removed
+    pimpl_->CleanupEventMonitoring();
+}
+```
+
+#### Platform Implementation Example
+
+```objc
+// platform/macos/tray_icon_macos.mm
+class TrayIcon::Impl {
+public:
+    Impl(NSStatusItem* status_item) 
+        : ns_status_item_(status_item), 
+          ns_status_bar_button_target_(nil),
+          click_handler_setup_(false) {}
+    
+    void SetupEventMonitoring() {
+        if (click_handler_setup_) {
+            return;  // Already monitoring
+        }
+        
+        if (!ns_status_item_ || !ns_status_item_.button) {
+            return;
+        }
+        
+        // Create and set up button target
+        ns_status_bar_button_target_ = [[NSStatusBarButtonTarget alloc] init];
+        
+        // Set up event handlers
+        [ns_status_item_.button setTarget:ns_status_bar_button_target_];
+        [ns_status_item_.button setAction:@selector(handleStatusItemEvent:)];
+        
+        // Enable click handling
+        [ns_status_item_.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
+        
+        click_handler_setup_ = true;
+    }
+    
+    void CleanupEventMonitoring() {
+        if (!click_handler_setup_) {
+            return;  // Not monitoring
+        }
+        
+        // Remove event handlers
+        if (ns_status_item_ && ns_status_item_.button) {
+            [ns_status_item_.button setTarget:nil];
+            [ns_status_item_.button setAction:nil];
+        }
+        
+        // Clean up button target
+        ns_status_bar_button_target_ = nil;
+        
+        click_handler_setup_ = false;
+    }
+
+private:
+    NSStatusItem* ns_status_item_;
+    NSStatusBarButtonTarget* ns_status_bar_button_target_;
+    bool click_handler_setup_;
+};
+```
+
+#### Usage Flow
+
+```cpp
+// Application code
+auto tray_icon = std::make_shared<TrayIcon>();
+tray_icon->SetIcon(icon);
+tray_icon->SetTooltip("My Application");
+
+// At this point, NO platform event monitoring is active
+// (saves system resources)
+
+// Add first listener - triggers StartEventListening()
+auto listener_id = tray_icon->AddListener<TrayIconClickedEvent>(
+    [](const TrayIconClickedEvent& event) {
+        std::cout << "Tray icon clicked: " << event.GetTrayIconId() << std::endl;
+    }
+);
+
+// Platform event monitoring is now ACTIVE
+
+// Add more listeners - StartEventListening() NOT called again
+auto right_click_id = tray_icon->AddListener<TrayIconRightClickedEvent>(
+    [](const TrayIconRightClickedEvent& event) {
+        std::cout << "Tray icon right clicked" << std::endl;
+    }
+);
+
+// Remove one listener - StopEventListening() NOT called (still have listeners)
+tray_icon->RemoveListener(right_click_id);
+
+// Remove last listener - triggers StopEventListening()
+tray_icon->RemoveListener(listener_id);
+
+// Platform event monitoring is now STOPPED
+// (saves system resources again)
+```
+
+#### Important Considerations
+
+1. **Mutex Held**: `StartEventListening()` and `StopEventListening()` are called while holding `listeners_mutex_`. Keep the implementation fast and avoid acquiring other locks that could cause deadlocks.
+
+2. **Default Implementation**: The default implementations are empty, so existing subclasses don't need to change unless they want to use this feature.
+
+3. **Transitional Calls**: These methods are only called on transitions (0 → 1+ listeners and 1+ → 0 listeners), not on every add/remove operation.
+
+4. **Destructor Cleanup**: If the emitter is destroyed while listeners exist, `StopEventListening()` is NOT called. Clean up resources in the destructor if needed.
+
+5. **Idempotent Operations**: Implement setup/cleanup methods to be safe to call multiple times without side effects.
+
+#### Migration from Old Pattern
+
+##### Before (Always Monitoring)
+
+```cpp
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
+    SetupEventMonitoring();  // Always monitoring
+}
+
+TrayIcon::~TrayIcon() {
+    CleanupEventMonitoring();
+}
+```
+
+##### After (Lazy Monitoring)
+
+```cpp
+TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
+    // No need to call SetupEventMonitoring()
+}
+
+void TrayIcon::StartEventListening() {
+    pimpl_->SetupEventMonitoring();  // Called when first listener added
+}
+
+void TrayIcon::StopEventListening() {
+    pimpl_->CleanupEventMonitoring();  // Called when last listener removed
+}
+```

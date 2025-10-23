@@ -154,6 +154,17 @@ class EventEmitter {
 
       if (it != listeners.end()) {
         listeners.erase(it);
+
+        // Clean up empty vector
+        if (listeners.empty()) {
+          listeners_.erase(type);
+        }
+
+        // Check if this was the last listener
+        if (GetTotalListenerCountUnlocked() == 0) {
+          StopEventListening();
+        }
+
         return true;
       }
     }
@@ -177,7 +188,14 @@ class EventEmitter {
    */
   void RemoveAllListeners() {
     std::lock_guard<std::mutex> lock(listeners_mutex_);
+
+    bool had_listeners = GetTotalListenerCountUnlocked() > 0;
+
     listeners_.clear();
+
+    if (had_listeners) {
+      StopEventListening();
+    }
   }
 
   /**
@@ -196,13 +214,7 @@ class EventEmitter {
    */
   size_t GetTotalListenerCount() const {
     std::lock_guard<std::mutex> lock(listeners_mutex_);
-
-    size_t count = 0;
-    for (const auto& [type, listeners] : listeners_) {
-      count += listeners.size();
-    }
-
-    return count;
+    return GetTotalListenerCountUnlocked();
   }
 
   /**
@@ -293,6 +305,20 @@ class EventEmitter {
 
  protected:
   /**
+   * Called when the first listener is added.
+   * Subclasses can override this to start platform-specific event monitoring.
+   * This is called while holding the listeners_mutex_ lock.
+   */
+  virtual void StartEventListening() {}
+
+  /**
+   * Called when the last listener is removed.
+   * Subclasses can override this to stop platform-specific event monitoring.
+   * This is called while holding the listeners_mutex_ lock.
+   */
+  virtual void StopEventListening() {}
+
+  /**
    * Emit an event synchronously using perfect forwarding.
    * This creates the event object and emits it immediately.
    * The event type must be BaseEventType or a subclass of it.
@@ -356,8 +382,14 @@ class EventEmitter {
   size_t AddListener(std::type_index event_type, std::unique_ptr<EventListenerBase> listener) {
     std::lock_guard<std::mutex> lock(listeners_mutex_);
 
+    bool was_empty = GetTotalListenerCountUnlocked() == 0;
+
     size_t listener_id = next_listener_id_.fetch_add(1);
     listeners_[event_type].push_back({std::move(listener), listener_id});
+
+    if (was_empty) {
+      StartEventListening();
+    }
 
     return listener_id;
   }
@@ -368,6 +400,11 @@ class EventEmitter {
     auto it = listeners_.find(event_type);
     if (it != listeners_.end()) {
       listeners_.erase(it);
+
+      // Check if this was the last listener
+      if (GetTotalListenerCountUnlocked() == 0) {
+        StopEventListening();
+      }
     }
   }
 
@@ -380,6 +417,14 @@ class EventEmitter {
     }
 
     return 0;
+  }
+
+  size_t GetTotalListenerCountUnlocked() const {
+    size_t count = 0;
+    for (const auto& [type, listeners] : listeners_) {
+      count += listeners.size();
+    }
+    return count;
   }
 
   // Background thread function for processing async events
