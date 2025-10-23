@@ -21,9 +21,9 @@ typedef void (^TrayIconDoubleClickedBlock)(void);
 static const void* kTrayIconIdKey = &kTrayIconIdKey;
 
 @interface NSStatusBarButtonTarget : NSObject
-@property(nonatomic, copy) TrayIconClickedBlock left_clicked_callback;
-@property(nonatomic, copy) TrayIconRightClickedBlock right_clicked_callback;
-@property(nonatomic, copy) TrayIconDoubleClickedBlock double_clicked_callback;
+@property(nonatomic, copy) TrayIconClickedBlock left_clicked_callback_;
+@property(nonatomic, copy) TrayIconRightClickedBlock right_clicked_callback_;
+@property(nonatomic, copy) TrayIconDoubleClickedBlock double_clicked_callback_;
 - (void)handleStatusItemEvent:(id)sender;
 @end
 
@@ -114,9 +114,9 @@ class TrayIcon::Impl {
 
     // Clean up blocks first
     if (ns_status_bar_button_target_) {
-      ns_status_bar_button_target_.left_clicked_callback = nil;
-      ns_status_bar_button_target_.right_clicked_callback = nil;
-      ns_status_bar_button_target_.double_clicked_callback = nil;
+      ns_status_bar_button_target_.left_clicked_callback_ = nil;
+      ns_status_bar_button_target_.right_clicked_callback_ = nil;
+      ns_status_bar_button_target_.double_clicked_callback_ = nil;
       ns_status_bar_button_target_ = nil;
     }
 
@@ -167,15 +167,15 @@ void TrayIcon::StartEventListening() {
 
   // Set up click handler blocks
   if (pimpl_->ns_status_bar_button_target_) {
-    pimpl_->ns_status_bar_button_target_.left_clicked_callback = ^{
+    pimpl_->ns_status_bar_button_target_.left_clicked_callback_ = ^{
       Emit<TrayIconClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.right_clicked_callback = ^{
+    pimpl_->ns_status_bar_button_target_.right_clicked_callback_ = ^{
       Emit<TrayIconRightClickedEvent>(pimpl_->id_);
     };
 
-    pimpl_->ns_status_bar_button_target_.double_clicked_callback = ^{
+    pimpl_->ns_status_bar_button_target_.double_clicked_callback_ = ^{
       Emit<TrayIconDoubleClickedEvent>(pimpl_->id_);
     };
   }
@@ -393,18 +393,18 @@ void* TrayIcon::GetNativeObjectInternal() const {
       (event.type == NSEventTypeLeftMouseUp &&
        (event.modifierFlags & NSEventModifierFlagControl))) {
     // Right click or Ctrl+Left click
-    if (_right_clicked_callback) {
-      _right_clicked_callback();
+    if (_right_clicked_callback_) {
+      _right_clicked_callback_();
     }
   } else if (event.type == NSEventTypeLeftMouseUp) {
     // Check for double click
     if (event.clickCount == 2) {
-      if (_double_clicked_callback) {
-        _double_clicked_callback();
+      if (_double_clicked_callback_) {
+        _double_clicked_callback_();
       }
     } else {
-      if (_left_clicked_callback) {
-        _left_clicked_callback();
+      if (_left_clicked_callback_) {
+        _left_clicked_callback_();
       }
     }
   }

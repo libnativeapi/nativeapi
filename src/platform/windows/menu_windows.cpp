@@ -103,6 +103,8 @@ class MenuItem::Impl {
   std::shared_ptr<Menu> submenu_;
   int window_proc_handle_id_;
   std::function<void(MenuItemId)> clicked_callback_;
+  size_t submenu_opened_listener_id_;
+  size_t submenu_closed_listener_id_;
 
   Impl(MenuItemId id, HMENU parent_menu, MenuItemType type)
       : id_(id),
@@ -112,13 +114,26 @@ class MenuItem::Impl {
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
-        window_proc_handle_id_(-1) {}
+        window_proc_handle_id_(-1),
+        submenu_opened_listener_id_(0),
+        submenu_closed_listener_id_(0) {}
 
   ~Impl() {
     // Unregister window procedure handler
     if (window_proc_handle_id_ != -1) {
       WindowMessageDispatcher::GetInstance().UnregisterHandler(window_proc_handle_id_);
     }
+    
+    // Remove submenu listeners before cleaning up submenu reference
+    if (submenu_ && submenu_opened_listener_id_ != 0) {
+      submenu_->RemoveListener(submenu_opened_listener_id_);
+      submenu_opened_listener_id_ = 0;
+    }
+    if (submenu_ && submenu_closed_listener_id_ != 0) {
+      submenu_->RemoveListener(submenu_closed_listener_id_);
+      submenu_closed_listener_id_ = 0;
+    }
+    
     // Windows menu items are automatically cleaned up when the menu is
     // destroyed
   }
@@ -307,13 +322,40 @@ int MenuItem::GetRadioGroup() const {
 }
 
 void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
+  // Remove previous submenu listeners if they exist
+  if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
+    pimpl_->submenu_opened_listener_id_ = 0;
+  }
+  if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
+    pimpl_->submenu_closed_listener_id_ = 0;
+  }
+  
   pimpl_->submenu_ = submenu;
+  
+  // Update platform menu if parent_menu_ is set
   if (pimpl_->parent_menu_ && submenu) {
     MENUITEMINFOW mii = {};
     mii.cbSize = sizeof(MENUITEMINFOW);
     mii.fMask = MIIM_SUBMENU;
     mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeObject());
     SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
+  }
+  
+  // Add event listeners to forward submenu events (independent of parent_menu_)
+  if (submenu) {
+    MenuItemId menu_item_id = pimpl_->id_;
+    MenuItem* self = this;
+    pimpl_->submenu_opened_listener_id_ = submenu->AddListener<MenuOpenedEvent>(
+        [self, menu_item_id](const MenuOpenedEvent& event) {
+          self->Emit<MenuItemSubmenuOpenedEvent>(menu_item_id);
+        });
+    
+    pimpl_->submenu_closed_listener_id_ = submenu->AddListener<MenuClosedEvent>(
+        [self, menu_item_id](const MenuClosedEvent& event) {
+          self->Emit<MenuItemSubmenuClosedEvent>(menu_item_id);
+        });
   }
 }
 
@@ -322,6 +364,16 @@ std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
 }
 
 void MenuItem::RemoveSubmenu() {
+  // Remove listeners before clearing submenu reference
+  if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
+    pimpl_->submenu_opened_listener_id_ = 0;
+  }
+  if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
+    pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
+    pimpl_->submenu_closed_listener_id_ = 0;
+  }
+  
   pimpl_->submenu_.reset();
   if (pimpl_->parent_menu_) {
     MENUITEMINFOW mii = {};
@@ -375,10 +427,17 @@ class Menu::Impl {
         // This is our menu being opened
         // Emit menu opened event via callback
         if (opened_callback_) {
-          try {
-            opened_callback_(id_);
-          } catch (...) {
-            // Protect against event emission exceptions
+          opened_callback_(id_);
+        }
+      } else {
+        // Check if this is a submenu of one of our items
+        for (const auto& item : items_) {
+          auto submenu = item->GetSubmenu();
+          if (submenu && submenu->GetNativeObject() == popup_menu) {
+            // This is a submenu of one of our items being opened
+            // The MenuItem will handle emitting MenuItemSubmenuOpenedEvent
+            // through its event listeners
+            break;
           }
         }
       }
@@ -390,10 +449,17 @@ class Menu::Impl {
         // This is our menu being closed
         // Emit menu closed event via callback
         if (closed_callback_) {
-          try {
-            closed_callback_(id_);
-          } catch (...) {
-            // Protect against event emission exceptions
+          closed_callback_(id_);
+        }
+      } else {
+        // Check if this is a submenu of one of our items
+        for (const auto& item : items_) {
+          auto submenu = item->GetSubmenu();
+          if (submenu && submenu->GetNativeObject() == popup_menu) {
+            // This is a submenu of one of our items being closed
+            // The MenuItem will handle emitting MenuItemSubmenuClosedEvent
+            // through its event listeners
+            break;
           }
         }
       }

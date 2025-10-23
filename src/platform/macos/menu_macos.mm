@@ -271,11 +271,7 @@ MenuItem::MenuItem(const std::string& label, MenuItemType type) {
 
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id) {
-    try {
-      Emit<MenuItemClickedEvent>(item_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
+    Emit<MenuItemClickedEvent>(item_id);
   };
 }
 
@@ -288,11 +284,7 @@ MenuItem::MenuItem(void* native_item) {
 
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->ns_menu_item_target_.clickedBlock = ^(MenuItemId item_id) {
-    try {
-      Emit<MenuItemClickedEvent>(item_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
+    Emit<MenuItemClickedEvent>(item_id);
   };
 }
 
@@ -471,20 +463,12 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
         MenuItem* self = this;
         pimpl_->submenu_opened_listener_id_ = submenu->AddListener<MenuOpenedEvent>(
             [self, menu_item_id](const MenuOpenedEvent& event) {
-              try {
-                self->Emit<MenuItemSubmenuOpenedEvent>(menu_item_id);
-              } catch (...) {
-                // Protect against event emission exceptions
-              }
+              self->Emit<MenuItemSubmenuOpenedEvent>(menu_item_id);
             });
 
         pimpl_->submenu_closed_listener_id_ = submenu->AddListener<MenuClosedEvent>(
             [self, menu_item_id](const MenuClosedEvent& event) {
-              try {
-                self->Emit<MenuItemSubmenuClosedEvent>(menu_item_id);
-              } catch (...) {
-                // Protect against event emission exceptions
-              }
+              self->Emit<MenuItemSubmenuClosedEvent>(menu_item_id);
             });
       }
     } else {
@@ -581,19 +565,11 @@ Menu::Menu(void* native_menu) {
 
   // 设置默认的 Block 处理器，直接发送事件
   pimpl_->delegate_.openedBlock = ^(MenuId menu_id) {
-    try {
-      Emit<MenuOpenedEvent>(menu_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
+    Emit<MenuOpenedEvent>(menu_id);
   };
 
   pimpl_->delegate_.closedBlock = ^(MenuId menu_id) {
-    try {
-      Emit<MenuClosedEvent>(menu_id);
-    } catch (...) {
-      // Protect against event emission exceptions
-    }
+    Emit<MenuClosedEvent>(menu_id);
   };
 }
 
