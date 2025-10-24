@@ -139,7 +139,7 @@ class Application::Impl {
     }
 
     // Get the native menu handle
-    NSMenu* ns_menu = static_cast<NSMenu*>(menu->GetNativeObject());
+    NSMenu* ns_menu = (__bridge NSMenu*)(menu->GetNativeObject());
     if (!ns_menu) {
       return false;
     }

@@ -10,7 +10,7 @@ native_positioning_strategy_t native_positioning_strategy_absolute(const native_
     return nullptr;
   }
 
-  Point cpp_point{point->x, point->y};
+  nativeapi::Point cpp_point{point->x, point->y};
   PositioningStrategy* strategy = new PositioningStrategy(PositioningStrategy::Absolute(cpp_point));
   return static_cast<native_positioning_strategy_t>(strategy);
 }
@@ -26,10 +26,10 @@ native_positioning_strategy_t native_positioning_strategy_relative(const native_
     return nullptr;
   }
 
-  Rectangle cpp_rect{rect->x, rect->y, rect->width, rect->height};
-  Point cpp_offset{0, 0};
+  nativeapi::Rectangle cpp_rect{rect->x, rect->y, rect->width, rect->height};
+  nativeapi::Point cpp_offset{0, 0};
   if (offset) {
-    cpp_offset = Point{offset->x, offset->y};
+    cpp_offset = nativeapi::Point{offset->x, offset->y};
   }
 
   PositioningStrategy* strategy =

@@ -128,7 +128,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
       // Get the MenuItemId from the menu item's associated object
       NSNumber* item_id_obj = objc_getAssociatedObject(menu_item, kMenuItemIdKey);
       if (item_id_obj) {
-        nativeapi::MenuItemId item_id = [item_id_obj longValue];
+        nativeapi::MenuItemId item_id = static_cast<nativeapi::MenuItemId>([item_id_obj longValue]);
         _clickedBlock(item_id);
       }
     }
@@ -151,7 +151,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
       // Get the MenuId from the menu's associated object
       NSNumber* menu_id_obj = objc_getAssociatedObject(menu, kMenuIdKey);
       if (menu_id_obj) {
-        nativeapi::MenuId menu_id = [menu_id_obj longValue];
+        nativeapi::MenuId menu_id = static_cast<nativeapi::MenuId>([menu_id_obj longValue]);
         _openedBlock(menu_id);
       }
     }
@@ -170,7 +170,7 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
       // Get the MenuId from the menu's associated object
       NSNumber* menu_id_obj = objc_getAssociatedObject(menu, kMenuIdKey);
       if (menu_id_obj) {
-        nativeapi::MenuId menu_id = [menu_id_obj longValue];
+        nativeapi::MenuId menu_id = static_cast<nativeapi::MenuId>([menu_id_obj longValue]);
         _closedBlock(menu_id);
       }
     }

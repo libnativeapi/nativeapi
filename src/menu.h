@@ -184,7 +184,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    *
    * Creates a menu item of the specified type with the given text.
    *
-   * @param text The display text for the menu item
+   * @param label The display text for the menu item
    * @param type The type of menu item to create
    *
    * @example

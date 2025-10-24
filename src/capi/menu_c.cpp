@@ -710,7 +710,7 @@ bool native_menu_remove_item_by_id(native_menu_t menu, native_menu_item_id_t ite
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->RemoveItemById(item_id);
+    return menu_ptr->RemoveItemById(static_cast<MenuItemId>(item_id));
   } catch (...) {
     return false;
   }
@@ -795,7 +795,7 @@ native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_it
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    auto item = menu_ptr->GetItemById(item_id);
+    auto item = menu_ptr->GetItemById(static_cast<MenuItemId>(item_id));
     return item ? static_cast<native_menu_item_t>(item.get()) : nullptr;
   } catch (...) {
     return nullptr;
