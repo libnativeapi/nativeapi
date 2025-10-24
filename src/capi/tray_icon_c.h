@@ -214,16 +214,6 @@ FFI_PLUGIN_EXPORT
 bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id);
 
 /**
- * Open the context menu at specified coordinates
- * @param tray_icon The tray icon
- * @param x The x-coordinate in screen coordinates
- * @param y The y-coordinate in screen coordinates
- * @return true if menu was opened successfully, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_tray_icon_open_context_menu_at(native_tray_icon_t tray_icon, double x, double y);
-
-/**
  * Open the context menu at default location
  * @param tray_icon The tray icon
  * @return true if menu was opened successfully, false otherwise

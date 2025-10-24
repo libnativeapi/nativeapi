@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include "../foundation/positioning_strategy.h"
 #include "../global_registry.h"
 #include "../image.h"
 #include "../menu.h"
@@ -837,25 +838,14 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
   }
 }
 
-bool native_menu_open_at(native_menu_t menu, double x, double y) {
-  if (!menu)
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy) {
+  if (!menu || !strategy)
     return false;
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->Open(x, y);
-  } catch (...) {
-    return false;
-  }
-}
-
-bool native_menu_open(native_menu_t menu) {
-  if (!menu)
-    return false;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->Open();
+    auto strategy_ptr = static_cast<PositioningStrategy*>(strategy);
+    return menu_ptr->Open(*strategy_ptr);
   } catch (...) {
     return false;
   }
@@ -872,7 +862,6 @@ bool native_menu_close(native_menu_t menu) {
     return false;
   }
 }
-
 
 // New menu event listener API implementation
 int native_menu_add_listener(native_menu_t menu,

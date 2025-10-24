@@ -262,35 +262,6 @@ class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider
   bool IsVisible();
 
   /**
-   * @brief Programmatically display the context menu at a specified location.
-   *
-   * Opens the tray icon's context menu at the given screen coordinates.
-   * This allows for manually triggering the context menu through keyboard
-   * shortcuts, other UI events, or programmatic control.
-   *
-   * @param x The x-coordinate in screen coordinates where to open the menu
-   * @param y The y-coordinate in screen coordinates where to open the menu
-   * @return true if the menu was successfully opened, false otherwise
-   *
-   * @note If no context menu has been set via SetContextMenu(), this method
-   *       will return false. The coordinates are in screen/global coordinates,
-   *       not relative to any window.
-   *
-   * @example
-   * ```cpp
-   * // Open context menu at current cursor position
-   * POINT cursor;
-   * GetCursorPos(&cursor);  // Windows example
-   * tray_icon->OpenContextMenu(cursor.x, cursor.y);
-   *
-   * // Open context menu near the tray icon
-   * Rectangle bounds = tray_icon->GetBounds();
-   * tray_icon->OpenContextMenu(bounds.x, bounds.y + bounds.height);
-   * ```
-   */
-  bool OpenContextMenu(double x, double y);
-
-  /**
    * @brief Display the context menu at the tray icon's location.
    *
    * Opens the context menu at a default position near the tray icon.

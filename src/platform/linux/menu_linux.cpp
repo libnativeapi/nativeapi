@@ -395,31 +395,59 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-bool Menu::Open(double x, double y) {
+bool Menu::Open(const PositioningStrategy& strategy) {
   if (pimpl_->gtk_menu_) {
     gtk_widget_show_all(pimpl_->gtk_menu_);
 
+    double x = 0, y = 0;
+    bool use_explicit_position = false;
+
+    // Determine position based on strategy type
+    switch (strategy.GetType()) {
+      case PositioningStrategy::Type::Absolute:
+        x = strategy.GetAbsolutePosition().x;
+        y = strategy.GetAbsolutePosition().y;
+        use_explicit_position = true;
+        break;
+
+      case PositioningStrategy::Type::CursorPosition:
+        // Will use gtk_menu_popup_at_pointer
+        use_explicit_position = false;
+        break;
+
+      case PositioningStrategy::Type::Relative: {
+        Rectangle rect = strategy.GetRelativeRectangle();
+        Point offset = strategy.GetRelativeOffset();
+        // Position at top-left corner of rectangle plus offset
+        x = rect.x + offset.x;
+        y = rect.y + offset.y;
+        use_explicit_position = true;
+        break;
+      }
+    }
+
     // Try to position at explicit coordinates if available
-    GdkWindow* root_window = gdk_get_default_root_window();
-    if (root_window) {
-      GdkRectangle rect;
-      rect.x = static_cast<int>(x);
-      rect.y = static_cast<int>(y);
-      rect.width = 1;
-      rect.height = 1;
-      gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
-                             GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_NORTH_WEST, nullptr);
+    if (use_explicit_position) {
+      GdkWindow* root_window = gdk_get_default_root_window();
+      if (root_window) {
+        GdkRectangle rect;
+        rect.x = static_cast<int>(x);
+        rect.y = static_cast<int>(y);
+        rect.width = 1;
+        rect.height = 1;
+        gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
+                               GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_NORTH_WEST, nullptr);
+      } else {
+        // Fallback to pointer if root window not available
+        gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
+      }
     } else {
-      // Fallback to pointer if root window not available
+      // Use pointer position
       gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
     }
     return true;
   }
   return false;
-}
-
-bool Menu::Open() {
-  return Open(0, 0);  // GTK will position at pointer
 }
 
 bool Menu::Close() {

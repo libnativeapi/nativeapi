@@ -226,17 +226,6 @@ bool TrayIcon::IsVisible() {
   return false;
 }
 
-bool TrayIcon::OpenContextMenu(double x, double y) {
-  if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
-    return false;
-  }
-
-  // AppIndicator shows context menu automatically on right-click
-  // We don't need to manually show it at specific coordinates
-  // The menu is managed by the indicator framework
-  return true;
-}
-
 bool TrayIcon::OpenContextMenu() {
   if (!pimpl_->context_menu_ || !pimpl_->context_menu_->GetNativeObject()) {
     return false;

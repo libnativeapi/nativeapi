@@ -15,14 +15,14 @@ namespace nativeapi {
  * @example
  * ```cpp
  * // Position menu at absolute screen coordinates
- * menu->Open(PositioningStrategy::Absolute(100, 200), Placement::Bottom);
+ * menu->Open(PositioningStrategy::Absolute({100, 200}));
  *
  * // Position menu at current mouse location
- * menu->Open(PositioningStrategy::CursorPosition(), Placement::BottomStart);
+ * menu->Open(PositioningStrategy::CursorPosition());
  *
- * // Position menu relative to a rectangle
+ * // Position menu relative to a rectangle with offset
  * Rectangle buttonRect = button->GetBounds();
- * menu->Open(PositioningStrategy::Relative(buttonRect, {0, 10}), Placement::Bottom);
+ * menu->Open(PositioningStrategy::Relative(buttonRect, {0, 10}));
  * ```
  */
 class PositioningStrategy {
@@ -50,17 +50,16 @@ class PositioningStrategy {
   /**
    * @brief Create a strategy for absolute positioning at fixed coordinates.
    *
-   * @param x X-coordinate in screen space
-   * @param y Y-coordinate in screen space
+   * @param point Point in screen coordinates
    * @return PositioningStrategy configured for absolute positioning
    *
    * @example
    * ```cpp
-   * auto strategy = PositioningStrategy::Absolute(100, 200);
+   * auto strategy = PositioningStrategy::Absolute({100, 200});
    * menu->Open(strategy, Placement::Bottom);
    * ```
    */
-  static PositioningStrategy Absolute(double x, double y);
+  static PositioningStrategy Absolute(const Point& point);
 
   /**
    * @brief Create a strategy for positioning at current mouse location.
@@ -85,13 +84,13 @@ class PositioningStrategy {
    * @example
    * ```cpp
    * Rectangle buttonRect = button->GetBounds();
-   * // Position at bottom of button
-   * auto strategy = PositioningStrategy::Relative(buttonRect);
-   * menu->Open(strategy, Placement::Bottom);
+   * // Position at bottom of button (no offset)
+   * auto strategy = PositioningStrategy::Relative(buttonRect, {0, 0});
+   * menu->Open(strategy);
    *
-   * // Position at bottom of button with 10px offset
+   * // Position at bottom of button with 10px vertical offset
    * auto strategy2 = PositioningStrategy::Relative(buttonRect, {0, 10});
-   * menu->Open(strategy2, Placement::Bottom);
+   * menu->Open(strategy2);
    * ```
    */
   static PositioningStrategy Relative(const Rectangle& rect, const Point& offset = {0, 0});

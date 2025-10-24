@@ -521,9 +521,7 @@ class Menu::Impl {
   std::vector<std::shared_ptr<MenuItem>> items_;
 
   Impl(MenuId id, NSMenu* menu)
-      : id_(id),
-        ns_menu_(menu),
-        delegate_([[NSMenuDelegateImpl alloc] init]) {
+      : id_(id), ns_menu_(menu), delegate_([[NSMenuDelegateImpl alloc] init]) {
     [ns_menu_ setDelegate:delegate_];
   }
 
@@ -672,7 +670,33 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-bool Menu::Open(double x, double y) {
+bool Menu::Open(const PositioningStrategy& strategy) {
+  double x = 0, y = 0;
+
+  // Determine position based on strategy type
+  switch (strategy.GetType()) {
+    case PositioningStrategy::Type::Absolute:
+      x = strategy.GetAbsolutePosition().x;
+      y = strategy.GetAbsolutePosition().y;
+      break;
+
+    case PositioningStrategy::Type::CursorPosition: {
+      NSPoint mouse_location = [NSEvent mouseLocation];
+      x = mouse_location.x;
+      y = mouse_location.y;
+      break;
+    }
+
+    case PositioningStrategy::Type::Relative: {
+      Rectangle rect = strategy.GetRelativeRectangle();
+      Point offset = strategy.GetRelativeOffset();
+      // Position at top-left corner of rectangle plus offset
+      x = rect.x + offset.x;
+      y = rect.y + offset.y;
+      break;
+    }
+  }
+
   // Get the main window
   NSWindow* main_window = [[NSApplication sharedApplication] mainWindow];
   if (!main_window) {
@@ -723,11 +747,6 @@ bool Menu::Open(double x, double y) {
   });
 
   return true;
-}
-
-bool Menu::Open() {
-  NSPoint mouse_location = [NSEvent mouseLocation];
-  return Open(mouse_location.x, mouse_location.y);
 }
 
 bool Menu::Close() {

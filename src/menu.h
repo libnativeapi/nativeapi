@@ -10,6 +10,7 @@
 #include "foundation/geometry.h"
 #include "foundation/id_allocator.h"
 #include "foundation/native_object_provider.h"
+#include "foundation/positioning_strategy.h"
 #include "menu_event.h"
 
 namespace nativeapi {
@@ -642,32 +643,29 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
   std::vector<std::shared_ptr<MenuItem>> GetAllItems() const;
 
   /**
-   * @brief Display the menu as a context menu at the specified screen
-   * coordinates.
+   * @brief Display the menu as a context menu using the specified positioning strategy.
    *
-   * Shows the menu at the given position and waits for user interaction.
-   * The menu will close when the user clicks outside of it or selects an item.
+   * Shows the menu according to the provided positioning strategy and waits for
+   * user interaction. The menu will close when the user clicks outside of it or
+   * selects an item.
    *
-   * @param x The x-coordinate in screen coordinates where to open the menu
-   * @param y The y-coordinate in screen coordinates where to open the menu
+   * @param strategy The positioning strategy determining where to display the menu
    * @return true if the menu was successfully opened, false otherwise
    *
    * @example
    * ```cpp
    * // Open context menu at cursor position
-   * menu->Open(mouse_x, mouse_y);
+   * menu->Open(PositioningStrategy::CursorPosition());
+   *
+   * // Open context menu at specific coordinates
+   * menu->Open(PositioningStrategy::Absolute({100, 200}));
+   *
+   * // Open context menu relative to a button with offset
+   * Rectangle buttonRect = button->GetBounds();
+   * menu->Open(PositioningStrategy::Relative(buttonRect, {0, 10}));
    * ```
    */
-  bool Open(double x, double y);
-
-  /**
-   * @brief Display the menu as a context menu at the current cursor position.
-   *
-   * Shows the menu at the current mouse cursor location.
-   *
-   * @return true if the menu was successfully opened, false otherwise
-   */
-  bool Open();
+  bool Open(const PositioningStrategy& strategy);
 
   /**
    * @brief Programmatically close the menu if it's currently showing.

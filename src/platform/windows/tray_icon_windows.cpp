@@ -10,6 +10,7 @@
 
 #include "../../foundation/geometry.h"
 #include "../../foundation/id_allocator.h"
+#include "../../foundation/positioning_strategy.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
@@ -33,7 +34,11 @@ class TrayIcon::Impl {
   using RightClickedCallback = std::function<void(TrayIconId)>;
   using DoubleClickedCallback = std::function<void(TrayIconId)>;
 
-  Impl() : hwnd_(nullptr), icon_handle_(nullptr), window_proc_handle_id_(-1), event_monitoring_setup_(false) {
+  Impl()
+      : hwnd_(nullptr),
+        icon_handle_(nullptr),
+        window_proc_handle_id_(-1),
+        event_monitoring_setup_(false) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
@@ -350,29 +355,12 @@ bool TrayIcon::IsVisible() {
   return Shell_NotifyIconGetRect(&niid, &rect) == S_OK;
 }
 
-bool TrayIcon::OpenContextMenu(double x, double y) {
-  if (!pimpl_->context_menu_) {
-    return false;
-  }
-
-  // Open the context menu at the specified coordinates
-  return pimpl_->context_menu_->Open(x, y);
-}
-
 bool TrayIcon::OpenContextMenu() {
   if (!pimpl_->context_menu_) {
     return false;
   }
 
-  // Get the bounds of the tray icon to show menu near it
-  Rectangle bounds = GetBounds();
-  if (bounds.width > 0 && bounds.height > 0) {
-    // Open menu below the tray icon
-    return pimpl_->context_menu_->Open(bounds.x, bounds.y + bounds.height);
-  } else {
-    // Fall back to showing at mouse location
-    return pimpl_->context_menu_->Open();
-  }
+  return pimpl_->context_menu_->Open(PositioningStrategy::CursorPosition());
 }
 
 bool TrayIcon::CloseContextMenu() {

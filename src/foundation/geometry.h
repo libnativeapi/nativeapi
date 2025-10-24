@@ -53,7 +53,7 @@ struct Rectangle {
  * @example
  * ```cpp
  * // Position menu below the button, aligned to the left
- * menu->Open(PositioningStrategy::Absolute(100, 100), Placement::BottomStart);
+ * menu->Open(PositioningStrategy::Absolute({100, 100}), Placement::BottomStart);
  *
  * // Position popover to the right, aligned to the top
  * popover->Open(PositioningStrategy::CursorPosition(), Placement::RightStart);

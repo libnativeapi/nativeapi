@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../../src/capi/application_c.h"
 #include "../../src/capi/menu_c.h"
+#include "../../src/capi/positioning_strategy_c.h"
 
 // Event callback functions
 void on_menu_item_clicked(const void* event, void* user_data) {
@@ -154,8 +155,9 @@ int main() {
   // Note: Programmatic event triggering is no longer available via trigger API.
   // Events can only be triggered through actual user interaction.
   printf("\n=== Programmatic Event Triggering Removed ===\n");
-  printf("Note: The trigger API has been removed. Events are now only "
-         "triggered through user interaction.\n");
+  printf(
+      "Note: The trigger API has been removed. Events are now only "
+      "triggered through user interaction.\n");
 
   // Demonstrate listener removal
   printf("\n=== Testing Listener Removal ===\n");
@@ -167,18 +169,22 @@ int main() {
     printf("Failed to remove checkbox click listener\n");
   }
 
-  printf("Checkbox item listener removed. Events will now only be triggered "
-         "through user interaction.\n");
+  printf(
+      "Checkbox item listener removed. Events will now only be triggered "
+      "through user interaction.\n");
 
   // Open menu as context menu (this may not work in console applications)
   printf("\n=== Attempting to Open Context Menu ===\n");
   printf("Note: Context menu display may not work in console applications\n");
 
-  if (native_menu_open_at(menu, 100, 100)) {
+  native_point_t point = {100, 100};
+  native_positioning_strategy_t strategy = native_positioning_strategy_absolute(&point);
+  if (native_menu_open(menu, strategy)) {
     printf("Context menu opened successfully\n");
   } else {
     printf("Failed to open context menu (expected in console app)\n");
   }
+  native_positioning_strategy_free(strategy);
 
   // Test additional functionality
   printf("\n=== Testing Additional Functionality ===\n");

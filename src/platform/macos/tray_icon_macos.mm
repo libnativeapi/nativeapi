@@ -1,5 +1,6 @@
 #include <optional>
 #include "../../foundation/geometry.h"
+#include "../../foundation/positioning_strategy.h"
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../tray_icon.h"
@@ -330,15 +331,6 @@ bool TrayIcon::IsVisible() {
     return [pimpl_->ns_status_item_ isVisible] == YES;
   }
   return false;
-}
-
-bool TrayIcon::OpenContextMenu(double x, double y) {
-  if (!pimpl_->context_menu_) {
-    return false;
-  }
-
-  // Open the context menu at the specified coordinates
-  return pimpl_->context_menu_->Open(x, y);
 }
 
 bool TrayIcon::OpenContextMenu() {

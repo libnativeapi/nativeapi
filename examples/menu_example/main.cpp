@@ -106,7 +106,7 @@ int main() {
     std::cout << "Note: Context menu display may not work in console applications" << std::endl;
 
     // Try to show at screen coordinates (100, 100)
-    if (menu->Open(100, 100)) {
+    if (menu->Open(PositioningStrategy::Absolute({100, 100}))) {
       std::cout << "Context menu opened successfully" << std::endl;
     } else {
       std::cout << "Failed to open context menu (expected in console app)" << std::endl;

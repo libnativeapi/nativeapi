@@ -16,6 +16,7 @@ extern "C" {
 
 #include "geometry_c.h"
 #include "image_c.h"
+#include "positioning_strategy_c.h"
 
 /**
  * Opaque handles for menu objects
@@ -473,22 +474,13 @@ FFI_PLUGIN_EXPORT
 native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
 
 /**
- * Open the menu as a context menu at specified coordinates
+ * Open the menu as a context menu using the specified positioning strategy
  * @param menu The menu
- * @param x The x-coordinate in screen coordinates
- * @param y The y-coordinate in screen coordinates
+ * @param strategy The positioning strategy determining where to display the menu
  * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_open_at(native_menu_t menu, double x, double y);
-
-/**
- * Open the menu as a context menu at default location
- * @param menu The menu
- * @return true if menu was opened successfully, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_menu_open(native_menu_t menu);
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy);
 
 /**
  * Close the menu if it's currently showing
