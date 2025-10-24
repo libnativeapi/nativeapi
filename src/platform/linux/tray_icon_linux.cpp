@@ -252,4 +252,14 @@ void* TrayIcon::GetNativeObjectInternal() const {
   return static_cast<void*>(pimpl_->app_indicator_);
 }
 
+void TrayIcon::StartEventListening() {
+  // Called automatically when first listener is added
+  // AppIndicator handles events automatically, no platform-specific setup needed
+}
+
+void TrayIcon::StopEventListening() {
+  // Called automatically when last listener is removed
+  // AppIndicator handles events automatically, no platform-specific cleanup needed
+}
+
 }  // namespace nativeapi
