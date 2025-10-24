@@ -703,59 +703,69 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   double menu_height = menu_size.height;
 
   // Adjust position based on placement
+  // Note: Coordinates are in top-left origin system (y grows downward)
+  // popUpMenuPositioningItem places the menu's top-left corner at the specified location
   switch (placement) {
-    case Placement::TopStart:  // topLeft
-      x -= menu_width;
-      y += menu_height;
-      break;
-    
-    case Placement::Top:  // top center
-      x -= menu_width / 2.0;
-      y += menu_height;
-      break;
-    
-    case Placement::TopEnd:  // topRight
-      y += menu_height;
-      break;
-    
-    case Placement::RightStart:  // right top
-      x += menu_width;
-      y += menu_height;
-      break;
-    
-    case Placement::Right:  // right center
-      x += menu_width;
-      y -= menu_height / 2.0;
-      break;
-    
-    case Placement::RightEnd:  // right bottom
-      x += menu_width;
+    case Placement::TopStart:  // Menu above reference point, left-aligned
+      // Menu's bottom-left corner at reference point
+      // No x adjustment needed (left-aligned)
+      // Move up by menu height
       y -= menu_height;
       break;
     
-    case Placement::BottomStart:  // bottomLeft
-      x -= menu_width;
+    case Placement::Top:  // Menu above reference point, center-aligned
+      // Menu's bottom-center at reference point
+      x -= menu_width / 2.0;
+      y -= menu_height;
       break;
     
-    case Placement::Bottom:  // bottom center
+    case Placement::TopEnd:  // Menu above reference point, right-aligned
+      // Menu's bottom-right corner at reference point
+      x -= menu_width;
+      y -= menu_height;
+      break;
+    
+    case Placement::RightStart:  // Menu to the right, top-aligned
+      // Menu's top-left corner at reference point (no adjustment needed)
+      break;
+    
+    case Placement::Right:  // Menu to the right, center-aligned
+      // Menu's left-center at reference point
+      y -= menu_height / 2.0;
+      break;
+    
+    case Placement::RightEnd:  // Menu to the right, bottom-aligned
+      // Menu's bottom-left corner at reference point
+      y -= menu_height;
+      break;
+    
+    case Placement::BottomStart:  // Menu below reference point, left-aligned
+      // Menu's top-left corner at reference point (no adjustment needed)
+      break;
+    
+    case Placement::Bottom:  // Menu below reference point, center-aligned
+      // Menu's top-center at reference point
       x -= menu_width / 2.0;
       break;
     
-    case Placement::BottomEnd:  // bottomRight
-      // No adjustment needed
-      break;
-    
-    case Placement::LeftStart:  // left top
+    case Placement::BottomEnd:  // Menu below reference point, right-aligned
+      // Menu's top-right corner at reference point
       x -= menu_width;
-      y += menu_height;
       break;
     
-    case Placement::Left:  // left center
+    case Placement::LeftStart:  // Menu to the left, top-aligned
+      // Menu's top-right corner at reference point
+      x -= menu_width;
+      break;
+    
+    case Placement::Left:  // Menu to the left, center-aligned
+      // Menu's right-center at reference point
       x -= menu_width;
       y -= menu_height / 2.0;
       break;
     
-    case Placement::LeftEnd:  // left bottom
+    case Placement::LeftEnd:  // Menu to the left, bottom-aligned
+      // Menu's bottom-right corner at reference point
       x -= menu_width;
       y -= menu_height;
       break;
