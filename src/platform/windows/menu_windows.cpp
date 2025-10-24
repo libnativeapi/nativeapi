@@ -624,7 +624,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-bool Menu::Open(const PositioningStrategy& strategy) {
+bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   POINT pt = {0, 0};
 
   // Determine position based on strategy type
@@ -658,13 +658,38 @@ bool Menu::Open(const PositioningStrategy& strategy) {
   // Set the host window as foreground to ensure menu can be displayed
   SetForegroundWindow(host_window);
 
+  // Determine alignment flags based on placement
+  // Note: TPM_* flags are mutually exclusive and control vertical alignment only
+  UINT uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;  // Default
+  switch (placement) {
+    case Placement::Top:
+    case Placement::TopStart:
+    case Placement::TopEnd:
+      uFlags = TPM_TOPALIGN | TPM_LEFTALIGN;
+      break;
+    case Placement::Right:
+    case Placement::RightStart:
+    case Placement::RightEnd:
+      uFlags = TPM_BOTTOMALIGN | TPM_RIGHTALIGN;
+      break;
+    case Placement::Bottom:
+    case Placement::BottomStart:
+    case Placement::BottomEnd:
+      uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;
+      break;
+    case Placement::Left:
+    case Placement::LeftStart:
+    case Placement::LeftEnd:
+      uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;
+      break;
+  }
+
   // Show the context menu using the host window
   // Note: TrackPopupMenu is a blocking call
   // - WM_INITMENUPOPUP is sent when the menu opens (triggers MenuOpenedEvent)
   // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers
   // MenuClosedEvent)
-  TrackPopupMenu(pimpl_->hmenu_, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, host_window,
-                 nullptr);
+  TrackPopupMenu(pimpl_->hmenu_, uFlags, pt.x, pt.y, 0, host_window, nullptr);
 
   return true;
 }

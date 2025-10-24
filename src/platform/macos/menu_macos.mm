@@ -670,7 +670,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-bool Menu::Open(const PositioningStrategy& strategy) {
+bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   double x = 0, y = 0;
 
   // Determine position based on strategy type
@@ -695,6 +695,70 @@ bool Menu::Open(const PositioningStrategy& strategy) {
       y = rect.y + offset.y;
       break;
     }
+  }
+
+  // Get menu size for placement adjustments
+  NSSize menu_size = [pimpl_->ns_menu_ size];
+  double menu_width = menu_size.width;
+  double menu_height = menu_size.height;
+
+  // Adjust position based on placement
+  switch (placement) {
+    case Placement::TopStart:  // topLeft
+      x -= menu_width;
+      y += menu_height;
+      break;
+    
+    case Placement::Top:  // top center
+      x -= menu_width / 2.0;
+      y += menu_height;
+      break;
+    
+    case Placement::TopEnd:  // topRight
+      y += menu_height;
+      break;
+    
+    case Placement::RightStart:  // right top
+      x += menu_width;
+      y += menu_height;
+      break;
+    
+    case Placement::Right:  // right center
+      x += menu_width;
+      y -= menu_height / 2.0;
+      break;
+    
+    case Placement::RightEnd:  // right bottom
+      x += menu_width;
+      y -= menu_height;
+      break;
+    
+    case Placement::BottomStart:  // bottomLeft
+      x -= menu_width;
+      break;
+    
+    case Placement::Bottom:  // bottom center
+      x -= menu_width / 2.0;
+      break;
+    
+    case Placement::BottomEnd:  // bottomRight
+      // No adjustment needed
+      break;
+    
+    case Placement::LeftStart:  // left top
+      x -= menu_width;
+      y += menu_height;
+      break;
+    
+    case Placement::Left:  // left center
+      x -= menu_width;
+      y -= menu_height / 2.0;
+      break;
+    
+    case Placement::LeftEnd:  // left bottom
+      x -= menu_width;
+      y -= menu_height;
+      break;
   }
 
   // Get the main window

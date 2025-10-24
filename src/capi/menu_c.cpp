@@ -838,14 +838,59 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
   }
 }
 
-bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy) {
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement) {
   if (!menu || !strategy)
     return false;
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
     auto strategy_ptr = static_cast<PositioningStrategy*>(strategy);
-    return menu_ptr->Open(*strategy_ptr);
+    
+    // Convert C placement enum to C++ placement enum
+    Placement cpp_placement;
+    switch (placement) {
+      case NATIVE_PLACEMENT_TOP:
+        cpp_placement = Placement::Top;
+        break;
+      case NATIVE_PLACEMENT_TOP_START:
+        cpp_placement = Placement::TopStart;
+        break;
+      case NATIVE_PLACEMENT_TOP_END:
+        cpp_placement = Placement::TopEnd;
+        break;
+      case NATIVE_PLACEMENT_RIGHT:
+        cpp_placement = Placement::Right;
+        break;
+      case NATIVE_PLACEMENT_RIGHT_START:
+        cpp_placement = Placement::RightStart;
+        break;
+      case NATIVE_PLACEMENT_RIGHT_END:
+        cpp_placement = Placement::RightEnd;
+        break;
+      case NATIVE_PLACEMENT_BOTTOM:
+        cpp_placement = Placement::Bottom;
+        break;
+      case NATIVE_PLACEMENT_BOTTOM_START:
+        cpp_placement = Placement::BottomStart;
+        break;
+      case NATIVE_PLACEMENT_BOTTOM_END:
+        cpp_placement = Placement::BottomEnd;
+        break;
+      case NATIVE_PLACEMENT_LEFT:
+        cpp_placement = Placement::Left;
+        break;
+      case NATIVE_PLACEMENT_LEFT_START:
+        cpp_placement = Placement::LeftStart;
+        break;
+      case NATIVE_PLACEMENT_LEFT_END:
+        cpp_placement = Placement::LeftEnd;
+        break;
+      default:
+        cpp_placement = Placement::BottomStart;
+        break;
+    }
+    
+    return menu_ptr->Open(*strategy_ptr, cpp_placement);
   } catch (...) {
     return false;
   }

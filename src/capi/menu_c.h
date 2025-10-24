@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "geometry_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -477,10 +478,12 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
  * Open the menu as a context menu using the specified positioning strategy
  * @param menu The menu
  * @param strategy The positioning strategy determining where to display the menu
+ * @param placement The placement option determining how the menu is positioned
+ *                  relative to the reference point (default: NATIVE_PLACEMENT_BOTTOM_START)
  * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy);
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement);
 
 /**
  * Close the menu if it's currently showing

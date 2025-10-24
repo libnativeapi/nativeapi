@@ -650,22 +650,27 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * selects an item.
    *
    * @param strategy The positioning strategy determining where to display the menu
+   * @param placement The placement option determining how the menu is positioned
+   *                  relative to the reference point (default: BottomStart)
    * @return true if the menu was successfully opened, false otherwise
    *
    * @example
    * ```cpp
-   * // Open context menu at cursor position
-   * menu->Open(PositioningStrategy::CursorPosition());
+   * // Open context menu at cursor position, below the cursor
+   * menu->Open(PositioningStrategy::CursorPosition(), Placement::BottomStart);
    *
-   * // Open context menu at specific coordinates
-   * menu->Open(PositioningStrategy::Absolute({100, 200}));
+   * // Open context menu at specific coordinates, above and centered
+   * menu->Open(PositioningStrategy::Absolute({100, 200}), Placement::Top);
    *
-   * // Open context menu relative to a button with offset
+   * // Open context menu relative to a button with offset, to the right
    * Rectangle buttonRect = button->GetBounds();
-   * menu->Open(PositioningStrategy::Relative(buttonRect, {0, 10}));
+   * menu->Open(PositioningStrategy::Relative(buttonRect, {0, 10}), Placement::Right);
+   *
+   * // Use default placement (BottomStart)
+   * menu->Open(PositioningStrategy::CursorPosition());
    * ```
    */
-  bool Open(const PositioningStrategy& strategy);
+  bool Open(const PositioningStrategy& strategy, Placement placement = Placement::BottomStart);
 
   /**
    * @brief Programmatically close the menu if it's currently showing.

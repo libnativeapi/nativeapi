@@ -179,8 +179,8 @@ int main() {
 
   native_point_t point = {100, 100};
   native_positioning_strategy_t strategy = native_positioning_strategy_absolute(&point);
-  if (native_menu_open(menu, strategy)) {
-    printf("Context menu opened successfully\n");
+  if (native_menu_open(menu, strategy, NATIVE_PLACEMENT_BOTTOM_START)) {
+    printf("Context menu opened successfully (BOTTOM_START placement)\n");
   } else {
     printf("Failed to open context menu (expected in console app)\n");
   }

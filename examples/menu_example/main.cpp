@@ -105,11 +105,16 @@ int main() {
     std::cout << "\n=== Attempting to Open Context Menu ===" << std::endl;
     std::cout << "Note: Context menu display may not work in console applications" << std::endl;
 
-    // Try to show at screen coordinates (100, 100)
+    // Try to show at screen coordinates (100, 100) with default placement (BottomStart)
     if (menu->Open(PositioningStrategy::Absolute({100, 100}))) {
-      std::cout << "Context menu opened successfully" << std::endl;
+      std::cout << "Context menu opened successfully (BottomStart placement)" << std::endl;
     } else {
       std::cout << "Failed to open context menu (expected in console app)" << std::endl;
+    }
+
+    // Demonstrate placement parameter - open menu above the point
+    if (menu->Open(PositioningStrategy::Absolute({100, 200}), Placement::Top)) {
+      std::cout << "Context menu opened successfully (Top placement)" << std::endl;
     }
 
     // Demonstrate submenu

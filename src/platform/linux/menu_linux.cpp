@@ -395,7 +395,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
   return pimpl_->items_;
 }
 
-bool Menu::Open(const PositioningStrategy& strategy) {
+bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   if (pimpl_->gtk_menu_) {
     gtk_widget_show_all(pimpl_->gtk_menu_);
 
@@ -426,6 +426,61 @@ bool Menu::Open(const PositioningStrategy& strategy) {
       }
     }
 
+    // Map placement to GDK gravity values
+    GdkGravity anchor_gravity = GDK_GRAVITY_NORTH_WEST;
+    GdkGravity menu_gravity = GDK_GRAVITY_NORTH_WEST;
+
+    switch (placement) {
+      case Placement::Top:
+        anchor_gravity = GDK_GRAVITY_SOUTH;
+        menu_gravity = GDK_GRAVITY_NORTH;
+        break;
+      case Placement::TopStart:
+        anchor_gravity = GDK_GRAVITY_SOUTH_WEST;
+        menu_gravity = GDK_GRAVITY_NORTH_WEST;
+        break;
+      case Placement::TopEnd:
+        anchor_gravity = GDK_GRAVITY_SOUTH_EAST;
+        menu_gravity = GDK_GRAVITY_NORTH_EAST;
+        break;
+      case Placement::Right:
+        anchor_gravity = GDK_GRAVITY_WEST;
+        menu_gravity = GDK_GRAVITY_EAST;
+        break;
+      case Placement::RightStart:
+        anchor_gravity = GDK_GRAVITY_NORTH_WEST;
+        menu_gravity = GDK_GRAVITY_NORTH_EAST;
+        break;
+      case Placement::RightEnd:
+        anchor_gravity = GDK_GRAVITY_SOUTH_WEST;
+        menu_gravity = GDK_GRAVITY_SOUTH_EAST;
+        break;
+      case Placement::Bottom:
+        anchor_gravity = GDK_GRAVITY_NORTH;
+        menu_gravity = GDK_GRAVITY_SOUTH;
+        break;
+      case Placement::BottomStart:
+        anchor_gravity = GDK_GRAVITY_NORTH_WEST;
+        menu_gravity = GDK_GRAVITY_SOUTH_WEST;
+        break;
+      case Placement::BottomEnd:
+        anchor_gravity = GDK_GRAVITY_NORTH_EAST;
+        menu_gravity = GDK_GRAVITY_SOUTH_EAST;
+        break;
+      case Placement::Left:
+        anchor_gravity = GDK_GRAVITY_EAST;
+        menu_gravity = GDK_GRAVITY_WEST;
+        break;
+      case Placement::LeftStart:
+        anchor_gravity = GDK_GRAVITY_NORTH_EAST;
+        menu_gravity = GDK_GRAVITY_NORTH_WEST;
+        break;
+      case Placement::LeftEnd:
+        anchor_gravity = GDK_GRAVITY_SOUTH_EAST;
+        menu_gravity = GDK_GRAVITY_SOUTH_WEST;
+        break;
+    }
+
     // Try to position at explicit coordinates if available
     if (use_explicit_position) {
       GdkWindow* root_window = gdk_get_default_root_window();
@@ -436,7 +491,7 @@ bool Menu::Open(const PositioningStrategy& strategy) {
         rect.width = 1;
         rect.height = 1;
         gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
-                               GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_NORTH_WEST, nullptr);
+                               anchor_gravity, menu_gravity, nullptr);
       } else {
         // Fallback to pointer if root window not available
         gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
