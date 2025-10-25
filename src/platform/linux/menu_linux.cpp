@@ -148,7 +148,24 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->title_ = label;
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
     const char* labelStr = label.has_value() ? label->c_str() : "";
-    gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), labelStr);
+    
+    // Check if we have a custom box layout (with icon)
+    GtkWidget* child = gtk_bin_get_child(GTK_BIN(pimpl_->gtk_menu_item_));
+    if (child && GTK_IS_BOX(child)) {
+      // Custom layout with icon - find the label widget and update it
+      GList* children = gtk_container_get_children(GTK_CONTAINER(child));
+      for (GList* iter = children; iter != nullptr; iter = iter->next) {
+        GtkWidget* widget = GTK_WIDGET(iter->data);
+        if (GTK_IS_LABEL(widget)) {
+          gtk_label_set_text(GTK_LABEL(widget), labelStr);
+          break;
+        }
+      }
+      g_list_free(children);
+    } else {
+      // Simple label-only layout
+      gtk_menu_item_set_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), labelStr);
+    }
   }
 }
 
@@ -158,7 +175,63 @@ std::optional<std::string> MenuItem::GetLabel() const {
 
 void MenuItem::SetIcon(std::shared_ptr<Image> image) {
   pimpl_->image_ = image;
-  // TODO: Implement icon setting for GTK menu item
+  
+  if (!pimpl_->gtk_menu_item_ || pimpl_->type_ == MenuItemType::Separator) {
+    return;
+  }
+
+  // Get current label text to preserve it
+  const char* label_text = gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
+  std::string current_label = label_text ? label_text : "";
+
+  // Remove existing child widget
+  GtkWidget* existing_child = gtk_bin_get_child(GTK_BIN(pimpl_->gtk_menu_item_));
+  if (existing_child) {
+    gtk_container_remove(GTK_CONTAINER(pimpl_->gtk_menu_item_), existing_child);
+  }
+
+  if (image && image->GetNativeObject()) {
+    // Create a horizontal box to hold icon and label
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);  // 6px spacing
+    
+    // Get the GdkPixbuf from the image
+    GdkPixbuf* pixbuf = static_cast<GdkPixbuf*>(image->GetNativeObject());
+    
+    // Scale the icon to a reasonable menu size (16x16 is standard for menu items)
+    const int icon_size = 16;
+    GdkPixbuf* scaled_pixbuf = nullptr;
+    
+    int original_width = gdk_pixbuf_get_width(pixbuf);
+    int original_height = gdk_pixbuf_get_height(pixbuf);
+    
+    if (original_width != icon_size || original_height != icon_size) {
+      scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, icon_size, icon_size, GDK_INTERP_BILINEAR);
+    } else {
+      scaled_pixbuf = gdk_pixbuf_copy(pixbuf);
+    }
+    
+    // Create GtkImage from the pixbuf
+    GtkWidget* gtk_image = gtk_image_new_from_pixbuf(scaled_pixbuf);
+    g_object_unref(scaled_pixbuf);  // GtkImage takes its own reference
+    
+    // Create label widget
+    GtkWidget* label = gtk_label_new(current_label.c_str());
+    gtk_label_set_xalign(GTK_LABEL(label), 0.0);  // Left-align the label
+    
+    // Pack icon and label into box
+    gtk_box_pack_start(GTK_BOX(box), gtk_image, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 0);
+    
+    // Add box to menu item
+    gtk_container_add(GTK_CONTAINER(pimpl_->gtk_menu_item_), box);
+    gtk_widget_show_all(box);
+  } else {
+    // No icon - restore simple label display
+    GtkWidget* label = gtk_label_new(current_label.c_str());
+    gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+    gtk_container_add(GTK_CONTAINER(pimpl_->gtk_menu_item_), label);
+    gtk_widget_show(label);
+  }
 }
 
 std::shared_ptr<Image> MenuItem::GetIcon() const {
