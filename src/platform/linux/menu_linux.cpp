@@ -344,13 +344,19 @@ void MenuItem::SetState(MenuItemState state) {
   pimpl_->state_ = state;
   if (pimpl_->gtk_menu_item_) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
+      // Update checked state
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      // Block the "toggled" signal to prevent recursive triggering
-      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+      // Block the "toggled" signal to prevent recursive triggering when setting active
+      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_),
                                       (gpointer)OnGtkCheckMenuItemToggled, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
-      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_),
                                         (gpointer)OnGtkCheckMenuItemToggled, this);
+
+      // Reflect tri-state (Mixed) visually using GTK's inconsistent state
+      gtk_check_menu_item_set_inconsistent(
+          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_),
+          (state == MenuItemState::Mixed) ? TRUE : FALSE);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
       // Block the "toggled" signal to prevent recursive triggering
@@ -367,6 +373,15 @@ MenuItemState MenuItem::GetState() const {
   // For checkbox and radio items, get the actual state from GTK widget
   if (pimpl_->gtk_menu_item_ && 
       (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio)) {
+    if (pimpl_->type_ == MenuItemType::Checkbox) {
+      // If inconsistent is set, treat as Mixed regardless of active
+      gboolean inconsistent = gtk_check_menu_item_get_inconsistent(
+          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_));
+      if (inconsistent) {
+        return MenuItemState::Mixed;
+      }
+    }
+
     gboolean active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_));
     return active ? MenuItemState::Checked : MenuItemState::Unchecked;
   }
