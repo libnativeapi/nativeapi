@@ -146,7 +146,7 @@ void WindowManager::Impl::CleanupEventMonitoring() {
 }
 
 void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
-  WindowID window_id = [window windowNumber];
+  WindowId window_id = [window windowNumber];
 
   if (event_type == "focused") {
     WindowFocusedEvent event(window_id);
@@ -209,7 +209,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   [ns_window center];
   [ns_window makeKeyAndOrderFront:nil];
   [ns_window makeMainWindow];
-  WindowID window_id = [ns_window windowNumber];
+  WindowId window_id = [ns_window windowNumber];
   auto window = std::make_shared<Window>((__bridge void*)ns_window);
   windows_[window_id] = window;
 
@@ -221,7 +221,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 }
 
 // Destroy a window by its ID. Returns true if window was destroyed.
-bool WindowManager::Destroy(WindowID id) {
+bool WindowManager::Destroy(WindowId id) {
   auto it = windows_.find(id);
   if (it != windows_.end()) {
     // Get the NSWindow to close it
@@ -239,7 +239,7 @@ bool WindowManager::Destroy(WindowID id) {
   return false;
 }
 
-std::shared_ptr<Window> WindowManager::Get(WindowID id) {
+std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   auto it = windows_.find(id);
   if (it != windows_.end()) {
     return it->second;
@@ -259,7 +259,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<std::shared_ptr<Window>> windows;
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   for (NSWindow* ns_window in ns_windows) {
-    WindowID window_id = [ns_window windowNumber];
+    WindowId window_id = [ns_window windowNumber];
     auto it = windows_.find(window_id);
     if (it == windows_.end()) {
       auto window = std::make_shared<Window>((__bridge void*)ns_window);

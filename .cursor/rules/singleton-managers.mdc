@@ -30,9 +30,9 @@ public:
         static WindowManager instance;  // Created on first call
         return instance;
     }
-    
+
     virtual ~WindowManager();
-    
+
     // Prevent copying and moving
     WindowManager(const WindowManager&) = delete;
     WindowManager& operator=(const WindowManager&) = delete;
@@ -71,15 +71,15 @@ class WindowManager : public EventEmitter<WindowEvent> {
 public:
     // Singleton access
     static WindowManager& GetInstance();
-    
+
     virtual ~WindowManager();
-    
+
     // Public API
     std::shared_ptr<Window> Create(const WindowOptions& options);
-    std::shared_ptr<Window> Get(WindowID id);
+    std::shared_ptr<Window> Get(WindowId id);
     std::vector<std::shared_ptr<Window>> GetAll();
-    bool Destroy(WindowID id);
-    
+    bool Destroy(WindowId id);
+
     // Prevent copying and moving
     WindowManager(const WindowManager&) = delete;
     WindowManager& operator=(const WindowManager&) = delete;
@@ -89,14 +89,14 @@ public:
 private:
     // Private constructor
     WindowManager();
-    
+
     // PIMPL for platform-specific details
     class Impl;
     std::unique_ptr<Impl> pimpl_;
-    
+
     // Shared state (not platform-specific)
-    std::unordered_map<WindowID, std::shared_ptr<Window>> windows_;
-    
+    std::unordered_map<WindowId, std::shared_ptr<Window>> windows_;
+
     // Platform event monitoring
     void SetupEventMonitoring();
     void CleanupEventMonitoring();
@@ -129,19 +129,19 @@ WindowManager::~WindowManager() {
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     // Platform-specific creation
     auto window = pimpl_->CreatePlatformWindow(options);
-    
+
     if (window) {
         // Store in registry
         windows_[window->GetId()] = window;
-        
+
         // Emit event
         Emit<WindowCreatedEvent>(window->GetId());
     }
-    
+
     return window;
 }
 
-std::shared_ptr<Window> WindowManager::Get(WindowID id) {
+std::shared_ptr<Window> WindowManager::Get(WindowId id) {
     auto it = windows_.find(id);
     return (it != windows_.end()) ? it->second : nullptr;
 }
@@ -149,26 +149,26 @@ std::shared_ptr<Window> WindowManager::Get(WindowID id) {
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
     std::vector<std::shared_ptr<Window>> result;
     result.reserve(windows_.size());
-    
+
     for (const auto& [id, window] : windows_) {
         result.push_back(window);
     }
-    
+
     return result;
 }
 
-bool WindowManager::Destroy(WindowID id) {
+bool WindowManager::Destroy(WindowId id) {
     auto it = windows_.find(id);
     if (it == windows_.end()) {
         return false;
     }
-    
+
     // Platform-specific cleanup happens in Window destructor
     windows_.erase(it);
-    
+
     // Emit event
     Emit<WindowClosedEvent>(id);
-    
+
     return true;
 }
 
@@ -255,15 +255,15 @@ public:
         // macOS: Register for NSNotifications
         // Linux: Connect to GTK signals
     }
-    
+
     void CleanupEventMonitoring() {
         // Remove hooks/observers/signal handlers
     }
-    
+
     void OnPlatformEvent(PlatformEventData data) {
         // Convert to generic event
         WindowMovedEvent event(data.window_id);
-        
+
         // Dispatch through manager
         manager_->DispatchWindowEvent(event);
     }

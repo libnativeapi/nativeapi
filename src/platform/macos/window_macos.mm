@@ -320,7 +320,7 @@ void Window::StartDragging() {
 
 void Window::StartResizing() {}
 
-WindowID Window::GetId() const {
+WindowId Window::GetId() const {
   return pimpl_ && pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : -1;
 }
 

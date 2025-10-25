@@ -18,7 +18,7 @@ class WindowEvent : public Event {
    * Constructor for WindowEvent
    * @param window_id The window ID associated with this event
    */
-  explicit WindowEvent(WindowID window_id) : window_id_(window_id) {}
+  explicit WindowEvent(WindowId window_id) : window_id_(window_id) {}
 
   /**
    * Virtual destructor
@@ -29,7 +29,7 @@ class WindowEvent : public Event {
    * Get the window ID associated with this event
    * @return The window ID
    */
-  WindowID GetWindowId() const { return window_id_; }
+  WindowId GetWindowId() const { return window_id_; }
 
   /**
    * Get a string representation of the event type (for debugging)
@@ -38,7 +38,7 @@ class WindowEvent : public Event {
   std::string GetTypeName() const override { return "WindowEvent"; }
 
  private:
-  WindowID window_id_;
+  WindowId window_id_;
 };
 
 /**
@@ -48,7 +48,7 @@ class WindowEvent : public Event {
  */
 class WindowCreatedEvent : public WindowEvent {
  public:
-  explicit WindowCreatedEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowCreatedEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -63,7 +63,7 @@ class WindowCreatedEvent : public WindowEvent {
  */
 class WindowClosedEvent : public WindowEvent {
  public:
-  explicit WindowClosedEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowClosedEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -82,7 +82,7 @@ class WindowClosedEvent : public WindowEvent {
  */
 class WindowFocusedEvent : public WindowEvent {
  public:
-  explicit WindowFocusedEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowFocusedEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -101,7 +101,7 @@ class WindowFocusedEvent : public WindowEvent {
  */
 class WindowBlurredEvent : public WindowEvent {
  public:
-  explicit WindowBlurredEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowBlurredEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -120,7 +120,7 @@ class WindowBlurredEvent : public WindowEvent {
  */
 class WindowMinimizedEvent : public WindowEvent {
  public:
-  explicit WindowMinimizedEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowMinimizedEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -139,7 +139,7 @@ class WindowMinimizedEvent : public WindowEvent {
  */
 class WindowMaximizedEvent : public WindowEvent {
  public:
-  explicit WindowMaximizedEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowMaximizedEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -159,7 +159,7 @@ class WindowMaximizedEvent : public WindowEvent {
  */
 class WindowRestoredEvent : public WindowEvent {
  public:
-  explicit WindowRestoredEvent(WindowID window_id) : WindowEvent(window_id) {}
+  explicit WindowRestoredEvent(WindowId window_id) : WindowEvent(window_id) {}
 
   /**
    * Get a string representation of the event type
@@ -178,7 +178,7 @@ class WindowRestoredEvent : public WindowEvent {
  */
 class WindowMovedEvent : public WindowEvent {
  public:
-  WindowMovedEvent(WindowID window_id, Point new_position)
+  WindowMovedEvent(WindowId window_id, Point new_position)
       : WindowEvent(window_id), new_position_(new_position) {}
 
   /**
@@ -207,7 +207,7 @@ class WindowMovedEvent : public WindowEvent {
  */
 class WindowResizedEvent : public WindowEvent {
  public:
-  WindowResizedEvent(WindowID window_id, Size new_size)
+  WindowResizedEvent(WindowId window_id, Size new_size)
       : WindowEvent(window_id), new_size_(new_size) {}
 
   /**

@@ -89,7 +89,7 @@ int native_application_run_with_window(native_application_t app, native_window_t
 
   // Convert native_window_t back to shared_ptr<Window>
   Window* window_ptr = static_cast<Window*>(window);
-  WindowID window_id = window_ptr->GetId();
+  WindowId window_id = window_ptr->GetId();
 
   // Retrieve the shared_ptr from WindowManager
   auto& manager = WindowManager::GetInstance();

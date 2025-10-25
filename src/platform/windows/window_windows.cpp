@@ -491,8 +491,8 @@ void Window::StartResizing() {
   // This would require more complex implementation
 }
 
-WindowID Window::GetId() const {
-  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowID>(pimpl_->hwnd_) : -1;
+WindowId Window::GetId() const {
+  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowId>(pimpl_->hwnd_) : -1;
 }
 
 void* Window::GetNativeObjectInternal() const {

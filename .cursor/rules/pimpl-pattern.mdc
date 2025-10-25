@@ -38,7 +38,7 @@ public:
 private:
     // Forward declaration only - no definition
     class Impl;
-    
+
     // Pointer to implementation
     std::unique_ptr<Impl> pimpl_;
 };
@@ -68,14 +68,14 @@ namespace nativeapi {
 class Window::Impl {
 public:
     Impl(HWND hwnd) : hwnd_(hwnd) {}
-    
+
     HWND hwnd_;  // Windows-specific handle
     // Other Windows-specific state...
 };
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window) 
+Window::Window(void* window)
     : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
 
 Window::~Window() = default;  // unique_ptr handles cleanup
@@ -101,14 +101,14 @@ namespace nativeapi {
 class Window::Impl {
 public:
     Impl(NSWindow* window) : window_(window) {}
-    
+
     NSWindow* window_;  // macOS-specific handle
     // Other macOS-specific state...
 };
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {}
 
-Window::Window(void* window) 
+Window::Window(void* window)
     : pimpl_(std::make_unique<Impl>(static_cast<NSWindow*>(window))) {}
 
 Window::~Window() = default;
@@ -134,14 +134,14 @@ namespace nativeapi {
 class Window::Impl {
 public:
     Impl(GtkWidget* window) : window_(window) {}
-    
+
     GtkWidget* window_;  // GTK-specific handle
     // Other GTK-specific state...
 };
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window) 
+Window::Window(void* window)
     : pimpl_(std::make_unique<Impl>(static_cast<GtkWidget*>(window))) {}
 
 Window::~Window() = default;
@@ -172,7 +172,7 @@ class MyClass {
 public:
     MyClass();
     virtual ~MyClass();
-    
+
     void DoSomething();
 
 private:
@@ -218,7 +218,7 @@ class MyClass {
 public:
     MyClass();
     virtual ~MyClass();  // Virtual if used as base class
-    
+
     // Copy/move operations - handle appropriately
     MyClass(const MyClass&) = delete;
     MyClass& operator=(const MyClass&) = delete;
@@ -256,7 +256,7 @@ TrayIcon::TrayIcon() : TrayIcon(nullptr) {}  // Delegate to parameterized constr
 TrayIcon::TrayIcon(void* tray) {
     // Handle both cases in one place
     NSStatusItem* status_item = nullptr;
-    
+
     if (tray == nullptr) {
         // Create new platform object
         NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
@@ -265,10 +265,10 @@ TrayIcon::TrayIcon(void* tray) {
         // Wrap existing platform object
         status_item = (__bridge NSStatusItem*)tray;
     }
-    
+
     // All initialization logic in one place
     pimpl_ = std::make_unique<Impl>(status_item);
-    
+
     // Additional setup that applies to both cases
     if (pimpl_->status_item_) {
         // Configure the status item...
@@ -291,7 +291,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
     NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
     NSStatusItem* status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
     pimpl_->status_item_ = status_item;
-    
+
     // Setup code duplicated...
     if (pimpl_->status_item_) {
         // Configure...
@@ -301,7 +301,7 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>()) {
 TrayIcon::TrayIcon(void* tray) : pimpl_(std::make_unique<Impl>()) {
     NSStatusItem* status_item = (__bridge NSStatusItem*)tray;
     pimpl_->status_item_ = status_item;
-    
+
     // Same setup code duplicated again!
     if (pimpl_->status_item_) {
         // Configure...
@@ -318,17 +318,17 @@ class WindowManager : public EventEmitter<WindowEvent> {
 public:
     static WindowManager& GetInstance();
     virtual ~WindowManager();
-    
+
     std::shared_ptr<Window> Create(const WindowOptions& options);
 
 private:
     WindowManager();  // Private constructor
-    
+
     class Impl;
     std::unique_ptr<Impl> pimpl_;
-    
+
     // Public data that doesn't vary by platform
-    std::unordered_map<WindowID, std::shared_ptr<Window>> windows_;
+    std::unordered_map<WindowId, std::shared_ptr<Window>> windows_;
 };
 ```
 
@@ -365,11 +365,11 @@ public:
 };
 
 // Windows implementation
-Window::Window(void* window) 
+Window::Window(void* window)
     : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
 
 // macOS implementation
-Window::Window(void* window) 
+Window::Window(void* window)
     : pimpl_(std::make_unique<Impl>(static_cast<NSWindow*>(window))) {}
 ```
 
@@ -380,7 +380,7 @@ Always validate before using platform handles:
 ```cpp
 void Window::Show() {
     if (!pimpl_->hwnd_) return;  // Or pimpl_->window_, pimpl_->gtk_window_
-    
+
     // Safe to use handle
     ShowWindow(pimpl_->hwnd_, SW_SHOW);
 }

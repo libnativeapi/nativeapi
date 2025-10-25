@@ -68,7 +68,7 @@ void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
   Emit(event);
 }
 
-std::shared_ptr<Window> WindowManager::Get(WindowID id) {
+std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   auto it = windows_.find(id);
   if (it != windows_.end()) {
     return it->second;
@@ -86,7 +86,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowID id) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
 
-    if (gdk_window && (WindowID)gdk_window == id) {
+    if (gdk_window && (WindowId)gdk_window == id) {
       auto window = std::make_shared<Window>((void*)gdk_window);
       windows_[id] = window;
       g_list_free(toplevels);
@@ -112,7 +112,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
 
     if (gdk_window) {
-      WindowID window_id = (WindowID)gdk_window;
+      WindowId window_id = (WindowId)gdk_window;
       auto it = windows_.find(window_id);
       if (it == windows_.end()) {
         auto window = std::make_shared<Window>((void*)gdk_window);
@@ -142,7 +142,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     if (keyboard) {
       GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       if (focused_window) {
-        WindowID window_id = (WindowID)focused_window;
+        WindowId window_id = (WindowId)focused_window;
         return Get(window_id);
       }
     }
@@ -155,7 +155,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     if (gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
       GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
       if (gdk_window) {
-        WindowID window_id = (WindowID)gdk_window;
+        WindowId window_id = (WindowId)gdk_window;
         g_list_free(toplevels);
         return Get(window_id);
       }
@@ -231,7 +231,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   // Create our Window wrapper
   auto window = std::make_shared<Window>((void*)gdk_window);
-  WindowID window_id = (WindowID)gdk_window;
+  WindowId window_id = (WindowId)gdk_window;
 
   // Store in our cache
   windows_[window_id] = window;
@@ -241,7 +241,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   return window;
 }
 
-bool WindowManager::Destroy(WindowID id) {
+bool WindowManager::Destroy(WindowId id) {
   auto it = windows_.find(id);
   if (it != windows_.end()) {
     // TODO: Implement proper GTK window destruction

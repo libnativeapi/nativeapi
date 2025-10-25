@@ -21,9 +21,9 @@ Window::Window(void* window) : pimpl_(std::make_unique<Impl>((GdkWindow*)window)
 
 Window::~Window() {}
 
-WindowID Window::GetId() const {
+WindowId Window::GetId() const {
   // Use pointer address as ID since GDK doesn't provide direct window IDs
-  return pimpl_->gdk_window_ ? (WindowID)pimpl_->gdk_window_ : 0;
+  return pimpl_->gdk_window_ ? (WindowId)pimpl_->gdk_window_ : 0;
 }
 
 void Window::Focus() {

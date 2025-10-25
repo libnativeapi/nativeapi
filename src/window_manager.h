@@ -98,14 +98,14 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * @return Shared pointer to the Window instance, or nullptr if window not found
    *
    * @code
-   * WindowID window_id = some_event.GetWindowId();
+   * WindowId window_id = some_event.GetWindowId();
    * auto window = WindowManager::GetInstance().Get(window_id);
    * if (window) {
    *     window->Show();
    * }
    * @endcode
    */
-  std::shared_ptr<Window> Get(WindowID id);
+  std::shared_ptr<Window> Get(WindowId id);
 
   /**
    * @brief Get all managed windows
@@ -154,14 +154,14 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * @return true if the window was found and destroyed, false if window was not found
    *
    * @code
-   * WindowID window_id = some_window->GetId();
+   * WindowId window_id = some_window->GetId();
    * bool success = WindowManager::GetInstance().Destroy(window_id);
    * if (success) {
    *     std::cout << "Window destroyed successfully" << std::endl;
    * }
    * @endcode
    */
-  bool Destroy(WindowID id);
+  bool Destroy(WindowId id);
 
  private:
   /**
@@ -194,7 +194,7 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * Maps window IDs to their corresponding Window instances for fast lookup.
    * This container is the authoritative source for all active windows.
    */
-  std::unordered_map<WindowID, std::shared_ptr<Window>> windows_;
+  std::unordered_map<WindowId, std::shared_ptr<Window>> windows_;
 
   /**
    * @brief Set up platform-specific event monitoring

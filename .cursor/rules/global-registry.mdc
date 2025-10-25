@@ -47,24 +47,24 @@ class Registry {
 public:
     using Key = void*;
     using Ptr = std::shared_ptr<T>;
-    
+
     static Registry& GetInstance();
-    
+
     // Register an object with a key
     bool Register(Key key, Ptr object);
-    
+
     // Unregister an object by key
     bool Unregister(Key key);
-    
+
     // Retrieve an object by key
     Ptr Get(Key key) const;
-    
+
     // Check if key exists
     bool Contains(Key key) const;
-    
+
     // Clear all entries
     void Clear();
-    
+
     // Get snapshot of all entries
     std::unordered_map<Key, Ptr> GetSnapshot() const;
 
@@ -97,13 +97,13 @@ public:
         // Create native window
         HWND hwnd = CreateWindowEx(...);
         if (!hwnd) return nullptr;
-        
+
         // Create wrapper
         auto window = std::make_shared<Window>(static_cast<void*>(hwnd));
-        
+
         // Register in global registry
         GlobalRegistry<Window>().Register(static_cast<void*>(hwnd), window);
-        
+
         return window;
     }
 };
@@ -117,13 +117,13 @@ public:
         // Create native window
         NSWindow* nswindow = [[NSWindow alloc] init...];
         if (!nswindow) return nullptr;
-        
+
         // Create wrapper
         auto window = std::make_shared<Window>(static_cast<void*>(nswindow));
-        
+
         // Register in global registry
         GlobalRegistry<Window>().Register(static_cast<void*>(nswindow), window);
-        
+
         return window;
     }
 };
@@ -140,11 +140,11 @@ When platform code calls back with native handles, look up the wrapper:
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     // Look up Window wrapper from native handle
     auto window = GlobalRegistry<Window>().Get(static_cast<void*>(hwnd));
-    
+
     if (!window) {
         return DefWindowProc(hwnd, msg, wp, lp);
     }
-    
+
     // Handle message using wrapper
     switch (msg) {
         case WM_SIZE:
@@ -154,7 +154,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             // Emit WindowMovedEvent
             break;
     }
-    
+
     return DefWindowProc(hwnd, msg, wp, lp);
 }
 ```
@@ -166,11 +166,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 - (void)windowDidMove:(NSNotification*)notification {
     NSWindow* nswindow = [notification object];
-    
+
     // Look up Window wrapper from native handle
     auto window = nativeapi::GlobalRegistry<nativeapi::Window>()
         .Get(static_cast<void*>(nswindow));
-    
+
     if (window) {
         // Emit WindowMovedEvent using wrapper
         NSRect frame = [nswindow frame];
@@ -185,12 +185,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 ```cpp
 // GTK signal callback
-static void OnWindowStateChanged(GtkWidget* widget, 
+static void OnWindowStateChanged(GtkWidget* widget,
                                  GdkEventWindowState* event,
                                  gpointer user_data) {
     // Look up Window wrapper from native handle
     auto window = GlobalRegistry<Window>().Get(static_cast<void*>(widget));
-    
+
     if (window) {
         // Emit appropriate event using wrapper
         if (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) {
@@ -210,12 +210,12 @@ public:
     ~Window() {
         // Get native handle before pimpl_ is destroyed
         void* native = GetNativeObject();
-        
+
         if (native) {
             // Unregister from global registry
             GlobalRegistry<Window>().Unregister(native);
         }
-        
+
         // pimpl_ destructor will clean up native object
     }
 
@@ -228,26 +228,26 @@ private:
 Or unregister when manager destroys object:
 
 ```cpp
-bool WindowManager::Destroy(WindowID id) {
+bool WindowManager::Destroy(WindowId id) {
     auto it = windows_.find(id);
     if (it == windows_.end()) {
         return false;
     }
-    
+
     auto window = it->second;
-    
+
     // Unregister from global registry
     void* native = window->GetNativeObject();
     if (native) {
         GlobalRegistry<Window>().Unregister(native);
     }
-    
+
     // Remove from local registry
     windows_.erase(it);
-    
+
     // Emit event
     Emit<WindowClosedEvent>(id);
-    
+
     return true;
 }
 ```
@@ -286,10 +286,10 @@ void OnMenuCommand(HMENU hmenu, UINT item_id) {
 // macOS
 - (void)menuItemClicked:(id)sender {
     NSMenuItem* nsitem = (NSMenuItem*)sender;
-    
+
     auto item = nativeapi::GlobalRegistry<nativeapi::MenuItem>()
         .Get(static_cast<void*>(nsitem));
-    
+
     if (item) {
         item->Trigger();
     }
@@ -299,7 +299,7 @@ void OnMenuCommand(HMENU hmenu, UINT item_id) {
 static void OnMenuItemActivated(GtkMenuItem* menu_item, gpointer user_data) {
     auto item = nativeapi::GlobalRegistry<nativeapi::MenuItem>()
         .Get(static_cast<void*>(menu_item));
-    
+
     if (item) {
         item->Trigger();
     }
@@ -497,7 +497,7 @@ auto snapshot = GlobalRegistry<Window>().GetSnapshot();
 std::cout << "Registered windows: " << snapshot.size() << std::endl;
 
 for (const auto& [native, window] : snapshot) {
-    std::cout << "  - " << window->GetTitle() 
+    std::cout << "  - " << window->GetTitle()
               << " (native: " << native << ")" << std::endl;
 }
 ```
