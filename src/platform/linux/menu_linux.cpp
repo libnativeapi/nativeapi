@@ -565,23 +565,29 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
     // Try to position at explicit coordinates if available
     if (use_explicit_position) {
       GdkWindow* root_window = gdk_get_default_root_window();
-      if (root_window) {
-        GdkRectangle rect;
-        rect.x = static_cast<int>(x);
-        rect.y = static_cast<int>(y);
-        rect.width = 1;
-        rect.height = 1;
-        gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
-                               anchor_gravity, menu_gravity, nullptr);
-      } else {
-        // Fallback to pointer if root window not available
-        gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
+      if (!root_window) {
+        // No root window (e.g., Wayland) and no parent to anchor to → cannot show
+        return false;
       }
+
+      GdkRectangle rect;
+      rect.x = static_cast<int>(x);
+      rect.y = static_cast<int>(y);
+      rect.width = 1;
+      rect.height = 1;
+      gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
+                             anchor_gravity, menu_gravity, nullptr);
+      return true;
     } else {
-      // Use pointer position
-      gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
+      // Use pointer position only if we have a current event to anchor to
+      GdkEvent* current_event = gtk_get_current_event();
+      if (!current_event) {
+        return false;
+      }
+      gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), current_event);
+      gdk_event_free(current_event);
+      return true;
     }
-    return true;
   }
   return false;
 }
