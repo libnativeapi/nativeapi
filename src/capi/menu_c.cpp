@@ -335,13 +335,17 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
 
 void native_menu_item_set_accelerator(native_menu_item_t item,
                                       const native_keyboard_accelerator_t* accelerator) {
-  if (!item || !accelerator)
+  if (!item)
     return;
 
   try {
     auto menu_item = static_cast<MenuItem*>(item);
-    KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
-    menu_item->SetAccelerator(cpp_accelerator);
+    if (accelerator) {
+      KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
+      menu_item->SetAccelerator(cpp_accelerator);
+    } else {
+      menu_item->SetAccelerator(std::nullopt);
+    }
   } catch (...) {
     // Ignore exceptions
   }
@@ -367,17 +371,7 @@ bool native_menu_item_get_accelerator(native_menu_item_t item,
   }
 }
 
-void native_menu_item_remove_accelerator(native_menu_item_t item) {
-  if (!item)
-    return;
 
-  try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->RemoveAccelerator();
-  } catch (...) {
-    // Ignore exceptions
-  }
-}
 
 void native_menu_item_set_enabled(native_menu_item_t item, bool enabled) {
   if (!item)
@@ -452,7 +446,7 @@ int native_menu_item_get_radio_group(native_menu_item_t item) {
 }
 
 void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu) {
-  if (!item || !submenu)
+  if (!item)
     return;
 
   try {
@@ -461,10 +455,14 @@ void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu
       return;
 
     auto menu_item = static_cast<MenuItem*>(item);
-    // Get the shared_ptr from global storage instead of creating a new one
-    auto submenu_ptr = GlobalRegistry<Menu>().Get(submenu);
-    if (submenu_ptr) {
-      menu_item->SetSubmenu(submenu_ptr);
+    if (submenu) {
+      // Get the shared_ptr from global storage instead of creating a new one
+      auto submenu_ptr = GlobalRegistry<Menu>().Get(submenu);
+      if (submenu_ptr) {
+        menu_item->SetSubmenu(submenu_ptr);
+      }
+    } else {
+      menu_item->SetSubmenu(nullptr);
     }
   } catch (...) {
     // Ignore exceptions
@@ -484,17 +482,7 @@ native_menu_t native_menu_item_get_submenu(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_remove_submenu(native_menu_item_t item) {
-  if (!item)
-    return;
 
-  try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->RemoveSubmenu();
-  } catch (...) {
-    // Ignore exceptions
-  }
-}
 
 // New event listener API implementation
 int native_menu_item_add_listener(native_menu_item_t item,

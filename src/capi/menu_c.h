@@ -231,7 +231,7 @@ char* native_menu_item_get_tooltip(native_menu_item_t item);
 /**
  * Set the keyboard accelerator for a menu item
  * @param item The menu item
- * @param accelerator The keyboard accelerator to set
+ * @param accelerator The keyboard accelerator to set, or NULL to remove the accelerator
  */
 FFI_PLUGIN_EXPORT
 void native_menu_item_set_accelerator(native_menu_item_t item,
@@ -247,12 +247,7 @@ FFI_PLUGIN_EXPORT
 bool native_menu_item_get_accelerator(native_menu_item_t item,
                                       native_keyboard_accelerator_t* accelerator);
 
-/**
- * Remove the keyboard accelerator from a menu item
- * @param item The menu item
- */
-FFI_PLUGIN_EXPORT
-void native_menu_item_remove_accelerator(native_menu_item_t item);
+
 
 /**
  * Set the enabled state of a menu item
@@ -305,7 +300,7 @@ int native_menu_item_get_radio_group(native_menu_item_t item);
 /**
  * Set the submenu for a menu item
  * @param item The menu item
- * @param submenu The submenu to attach
+ * @param submenu The submenu to attach, or NULL to remove the submenu
  */
 FFI_PLUGIN_EXPORT
 void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu);
@@ -318,12 +313,7 @@ void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu
 FFI_PLUGIN_EXPORT
 native_menu_t native_menu_item_get_submenu(native_menu_item_t item);
 
-/**
- * Remove the submenu from a menu item
- * @param item The menu item
- */
-FFI_PLUGIN_EXPORT
-void native_menu_item_remove_submenu(native_menu_item_t item);
+
 
 /**
  * Add event listener for a menu item

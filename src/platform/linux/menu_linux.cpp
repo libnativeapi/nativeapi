@@ -180,18 +180,17 @@ std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
-void MenuItem::SetAccelerator(const KeyboardAccelerator& accelerator) {
-  pimpl_->accelerator_ = accelerator;
+void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelerator) {
+  if (accelerator.has_value()) {
+    pimpl_->accelerator_ = *accelerator;
+  } else {
+    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+  }
   // TODO: Implement GTK accelerator setting
 }
 
 KeyboardAccelerator MenuItem::GetAccelerator() const {
   return pimpl_->accelerator_;
-}
-
-void MenuItem::RemoveAccelerator() {
-  pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
-  // TODO: Implement GTK accelerator removal
 }
 
 void MenuItem::SetEnabled(bool enabled) {
@@ -212,15 +211,31 @@ void MenuItem::SetState(MenuItemState state) {
   if (pimpl_->gtk_menu_item_) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
+      // Block the "activate" signal to prevent recursive triggering
+      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+                                      (gpointer)OnGtkMenuItemActivate, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+                                        (gpointer)OnGtkMenuItemActivate, this);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
+      // Block the "activate" signal to prevent recursive triggering
+      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+                                      (gpointer)OnGtkMenuItemActivate, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
+      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+                                        (gpointer)OnGtkMenuItemActivate, this);
     }
   }
 }
 
 MenuItemState MenuItem::GetState() const {
+  // For checkbox and radio items, get the actual state from GTK widget
+  if (pimpl_->gtk_menu_item_ && 
+      (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio)) {
+    gboolean active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_));
+    return active ? MenuItemState::Checked : MenuItemState::Unchecked;
+  }
   return pimpl_->state_;
 }
 
@@ -251,13 +266,6 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
 
 std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
   return pimpl_->submenu_;
-}
-
-void MenuItem::RemoveSubmenu() {
-  pimpl_->submenu_.reset();
-  if (pimpl_->gtk_menu_item_) {
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pimpl_->gtk_menu_item_), nullptr);
-  }
 }
 
 void* MenuItem::GetNativeObjectInternal() const {

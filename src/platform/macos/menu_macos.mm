@@ -348,13 +348,20 @@ std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
-void MenuItem::SetAccelerator(const KeyboardAccelerator& accelerator) {
-  pimpl_->accelerator_ = accelerator;
-  pimpl_->has_accelerator_ = true;
+void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelerator) {
+  if (accelerator.has_value()) {
+    pimpl_->accelerator_ = *accelerator;
+    pimpl_->has_accelerator_ = true;
 
-  auto key_and_modifier = ConvertAccelerator(accelerator);
-  [pimpl_->ns_menu_item_ setKeyEquivalent:key_and_modifier.first];
-  [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:key_and_modifier.second];
+    auto key_and_modifier = ConvertAccelerator(*accelerator);
+    [pimpl_->ns_menu_item_ setKeyEquivalent:key_and_modifier.first];
+    [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:key_and_modifier.second];
+  } else {
+    pimpl_->has_accelerator_ = false;
+    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    [pimpl_->ns_menu_item_ setKeyEquivalent:@""];
+    [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:0];
+  }
 }
 
 KeyboardAccelerator MenuItem::GetAccelerator() const {
@@ -362,13 +369,6 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
     return pimpl_->accelerator_;
   }
   return KeyboardAccelerator("", KeyboardAccelerator::None);
-}
-
-void MenuItem::RemoveAccelerator() {
-  pimpl_->has_accelerator_ = false;
-  pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
-  [pimpl_->ns_menu_item_ setKeyEquivalent:@""];
-  [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:0];
 }
 
 void MenuItem::SetEnabled(bool enabled) {
@@ -491,21 +491,6 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
 
 std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
   return pimpl_->submenu_;
-}
-
-void MenuItem::RemoveSubmenu() {
-  // Remove listeners before clearing submenu reference
-  if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
-    pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
-    pimpl_->submenu_opened_listener_id_ = 0;
-  }
-  if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
-    pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
-    pimpl_->submenu_closed_listener_id_ = 0;
-  }
-
-  pimpl_->submenu_.reset();
-  [pimpl_->ns_menu_item_ setSubmenu:nil];
 }
 
 void* MenuItem::GetNativeObjectInternal() const {
@@ -712,58 +697,58 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
       // Move up by menu height
       y -= menu_height;
       break;
-    
+
     case Placement::Top:  // Menu above reference point, center-aligned
       // Menu's bottom-center at reference point
       x -= menu_width / 2.0;
       y -= menu_height;
       break;
-    
+
     case Placement::TopEnd:  // Menu above reference point, right-aligned
       // Menu's bottom-right corner at reference point
       x -= menu_width;
       y -= menu_height;
       break;
-    
+
     case Placement::RightStart:  // Menu to the right, top-aligned
       // Menu's top-left corner at reference point (no adjustment needed)
       break;
-    
+
     case Placement::Right:  // Menu to the right, center-aligned
       // Menu's left-center at reference point
       y -= menu_height / 2.0;
       break;
-    
+
     case Placement::RightEnd:  // Menu to the right, bottom-aligned
       // Menu's bottom-left corner at reference point
       y -= menu_height;
       break;
-    
+
     case Placement::BottomStart:  // Menu below reference point, left-aligned
       // Menu's top-left corner at reference point (no adjustment needed)
       break;
-    
+
     case Placement::Bottom:  // Menu below reference point, center-aligned
       // Menu's top-center at reference point
       x -= menu_width / 2.0;
       break;
-    
+
     case Placement::BottomEnd:  // Menu below reference point, right-aligned
       // Menu's top-right corner at reference point
       x -= menu_width;
       break;
-    
+
     case Placement::LeftStart:  // Menu to the left, top-aligned
       // Menu's top-right corner at reference point
       x -= menu_width;
       break;
-    
+
     case Placement::Left:  // Menu to the left, center-aligned
       // Menu's right-center at reference point
       x -= menu_width;
       y -= menu_height / 2.0;
       break;
-    
+
     case Placement::LeftEnd:  // Menu to the left, bottom-aligned
       // Menu's bottom-right corner at reference point
       x -= menu_width;

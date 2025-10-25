@@ -170,7 +170,7 @@ class Menu;
  *
  * // Create a checkbox item
  * auto checkbox = std::make_shared<MenuItem>("Show Toolbar", MenuItemType::Checkbox);
- * checkbox->SetChecked(true);
+ * checkbox->SetState(MenuItemState::Checked);
  * checkbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent&
  * event) { std::cout << "Toolbar clicked, handle state change manually" <<
  * std::endl;
@@ -315,7 +315,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * keyboard shortcuts. The accelerator is typically displayed
    * next to the menu item label.
    *
-   * @param accelerator The keyboard accelerator to set
+   * @param accelerator The keyboard accelerator to set, or std::nullopt to remove
    *
    * @example
    * ```cpp
@@ -327,9 +327,12 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    *
    * // Set Alt+F4 as accelerator
    * item->SetAccelerator(KeyboardAccelerator("F4", KeyboardAccelerator::Alt));
+   *
+   * // Remove accelerator
+   * item->SetAccelerator(std::nullopt);
    * ```
    */
-  void SetAccelerator(const KeyboardAccelerator& accelerator);
+  void SetAccelerator(const std::optional<KeyboardAccelerator>& accelerator);
 
   /**
    * @brief Get the current keyboard accelerator of the menu item.
@@ -338,11 +341,6 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * set
    */
   KeyboardAccelerator GetAccelerator() const;
-
-  /**
-   * @brief Remove the keyboard accelerator from the menu item.
-   */
-  void RemoveAccelerator();
 
   /**
    * @brief Enable or disable the menu item.
@@ -363,7 +361,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
   /**
    * @brief Set the state of a checkbox or radio menu item.
    *
-   * This method provides more control than SetChecked, allowing
+   * This method allows you to set the checked state, including
    * you to set mixed/indeterminate state for checkboxes.
    * For radio items, only Unchecked and Checked states are valid.
    *
@@ -411,11 +409,6 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * @return Shared pointer to the submenu, or nullptr if no submenu is attached
    */
   std::shared_ptr<Menu> GetSubmenu() const;
-
-  /**
-   * @brief Remove the submenu from this menu item.
-   */
-  void RemoveSubmenu();
 
  protected:
   /**

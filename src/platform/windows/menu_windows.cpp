@@ -244,9 +244,14 @@ std::optional<std::string> MenuItem::GetTooltip() const {
   return pimpl_->tooltip_;
 }
 
-void MenuItem::SetAccelerator(const KeyboardAccelerator& accelerator) {
-  pimpl_->accelerator_ = accelerator;
-  pimpl_->has_accelerator_ = true;
+void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelerator) {
+  if (accelerator.has_value()) {
+    pimpl_->accelerator_ = *accelerator;
+    pimpl_->has_accelerator_ = true;
+  } else {
+    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    pimpl_->has_accelerator_ = false;
+  }
   // Windows accelerators would be handled through accelerator tables
   // This is a placeholder implementation
 }
@@ -256,11 +261,6 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
     return pimpl_->accelerator_;
   }
   return KeyboardAccelerator("", KeyboardAccelerator::None);
-}
-
-void MenuItem::RemoveAccelerator() {
-  pimpl_->has_accelerator_ = false;
-  pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
 }
 
 void MenuItem::SetEnabled(bool enabled) {
@@ -354,27 +354,6 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
 
 std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
   return pimpl_->submenu_;
-}
-
-void MenuItem::RemoveSubmenu() {
-  // Remove listeners before clearing submenu reference
-  if (pimpl_->submenu_ && pimpl_->submenu_opened_listener_id_ != 0) {
-    pimpl_->submenu_->RemoveListener(pimpl_->submenu_opened_listener_id_);
-    pimpl_->submenu_opened_listener_id_ = 0;
-  }
-  if (pimpl_->submenu_ && pimpl_->submenu_closed_listener_id_ != 0) {
-    pimpl_->submenu_->RemoveListener(pimpl_->submenu_closed_listener_id_);
-    pimpl_->submenu_closed_listener_id_ = 0;
-  }
-
-  pimpl_->submenu_.reset();
-  if (pimpl_->parent_menu_) {
-    MENUITEMINFOW mii = {};
-    mii.cbSize = sizeof(MENUITEMINFOW);
-    mii.fMask = MIIM_SUBMENU;
-    mii.hSubMenu = nullptr;
-    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
-  }
 }
 
 void* MenuItem::GetNativeObjectInternal() const {
