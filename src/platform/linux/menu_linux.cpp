@@ -6,6 +6,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <mutex>
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
@@ -20,6 +22,25 @@ static void OnGtkMenuItemActivate(GtkMenuItem* /*item*/, gpointer user_data) {
     return;
   }
   menu_item->Emit(MenuItemClickedEvent(menu_item->GetId()));
+}
+
+// For checkbox and radio items we listen to "toggled" to avoid recursive
+// activate emissions when GTK internally updates group state. For radio items,
+// we only emit when the item becomes active.
+static void OnGtkCheckMenuItemToggled(GtkCheckMenuItem* item, gpointer user_data) {
+  MenuItem* menu_item = static_cast<MenuItem*>(user_data);
+  if (!menu_item) {
+    return;
+  }
+  gboolean active = gtk_check_menu_item_get_active(item);
+  if (menu_item->GetType() == MenuItemType::Radio) {
+    if (active) {
+      menu_item->Emit(MenuItemClickedEvent(menu_item->GetId()));
+    }
+  } else {
+    // Checkbox: emit on any toggle
+    menu_item->Emit(MenuItemClickedEvent(menu_item->GetId()));
+  }
 }
 
 static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
@@ -69,6 +90,29 @@ class MenuItem::Impl {
         radio_group_(-1),
         accelerator_("", KeyboardAccelerator::None) {}
 
+  void ApplyRadioGroup() {
+    if (!gtk_menu_item_ || type_ != MenuItemType::Radio || radio_group_ < 0) {
+      return;
+    }
+
+    std::lock_guard<std::mutex> lock(s_group_map_mutex_);
+
+    GSList* target_group = nullptr;
+    auto it = s_group_map_.find(radio_group_);
+    if (it != s_group_map_.end()) {
+      target_group = it->second;
+    } else {
+      target_group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_));
+      s_group_map_[radio_group_] = target_group;
+    }
+
+    gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_), target_group);
+
+    // Update stored head pointer after potential re-linking
+    s_group_map_[radio_group_] =
+        gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_));
+  }
+
   MenuItemId id_;
   GtkWidget* gtk_menu_item_;
   std::optional<std::string> title_;
@@ -79,7 +123,15 @@ class MenuItem::Impl {
   int radio_group_;
   KeyboardAccelerator accelerator_;
   std::shared_ptr<Menu> submenu_;
+
+  // Shared map from logical group id to GTK group list
+  static std::unordered_map<int, GSList*> s_group_map_;
+  static std::mutex s_group_map_mutex_;
 };
+
+// Static member definitions
+std::unordered_map<int, GSList*> MenuItem::Impl::s_group_map_;
+std::mutex MenuItem::Impl::s_group_map_mutex_;
 
 MenuItem::MenuItem(const std::string& label, MenuItemType type) {
   MenuItemId id = IdAllocator::Allocate<MenuItem>();
@@ -110,9 +162,13 @@ MenuItem::MenuItem(const std::string& label, MenuItemType type) {
     pimpl_->title_.reset();
   }
 
-  // Connect activation signal for click events (except separators)
+  // Connect signals for click/toggle events (except separators)
   if (gtk_item && type != MenuItemType::Separator) {
-    g_signal_connect(G_OBJECT(gtk_item), "activate", G_CALLBACK(OnGtkMenuItemActivate), this);
+    if (type == MenuItemType::Checkbox || type == MenuItemType::Radio) {
+      g_signal_connect(G_OBJECT(gtk_item), "toggled", G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+    } else {
+      g_signal_connect(G_OBJECT(gtk_item), "activate", G_CALLBACK(OnGtkMenuItemActivate), this);
+    }
   }
 }
 
@@ -129,8 +185,13 @@ MenuItem::MenuItem(void* menu_item) {
   }
 
   if (pimpl_->gtk_menu_item_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
-                     G_CALLBACK(OnGtkMenuItemActivate), this);
+    if (GTK_IS_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_)) {
+      g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "toggled",
+                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+    } else {
+      g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
+                       G_CALLBACK(OnGtkMenuItemActivate), this);
+    }
   }
 }
 
@@ -284,20 +345,20 @@ void MenuItem::SetState(MenuItemState state) {
   if (pimpl_->gtk_menu_item_) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      // Block the "activate" signal to prevent recursive triggering
+      // Block the "toggled" signal to prevent recursive triggering
       g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
-                                      (gpointer)OnGtkMenuItemActivate, this);
+                                      (gpointer)OnGtkCheckMenuItemToggled, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
       g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
-                                        (gpointer)OnGtkMenuItemActivate, this);
+                                        (gpointer)OnGtkCheckMenuItemToggled, this);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
-      // Block the "activate" signal to prevent recursive triggering
+      // Block the "toggled" signal to prevent recursive triggering
       g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
-                                      (gpointer)OnGtkMenuItemActivate, this);
+                                      (gpointer)OnGtkCheckMenuItemToggled, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
       g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
-                                        (gpointer)OnGtkMenuItemActivate, this);
+                                        (gpointer)OnGtkCheckMenuItemToggled, this);
     }
   }
 }
@@ -314,7 +375,7 @@ MenuItemState MenuItem::GetState() const {
 
 void MenuItem::SetRadioGroup(int group_id) {
   pimpl_->radio_group_ = group_id;
-  // TODO: Implement proper radio grouping for GTK
+  pimpl_->ApplyRadioGroup();
 }
 
 int MenuItem::GetRadioGroup() const {
