@@ -1,6 +1,8 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <unordered_map>
+#include <mutex>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -10,6 +12,41 @@
 #include <gtk/gtk.h>
 
 namespace nativeapi {
+
+// Shared static variables for window ID mapping
+static std::unordered_map<GdkWindow*, WindowId> g_window_id_map;
+static std::mutex g_map_mutex;
+
+// Helper function to manage mapping between GdkWindow pointers and WindowIds
+static WindowId GetOrCreateWindowId(GdkWindow* gdk_window) {
+  if (!gdk_window) {
+    return IdAllocator::kInvalidId;
+  }
+  
+  std::lock_guard<std::mutex> lock(g_map_mutex);
+  auto it = g_window_id_map.find(gdk_window);
+  if (it != g_window_id_map.end()) {
+    return it->second;
+  }
+  
+  // Allocate new ID using the IdAllocator
+  WindowId new_id = IdAllocator::Allocate<Window>();
+  if (new_id != IdAllocator::kInvalidId) {
+    g_window_id_map[gdk_window] = new_id;
+  }
+  return new_id;
+}
+
+// Helper function to find GdkWindow by WindowId
+static GdkWindow* FindGdkWindowById(WindowId id) {
+  std::lock_guard<std::mutex> lock(g_map_mutex);
+  for (const auto& pair : g_window_id_map) {
+    if (pair.second == id) {
+      return pair.first;
+    }
+  }
+  return nullptr;
+}
 
 // Private implementation for Linux (stub for now)
 class WindowManager::Impl {
@@ -86,7 +123,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
 
-    if (gdk_window && (WindowId)gdk_window == id) {
+    if (gdk_window && GetOrCreateWindowId(gdk_window) == id) {
       auto window = std::make_shared<Window>((void*)gdk_window);
       windows_[id] = window;
       g_list_free(toplevels);
@@ -112,7 +149,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
 
     if (gdk_window) {
-      WindowId window_id = (WindowId)gdk_window;
+      WindowId window_id = GetOrCreateWindowId(gdk_window);
       auto it = windows_.find(window_id);
       if (it == windows_.end()) {
         auto window = std::make_shared<Window>((void*)gdk_window);
@@ -142,7 +179,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     if (keyboard) {
       GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
       if (focused_window) {
-        WindowId window_id = (WindowId)focused_window;
+        WindowId window_id = GetOrCreateWindowId(focused_window);
         return Get(window_id);
       }
     }
@@ -155,7 +192,7 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     if (gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
       GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
       if (gdk_window) {
-        WindowId window_id = (WindowId)gdk_window;
+        WindowId window_id = GetOrCreateWindowId(gdk_window);
         g_list_free(toplevels);
         return Get(window_id);
       }
@@ -231,7 +268,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   // Create our Window wrapper
   auto window = std::make_shared<Window>((void*)gdk_window);
-  WindowId window_id = (WindowId)gdk_window;
+  WindowId window_id = GetOrCreateWindowId(gdk_window);
 
   // Store in our cache
   windows_[window_id] = window;
