@@ -183,6 +183,9 @@ void TrayIcon::SetContextMenu(std::shared_ptr<Menu> menu) {
   if (pimpl_->app_indicator_ && menu && menu->GetNativeObject()) {
     GtkMenu* gtk_menu = static_cast<GtkMenu*>(menu->GetNativeObject());
     app_indicator_set_menu(pimpl_->app_indicator_, gtk_menu);
+    // Ensure the menu and its children are realized; actual popup is controlled
+    // by the indicator. Using map/unmap signals in menu_linux.cpp prevents
+    // premature opened/closed emissions.
     gtk_widget_show_all(GTK_WIDGET(gtk_menu));
   }
 }

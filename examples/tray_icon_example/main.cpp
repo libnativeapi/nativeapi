@@ -3,15 +3,13 @@
 #include <memory>
 #include <thread>
 
+#include "../../src/application.h"
+#include "../../src/application_event.h"
 #include "../../src/image.h"
 #include "../../src/menu.h"
 #include "../../src/tray_icon.h"
 #include "../../src/tray_icon_event.h"
 #include "../../src/tray_manager.h"
-
-#ifdef __APPLE__
-#import <Cocoa/Cocoa.h>
-#endif
 
 using namespace nativeapi;
 using nativeapi::Menu;
@@ -22,11 +20,8 @@ using nativeapi::MenuItemType;
 int main() {
   std::cout << "Starting TrayIcon Example..." << std::endl;
 
-#ifdef __APPLE__
-  // Initialize Cocoa application for macOS
-  [NSApplication sharedApplication];
-  [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
-#endif
+  // Get the Application instance - this handles platform initialization
+  Application& app = Application::GetInstance();
 
   // Check if tray icons are supported
   TrayManager& trayManager = TrayManager::GetInstance();
@@ -53,11 +48,11 @@ int main() {
     std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
   });
 
-  trayIcon->AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
+  trayIcon->AddListener<TrayIconRightClickedEvent>([trayIcon](const TrayIconRightClickedEvent& event) {
     std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
     std::cout << "This is the right click handler working!" << std::endl;
     std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-    // Context menu will be shown automatically
+    trayIcon->OpenContextMenu();
   });
 
   trayIcon->AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
@@ -100,10 +95,9 @@ int main() {
 
   // Add exit item
   auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
-  bool* should_exit = new bool(false);
-  exit_item->AddListener<MenuItemClickedEvent>([should_exit](const MenuItemClickedEvent& event) {
+  exit_item->AddListener<MenuItemClickedEvent>([&app](const MenuItemClickedEvent& event) {
     std::cout << "Exit clicked from context menu" << std::endl;
-    *should_exit = true;
+    app.Quit(0);
   });
   context_menu->AddItem(exit_item);
 
@@ -130,36 +124,21 @@ int main() {
   std::cout << "- Right click: Opens context menu" << std::endl;
   std::cout << "- Double click: Quick double click" << std::endl;
   std::cout << "- Context menu: Right-click to see options including Exit" << std::endl;
-  std::cout << "The application will run for 60 seconds, or until you click Exit." << std::endl;
+  std::cout << "Use the Exit menu item to quit the application." << std::endl;
   std::cout << "========================================" << std::endl;
 
-  // Keep the application running for 60 seconds or until exit is clicked
-  int countdown = 60;
-  while (countdown > 0 && !*should_exit) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    countdown--;
-
-    // Check if tray icon is still visible
-    if (!trayIcon->IsVisible()) {
-      std::cout << "Tray icon is no longer visible!" << std::endl;
-      break;
+  // Set up application event listeners
+  app.AddListener<ApplicationExitingEvent>([&trayIcon](const ApplicationExitingEvent& event) {
+    std::cout << "Application is exiting with code: " << event.GetExitCode() << std::endl;
+    // Hide the tray icon before exiting
+    if (trayIcon) {
+      trayIcon->SetVisible(false);
     }
+  });
 
-    // Print countdown every 10 seconds
-    if (countdown % 10 == 0) {
-      std::cout << "Application will exit in " << countdown << " seconds..." << std::endl;
-    }
-  }
+  // Run the application event loop - this will block until app.Quit() is called
+  int exit_code = app.Run();
 
-  if (*should_exit) {
-    std::cout << "Exit requested from context menu." << std::endl;
-  }
-
-  // Hide the tray icon before exiting
-  trayIcon->SetVisible(false);
   std::cout << "Exiting TrayIcon Example..." << std::endl;
-
-  // Cleanup
-  delete should_exit;
-  return 0;
+  return exit_code;
 }

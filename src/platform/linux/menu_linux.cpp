@@ -43,7 +43,7 @@ static void OnGtkCheckMenuItemToggled(GtkCheckMenuItem* item, gpointer user_data
   }
 }
 
-static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
+static void OnGtkMenuMap(GtkWidget* /*menu*/, gpointer user_data) {
   Menu* menu_obj = static_cast<Menu*>(user_data);
   if (!menu_obj) {
     return;
@@ -51,7 +51,7 @@ static void OnGtkMenuShow(GtkWidget* /*menu*/, gpointer user_data) {
   menu_obj->Emit(MenuOpenedEvent(menu_obj->GetId()));
 }
 
-static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
+static void OnGtkMenuUnmap(GtkWidget* /*menu*/, gpointer user_data) {
   Menu* menu_obj = static_cast<Menu*>(user_data);
   if (!menu_obj) {
     return;
@@ -59,7 +59,7 @@ static void OnGtkMenuHide(GtkWidget* /*menu*/, gpointer user_data) {
   menu_obj->Emit(MenuClosedEvent(menu_obj->GetId()));
 }
 
-static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
+static void OnGtkSubmenuMap(GtkWidget* /*submenu*/, gpointer user_data) {
   MenuItem* menu_item = static_cast<MenuItem*>(user_data);
   if (!menu_item) {
     return;
@@ -68,7 +68,7 @@ static void OnGtkSubmenuShow(GtkWidget* /*submenu*/, gpointer user_data) {
   menu_item->Emit(MenuItemSubmenuOpenedEvent(menu_item->GetId()));
 }
 
-static void OnGtkSubmenuHide(GtkWidget* /*submenu*/, gpointer user_data) {
+static void OnGtkSubmenuUnmap(GtkWidget* /*submenu*/, gpointer user_data) {
   MenuItem* menu_item = static_cast<MenuItem*>(user_data);
   if (!menu_item) {
     return;
@@ -404,11 +404,11 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
                               (GtkWidget*)submenu->GetNativeObject());
 
     // Emit submenu open/close events on the parent item when submenu
-    // shows/hides
+    // maps/unmaps (actual visibility on screen)
     GtkWidget* submenu_widget = (GtkWidget*)submenu->GetNativeObject();
     if (submenu_widget) {
-      g_signal_connect(G_OBJECT(submenu_widget), "show", G_CALLBACK(OnGtkSubmenuShow), this);
-      g_signal_connect(G_OBJECT(submenu_widget), "hide", G_CALLBACK(OnGtkSubmenuHide), this);
+      g_signal_connect(G_OBJECT(submenu_widget), "map", G_CALLBACK(OnGtkSubmenuMap), this);
+      g_signal_connect(G_OBJECT(submenu_widget), "unmap", G_CALLBACK(OnGtkSubmenuUnmap), this);
     }
   }
 }
@@ -434,10 +434,10 @@ class Menu::Impl {
 Menu::Menu() {
   MenuId id = IdAllocator::Allocate<Menu>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_menu_new()));
-  // Connect menu show/hide to emit open/close events
+  // Connect menu map/unmap to emit open/close events when actually visible
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show", G_CALLBACK(OnGtkMenuShow), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide", G_CALLBACK(OnGtkMenuHide), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
@@ -445,8 +445,8 @@ Menu::Menu(void* menu) {
   MenuId id = IdAllocator::Allocate<Menu>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu));
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "show", G_CALLBACK(OnGtkMenuShow), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "hide", G_CALLBACK(OnGtkMenuHide), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
+    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
