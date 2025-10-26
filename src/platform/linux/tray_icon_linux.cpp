@@ -63,9 +63,11 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
   std::string indicator_id = "nativeapi-tray-" + std::to_string(next_indicator_id++);
 
   // Create a new tray using AppIndicator
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS // TODO: Use libayatana-appindicator-glib instead of libayatana-appindicator in the future
   AppIndicator* app_indicator = app_indicator_new(indicator_id.c_str(),
                                                   "application-default-icon",  // Default icon name
                                                   APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+  G_GNUC_END_IGNORE_DEPRECATIONS
 
   if (app_indicator) {
     // Reinitialize the Impl with the created indicator

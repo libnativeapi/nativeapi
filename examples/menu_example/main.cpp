@@ -9,6 +9,9 @@ using namespace nativeapi;
 int main() {
   std::cout << "=== Menu Event System Example ===" << std::endl;
 
+  // Get the Application instance to initialize platform
+  Application& app = Application::GetInstance();
+
   try {
     // Create a menu
     auto menu = std::make_shared<Menu>();
@@ -57,9 +60,10 @@ int main() {
                 << " - Handle state manually" << std::endl;
     });
 
-    exit_item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event) {
+    exit_item->AddListener<MenuItemClickedEvent>([&app](const MenuItemClickedEvent& event) {
       std::cout << "[EVENT] Exit item clicked: Exit" << std::endl;
-      std::cout << "Application should exit now..." << std::endl;
+      std::cout << "Application exiting..." << std::endl;
+      app.Quit(0);
     });
 
     // Listen to menu events
@@ -82,40 +86,6 @@ int main() {
     menu->AddItem(exit_item);
 
     std::cout << "Menu created with " << menu->GetItemCount() << " items" << std::endl;
-
-    // Demonstrate programmatic triggering by emitting events directly
-    std::cout << "\n=== Testing Programmatic Event Triggering ===" << std::endl;
-
-    std::cout << "Triggering file item..." << std::endl;
-    file_item->Emit(MenuItemClickedEvent(file_item->GetId()));
-
-    std::cout << "Triggering checkbox item..." << std::endl;
-    checkbox_item->Emit(MenuItemClickedEvent(checkbox_item->GetId()));
-
-    std::cout << "Triggering checkbox item again..." << std::endl;
-    checkbox_item->Emit(MenuItemClickedEvent(checkbox_item->GetId()));
-
-    std::cout << "Switching radio button..." << std::endl;
-    radio_item2->Emit(MenuItemClickedEvent(radio_item2->GetId()));
-
-    std::cout << "Triggering exit item..." << std::endl;
-    exit_item->Emit(MenuItemClickedEvent(exit_item->GetId()));
-
-    // Open menu as context menu (this may not work in console applications)
-    std::cout << "\n=== Attempting to Open Context Menu ===" << std::endl;
-    std::cout << "Note: Context menu display may not work in console applications" << std::endl;
-
-    // Try to show at screen coordinates (100, 100) with default placement (BottomStart)
-    if (menu->Open(PositioningStrategy::Absolute({100, 100}))) {
-      std::cout << "Context menu opened successfully (BottomStart placement)" << std::endl;
-    } else {
-      std::cout << "Failed to open context menu (expected in console app)" << std::endl;
-    }
-
-    // Demonstrate placement parameter - open menu above the point
-    if (menu->Open(PositioningStrategy::Absolute({100, 200}), Placement::Top)) {
-      std::cout << "Context menu opened successfully (Top placement)" << std::endl;
-    }
 
     // Demonstrate submenu
     std::cout << "\n=== Testing Submenu ===" << std::endl;
@@ -152,11 +122,6 @@ int main() {
 
     std::cout << "Added submenu with " << submenu->GetItemCount() << " items" << std::endl;
 
-    // Test submenu items
-    std::cout << "Triggering submenu items..." << std::endl;
-    submenu_item1->Emit(MenuItemClickedEvent(submenu_item1->GetId()));
-    submenu_item2->Emit(MenuItemClickedEvent(submenu_item2->GetId()));
-
     std::cout << "\n=== Event System Demo Complete ===" << std::endl;
     std::cout << "This example demonstrates:" << std::endl;
     std::cout << "1. Creating menus and menu items with different types" << std::endl;
@@ -168,6 +133,30 @@ int main() {
               << std::endl;
     std::cout << "6. Programmatic event emission using Emit()" << std::endl;
     std::cout << "7. Submenu support with event propagation" << std::endl;
+
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "Starting application event loop..." << std::endl;
+    std::cout << "The menu will open shortly." << std::endl;
+    std::cout << "Click the Exit menu item to quit the application." << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    // Set up application started listener to open menu after event loop starts
+    app.AddListener<ApplicationStartedEvent>([menu](const ApplicationStartedEvent& event) {
+      std::cout << "Application started - opening menu at (100, 100)" << std::endl;
+      
+      // Open menu as context menu at screen coordinates (100, 100)
+      if (menu->Open(PositioningStrategy::Absolute({100, 100}))) {
+        std::cout << "Context menu opened successfully!" << std::endl;
+      } else {
+        std::cout << "Failed to open context menu" << std::endl;
+      }
+    });
+
+    // Run the application event loop - this will block until app.Quit() is called
+    int exit_code = app.Run();
+
+    std::cout << "Exiting Menu Example..." << std::endl;
+    return exit_code;
 
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
