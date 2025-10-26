@@ -5,8 +5,11 @@
 namespace nativeapi {
 
 WindowMessageDispatcher& WindowMessageDispatcher::GetInstance() {
-  static WindowMessageDispatcher instance;
-  return instance;
+  // Use heap allocation to avoid static destruction order issues
+  // The instance is never destroyed to ensure it remains valid during
+  // the entire program lifetime, including during static destruction
+  static auto* instance = new WindowMessageDispatcher();
+  return *instance;
 }
 
 WindowMessageDispatcher::~WindowMessageDispatcher() {
