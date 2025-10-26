@@ -206,6 +206,18 @@ MenuItem::MenuItem(void* menu_item) {
 MenuItem::~MenuItem() {
   // Disconnect signal handlers before destruction to prevent accessing freed memory
   if (pimpl_->gtk_menu_item_) {
+    // Disconnect submenu map/unmap handlers first if they exist
+    if (pimpl_->submenu_ && pimpl_->submenu_->GetNativeObject()) {
+      GtkWidget* submenu_widget = (GtkWidget*)pimpl_->submenu_->GetNativeObject();
+      if (submenu_widget && GTK_IS_WIDGET(submenu_widget)) {
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
+                                             (gpointer)OnGtkSubmenuMap, this);
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
+                                             (gpointer)OnGtkSubmenuUnmap, this);
+      }
+    }
+    
+    // Disconnect item-specific signal handlers
     if (pimpl_->activate_handler_id_ > 0) {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_item_), pimpl_->activate_handler_id_);
       pimpl_->activate_handler_id_ = 0;
@@ -215,16 +227,8 @@ MenuItem::~MenuItem() {
       pimpl_->toggled_handler_id_ = 0;
     }
     
-    // Disconnect submenu map/unmap handlers if they exist
-    if (pimpl_->submenu_ && pimpl_->submenu_->GetNativeObject()) {
-      GtkWidget* submenu_widget = (GtkWidget*)pimpl_->submenu_->GetNativeObject();
-      if (submenu_widget) {
-        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
-                                             (gpointer)OnGtkSubmenuMap, this);
-        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
-                                             (gpointer)OnGtkSubmenuUnmap, this);
-      }
-    }
+    // Note: We don't destroy the gtk_menu_item_ here because it's owned by the parent Menu
+    // and will be destroyed when the Menu container is destroyed
   }
 }
 
@@ -491,8 +495,14 @@ Menu::Menu(void* menu) {
 }
 
 Menu::~Menu() {
-  // Disconnect signal handlers before unreferencing to prevent accessing freed memory
+  // Disconnect signal handlers and properly clean up GTK widget
   if (pimpl_->gtk_menu_) {
+    // Ensure menu is closed before destroying to prevent processing events on freed widget
+    if (gtk_widget_get_visible(pimpl_->gtk_menu_)) {
+      gtk_menu_popdown(GTK_MENU(pimpl_->gtk_menu_));
+    }
+    
+    // Disconnect signal handlers before destroying to prevent accessing freed memory
     if (pimpl_->map_handler_id_ > 0) {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_), pimpl_->map_handler_id_);
       pimpl_->map_handler_id_ = 0;
@@ -502,7 +512,10 @@ Menu::~Menu() {
       pimpl_->unmap_handler_id_ = 0;
     }
     
-    g_object_unref(pimpl_->gtk_menu_);
+    // Use gtk_widget_destroy() instead of g_object_unref() to properly clean up
+    // the widget hierarchy and ensure all pending events are handled before destruction
+    gtk_widget_destroy(pimpl_->gtk_menu_);
+    pimpl_->gtk_menu_ = nullptr;
   }
 }
 
@@ -603,6 +616,43 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 }
 
 bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
+  // Ensure GTK operations run on the main thread (owner of default GMainContext)
+  if (!g_main_context_is_owner(g_main_context_default())) {
+    struct OpenInvokeData {
+      Menu* self;
+      PositioningStrategy strategy;
+      Placement placement;
+      bool result;
+      GMutex mutex;
+      GCond cond;
+      bool done;
+    } data{this, strategy, placement, false};
+
+    g_mutex_init(&data.mutex);
+    g_cond_init(&data.cond);
+    data.done = false;
+
+    g_mutex_lock(&data.mutex);
+    g_main_context_invoke(nullptr, [](gpointer user_data) -> gboolean {
+      OpenInvokeData* d = static_cast<OpenInvokeData*>(user_data);
+      bool r = d->self->Open(d->strategy, d->placement);
+      g_mutex_lock(&d->mutex);
+      d->result = r;
+      d->done = true;
+      g_cond_signal(&d->cond);
+      g_mutex_unlock(&d->mutex);
+      return G_SOURCE_REMOVE;
+    }, &data);
+
+    while (!data.done) {
+      g_cond_wait(&data.cond, &data.mutex);
+    }
+    g_mutex_unlock(&data.mutex);
+    g_cond_clear(&data.cond);
+    g_mutex_clear(&data.mutex);
+    return data.result;
+  }
+
   if (pimpl_->gtk_menu_) {
     gtk_widget_show_all(pimpl_->gtk_menu_);
 
@@ -705,13 +755,8 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
                              anchor_gravity, menu_gravity, nullptr);
       return true;
     } else {
-      // Use pointer position only if we have a current event to anchor to
-      GdkEvent* current_event = gtk_get_current_event();
-      if (!current_event) {
-        return false;
-      }
-      gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), current_event);
-      gdk_event_free(current_event);
+      // Let GTK automatically use the current event
+      gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
       return true;
     }
   }
@@ -719,6 +764,41 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
 }
 
 bool Menu::Close() {
+  // Ensure GTK operations run on the main thread
+  if (!g_main_context_is_owner(g_main_context_default())) {
+    struct CloseInvokeData {
+      Menu* self;
+      bool result;
+      GMutex mutex;
+      GCond cond;
+      bool done;
+    } data{this, false};
+
+    g_mutex_init(&data.mutex);
+    g_cond_init(&data.cond);
+    data.done = false;
+
+    g_mutex_lock(&data.mutex);
+    g_main_context_invoke(nullptr, [](gpointer user_data) -> gboolean {
+      CloseInvokeData* d = static_cast<CloseInvokeData*>(user_data);
+      bool r = d->self->Close();
+      g_mutex_lock(&d->mutex);
+      d->result = r;
+      d->done = true;
+      g_cond_signal(&d->cond);
+      g_mutex_unlock(&d->mutex);
+      return G_SOURCE_REMOVE;
+    }, &data);
+
+    while (!data.done) {
+      g_cond_wait(&data.cond, &data.mutex);
+    }
+    g_mutex_unlock(&data.mutex);
+    g_cond_clear(&data.cond);
+    g_mutex_clear(&data.mutex);
+    return data.result;
+  }
+
   if (pimpl_->gtk_menu_) {
     gtk_menu_popdown(GTK_MENU(pimpl_->gtk_menu_));
     return true;
