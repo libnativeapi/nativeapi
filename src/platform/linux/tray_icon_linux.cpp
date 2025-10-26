@@ -39,9 +39,14 @@ class TrayIcon::Impl {
 
   ~Impl() {
     // Cancel any pending cleanup timeouts
+    // Check if source exists before removing to avoid GLib warnings
+    GMainContext* context = g_main_context_default();
     for (guint source_id : pending_cleanup_sources_) {
       if (source_id > 0) {
-        g_source_remove(source_id);
+        GSource* source = g_main_context_find_source_by_id(context, source_id);
+        if (source) {
+          g_source_remove(source_id);
+        }
       }
     }
     pending_cleanup_sources_.clear();
