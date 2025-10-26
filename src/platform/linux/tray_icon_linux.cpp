@@ -37,12 +37,23 @@ class TrayIcon::Impl {
     id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
+  ~Impl() {
+    // Cancel any pending cleanup timeouts
+    for (guint source_id : pending_cleanup_sources_) {
+      if (source_id > 0) {
+        g_source_remove(source_id);
+      }
+    }
+    pending_cleanup_sources_.clear();
+  }
+
   AppIndicator* app_indicator_;
   std::shared_ptr<Menu> context_menu_;  // Store menu shared_ptr to keep it alive
   std::optional<std::string> title_;
   std::optional<std::string> tooltip_;
   bool visible_;
   TrayIconId id_;
+  std::vector<guint> pending_cleanup_sources_;  // Track GLib timeout source IDs
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
@@ -131,7 +142,9 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (success) {
     // Set the icon and schedule cleanup
     app_indicator_set_icon_full(pimpl_->app_indicator_, png_path.c_str(), "");
-    g_timeout_add(
+    
+    // Track the cleanup timeout source ID so we can cancel it if needed
+    guint source_id = g_timeout_add(
         5000,
         [](gpointer data) -> gboolean {
           unlink(static_cast<char*>(data));
@@ -139,6 +152,9 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
           return FALSE;  // Don't repeat
         },
         g_strdup(png_path.c_str()));
+    
+    // Store source ID for cleanup in destructor
+    pimpl_->pending_cleanup_sources_.push_back(source_id);
   } else {
     // Fallback to default icon
     app_indicator_set_icon_full(pimpl_->app_indicator_, "application-default-icon", "Tray Icon");

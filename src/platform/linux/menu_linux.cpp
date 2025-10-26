@@ -88,7 +88,9 @@ class MenuItem::Impl {
         type_(type),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
-        accelerator_("", KeyboardAccelerator::None) {}
+        accelerator_("", KeyboardAccelerator::None),
+        activate_handler_id_(0),
+        toggled_handler_id_(0) {}
 
   void ApplyRadioGroup() {
     if (!gtk_menu_item_ || type_ != MenuItemType::Radio || radio_group_ < 0) {
@@ -123,6 +125,10 @@ class MenuItem::Impl {
   int radio_group_;
   KeyboardAccelerator accelerator_;
   std::shared_ptr<Menu> submenu_;
+  
+  // Signal handler IDs for cleanup
+  gulong activate_handler_id_;
+  gulong toggled_handler_id_;
 
   // Shared map from logical group id to GTK group list
   static std::unordered_map<int, GSList*> s_group_map_;
@@ -165,9 +171,11 @@ MenuItem::MenuItem(const std::string& label, MenuItemType type) {
   // Connect signals for click/toggle events (except separators)
   if (gtk_item && type != MenuItemType::Separator) {
     if (type == MenuItemType::Checkbox || type == MenuItemType::Radio) {
-      g_signal_connect(G_OBJECT(gtk_item), "toggled", G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+      pimpl_->toggled_handler_id_ = g_signal_connect(G_OBJECT(gtk_item), "toggled", 
+                                                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
     } else {
-      g_signal_connect(G_OBJECT(gtk_item), "activate", G_CALLBACK(OnGtkMenuItemActivate), this);
+      pimpl_->activate_handler_id_ = g_signal_connect(G_OBJECT(gtk_item), "activate", 
+                                                        G_CALLBACK(OnGtkMenuItemActivate), this);
     }
   }
 }
@@ -186,16 +194,39 @@ MenuItem::MenuItem(void* menu_item) {
 
   if (pimpl_->gtk_menu_item_) {
     if (GTK_IS_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_)) {
-      g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "toggled",
-                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+      pimpl_->toggled_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "toggled",
+                                                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
     } else {
-      g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
-                       G_CALLBACK(OnGtkMenuItemActivate), this);
+      pimpl_->activate_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
+                                                        G_CALLBACK(OnGtkMenuItemActivate), this);
     }
   }
 }
 
-MenuItem::~MenuItem() {}
+MenuItem::~MenuItem() {
+  // Disconnect signal handlers before destruction to prevent accessing freed memory
+  if (pimpl_->gtk_menu_item_) {
+    if (pimpl_->activate_handler_id_ > 0) {
+      g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_item_), pimpl_->activate_handler_id_);
+      pimpl_->activate_handler_id_ = 0;
+    }
+    if (pimpl_->toggled_handler_id_ > 0) {
+      g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_item_), pimpl_->toggled_handler_id_);
+      pimpl_->toggled_handler_id_ = 0;
+    }
+    
+    // Disconnect submenu map/unmap handlers if they exist
+    if (pimpl_->submenu_ && pimpl_->submenu_->GetNativeObject()) {
+      GtkWidget* submenu_widget = (GtkWidget*)pimpl_->submenu_->GetNativeObject();
+      if (submenu_widget) {
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
+                                             (gpointer)OnGtkSubmenuMap, this);
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
+                                             (gpointer)OnGtkSubmenuUnmap, this);
+      }
+    }
+  }
+}
 
 MenuItemId MenuItem::GetId() const {
   return pimpl_->id_;
@@ -424,11 +455,16 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Private implementation class for Menu
 class Menu::Impl {
  public:
-  Impl(MenuId id, GtkWidget* menu) : id_(id), gtk_menu_(menu) {}
+  Impl(MenuId id, GtkWidget* menu) 
+      : id_(id), gtk_menu_(menu), map_handler_id_(0), unmap_handler_id_(0) {}
 
   MenuId id_;
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
+  
+  // Signal handler IDs for cleanup
+  gulong map_handler_id_;
+  gulong unmap_handler_id_;
 };
 
 Menu::Menu() {
@@ -436,8 +472,10 @@ Menu::Menu() {
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_menu_new()));
   // Connect menu map/unmap to emit open/close events when actually visible
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
+    pimpl_->map_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", 
+                                                 G_CALLBACK(OnGtkMenuMap), this);
+    pimpl_->unmap_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", 
+                                                   G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
@@ -445,13 +483,25 @@ Menu::Menu(void* menu) {
   MenuId id = IdAllocator::Allocate<Menu>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu));
   if (pimpl_->gtk_menu_) {
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
-    g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
+    pimpl_->map_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", 
+                                                 G_CALLBACK(OnGtkMenuMap), this);
+    pimpl_->unmap_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", 
+                                                   G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
 Menu::~Menu() {
+  // Disconnect signal handlers before unreferencing to prevent accessing freed memory
   if (pimpl_->gtk_menu_) {
+    if (pimpl_->map_handler_id_ > 0) {
+      g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_), pimpl_->map_handler_id_);
+      pimpl_->map_handler_id_ = 0;
+    }
+    if (pimpl_->unmap_handler_id_ > 0) {
+      g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_), pimpl_->unmap_handler_id_);
+      pimpl_->unmap_handler_id_ = 0;
+    }
+    
     g_object_unref(pimpl_->gtk_menu_);
   }
 }
