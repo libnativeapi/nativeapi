@@ -182,11 +182,25 @@ jobs:
       - name: Setup build environment
         run: |
           SDK_DIR=$(pwd)/sdk
+          
+          # Find the API level directory (usually "20" or similar)
+          API_LEVEL=$(ls -1 $SDK_DIR | grep -E '^[0-9]+$' | head -1)
+          if [ -z "$API_LEVEL" ]; then
+            # Fallback to direct native/ structure
+            OHOS_NATIVE_TOOLCHAIN="$SDK_DIR/native/build/cmake/ohos.toolchain.cmake"
+          else
+            OHOS_NATIVE_TOOLCHAIN="$SDK_DIR/$API_LEVEL/native/build/cmake/ohos.toolchain.cmake"
+          fi
+          
           echo "OHOS_NDK_HOME=$SDK_DIR" >> $GITHUB_ENV
           echo "OHOS_SDK_PATH=$SDK_DIR" >> $GITHUB_ENV
-          ls -la $SDK_DIR/native/ || true
-          ls -la $SDK_DIR/native/build/ || true
-          ls -la $SDK_DIR/native/build/cmake/ || true
+          echo "OHOS_NATIVE_TOOLCHAIN=$OHOS_NATIVE_TOOLCHAIN" >> $GITHUB_ENV
+          
+          # Debug: Show SDK structure
+          echo "SDK structure:"
+          ls -la $SDK_DIR/ || true
+          echo "Looking for toolchain at: $OHOS_NATIVE_TOOLCHAIN"
+          ls -la $OHOS_NATIVE_TOOLCHAIN || true
 
       - name: Configure CMake for OpenHarmony
         shell: bash
@@ -194,25 +208,10 @@ jobs:
           mkdir build-ohos
           cd build-ohos
 
-          # Find ninja executable
-          NINJA=$(which ninja)
-          echo "Found ninja at: $NINJA"
-
-          # Debug: Check SDK structure
-          echo "SDK structure:"
-          ls -la $OHOS_SDK_PATH/native/ || true
-          echo "Toolchain file:"
-          cat $OHOS_SDK_PATH/native/build/cmake/ohos.toolchain.cmake | head -150 || true
-
-          # Configure CMake with OpenHarmony toolchain (ARM64 only)
-          cmake .. \
-            -DCMAKE_SYSTEM_NAME=OHOS \
-            -DCMAKE_TOOLCHAIN_FILE=$OHOS_SDK_PATH/native/build/cmake/ohos.toolchain.cmake \
-            -DOHOS_ARCH=aarch64 \
-            -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_MAKE_PROGRAM=$NINJA \
-            -G Ninja
+          # Configure CMake with OpenHarmony toolchain
+          cmake -DCMAKE_SYSTEM_NAME=OHOS \
+                -DCMAKE_TOOLCHAIN_FILE="$OHOS_NATIVE_TOOLCHAIN" \
+                ..
 
       - name: Build Examples
         shell: bash
