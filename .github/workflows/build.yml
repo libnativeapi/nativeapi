@@ -170,31 +170,29 @@ jobs:
 
       - name: Download OpenHarmony Native SDK
         run: |
-          # Download OpenHarmony 5.1.0 SDK from mirror
-          # Note: This is a split archive (.aa, .ab, .ac files)
-          wget -q https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.aa -O ohos-sdk.tar.gz.aa
-          wget -q https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.ab -O ohos-sdk.tar.gz.ab
-          
-          # Combine split archives
-          cat ohos-sdk.tar.gz.* > ohos-sdk.tar.gz
-          
-          # Extract the SDK
-          tar -xzf ohos-sdk.tar.gz
-          
-          # The SDK should be extracted to current directory
-          ls -la
-          
-          # Set up OHOS_NDK_HOME environment variable
-          # SDK structure: ohos-sdk/windows_linux/native/...
-          export OHOS_NDK_HOME=$(pwd)/ohos-sdk/windows_linux/native
-          echo "OHOS_NDK_HOME=$OHOS_NDK_HOME" >> $GITHUB_ENV
-          echo "OHOS_SDK_PATH=$OHOS_NDK_HOME" >> $GITHUB_ENV
-          
-          # Verify SDK structure
-          echo "Checking SDK structure..."
-          ls -la $OHOS_NDK_HOME/ || true
-          ls -la $OHOS_NDK_HOME/build/ || true
-          ls -la $OHOS_NDK_HOME/build/cmake/ || true
+          echo $PWD
+          wget -q \
+            https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.aa
+          wget -q \
+            https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.ab
+          cat ohos-sdk-windows_linux-public.tar.gz.aa ohos-sdk-windows_linux-public.tar.gz.ab > sdk.tar.gz
+          echo "Extracting native..."
+          mkdir sdk
+          tar -xzf sdk.tar.gz ohos-sdk/linux/native-linux-x64-5.1.0.107-Release.zip
+          tar -xzf sdk.tar.gz ohos-sdk/linux/toolchains-linux-x64-5.1.0.107-Release.zip
+          unzip -qq ohos-sdk/linux/native-linux-x64-5.1.0.107-Release.zip -d sdk
+          unzip -qq ohos-sdk/linux/toolchains-linux-x64-5.1.0.107-Release.zip -d sdk
+          ls -la sdk/native/llvm/bin/
+          rm -rf ohos-sdk-windows_linux-public.tar.gz.aa ohos-sdk-windows_linux-public.tar.gz.ab ohos-sdk/ sdk.tar.gz
+
+      - name: Setup build environment
+        run: |
+          SDK_DIR=$(pwd)/sdk
+          echo "OHOS_NDK_HOME=$SDK_DIR" >> $GITHUB_ENV
+          echo "OHOS_SDK_PATH=$SDK_DIR" >> $GITHUB_ENV
+          ls -la $SDK_DIR/native/ || true
+          ls -la $SDK_DIR/native/build/ || true
+          ls -la $SDK_DIR/native/build/cmake/ || true
 
       - name: Configure CMake for OpenHarmony
         shell: bash
@@ -214,14 +212,14 @@ jobs:
               exit 1
               ;;
           esac
-          
+
           mkdir build-ohos-${{ matrix.abi }}
           cd build-ohos-${{ matrix.abi }}
-          
+
           # Configure CMake with OpenHarmony toolchain
           cmake .. \
             -DCMAKE_SYSTEM_NAME=OHOS \
-            -DCMAKE_TOOLCHAIN_FILE=$OHOS_SDK_PATH/build/cmake/ohos.toolchain.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=$OHOS_SDK_PATH/native/build/cmake/ohos.toolchain.cmake \
             -DOHOS_ARCH=$OHOS_ARCH \
             -DCMAKE_ANDROID_ARCH_ABI=$CMAKE_ANDROID_ARCH_ABI \
             -DCMAKE_BUILD_TYPE=Release \
