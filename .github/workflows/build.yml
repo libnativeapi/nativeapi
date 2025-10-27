@@ -151,14 +151,8 @@ jobs:
 
   # OpenHarmony builds
   build-ohos:
-    strategy:
-      matrix:
-        abi:
-          - arm64-v8a
-          - armeabi-v7a
-
     runs-on: ubuntu-latest
-    name: Build OpenHarmony (${{ matrix.abi }})
+    name: Build OpenHarmony
 
     steps:
       - uses: actions/checkout@v4
@@ -197,38 +191,33 @@ jobs:
       - name: Configure CMake for OpenHarmony
         shell: bash
         run: |
-          # Map CMake ABIs to OpenHarmony architectures
-          case "${{ matrix.abi }}" in
-            arm64-v8a)
-              OHOS_ARCH=arm64
-              CMAKE_ANDROID_ARCH_ABI=arm64-v8a
-              ;;
-            armeabi-v7a)
-              OHOS_ARCH=arm
-              CMAKE_ANDROID_ARCH_ABI=armeabi-v7a
-              ;;
-            *)
-              echo "Unsupported ABI: ${{ matrix.abi }}"
-              exit 1
-              ;;
-          esac
+          mkdir build-ohos
+          cd build-ohos
 
-          mkdir build-ohos-${{ matrix.abi }}
-          cd build-ohos-${{ matrix.abi }}
+          # Find ninja executable
+          NINJA=$(which ninja)
+          echo "Found ninja at: $NINJA"
 
-          # Configure CMake with OpenHarmony toolchain
+          # Debug: Check SDK structure
+          echo "SDK structure:"
+          ls -la $OHOS_SDK_PATH/native/ || true
+          echo "Toolchain file:"
+          cat $OHOS_SDK_PATH/native/build/cmake/ohos.toolchain.cmake | head -150 || true
+
+          # Configure CMake with OpenHarmony toolchain (ARM64 only)
           cmake .. \
             -DCMAKE_SYSTEM_NAME=OHOS \
             -DCMAKE_TOOLCHAIN_FILE=$OHOS_SDK_PATH/native/build/cmake/ohos.toolchain.cmake \
-            -DOHOS_ARCH=$OHOS_ARCH \
-            -DCMAKE_ANDROID_ARCH_ABI=$CMAKE_ANDROID_ARCH_ABI \
+            -DOHOS_ARCH=aarch64 \
+            -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_MAKE_PROGRAM=$NINJA \
             -G Ninja
 
       - name: Build Examples
         shell: bash
         run: |
-          cd build-ohos-${{ matrix.abi }}
+          cd build-ohos
           cmake --build . --config Release
 
   # Windows build
