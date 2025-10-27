@@ -13,7 +13,9 @@ add_executable(menu_c_example main.c)
 target_link_libraries(menu_c_example nativeapi)
 
 # Platform-specific settings
-if(APPLE)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    # iOS uses UIKit, Foundation, CoreGraphics (already linked by nativeapi)
+elseif(APPLE)
     find_library(COCOA_LIBRARY Cocoa)
     target_link_libraries(menu_c_example ${COCOA_LIBRARY})
 elseif(WIN32)
