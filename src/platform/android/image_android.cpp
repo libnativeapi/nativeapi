@@ -34,6 +34,16 @@ std::string Image::GetFormat() const {
   return "";
 }
 
+std::string Image::ToBase64() const {
+  ALOGW("Image::ToBase64 not implemented on Android");
+  return "";
+}
+
+bool Image::SaveToFile(const std::string& file_path) const {
+  ALOGW("Image::SaveToFile not implemented on Android");
+  return false;
+}
+
 void* Image::GetNativeObjectInternal() const {
   return nullptr;
 }
