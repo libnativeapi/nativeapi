@@ -3,6 +3,7 @@
 .vscode/
 build/
 cmake-build-debug/
+build-android/
 
 # Generated test binaries and object files
 *.o
