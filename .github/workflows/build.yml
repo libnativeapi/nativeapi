@@ -7,22 +7,99 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  # Android builds (ARM64, ARMv7, x86_64)
+  build-android:
     strategy:
       matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-latest
-            platform: linux
-          - os: windows-latest
-            platform: windows
+        abi:
+          - arm64-v8a
+          - armeabi-v7a
+          - x86_64
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    name: Build Android (${{ matrix.abi }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install Android NDK
+        run: |
+          ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          SDKMANAGER=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager
+          echo "y" | $SDKMANAGER "ndk;25.2.9519653"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Configure CMake for Android
+        shell: bash
+        run: |
+          mkdir build-android
+          cd build-android
+          cmake .. \
+            -DCMAKE_SYSTEM_NAME=Android \
+            -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT \
+            -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.abi }} \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Examples
+        shell: bash
+        run: |
+          cd build-android
+          cmake --build . --config Release
+
+  # iOS builds (device and simulator)
+  build-ios:
+    strategy:
+      matrix:
+        include:
+          - target: device
+            arch: arm64
+            sysroot: iphoneos
+            platform_name: iOS Device
+          - target: simulator
+            arch: arm64
+            sysroot: iphonesimulator
+            platform_name: iOS Simulator
+
+    runs-on: macos-latest
+    name: Build ${{ matrix.platform_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake for iOS
+        shell: bash
+        run: |
+          mkdir build-ios-${{ matrix.target }}
+          cd build-ios-${{ matrix.target }}
+          cmake .. \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_SYSTEM_VERSION=14.0 \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+            -DCMAKE_OSX_SYSROOT=${{ matrix.sysroot }} \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Examples
+        shell: bash
+        run: |
+          cd build-ios-${{ matrix.target }}
+          cmake --build . --config Release
+
+  # Linux build
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build Linux
 
     steps:
       - uses: actions/checkout@v4
@@ -31,21 +108,15 @@ jobs:
         shell: bash
         run: |
           cmake --version
-          if [ "${{ matrix.platform }}" = "linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y ninja-build libgtk-3-dev libx11-dev libxi-dev libayatana-appindicator3-dev
-          fi
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev libx11-dev libxi-dev libayatana-appindicator3-dev
 
       - name: Configure CMake
         shell: bash
         run: |
           mkdir build
           cd build
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022"
-          else
-            cmake .. -DCMAKE_BUILD_TYPE=Release
-          fi
+          cmake .. -DCMAKE_BUILD_TYPE=Release
 
       - name: Build Examples
         shell: bash
@@ -53,11 +124,136 @@ jobs:
           cd build
           cmake --build . --config Release
 
-      # - name: Upload artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: examples-${{ matrix.platform }}
-      #     path: |
-      #       build/examples/*/
-      #       !build/examples/*/CMakeFiles/
-      #       !build/examples/*/cmake_install.cmake
+  # macOS build
+  build-macos:
+    runs-on: macos-latest
+    name: Build macOS
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up CMake
+        shell: bash
+        run: cmake --version
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Examples
+        shell: bash
+        run: |
+          cd build
+          cmake --build . --config Release
+
+  # OpenHarmony builds
+  build-ohos:
+    strategy:
+      matrix:
+        abi:
+          - arm64-v8a
+          - armeabi-v7a
+
+    runs-on: ubuntu-latest
+    name: Build OpenHarmony (${{ matrix.abi }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build unzip
+
+      - name: Download OpenHarmony Native SDK
+        run: |
+          # Download OpenHarmony 5.1.0 SDK from mirror
+          # Note: This is a split archive (.aa, .ab, .ac files)
+          wget -q https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.aa -O ohos-sdk.tar.gz.aa
+          wget -q https://github.com/openharmony-rs/ohos-sdk/releases/download/v5.1.0/ohos-sdk-windows_linux-public.tar.gz.ab -O ohos-sdk.tar.gz.ab
+          
+          # Combine split archives
+          cat ohos-sdk.tar.gz.* > ohos-sdk.tar.gz
+          
+          # Extract the SDK
+          tar -xzf ohos-sdk.tar.gz
+          
+          # The SDK should be extracted to current directory
+          ls -la
+          
+          # Set up OHOS_NDK_HOME environment variable
+          # SDK structure: ohos-sdk/windows_linux/native/...
+          export OHOS_NDK_HOME=$(pwd)/ohos-sdk/windows_linux/native
+          echo "OHOS_NDK_HOME=$OHOS_NDK_HOME" >> $GITHUB_ENV
+          echo "OHOS_SDK_PATH=$OHOS_NDK_HOME" >> $GITHUB_ENV
+          
+          # Verify SDK structure
+          echo "Checking SDK structure..."
+          ls -la $OHOS_NDK_HOME/ || true
+          ls -la $OHOS_NDK_HOME/build/ || true
+          ls -la $OHOS_NDK_HOME/build/cmake/ || true
+
+      - name: Configure CMake for OpenHarmony
+        shell: bash
+        run: |
+          # Map CMake ABIs to OpenHarmony architectures
+          case "${{ matrix.abi }}" in
+            arm64-v8a)
+              OHOS_ARCH=arm64
+              CMAKE_ANDROID_ARCH_ABI=arm64-v8a
+              ;;
+            armeabi-v7a)
+              OHOS_ARCH=arm
+              CMAKE_ANDROID_ARCH_ABI=armeabi-v7a
+              ;;
+            *)
+              echo "Unsupported ABI: ${{ matrix.abi }}"
+              exit 1
+              ;;
+          esac
+          
+          mkdir build-ohos-${{ matrix.abi }}
+          cd build-ohos-${{ matrix.abi }}
+          
+          # Configure CMake with OpenHarmony toolchain
+          cmake .. \
+            -DCMAKE_SYSTEM_NAME=OHOS \
+            -DCMAKE_TOOLCHAIN_FILE=$OHOS_SDK_PATH/build/cmake/ohos.toolchain.cmake \
+            -DOHOS_ARCH=$OHOS_ARCH \
+            -DCMAKE_ANDROID_ARCH_ABI=$CMAKE_ANDROID_ARCH_ABI \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja
+
+      - name: Build Examples
+        shell: bash
+        run: |
+          cd build-ohos-${{ matrix.abi }}
+          cmake --build . --config Release
+
+  # Windows build
+  build-windows:
+    runs-on: windows-latest
+    name: Build Windows
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up CMake
+        shell: bash
+        run: cmake --version
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022"
+
+      - name: Build Examples
+        shell: bash
+        run: |
+          cd build
+          cmake --build . --config Release
