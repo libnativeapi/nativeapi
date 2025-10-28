@@ -12,9 +12,6 @@
 
 namespace nativeapi {
 
-AccessibilityManager::AccessibilityManager() : enabled_(false) {}
-AccessibilityManager::~AccessibilityManager() {}
-
 void AccessibilityManager::Enable() {
   enabled_ = true;
 }
