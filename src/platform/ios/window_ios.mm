@@ -25,11 +25,12 @@ WindowId Window::GetId() const {
   }
   
   // Store the allocated ID in a static map to ensure consistency
-  static std::unordered_map<UIWindow*, WindowId> window_id_map;
+  // Note: Use void* as the key to avoid hashing issues for ObjC pointers with libc++ on iOS
+  static std::unordered_map<void*, WindowId> window_id_map;
   static std::mutex map_mutex;
   
   std::lock_guard<std::mutex> lock(map_mutex);
-  auto it = window_id_map.find(pimpl_->ui_window_);
+  auto it = window_id_map.find((__bridge void*)pimpl_->ui_window_);
   if (it != window_id_map.end()) {
     return it->second;
   }
@@ -37,7 +38,7 @@ WindowId Window::GetId() const {
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
-    window_id_map[pimpl_->ui_window_] = new_id;
+    window_id_map[(__bridge void*)pimpl_->ui_window_] = new_id;
   }
   return new_id;
 }
