@@ -1,19 +1,11 @@
 #include "../../display.h"
+#include "coordinate_utils_macos.h"
 
 // Import Cocoa and Core Graphics headers
 #import <Cocoa/Cocoa.h>
 #import <CoreGraphics/CoreGraphics.h>
 
 namespace nativeapi {
-
-// NSRect extension-like helper for coordinate system conversion
-struct NSRectExt {
-  static CGPoint topLeft(NSRect rect) {
-    NSRect primaryScreenFrame = [[NSScreen screens][0] frame];
-    return CGPointMake(rect.origin.x,
-                       primaryScreenFrame.size.height - rect.origin.y - rect.size.height);
-  }
-};
 
 // Private implementation class
 class Display::Impl {

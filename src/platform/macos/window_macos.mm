@@ -1,6 +1,7 @@
 #include <iostream>
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "coordinate_utils_macos.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -107,15 +108,18 @@ bool Window::IsFullScreen() const {
 //// Color Window::GetBackgroundColor() const;
 
 void Window::SetBounds(Rectangle bounds) {
-  [pimpl_->ns_window_ setFrame:NSMakeRect(bounds.x, bounds.y, bounds.width, bounds.height)
-                       display:YES];
+  // Convert from topLeft coordinate system to bottom-left (macOS default)
+  NSRect topLeftRect = NSMakeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+  NSRect nsRect = NSRectExt::bottomLeft(topLeftRect);
+  [pimpl_->ns_window_ setFrame:nsRect display:YES];
 }
 
 Rectangle Window::GetBounds() const {
   NSRect frame = [pimpl_->ns_window_ frame];
-  Rectangle bounds = {static_cast<double>(frame.origin.x), static_cast<double>(frame.origin.y),
-                      static_cast<double>(frame.size.height),
-                      static_cast<double>(frame.size.width)};
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeft = NSRectExt::topLeft(frame);
+  Rectangle bounds = {topLeft.x, topLeft.y, static_cast<double>(frame.size.width),
+                      static_cast<double>(frame.size.height)};
   return bounds;
 }
 
@@ -246,16 +250,17 @@ bool Window::IsAlwaysOnTop() const {
 }
 
 void Window::SetPosition(Point point) {
-  NSRect screenFrameRect = [[NSScreen screens][0] frame];
-  // Convert point to bottom left origin
-  NSPoint bottomLeft =
-      NSMakePoint(point.x, screenFrameRect.size.height - point.y - GetSize().height);
+  // Convert from topLeft coordinate system to bottom-left (macOS default)
+  NSPoint topLeftPoint = {point.x, point.y};
+  NSPoint bottomLeft = NSPointExt::bottomLeft(topLeftPoint);
   [pimpl_->ns_window_ setFrameOrigin:bottomLeft];
 }
 
 Point Window::GetPosition() const {
   NSRect frame = [pimpl_->ns_window_ frame];
-  Point point = {static_cast<double>(frame.origin.x), static_cast<double>(frame.origin.y)};
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeft = NSRectExt::topLeft(frame);
+  Point point = {topLeft.x, topLeft.y};
   return point;
 }
 

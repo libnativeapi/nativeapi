@@ -6,6 +6,7 @@
 
 #include "../../display.h"
 #include "../../display_manager.h"
+#include "coordinate_utils_macos.h"
 
 // Import Cocoa and Core Graphics headers
 #import <Cocoa/Cocoa.h>
@@ -80,9 +81,13 @@ Display DisplayManager::GetPrimary() {
 
 Point DisplayManager::GetCursorPosition() {
   NSPoint mouseLocation = [NSEvent mouseLocation];
+  
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeftPoint = NSPointExt::topLeft(mouseLocation);
+  
   Point point;
-  point.x = mouseLocation.x;
-  point.y = mouseLocation.y;
+  point.x = topLeftPoint.x;
+  point.y = topLeftPoint.y;
   return point;
 }
 
