@@ -8,7 +8,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -20,7 +20,7 @@ class Display::Impl {
  public:
   Impl() = default;
   Impl(void* display) : native_display_(display) {}
-  
+
   void* native_display_ = nullptr;
 };
 
@@ -96,4 +96,3 @@ int Display::GetBitDepth() const {
 }
 
 }  // namespace nativeapi
-

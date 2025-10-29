@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include "../../tray_manager.h"
 
 namespace nativeapi {
@@ -28,13 +28,12 @@ std::vector<std::shared_ptr<TrayIcon>> TrayManager::GetAll() {
   std::lock_guard<std::mutex> lock(mutex_);
   std::vector<std::shared_ptr<TrayIcon>> result;
   result.reserve(trays_.size());
-  
+
   for (const auto& [id, tray] : trays_) {
     result.push_back(tray);
   }
-  
+
   return result;
 }
 
 }  // namespace nativeapi
-

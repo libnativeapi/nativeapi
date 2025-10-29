@@ -63,4 +63,3 @@ void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
 }
 
 }  // namespace nativeapi
-

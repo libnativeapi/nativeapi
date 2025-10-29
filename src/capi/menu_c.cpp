@@ -371,8 +371,6 @@ bool native_menu_item_get_accelerator(native_menu_item_t item,
   }
 }
 
-
-
 void native_menu_item_set_enabled(native_menu_item_t item, bool enabled) {
   if (!item)
     return;
@@ -481,8 +479,6 @@ native_menu_t native_menu_item_get_submenu(native_menu_item_t item) {
     return nullptr;
   }
 }
-
-
 
 // New event listener API implementation
 int native_menu_item_add_listener(native_menu_item_t item,
@@ -826,14 +822,16 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
   }
 }
 
-bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement) {
+bool native_menu_open(native_menu_t menu,
+                      native_positioning_strategy_t strategy,
+                      native_placement_t placement) {
   if (!menu || !strategy)
     return false;
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
     auto strategy_ptr = static_cast<PositioningStrategy*>(strategy);
-    
+
     // Convert C placement enum to C++ placement enum
     Placement cpp_placement;
     switch (placement) {
@@ -877,7 +875,7 @@ bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy
         cpp_placement = Placement::BottomStart;
         break;
     }
-    
+
     return menu_ptr->Open(*strategy_ptr, cpp_placement);
   } catch (...) {
     return false;

@@ -1,8 +1,8 @@
 #include <cstring>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -22,13 +22,13 @@ static WindowId GetOrCreateWindowId(GdkWindow* gdk_window) {
   if (!gdk_window) {
     return IdAllocator::kInvalidId;
   }
-  
+
   std::lock_guard<std::mutex> lock(g_map_mutex);
   auto it = g_window_id_map.find(gdk_window);
   if (it != g_window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {

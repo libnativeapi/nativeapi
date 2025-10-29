@@ -68,10 +68,12 @@ TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
   std::string indicator_id = "nativeapi-tray-" + std::to_string(next_indicator_id++);
 
   // Create a new tray using AppIndicator
-  G_GNUC_BEGIN_IGNORE_DEPRECATIONS // TODO: Use libayatana-appindicator-glib instead of libayatana-appindicator in the future
-  AppIndicator* app_indicator = app_indicator_new(indicator_id.c_str(),
-                                                  "application-default-icon",  // Default icon name
-                                                  APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS  // TODO: Use libayatana-appindicator-glib instead of
+                                    // libayatana-appindicator in the future
+      AppIndicator* app_indicator =
+          app_indicator_new(indicator_id.c_str(),
+                            "application-default-icon",  // Default icon name
+                            APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
   G_GNUC_END_IGNORE_DEPRECATIONS
 
   if (app_indicator) {
@@ -149,7 +151,7 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
   if (success) {
     // Set the icon and schedule cleanup
     app_indicator_set_icon_full(pimpl_->app_indicator_, png_path.c_str(), "");
-    
+
     // Track the cleanup timeout source ID so we can cancel it if needed
     guint source_id = g_timeout_add(
         5000,
@@ -159,7 +161,7 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
           return FALSE;  // Don't repeat
         },
         g_strdup(png_path.c_str()));
-    
+
     // Store source ID for cleanup in destructor
     pimpl_->pending_cleanup_sources_.push_back(source_id);
   } else {

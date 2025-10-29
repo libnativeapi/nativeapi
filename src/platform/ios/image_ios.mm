@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <memory>
 #include <string>
 #include "../../image.h"
@@ -9,7 +9,7 @@ namespace nativeapi {
 class Image::Impl {
  public:
   Impl() : ui_image_(nil), size_({0, 0}), format_("Unknown") {}
-  
+
   UIImage* ui_image_;
   Size size_;
   std::string format_;
@@ -32,14 +32,14 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
   auto image = std::shared_ptr<Image>(new Image());
   NSString* nsPath = [NSString stringWithUTF8String:file_path.c_str()];
   UIImage* uiImage = [UIImage imageWithContentsOfFile:nsPath];
-  
+
   if (uiImage) {
     image->pimpl_->ui_image_ = uiImage;
-    
+
     // Get actual image size
     CGSize size = uiImage.size;
     image->pimpl_->size_ = {static_cast<double>(size.width), static_cast<double>(size.height)};
-    
+
     // Determine format from file extension
     NSString* extension = [[nsPath pathExtension] lowercaseString];
     if ([extension isEqualToString:@"png"]) {
@@ -54,7 +54,7 @@ std::shared_ptr<Image> Image::FromFile(const std::string& file_path) {
   } else {
     return nullptr;
   }
-  
+
   return image;
 }
 
@@ -66,23 +66,25 @@ std::shared_ptr<Image> Image::FromBase64(const std::string& base64_data) {
   if (pos != std::string::npos) {
     data = data.substr(pos + 1);
   }
-  
-  NSData* nsData = [[NSData alloc] initWithBase64EncodedString:[NSString stringWithUTF8String:data.c_str()] options:0];
+
+  NSData* nsData =
+      [[NSData alloc] initWithBase64EncodedString:[NSString stringWithUTF8String:data.c_str()]
+                                          options:0];
   UIImage* uiImage = [UIImage imageWithData:nsData];
-  
+
   if (uiImage) {
     image->pimpl_->ui_image_ = uiImage;
-    
+
     // Get actual image size
     CGSize size = uiImage.size;
     image->pimpl_->size_ = {static_cast<double>(size.width), static_cast<double>(size.height)};
-    
+
     // Default assumption for base64 images
     image->pimpl_->format_ = "PNG";
   } else {
     return nullptr;
   }
-  
+
   return image;
 }
 
@@ -98,7 +100,7 @@ std::string Image::ToBase64() const {
   if (!pimpl_->ui_image_) {
     return "";
   }
-  
+
   NSData* pngData = UIImagePNGRepresentation(pimpl_->ui_image_);
   NSString* base64String = [pngData base64EncodedStringWithOptions:0];
   return std::string("data:image/png;base64,") + [base64String UTF8String];
@@ -108,7 +110,7 @@ bool Image::SaveToFile(const std::string& file_path) const {
   if (!pimpl_->ui_image_) {
     return false;
   }
-  
+
   NSData* pngData = UIImagePNGRepresentation(pimpl_->ui_image_);
   NSString* nsPath = [NSString stringWithUTF8String:file_path.c_str()];
   return [pngData writeToFile:nsPath atomically:YES];
@@ -119,4 +121,3 @@ void* Image::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

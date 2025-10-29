@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <string>
 #include "../../tray_icon.h"
 
@@ -83,4 +83,3 @@ void* TrayIcon::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

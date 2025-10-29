@@ -8,7 +8,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -19,7 +19,7 @@ namespace nativeapi {
 class Image::Impl {
  public:
   Impl() = default;
-  
+
   void* native_image_ = nullptr;
   std::string source_;
   Size size_ = {0, 0};
@@ -67,4 +67,3 @@ void* Image::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

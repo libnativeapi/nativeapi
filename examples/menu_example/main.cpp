@@ -143,7 +143,7 @@ int main() {
     // Set up application started listener to open menu after event loop starts
     app.AddListener<ApplicationStartedEvent>([menu](const ApplicationStartedEvent& event) {
       std::cout << "Application started - opening menu at (100, 100)" << std::endl;
-      
+
       // Open menu as context menu at screen coordinates (100, 100)
       if (menu->Open(PositioningStrategy::Absolute({100, 100}))) {
         std::cout << "Context menu opened successfully!" << std::endl;

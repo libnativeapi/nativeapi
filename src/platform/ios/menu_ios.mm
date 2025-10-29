@@ -1,8 +1,8 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
-#include "../../menu.h"
+#import <UIKit/UIKit.h>
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
+#include "../../menu.h"
 #include "../../menu_event.h"
 
 namespace nativeapi {
@@ -209,4 +209,3 @@ void* Menu::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

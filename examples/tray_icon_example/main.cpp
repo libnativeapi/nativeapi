@@ -48,12 +48,13 @@ int main() {
     std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
   });
 
-  trayIcon->AddListener<TrayIconRightClickedEvent>([trayIcon](const TrayIconRightClickedEvent& event) {
-    std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
-    std::cout << "This is the right click handler working!" << std::endl;
-    std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-    trayIcon->OpenContextMenu();
-  });
+  trayIcon->AddListener<TrayIconRightClickedEvent>(
+      [trayIcon](const TrayIconRightClickedEvent& event) {
+        std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
+        std::cout << "This is the right click handler working!" << std::endl;
+        std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
+        trayIcon->OpenContextMenu();
+      });
 
   trayIcon->AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
     std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;

@@ -1,9 +1,9 @@
-#include <android/native_window.h>
-#include <android/native_activity.h>
 #include <android/log.h>
+#include <android/native_activity.h>
+#include <android/native_window.h>
 #include <iostream>
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
 #include "../../window.h"
 #include "../../window_manager.h"
 
@@ -19,16 +19,16 @@ static WindowId GetOrCreateWindowId(ANativeWindow* native_window) {
   if (!native_window) {
     return IdAllocator::kInvalidId;
   }
-  
+
   static std::unordered_map<ANativeWindow*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   auto it = window_id_map.find(native_window);
   if (it != window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
@@ -41,7 +41,7 @@ static WindowId GetOrCreateWindowId(ANativeWindow* native_window) {
 static ANativeWindow* FindNativeWindowById(WindowId id) {
   static std::unordered_map<ANativeWindow*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   for (const auto& pair : window_id_map) {
     if (pair.second == id) {
@@ -63,9 +63,7 @@ class WindowManager::Impl {
     ALOGI("Window event monitoring setup");
   }
 
-  void CleanupEventMonitoring() {
-    ALOGI("Window event monitoring cleanup");
-  }
+  void CleanupEventMonitoring() { ALOGI("Window event monitoring cleanup"); }
 
  private:
   WindowManager* manager_;
@@ -110,11 +108,11 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<std::shared_ptr<Window>> windows;
-  
+
   for (const auto& [id, window] : windows_) {
     windows.push_back(window);
   }
-  
+
   return windows;
 }
 
@@ -141,10 +139,9 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   // On Android, window creation is handled by the Activity lifecycle
   // This function would typically be called from onNativeWindowCreated callback
   ALOGI("Window creation requested (Android handles this through Activity lifecycle)");
-  
+
   // Return nullptr as windows are created by the Android system
   return nullptr;
 }
 
 }  // namespace nativeapi
-

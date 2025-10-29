@@ -1,6 +1,6 @@
 #include <iostream>
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
 #include "../../window.h"
 #include "../../window_manager.h"
 
@@ -28,17 +28,17 @@ WindowId Window::GetId() const {
   if (!pimpl_->gdk_window_) {
     return IdAllocator::kInvalidId;
   }
-  
+
   // Store the allocated ID in a static map to ensure consistency
   static std::unordered_map<GdkWindow*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   auto it = window_id_map.find(pimpl_->gdk_window_);
   if (it != window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {

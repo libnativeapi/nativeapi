@@ -13,4 +13,3 @@ bool AccessibilityManager::IsEnabled() {
 }
 
 }  // namespace nativeapi
-

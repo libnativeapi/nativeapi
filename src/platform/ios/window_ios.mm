@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <string>
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -23,18 +23,18 @@ WindowId Window::GetId() const {
   if (!pimpl_->ui_window_) {
     return IdAllocator::kInvalidId;
   }
-  
+
   // Store the allocated ID in a static map to ensure consistency
   // Note: Use void* as the key to avoid hashing issues for ObjC pointers with libc++ on iOS
   static std::unordered_map<void*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   auto it = window_id_map.find((__bridge void*)pimpl_->ui_window_);
   if (it != window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
@@ -122,7 +122,8 @@ void Window::SetFullScreen(bool is_full_screen) {
   if (pimpl_->ui_window_) {
     UIViewController* rootVC = pimpl_->ui_window_.rootViewController;
     if (rootVC) {
-      rootVC.modalPresentationStyle = is_full_screen ? UIModalPresentationFullScreen : UIModalPresentationPageSheet;
+      rootVC.modalPresentationStyle =
+          is_full_screen ? UIModalPresentationFullScreen : UIModalPresentationPageSheet;
     }
   }
 }
@@ -131,7 +132,7 @@ bool Window::IsFullScreen() const {
   if (!pimpl_->ui_window_) {
     return false;
   }
-  
+
   UIViewController* rootVC = pimpl_->ui_window_.rootViewController;
   return rootVC && rootVC.modalPresentationStyle == UIModalPresentationFullScreen;
 }
@@ -146,7 +147,7 @@ Rectangle Window::GetBounds() const {
   if (!pimpl_->ui_window_) {
     return Rectangle{0.0, 0.0, 0.0, 0.0};
   }
-  
+
   CGRect frame = pimpl_->ui_window_.frame;
   return Rectangle{static_cast<double>(frame.origin.x), static_cast<double>(frame.origin.y),
                    static_cast<double>(frame.size.width), static_cast<double>(frame.size.height)};
@@ -157,11 +158,12 @@ void Window::SetSize(Size size, bool animate) {
     CGRect frame = pimpl_->ui_window_.frame;
     frame.size.width = size.width;
     frame.size.height = size.height;
-    
+
     if (animate) {
-      [UIView animateWithDuration:0.3 animations:^{
-        pimpl_->ui_window_.frame = frame;
-      }];
+      [UIView animateWithDuration:0.3
+                       animations:^{
+                         pimpl_->ui_window_.frame = frame;
+                       }];
     } else {
       pimpl_->ui_window_.frame = frame;
     }
@@ -172,7 +174,7 @@ Size Window::GetSize() const {
   if (!pimpl_->ui_window_) {
     return Size{0.0, 0.0};
   }
-  
+
   CGSize size = pimpl_->ui_window_.frame.size;
   return Size{static_cast<double>(size.width), static_cast<double>(size.height)};
 }
@@ -271,7 +273,7 @@ Point Window::GetPosition() const {
   if (!pimpl_->ui_window_) {
     return Point{0, 0};
   }
-  
+
   CGPoint origin = pimpl_->ui_window_.frame.origin;
   return Point{static_cast<double>(origin.x), static_cast<double>(origin.y)};
 }
@@ -290,7 +292,7 @@ std::string Window::GetTitle() const {
   if (!pimpl_->ui_window_) {
     return "";
   }
-  
+
   UIViewController* rootVC = pimpl_->ui_window_.rootViewController;
   if (rootVC && rootVC.title) {
     return std::string([rootVC.title UTF8String]);
@@ -353,4 +355,3 @@ void* Window::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

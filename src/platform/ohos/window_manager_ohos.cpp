@@ -15,16 +15,16 @@ static WindowId GetOrCreateWindowId(void* native_window) {
   if (!native_window) {
     return IdAllocator::kInvalidId;
   }
-  
+
   static std::unordered_map<void*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   auto it = window_id_map.find(native_window);
   if (it != window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
@@ -37,7 +37,7 @@ static WindowId GetOrCreateWindowId(void* native_window) {
 static void* FindNativeWindowById(WindowId id) {
   static std::unordered_map<void*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   for (const auto& pair : window_id_map) {
     if (pair.second == id) {
@@ -105,11 +105,11 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<std::shared_ptr<Window>> windows;
-  
+
   for (const auto& [id, window] : windows_) {
     windows.push_back(window);
   }
-  
+
   return windows;
 }
 
@@ -134,10 +134,9 @@ bool WindowManager::Destroy(WindowId id) {
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   // On OpenHarmony, window creation is handled by the Ability lifecycle
   // Window creation requested (OpenHarmony handles this through Ability lifecycle)
-  
+
   // Return nullptr as windows are created by the OpenHarmony system
   return nullptr;
 }
 
 }  // namespace nativeapi
-

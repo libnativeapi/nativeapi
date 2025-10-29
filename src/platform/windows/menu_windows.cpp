@@ -98,7 +98,7 @@ class MenuItem::Impl {
   MenuItemType type_;
   std::optional<std::string> label_;
   std::shared_ptr<Image> image_;
-  HICON menu_icon_;  // Stored icon for menu item with transparency support
+  HICON menu_icon_;      // Stored icon for menu item with transparency support
   HBITMAP menu_bitmap_;  // Stored bitmap with icon drawn on menu background
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
@@ -146,7 +146,7 @@ class MenuItem::Impl {
       DestroyIcon(menu_icon_);
       menu_icon_ = nullptr;
     }
-    
+
     // Clean up menu bitmap
     if (menu_bitmap_) {
       DeleteObject(menu_bitmap_);
@@ -259,16 +259,16 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
   if (image && pimpl_->parent_menu_) {
     // Use 32x32 for menu icons
     const int iconSize = 32;
-    
+
     // Convert image to HICON first for proper transparency support
     HICON hIcon = ImageToHICON(image.get(), iconSize, iconSize);
-    
+
     if (hIcon) {
       pimpl_->menu_icon_ = hIcon;
-      
+
       // Create a 32-bit ARGB bitmap
       HDC hdc = GetDC(nullptr);
-      
+
       // Create BITMAPINFO for 32-bit ARGB
       BITMAPINFO bmi = {};
       bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -277,33 +277,34 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
       bmi.bmiHeader.biPlanes = 1;
       bmi.bmiHeader.biBitCount = 32;
       bmi.bmiHeader.biCompression = BI_RGB;
-      
+
       void* pBits = nullptr;
       HBITMAP hBmp = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
-      
+
       if (hBmp && pBits) {
         // Fill with system menu background color
         COLORREF bgColor = GetSysColor(COLOR_MENU);
-        DWORD bgPixel = (0xFF << 24) | (GetRValue(bgColor) << 16) | (GetGValue(bgColor) << 8) | GetBValue(bgColor);
-        
+        DWORD bgPixel = (0xFF << 24) | (GetRValue(bgColor) << 16) | (GetGValue(bgColor) << 8) |
+                        GetBValue(bgColor);
+
         DWORD* pixels = static_cast<DWORD*>(pBits);
         for (int i = 0; i < iconSize * iconSize; i++) {
           pixels[i] = bgPixel;  // System menu background color (ARGB)
         }
-        
+
         // Draw the icon on the bitmap
         HDC hdcMem = CreateCompatibleDC(hdc);
         HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBmp);
-        
+
         // Draw icon with proper blending
         DrawIconEx(hdcMem, 0, 0, hIcon, iconSize, iconSize, 0, nullptr, DI_NORMAL);
-        
+
         SelectObject(hdcMem, hOldBmp);
         DeleteDC(hdcMem);
-        
+
         // Store the bitmap for cleanup
         pimpl_->menu_bitmap_ = hBmp;
-        
+
         // Set the bitmap on the menu item
         MENUITEMINFOW mii = {};
         mii.cbSize = sizeof(MENUITEMINFOW);
@@ -311,7 +312,7 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
         mii.hbmpItem = hBmp;
         SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
       }
-      
+
       ReleaseDC(nullptr, hdc);
     }
   }

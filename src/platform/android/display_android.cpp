@@ -16,7 +16,9 @@ Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {}
 Display::~Display() {}
 
 Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>()) {}
-Display& Display::operator=(const Display& other) { return *this; }
+Display& Display::operator=(const Display& other) {
+  return *this;
+}
 Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
 Display& Display::operator=(Display&& other) noexcept {
   pimpl_ = std::move(other.pimpl_);

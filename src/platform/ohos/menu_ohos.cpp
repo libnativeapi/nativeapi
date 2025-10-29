@@ -8,7 +8,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -19,7 +19,7 @@ namespace nativeapi {
 class Menu::Impl {
  public:
   Impl() = default;
-  
+
   void* native_menu_ = nullptr;
 };
 
@@ -101,4 +101,3 @@ void* Menu::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <string>
 #include "../../display.h"
 
@@ -40,7 +40,7 @@ std::string Display::GetId() const {
   if (!pimpl_->ui_screen_) {
     return "";
   }
-  
+
   // Use the screen's bounds as a unique identifier
   CGRect bounds = pimpl_->ui_screen_.bounds;
   return std::to_string((int)bounds.origin.x) + "_" + std::to_string((int)bounds.origin.y);
@@ -50,13 +50,13 @@ std::string Display::GetName() const {
   if (!pimpl_->ui_screen_) {
     return "Unknown";
   }
-  
+
   // iOS doesn't provide a friendly name for screens
   // Use scale factor and size to differentiate
   CGFloat scale = pimpl_->ui_screen_.scale;
   CGRect bounds = pimpl_->ui_screen_.bounds;
-  
-  return std::string("Screen ") + std::to_string((int)bounds.size.width) + "x" + 
+
+  return std::string("Screen ") + std::to_string((int)bounds.size.width) + "x" +
          std::to_string((int)bounds.size.height) + "@" + std::to_string((int)scale) + "x";
 }
 
@@ -64,7 +64,7 @@ Point Display::GetPosition() const {
   if (!pimpl_->ui_screen_) {
     return Point{0, 0};
   }
-  
+
   CGRect bounds = pimpl_->ui_screen_.bounds;
   return Point{static_cast<double>(bounds.origin.x), static_cast<double>(bounds.origin.y)};
 }
@@ -73,7 +73,7 @@ Size Display::GetSize() const {
   if (!pimpl_->ui_screen_) {
     return Size{0, 0};
   }
-  
+
   CGRect bounds = pimpl_->ui_screen_.bounds;
   return Size{static_cast<double>(bounds.size.width), static_cast<double>(bounds.size.height)};
 }
@@ -82,7 +82,7 @@ Rectangle Display::GetWorkArea() const {
   if (!pimpl_->ui_screen_) {
     return Rectangle{0, 0, 0, 0};
   }
-  
+
   CGRect bounds = pimpl_->ui_screen_.bounds;
   return Rectangle{static_cast<double>(bounds.origin.x), static_cast<double>(bounds.origin.y),
                    static_cast<double>(bounds.size.width), static_cast<double>(bounds.size.height)};
@@ -100,7 +100,7 @@ DisplayOrientation Display::GetOrientation() const {
   if (!pimpl_->ui_screen_) {
     return DisplayOrientation::kPortrait;
   }
-  
+
   // Check orientation based on screen bounds
   CGRect bounds = pimpl_->ui_screen_.bounds;
   if (bounds.size.width > bounds.size.height) {
@@ -114,7 +114,7 @@ int Display::GetRefreshRate() const {
   if (!pimpl_->ui_screen_) {
     return 60;
   }
-  
+
   // iOS doesn't expose refresh rate directly, return standard 60Hz
   return 60;
 }
@@ -129,4 +129,3 @@ void* Display::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

@@ -96,4 +96,3 @@ std::shared_ptr<Menu> MenuItem::GetSubmenu() const {
 }
 
 }  // namespace nativeapi
-

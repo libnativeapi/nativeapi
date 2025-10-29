@@ -1,5 +1,5 @@
-#include <android/native_window.h>
 #include <android/log.h>
+#include <android/native_window.h>
 #include <iostream>
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -20,7 +20,8 @@ class Window::Impl {
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>(static_cast<ANativeWindow*>(window))) {}
+Window::Window(void* window)
+    : pimpl_(std::make_unique<Impl>(static_cast<ANativeWindow*>(window))) {}
 
 Window::~Window() {}
 
@@ -28,17 +29,17 @@ WindowId Window::GetId() const {
   if (!pimpl_->native_window_) {
     return IdAllocator::kInvalidId;
   }
-  
+
   // Store the allocated ID in a static map to ensure consistency
   static std::unordered_map<ANativeWindow*, WindowId> window_id_map;
   static std::mutex map_mutex;
-  
+
   std::lock_guard<std::mutex> lock(map_mutex);
   auto it = window_id_map.find(pimpl_->native_window_);
   if (it != window_id_map.end()) {
     return it->second;
   }
-  
+
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
@@ -142,8 +143,8 @@ bool Window::IsFullScreen() const {
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->native_window_) {
-    ALOGI("SetBounds called: x=%f, y=%f, w=%f, h=%f", 
-          bounds.x, bounds.y, bounds.width, bounds.height);
+    ALOGI("SetBounds called: x=%f, y=%f, w=%f, h=%f", bounds.x, bounds.y, bounds.width,
+          bounds.height);
     // Android windows resize is handled by the system
   }
 }
@@ -152,11 +153,11 @@ Rectangle Window::GetBounds() const {
   if (!pimpl_->native_window_) {
     return Rectangle{0.0, 0.0, 0.0, 0.0};
   }
-  
+
   // Get window dimensions from ANativeWindow
   int32_t width = ANativeWindow_getWidth(pimpl_->native_window_);
   int32_t height = ANativeWindow_getHeight(pimpl_->native_window_);
-  
+
   return Rectangle{0.0, 0.0, static_cast<double>(width), static_cast<double>(height)};
 }
 
@@ -171,10 +172,10 @@ Size Window::GetSize() const {
   if (!pimpl_->native_window_) {
     return Size{0.0, 0.0};
   }
-  
+
   int32_t width = ANativeWindow_getWidth(pimpl_->native_window_);
   int32_t height = ANativeWindow_getHeight(pimpl_->native_window_);
-  
+
   return Size{static_cast<double>(width), static_cast<double>(height)};
 }
 
@@ -328,4 +329,3 @@ void* Window::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

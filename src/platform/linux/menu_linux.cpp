@@ -3,11 +3,11 @@
 #include <cctype>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include <mutex>
+#include <vector>
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
@@ -111,8 +111,7 @@ class MenuItem::Impl {
     gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_), target_group);
 
     // Update stored head pointer after potential re-linking
-    s_group_map_[radio_group_] =
-        gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_));
+    s_group_map_[radio_group_] = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(gtk_menu_item_));
   }
 
   MenuItemId id_;
@@ -125,7 +124,7 @@ class MenuItem::Impl {
   int radio_group_;
   KeyboardAccelerator accelerator_;
   std::shared_ptr<Menu> submenu_;
-  
+
   // Signal handler IDs for cleanup
   gulong activate_handler_id_;
   gulong toggled_handler_id_;
@@ -171,11 +170,11 @@ MenuItem::MenuItem(const std::string& label, MenuItemType type) {
   // Connect signals for click/toggle events (except separators)
   if (gtk_item && type != MenuItemType::Separator) {
     if (type == MenuItemType::Checkbox || type == MenuItemType::Radio) {
-      pimpl_->toggled_handler_id_ = g_signal_connect(G_OBJECT(gtk_item), "toggled", 
-                                                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+      pimpl_->toggled_handler_id_ = g_signal_connect(G_OBJECT(gtk_item), "toggled",
+                                                     G_CALLBACK(OnGtkCheckMenuItemToggled), this);
     } else {
-      pimpl_->activate_handler_id_ = g_signal_connect(G_OBJECT(gtk_item), "activate", 
-                                                        G_CALLBACK(OnGtkMenuItemActivate), this);
+      pimpl_->activate_handler_id_ =
+          g_signal_connect(G_OBJECT(gtk_item), "activate", G_CALLBACK(OnGtkMenuItemActivate), this);
     }
   }
 }
@@ -195,10 +194,10 @@ MenuItem::MenuItem(void* menu_item) {
   if (pimpl_->gtk_menu_item_) {
     if (GTK_IS_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_)) {
       pimpl_->toggled_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "toggled",
-                                                       G_CALLBACK(OnGtkCheckMenuItemToggled), this);
+                                                     G_CALLBACK(OnGtkCheckMenuItemToggled), this);
     } else {
       pimpl_->activate_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_item_), "activate",
-                                                        G_CALLBACK(OnGtkMenuItemActivate), this);
+                                                      G_CALLBACK(OnGtkMenuItemActivate), this);
     }
   }
 }
@@ -210,13 +209,13 @@ MenuItem::~MenuItem() {
     if (pimpl_->submenu_ && pimpl_->submenu_->GetNativeObject()) {
       GtkWidget* submenu_widget = (GtkWidget*)pimpl_->submenu_->GetNativeObject();
       if (submenu_widget && GTK_IS_WIDGET(submenu_widget)) {
-        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
-                                             (gpointer)OnGtkSubmenuMap, this);
-        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), 
-                                             (gpointer)OnGtkSubmenuUnmap, this);
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), (gpointer)OnGtkSubmenuMap,
+                                             this);
+        g_signal_handlers_disconnect_by_func(G_OBJECT(submenu_widget), (gpointer)OnGtkSubmenuUnmap,
+                                             this);
       }
     }
-    
+
     // Disconnect item-specific signal handlers
     if (pimpl_->activate_handler_id_ > 0) {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_item_), pimpl_->activate_handler_id_);
@@ -226,7 +225,7 @@ MenuItem::~MenuItem() {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_item_), pimpl_->toggled_handler_id_);
       pimpl_->toggled_handler_id_ = 0;
     }
-    
+
     // Note: We don't destroy the gtk_menu_item_ here because it's owned by the parent Menu
     // and will be destroyed when the Menu container is destroyed
   }
@@ -244,7 +243,7 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
   pimpl_->title_ = label;
   if (pimpl_->gtk_menu_item_ && pimpl_->type_ != MenuItemType::Separator) {
     const char* labelStr = label.has_value() ? label->c_str() : "";
-    
+
     // Check if we have a custom box layout (with icon)
     GtkWidget* child = gtk_bin_get_child(GTK_BIN(pimpl_->gtk_menu_item_));
     if (child && GTK_IS_BOX(child)) {
@@ -271,7 +270,7 @@ std::optional<std::string> MenuItem::GetLabel() const {
 
 void MenuItem::SetIcon(std::shared_ptr<Image> image) {
   pimpl_->image_ = image;
-  
+
   if (!pimpl_->gtk_menu_item_ || pimpl_->type_ == MenuItemType::Separator) {
     return;
   }
@@ -289,35 +288,35 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
   if (image && image->GetNativeObject()) {
     // Create a horizontal box to hold icon and label
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);  // 6px spacing
-    
+
     // Get the GdkPixbuf from the image
     GdkPixbuf* pixbuf = static_cast<GdkPixbuf*>(image->GetNativeObject());
-    
+
     // Scale the icon to a reasonable menu size (16x16 is standard for menu items)
     const int icon_size = 16;
     GdkPixbuf* scaled_pixbuf = nullptr;
-    
+
     int original_width = gdk_pixbuf_get_width(pixbuf);
     int original_height = gdk_pixbuf_get_height(pixbuf);
-    
+
     if (original_width != icon_size || original_height != icon_size) {
       scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, icon_size, icon_size, GDK_INTERP_BILINEAR);
     } else {
       scaled_pixbuf = gdk_pixbuf_copy(pixbuf);
     }
-    
+
     // Create GtkImage from the pixbuf
     GtkWidget* gtk_image = gtk_image_new_from_pixbuf(scaled_pixbuf);
     g_object_unref(scaled_pixbuf);  // GtkImage takes its own reference
-    
+
     // Create label widget
     GtkWidget* label = gtk_label_new(current_label.c_str());
     gtk_label_set_xalign(GTK_LABEL(label), 0.0);  // Left-align the label
-    
+
     // Pack icon and label into box
     gtk_box_pack_start(GTK_BOX(box), gtk_image, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 0);
-    
+
     // Add box to menu item
     gtk_container_add(GTK_CONTAINER(pimpl_->gtk_menu_item_), box);
     gtk_widget_show_all(box);
@@ -389,16 +388,15 @@ void MenuItem::SetState(MenuItemState state) {
                                         (gpointer)OnGtkCheckMenuItemToggled, this);
 
       // Reflect tri-state (Mixed) visually using GTK's inconsistent state
-      gtk_check_menu_item_set_inconsistent(
-          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_),
-          (state == MenuItemState::Mixed) ? TRUE : FALSE);
+      gtk_check_menu_item_set_inconsistent(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_),
+                                           (state == MenuItemState::Mixed) ? TRUE : FALSE);
     } else if (pimpl_->type_ == MenuItemType::Radio) {
       gboolean active = (state == MenuItemState::Checked) ? TRUE : FALSE;
       // Block the "toggled" signal to prevent recursive triggering
-      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+      g_signal_handlers_block_by_func(G_OBJECT(pimpl_->gtk_menu_item_),
                                       (gpointer)OnGtkCheckMenuItemToggled, this);
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_), active);
-      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_), 
+      g_signal_handlers_unblock_by_func(G_OBJECT(pimpl_->gtk_menu_item_),
                                         (gpointer)OnGtkCheckMenuItemToggled, this);
     }
   }
@@ -406,12 +404,12 @@ void MenuItem::SetState(MenuItemState state) {
 
 MenuItemState MenuItem::GetState() const {
   // For checkbox and radio items, get the actual state from GTK widget
-  if (pimpl_->gtk_menu_item_ && 
+  if (pimpl_->gtk_menu_item_ &&
       (pimpl_->type_ == MenuItemType::Checkbox || pimpl_->type_ == MenuItemType::Radio)) {
     if (pimpl_->type_ == MenuItemType::Checkbox) {
       // If inconsistent is set, treat as Mixed regardless of active
-      gboolean inconsistent = gtk_check_menu_item_get_inconsistent(
-          GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_));
+      gboolean inconsistent =
+          gtk_check_menu_item_get_inconsistent(GTK_CHECK_MENU_ITEM(pimpl_->gtk_menu_item_));
       if (inconsistent) {
         return MenuItemState::Mixed;
       }
@@ -459,13 +457,13 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Private implementation class for Menu
 class Menu::Impl {
  public:
-  Impl(MenuId id, GtkWidget* menu) 
+  Impl(MenuId id, GtkWidget* menu)
       : id_(id), gtk_menu_(menu), map_handler_id_(0), unmap_handler_id_(0) {}
 
   MenuId id_;
   GtkWidget* gtk_menu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
-  
+
   // Signal handler IDs for cleanup
   gulong map_handler_id_;
   gulong unmap_handler_id_;
@@ -476,10 +474,10 @@ Menu::Menu() {
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, gtk_menu_new()));
   // Connect menu map/unmap to emit open/close events when actually visible
   if (pimpl_->gtk_menu_) {
-    pimpl_->map_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", 
-                                                 G_CALLBACK(OnGtkMenuMap), this);
-    pimpl_->unmap_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", 
-                                                   G_CALLBACK(OnGtkMenuUnmap), this);
+    pimpl_->map_handler_id_ =
+        g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
+    pimpl_->unmap_handler_id_ =
+        g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
@@ -487,10 +485,10 @@ Menu::Menu(void* menu) {
   MenuId id = IdAllocator::Allocate<Menu>();
   pimpl_ = std::unique_ptr<Impl>(new Impl(id, (GtkWidget*)menu));
   if (pimpl_->gtk_menu_) {
-    pimpl_->map_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", 
-                                                 G_CALLBACK(OnGtkMenuMap), this);
-    pimpl_->unmap_handler_id_ = g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", 
-                                                   G_CALLBACK(OnGtkMenuUnmap), this);
+    pimpl_->map_handler_id_ =
+        g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "map", G_CALLBACK(OnGtkMenuMap), this);
+    pimpl_->unmap_handler_id_ =
+        g_signal_connect(G_OBJECT(pimpl_->gtk_menu_), "unmap", G_CALLBACK(OnGtkMenuUnmap), this);
   }
 }
 
@@ -501,7 +499,7 @@ Menu::~Menu() {
     if (gtk_widget_get_visible(pimpl_->gtk_menu_)) {
       gtk_menu_popdown(GTK_MENU(pimpl_->gtk_menu_));
     }
-    
+
     // Disconnect signal handlers before destroying to prevent accessing freed memory
     if (pimpl_->map_handler_id_ > 0) {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_), pimpl_->map_handler_id_);
@@ -511,7 +509,7 @@ Menu::~Menu() {
       g_signal_handler_disconnect(G_OBJECT(pimpl_->gtk_menu_), pimpl_->unmap_handler_id_);
       pimpl_->unmap_handler_id_ = 0;
     }
-    
+
     // Use gtk_widget_destroy() instead of g_object_unref() to properly clean up
     // the widget hierarchy and ensure all pending events are handled before destruction
     gtk_widget_destroy(pimpl_->gtk_menu_);
@@ -633,16 +631,19 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
     data.done = false;
 
     g_mutex_lock(&data.mutex);
-    g_main_context_invoke(nullptr, [](gpointer user_data) -> gboolean {
-      OpenInvokeData* d = static_cast<OpenInvokeData*>(user_data);
-      bool r = d->self->Open(d->strategy, d->placement);
-      g_mutex_lock(&d->mutex);
-      d->result = r;
-      d->done = true;
-      g_cond_signal(&d->cond);
-      g_mutex_unlock(&d->mutex);
-      return G_SOURCE_REMOVE;
-    }, &data);
+    g_main_context_invoke(
+        nullptr,
+        [](gpointer user_data) -> gboolean {
+          OpenInvokeData* d = static_cast<OpenInvokeData*>(user_data);
+          bool r = d->self->Open(d->strategy, d->placement);
+          g_mutex_lock(&d->mutex);
+          d->result = r;
+          d->done = true;
+          g_cond_signal(&d->cond);
+          g_mutex_unlock(&d->mutex);
+          return G_SOURCE_REMOVE;
+        },
+        &data);
 
     while (!data.done) {
       g_cond_wait(&data.cond, &data.mutex);
@@ -751,8 +752,8 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
       rect.y = static_cast<int>(y);
       rect.width = 1;
       rect.height = 1;
-      gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect,
-                             anchor_gravity, menu_gravity, nullptr);
+      gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), root_window, &rect, anchor_gravity,
+                             menu_gravity, nullptr);
       return true;
     } else {
       // Let GTK automatically use the current event
@@ -779,16 +780,19 @@ bool Menu::Close() {
     data.done = false;
 
     g_mutex_lock(&data.mutex);
-    g_main_context_invoke(nullptr, [](gpointer user_data) -> gboolean {
-      CloseInvokeData* d = static_cast<CloseInvokeData*>(user_data);
-      bool r = d->self->Close();
-      g_mutex_lock(&d->mutex);
-      d->result = r;
-      d->done = true;
-      g_cond_signal(&d->cond);
-      g_mutex_unlock(&d->mutex);
-      return G_SOURCE_REMOVE;
-    }, &data);
+    g_main_context_invoke(
+        nullptr,
+        [](gpointer user_data) -> gboolean {
+          CloseInvokeData* d = static_cast<CloseInvokeData*>(user_data);
+          bool r = d->self->Close();
+          g_mutex_lock(&d->mutex);
+          d->result = r;
+          d->done = true;
+          g_cond_signal(&d->cond);
+          g_mutex_unlock(&d->mutex);
+          return G_SOURCE_REMOVE;
+        },
+        &data);
 
     while (!data.done) {
       g_cond_wait(&data.cond, &data.mutex);

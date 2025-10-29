@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include "../../accessibility_manager.h"
 
 namespace nativeapi {
@@ -16,4 +16,3 @@ bool AccessibilityManager::IsEnabled() {
 }
 
 }  // namespace nativeapi
-

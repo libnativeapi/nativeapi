@@ -247,8 +247,6 @@ FFI_PLUGIN_EXPORT
 bool native_menu_item_get_accelerator(native_menu_item_t item,
                                       native_keyboard_accelerator_t* accelerator);
 
-
-
 /**
  * Set the enabled state of a menu item
  * @param item The menu item
@@ -312,8 +310,6 @@ void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu
  */
 FFI_PLUGIN_EXPORT
 native_menu_t native_menu_item_get_submenu(native_menu_item_t item);
-
-
 
 /**
  * Add event listener for a menu item
@@ -473,7 +469,9 @@ native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
  * @return true if menu was opened successfully, false otherwise
  */
 FFI_PLUGIN_EXPORT
-bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement);
+bool native_menu_open(native_menu_t menu,
+                      native_positioning_strategy_t strategy,
+                      native_placement_t placement);
 
 /**
  * Close the menu if it's currently showing

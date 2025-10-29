@@ -9,7 +9,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -20,7 +20,7 @@ namespace nativeapi {
 class TrayManager::Impl {
  public:
   Impl(TrayManager* manager) : manager_(manager) {}
-  
+
   TrayManager* manager_;
 };
 
@@ -50,4 +50,3 @@ std::vector<std::shared_ptr<TrayIcon>> TrayManager::GetAll() {
 }
 
 }  // namespace nativeapi
-

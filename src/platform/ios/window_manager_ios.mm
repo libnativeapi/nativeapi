@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include "../../window_manager.h"
 
 namespace nativeapi {
@@ -21,17 +21,17 @@ WindowManager::~WindowManager() {
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   // On iOS, windows are created through the UIApplication scene lifecycle
   // This is typically handled by the app delegate, not directly
-  
+
   CGRect screenBounds = [UIScreen mainScreen].bounds;
   UIWindow* uiWindow = [[UIWindow alloc] initWithFrame:screenBounds];
-  
+
   auto window = std::make_shared<Window>((__bridge void*)uiWindow);
-  
+
   if (window) {
     windows_[window->GetId()] = window;
     Emit<WindowCreatedEvent>(window->GetId());
   }
-  
+
   return window;
 }
 
@@ -43,11 +43,11 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<std::shared_ptr<Window>> result;
   result.reserve(windows_.size());
-  
+
   for (const auto& [id, window] : windows_) {
     result.push_back(window);
   }
-  
+
   return result;
 }
 
@@ -66,10 +66,10 @@ bool WindowManager::Destroy(WindowId id) {
   if (it == windows_.end()) {
     return false;
   }
-  
+
   windows_.erase(it);
   Emit<WindowClosedEvent>(id);
-  
+
   return true;
 }
 
@@ -86,4 +86,3 @@ void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
 }
 
 }  // namespace nativeapi
-

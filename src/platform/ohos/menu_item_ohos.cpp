@@ -8,7 +8,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -19,20 +19,18 @@ namespace nativeapi {
 class MenuItem::Impl {
  public:
   Impl() = default;
-  
+
   void* native_item_ = nullptr;
   std::string label_;
   MenuItemType type_ = MenuItemType::Normal;
 };
 
-MenuItem::MenuItem(const std::string& label, MenuItemType type) 
-    : pimpl_(std::make_unique<Impl>()) {
+MenuItem::MenuItem(const std::string& label, MenuItemType type) : pimpl_(std::make_unique<Impl>()) {
   pimpl_->label_ = label;
   pimpl_->type_ = type;
 }
 
-MenuItem::MenuItem(void* native_item) 
-    : pimpl_(std::make_unique<Impl>()) {
+MenuItem::MenuItem(void* native_item) : pimpl_(std::make_unique<Impl>()) {
   pimpl_->native_item_ = native_item;
 }
 
@@ -115,4 +113,3 @@ void* MenuItem::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
-

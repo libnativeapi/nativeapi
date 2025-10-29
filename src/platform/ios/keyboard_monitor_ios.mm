@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include "../../keyboard_monitor.h"
 
 namespace nativeapi {
@@ -26,4 +26,3 @@ bool KeyboardMonitor::IsMonitoring() const {
 }
 
 }  // namespace nativeapi
-

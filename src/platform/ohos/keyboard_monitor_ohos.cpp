@@ -6,7 +6,7 @@
 
 #ifdef __OHOS__
 #define LOG_CORE 0xD001700
-// Note: LOG_TAG is defined in hilog/log.h as NULL, 
+// Note: LOG_TAG is defined in hilog/log.h as NULL,
 // redefine to avoid warnings if needed
 #undef LOG_TAG
 #define LOG_TAG "NativeApi"
@@ -17,7 +17,7 @@ namespace nativeapi {
 class KeyboardMonitor::Impl {
  public:
   Impl(KeyboardMonitor* monitor) : monitor_(monitor) {}
-  
+
   KeyboardMonitor* monitor_;
 };
 
@@ -44,4 +44,3 @@ EventEmitter<KeyboardEvent>& KeyboardMonitor::GetInternalEventEmitter() {
 }
 
 }  // namespace nativeapi
-

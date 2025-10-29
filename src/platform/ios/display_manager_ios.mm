@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include "../../display_manager.h"
 #include "../../window.h"
 
@@ -13,13 +13,13 @@ DisplayManager::~DisplayManager() {}
 
 std::vector<Display> DisplayManager::GetAll() {
   std::vector<Display> displays;
-  
+
   // Get all screens
   NSArray<UIScreen*>* screens = [UIScreen screens];
   for (UIScreen* screen in screens) {
     displays.push_back(Display((__bridge void*)screen));
   }
-  
+
   // If no screens found, add main screen
   if (displays.empty()) {
     UIScreen* mainScreen = [UIScreen mainScreen];
@@ -27,7 +27,7 @@ std::vector<Display> DisplayManager::GetAll() {
       displays.push_back(Display((__bridge void*)mainScreen));
     }
   }
-  
+
   return displays;
 }
 
@@ -43,4 +43,3 @@ Point DisplayManager::GetCursorPosition() {
 }
 
 }  // namespace nativeapi
-

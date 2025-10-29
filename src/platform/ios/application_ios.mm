@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <string>
 #include "../../application.h"
 
@@ -62,4 +62,3 @@ void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
 }
 
 }  // namespace nativeapi
-
