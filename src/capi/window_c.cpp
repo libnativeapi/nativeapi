@@ -1,7 +1,7 @@
 #include "window_c.h"
 #include <cstring>
-#include <memory>
 #include "../window.h"
+#include "string_utils_c.h"
 
 using namespace nativeapi;
 
@@ -28,7 +28,7 @@ void native_window_options_destroy(native_window_options_t* options) {
     return;
 
   if (options->title) {
-    delete[] options->title;
+    free_c_str(options->title);
   }
   delete options;
 }
@@ -40,16 +40,18 @@ bool native_window_options_set_title(native_window_options_t* options, const cha
 
   // Free existing title
   if (options->title) {
-    delete[] options->title;
+    free_c_str(options->title);
     options->title = nullptr;
   }
 
   if (title) {
-    size_t len = strlen(title) + 1;
-    options->title = new (std::nothrow) char[len];
-    if (!options->title)
+    std::string title_str(title);
+    options->title = to_c_str(title_str);
+    // to_c_str returns nullptr for empty strings, which is acceptable for title
+    // For non-empty strings, nullptr indicates allocation failure
+    if (!options->title && !title_str.empty()) {
       return false;
-    strcpy(options->title, title);
+    }
   }
 
   return true;
@@ -490,11 +492,7 @@ char* native_window_get_title(native_window_t window) {
   try {
     auto* win = static_cast<nativeapi::Window*>(window);
     std::string title = win->GetTitle();
-    char* result = new (std::nothrow) char[title.length() + 1];
-    if (result) {
-      strcpy(result, title.c_str());
-    }
-    return result;
+    return to_c_str(title);
   } catch (...) {
     return nullptr;
   }
@@ -609,9 +607,7 @@ void* native_window_get_native_object(native_window_t window) {
 // Memory management
 FFI_PLUGIN_EXPORT
 void native_window_free_string(char* str) {
-  if (str) {
-    delete[] str;
-  }
+  free_c_str(str);
 }
 
 FFI_PLUGIN_EXPORT

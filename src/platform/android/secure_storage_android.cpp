@@ -59,8 +59,7 @@ class SecureStorage::Impl {
 // Constructor implementations
 SecureStorage::SecureStorage() : SecureStorage("default") {}
 
-SecureStorage::SecureStorage(const std::string& scope)
-    : pimpl_(std::make_unique<Impl>(scope)) {}
+SecureStorage::SecureStorage(const std::string& scope) : pimpl_(std::make_unique<Impl>(scope)) {}
 
 SecureStorage::~SecureStorage() = default;
 

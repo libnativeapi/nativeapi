@@ -149,8 +149,7 @@ class Preferences::Impl {
 // Constructor implementations
 Preferences::Preferences() : Preferences("default") {}
 
-Preferences::Preferences(const std::string& scope)
-    : pimpl_(std::make_unique<Impl>(scope)) {}
+Preferences::Preferences(const std::string& scope) : pimpl_(std::make_unique<Impl>(scope)) {}
 
 Preferences::~Preferences() = default;
 
