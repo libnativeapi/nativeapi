@@ -162,7 +162,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build unzip
 
+      - name: Cache OpenHarmony Native SDK
+        id: cache-ohos-sdk
+        uses: actions/cache@v4
+        with:
+          path: sdk
+          key: ohos-sdk-v5.1.0-linux-x64-${{ runner.os }}
+
       - name: Download OpenHarmony Native SDK
+        if: steps.cache-ohos-sdk.outputs.cache-hit != 'true'
         run: |
           echo $PWD
           wget -q \
