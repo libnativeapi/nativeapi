@@ -9,6 +9,7 @@
 #include "../global_registry.h"
 #include "../image.h"
 #include "../menu.h"
+#include "string_utils_c.h"
 
 using namespace nativeapi;
 
@@ -242,14 +243,7 @@ char* native_menu_item_get_label(native_menu_item_t item) {
       return nullptr;
     }
 
-    const std::string& label = labelOpt.value();
-
-    // Allocate C string and copy content
-    char* result = static_cast<char*>(malloc(label.length() + 1));
-    if (result) {
-      strcpy(result, label.c_str());
-    }
-    return result;
+    return to_c_str(labelOpt.value());
   } catch (...) {
     return nullptr;
   }
@@ -320,14 +314,7 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
       return nullptr;
     }
 
-    const std::string& tooltip = tooltipOpt.value();
-
-    // Allocate C string and copy content
-    char* result = static_cast<char*>(malloc(tooltip.length() + 1));
-    if (result) {
-      strcpy(result, tooltip.c_str());
-    }
-    return result;
+    return to_c_str(tooltipOpt.value());
   } catch (...) {
     return nullptr;
   }
@@ -994,14 +981,7 @@ char* native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t*
 
   try {
     KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
-    std::string str = cpp_accelerator.ToString();
-
-    // Allocate C string and copy content
-    char* result = static_cast<char*>(malloc(str.length() + 1));
-    if (result) {
-      strcpy(result, str.c_str());
-    }
-    return result;
+    return to_c_str(cpp_accelerator.ToString());
   } catch (...) {
     return nullptr;
   }

@@ -2,6 +2,7 @@
 #include <cstring>
 #include <memory>
 #include "../window.h"
+#include "string_utils_c.h"
 
 using namespace nativeapi;
 
@@ -489,12 +490,7 @@ char* native_window_get_title(native_window_t window) {
 
   try {
     auto* win = static_cast<nativeapi::Window*>(window);
-    std::string title = win->GetTitle();
-    char* result = new (std::nothrow) char[title.length() + 1];
-    if (result) {
-      strcpy(result, title.c_str());
-    }
-    return result;
+    return to_c_str(win->GetTitle());
   } catch (...) {
     return nullptr;
   }
