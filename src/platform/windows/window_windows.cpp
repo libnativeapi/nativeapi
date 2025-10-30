@@ -224,6 +224,54 @@ Size Window::GetContentSize() const {
   return size;
 }
 
+void Window::SetContentBounds(Rectangle bounds) {
+  if (pimpl_->hwnd_) {
+    RECT windowRect, clientRect;
+    GetWindowRect(pimpl_->hwnd_, &windowRect);
+    GetClientRect(pimpl_->hwnd_, &clientRect);
+
+    // Calculate the difference between window and client area
+    int borderWidth = (windowRect.right - windowRect.left) - clientRect.right;
+    int borderHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
+
+    // Get current client area position in screen coordinates
+    POINT clientTopLeft = {0, 0};
+    ClientToScreen(pimpl_->hwnd_, &clientTopLeft);
+
+    // Calculate the offset from window top-left to client top-left
+    int offsetX = clientTopLeft.x - windowRect.left;
+    int offsetY = clientTopLeft.y - windowRect.top;
+
+    // Calculate window position so that client area is at bounds position
+    int windowX = static_cast<int>(bounds.x) - offsetX;
+    int windowY = static_cast<int>(bounds.y) - offsetY;
+    int windowWidth = static_cast<int>(bounds.width) + borderWidth;
+    int windowHeight = static_cast<int>(bounds.height) + borderHeight;
+
+    SetWindowPos(pimpl_->hwnd_, nullptr, windowX, windowY, windowWidth, windowHeight, SWP_NOZORDER);
+  }
+}
+
+Rectangle Window::GetContentBounds() const {
+  Rectangle bounds = {0, 0, 0, 0};
+  if (pimpl_->hwnd_) {
+    RECT clientRect;
+    GetClientRect(pimpl_->hwnd_, &clientRect);
+
+    // Convert client rect to screen coordinates
+    POINT topLeft = {clientRect.left, clientRect.top};
+    POINT bottomRight = {clientRect.right, clientRect.bottom};
+    ClientToScreen(pimpl_->hwnd_, &topLeft);
+    ClientToScreen(pimpl_->hwnd_, &bottomRight);
+
+    bounds.x = topLeft.x;
+    bounds.y = topLeft.y;
+    bounds.width = bottomRight.x - topLeft.x;
+    bounds.height = bottomRight.y - topLeft.y;
+  }
+  return bounds;
+}
+
 void Window::SetMinimumSize(Size size) {
   // Windows minimum size would be handled in WM_GETMINMAXINFO message
   // This is a placeholder implementation

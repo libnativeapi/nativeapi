@@ -81,10 +81,10 @@ Display DisplayManager::GetPrimary() {
 
 Point DisplayManager::GetCursorPosition() {
   NSPoint mouseLocation = [NSEvent mouseLocation];
-  
+
   // Convert from bottom-left (macOS default) to top-left coordinate system
   CGPoint topLeftPoint = NSPointExt::topLeft(mouseLocation);
-  
+
   Point point;
   point.x = topLeftPoint.x;
   point.y = topLeftPoint.y;

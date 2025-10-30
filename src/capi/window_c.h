@@ -140,6 +140,12 @@ FFI_PLUGIN_EXPORT
 native_size_t native_window_get_content_size(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+void native_window_set_content_bounds(native_window_t window, native_rectangle_t bounds);
+
+FFI_PLUGIN_EXPORT
+native_rectangle_t native_window_get_content_bounds(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_minimum_size(native_window_t window, double width, double height);
 
 FFI_PLUGIN_EXPORT

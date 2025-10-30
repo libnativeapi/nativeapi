@@ -234,6 +234,27 @@ class Window : public NativeObjectProvider {
   Rectangle GetBounds() const;
 
   /**
+   * @brief Sets the position and size of the window's content area.
+   *
+   * @param bounds Rectangle containing the desired position and size of the content area
+   *
+   * This method sets both the content area's position and size in a single operation,
+   * which can be more efficient than separate calls to SetPosition() and SetContentSize().
+   * The content area excludes window decorations like title bar and borders.
+   */
+  void SetContentBounds(Rectangle bounds);
+
+  /**
+   * @brief Gets the position and size of the window's content area.
+   *
+   * @return Rectangle containing the current position and size of the content area
+   *
+   * The returned rectangle excludes window decorations and represents the drawable
+   * content area of the window.
+   */
+  Rectangle GetContentBounds() const;
+
+  /**
    * @brief Sets the window's size with optional animation.
    *
    * @param size The new size for the window

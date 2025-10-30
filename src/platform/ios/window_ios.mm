@@ -188,6 +188,16 @@ Size Window::GetContentSize() const {
   return GetSize();
 }
 
+void Window::SetContentBounds(Rectangle bounds) {
+  // On iOS, content bounds is the same as window bounds
+  SetBounds(bounds);
+}
+
+Rectangle Window::GetContentBounds() const {
+  // On iOS, content bounds is the same as window bounds
+  return GetBounds();
+}
+
 void Window::SetMinimumSize(Size size) {
   // Not applicable to iOS windows
 }

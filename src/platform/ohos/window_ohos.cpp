@@ -170,6 +170,16 @@ Size Window::GetContentSize() const {
   return GetSize();
 }
 
+void Window::SetContentBounds(Rectangle bounds) {
+  // On OpenHarmony, content bounds is the same as window bounds
+  SetBounds(bounds);
+}
+
+Rectangle Window::GetContentBounds() const {
+  // On OpenHarmony, content bounds is the same as window bounds
+  return GetBounds();
+}
+
 void Window::SetMinimumSize(Size size) {
   // SetMinimumSize not fully supported on OpenHarmony
 }

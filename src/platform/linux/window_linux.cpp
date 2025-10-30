@@ -201,6 +201,16 @@ Size Window::GetContentSize() const {
   return GetSize();
 }
 
+void Window::SetContentBounds(Rectangle bounds) {
+  // For GDK windows, content bounds is the same as window bounds
+  SetBounds(bounds);
+}
+
+Rectangle Window::GetContentBounds() const {
+  // For GDK windows, content bounds is the same as window bounds
+  return GetBounds();
+}
+
 void Window::SetMinimumSize(Size size) {
   // GTK minimum size constraints would need to be set on the widget level
   // For now, we'll provide a basic implementation that doesn't enforce

@@ -6,6 +6,7 @@
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
+#include "coordinate_utils_macos.h"
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
@@ -666,7 +667,7 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
       break;
 
     case PositioningStrategy::Type::CursorPosition: {
-      NSPoint mouse_location = [NSEvent mouseLocation];
+      NSPoint mouse_location = NSPointExt::topLeft([NSEvent mouseLocation]);
       x = mouse_location.x;
       y = mouse_location.y;
       break;
@@ -756,53 +757,18 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
       break;
   }
 
-  // Get the main window
-  NSWindow* main_window = [[NSApplication sharedApplication] mainWindow];
-  if (!main_window) {
-    // Fallback to key window if main window is not available
-    main_window = [[NSApplication sharedApplication] keyWindow];
-  }
-
-  if (!main_window) {
-    // If still no window, use the old implementation
-    NSPoint point = NSMakePoint(x, y);
-    NSEvent* event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                                        location:point
-                                   modifierFlags:0
-                                       timestamp:0
-                                    windowNumber:0
-                                         context:nil
-                                     eventNumber:0
-                                      clickCount:1
-                                        pressure:1.0];
-
-    @autoreleasepool {
-      NSView* dummy_view = [[NSView alloc] init];
-      [NSMenu popUpContextMenu:pimpl_->ns_menu_ withEvent:event forView:dummy_view];
-    }
-
-    return true;
-  }
-
-  NSView* content_view = [main_window contentView];
-  if (!content_view) {
-    return false;
-  }
-
-  // Convert coordinates if the content view is not flipped
-  // In macOS, the default coordinate system has origin at bottom-left
-  // If view is not flipped, we need to convert from top-left origin
-  CGFloat final_y = y;
-  if (![content_view isFlipped]) {
-    CGFloat frame_height = [content_view frame].size.height;
-    final_y = frame_height - y;
-  }
-
-  NSPoint point = NSMakePoint(x, final_y);
+  // Convert coordinates from top-left origin to macOS screen coordinates (bottom-left origin)
+  // macOS screen coordinates: origin at bottom-left, y grows upward
+  // Our coordinates: origin at top-left, y grows downward
+  CGPoint top_left_point = CGPointMake(x, y);
+  NSPoint point = NSPointExt::bottomLeft(top_left_point);
 
   // Use dispatch to ensure menu popup happens on the main run loop
+  // Show the menu using screen coordinates (inView:nil)
   dispatch_async(dispatch_get_main_queue(), ^{
-    [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:content_view];
+    @autoreleasepool {
+      [pimpl_->ns_menu_ popUpMenuPositioningItem:nil atLocation:point inView:nil];
+    }
   });
 
   return true;

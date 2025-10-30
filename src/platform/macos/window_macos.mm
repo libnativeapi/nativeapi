@@ -151,6 +151,25 @@ Size Window::GetContentSize() const {
   return size;
 }
 
+void Window::SetContentBounds(Rectangle bounds) {
+  // Convert from topLeft coordinate system to bottom-left (macOS default)
+  NSRect topLeftRect = NSMakeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+  NSRect contentRect = NSRectExt::bottomLeft(topLeftRect);
+
+  // Set the content view frame
+  NSRect frameRect = [pimpl_->ns_window_ frameRectForContentRect:contentRect];
+  [pimpl_->ns_window_ setFrame:frameRect display:YES];
+}
+
+Rectangle Window::GetContentBounds() const {
+  NSRect contentRect = [pimpl_->ns_window_ contentRectForFrameRect:[pimpl_->ns_window_ frame]];
+  // Convert from bottom-left (macOS default) to top-left coordinate system
+  CGPoint topLeft = NSRectExt::topLeft(contentRect);
+  Rectangle bounds = {topLeft.x, topLeft.y, static_cast<double>(contentRect.size.width),
+                      static_cast<double>(contentRect.size.height)};
+  return bounds;
+}
+
 void Window::SetMinimumSize(Size size) {
   [pimpl_->ns_window_ setMinSize:NSMakeSize(size.width, size.height)];
 }

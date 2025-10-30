@@ -292,6 +292,30 @@ native_size_t native_window_get_content_size(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
+void native_window_set_content_bounds(native_window_t window, native_rectangle_t bounds) {
+  if (!window)
+    return;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  nativeapi::Rectangle rect = {bounds.x, bounds.y, bounds.width, bounds.height};
+  win->SetContentBounds(rect);
+}
+
+FFI_PLUGIN_EXPORT
+native_rectangle_t native_window_get_content_bounds(native_window_t window) {
+  native_rectangle_t result = {0.0, 0.0, 0.0, 0.0};
+  if (!window)
+    return result;
+
+  auto* win = static_cast<nativeapi::Window*>(window);
+  nativeapi::Rectangle bounds = win->GetContentBounds();
+  result.x = bounds.x;
+  result.y = bounds.y;
+  result.width = bounds.width;
+  result.height = bounds.height;
+  return result;
+}
+
+FFI_PLUGIN_EXPORT
 void native_window_set_minimum_size(native_window_t window, double width, double height) {
   if (!window)
     return;
