@@ -725,29 +725,46 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   // Set the host window as foreground to ensure menu can be displayed
   SetForegroundWindow(host_window);
 
-  // Determine alignment flags based on placement
-  // Note: TPM_* flags are mutually exclusive and control vertical alignment only
-  UINT uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;  // Default
+  // Determine alignment flags based on placement (both axes)
+  // Horizontal:  TPM_LEFTALIGN | TPM_CENTERALIGN | TPM_RIGHTALIGN
+  // Vertical:    TPM_TOPALIGN  | TPM_VCENTERALIGN | TPM_BOTTOMALIGN
+  UINT uFlags = 0;
   switch (placement) {
     case Placement::Top:
+      uFlags = TPM_BOTTOMALIGN | TPM_CENTERALIGN;  // above anchor, horizontally centered
+      break;
     case Placement::TopStart:
+      uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;  // above anchor, align left
+      break;
     case Placement::TopEnd:
-      uFlags = TPM_TOPALIGN | TPM_LEFTALIGN;
+      uFlags = TPM_BOTTOMALIGN | TPM_RIGHTALIGN;  // above anchor, align right
       break;
     case Placement::Right:
+      uFlags = TPM_LEFTALIGN | TPM_VCENTERALIGN;  // right of anchor, vertically centered
+      break;
     case Placement::RightStart:
+      uFlags = TPM_LEFTALIGN | TPM_TOPALIGN;  // right of anchor, align top
+      break;
     case Placement::RightEnd:
-      uFlags = TPM_BOTTOMALIGN | TPM_RIGHTALIGN;
+      uFlags = TPM_LEFTALIGN | TPM_BOTTOMALIGN;  // right of anchor, align bottom
       break;
     case Placement::Bottom:
+      uFlags = TPM_TOPALIGN | TPM_CENTERALIGN;  // below anchor, horizontally centered
+      break;
     case Placement::BottomStart:
+      uFlags = TPM_TOPALIGN | TPM_LEFTALIGN;  // below anchor, align left
+      break;
     case Placement::BottomEnd:
-      uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;
+      uFlags = TPM_TOPALIGN | TPM_RIGHTALIGN;  // below anchor, align right
       break;
     case Placement::Left:
+      uFlags = TPM_RIGHTALIGN | TPM_VCENTERALIGN;  // left of anchor, vertically centered
+      break;
     case Placement::LeftStart:
+      uFlags = TPM_RIGHTALIGN | TPM_TOPALIGN;  // left of anchor, align top
+      break;
     case Placement::LeftEnd:
-      uFlags = TPM_BOTTOMALIGN | TPM_LEFTALIGN;
+      uFlags = TPM_RIGHTALIGN | TPM_BOTTOMALIGN;  // left of anchor, align bottom
       break;
   }
 
