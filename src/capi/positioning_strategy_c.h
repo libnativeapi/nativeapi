@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "geometry_c.h"
+#include "window_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -60,6 +61,27 @@ native_positioning_strategy_t native_positioning_strategy_cursor_position();
 FFI_PLUGIN_EXPORT
 native_positioning_strategy_t native_positioning_strategy_relative(const native_rectangle_t* rect,
                                                                    const native_point_t* offset);
+
+/**
+ * Create a positioning strategy for positioning relative to a window
+ * @param window Window to position relative to
+ * @param offset Offset point to apply to the position, or NULL for no offset
+ * @return Positioning strategy handle, or NULL if window is invalid
+ *
+ * This function obtains the window's bounds using native_window_get_bounds()
+ * and creates a Relative positioning strategy based on those bounds.
+ *
+ * @example
+ * ```c
+ * native_window_t window = native_window_manager_create(&options);
+ * native_point_t offset = {0, 10};
+ * native_positioning_strategy_t strategy = native_positioning_strategy_relative_to_window(window,
+ * &offset); native_menu_open(menu, strategy); native_positioning_strategy_free(strategy);
+ * ```
+ */
+FFI_PLUGIN_EXPORT
+native_positioning_strategy_t native_positioning_strategy_relative_to_window(native_window_t window,
+                                                                          const native_point_t* offset);
 
 /**
  * Free a positioning strategy handle

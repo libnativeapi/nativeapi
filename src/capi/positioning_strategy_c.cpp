@@ -1,5 +1,6 @@
 #include "positioning_strategy_c.h"
-#include "../foundation/positioning_strategy.h"
+#include "../positioning_strategy.h"
+#include "../window.h"
 
 using namespace nativeapi;
 
@@ -34,6 +35,23 @@ native_positioning_strategy_t native_positioning_strategy_relative(const native_
 
   PositioningStrategy* strategy =
       new PositioningStrategy(PositioningStrategy::Relative(cpp_rect, cpp_offset));
+  return static_cast<native_positioning_strategy_t>(strategy);
+}
+
+native_positioning_strategy_t native_positioning_strategy_relative_to_window(native_window_t window,
+                                                                          const native_point_t* offset) {
+  if (!window) {
+    return nullptr;
+  }
+
+  auto* win = static_cast<nativeapi::Window*>(window);
+  nativeapi::Point cpp_offset{0, 0};
+  if (offset) {
+    cpp_offset = nativeapi::Point{offset->x, offset->y};
+  }
+
+  PositioningStrategy* strategy =
+      new PositioningStrategy(PositioningStrategy::Relative(*win, cpp_offset));
   return static_cast<native_positioning_strategy_t>(strategy);
 }
 

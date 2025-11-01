@@ -1,7 +1,10 @@
 #pragma once
-#include "geometry.h"
+#include "foundation/geometry.h"
 
 namespace nativeapi {
+
+// Forward declaration
+class Window;
 
 /**
  * @brief Strategy for determining where to position UI elements.
@@ -96,6 +99,31 @@ class PositioningStrategy {
   static PositioningStrategy Relative(const Rectangle& rect, const Point& offset = {0, 0});
 
   /**
+   * @brief Create a strategy for positioning relative to a window.
+   *
+   * @param window Window to position relative to
+   * @param offset Optional offset point to apply to the position (default: {0, 0})
+   * @return PositioningStrategy configured for window-relative positioning
+   *
+   * This method stores a reference to the window and will obtain its bounds
+   * dynamically when GetRelativeRectangle() is called, ensuring the position
+   * reflects the window's current state.
+   *
+   * @example
+   * ```cpp
+   * auto window = WindowManager::GetInstance().Create(options);
+   * // Position menu at bottom of window (no offset)
+   * auto strategy = PositioningStrategy::Relative(*window, {0, 0});
+   * menu->Open(strategy);
+   *
+   * // Position menu at bottom of window with 10px vertical offset
+   * auto strategy2 = PositioningStrategy::Relative(*window, {0, 10});
+   * menu->Open(strategy2);
+   * ```
+   */
+  static PositioningStrategy Relative(const Window& window, const Point& offset = {0, 0});
+
+  /**
    * @brief Get the type of this positioning strategy.
    *
    * @return The Type enum value indicating the strategy type
@@ -115,8 +143,10 @@ class PositioningStrategy {
    *
    * @return Rectangle in screen coordinates
    * @note Only valid when GetType() == Type::Relative
+   * @note If the strategy was created with a Window, this will return the
+   *       window's current bounds (obtained dynamically).
    */
-  Rectangle GetRelativeRectangle() const { return relative_rect_; }
+  Rectangle GetRelativeRectangle() const;
 
   /**
    * @brief Get the relative offset point (for Relative type).
@@ -136,6 +166,8 @@ class PositioningStrategy {
   Point absolute_position_;
   Rectangle relative_rect_;
   Point relative_offset_;
+  const Window* relative_window_;  // Optional: when set, GetRelativeRectangle() will use window->GetBounds()
 };
 
 }  // namespace nativeapi
+

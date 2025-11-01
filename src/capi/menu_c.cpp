@@ -5,7 +5,8 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include "../foundation/positioning_strategy.h"
+#include "../placement.h"
+#include "../positioning_strategy.h"
 #include "../global_registry.h"
 #include "../image.h"
 #include "../menu.h"
