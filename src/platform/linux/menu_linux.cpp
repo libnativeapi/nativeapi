@@ -276,9 +276,15 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
     return;
   }
 
-  // Get current label text to preserve it
-  const char* label_text = gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
-  std::string current_label = label_text ? label_text : "";
+  // Get current label text to preserve it - prefer stored title over GTK widget
+  std::string current_label;
+  if (pimpl_->title_.has_value()) {
+    current_label = pimpl_->title_.value();
+  } else {
+    // Fallback to GTK widget if title not set
+    const char* label_text = gtk_menu_item_get_label(GTK_MENU_ITEM(pimpl_->gtk_menu_item_));
+    current_label = label_text ? label_text : "";
+  }
 
   // Remove existing child widget
   GtkWidget* existing_child = gtk_bin_get_child(GTK_BIN(pimpl_->gtk_menu_item_));
