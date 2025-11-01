@@ -718,8 +718,7 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
         GdkRectangle frame_rectangle;
         gdk_window_get_frame_extents(gdk_window, &frame_rectangle);
 
-        // Get title bar height from GtkWindow
-        int title_bar_height = 0;
+        // Get GtkWindow for window position and title bar
         GtkWindow* gtk_window = nullptr;
         GList* toplevels = gtk_window_list_toplevels();
         for (GList* l = toplevels; l != nullptr; l = l->next) {
@@ -732,6 +731,17 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
         }
         g_list_free(toplevels);
 
+        // Get window position using gtk_window_get_position (works better on Wayland)
+        gint window_x = 0, window_y = 0;
+        if (gtk_window) {
+          gtk_window_get_position(gtk_window, &window_x, &window_y);
+        } else {
+          // Fallback to gdk_window_get_origin if gtk_window not found
+          gdk_window_get_origin(gdk_window, &window_x, &window_y);
+        }
+
+        // Get title bar height from GtkWindow
+        int title_bar_height = 0;
         if (gtk_window) {
           GtkWidget* titlebar = gtk_window_get_titlebar(gtk_window);
           if (titlebar) {
@@ -739,8 +749,21 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
           }
         }
 
-        rectangle.x = static_cast<int>(position.x - frame_rectangle.x);
-        rectangle.y = static_cast<int>(position.y - frame_rectangle.y + title_bar_height);
+        // Get device pixel ratio for DPI scaling
+        double device_pixel_ratio = 1.0;
+        GdkScreen* screen = gdk_window_get_screen(gdk_window);
+        if (screen) {
+          // Get scale factor (typically 1.0 for standard DPI, 2.0 for HiDPI)
+          device_pixel_ratio = gdk_screen_get_resolution(screen) / 96.0;
+          if (device_pixel_ratio <= 0.0) {
+            device_pixel_ratio = 1.0;
+          }
+        }
+
+        // Convert content-relative coordinates to window-relative coordinates
+        // Apply DPI scaling, then adjust for window position and frame extents
+        rectangle.x = static_cast<int>((position.x * device_pixel_ratio) + window_x - frame_rectangle.x);
+        rectangle.y = static_cast<int>((position.y * device_pixel_ratio) + window_y - frame_rectangle.y + title_bar_height);
       } else {
         // Relative to rectangle (no window) - use root window coordinates
         rectangle.x = static_cast<int>(position.x);
