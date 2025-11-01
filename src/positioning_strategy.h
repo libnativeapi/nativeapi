@@ -156,6 +156,14 @@ class PositioningStrategy {
    */
   Point GetRelativeOffset() const { return relative_offset_; }
 
+  /**
+   * @brief Get the relative window (for Relative type created with Window).
+   *
+   * @return Pointer to the Window, or nullptr if not set
+   * @note Only valid when GetType() == Type::Relative and strategy was created with a Window
+   */
+  const Window* GetRelativeWindow() const { return relative_window_; }
+
  private:
   /**
    * @brief Private constructor - use static factory methods instead.
