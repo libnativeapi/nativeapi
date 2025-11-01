@@ -9,6 +9,8 @@
 #include "../../image.h"
 #include "../../menu.h"
 #include "../../menu_event.h"
+#include "../../window.h"
+#include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
 #include "window_message_dispatcher.h"
 
@@ -709,9 +711,18 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
     case PositioningStrategy::Type::Relative: {
       Rectangle rect = strategy.GetRelativeRectangle();
       Point offset = strategy.GetRelativeOffset();
-      // Position at top-left corner of rectangle plus offset
-      pt.x = static_cast<int>(rect.x + offset.x);
-      pt.y = static_cast<int>(rect.y + offset.y);
+      if (strategy.GetRelativeWindow() != nullptr) {
+        // rect and offset are in logical pixels (DIP) for Window-relative
+        HWND rel_hwnd = static_cast<HWND>(strategy.GetRelativeWindow()->GetNativeObject());
+        double scale = GetScaleFactorForWindow(rel_hwnd);
+        if (scale <= 0.0) scale = 1.0;
+        pt.x = static_cast<int>(std::lround((rect.x + offset.x) * scale));
+        pt.y = static_cast<int>(std::lround((rect.y + offset.y) * scale));
+      } else {
+        // For plain rectangles, assume inputs already in screen pixels
+        pt.x = static_cast<int>(rect.x + offset.x);
+        pt.y = static_cast<int>(rect.y + offset.y);
+      }
       break;
     }
   }
