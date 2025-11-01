@@ -680,51 +680,50 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
 
   GdkRectangle rectangle;
 
-  // Calculate position based on strategy type
-  if (strategy.GetType() == PositioningStrategy::Type::CursorPosition) {
-    // Position relative to the window under the pointer to avoid coord space mismatches
-    int x = 0, y = 0;
-    GdkWindow* pointer_window = nullptr;
+  switch (strategy.GetType()) {
+    case PositioningStrategy::Type::Absolute:
+      // Linux does not support Absolute positioning strategy
+      std::cerr << "Warning: Absolute positioning strategy is not supported on Linux" << std::endl;
+      return false;
+
+    case PositioningStrategy::Type::CursorPosition: {
+      // Position relative to the window under the pointer to avoid coord space mismatches
+      int x = 0, y = 0;
+      GdkWindow* pointer_window = nullptr;
 #if GTK_CHECK_VERSION(3, 20, 0)
-    GdkDisplay* display = gdk_display_get_default();
-    GdkSeat* seat = display ? gdk_display_get_default_seat(display) : nullptr;
-    GdkDevice* pointer = seat ? gdk_seat_get_pointer(seat) : nullptr;
-    if (pointer) {
-      pointer_window = gdk_device_get_window_at_position(pointer, &x, &y);
-    }
+      GdkDisplay* display = gdk_display_get_default();
+      GdkSeat* seat = display ? gdk_display_get_default_seat(display) : nullptr;
+      GdkDevice* pointer = seat ? gdk_seat_get_pointer(seat) : nullptr;
+      if (pointer) {
+        pointer_window = gdk_device_get_window_at_position(pointer, &x, &y);
+      }
 #else
-    GdkDeviceManager* devman = gdk_display_get_device_manager(gdk_display_get_default());
-    GdkDevice* pointer = gdk_device_manager_get_client_pointer(devman);
-    if (pointer) {
-      GdkScreen* screen = nullptr;
-      gdk_device_get_position(pointer, &screen, &x, &y);  // screen coords
-      pointer_window = gdk_get_default_root_window();
-    }
+      GdkDeviceManager* devman = gdk_display_get_device_manager(gdk_display_get_default());
+      GdkDevice* pointer = gdk_device_manager_get_client_pointer(devman);
+      if (pointer) {
+        GdkScreen* screen = nullptr;
+        gdk_device_get_position(pointer, &screen, &x, &y);  // screen coords
+        pointer_window = gdk_get_default_root_window();
+      }
 #endif
-    if (pointer_window) {
-      gdk_window = pointer_window;  // ensure rect coords match this window
-    } else if (!gdk_window) {
-      gdk_window = gdk_get_default_root_window();
+      if (pointer_window) {
+        gdk_window = pointer_window;  // ensure rect coords match this window
+      } else if (!gdk_window) {
+        gdk_window = gdk_get_default_root_window();
+      }
+
+      rectangle.x = x;
+      rectangle.y = y;
+      rectangle.width = 1;
+      rectangle.height = 1;
+      break;
     }
 
-    rectangle.x = x;
-    rectangle.y = y;
-    rectangle.width = 1;
-    rectangle.height = 1;
-  } else {
-    // Absolute or Relative positioning
-    Point position;
-
-    if (strategy.GetType() == PositioningStrategy::Type::Absolute) {
-      position = strategy.GetAbsolutePosition();
-      // For absolute positioning, use root window coordinates directly
-      rectangle.x = static_cast<int>(position.x);
-      rectangle.y = static_cast<int>(position.y);
-    } else {
+    case PositioningStrategy::Type::Relative: {
       // Relative positioning
       Rectangle rect = strategy.GetRelativeRectangle();
       Point offset = strategy.GetRelativeOffset();
-      position = Point{rect.x + offset.x, rect.y + offset.y};
+      Point position = Point{rect.x + offset.x, rect.y + offset.y};
 
       // If we have a relative window, adjust for frame extents and title bar
       if (relative_window && relative_window->GetNativeObject()) {
@@ -775,18 +774,24 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
 
         // Convert content-relative coordinates to window-relative coordinates
         // Apply DPI scaling, then adjust for window position and frame extents
-        rectangle.x = static_cast<int>((position.x * device_pixel_ratio) + window_x - frame_rectangle.x);
-        rectangle.y = static_cast<int>((position.y * device_pixel_ratio) + window_y - frame_rectangle.y + title_bar_height);
+        rectangle.x =
+            static_cast<int>((position.x * device_pixel_ratio) + window_x - frame_rectangle.x);
+        rectangle.y = static_cast<int>((position.y * device_pixel_ratio) + window_y -
+                                       frame_rectangle.y + title_bar_height);
       } else {
         // Relative to rectangle (no window) - use root window coordinates
         rectangle.x = static_cast<int>(position.x);
         rectangle.y = static_cast<int>(position.y);
       }
+
+      // Set rectangle dimensions
+      rectangle.width = 1;
+      rectangle.height = 1;
+      break;
     }
 
-    // Set rectangle dimensions
-    rectangle.width = 1;
-    rectangle.height = 1;
+    default:
+      return false;
   }
 
   // Map placement to GDK gravity (menu anchor)
