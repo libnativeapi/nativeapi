@@ -34,10 +34,9 @@ PositioningStrategy PositioningStrategy::Relative(const Window& window, const Po
 
 Rectangle PositioningStrategy::GetRelativeRectangle() const {
   if (relative_window_) {
-    return relative_window_->GetBounds();
+    return relative_window_->GetContentBounds();
   }
   return relative_rect_;
 }
 
 }  // namespace nativeapi
-

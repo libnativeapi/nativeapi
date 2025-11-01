@@ -655,211 +655,143 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
     return data.result;
   }
 
-  if (pimpl_->gtk_menu_) {
-    gtk_widget_show_all(pimpl_->gtk_menu_);
+  if (!pimpl_->gtk_menu_) {
+    return false;
+  }
 
-    // Try to get GdkWindow from strategy if it's Relative type with a window
-    GdkWindow* gdk_window = nullptr;
-    GdkRectangle rectangle;
-    bool use_explicit_position = false;
+  gtk_widget_show_all(pimpl_->gtk_menu_);
 
-    // Determine position based on strategy type
-    switch (strategy.GetType()) {
-      case PositioningStrategy::Type::Absolute: {
-        Point abs_pos = strategy.GetAbsolutePosition();
-        rectangle.x = static_cast<int>(abs_pos.x);
-        rectangle.y = static_cast<int>(abs_pos.y);
-        rectangle.width = 1;
-        rectangle.height = 1;
-        use_explicit_position = true;
-        // Use root window for absolute positioning
-        gdk_window = gdk_get_default_root_window();
-        break;
-      }
-
-      case PositioningStrategy::Type::CursorPosition: {
-        // Will use gtk_menu_popup_at_pointer or mouse position
-        use_explicit_position = false;
-        break;
-      }
-
-      case PositioningStrategy::Type::Relative: {
-        const Window* relative_window = strategy.GetRelativeWindow();
-        if (relative_window) {
-          // Strategy was created with a Window - use its GdkWindow
-          void* native_obj = relative_window->GetNativeObject();
-          if (native_obj) {
-            gdk_window = static_cast<GdkWindow*>(native_obj);
-
-            // Get window frame extents for accurate positioning
-            GdkRectangle frame_rectangle;
-            gdk_window_get_frame_extents(gdk_window, &frame_rectangle);
-
-            // Get window position
-            Point window_pos = relative_window->GetPosition();
-
-            // Try to get GtkWindow for title bar height calculation
-            int title_bar_height = 0;
-            GtkWindow* gtk_window = nullptr;
-            // Find GtkWindow from GdkWindow by iterating through all toplevel windows
-            GList* toplevels = gtk_window_list_toplevels();
-            for (GList* l = toplevels; l != nullptr; l = l->next) {
-              GtkWindow* candidate = GTK_WINDOW(l->data);
-              GdkWindow* candidate_gdk = gtk_widget_get_window(GTK_WIDGET(candidate));
-              if (candidate_gdk == gdk_window) {
-                gtk_window = candidate;
-                break;
-              }
-            }
-            g_list_free(toplevels);
-
-            if (gtk_window) {
-              GtkWidget* titlebar = gtk_window_get_titlebar(gtk_window);
-              if (titlebar) {
-                title_bar_height = gtk_widget_get_allocated_height(titlebar);
-              }
-            }
-
-            // Get relative rectangle and offset
-            Rectangle rect = strategy.GetRelativeRectangle();
-            Point offset = strategy.GetRelativeOffset();
-
-            // Calculate position: relative position (already in screen coordinates from GetRelativeRectangle)
-            // + offset, then adjust for frame extents and title bar
-            // Note: GetRelativeRectangle() returns window bounds in screen coordinates,
-            // so we need to add the offset and adjust for frame/titlebar
-            rectangle.x = static_cast<int>(rect.x + offset.x - frame_rectangle.x);
-            rectangle.y = static_cast<int>(rect.y + offset.y - frame_rectangle.y + title_bar_height);
-            rectangle.width = 1;
-            rectangle.height = 1;
-            use_explicit_position = true;
-          } else {
-            // Fallback: use root window
-            gdk_window = gdk_get_default_root_window();
-            Rectangle rect = strategy.GetRelativeRectangle();
-            Point offset = strategy.GetRelativeOffset();
-            rectangle.x = static_cast<int>(rect.x + offset.x);
-            rectangle.y = static_cast<int>(rect.y + offset.y);
-            rectangle.width = 1;
-            rectangle.height = 1;
-            use_explicit_position = true;
-          }
-        } else {
-          // Strategy was created with a Rectangle - use root window
-          Rectangle rect = strategy.GetRelativeRectangle();
-          Point offset = strategy.GetRelativeOffset();
-          rectangle.x = static_cast<int>(rect.x + offset.x);
-          rectangle.y = static_cast<int>(rect.y + offset.y);
-          rectangle.width = 1;
-          rectangle.height = 1;
-          use_explicit_position = true;
-          gdk_window = gdk_get_default_root_window();
-        }
-        break;
-      }
-    }
-
-    // Map placement to GDK gravity values
-    GdkGravity anchor_gravity = GDK_GRAVITY_NORTH_WEST;
-    GdkGravity menu_gravity = GDK_GRAVITY_NORTH_WEST;
-
-    switch (placement) {
-      case Placement::Top:
-        anchor_gravity = GDK_GRAVITY_SOUTH;
-        menu_gravity = GDK_GRAVITY_NORTH;
-        break;
-      case Placement::TopStart:
-        anchor_gravity = GDK_GRAVITY_SOUTH_WEST;
-        menu_gravity = GDK_GRAVITY_NORTH_WEST;
-        break;
-      case Placement::TopEnd:
-        anchor_gravity = GDK_GRAVITY_SOUTH_EAST;
-        menu_gravity = GDK_GRAVITY_NORTH_EAST;
-        break;
-      case Placement::Right:
-        anchor_gravity = GDK_GRAVITY_WEST;
-        menu_gravity = GDK_GRAVITY_EAST;
-        break;
-      case Placement::RightStart:
-        anchor_gravity = GDK_GRAVITY_NORTH_WEST;
-        menu_gravity = GDK_GRAVITY_NORTH_EAST;
-        break;
-      case Placement::RightEnd:
-        anchor_gravity = GDK_GRAVITY_SOUTH_WEST;
-        menu_gravity = GDK_GRAVITY_SOUTH_EAST;
-        break;
-      case Placement::Bottom:
-        anchor_gravity = GDK_GRAVITY_NORTH;
-        menu_gravity = GDK_GRAVITY_SOUTH;
-        break;
-      case Placement::BottomStart:
-        anchor_gravity = GDK_GRAVITY_NORTH_WEST;
-        menu_gravity = GDK_GRAVITY_SOUTH_WEST;
-        break;
-      case Placement::BottomEnd:
-        anchor_gravity = GDK_GRAVITY_NORTH_EAST;
-        menu_gravity = GDK_GRAVITY_SOUTH_EAST;
-        break;
-      case Placement::Left:
-        anchor_gravity = GDK_GRAVITY_EAST;
-        menu_gravity = GDK_GRAVITY_WEST;
-        break;
-      case Placement::LeftStart:
-        anchor_gravity = GDK_GRAVITY_NORTH_EAST;
-        menu_gravity = GDK_GRAVITY_NORTH_WEST;
-        break;
-      case Placement::LeftEnd:
-        anchor_gravity = GDK_GRAVITY_SOUTH_EAST;
-        menu_gravity = GDK_GRAVITY_SOUTH_WEST;
-        break;
-    }
-
-    // Position menu
-    if (use_explicit_position) {
-      if (!gdk_window) {
-        // Fallback to root window if no window available
-        gdk_window = gdk_get_default_root_window();
-      }
-      if (!gdk_window) {
-        // No root window (e.g., Wayland) and no parent to anchor to → cannot show
-        return false;
-      }
-      gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), gdk_window, &rectangle,
-                             anchor_gravity, menu_gravity, nullptr);
-      return true;
-    } else {
-      // CursorPosition: Try to get mouse position relative to a window if available
-      const Window* relative_window = strategy.GetRelativeWindow();
-      if (relative_window) {
-        void* native_obj = relative_window->GetNativeObject();
-        if (native_obj) {
-          GdkWindow* target_window = static_cast<GdkWindow*>(native_obj);
-          GdkDevice* mouse_device;
-#if GTK_CHECK_VERSION(3, 20, 0)
-          GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
-          mouse_device = gdk_seat_get_pointer(seat);
-#else
-          GdkDeviceManager* devman =
-              gdk_display_get_device_manager(gdk_display_get_default());
-          mouse_device = gdk_device_manager_get_client_pointer(devman);
-#endif
-          int x, y;
-          gdk_window_get_device_position(target_window, mouse_device, &x, &y, nullptr);
-          rectangle.x = x;
-          rectangle.y = y;
-          rectangle.width = 1;
-          rectangle.height = 1;
-          gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), target_window, &rectangle,
-                                 anchor_gravity, menu_gravity, nullptr);
-          return true;
-        }
-      }
-      // Fallback: Let GTK automatically use the current event
-      gtk_menu_popup_at_pointer(GTK_MENU(pimpl_->gtk_menu_), nullptr);
-      return true;
+  // Get GdkWindow from relative window if available, otherwise use root window
+  GdkWindow* gdk_window = nullptr;
+  const Window* relative_window = strategy.GetRelativeWindow();
+  if (relative_window) {
+    void* native_obj = relative_window->GetNativeObject();
+    if (native_obj) {
+      gdk_window = static_cast<GdkWindow*>(native_obj);
     }
   }
-  return false;
+  if (!gdk_window) {
+    gdk_window = gdk_get_default_root_window();
+  }
+  if (!gdk_window) {
+    // No window available (e.g., Wayland without root window) → cannot show
+    return false;
+  }
+
+  GdkRectangle rectangle;
+
+  // Calculate position based on strategy type
+  if (strategy.GetType() == PositioningStrategy::Type::CursorPosition) {
+    // Use mouse position
+    GdkDevice* mouse_device;
+#if GTK_CHECK_VERSION(3, 20, 0)
+    GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
+    mouse_device = gdk_seat_get_pointer(seat);
+#else
+    GdkDeviceManager* devman =
+        gdk_display_get_device_manager(gdk_display_get_default());
+    mouse_device = gdk_device_manager_get_client_pointer(devman);
+#endif
+    int x, y;
+    gdk_window_get_device_position(gdk_window, mouse_device, &x, &y, nullptr);
+    rectangle.x = x;
+    rectangle.y = y;
+    rectangle.width = 1;
+    rectangle.height = 1;
+  } else {
+    // Absolute or Relative positioning
+    Point position;
+
+    if (strategy.GetType() == PositioningStrategy::Type::Absolute) {
+      position = strategy.GetAbsolutePosition();
+      // For absolute positioning, use root window coordinates directly
+      rectangle.x = static_cast<int>(position.x);
+      rectangle.y = static_cast<int>(position.y);
+    } else {
+      // Relative positioning
+      Rectangle rect = strategy.GetRelativeRectangle();
+      Point offset = strategy.GetRelativeOffset();
+      position = Point{rect.x + offset.x, rect.y + offset.y};
+
+      // If we have a relative window, adjust for frame extents and title bar
+      if (relative_window && relative_window->GetNativeObject()) {
+        GdkRectangle frame_rectangle;
+        gdk_window_get_frame_extents(gdk_window, &frame_rectangle);
+
+        // Get title bar height from GtkWindow
+        int title_bar_height = 0;
+        GtkWindow* gtk_window = nullptr;
+        GList* toplevels = gtk_window_list_toplevels();
+        for (GList* l = toplevels; l != nullptr; l = l->next) {
+          GtkWindow* candidate = GTK_WINDOW(l->data);
+          GdkWindow* candidate_gdk = gtk_widget_get_window(GTK_WIDGET(candidate));
+          if (candidate_gdk == gdk_window) {
+            gtk_window = candidate;
+            break;
+          }
+        }
+        g_list_free(toplevels);
+
+        if (gtk_window) {
+          GtkWidget* titlebar = gtk_window_get_titlebar(gtk_window);
+          if (titlebar) {
+            title_bar_height = gtk_widget_get_allocated_height(titlebar);
+          }
+        }
+
+        rectangle.x = static_cast<int>(position.x - frame_rectangle.x);
+        rectangle.y = static_cast<int>(position.y - frame_rectangle.y + title_bar_height);
+      } else {
+        // Relative to rectangle (no window) - use root window coordinates
+        rectangle.x = static_cast<int>(position.x);
+        rectangle.y = static_cast<int>(position.y);
+      }
+    }
+
+    // Set rectangle dimensions
+    rectangle.width = 1;
+    rectangle.height = 1;
+  }
+
+  // Map placement to GDK gravity (menu anchor)
+  GdkGravity menu_anchor = GDK_GRAVITY_NORTH_WEST;
+
+  switch (placement) {
+    case Placement::TopStart:
+    case Placement::Top:
+      menu_anchor = GDK_GRAVITY_SOUTH_WEST;
+      break;
+    case Placement::TopEnd:
+      menu_anchor = GDK_GRAVITY_SOUTH_EAST;
+      break;
+    case Placement::BottomStart:
+    case Placement::Bottom:
+      menu_anchor = GDK_GRAVITY_NORTH_WEST;
+      break;
+    case Placement::BottomEnd:
+      menu_anchor = GDK_GRAVITY_NORTH_EAST;
+      break;
+    case Placement::LeftStart:
+    case Placement::Left:
+      menu_anchor = GDK_GRAVITY_NORTH_EAST;
+      break;
+    case Placement::LeftEnd:
+      menu_anchor = GDK_GRAVITY_SOUTH_EAST;
+      break;
+    case Placement::RightStart:
+    case Placement::Right:
+      menu_anchor = GDK_GRAVITY_NORTH_WEST;
+      break;
+    case Placement::RightEnd:
+      menu_anchor = GDK_GRAVITY_SOUTH_WEST;
+      break;
+  }
+
+  // Position menu using gtk_menu_popup_at_rect
+  gtk_menu_popup_at_rect(GTK_MENU(pimpl_->gtk_menu_), gdk_window, &rectangle,
+                         GDK_GRAVITY_NORTH_WEST, menu_anchor, nullptr);
+
+  return true;
 }
 
 bool Menu::Close() {
