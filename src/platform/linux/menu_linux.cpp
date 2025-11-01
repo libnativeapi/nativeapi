@@ -682,18 +682,31 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
 
   // Calculate position based on strategy type
   if (strategy.GetType() == PositioningStrategy::Type::CursorPosition) {
-    // Use mouse position
-    GdkDevice* mouse_device;
+    // Position relative to the window under the pointer to avoid coord space mismatches
+    int x = 0, y = 0;
+    GdkWindow* pointer_window = nullptr;
 #if GTK_CHECK_VERSION(3, 20, 0)
-    GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
-    mouse_device = gdk_seat_get_pointer(seat);
+    GdkDisplay* display = gdk_display_get_default();
+    GdkSeat* seat = display ? gdk_display_get_default_seat(display) : nullptr;
+    GdkDevice* pointer = seat ? gdk_seat_get_pointer(seat) : nullptr;
+    if (pointer) {
+      pointer_window = gdk_device_get_window_at_position(pointer, &x, &y);
+    }
 #else
-    GdkDeviceManager* devman =
-        gdk_display_get_device_manager(gdk_display_get_default());
-    mouse_device = gdk_device_manager_get_client_pointer(devman);
+    GdkDeviceManager* devman = gdk_display_get_device_manager(gdk_display_get_default());
+    GdkDevice* pointer = gdk_device_manager_get_client_pointer(devman);
+    if (pointer) {
+      GdkScreen* screen = nullptr;
+      gdk_device_get_position(pointer, &screen, &x, &y);  // screen coords
+      pointer_window = gdk_get_default_root_window();
+    }
 #endif
-    int x, y;
-    gdk_window_get_device_position(gdk_window, mouse_device, &x, &y, nullptr);
+    if (pointer_window) {
+      gdk_window = pointer_window;  // ensure rect coords match this window
+    } else if (!gdk_window) {
+      gdk_window = gdk_get_default_root_window();
+    }
+
     rectangle.x = x;
     rectangle.y = y;
     rectangle.width = 1;
