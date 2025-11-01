@@ -3,6 +3,7 @@
 #include "../../window.h"
 #include "../../window_manager.h"
 #include "string_utils_windows.h"
+#include "dpi_utils_windows.h"
 
 namespace nativeapi {
 
@@ -258,16 +259,20 @@ Rectangle Window::GetContentBounds() const {
     RECT clientRect;
     GetClientRect(pimpl_->hwnd_, &clientRect);
 
-    // Convert client rect to screen coordinates
+    // Convert client rect to screen coordinates (physical pixels)
     POINT topLeft = {clientRect.left, clientRect.top};
     POINT bottomRight = {clientRect.right, clientRect.bottom};
     ClientToScreen(pimpl_->hwnd_, &topLeft);
     ClientToScreen(pimpl_->hwnd_, &bottomRight);
 
-    bounds.x = topLeft.x;
-    bounds.y = topLeft.y;
-    bounds.width = bottomRight.x - topLeft.x;
-    bounds.height = bottomRight.y - topLeft.y;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0) scale = 1.0;
+
+    // Return logical pixels (DIP) by dividing by scale
+    bounds.x = static_cast<double>(topLeft.x) / scale;
+    bounds.y = static_cast<double>(topLeft.y) / scale;
+    bounds.width = static_cast<double>(bottomRight.x - topLeft.x) / scale;
+    bounds.height = static_cast<double>(bottomRight.y - topLeft.y) / scale;
   }
   return bounds;
 }
