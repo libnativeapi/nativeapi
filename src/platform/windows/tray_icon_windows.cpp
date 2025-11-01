@@ -38,7 +38,8 @@ class TrayIcon::Impl {
       : hwnd_(nullptr),
         icon_handle_(nullptr),
         window_proc_handle_id_(-1),
-        event_monitoring_setup_(false) {
+        event_monitoring_setup_(false),
+        context_menu_trigger_(ContextMenuTrigger::None) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
@@ -52,7 +53,8 @@ class TrayIcon::Impl {
         clicked_callback_(std::move(clicked_callback)),
         right_clicked_callback_(std::move(right_clicked_callback)),
         double_clicked_callback_(std::move(double_clicked_callback)),
-        event_monitoring_setup_(false) {
+        event_monitoring_setup_(false),
+        context_menu_trigger_(ContextMenuTrigger::None) {
     tray_icon_id_ = IdAllocator::Allocate<TrayIcon>();
     // Initialize NOTIFYICONDATA structure
     ZeroMemory(&nid_, sizeof(NOTIFYICONDATAW));
@@ -149,6 +151,7 @@ class TrayIcon::Impl {
   HICON icon_handle_;
   TrayIconId tray_icon_id_;
   bool event_monitoring_setup_;
+  ContextMenuTrigger context_menu_trigger_;
 
   // Callback functions for event emission
   ClickedCallback clicked_callback_;
@@ -175,14 +178,28 @@ TrayIcon::TrayIcon(void* native_tray_icon) {
   // The tray_icon_id will be allocated inside Impl constructor
   if (hwnd) {
     // Create callback functions that emit events
-    auto clicked_callback = [this](TrayIconId id) { this->Emit<TrayIconClickedEvent>(id); };
+    auto clicked_callback = [this](TrayIconId id) {
+      this->Emit<TrayIconClickedEvent>(id);
+      // Auto-trigger context menu if configured
+      if (pimpl_ && pimpl_->context_menu_trigger_ == ContextMenuTrigger::Clicked) {
+        this->OpenContextMenu();
+      }
+    };
 
     auto right_clicked_callback = [this](TrayIconId id) {
       this->Emit<TrayIconRightClickedEvent>(id);
+      // Auto-trigger context menu if configured
+      if (pimpl_ && pimpl_->context_menu_trigger_ == ContextMenuTrigger::RightClicked) {
+        this->OpenContextMenu();
+      }
     };
 
     auto double_clicked_callback = [this](TrayIconId id) {
       this->Emit<TrayIconDoubleClickedEvent>(id);
+      // Auto-trigger context menu if configured
+      if (pimpl_ && pimpl_->context_menu_trigger_ == ContextMenuTrigger::DoubleClicked) {
+        this->OpenContextMenu();
+      }
     };
 
     pimpl_ =
@@ -370,6 +387,14 @@ bool TrayIcon::CloseContextMenu() {
 
   // Close the context menu
   return pimpl_->context_menu_->Close();
+}
+
+void TrayIcon::SetContextMenuTrigger(ContextMenuTrigger trigger) {
+  pimpl_->context_menu_trigger_ = trigger;
+}
+
+ContextMenuTrigger TrayIcon::GetContextMenuTrigger() {
+  return pimpl_->context_menu_trigger_;
 }
 
 void* TrayIcon::GetNativeObjectInternal() const {

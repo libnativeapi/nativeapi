@@ -59,6 +59,17 @@ typedef enum {
 } native_tray_icon_event_type_t;
 
 /**
+ * Context menu trigger modes
+ * Defines how the context menu is triggered for a tray icon
+ */
+typedef enum {
+  NATIVE_CONTEXT_MENU_TRIGGER_NONE = 0,           // Manual control only
+  NATIVE_CONTEXT_MENU_TRIGGER_CLICKED = 1,        // Left click triggers menu
+  NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED = 2,  // Right click triggers menu
+  NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED = 3  // Double click triggers menu
+} native_context_menu_trigger_t;
+
+/**
  * Event callback function type
  */
 typedef void (*native_tray_icon_event_callback_t)(const void* event, void* user_data);
@@ -163,6 +174,24 @@ void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu
  */
 FFI_PLUGIN_EXPORT
 native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon);
+
+/**
+ * Set the context menu trigger behavior
+ * @param tray_icon The tray icon
+ * @param trigger The desired trigger behavior
+ */
+FFI_PLUGIN_EXPORT
+void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
+                                               native_context_menu_trigger_t trigger);
+
+/**
+ * Get the current context menu trigger behavior
+ * @param tray_icon The tray icon
+ * @return The current trigger behavior
+ */
+FFI_PLUGIN_EXPORT
+native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
+    native_tray_icon_t tray_icon);
 
 /**
  * Get the screen bounds of the tray icon

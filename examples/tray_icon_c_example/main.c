@@ -172,6 +172,27 @@ int main() {
   // Set the context menu
   native_tray_icon_set_context_menu(tray_icon, menu);
 
+  // Set context menu trigger to automatically show menu on right click
+  native_tray_icon_set_context_menu_trigger(tray_icon, NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED);
+
+  // Get and display the current trigger mode
+  native_context_menu_trigger_t current_trigger = native_tray_icon_get_context_menu_trigger(tray_icon);
+  printf("Context menu trigger mode: ");
+  switch (current_trigger) {
+    case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
+      printf("None (manual control)\n");
+      break;
+    case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
+      printf("Left Click\n");
+      break;
+    case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
+      printf("Right Click\n");
+      break;
+    case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
+      printf("Double Click\n");
+      break;
+  }
+
   // Set up tray icon event listeners using new API
   native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_clicked, NULL);
   native_tray_icon_add_listener(tray_icon, NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED,
@@ -200,10 +221,12 @@ int main() {
 
   printf("\n=== Tray icon and menu are now active ===\n");
   printf("- Click the tray icon to see click message\n");
-  printf("- Right click the tray icon to open context menu\n");
+  printf("- Right click the tray icon to auto-open context menu\n");
   printf("- Double click the tray icon to see double click message\n");
   printf("- Use menu items to interact with the application\n");
   printf("- Click 'Exit' to quit\n");
+  printf("\nNote: Context menu automatically shows on right-click\n");
+  printf("      because we set NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED.\n");
   printf("\nRunning... (Press Ctrl+C to force quit)\n");
 
   int exit_code = native_run_example_app();

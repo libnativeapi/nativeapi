@@ -48,13 +48,12 @@ int main() {
     std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
   });
 
-  trayIcon->AddListener<TrayIconRightClickedEvent>(
-      [trayIcon](const TrayIconRightClickedEvent& event) {
-        std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
-        std::cout << "This is the right click handler working!" << std::endl;
-        std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
-        trayIcon->OpenContextMenu();
-      });
+  trayIcon->AddListener<TrayIconRightClickedEvent>([](const TrayIconRightClickedEvent& event) {
+    std::cout << "*** TRAY ICON RIGHT CLICKED! ***" << std::endl;
+    std::cout << "This is the right click handler working!" << std::endl;
+    std::cout << "Tray icon ID: " << event.GetTrayIconId() << std::endl;
+    // Note: Context menu will be auto-triggered by SetContextMenuTrigger below
+  });
 
   trayIcon->AddListener<TrayIconDoubleClickedEvent>([](const TrayIconDoubleClickedEvent& event) {
     std::cout << "*** TRAY ICON DOUBLE CLICKED! ***" << std::endl;
@@ -105,6 +104,29 @@ int main() {
   // Set the context menu to the tray icon
   trayIcon->SetContextMenu(context_menu);
 
+  // Set context menu trigger to automatically show menu on right click
+  // This is the common behavior on Windows and most desktop environments
+  trayIcon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);
+  
+  // Get and display the current trigger mode
+  ContextMenuTrigger currentTrigger = trayIcon->GetContextMenuTrigger();
+  std::cout << "Context menu trigger mode: ";
+  switch (currentTrigger) {
+    case ContextMenuTrigger::None:
+      std::cout << "None (manual control)";
+      break;
+    case ContextMenuTrigger::Clicked:
+      std::cout << "Left Click";
+      break;
+    case ContextMenuTrigger::RightClicked:
+      std::cout << "Right Click";
+      break;
+    case ContextMenuTrigger::DoubleClicked:
+      std::cout << "Double Click";
+      break;
+  }
+  std::cout << std::endl;
+
   // Show the tray icon
   if (trayIcon->SetVisible(true)) {
     std::cout << "Tray icon is now visible!" << std::endl;
@@ -121,10 +143,15 @@ int main() {
   std::cout << "========================================" << std::endl;
   std::cout << "Tray icon example is now running!" << std::endl;
   std::cout << "Try clicking on the tray icon:" << std::endl;
-  std::cout << "- Left click: Single click" << std::endl;
-  std::cout << "- Right click: Opens context menu" << std::endl;
-  std::cout << "- Double click: Quick double click" << std::endl;
+  std::cout << "- Left click: Single click event" << std::endl;
+  std::cout << "- Right click: Auto-opens context menu (via SetContextMenuTrigger)" << std::endl;
+  std::cout << "- Double click: Quick double click event" << std::endl;
   std::cout << "- Context menu: Right-click to see options including Exit" << std::endl;
+  std::cout << std::endl;
+  std::cout << "Note: The context menu is automatically shown on right-click" << std::endl;
+  std::cout << "      because we set ContextMenuTrigger::RightClicked." << std::endl;
+  std::cout << "      You can also use Clicked, DoubleClicked, or None for manual control." << std::endl;
+  std::cout << std::endl;
   std::cout << "Use the Exit menu item to quit the application." << std::endl;
   std::cout << "========================================" << std::endl;
 

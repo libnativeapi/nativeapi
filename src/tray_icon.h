@@ -17,6 +17,46 @@ class Image;
 typedef IdAllocator::IdType TrayIconId;
 
 /**
+ * @brief Defines how the context menu is triggered for a tray icon.
+ *
+ * This enum specifies which mouse interactions should display the tray icon's
+ * context menu. The values align with tray icon event types for consistency.
+ */
+enum class ContextMenuTrigger {
+  /**
+   * @brief Context menu is not automatically triggered by mouse events.
+   *
+   * The application must call OpenContextMenu() explicitly to display the menu.
+   * Use this when you want full control over when the menu appears.
+   */
+  None,
+
+  /**
+   * @brief Context menu is triggered on TrayIconClickedEvent.
+   *
+   * Automatically opens the context menu when the tray icon is left-clicked.
+   * This is common on some Linux desktop environments.
+   */
+  Clicked,
+
+  /**
+   * @brief Context menu is triggered on TrayIconRightClickedEvent.
+   *
+   * Automatically opens the context menu when the tray icon is right-clicked.
+   * This follows the convention on Windows and most desktop environments.
+   */
+  RightClicked,
+
+  /**
+   * @brief Context menu is triggered on TrayIconDoubleClickedEvent.
+   *
+   * Automatically opens the context menu when the tray icon is double-clicked.
+   * Less common but useful for applications that use single-click for another action.
+   */
+  DoubleClicked
+};
+
+/**
  * @brief TrayIcon represents a system tray icon (notification area icon).
  *
  * This class provides a cross-platform interface for creating and managing
@@ -212,6 +252,47 @@ class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider
    * @return A copy of the current context Menu object
    */
   std::shared_ptr<Menu> GetContextMenu();
+
+  /**
+   * @brief Set the context menu trigger behavior.
+   *
+   * Determines which mouse interactions will automatically display the
+   * context menu. By default, the trigger is set to None, requiring
+   * explicit control via OpenContextMenu() or by setting a trigger mode.
+   *
+   * @param trigger The desired trigger behavior
+   *
+   * @note When set to ContextMenuTrigger::None (default), the context menu
+   *       will only appear when OpenContextMenu() is called explicitly, giving
+   *       you full control over menu display through event listeners.
+   *
+   * @example
+   * ```cpp
+   * // Right click shows menu (common on Windows/Linux)
+   * tray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);
+   *
+   * // Left click shows menu (common on some Linux environments and macOS)
+   * tray_icon->SetContextMenuTrigger(ContextMenuTrigger::Clicked);
+   *
+   * // Double click shows menu
+   * tray_icon->SetContextMenuTrigger(ContextMenuTrigger::DoubleClicked);
+   *
+   * // Manual control (default) - handle events yourself
+   * tray_icon->SetContextMenuTrigger(ContextMenuTrigger::None);
+   * tray_icon->AddListener<TrayIconRightClickedEvent>([&](const auto& e) {
+   *   // Custom logic before showing menu
+   *   tray_icon->OpenContextMenu();
+   * });
+   * ```
+   */
+  void SetContextMenuTrigger(ContextMenuTrigger trigger);
+
+  /**
+   * @brief Get the current context menu trigger behavior.
+   *
+   * @return The current ContextMenuTrigger setting
+   */
+  ContextMenuTrigger GetContextMenuTrigger();
 
   /**
    * @brief Get the screen coordinates and dimensions of the tray icon.

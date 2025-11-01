@@ -39,7 +39,8 @@ class TrayIcon::Impl {
       : ns_status_item_(status_item),
         ns_status_bar_button_target_(nil),
         menu_closed_listener_id_(0),
-        click_handler_setup_(false) {
+        click_handler_setup_(false),
+        context_menu_trigger_(ContextMenuTrigger::None) {
     if (status_item) {
       // Check if ID already exists in the associated object
       NSNumber* allocated_id = objc_getAssociatedObject(status_item, kTrayIconIdKey);
@@ -137,6 +138,7 @@ class TrayIcon::Impl {
   std::shared_ptr<Menu> context_menu_;
   size_t menu_closed_listener_id_;
   bool click_handler_setup_;
+  ContextMenuTrigger context_menu_trigger_;
 };
 
 TrayIcon::TrayIcon() : TrayIcon(nullptr) {}
@@ -170,14 +172,26 @@ void TrayIcon::StartEventListening() {
   if (pimpl_->ns_status_bar_button_target_) {
     pimpl_->ns_status_bar_button_target_.left_clicked_callback_ = ^{
       Emit<TrayIconClickedEvent>(pimpl_->id_);
+      // Auto-trigger context menu if configured
+      if (pimpl_->context_menu_trigger_ == ContextMenuTrigger::Clicked) {
+        OpenContextMenu();
+      }
     };
 
     pimpl_->ns_status_bar_button_target_.right_clicked_callback_ = ^{
       Emit<TrayIconRightClickedEvent>(pimpl_->id_);
+      // Auto-trigger context menu if configured
+      if (pimpl_->context_menu_trigger_ == ContextMenuTrigger::RightClicked) {
+        OpenContextMenu();
+      }
     };
 
     pimpl_->ns_status_bar_button_target_.double_clicked_callback_ = ^{
       Emit<TrayIconDoubleClickedEvent>(pimpl_->id_);
+      // Auto-trigger context menu if configured
+      if (pimpl_->context_menu_trigger_ == ContextMenuTrigger::DoubleClicked) {
+        OpenContextMenu();
+      }
     };
   }
 }
@@ -364,6 +378,14 @@ bool TrayIcon::CloseContextMenu() {
 
   // Close the context menu
   return pimpl_->context_menu_->Close();
+}
+
+void TrayIcon::SetContextMenuTrigger(ContextMenuTrigger trigger) {
+  pimpl_->context_menu_trigger_ = trigger;
+}
+
+ContextMenuTrigger TrayIcon::GetContextMenuTrigger() {
+  return pimpl_->context_menu_trigger_;
 }
 
 void* TrayIcon::GetNativeObjectInternal() const {

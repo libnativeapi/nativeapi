@@ -230,6 +230,67 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
   }
 }
 
+void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
+                                               native_context_menu_trigger_t trigger) {
+  if (!tray_icon)
+    return;
+
+  try {
+    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    
+    // Convert C enum to C++ enum
+    ContextMenuTrigger cpp_trigger;
+    switch (trigger) {
+      case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
+        cpp_trigger = ContextMenuTrigger::None;
+        break;
+      case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
+        cpp_trigger = ContextMenuTrigger::Clicked;
+        break;
+      case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
+        cpp_trigger = ContextMenuTrigger::RightClicked;
+        break;
+      case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
+        cpp_trigger = ContextMenuTrigger::DoubleClicked;
+        break;
+      default:
+        cpp_trigger = ContextMenuTrigger::None;
+        break;
+    }
+    
+    tray_icon_ptr->SetContextMenuTrigger(cpp_trigger);
+  } catch (...) {
+    // Ignore exceptions
+  }
+}
+
+native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
+    native_tray_icon_t tray_icon) {
+  if (!tray_icon)
+    return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+
+  try {
+    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    ContextMenuTrigger cpp_trigger = tray_icon_ptr->GetContextMenuTrigger();
+    
+    // Convert C++ enum to C enum
+    switch (cpp_trigger) {
+      case ContextMenuTrigger::None:
+        return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+      case ContextMenuTrigger::Clicked:
+        return NATIVE_CONTEXT_MENU_TRIGGER_CLICKED;
+      case ContextMenuTrigger::RightClicked:
+        return NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED;
+      case ContextMenuTrigger::DoubleClicked:
+        return NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED;
+      default:
+        return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+    }
+  } catch (...) {
+    return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+  }
+}
+
 bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds) {
   if (!tray_icon || !bounds)
     return false;

@@ -33,7 +33,8 @@ class TrayIcon::Impl {
         title_(std::nullopt),
         tooltip_(std::nullopt),
         context_menu_(nullptr),
-        visible_(false) {
+        visible_(false),
+        context_menu_trigger_(ContextMenuTrigger::None) {
     id_ = IdAllocator::Allocate<TrayIcon>();
   }
 
@@ -59,6 +60,7 @@ class TrayIcon::Impl {
   bool visible_;
   TrayIconId id_;
   std::vector<guint> pending_cleanup_sources_;  // Track GLib timeout source IDs
+  ContextMenuTrigger context_menu_trigger_;
 };
 
 TrayIcon::TrayIcon() : pimpl_(std::make_unique<Impl>(nullptr)) {
@@ -274,6 +276,16 @@ bool TrayIcon::CloseContextMenu() {
   // There's no direct way to programmatically close the menu
   // but we can return true as the operation is conceptually successful
   return true;
+}
+
+void TrayIcon::SetContextMenuTrigger(ContextMenuTrigger trigger) {
+  pimpl_->context_menu_trigger_ = trigger;
+  // Note: On Linux with AppIndicator, the menu is automatically shown on right-click
+  // This setting is stored for compatibility but has limited effect on AppIndicator behavior
+}
+
+ContextMenuTrigger TrayIcon::GetContextMenuTrigger() {
+  return pimpl_->context_menu_trigger_;
 }
 
 void* TrayIcon::GetNativeObjectInternal() const {
