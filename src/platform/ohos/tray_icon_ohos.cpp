@@ -67,6 +67,14 @@ std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
   return nullptr;
 }
 
+void TrayIcon::SetContextMenuTrigger(ContextMenuTrigger trigger) {
+  // Not implemented on OpenHarmony yet
+}
+
+ContextMenuTrigger TrayIcon::GetContextMenuTrigger() {
+  return ContextMenuTrigger::None;
+}
+
 Rectangle TrayIcon::GetBounds() {
   return Rectangle{0.0, 0.0, 0.0, 0.0};
 }

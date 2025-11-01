@@ -55,6 +55,14 @@ std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
   return nullptr;
 }
 
+void TrayIcon::SetContextMenuTrigger(ContextMenuTrigger trigger) {
+  ALOGW("TrayIcon::SetContextMenuTrigger not applicable on Android");
+}
+
+ContextMenuTrigger TrayIcon::GetContextMenuTrigger() {
+  return ContextMenuTrigger::None;
+}
+
 Rectangle TrayIcon::GetBounds() {
   return Rectangle{0.0, 0.0, 0.0, 0.0};
 }
