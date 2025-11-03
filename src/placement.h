@@ -93,4 +93,3 @@ enum class Placement {
 };
 
 }  // namespace nativeapi
-

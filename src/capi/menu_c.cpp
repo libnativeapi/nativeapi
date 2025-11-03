@@ -5,11 +5,11 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include "../placement.h"
-#include "../positioning_strategy.h"
 #include "../global_registry.h"
 #include "../image.h"
 #include "../menu.h"
+#include "../placement.h"
+#include "../positioning_strategy.h"
 #include "string_utils_c.h"
 
 using namespace nativeapi;

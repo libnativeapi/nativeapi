@@ -1,8 +1,8 @@
 #include <optional>
 #include "../../foundation/geometry.h"
-#include "../../positioning_strategy.h"
 #include "../../image.h"
 #include "../../menu.h"
+#include "../../positioning_strategy.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
 

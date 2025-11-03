@@ -10,9 +10,9 @@
 #include "foundation/geometry.h"
 #include "foundation/id_allocator.h"
 #include "foundation/native_object_provider.h"
+#include "menu_event.h"
 #include "placement.h"
 #include "positioning_strategy.h"
-#include "menu_event.h"
 
 namespace nativeapi {
 

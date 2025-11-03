@@ -7,5 +7,3 @@ namespace nativeapi {
 double GetScaleFactorForWindow(HWND hwnd);
 
 }  // namespace nativeapi
-
-

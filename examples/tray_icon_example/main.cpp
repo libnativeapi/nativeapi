@@ -107,7 +107,7 @@ int main() {
   // Set context menu trigger to automatically show menu on right click
   // This is the common behavior on Windows and most desktop environments
   trayIcon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);
-  
+
   // Get and display the current trigger mode
   ContextMenuTrigger currentTrigger = trayIcon->GetContextMenuTrigger();
   std::cout << "Context menu trigger mode: ";
@@ -150,7 +150,8 @@ int main() {
   std::cout << std::endl;
   std::cout << "Note: The context menu is automatically shown on right-click" << std::endl;
   std::cout << "      because we set ContextMenuTrigger::RightClicked." << std::endl;
-  std::cout << "      You can also use Clicked, DoubleClicked, or None for manual control." << std::endl;
+  std::cout << "      You can also use Clicked, DoubleClicked, or None for manual control."
+            << std::endl;
   std::cout << std::endl;
   std::cout << "Use the Exit menu item to quit the application." << std::endl;
   std::cout << "========================================" << std::endl;

@@ -4,15 +4,16 @@ namespace nativeapi {
 
 // Internal: per-monitor DPI via Shcore when available
 static double GetScaleFactorForMonitor(HMONITOR hmonitor) {
-  if (!hmonitor) return 1.0;
+  if (!hmonitor)
+    return 1.0;
   typedef HRESULT(WINAPI * GetDpiForMonitorFunc)(HMONITOR, int, UINT*, UINT*);
   static GetDpiForMonitorFunc pGetDpiForMonitor = nullptr;
   static bool resolved = false;
   if (!resolved) {
     HMODULE hShcore = LoadLibraryW(L"Shcore.dll");
     if (hShcore) {
-      pGetDpiForMonitor = reinterpret_cast<GetDpiForMonitorFunc>(
-          GetProcAddress(hShcore, "GetDpiForMonitor"));
+      pGetDpiForMonitor =
+          reinterpret_cast<GetDpiForMonitorFunc>(GetProcAddress(hShcore, "GetDpiForMonitor"));
     }
     resolved = true;
   }
@@ -34,8 +35,8 @@ double GetScaleFactorForWindow(HWND hwnd) {
     if (!resolved_win) {
       HMODULE hUser32 = LoadLibraryW(L"user32.dll");
       if (hUser32) {
-        pGetDpiForWindow = reinterpret_cast<GetDpiForWindowFunc>(
-            GetProcAddress(hUser32, "GetDpiForWindow"));
+        pGetDpiForWindow =
+            reinterpret_cast<GetDpiForWindowFunc>(GetProcAddress(hUser32, "GetDpiForWindow"));
       }
       resolved_win = true;
     }
@@ -49,7 +50,8 @@ double GetScaleFactorForWindow(HWND hwnd) {
     // Fallback: per-monitor DPI
     HMONITOR hmonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     double monitor_scale = GetScaleFactorForMonitor(hmonitor);
-    if (monitor_scale > 0.0) return monitor_scale;
+    if (monitor_scale > 0.0)
+      return monitor_scale;
   }
 
   // Fallback: system DPI
@@ -65,5 +67,3 @@ double GetScaleFactorForWindow(HWND hwnd) {
 }
 
 }  // namespace nativeapi
-
-

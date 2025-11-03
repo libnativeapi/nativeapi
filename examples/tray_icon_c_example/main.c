@@ -176,7 +176,8 @@ int main() {
   native_tray_icon_set_context_menu_trigger(tray_icon, NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED);
 
   // Get and display the current trigger mode
-  native_context_menu_trigger_t current_trigger = native_tray_icon_get_context_menu_trigger(tray_icon);
+  native_context_menu_trigger_t current_trigger =
+      native_tray_icon_get_context_menu_trigger(tray_icon);
   printf("Context menu trigger mode: ");
   switch (current_trigger) {
     case NATIVE_CONTEXT_MENU_TRIGGER_NONE:

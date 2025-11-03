@@ -4,7 +4,11 @@
 namespace nativeapi {
 
 PositioningStrategy::PositioningStrategy(Type type)
-    : type_(type), absolute_position_{0, 0}, relative_rect_{0, 0, 0, 0}, relative_offset_{0, 0}, relative_window_(nullptr) {}
+    : type_(type),
+      absolute_position_{0, 0},
+      relative_rect_{0, 0, 0, 0},
+      relative_offset_{0, 0},
+      relative_window_(nullptr) {}
 
 PositioningStrategy PositioningStrategy::Absolute(const Point& point) {
   PositioningStrategy strategy(Type::Absolute);

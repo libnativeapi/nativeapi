@@ -237,7 +237,7 @@ void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    
+
     // Convert C enum to C++ enum
     ContextMenuTrigger cpp_trigger;
     switch (trigger) {
@@ -257,7 +257,7 @@ void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
         cpp_trigger = ContextMenuTrigger::None;
         break;
     }
-    
+
     tray_icon_ptr->SetContextMenuTrigger(cpp_trigger);
   } catch (...) {
     // Ignore exceptions
@@ -272,7 +272,7 @@ native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
     ContextMenuTrigger cpp_trigger = tray_icon_ptr->GetContextMenuTrigger();
-    
+
     // Convert C++ enum to C enum
     switch (cpp_trigger) {
       case ContextMenuTrigger::None:

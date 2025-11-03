@@ -715,7 +715,8 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
         // rect and offset are in logical pixels (DIP) for Window-relative
         HWND rel_hwnd = static_cast<HWND>(strategy.GetRelativeWindow()->GetNativeObject());
         double scale = GetScaleFactorForWindow(rel_hwnd);
-        if (scale <= 0.0) scale = 1.0;
+        if (scale <= 0.0)
+          scale = 1.0;
         pt.x = static_cast<int>(std::lround((rect.x + offset.x) * scale));
         pt.y = static_cast<int>(std::lround((rect.y + offset.y) * scale));
       } else {

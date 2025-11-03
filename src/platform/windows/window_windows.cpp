@@ -2,8 +2,8 @@
 #include <iostream>
 #include "../../window.h"
 #include "../../window_manager.h"
-#include "string_utils_windows.h"
 #include "dpi_utils_windows.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
@@ -266,7 +266,8 @@ Rectangle Window::GetContentBounds() const {
     ClientToScreen(pimpl_->hwnd_, &bottomRight);
 
     double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
-    if (scale <= 0.0) scale = 1.0;
+    if (scale <= 0.0)
+      scale = 1.0;
 
     // Return logical pixels (DIP) by dividing by scale
     bounds.x = static_cast<double>(topLeft.x) / scale;

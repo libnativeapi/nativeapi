@@ -10,9 +10,9 @@
 
 #include "../../foundation/geometry.h"
 #include "../../foundation/id_allocator.h"
-#include "../../positioning_strategy.h"
 #include "../../image.h"
 #include "../../menu.h"
+#include "../../positioning_strategy.h"
 #include "../../tray_icon.h"
 #include "../../tray_icon_event.h"
 #include "string_utils_windows.h"

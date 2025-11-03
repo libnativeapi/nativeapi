@@ -174,8 +174,7 @@ class PositioningStrategy {
   Point absolute_position_;
   Rectangle relative_rect_;
   Point relative_offset_;
-  const Window* relative_window_;  // Optional: when set, GetRelativeRectangle() will use window->GetBounds()
+  const Window* relative_window_;
 };
 
 }  // namespace nativeapi
-

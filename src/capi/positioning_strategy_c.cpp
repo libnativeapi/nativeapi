@@ -38,8 +38,9 @@ native_positioning_strategy_t native_positioning_strategy_relative(const native_
   return static_cast<native_positioning_strategy_t>(strategy);
 }
 
-native_positioning_strategy_t native_positioning_strategy_relative_to_window(native_window_t window,
-                                                                          const native_point_t* offset) {
+native_positioning_strategy_t native_positioning_strategy_relative_to_window(
+    native_window_t window,
+    const native_point_t* offset) {
   if (!window) {
     return nullptr;
   }
