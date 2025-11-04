@@ -48,7 +48,9 @@ class WindowManager::Impl {
   }
 
   void OnWindowEvent(HWND hwnd, const std::string& event_type) {
-    WindowId window_id = reinterpret_cast<WindowId>(hwnd);
+    // Create a temporary Window object to get the proper WindowId
+    Window temp_window(hwnd);
+    WindowId window_id = temp_window.GetId();
 
     if (event_type == "focused") {
       WindowFocusedEvent event(window_id);
@@ -151,8 +153,8 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   ShowWindow(hwnd, SW_SHOW);
   UpdateWindow(hwnd);
 
-  WindowId window_id = reinterpret_cast<WindowId>(hwnd);
   auto window = std::make_shared<Window>(hwnd);
+  WindowId window_id = window->GetId();
   windows_[window_id] = window;
 
   // Dispatch window created event
@@ -166,7 +168,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 bool WindowManager::Destroy(WindowId id) {
   auto it = windows_.find(id);
   if (it != windows_.end()) {
-    HWND hwnd = reinterpret_cast<HWND>(id);
+    HWND hwnd = static_cast<HWND>(it->second->GetNativeObject());
     if (IsWindow(hwnd)) {
       DestroyWindow(hwnd);
     }
@@ -208,7 +210,8 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   HWND hwnd = GetForegroundWindow();
   if (hwnd) {
-    WindowId window_id = reinterpret_cast<WindowId>(hwnd);
+    Window temp_window(hwnd);
+    WindowId window_id = temp_window.GetId();
     return Get(window_id);
   }
   return nullptr;

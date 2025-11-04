@@ -1,44 +1,65 @@
+// clang-format off
+#include <windows.h>
+#include <windowsx.h>
+// clang-format on
+
+// Undefine Windows API macros that conflict with our method names
+#ifdef GetMessage
+#undef GetMessage
+#endif
+
+#include <memory>
+#include <string>
+
 #include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
-// Private implementation class for MessageDialog (Windows stub)
+// Private implementation class for MessageDialog using Win32 MessageBox
 class MessageDialog::Impl {
  public:
   Impl(const std::string& title, const std::string& message)
-      : title_(title), message_(message) {
-    // TODO: Implement Windows MessageBox or Task Dialog
-  }
+      : title_(title), message_(message) {}
 
-  ~Impl() {
-    // TODO: Cleanup if needed
-  }
+  ~Impl() = default;
 
   void SetTitle(const std::string& title) {
     title_ = title;
   }
 
-  std::string GetTitle() const { 
-    return title_; 
+  std::string GetTitle() const {
+    return title_;
   }
 
   void SetMessage(const std::string& message) {
     message_ = message;
   }
 
-  std::string GetMessage() const { 
-    return message_; 
+  std::string GetMessage() const {
+    return message_;
   }
 
   bool Open(DialogModality modality) {
-    // TODO: Implement using MessageBox or TaskDialogIndirect
-    // For now, return false (not implemented)
-    return false;
+    std::wstring wtitle = StringToWString(title_);
+    std::wstring wmessage = StringToWString(message_);
+
+    UINT uType = MB_OK | MB_ICONINFORMATION;
+
+    // Set modality
+    if (modality == DialogModality::Application) {
+      uType |= MB_APPLMODAL;
+    } else if (modality == DialogModality::Window) {
+      uType |= MB_SYSTEMMODAL;  // Use system modal as approximation
+    }
+
+    int result = MessageBoxW(nullptr, wmessage.c_str(), wtitle.c_str(), uType);
+    return result != 0;
   }
 
   bool Close() {
-    // TODO: Implement closing logic
+    // MessageBox doesn't support programmatic closing
     return false;
   }
 
@@ -82,4 +103,3 @@ bool MessageDialog::Close() {
 }
 
 }  // namespace nativeapi
-

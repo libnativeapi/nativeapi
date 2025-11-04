@@ -1,5 +1,7 @@
 #include <windows.h>
 #include <iostream>
+#include <mutex>
+#include <unordered_map>
 #include "../../window.h"
 #include "../../window_manager.h"
 #include "dpi_utils_windows.h"
@@ -546,7 +548,27 @@ void Window::StartResizing() {
 }
 
 WindowId Window::GetId() const {
-  return pimpl_ && pimpl_->hwnd_ ? reinterpret_cast<WindowId>(pimpl_->hwnd_) : -1;
+  // Use IdAllocator to generate unique IDs instead of casting pointers
+  if (!pimpl_->hwnd_) {
+    return IdAllocator::kInvalidId;
+  }
+
+  // Store the allocated ID in a static map to ensure consistency
+  static std::unordered_map<HWND, WindowId> window_id_map;
+  static std::mutex map_mutex;
+
+  std::lock_guard<std::mutex> lock(map_mutex);
+  auto it = window_id_map.find(pimpl_->hwnd_);
+  if (it != window_id_map.end()) {
+    return it->second;
+  }
+
+  // Allocate new ID using the IdAllocator
+  WindowId new_id = IdAllocator::Allocate<Window>();
+  if (new_id != IdAllocator::kInvalidId) {
+    window_id_map[pimpl_->hwnd_] = new_id;
+  }
+  return new_id;
 }
 
 void* Window::GetNativeObjectInternal() const {

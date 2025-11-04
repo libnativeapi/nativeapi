@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <cmath>
 #include <cstring>
 #include <functional>
 #include <iostream>
