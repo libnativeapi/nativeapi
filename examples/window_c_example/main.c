@@ -4,9 +4,9 @@
 
 // Include C API headers
 #include "../../src/capi/accessibility_manager_c.h"
+#include "../../src/capi/application_c.h"
 #include "../../src/capi/image_c.h"
 #include "../../src/capi/menu_c.h"
-#include "../../src/capi/run_example_app_c.h"
 #include "../../src/capi/string_utils_c.h"
 #include "../../src/capi/tray_icon_c.h"
 #include "../../src/capi/tray_manager_c.h"
@@ -396,8 +396,8 @@ int main() {
     fprintf(stderr, "Failed to create tray.\n");
   }
 
-  // Run the example app
-  int result = native_run_example_app();
+  // Run the application with the window
+  int result = native_run_app(g_window);
 
   // Cleanup
   if (g_context_menu) {

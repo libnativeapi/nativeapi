@@ -9,8 +9,8 @@
 #endif
 
 // Include individual C API headers instead of the full nativeapi.h
+#include "../../src/capi/application_c.h"
 #include "../../src/capi/menu_c.h"
-#include "../../src/capi/run_example_app_c.h"
 #include "../../src/capi/string_utils_c.h"
 #include "../../src/capi/tray_icon_c.h"
 #include "../../src/capi/tray_manager_c.h"
@@ -230,7 +230,9 @@ int main() {
   printf("      because we set NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED.\n");
   printf("\nRunning... (Press Ctrl+C to force quit)\n");
 
-  int exit_code = native_run_example_app();
+  // Run the application event loop
+  native_application_t app = native_application_get_instance();
+  int exit_code = native_application_run(app);
 
-  return 0;
+  return exit_code;
 }
