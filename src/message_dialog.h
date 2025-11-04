@@ -82,6 +82,20 @@ class MessageDialog : public Dialog {
   std::string GetMessage() const;
 
   /**
+   * @brief Get the current modality setting of the dialog.
+   *
+   * @return The current DialogModality setting
+   */
+  DialogModality GetModality() const override;
+
+  /**
+   * @brief Set the modality of the dialog.
+   *
+   * @param modality The modality type to set
+   */
+  void SetModality(DialogModality modality) override;
+
+  /**
    * @brief Open the dialog.
    *
    * Displays the dialog according to the current modality setting.
@@ -112,6 +126,11 @@ class MessageDialog : public Dialog {
    * message-dialog-specific implementation details.
    */
   std::unique_ptr<Impl> pimpl_;
+
+  /**
+   * @brief Current modality setting.
+   */
+  DialogModality modality_ = DialogModality::None;
 };
 
 }  // namespace nativeapi

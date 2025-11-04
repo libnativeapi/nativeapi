@@ -76,7 +76,7 @@ class Dialog {
    *
    * @return The current DialogModality setting
    */
-  virtual DialogModality GetModality() const;
+  virtual DialogModality GetModality() const = 0;
 
   /**
    * @brief Set the modality of the dialog.
@@ -97,7 +97,7 @@ class Dialog {
    * dialog->Open();                                    // Open as modal dialog
    * ```
    */
-  virtual void SetModality(DialogModality modality);
+  virtual void SetModality(DialogModality modality) = 0;
 
   /**
    * @brief Open the dialog according to its modality setting.
@@ -131,12 +131,6 @@ class Dialog {
    * @return true if the dialog was successfully closed, false otherwise
    */
   virtual bool Close();
-
- protected:
-  /**
-   * @brief Current modality setting.
-   */
-  DialogModality modality_ = DialogModality::None;
 };
 
 }  // namespace nativeapi

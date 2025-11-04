@@ -177,6 +177,14 @@ std::string MessageDialog::GetMessage() const {
   return pimpl_->GetMessage();
 }
 
+DialogModality MessageDialog::GetModality() const {
+  return modality_;
+}
+
+void MessageDialog::SetModality(DialogModality modality) {
+  modality_ = modality;
+}
+
 bool MessageDialog::Open() {
   DialogModality modality = GetModality();
   return pimpl_->Open(modality);
