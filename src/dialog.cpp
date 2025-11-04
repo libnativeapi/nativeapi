@@ -21,4 +21,3 @@ bool Dialog::Close() {
 }
 
 }  // namespace nativeapi
-

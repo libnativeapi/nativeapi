@@ -1,6 +1,6 @@
 #import <Cocoa/Cocoa.h>
-#include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "../../message_dialog.h"
 
 namespace nativeapi {
 
@@ -161,4 +161,3 @@ bool MessageDialog::Close() {
 }
 
 }  // namespace nativeapi
-

@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
-#include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "../../message_dialog.h"
 
 namespace nativeapi {
 
@@ -19,25 +19,17 @@ class MessageDialog::Impl {
     }
   }
 
-  void SetTitle(const std::string& title) {
-    title_ = title;
-  }
+  void SetTitle(const std::string& title) { title_ = title; }
 
-  std::string GetTitle() const { 
-    return title_; 
-  }
+  std::string GetTitle() const { return title_; }
 
-  void SetMessage(const std::string& message) {
-    message_ = message;
-  }
+  void SetMessage(const std::string& message) { message_ = message; }
 
-  std::string GetMessage() const { 
-    return message_; 
-  }
+  std::string GetMessage() const { return message_; }
 
   bool Open(DialogModality modality) {
     // TODO: Implement using UIAlertController
-    // UIAlertController *alert = [UIAlertController 
+    // UIAlertController *alert = [UIAlertController
     //     alertControllerWithTitle:@"title"
     //     message:@"message"
     //     preferredStyle:UIAlertControllerStyleAlert];
@@ -92,4 +84,3 @@ bool MessageDialog::Close() {
 }
 
 }  // namespace nativeapi
-

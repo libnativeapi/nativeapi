@@ -11,8 +11,8 @@
 #include <memory>
 #include <string>
 
-#include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "../../message_dialog.h"
 #include "string_utils_windows.h"
 
 namespace nativeapi {
@@ -20,26 +20,17 @@ namespace nativeapi {
 // Private implementation class for MessageDialog using Win32 MessageBox
 class MessageDialog::Impl {
  public:
-  Impl(const std::string& title, const std::string& message)
-      : title_(title), message_(message) {}
+  Impl(const std::string& title, const std::string& message) : title_(title), message_(message) {}
 
   ~Impl() = default;
 
-  void SetTitle(const std::string& title) {
-    title_ = title;
-  }
+  void SetTitle(const std::string& title) { title_ = title; }
 
-  std::string GetTitle() const {
-    return title_;
-  }
+  std::string GetTitle() const { return title_; }
 
-  void SetMessage(const std::string& message) {
-    message_ = message;
-  }
+  void SetMessage(const std::string& message) { message_ = message; }
 
-  std::string GetMessage() const {
-    return message_;
-  }
+  std::string GetMessage() const { return message_; }
 
   bool Open(DialogModality modality) {
     std::wstring wtitle = StringToWString(title_);

@@ -1,5 +1,5 @@
-#include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "../../message_dialog.h"
 
 #include <gtk/gtk.h>
 
@@ -28,18 +28,14 @@ class MessageDialog::Impl {
     // Title will be applied when dialog is opened
   }
 
-  std::string GetTitle() const { 
-    return title_; 
-  }
+  std::string GetTitle() const { return title_; }
 
   void SetMessage(const std::string& message) {
     message_ = message;
     // Message will be applied when dialog is opened
   }
 
-  std::string GetMessage() const { 
-    return message_; 
-  }
+  std::string GetMessage() const { return message_; }
 
   bool Open(DialogModality modality) {
     // Ensure GTK is initialized
@@ -61,7 +57,7 @@ class MessageDialog::Impl {
 
     // Create a new message dialog
     dialog_ = gtk_message_dialog_new(
-        nullptr,  // No parent window
+        nullptr,           // No parent window
         GTK_DIALOG_MODAL,  // Default to modal (will be overridden for non-modal)
         GTK_MESSAGE_INFO,  // Message type
         GTK_BUTTONS_OK,    // Buttons
@@ -93,11 +89,11 @@ class MessageDialog::Impl {
         // Modal: block until user responds
         gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
         is_open_ = true;
-        
+
         // Run the dialog modally - this blocks until user responds
         // Note: gtk_dialog_run automatically destroys the dialog when done
         gtk_dialog_run(GTK_DIALOG(dialog_));
-        
+
         // After gtk_dialog_run returns, the dialog has been dismissed and destroyed
         // The OnDestroy callback will set dialog_ to nullptr
         is_open_ = false;
@@ -114,14 +110,14 @@ class MessageDialog::Impl {
 
     // Close the dialog programmatically
     gtk_dialog_response(GTK_DIALOG(dialog_), GTK_RESPONSE_CLOSE);
-    
+
     // If it's a modal dialog, we need to destroy it manually
     // (gtk_dialog_run already destroyed it)
     if (dialog_) {
       gtk_widget_destroy(dialog_);
       dialog_ = nullptr;
     }
-    
+
     is_open_ = false;
     return true;
   }
@@ -134,10 +130,10 @@ class MessageDialog::Impl {
 
   static void OnResponse(GtkDialog* dialog, gint response_id, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
-    
+
     // Mark as closed
     impl->is_open_ = false;
-    
+
     // For non-modal dialogs, destroy the dialog when user responds
     if (!gtk_window_get_modal(GTK_WINDOW(dialog))) {
       gtk_widget_destroy(GTK_WIDGET(dialog));
@@ -147,7 +143,7 @@ class MessageDialog::Impl {
 
   static void OnDestroy(GtkWidget* widget, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
-    
+
     // Clear the dialog pointer when it's destroyed
     if (impl->dialog_ == widget) {
       impl->dialog_ = nullptr;
@@ -191,4 +187,3 @@ bool MessageDialog::Close() {
 }
 
 }  // namespace nativeapi
-

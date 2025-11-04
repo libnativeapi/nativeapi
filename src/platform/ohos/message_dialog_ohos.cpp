@@ -1,13 +1,12 @@
-#include "../../message_dialog.h"
 #include "../../dialog.h"
+#include "../../message_dialog.h"
 
 namespace nativeapi {
 
 // Private implementation class for MessageDialog (OHOS stub)
 class MessageDialog::Impl {
  public:
-  Impl(const std::string& title, const std::string& message)
-      : title_(title), message_(message) {
+  Impl(const std::string& title, const std::string& message) : title_(title), message_(message) {
     // TODO: Implement HarmonyOS dialog using ArkUI
     // Should use OHOS::Ace::DialogProperties or similar API
   }
@@ -16,21 +15,13 @@ class MessageDialog::Impl {
     // TODO: Cleanup if needed
   }
 
-  void SetTitle(const std::string& title) {
-    title_ = title;
-  }
+  void SetTitle(const std::string& title) { title_ = title; }
 
-  std::string GetTitle() const { 
-    return title_; 
-  }
+  std::string GetTitle() const { return title_; }
 
-  void SetMessage(const std::string& message) {
-    message_ = message;
-  }
+  void SetMessage(const std::string& message) { message_ = message; }
 
-  std::string GetMessage() const { 
-    return message_; 
-  }
+  std::string GetMessage() const { return message_; }
 
   bool Open(DialogModality modality) {
     // TODO: Implement using HarmonyOS ArkUI dialog
@@ -84,4 +75,3 @@ bool MessageDialog::Close() {
 }
 
 }  // namespace nativeapi
-
