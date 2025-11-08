@@ -1,8 +1,6 @@
 #include "message_dialog_c.h"
 #include <cstring>
-#include <memory>
 #include "../dialog.h"
-#include "../global_registry.h"
 #include "../message_dialog.h"
 #include "string_utils_c.h"
 
@@ -36,18 +34,6 @@ static native_dialog_modality_t convert_dialog_modality(DialogModality modality)
   }
 }
 
-// Helper function to get shared_ptr from handle
-static std::shared_ptr<MessageDialog> HandleToMessageDialog(native_message_dialog_t handle) {
-  if (!handle)
-    return nullptr;
-
-  // Verify the dialog exists in the registry
-  if (!GlobalRegistry<MessageDialog>().Contains(handle))
-    return nullptr;
-
-  return GlobalRegistry<MessageDialog>().Get(handle);
-}
-
 // MessageDialog C API Implementation
 
 native_message_dialog_t native_message_dialog_create(const char* title, const char* message) {
@@ -55,13 +41,8 @@ native_message_dialog_t native_message_dialog_create(const char* title, const ch
     return nullptr;
 
   try {
-    auto dialog = std::make_shared<MessageDialog>(std::string(title), std::string(message));
-    void* handle = dialog.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<MessageDialog>().Register(handle, dialog);
-
-    return static_cast<native_message_dialog_t>(handle);
+    auto dialog = new MessageDialog(std::string(title), std::string(message));
+    return static_cast<native_message_dialog_t>(dialog);
   } catch (...) {
     return nullptr;
   }
@@ -71,8 +52,9 @@ void native_message_dialog_destroy(native_message_dialog_t dialog) {
   if (!dialog)
     return;
 
-  // Unregister from registry - this will also destroy the object
-  GlobalRegistry<MessageDialog>().Unregister(dialog);
+  // Delete MessageDialog instance
+  auto dialog_ptr = static_cast<MessageDialog*>(dialog);
+  delete dialog_ptr;
 }
 
 void native_message_dialog_set_title(native_message_dialog_t dialog, const char* title) {
@@ -80,8 +62,10 @@ void native_message_dialog_set_title(native_message_dialog_t dialog, const char*
     return;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
-    if (dialog_ptr && title) {
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
+    if (!dialog_ptr)
+      return;
+    if (title) {
       dialog_ptr->SetTitle(std::string(title));
     }
   } catch (...) {
@@ -94,7 +78,7 @@ char* native_message_dialog_get_title(native_message_dialog_t dialog) {
     return nullptr;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
     if (!dialog_ptr)
       return nullptr;
 
@@ -110,8 +94,10 @@ void native_message_dialog_set_message(native_message_dialog_t dialog, const cha
     return;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
-    if (dialog_ptr && message) {
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
+    if (!dialog_ptr)
+      return;
+    if (message) {
       dialog_ptr->SetMessage(std::string(message));
     }
   } catch (...) {
@@ -124,7 +110,7 @@ char* native_message_dialog_get_message(native_message_dialog_t dialog) {
     return nullptr;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
     if (!dialog_ptr)
       return nullptr;
 
@@ -141,10 +127,10 @@ void native_message_dialog_set_modality(native_message_dialog_t dialog,
     return;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
-    if (dialog_ptr) {
-      dialog_ptr->SetModality(convert_dialog_modality(modality));
-    }
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
+    if (!dialog_ptr)
+      return;
+    dialog_ptr->SetModality(convert_dialog_modality(modality));
   } catch (...) {
     // Ignore exceptions
   }
@@ -155,7 +141,7 @@ native_dialog_modality_t native_message_dialog_get_modality(native_message_dialo
     return NATIVE_DIALOG_MODALITY_NONE;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
     if (!dialog_ptr)
       return NATIVE_DIALOG_MODALITY_NONE;
 
@@ -170,7 +156,7 @@ bool native_message_dialog_open(native_message_dialog_t dialog) {
     return false;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
     if (!dialog_ptr)
       return false;
 
@@ -185,7 +171,7 @@ bool native_message_dialog_close(native_message_dialog_t dialog) {
     return false;
 
   try {
-    auto dialog_ptr = HandleToMessageDialog(dialog);
+    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
     if (!dialog_ptr)
       return false;
 
