@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include "../global_registry.h"
 #include "../image.h"
 #include "../tray_icon.h"
 #include "../tray_icon_event.h"
@@ -28,13 +27,8 @@ static std::atomic<int> g_tray_icon_next_listener_id{1};
 
 native_tray_icon_t native_tray_icon_create(void) {
   try {
-    auto tray_icon = std::make_shared<TrayIcon>();
-    void* handle = tray_icon.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<TrayIcon>().Register(handle, tray_icon);
-
-    return static_cast<native_tray_icon_t>(handle);
+    auto tray_icon_raw = new TrayIcon();
+    return static_cast<native_tray_icon_t>(tray_icon_raw);
   } catch (...) {
     return nullptr;
   }
@@ -45,13 +39,8 @@ native_tray_icon_t native_tray_icon_create_from_native(void* native_tray) {
     return nullptr;
 
   try {
-    auto tray_icon = std::make_shared<TrayIcon>(native_tray);
-    void* handle = tray_icon.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<TrayIcon>().Register(handle, tray_icon);
-
-    return static_cast<native_tray_icon_t>(handle);
+    auto tray_icon_raw = new TrayIcon(native_tray);
+    return static_cast<native_tray_icon_t>(tray_icon_raw);
   } catch (...) {
     return nullptr;
   }
@@ -67,20 +56,19 @@ void native_tray_icon_destroy(native_tray_icon_t tray_icon) {
     g_tray_icon_listeners.erase(listeners_it);
   }
 
-  // Unregister from registry - this will also destroy the object
-  GlobalRegistry<TrayIcon>().Unregister(tray_icon);
+  // Delete TrayIcon instance
+  auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+  delete tray_icon_ptr;
 }
 
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
   if (!tray_icon)
     return -1;
 
-  // Verify the tray icon exists in the registry
-  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
-    return -1;
-
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return -1;
     return tray_icon_ptr->GetId();
   } catch (...) {
     return -1;
@@ -91,12 +79,10 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t imag
   if (!tray_icon)
     return;
 
-  // Verify the tray icon exists in the registry
-  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
-    return;
-
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return;
     if (image) {
       // Extract the shared_ptr from the native_image_t handle
       auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
@@ -115,6 +101,8 @@ native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return nullptr;
     auto image = tray_icon_ptr->GetIcon();
 
     if (!image) {
@@ -134,6 +122,8 @@ void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title)
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return;
     if (title) {
       tray_icon_ptr->SetTitle(std::string(title));
     } else {
@@ -150,6 +140,8 @@ char* native_tray_icon_get_title(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return nullptr;
     auto title = tray_icon_ptr->GetTitle();
     if (title.has_value()) {
       return to_c_str(title.value());
@@ -167,6 +159,8 @@ void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tool
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return;
     if (tooltip) {
       tray_icon_ptr->SetTooltip(std::string(tooltip));
     } else {
@@ -183,6 +177,8 @@ char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return nullptr;
     auto tooltip = tray_icon_ptr->GetTooltip();
     if (tooltip.has_value()) {
       return to_c_str(tooltip.value());
@@ -200,6 +196,8 @@ void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return;
     if (menu) {
       // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
       // Menu objects are owned by the global registry in menu_c.cpp and by
@@ -223,6 +221,8 @@ native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return nullptr;
     auto menu = tray_icon_ptr->GetContextMenu();
     return menu ? static_cast<native_menu_t>(menu.get()) : nullptr;
   } catch (...) {
@@ -237,6 +237,8 @@ void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return;
 
     // Convert C enum to C++ enum
     ContextMenuTrigger cpp_trigger;
@@ -271,6 +273,8 @@ native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
     ContextMenuTrigger cpp_trigger = tray_icon_ptr->GetContextMenuTrigger();
 
     // Convert C++ enum to C enum
@@ -297,6 +301,8 @@ bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
     Rectangle cpp_bounds = tray_icon_ptr->GetBounds();
 
     bounds->x = cpp_bounds.x;
@@ -316,6 +322,8 @@ bool native_tray_icon_set_visible(native_tray_icon_t tray_icon, bool visible) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
     return tray_icon_ptr->SetVisible(visible);
   } catch (...) {
     return false;
@@ -328,6 +336,8 @@ bool native_tray_icon_is_visible(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
     return tray_icon_ptr->IsVisible();
   } catch (...) {
     return false;
@@ -341,12 +351,10 @@ int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
   if (!tray_icon || !callback)
     return -1;
 
-  // Verify the tray icon exists in the registry
-  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
-    return -1;
-
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return -1;
 
     // Create listener data
     auto listener_data = std::make_shared<TrayIconListenerData>();
@@ -412,12 +420,10 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener
   if (!tray_icon)
     return false;
 
-  // Verify the tray icon exists in the registry
-  if (!GlobalRegistry<TrayIcon>().Contains(tray_icon))
-    return false;
-
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
 
     // Find and remove the listener
     auto it = g_tray_icon_listeners.find(tray_icon);
@@ -443,6 +449,8 @@ bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
     return tray_icon_ptr->OpenContextMenu();
   } catch (...) {
     return false;
@@ -455,6 +463,8 @@ bool native_tray_icon_close_context_menu(native_tray_icon_t tray_icon) {
 
   try {
     auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
+    if (!tray_icon_ptr)
+      return false;
     return tray_icon_ptr->CloseContextMenu();
   } catch (...) {
     return false;
