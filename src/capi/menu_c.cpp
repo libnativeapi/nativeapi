@@ -1,11 +1,9 @@
 #include "menu_c.h"
-#include <atomic>
 #include <cstdlib>
 #include <cstring>
 #include <map>
 #include <memory>
 #include <optional>
-#include "../global_registry.h"
 #include "../image.h"
 #include "../menu.h"
 #include "../placement.h"
@@ -20,24 +18,19 @@ using namespace nativeapi;
 struct EventListenerData {
   native_menu_item_event_callback_t callback;
   void* user_data;
-  int listener_id;
 };
 
 struct MenuEventListenerData {
   native_menu_event_callback_t callback;
   void* user_data;
-  int listener_id;
 };
 
 // Global maps to store event listeners
-static std::map<native_menu_item_t, std::map<int, std::unique_ptr<EventListenerData>>>
+// Key is the C++ listener ID returned by AddListener
+static std::map<native_menu_item_t, std::map<size_t, std::shared_ptr<EventListenerData>>>
     g_menu_item_listeners;
-static std::map<native_menu_t, std::map<int, std::unique_ptr<MenuEventListenerData>>>
+static std::map<native_menu_t, std::map<size_t, std::shared_ptr<MenuEventListenerData>>>
     g_menu_listeners;
-
-// Global listener ID counter
-static std::atomic<int> g_menu_next_listener_id{1};
-static std::atomic<int> g_menu_item_next_listener_id{1};
 
 // Helper functions
 static MenuItemType convert_menu_item_type(native_menu_item_type_t type) {
@@ -148,13 +141,8 @@ native_menu_item_t native_menu_item_create(const char* label, native_menu_item_t
     return nullptr;
 
   try {
-    auto item = std::make_shared<MenuItem>(label, convert_menu_item_type(type));
-    void* handle = item.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<MenuItem>().Register(handle, item);
-
-    return static_cast<native_menu_item_t>(handle);
+    auto menu_item_raw = new MenuItem(label, convert_menu_item_type(type));
+    return static_cast<native_menu_item_t>(menu_item_raw);
   } catch (...) {
     return nullptr;
   }
@@ -162,83 +150,77 @@ native_menu_item_t native_menu_item_create(const char* label, native_menu_item_t
 
 native_menu_item_t native_menu_item_create_separator(void) {
   try {
-    auto item = std::make_shared<MenuItem>("", MenuItemType::Separator);
-    void* handle = item.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<MenuItem>().Register(handle, item);
-
-    return static_cast<native_menu_item_t>(handle);
+    auto menu_item_raw = new MenuItem("", MenuItemType::Separator);
+    return static_cast<native_menu_item_t>(menu_item_raw);
   } catch (...) {
     return nullptr;
   }
 }
 
-void native_menu_item_destroy(native_menu_item_t item) {
-  if (!item)
+void native_menu_item_destroy(native_menu_item_t menu_item) {
+  if (!menu_item)
     return;
 
   // Remove event listeners first
-  auto listeners_it = g_menu_item_listeners.find(item);
+  auto listeners_it = g_menu_item_listeners.find(menu_item);
   if (listeners_it != g_menu_item_listeners.end()) {
     g_menu_item_listeners.erase(listeners_it);
   }
 
-  // Unregister from registry - this will also destroy the object
-  GlobalRegistry<MenuItem>().Unregister(item);
+  // Delete MenuItem instance
+  auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+  delete menu_item_ptr;
 }
 
-native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item) {
-  if (!item)
-    return -1;
-
-  // Verify the item exists in the registry
-  if (!GlobalRegistry<MenuItem>().Contains(item))
+native_menu_item_id_t native_menu_item_get_id(native_menu_item_t menu_item) {
+  if (!menu_item)
     return -1;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->GetId();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    if (!menu_item_ptr)
+      return -1;
+    return menu_item_ptr->GetId();
   } catch (...) {
     return -1;
   }
 }
 
-native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item) {
-  if (!item)
+native_menu_item_type_t native_menu_item_get_type(native_menu_item_t menu_item) {
+  if (!menu_item)
     return NATIVE_MENU_ITEM_TYPE_NORMAL;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return convert_menu_item_type(menu_item->GetType());
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    return convert_menu_item_type(menu_item_ptr->GetType());
   } catch (...) {
     return NATIVE_MENU_ITEM_TYPE_NORMAL;
   }
 }
 
-void native_menu_item_set_label(native_menu_item_t item, const char* label) {
-  if (!item)
+void native_menu_item_set_label(native_menu_item_t menu_item, const char* label) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
     if (label) {
-      menu_item->SetLabel(std::string(label));
+      menu_item_ptr->SetLabel(std::string(label));
     } else {
-      menu_item->SetLabel(std::nullopt);
+      menu_item_ptr->SetLabel(std::nullopt);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-char* native_menu_item_get_label(native_menu_item_t item) {
-  if (!item)
+char* native_menu_item_get_label(native_menu_item_t menu_item) {
+  if (!menu_item)
     return nullptr;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    auto labelOpt = menu_item->GetLabel();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    auto labelOpt = menu_item_ptr->GetLabel();
 
     if (!labelOpt.has_value()) {
       return nullptr;
@@ -251,31 +233,31 @@ char* native_menu_item_get_label(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_icon(native_menu_item_t item, native_image_t image) {
-  if (!item)
+void native_menu_item_set_icon(native_menu_item_t menu_item, native_image_t image) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
     if (image) {
       // Extract the shared_ptr from the native_image_t handle
       auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
-      menu_item->SetIcon(*image_ptr);
+      menu_item_ptr->SetIcon(*image_ptr);
     } else {
-      menu_item->SetIcon(nullptr);
+      menu_item_ptr->SetIcon(nullptr);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-native_image_t native_menu_item_get_icon(native_menu_item_t item) {
-  if (!item)
+native_image_t native_menu_item_get_icon(native_menu_item_t menu_item) {
+  if (!menu_item)
     return nullptr;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    auto image = menu_item->GetIcon();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    auto image = menu_item_ptr->GetIcon();
 
     if (!image) {
       return nullptr;
@@ -288,29 +270,29 @@ native_image_t native_menu_item_get_icon(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_tooltip(native_menu_item_t item, const char* tooltip) {
-  if (!item)
+void native_menu_item_set_tooltip(native_menu_item_t menu_item, const char* tooltip) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
     if (tooltip) {
-      menu_item->SetTooltip(std::string(tooltip));
+      menu_item_ptr->SetTooltip(std::string(tooltip));
     } else {
-      menu_item->SetTooltip(std::nullopt);
+      menu_item_ptr->SetTooltip(std::nullopt);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-char* native_menu_item_get_tooltip(native_menu_item_t item) {
-  if (!item)
+char* native_menu_item_get_tooltip(native_menu_item_t menu_item) {
+  if (!menu_item)
     return nullptr;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    auto tooltipOpt = menu_item->GetTooltip();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    auto tooltipOpt = menu_item_ptr->GetTooltip();
 
     if (!tooltipOpt.has_value()) {
       return nullptr;
@@ -323,32 +305,32 @@ char* native_menu_item_get_tooltip(native_menu_item_t item) {
   }
 }
 
-void native_menu_item_set_accelerator(native_menu_item_t item,
+void native_menu_item_set_accelerator(native_menu_item_t menu_item,
                                       const native_keyboard_accelerator_t* accelerator) {
-  if (!item)
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
     if (accelerator) {
       KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
-      menu_item->SetAccelerator(cpp_accelerator);
+      menu_item_ptr->SetAccelerator(cpp_accelerator);
     } else {
-      menu_item->SetAccelerator(std::nullopt);
+      menu_item_ptr->SetAccelerator(std::nullopt);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-bool native_menu_item_get_accelerator(native_menu_item_t item,
+bool native_menu_item_get_accelerator(native_menu_item_t menu_item,
                                       native_keyboard_accelerator_t* accelerator) {
-  if (!item || !accelerator)
+  if (!menu_item || !accelerator)
     return false;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    KeyboardAccelerator cpp_accelerator = menu_item->GetAccelerator();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    KeyboardAccelerator cpp_accelerator = menu_item_ptr->GetAccelerator();
 
     if (cpp_accelerator.key.empty()) {
       return false;
@@ -361,109 +343,109 @@ bool native_menu_item_get_accelerator(native_menu_item_t item,
   }
 }
 
-void native_menu_item_set_enabled(native_menu_item_t item, bool enabled) {
-  if (!item)
+void native_menu_item_set_enabled(native_menu_item_t menu_item, bool enabled) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetEnabled(enabled);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    menu_item_ptr->SetEnabled(enabled);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-bool native_menu_item_is_enabled(native_menu_item_t item) {
-  if (!item)
+bool native_menu_item_is_enabled(native_menu_item_t menu_item) {
+  if (!menu_item)
     return false;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->IsEnabled();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    return menu_item_ptr->IsEnabled();
   } catch (...) {
     return false;
   }
 }
 
-void native_menu_item_set_state(native_menu_item_t item, native_menu_item_state_t state) {
-  if (!item)
+void native_menu_item_set_state(native_menu_item_t menu_item, native_menu_item_state_t state) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetState(convert_menu_item_state(state));
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    menu_item_ptr->SetState(convert_menu_item_state(state));
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-native_menu_item_state_t native_menu_item_get_state(native_menu_item_t item) {
-  if (!item)
+native_menu_item_state_t native_menu_item_get_state(native_menu_item_t menu_item) {
+  if (!menu_item)
     return NATIVE_MENU_ITEM_STATE_UNCHECKED;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return convert_menu_item_state(menu_item->GetState());
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    return convert_menu_item_state(menu_item_ptr->GetState());
   } catch (...) {
     return NATIVE_MENU_ITEM_STATE_UNCHECKED;
   }
 }
 
-void native_menu_item_set_radio_group(native_menu_item_t item, int group_id) {
-  if (!item)
+void native_menu_item_set_radio_group(native_menu_item_t menu_item, int group_id) {
+  if (!menu_item)
     return;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    menu_item->SetRadioGroup(group_id);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    menu_item_ptr->SetRadioGroup(group_id);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-int native_menu_item_get_radio_group(native_menu_item_t item) {
-  if (!item)
+int native_menu_item_get_radio_group(native_menu_item_t menu_item) {
+  if (!menu_item)
     return -1;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    return menu_item->GetRadioGroup();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    return menu_item_ptr->GetRadioGroup();
   } catch (...) {
     return -1;
   }
 }
 
-void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu) {
-  if (!item)
+void native_menu_item_set_submenu(native_menu_item_t menu_item, native_menu_t submenu) {
+  if (!menu_item)
     return;
 
   try {
-    // Verify item exists in global storage
-    if (!GlobalRegistry<MenuItem>().Contains(item))
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    if (!menu_item_ptr)
       return;
-
-    auto menu_item = static_cast<MenuItem*>(item);
     if (submenu) {
-      // Get the shared_ptr from global storage instead of creating a new one
-      auto submenu_ptr = GlobalRegistry<Menu>().Get(submenu);
-      if (submenu_ptr) {
-        menu_item->SetSubmenu(submenu_ptr);
-      }
+      // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
+      // Menu objects are owned by the C API caller. Creating an owning shared_ptr
+      // would introduce a separate control block and cause double-deletion during shutdown.
+      // Use a non-owning aliasing shared_ptr with an empty deleter instead.
+      auto menu_raw = static_cast<Menu*>(submenu);
+      auto menu_ptr = std::shared_ptr<Menu>(menu_raw, [](Menu*) {});
+      menu_item_ptr->SetSubmenu(menu_ptr);
     } else {
-      menu_item->SetSubmenu(nullptr);
+      menu_item_ptr->SetSubmenu(nullptr);
     }
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-native_menu_t native_menu_item_get_submenu(native_menu_item_t item) {
-  if (!item)
+native_menu_t native_menu_item_get_submenu(native_menu_item_t menu_item) {
+  if (!menu_item)
     return nullptr;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    auto submenu = menu_item->GetSubmenu();
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    auto submenu = menu_item_ptr->GetSubmenu();
     return submenu ? static_cast<native_menu_t>(submenu.get()) : nullptr;
   } catch (...) {
     return nullptr;
@@ -471,95 +453,89 @@ native_menu_t native_menu_item_get_submenu(native_menu_item_t item) {
 }
 
 // New event listener API implementation
-int native_menu_item_add_listener(native_menu_item_t item,
+int native_menu_item_add_listener(native_menu_item_t menu_item,
                                   native_menu_item_event_type_t event_type,
                                   native_menu_item_event_callback_t callback,
                                   void* user_data) {
-  if (!item || !callback)
+  if (!menu_item || !callback)
     return -1;
 
   try {
-    auto menu_item = static_cast<MenuItem*>(item);
-    int listener_id = g_menu_item_next_listener_id++;
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
 
     // Create listener data
-    auto listener_data = std::make_unique<EventListenerData>();
+    auto listener_data = std::make_shared<EventListenerData>();
     listener_data->callback = callback;
     listener_data->user_data = user_data;
-    listener_data->listener_id = listener_id;
-
-    // Store the listener data
-    g_menu_item_listeners[item][listener_id] = std::move(listener_data);
 
     // Add the appropriate event listener based on event type
+    size_t cpp_listener_id = 0;
     if (event_type == NATIVE_MENU_ITEM_EVENT_CLICKED) {
-      menu_item->AddListener<MenuItemClickedEvent>(
-          [item, listener_id](const MenuItemClickedEvent& event) {
-            // Find the listener data
-            auto item_it = g_menu_item_listeners.find(item);
-            if (item_it != g_menu_item_listeners.end()) {
-              auto listener_it = item_it->second.find(listener_id);
-              if (listener_it != item_it->second.end()) {
-                native_menu_item_clicked_event_t c_event = {};
-                c_event.item_id = event.GetItemId();
+      cpp_listener_id = menu_item_ptr->AddListener<MenuItemClickedEvent>(
+          [listener_data](const MenuItemClickedEvent& event) {
+            if (listener_data && listener_data->callback) {
+              native_menu_item_clicked_event_t c_event = {};
+              c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event, listener_it->second->user_data);
-              }
+              listener_data->callback(&c_event, listener_data->user_data);
             }
           });
     } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED) {
-      menu_item->AddListener<MenuItemSubmenuOpenedEvent>(
-          [item, listener_id](const MenuItemSubmenuOpenedEvent& event) {
-            // Find the listener data
-            auto item_it = g_menu_item_listeners.find(item);
-            if (item_it != g_menu_item_listeners.end()) {
-              auto listener_it = item_it->second.find(listener_id);
-              if (listener_it != item_it->second.end()) {
-                native_menu_item_submenu_opened_event_t c_event = {};
-                c_event.item_id = event.GetItemId();
+      cpp_listener_id = menu_item_ptr->AddListener<MenuItemSubmenuOpenedEvent>(
+          [listener_data](const MenuItemSubmenuOpenedEvent& event) {
+            if (listener_data && listener_data->callback) {
+              native_menu_item_submenu_opened_event_t c_event = {};
+              c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event, listener_it->second->user_data);
-              }
+              listener_data->callback(&c_event, listener_data->user_data);
             }
           });
     } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED) {
-      menu_item->AddListener<MenuItemSubmenuClosedEvent>(
-          [item, listener_id](const MenuItemSubmenuClosedEvent& event) {
-            // Find the listener data
-            auto item_it = g_menu_item_listeners.find(item);
-            if (item_it != g_menu_item_listeners.end()) {
-              auto listener_it = item_it->second.find(listener_id);
-              if (listener_it != item_it->second.end()) {
-                native_menu_item_submenu_closed_event_t c_event = {};
-                c_event.item_id = event.GetItemId();
+      cpp_listener_id = menu_item_ptr->AddListener<MenuItemSubmenuClosedEvent>(
+          [listener_data](const MenuItemSubmenuClosedEvent& event) {
+            if (listener_data && listener_data->callback) {
+              native_menu_item_submenu_closed_event_t c_event = {};
+              c_event.item_id = event.GetItemId();
 
-                listener_it->second->callback(&c_event, listener_it->second->user_data);
-              }
+              listener_data->callback(&c_event, listener_data->user_data);
             }
           });
     }
 
-    return listener_id;
+    // Store the listener data using C++ listener ID as key
+    g_menu_item_listeners[menu_item][cpp_listener_id] = listener_data;
+
+    return static_cast<int>(cpp_listener_id);
   } catch (...) {
     return -1;
   }
 }
 
-bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id) {
-  if (!item)
+bool native_menu_item_remove_listener(native_menu_item_t menu_item, int listener_id) {
+  if (!menu_item)
     return false;
 
   try {
-    auto item_it = g_menu_item_listeners.find(item);
-    if (item_it != g_menu_item_listeners.end()) {
-      auto listener_it = item_it->second.find(listener_id);
-      if (listener_it != item_it->second.end()) {
-        // Remove the listener data
-        item_it->second.erase(listener_it);
+    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    if (!menu_item_ptr)
+      return false;
 
-        // If no more listeners for this item, remove the item entry
-        if (item_it->second.empty()) {
-          g_menu_item_listeners.erase(item_it);
+    // Convert C API listener_id (int) to C++ listener_id (size_t)
+    size_t cpp_listener_id = static_cast<size_t>(listener_id);
+
+    auto menu_item_it = g_menu_item_listeners.find(menu_item);
+    if (menu_item_it != g_menu_item_listeners.end()) {
+      auto listener_it = menu_item_it->second.find(cpp_listener_id);
+      if (listener_it != menu_item_it->second.end()) {
+        // Remove the C++ listener first
+        menu_item_ptr->RemoveListener(cpp_listener_id);
+
+        // Remove the listener data
+        menu_item_it->second.erase(listener_it);
+
+        // If no more listeners for this menu_item, remove the menu_item entry
+        if (menu_item_it->second.empty()) {
+          g_menu_item_listeners.erase(menu_item_it);
         }
 
         return true;
@@ -575,13 +551,8 @@ bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id) 
 
 native_menu_t native_menu_create(void) {
   try {
-    auto menu = std::make_shared<Menu>();
-    void* handle = menu.get();
-
-    // Store the shared_ptr in the registry to keep the object alive
-    GlobalRegistry<Menu>().Register(handle, menu);
-
-    return static_cast<native_menu_t>(handle);
+    auto menu_raw = new Menu();
+    return static_cast<native_menu_t>(menu_raw);
   } catch (...) {
     return nullptr;
   }
@@ -597,82 +568,80 @@ void native_menu_destroy(native_menu_t menu) {
     g_menu_listeners.erase(listeners_it);
   }
 
-  // Unregister from registry - this will also destroy the object
-  GlobalRegistry<Menu>().Unregister(menu);
+  // Delete Menu instance
+  auto menu_ptr = static_cast<Menu*>(menu);
+  delete menu_ptr;
 }
 
 native_menu_id_t native_menu_get_id(native_menu_t menu) {
   if (!menu)
     return -1;
 
-  // Verify the menu exists in the registry
-  if (!GlobalRegistry<Menu>().Contains(menu))
-    return -1;
-
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
+    if (!menu_ptr)
+      return -1;
     return menu_ptr->GetId();
   } catch (...) {
     return -1;
   }
 }
 
-void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
-  if (!menu || !item)
+void native_menu_add_item(native_menu_t menu, native_menu_item_t menu_item) {
+  if (!menu || !menu_item)
     return;
 
   try {
-    // Verify menu exists in global storage
-    if (!GlobalRegistry<Menu>().Contains(menu))
-      return;
-
     auto menu_ptr = static_cast<Menu*>(menu);
-    // Get the shared_ptr from global storage instead of creating a new one
-    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
-    if (item_ptr) {
-      menu_ptr->AddItem(item_ptr);
-    }
+    if (!menu_ptr)
+      return;
+    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
+    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
+    // would introduce a separate control block and cause double-deletion during shutdown.
+    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
+    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
+    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
+    menu_ptr->AddItem(menu_item_ptr);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-void native_menu_insert_item(native_menu_t menu, native_menu_item_t item, size_t index) {
-  if (!menu || !item)
+void native_menu_insert_item(native_menu_t menu, native_menu_item_t menu_item, size_t index) {
+  if (!menu || !menu_item)
     return;
 
   try {
-    // Verify menu exists in global storage
-    if (!GlobalRegistry<Menu>().Contains(menu))
-      return;
-
     auto menu_ptr = static_cast<Menu*>(menu);
-    // Get the shared_ptr from global storage instead of creating a new one
-    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
-    if (item_ptr) {
-      menu_ptr->InsertItem(index, item_ptr);
-    }
+    if (!menu_ptr)
+      return;
+    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
+    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
+    // would introduce a separate control block and cause double-deletion during shutdown.
+    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
+    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
+    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
+    menu_ptr->InsertItem(index, menu_item_ptr);
   } catch (...) {
     // Ignore exceptions
   }
 }
 
-bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item) {
-  if (!menu || !item)
+bool native_menu_remove_item(native_menu_t menu, native_menu_item_t menu_item) {
+  if (!menu || !menu_item)
     return false;
 
   try {
-    // Verify menu exists in global storage
-    if (!GlobalRegistry<Menu>().Contains(menu))
+    auto menu_ptr = static_cast<Menu*>(menu);
+    if (!menu_ptr)
       return false;
-
-    auto menu_ptr = static_cast<Menu*>(menu);
-    // Get the shared_ptr from global storage instead of creating a new one
-    auto item_ptr = GlobalRegistry<MenuItem>().Get(item);
-    if (item_ptr) {
-      return menu_ptr->RemoveItem(item_ptr);
-    }
-    return false;
+    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
+    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
+    // would introduce a separate control block and cause double-deletion during shutdown.
+    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
+    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
+    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
+    return menu_ptr->RemoveItem(menu_item_ptr);
   } catch (...) {
     return false;
   }
@@ -756,8 +725,8 @@ native_menu_item_t native_menu_get_item_at(native_menu_t menu, size_t index) {
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    auto item = menu_ptr->GetItemAt(index);
-    return item ? static_cast<native_menu_item_t>(item.get()) : nullptr;
+    auto menu_item = menu_ptr->GetItemAt(index);
+    return menu_item ? static_cast<native_menu_item_t>(menu_item.get()) : nullptr;
   } catch (...) {
     return nullptr;
   }
@@ -769,8 +738,8 @@ native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_it
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    auto item = menu_ptr->GetItemById(static_cast<MenuItemId>(item_id));
-    return item ? static_cast<native_menu_item_t>(item.get()) : nullptr;
+    auto menu_item = menu_ptr->GetItemById(static_cast<MenuItemId>(item_id));
+    return menu_item ? static_cast<native_menu_item_t>(menu_item.get()) : nullptr;
   } catch (...) {
     return nullptr;
   }
@@ -894,49 +863,40 @@ int native_menu_add_listener(native_menu_t menu,
 
   try {
     auto menu_ptr = static_cast<Menu*>(menu);
-    int listener_id = g_menu_next_listener_id++;
 
     // Create listener data
-    auto listener_data = std::make_unique<MenuEventListenerData>();
+    auto listener_data = std::make_shared<MenuEventListenerData>();
     listener_data->callback = callback;
     listener_data->user_data = user_data;
-    listener_data->listener_id = listener_id;
-
-    // Store the listener data
-    g_menu_listeners[menu][listener_id] = std::move(listener_data);
 
     // Add the appropriate event listener based on event type
+    size_t cpp_listener_id = 0;
     if (event_type == NATIVE_MENU_EVENT_OPENED) {
-      menu_ptr->AddListener<MenuOpenedEvent>([menu, listener_id](const MenuOpenedEvent& event) {
-        // Find the listener data
-        auto menu_it = g_menu_listeners.find(menu);
-        if (menu_it != g_menu_listeners.end()) {
-          auto listener_it = menu_it->second.find(listener_id);
-          if (listener_it != menu_it->second.end()) {
-            native_menu_opened_event_t c_event = {};
-            c_event.menu_id = event.GetMenuId();
+      cpp_listener_id =
+          menu_ptr->AddListener<MenuOpenedEvent>([listener_data](const MenuOpenedEvent& event) {
+            if (listener_data && listener_data->callback) {
+              native_menu_opened_event_t c_event = {};
+              c_event.menu_id = event.GetMenuId();
 
-            listener_it->second->callback(&c_event, listener_it->second->user_data);
-          }
-        }
-      });
+              listener_data->callback(&c_event, listener_data->user_data);
+            }
+          });
     } else if (event_type == NATIVE_MENU_EVENT_CLOSED) {
-      menu_ptr->AddListener<MenuClosedEvent>([menu, listener_id](const MenuClosedEvent& event) {
-        // Find the listener data
-        auto menu_it = g_menu_listeners.find(menu);
-        if (menu_it != g_menu_listeners.end()) {
-          auto listener_it = menu_it->second.find(listener_id);
-          if (listener_it != menu_it->second.end()) {
-            native_menu_closed_event_t c_event = {};
-            c_event.menu_id = event.GetMenuId();
+      cpp_listener_id =
+          menu_ptr->AddListener<MenuClosedEvent>([listener_data](const MenuClosedEvent& event) {
+            if (listener_data && listener_data->callback) {
+              native_menu_closed_event_t c_event = {};
+              c_event.menu_id = event.GetMenuId();
 
-            listener_it->second->callback(&c_event, listener_it->second->user_data);
-          }
-        }
-      });
+              listener_data->callback(&c_event, listener_data->user_data);
+            }
+          });
     }
 
-    return listener_id;
+    // Store the listener data using C++ listener ID as key
+    g_menu_listeners[menu][cpp_listener_id] = listener_data;
+
+    return static_cast<int>(cpp_listener_id);
   } catch (...) {
     return -1;
   }
@@ -947,10 +907,20 @@ bool native_menu_remove_listener(native_menu_t menu, int listener_id) {
     return false;
 
   try {
+    auto menu_ptr = static_cast<Menu*>(menu);
+    if (!menu_ptr)
+      return false;
+
+    // Convert C API listener_id (int) to C++ listener_id (size_t)
+    size_t cpp_listener_id = static_cast<size_t>(listener_id);
+
     auto menu_it = g_menu_listeners.find(menu);
     if (menu_it != g_menu_listeners.end()) {
-      auto listener_it = menu_it->second.find(listener_id);
+      auto listener_it = menu_it->second.find(cpp_listener_id);
       if (listener_it != menu_it->second.end()) {
+        // Remove the C++ listener first
+        menu_ptr->RemoveListener(cpp_listener_id);
+
         // Remove the listener data
         menu_it->second.erase(listener_it);
 
