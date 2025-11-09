@@ -28,5 +28,3 @@ class WindowRegistry {
 };
 
 }  // namespace nativeapi
-
-

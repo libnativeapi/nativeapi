@@ -38,5 +38,3 @@ void WindowRegistry::Clear() {
 }
 
 }  // namespace nativeapi
-
-

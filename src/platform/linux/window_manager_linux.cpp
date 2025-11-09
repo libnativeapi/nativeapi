@@ -1,9 +1,9 @@
 #include <cstring>
 #include <iostream>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
-#include <set>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -63,9 +63,9 @@ static void InstallGlobalSwizzling();
 
 // Signal emission hook for show signal
 static gboolean on_show_emission_hook(GSignalInvocationHint* ihint,
-                                       guint n_param_values,
-                                       const GValue* param_values,
-                                       gpointer data) {
+                                      guint n_param_values,
+                                      const GValue* param_values,
+                                      gpointer data) {
   (void)ihint;
   (void)n_param_values;
   (void)data;
@@ -84,9 +84,9 @@ static gboolean on_show_emission_hook(GSignalInvocationHint* ihint,
 
 // Signal emission hook for hide signal
 static gboolean on_hide_emission_hook(GSignalInvocationHint* ihint,
-                                       guint n_param_values,
-                                       const GValue* param_values,
-                                       gpointer data) {
+                                      guint n_param_values,
+                                      const GValue* param_values,
+                                      gpointer data) {
   (void)ihint;
   (void)n_param_values;
   (void)data;

@@ -5,8 +5,8 @@
 #include <psapi.h>
 #include "../../window.h"
 #include "../../window_event.h"
-#include "../../window_registry.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 #include "string_utils_windows.h"
 
 #pragma comment(lib, "psapi.lib")
