@@ -463,6 +463,15 @@ class Window : public NativeObjectProvider {
   Point GetPosition() const;
 
   /**
+   * @brief Centers the window on the screen.
+   *
+   * Moves the window to the center of the primary display. The window
+   * will be positioned so that its center point aligns with the center
+   * of the screen.
+   */
+  void Center();
+
+  /**
    * @brief Sets the text displayed in the window's title bar.
    *
    * @param title The new title text for the window

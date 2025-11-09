@@ -283,6 +283,14 @@ Point Window::GetPosition() const {
   return point;
 }
 
+void Window::Center() {
+  if (!pimpl_->ns_window_)
+    return;
+
+  // Use NSWindow's center method which automatically centers on the main screen
+  [pimpl_->ns_window_ center];
+}
+
 void Window::SetTitle(std::string title) {
   [pimpl_->ns_window_ setTitle:[NSString stringWithUTF8String:title.c_str()]];
 }

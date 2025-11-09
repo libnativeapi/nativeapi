@@ -314,6 +314,35 @@ Point Window::GetPosition() const {
   return point;
 }
 
+void Window::Center() {
+  if (!pimpl_->gdk_window_)
+    return;
+
+  // Get the window size
+  gint window_width, window_height;
+  gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &window_width, &window_height);
+
+  // Get the screen size
+  GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
+  GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+  if (!monitor) {
+    // Fallback to first monitor if no primary monitor is found
+    monitor = gdk_display_get_monitor(display, 0);
+  }
+
+  if (monitor) {
+    GdkRectangle geometry;
+    gdk_monitor_get_geometry(monitor, &geometry);
+
+    // Calculate center position
+    gint center_x = geometry.x + (geometry.width - window_width) / 2;
+    gint center_y = geometry.y + (geometry.height - window_height) / 2;
+
+    // Move the window to center
+    gdk_window_move(pimpl_->gdk_window_, center_x, center_y);
+  }
+}
+
 void Window::SetTitle(std::string title) {
   // GDK windows don't have titles directly - this would be set on the GTK
   // widget For now, provide stub implementation

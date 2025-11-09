@@ -381,6 +381,14 @@ native_point_t native_window_get_position(native_window_t window) {
   return result;
 }
 
+FFI_PLUGIN_EXPORT
+void native_window_center(native_window_t window) {
+  if (!window)
+    return;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  win->Center();
+}
+
 // Window properties
 FFI_PLUGIN_EXPORT
 void native_window_set_resizable(native_window_t window, bool resizable) {

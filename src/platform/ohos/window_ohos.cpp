@@ -260,6 +260,14 @@ Point Window::GetPosition() const {
   return Point{0, 0};
 }
 
+void Window::Center() {
+  // On OpenHarmony, window positioning is not supported
+  // Abilities are automatically managed by the system
+  if (pimpl_->native_window_) {
+    // Center not supported on OpenHarmony - Abilities are managed by the system
+  }
+}
+
 void Window::SetTitle(std::string title) {
   // SetTitle not supported on OpenHarmony (use Ability title)
 }

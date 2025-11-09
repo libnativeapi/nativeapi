@@ -278,6 +278,12 @@ Point Window::GetPosition() const {
   return Point{0, 0};
 }
 
+void Window::Center() {
+  // On Android, window positioning is not supported
+  // Activities are automatically managed by the system
+  ALOGW("Center not supported on Android - Activities are managed by the system");
+}
+
 void Window::SetTitle(std::string title) {
   ALOGW("SetTitle not supported on Android (use Activity title)");
 }

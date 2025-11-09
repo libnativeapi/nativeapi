@@ -436,6 +436,30 @@ Point Window::GetPosition() const {
   return point;
 }
 
+void Window::Center() {
+  if (!pimpl_->hwnd_)
+    return;
+
+  // Get the current window size
+  RECT windowRect;
+  GetWindowRect(pimpl_->hwnd_, &windowRect);
+  int windowWidth = windowRect.right - windowRect.left;
+  int windowHeight = windowRect.bottom - windowRect.top;
+
+  // Get the monitor that the window is currently on
+  HMONITOR monitor = MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST);
+  MONITORINFO mi = {sizeof(mi)};
+  GetMonitorInfo(monitor, &mi);
+
+  // Calculate the center position on the monitor's work area
+  int centerX = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - windowWidth) / 2;
+  int centerY = mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - windowHeight) / 2;
+
+  // Set the window position to center
+  SetWindowPos(pimpl_->hwnd_, nullptr, centerX, centerY, 0, 0,
+               SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
 void Window::SetTitle(std::string title) {
   if (pimpl_->hwnd_) {
     std::wstring wtitle = StringToWString(title);

@@ -163,6 +163,9 @@ void native_window_set_position(native_window_t window, double x, double y);
 FFI_PLUGIN_EXPORT
 native_point_t native_window_get_position(native_window_t window);
 
+FFI_PLUGIN_EXPORT
+void native_window_center(native_window_t window);
+
 // Window properties
 FFI_PLUGIN_EXPORT
 void native_window_set_resizable(native_window_t window, bool resizable);

@@ -288,6 +288,27 @@ Point Window::GetPosition() const {
   return Point{static_cast<double>(origin.x), static_cast<double>(origin.y)};
 }
 
+void Window::Center() {
+  if (!pimpl_->ui_window_)
+    return;
+
+  // Get the screen bounds
+  UIScreen* screen = pimpl_->ui_window_.screen ?: [UIScreen mainScreen];
+  CGRect screenBounds = screen.bounds;
+
+  // Get the current window size
+  CGRect windowFrame = pimpl_->ui_window_.frame;
+
+  // Calculate center position
+  CGFloat centerX = (screenBounds.size.width - windowFrame.size.width) / 2.0;
+  CGFloat centerY = (screenBounds.size.height - windowFrame.size.height) / 2.0;
+
+  // Set the centered frame
+  windowFrame.origin.x = centerX;
+  windowFrame.origin.y = centerY;
+  pimpl_->ui_window_.frame = windowFrame;
+}
+
 void Window::SetTitle(std::string title) {
   // iOS windows don't have titles (use view controller title)
   if (pimpl_->ui_window_) {
