@@ -1,6 +1,7 @@
 #include "window_manager_c.h"
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 #include "../window_manager.h"
@@ -136,6 +137,13 @@ class CEventListener {
 };
 
 static std::unique_ptr<CEventListener> g_event_listener;
+
+// Hook callbacks (C API)
+static std::mutex g_hook_mutex;
+static native_window_will_show_callback_t g_will_show_cb = nullptr;
+static void* g_will_show_ud = nullptr;
+static native_window_will_hide_callback_t g_will_hide_cb = nullptr;
+static void* g_will_hide_ud = nullptr;
 
 // Window manager operations
 FFI_PLUGIN_EXPORT
@@ -282,4 +290,50 @@ void native_window_manager_shutdown(void) {
 
   // Note: We don't explicitly destroy the WindowManager singleton
   // as it will be cleaned up automatically when the application exits
+}
+
+FFI_PLUGIN_EXPORT
+void native_window_manager_set_will_show_hook(native_window_will_show_callback_t callback,
+                                              void* user_data) {
+  std::lock_guard<std::mutex> lock(g_hook_mutex);
+  g_will_show_cb = callback;
+  g_will_show_ud = user_data;
+
+  auto& manager = WindowManager::GetInstance();
+  if (callback == nullptr) {
+    manager.SetWillShowHook(std::nullopt);
+    return;
+  }
+
+  // Bridge C callback through C++ hook
+  manager.SetWillShowHook([cb = callback, ud = user_data](WindowId id) {
+    try {
+      cb(id, ud);
+    } catch (...) {
+      // Swallow exceptions to avoid unwinding across API boundary
+    }
+  });
+}
+
+FFI_PLUGIN_EXPORT
+void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t callback,
+                                              void* user_data) {
+  std::lock_guard<std::mutex> lock(g_hook_mutex);
+  g_will_hide_cb = callback;
+  g_will_hide_ud = user_data;
+
+  auto& manager = WindowManager::GetInstance();
+  if (callback == nullptr) {
+    manager.SetWillHideHook(std::nullopt);
+    return;
+  }
+
+  // Bridge C callback through C++ hook
+  manager.SetWillHideHook([cb = callback, ud = user_data](WindowId id) {
+    try {
+      cb(id, ud);
+    } catch (...) {
+      // Swallow exceptions to avoid unwinding across API boundary
+    }
+  });
 }

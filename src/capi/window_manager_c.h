@@ -117,6 +117,33 @@ bool native_window_manager_unregister_event_callback(int registration_id);
 FFI_PLUGIN_EXPORT
 void native_window_manager_shutdown(void);
 
+/**
+ * Hooks called BEFORE a native window is shown/hidden.
+ * Passing NULL clears the corresponding hook.
+ */
+typedef void (*native_window_will_show_callback_t)(native_window_id_t window_id, void* user_data);
+typedef void (*native_window_will_hide_callback_t)(native_window_id_t window_id, void* user_data);
+
+/**
+ * Set (or clear) the "will show" hook.
+ * @param callback Function called before window is shown (e.g., makeKeyAndOrderFront: on macOS).
+ * NULL to clear.
+ * @param user_data Opaque pointer passed back to callback.
+ */
+FFI_PLUGIN_EXPORT
+void native_window_manager_set_will_show_hook(native_window_will_show_callback_t callback,
+                                              void* user_data);
+
+/**
+ * Set (or clear) the "will hide" hook.
+ * @param callback Function called before window is hidden (e.g., orderOut: on macOS). NULL to
+ * clear.
+ * @param user_data Opaque pointer passed back to callback.
+ */
+FFI_PLUGIN_EXPORT
+void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t callback,
+                                              void* user_data);
+
 #ifdef __cplusplus
 }
 #endif

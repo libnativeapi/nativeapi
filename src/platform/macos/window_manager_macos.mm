@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -23,9 +24,69 @@ class WindowManager::Impl {
  private:
   WindowManager* manager_;
   NativeAPIWindowManagerDelegate* delegate_;
+
+  // Optional pre-show/hide hooks
+  std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
+  std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+
+  friend class WindowManager;
 };
 
 }  // namespace nativeapi
+
+// MARK: - NSWindow Swizzling
+
+// Swizzled implementations call into WindowManager hooks, then forward to original implementations
+@interface NSWindow (NativeAPISwizzle)
+- (void)na_swizzled_makeKeyAndOrderFront:(id)sender;
+- (void)na_swizzled_orderOut:(id)sender;
+@end
+
+@implementation NSWindow (NativeAPISwizzle)
+
+- (void)na_swizzled_makeKeyAndOrderFront:(id)sender {
+  // Invoke hook before showing
+  nativeapi::WindowManager::GetInstance().InvokeWillShowHook([self windowNumber]);
+  // Call original implementation (swapped)
+  [self na_swizzled_makeKeyAndOrderFront:sender];
+}
+
+- (void)na_swizzled_orderOut:(id)sender {
+  // Invoke hook before hiding
+  nativeapi::WindowManager::GetInstance().InvokeWillHideHook([self windowNumber]);
+  // Call original implementation (swapped)
+  [self na_swizzled_orderOut:sender];
+}
+
+@end
+
+static void NativeAPIInstallNSWindowWillShowSwizzleOnce() {
+  static dispatch_once_t onceTokenShow;
+  dispatch_once(&onceTokenShow, ^{
+    Class cls = [NSWindow class];
+    SEL originalSel = @selector(makeKeyAndOrderFront:);
+    SEL swizzledSel = @selector(na_swizzled_makeKeyAndOrderFront:);
+    Method original = class_getInstanceMethod(cls, originalSel);
+    Method swizzled = class_getInstanceMethod(cls, swizzledSel);
+    if (original && swizzled) {
+      method_exchangeImplementations(original, swizzled);
+    }
+  });
+}
+
+static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
+  static dispatch_once_t onceTokenHide;
+  dispatch_once(&onceTokenHide, ^{
+    Class cls = [NSWindow class];
+    SEL originalSel = @selector(orderOut:);
+    SEL swizzledSel = @selector(na_swizzled_orderOut:);
+    Method original = class_getInstanceMethod(cls, originalSel);
+    Method swizzled = class_getInstanceMethod(cls, swizzledSel);
+    if (original && swizzled) {
+      method_exchangeImplementations(original, swizzled);
+    }
+  });
+}
 
 // Objective-C delegate class to handle NSWindow notifications
 @interface NativeAPIWindowManagerDelegate : NSObject
@@ -286,19 +347,29 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
-  // Empty implementation
+  pimpl_->will_show_hook_ = std::move(hook);
+  if (pimpl_->will_show_hook_) {
+    NativeAPIInstallNSWindowWillShowSwizzleOnce();
+  }
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
-  // Empty implementation
+  pimpl_->will_hide_hook_ = std::move(hook);
+  if (pimpl_->will_hide_hook_) {
+    NativeAPIInstallNSWindowWillHideSwizzleOnce();
+  }
 }
 
 void WindowManager::InvokeWillShowHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_show_hook_) {
+    (*pimpl_->will_show_hook_)(id);
+  }
 }
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_hide_hook_) {
+    (*pimpl_->will_hide_hook_)(id);
+  }
 }
 
 }  // namespace nativeapi
