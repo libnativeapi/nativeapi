@@ -3,6 +3,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <set>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -16,6 +17,13 @@ namespace nativeapi {
 // Shared static variables for window ID mapping
 static std::unordered_map<GdkWindow*, WindowId> g_window_id_map;
 static std::mutex g_map_mutex;
+
+// Track widgets that have been hooked to avoid duplicate connections
+static std::set<GtkWidget*> g_hooked_widgets;
+static std::mutex g_hook_mutex;
+
+// Flag to indicate if global swizzling has been installed
+static bool g_swizzle_installed = false;
 
 // Helper function to manage mapping between GdkWindow pointers and WindowIds
 static WindowId GetOrCreateWindowId(GdkWindow* gdk_window) {
@@ -48,15 +56,64 @@ static GdkWindow* FindGdkWindowById(WindowId id) {
   return nullptr;
 }
 
-// GTK signal callbacks to invoke hooks
+// Forward declarations for swizzling functions
+static void InstallShowHideHooks(GtkWidget* widget);
+static void InstallGlobalSwizzling();
+
+// Signal emission hook for show signal
+static gboolean on_show_emission_hook(GSignalInvocationHint* ihint,
+                                       guint n_param_values,
+                                       const GValue* param_values,
+                                       gpointer data) {
+  (void)ihint;
+  (void)n_param_values;
+  (void)data;
+
+  GtkWidget* widget = GTK_WIDGET(g_value_get_object(&param_values[0]));
+  if (widget && GTK_IS_WINDOW(widget)) {
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (gdk_window) {
+      WindowId id = GetOrCreateWindowId(gdk_window);
+      WindowManager::GetInstance().InvokeWillShowHook(id);
+    }
+  }
+
+  return TRUE;  // Continue emission
+}
+
+// Signal emission hook for hide signal
+static gboolean on_hide_emission_hook(GSignalInvocationHint* ihint,
+                                       guint n_param_values,
+                                       const GValue* param_values,
+                                       gpointer data) {
+  (void)ihint;
+  (void)n_param_values;
+  (void)data;
+
+  GtkWidget* widget = GTK_WIDGET(g_value_get_object(&param_values[0]));
+  if (widget && GTK_IS_WINDOW(widget)) {
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (gdk_window) {
+      WindowId id = GetOrCreateWindowId(gdk_window);
+      WindowManager::GetInstance().InvokeWillHideHook(id);
+    }
+  }
+
+  return TRUE;  // Continue emission
+}
+
+// GTK signal callbacks to invoke hooks (used as fallback)
 static gboolean OnGtkMapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_data) {
   (void)event;
   (void)user_data;
-  auto& manager = WindowManager::GetInstance();
-  GdkWindow* gdk_window = gtk_widget_get_window(widget);
-  if (gdk_window) {
-    WindowId id = GetOrCreateWindowId(gdk_window);
-    manager.InvokeWillShowHook(id);
+
+  if (GTK_IS_WINDOW(widget)) {
+    auto& manager = WindowManager::GetInstance();
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (gdk_window) {
+      WindowId id = GetOrCreateWindowId(gdk_window);
+      manager.InvokeWillShowHook(id);
+    }
   }
   // Return FALSE to propagate event further
   return FALSE;
@@ -65,28 +122,88 @@ static gboolean OnGtkMapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_
 static gboolean OnGtkUnmapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_data) {
   (void)event;
   (void)user_data;
-  auto& manager = WindowManager::GetInstance();
-  GdkWindow* gdk_window = gtk_widget_get_window(widget);
-  if (gdk_window) {
-    WindowId id = GetOrCreateWindowId(gdk_window);
-    manager.InvokeWillHideHook(id);
+
+  if (GTK_IS_WINDOW(widget)) {
+    auto& manager = WindowManager::GetInstance();
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (gdk_window) {
+      WindowId id = GetOrCreateWindowId(gdk_window);
+      manager.InvokeWillHideHook(id);
+    }
   }
   // Return FALSE to propagate event further
   return FALSE;
 }
 
-// Private implementation for Linux (stub for now)
+// Install hooks for a specific widget
+static void InstallShowHideHooks(GtkWidget* widget) {
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(g_hook_mutex);
+
+  // Check if already hooked
+  if (g_hooked_widgets.find(widget) != g_hooked_widgets.end()) {
+    return;
+  }
+
+  // Connect map/unmap events as fallback
+  g_signal_connect(G_OBJECT(widget), "map-event", G_CALLBACK(OnGtkMapEvent), nullptr);
+  g_signal_connect(G_OBJECT(widget), "unmap-event", G_CALLBACK(OnGtkUnmapEvent), nullptr);
+
+  g_hooked_widgets.insert(widget);
+}
+
+// Install global swizzling using signal emission hooks
+static void InstallGlobalSwizzling() {
+  if (g_swizzle_installed) {
+    return;
+  }
+
+  // Get the show and hide signal IDs for GtkWidget
+  guint show_signal_id = g_signal_lookup("show", GTK_TYPE_WIDGET);
+  guint hide_signal_id = g_signal_lookup("hide", GTK_TYPE_WIDGET);
+
+  if (show_signal_id != 0) {
+    // Add emission hook for show signal
+    g_signal_add_emission_hook(show_signal_id, 0, on_show_emission_hook, nullptr, nullptr);
+  }
+
+  if (hide_signal_id != 0) {
+    // Add emission hook for hide signal
+    g_signal_add_emission_hook(hide_signal_id, 0, on_hide_emission_hook, nullptr, nullptr);
+  }
+
+  g_swizzle_installed = true;
+}
+
+// Private implementation for Linux
 class WindowManager::Impl {
  public:
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
   void SetupEventMonitoring() {
-    // TODO: Implement Linux-specific event monitoring using GTK signals
+    // Install global swizzling for show/hide interception
+    InstallGlobalSwizzling();
+
+    // Monitor all existing windows
+    GdkDisplay* display = gdk_display_get_default();
+    if (display) {
+      GList* toplevels = gtk_window_list_toplevels();
+      for (GList* l = toplevels; l != nullptr; l = l->next) {
+        GtkWindow* gtk_window = GTK_WINDOW(l->data);
+        InstallShowHideHooks(GTK_WIDGET(gtk_window));
+      }
+      g_list_free(toplevels);
+    }
   }
 
   void CleanupEventMonitoring() {
-    // TODO: Implement Linux-specific cleanup
+    // Clear hooked widgets set
+    std::lock_guard<std::mutex> lock(g_hook_mutex);
+    g_hooked_widgets.clear();
   }
 
  private:
@@ -250,9 +367,8 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     return nullptr;
   }
 
-  // Connect map/unmap events to invoke hooks
-  g_signal_connect(G_OBJECT(gtk_window), "map-event", G_CALLBACK(OnGtkMapEvent), nullptr);
-  g_signal_connect(G_OBJECT(gtk_window), "unmap-event", G_CALLBACK(OnGtkUnmapEvent), nullptr);
+  // Install show/hide hooks for this window
+  InstallShowHideHooks(gtk_window);
 
   // Set window properties from options
   if (!options.title.empty()) {
@@ -326,10 +442,18 @@ bool WindowManager::Destroy(WindowId id) {
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   pimpl_->will_show_hook_ = std::move(hook);
+  if (pimpl_->will_show_hook_) {
+    // Ensure global swizzling is installed when hook is set
+    InstallGlobalSwizzling();
+  }
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   pimpl_->will_hide_hook_ = std::move(hook);
+  if (pimpl_->will_hide_hook_) {
+    // Ensure global swizzling is installed when hook is set
+    InstallGlobalSwizzling();
+  }
 }
 
 void WindowManager::InvokeWillShowHook(WindowId id) {
