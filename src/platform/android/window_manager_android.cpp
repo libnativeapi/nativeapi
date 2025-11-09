@@ -144,4 +144,20 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   return nullptr;
 }
 
+void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
+  // Empty implementation
+}
+
+void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
+  // Empty implementation
+}
+
+void WindowManager::InvokeWillShowHook(WindowId id) {
+  // Empty implementation
+}
+
+void WindowManager::InvokeWillHideHook(WindowId id) {
+  // Empty implementation
+}
+
 }  // namespace nativeapi

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -162,6 +164,21 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * @endcode
    */
   bool Destroy(WindowId id);
+
+  /**
+   * Hooks invoked before native window show/hide operations (e.g., via swizzling).
+   * These are declarations only; platform implementations can register and invoke them.
+   */
+  using WindowWillShowHook = std::function<void(WindowId)>;
+  using WindowWillHideHook = std::function<void(WindowId)>;
+
+  // Set or clear single hooks (pass std::nullopt to clear)
+  void SetWillShowHook(std::optional<WindowWillShowHook> hook);
+  void SetWillHideHook(std::optional<WindowWillHideHook> hook);
+
+  // Called by platform layer BEFORE the actual show/hide happens
+  void InvokeWillShowHook(WindowId id);
+  void InvokeWillHideHook(WindowId id);
 
  private:
   /**
