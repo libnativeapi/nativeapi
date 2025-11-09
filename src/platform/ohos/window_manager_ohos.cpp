@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 
 namespace nativeapi {
 
@@ -87,16 +88,16 @@ void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    return it->second;
+  auto cached = WindowRegistry::GetInstance().Get(id);
+  if (cached) {
+    return cached;
   }
 
   // Try to find the window by ID
   void* native_window = FindNativeWindowById(id);
   if (native_window) {
     auto window = std::make_shared<Window>(native_window);
-    windows_[id] = window;
+    WindowRegistry::GetInstance().Add(id, window);
     return window;
   }
 
@@ -104,31 +105,23 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
-  std::vector<std::shared_ptr<Window>> windows;
-
-  for (const auto& [id, window] : windows_) {
-    windows.push_back(window);
-  }
-
-  return windows;
+  return WindowRegistry::GetInstance().GetAll();
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   // On OpenHarmony, the current window is typically the Ability's window
-  if (!windows_.empty()) {
-    return windows_.begin()->second;
-  }
-  return nullptr;
+  auto all = WindowRegistry::GetInstance().GetAll();
+  return all.empty() ? nullptr : all.front();
 }
 
 bool WindowManager::Destroy(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    windows_.erase(it);
-    Emit<WindowClosedEvent>(id);
-    return true;
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (!window) {
+    return false;
   }
-  return false;
+  WindowRegistry::GetInstance().Remove(id);
+  Emit<WindowClosedEvent>(id);
+  return true;
 }
 
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {

@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 
 namespace nativeapi {
 
@@ -28,7 +29,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   auto window = std::make_shared<Window>((__bridge void*)uiWindow);
 
   if (window) {
-    windows_[window->GetId()] = window;
+    WindowRegistry::GetInstance().Add(window->GetId(), window);
     Emit<WindowCreatedEvent>(window->GetId());
   }
 
@@ -36,24 +37,16 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto it = windows_.find(id);
-  return (it != windows_.end()) ? it->second : nullptr;
+  return WindowRegistry::GetInstance().Get(id);
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
-  std::vector<std::shared_ptr<Window>> result;
-  result.reserve(windows_.size());
-
-  for (const auto& [id, window] : windows_) {
-    result.push_back(window);
-  }
-
-  return result;
+  return WindowRegistry::GetInstance().GetAll();
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   // Find the first key window
-  for (const auto& [id, window] : windows_) {
+  for (const auto& window : WindowRegistry::GetInstance().GetAll()) {
     if (window->IsFocused()) {
       return window;
     }
@@ -62,12 +55,12 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 }
 
 bool WindowManager::Destroy(WindowId id) {
-  auto it = windows_.find(id);
-  if (it == windows_.end()) {
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (!window) {
     return false;
   }
 
-  windows_.erase(it);
+  WindowRegistry::GetInstance().Remove(id);
   Emit<WindowClosedEvent>(id);
 
   return true;
