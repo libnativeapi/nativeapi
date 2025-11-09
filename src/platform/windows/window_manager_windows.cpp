@@ -12,6 +12,18 @@ namespace nativeapi {
 // Custom window procedure to handle window messages
 static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
+    case WM_SHOWWINDOW: {
+      // wParam: TRUE if the window is being shown, FALSE if hidden
+      auto& manager = WindowManager::GetInstance();
+      Window temp_window(hwnd);
+      WindowId window_id = temp_window.GetId();
+      if (wParam) {
+        manager.InvokeWillShowHook(window_id);
+      } else {
+        manager.InvokeWillHideHook(window_id);
+      }
+      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
     case WM_CLOSE:
       // User clicked the close button
       DestroyWindow(hwnd);
@@ -85,6 +97,11 @@ class WindowManager::Impl {
 
  private:
   WindowManager* manager_;
+  // Optional pre-show/hide hooks
+  std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
+  std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+
+  friend class WindowManager;
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
@@ -218,19 +235,23 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
-  // Empty implementation
+  pimpl_->will_show_hook_ = std::move(hook);
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
-  // Empty implementation
+  pimpl_->will_hide_hook_ = std::move(hook);
 }
 
 void WindowManager::InvokeWillShowHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_show_hook_) {
+    (*pimpl_->will_show_hook_)(id);
+  }
 }
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_hide_hook_) {
+    (*pimpl_->will_hide_hook_)(id);
+  }
 }
 
 }  // namespace nativeapi

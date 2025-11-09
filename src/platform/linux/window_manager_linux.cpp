@@ -48,6 +48,33 @@ static GdkWindow* FindGdkWindowById(WindowId id) {
   return nullptr;
 }
 
+// GTK signal callbacks to invoke hooks
+static gboolean OnGtkMapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_data) {
+  (void)event;
+  (void)user_data;
+  auto& manager = WindowManager::GetInstance();
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (gdk_window) {
+    WindowId id = GetOrCreateWindowId(gdk_window);
+    manager.InvokeWillShowHook(id);
+  }
+  // Return FALSE to propagate event further
+  return FALSE;
+}
+
+static gboolean OnGtkUnmapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_data) {
+  (void)event;
+  (void)user_data;
+  auto& manager = WindowManager::GetInstance();
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (gdk_window) {
+    WindowId id = GetOrCreateWindowId(gdk_window);
+    manager.InvokeWillHideHook(id);
+  }
+  // Return FALSE to propagate event further
+  return FALSE;
+}
+
 // Private implementation for Linux (stub for now)
 class WindowManager::Impl {
  public:
@@ -64,6 +91,11 @@ class WindowManager::Impl {
 
  private:
   WindowManager* manager_;
+  // Optional pre-show/hide hooks
+  std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
+  std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+
+  friend class WindowManager;
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
@@ -218,6 +250,10 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     return nullptr;
   }
 
+  // Connect map/unmap events to invoke hooks
+  g_signal_connect(G_OBJECT(gtk_window), "map-event", G_CALLBACK(OnGtkMapEvent), nullptr);
+  g_signal_connect(G_OBJECT(gtk_window), "unmap-event", G_CALLBACK(OnGtkUnmapEvent), nullptr);
+
   // Set window properties from options
   if (!options.title.empty()) {
     gtk_window_set_title(GTK_WINDOW(gtk_window), options.title.c_str());
@@ -249,29 +285,29 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
     gtk_window_set_position(GTK_WINDOW(gtk_window), GTK_WIN_POS_CENTER);
   }
 
-  // Show the window
-  gtk_widget_show(gtk_window);
-
-  // Get the GdkWindow after the widget is realized
-  GdkWindow* gdk_window = gtk_widget_get_window(gtk_window);
-  if (!gdk_window) {
-    // If window is not yet realized, realize it first
+  // Realize to ensure GdkWindow exists before show, so we can derive ID and invoke hook
+  if (!gtk_widget_get_realized(gtk_window)) {
     gtk_widget_realize(gtk_window);
-    gdk_window = gtk_widget_get_window(gtk_window);
   }
 
+  // Obtain GdkWindow and compute WindowId
+  GdkWindow* gdk_window = gtk_widget_get_window(gtk_window);
   if (!gdk_window) {
     std::cerr << "Failed to get GdkWindow from GTK widget" << std::endl;
     gtk_widget_destroy(gtk_window);
     return nullptr;
   }
 
-  // Create our Window wrapper
+  // Create our Window wrapper and cache before showing
   auto window = std::make_shared<Window>((void*)gdk_window);
   WindowId window_id = GetOrCreateWindowId(gdk_window);
-
-  // Store in our cache
   windows_[window_id] = window;
+
+  // Invoke pre-show hook if set
+  InvokeWillShowHook(window_id);
+
+  // Show the window after invoking hook
+  gtk_widget_show(gtk_window);
 
   std::cout << "Created window with ID: " << window_id << std::endl;
 
@@ -289,19 +325,23 @@ bool WindowManager::Destroy(WindowId id) {
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
-  // Empty implementation
+  pimpl_->will_show_hook_ = std::move(hook);
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
-  // Empty implementation
+  pimpl_->will_hide_hook_ = std::move(hook);
 }
 
 void WindowManager::InvokeWillShowHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_show_hook_) {
+    (*pimpl_->will_show_hook_)(id);
+  }
 }
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
-  // Empty implementation
+  if (pimpl_->will_hide_hook_) {
+    (*pimpl_->will_hide_hook_)(id);
+  }
 }
 
 }  // namespace nativeapi
