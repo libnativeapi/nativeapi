@@ -7,6 +7,7 @@
 
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 
 // Import GTK headers
 #include <gdk/gdk.h>
@@ -255,9 +256,9 @@ void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    return it->second;
+  auto cached = WindowRegistry::GetInstance().Get(id);
+  if (cached) {
+    return cached;
   }
 
   // Try to find the window by ID in the current display
@@ -274,7 +275,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 
     if (gdk_window && GetOrCreateWindowId(gdk_window) == id) {
       auto window = std::make_shared<Window>((void*)gdk_window);
-      windows_[id] = window;
+      WindowRegistry::GetInstance().Add(id, window);
       g_list_free(toplevels);
       return window;
     }
@@ -299,20 +300,16 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
 
     if (gdk_window) {
       WindowId window_id = GetOrCreateWindowId(gdk_window);
-      auto it = windows_.find(window_id);
-      if (it == windows_.end()) {
+      if (!WindowRegistry::GetInstance().Get(window_id)) {
         auto window = std::make_shared<Window>((void*)gdk_window);
-        windows_[window_id] = window;
+        WindowRegistry::GetInstance().Add(window_id, window);
       }
     }
   }
   g_list_free(toplevels);
 
   // Return all cached windows
-  for (auto& window : windows_) {
-    windows.push_back(window.second);
-  }
-  return windows;
+  return WindowRegistry::GetInstance().GetAll();
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
@@ -417,7 +414,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   // Create our Window wrapper and cache before showing
   auto window = std::make_shared<Window>((void*)gdk_window);
   WindowId window_id = GetOrCreateWindowId(gdk_window);
-  windows_[window_id] = window;
+  WindowRegistry::GetInstance().Add(window_id, window);
 
   // Invoke pre-show hook if set
   InvokeWillShowHook(window_id);
@@ -431,13 +428,13 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 }
 
 bool WindowManager::Destroy(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    // TODO: Implement proper GTK window destruction
-    windows_.erase(it);
-    return true;
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (!window) {
+    return false;
   }
-  return false;
+  // TODO: Implement proper GTK window destruction
+  WindowRegistry::GetInstance().Remove(id);
+  return true;
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {

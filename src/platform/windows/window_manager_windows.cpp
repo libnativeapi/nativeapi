@@ -5,6 +5,7 @@
 #include <psapi.h>
 #include "../../window.h"
 #include "../../window_event.h"
+#include "../../window_registry.h"
 #include "../../window_manager.h"
 #include "string_utils_windows.h"
 
@@ -421,7 +422,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
   auto window = std::make_shared<Window>(hwnd);
   WindowId window_id = window->GetId();
-  windows_[window_id] = window;
+  WindowRegistry::GetInstance().Add(window_id, window);
 
   // Dispatch window created event
   WindowCreatedEvent created_event(window_id);
@@ -432,45 +433,35 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
 // Destroy a window by its ID. Returns true if window was destroyed.
 bool WindowManager::Destroy(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    HWND hwnd = static_cast<HWND>(it->second->GetNativeObject());
-    if (IsWindow(hwnd)) {
-      DestroyWindow(hwnd);
-    }
-    windows_.erase(it);
-    return true;
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (!window) {
+    return false;
   }
-  return false;
+  HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+  if (IsWindow(hwnd)) {
+    DestroyWindow(hwnd);
+  }
+  WindowRegistry::GetInstance().Remove(id);
+  return true;
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    return it->second;
+  auto cached = WindowRegistry::GetInstance().Get(id);
+  if (cached) {
+    return cached;
   }
-
   // Check if the window still exists in the system
   HWND hwnd = reinterpret_cast<HWND>(id);
   if (IsWindow(hwnd)) {
     auto window = std::make_shared<Window>(hwnd);
-    windows_[id] = window;
+    WindowRegistry::GetInstance().Add(id, window);
     return window;
   }
-
   return nullptr;
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
-  std::vector<std::shared_ptr<Window>> windows;
-
-  // Enumerate all windows and add them to our collection
-  // This is a simplified implementation
-  for (auto& window_pair : windows_) {
-    windows.push_back(window_pair.second);
-  }
-
-  return windows;
+  return WindowRegistry::GetInstance().GetAll();
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {

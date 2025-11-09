@@ -205,13 +205,7 @@ class WindowManager : public EventEmitter<WindowEvent> {
   class Impl;
   std::unique_ptr<Impl> pimpl_;
 
-  /**
-   * @brief Internal registry of all managed windows
-   *
-   * Maps window IDs to their corresponding Window instances for fast lookup.
-   * This container is the authoritative source for all active windows.
-   */
-  std::unordered_map<WindowId, std::shared_ptr<Window>> windows_;
+  // Window instances are tracked by WindowRegistry (see window_registry.h)
 
   /**
    * @brief Set up platform-specific event monitoring

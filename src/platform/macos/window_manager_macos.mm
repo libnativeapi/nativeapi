@@ -6,6 +6,7 @@
 
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 
 // Forward declaration for the delegate
 @class NativeAPIWindowManagerDelegate;
@@ -272,7 +273,7 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
   [ns_window makeMainWindow];
   WindowId window_id = [ns_window windowNumber];
   auto window = std::make_shared<Window>((__bridge void*)ns_window);
-  windows_[window_id] = window;
+  WindowRegistry::GetInstance().Add(window_id, window);
 
   // Dispatch window created event
   WindowCreatedEvent created_event(window_id);
@@ -283,33 +284,32 @@ std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
 
 // Destroy a window by its ID. Returns true if window was destroyed.
 bool WindowManager::Destroy(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    // Get the NSWindow to close it
-    NSArray* ns_windows = [[NSApplication sharedApplication] windows];
-    for (NSWindow* ns_window in ns_windows) {
-      if ([ns_window windowNumber] == id) {
-        [ns_window close];
-        windows_.erase(it);
-        return true;
-      }
-    }
-    // Remove from our map even if we couldn't find the NSWindow
-    windows_.erase(it);
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (!window) {
+    return false;
   }
+  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
+  for (NSWindow* ns_window in ns_windows) {
+    if ([ns_window windowNumber] == id) {
+      [ns_window close];
+      WindowRegistry::GetInstance().Remove(id);
+      return true;
+    }
+  }
+  WindowRegistry::GetInstance().Remove(id);
   return false;
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto it = windows_.find(id);
-  if (it != windows_.end()) {
-    return it->second;
+  auto cached = WindowRegistry::GetInstance().Get(id);
+  if (cached) {
+    return cached;
   }
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   for (NSWindow* ns_window in ns_windows) {
     if ([ns_window windowNumber] == id) {
       auto window = std::make_shared<Window>((__bridge void*)ns_window);
-      windows_[id] = window;
+      WindowRegistry::GetInstance().Add(id, window);
       return window;
     }
   }
@@ -321,14 +321,15 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   for (NSWindow* ns_window in ns_windows) {
     WindowId window_id = [ns_window windowNumber];
-    auto it = windows_.find(window_id);
-    if (it == windows_.end()) {
+    if (!WindowRegistry::GetInstance().Get(window_id)) {
       auto window = std::make_shared<Window>((__bridge void*)ns_window);
-      windows_[window_id] = window;
+      WindowRegistry::GetInstance().Add(window_id, window);
     }
   }
-  for (auto& window : windows_) {
-    windows.push_back(window.second);
+  // Merge cached windows from registry to ensure consistency
+  auto cached = WindowRegistry::GetInstance().GetAll();
+  for (const auto& w : cached) {
+    windows.push_back(w);
   }
   return windows;
 }
