@@ -280,8 +280,10 @@ bool Window::IsAlwaysOnTop() const {
 
 void Window::SetPosition(Point point) {
   // Convert from topLeft coordinate system to bottom-left (macOS default)
-  NSPoint topLeftPoint = {point.x, point.y};
-  NSPoint bottomLeft = NSPointExt::bottomLeft(topLeftPoint);
+  // We need the window height to correctly convert the top-left position
+  NSRect frame = [pimpl_->ns_window_ frame];
+  CGPoint topLeftPoint = {point.x, point.y};
+  NSPoint bottomLeft = NSPointExt::bottomLeftForWindow(topLeftPoint, frame.size.height);
   [pimpl_->ns_window_ setFrameOrigin:bottomLeft];
 }
 
