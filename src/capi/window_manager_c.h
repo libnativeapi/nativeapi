@@ -19,15 +19,13 @@ extern "C" {
  * Window event types
  */
 typedef enum {
-  NATIVE_WINDOW_EVENT_CREATED = 0,
-  NATIVE_WINDOW_EVENT_CLOSED = 1,
-  NATIVE_WINDOW_EVENT_FOCUSED = 2,
-  NATIVE_WINDOW_EVENT_BLURRED = 3,
-  NATIVE_WINDOW_EVENT_MINIMIZED = 4,
-  NATIVE_WINDOW_EVENT_MAXIMIZED = 5,
-  NATIVE_WINDOW_EVENT_RESTORED = 6,
-  NATIVE_WINDOW_EVENT_MOVED = 7,
-  NATIVE_WINDOW_EVENT_RESIZED = 8
+  NATIVE_WINDOW_EVENT_FOCUSED = 0,
+  NATIVE_WINDOW_EVENT_BLURRED = 1,
+  NATIVE_WINDOW_EVENT_MINIMIZED = 2,
+  NATIVE_WINDOW_EVENT_MAXIMIZED = 3,
+  NATIVE_WINDOW_EVENT_RESTORED = 4,
+  NATIVE_WINDOW_EVENT_MOVED = 5,
+  NATIVE_WINDOW_EVENT_RESIZED = 6
 } native_window_event_type_t;
 
 /**
@@ -56,12 +54,11 @@ typedef void (*native_window_event_callback_t)(const native_window_event_t* even
  */
 
 /**
- * Create a new window with the specified options
- * @param options Window creation options
+ * Create a new window with default settings
  * @return Window handle, or NULL if creation failed
  */
 FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_create(const native_window_options_t* options);
+native_window_t native_window_manager_create(void);
 
 /**
  * Get a window by its ID

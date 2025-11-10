@@ -47,22 +47,16 @@ int main() {
     return 1;
   }
 
-  // Create a simple window
-  native_window_options_t* window_options = native_window_options_create();
-  if (!window_options) {
-    fprintf(stderr, "Failed to create window options\n");
-    return 1;
-  }
-
-  native_window_options_set_title(window_options, "Application C Example Window");
-  native_window_options_set_size(window_options, 400.0, 300.0);
-
-  native_window_t window = native_window_manager_create(window_options);
+  // Create a simple window with default settings
+  native_window_t window = native_window_manager_create();
   if (!window) {
     fprintf(stderr, "Failed to create window\n");
-    native_window_options_destroy(window_options);
     return 1;
   }
+
+  // Configure the window
+  native_window_set_title(window, "Application C Example Window");
+  native_window_set_size(window, 400.0, 300.0, false);
 
   printf("Window created successfully\n");
   printf("Window ID: %ld\n", native_window_get_id(window));
@@ -80,7 +74,6 @@ int main() {
 
   // Clean up
   native_application_remove_event_listener(app, listener_id);
-  native_window_options_destroy(window_options);
 
   return exit_code;
 }

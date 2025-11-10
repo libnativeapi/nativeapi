@@ -17,31 +17,6 @@ namespace nativeapi {
 typedef IdAllocator::IdType WindowId;
 
 /**
- * @struct WindowOptions
- * @brief Configuration options for creating a new window.
- *
- * This struct contains all the parameters needed to configure a window
- * during its creation process. All fields are optional and will use
- * platform defaults if not specified.
- */
-struct WindowOptions {
-  /** @brief The initial title of the window */
-  std::string title;
-
-  /** @brief The initial size of the window */
-  Size size;
-
-  /** @brief The minimum size the window can be resized to */
-  Size minimum_size;
-
-  /** @brief The maximum size the window can be resized to */
-  Size maximum_size;
-
-  /** @brief Whether the window should be centered on the screen when created */
-  bool centered;
-};
-
-/**
  * @class Window
  * @brief Cross-platform window abstraction class.
  *
@@ -55,13 +30,14 @@ struct WindowOptions {
  * @note This class is not thread-safe. All window operations should be performed
  *       on the main UI thread.
  */
-class Window : public NativeObjectProvider {
+class Window : public NativeObjectProvider, public std::enable_shared_from_this<Window> {
  public:
   /**
    * @brief Default constructor creates a new window with default settings.
    *
    * Creates a new window with platform-default size, position, and properties.
    * The window is initially hidden and must be explicitly shown.
+   * The window is automatically registered in the WindowRegistry.
    */
   Window();
 
@@ -71,7 +47,7 @@ class Window : public NativeObjectProvider {
    * @param window Pointer to an existing platform-specific window object
    * @note The Window instance takes ownership of the native window object
    */
-  Window(void* window);
+  Window(void* native_window);
 
   /**
    * @brief Virtual destructor ensures proper cleanup of resources.

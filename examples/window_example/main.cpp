@@ -22,7 +22,6 @@ using nativeapi::TrayIconRightClickedEvent;
 using nativeapi::TrayManager;
 using nativeapi::Window;
 using nativeapi::WindowManager;
-using nativeapi::WindowOptions;
 
 int main() {
   native_accessibility_manager_enable();
@@ -33,14 +32,13 @@ int main() {
   TrayManager& tray_manager = TrayManager::GetInstance();
   WindowManager& window_manager = WindowManager::GetInstance();
 
-  // Create a new window with options
-  WindowOptions options;
-  options.title = "Window Example";
-  options.size = {800, 600};
-  options.minimum_size = {400, 300};
-  options.maximum_size = {1920, 1080};
-  options.centered = true;
-  std::shared_ptr<Window> window_ptr = window_manager.Create(options);
+  // Create a new window (automatically registered)
+  std::shared_ptr<Window> window_ptr = std::make_shared<Window>();
+  window_ptr->SetTitle("Window Example");
+  window_ptr->SetSize({800, 600}, false);
+  window_ptr->SetMinimumSize({400, 300});
+  window_ptr->SetMaximumSize({1920, 1080});
+  window_ptr->Center();
 
   std::shared_ptr<TrayIcon> tray_icon_ptr = std::make_shared<TrayIcon>();
   if (tray_icon_ptr != nullptr) {

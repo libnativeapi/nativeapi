@@ -29,6 +29,10 @@ std::vector<std::shared_ptr<Window>> WindowRegistry::GetAll() const {
   return pimpl_->registry_.GetAll();
 }
 
+bool WindowRegistry::Contains(WindowId id) const {
+  return pimpl_->registry_.Contains(id);
+}
+
 bool WindowRegistry::Remove(WindowId id) {
   return pimpl_->registry_.Remove(id);
 }

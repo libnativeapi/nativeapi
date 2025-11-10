@@ -1,6 +1,10 @@
 #include <iostream>
+#include <mutex>
+#include <unordered_map>
+#include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 #include "coordinate_utils_macos.h"
 
 // Import Cocoa headers
@@ -15,9 +19,15 @@ class Window::Impl {
   NSWindow* ns_window_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {}
+Window::Window() {
+  NSWindow* ns_window = [[NSWindow alloc] init];
+  ns_window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
+                        NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+  pimpl_ = std::make_unique<Impl>(ns_window);
+}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)window)) {}
+Window::Window(void* native_window)
+    : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)native_window)) {}
 
 Window::~Window() {}
 
@@ -353,7 +363,35 @@ void Window::StartDragging() {
 void Window::StartResizing() {}
 
 WindowId Window::GetId() const {
-  return pimpl_ && pimpl_->ns_window_ ? [pimpl_->ns_window_ windowNumber] : -1;
+  if (!pimpl_ || !pimpl_->ns_window_) {
+    return IdAllocator::kInvalidId;
+  }
+
+  // Store the allocated ID in a static map to ensure consistency
+  static std::unordered_map<NSWindow*, WindowId> window_id_map;
+  static std::mutex map_mutex;
+
+  std::lock_guard<std::mutex> lock(map_mutex);
+  auto it = window_id_map.find(pimpl_->ns_window_);
+  if (it != window_id_map.end()) {
+    return it->second;
+  }
+
+  // Allocate new ID using the IdAllocator
+  WindowId new_id = IdAllocator::Allocate<Window>();
+  if (new_id != IdAllocator::kInvalidId) {
+    window_id_map[pimpl_->ns_window_] = new_id;
+
+    // Register window in registry (delayed registration)
+    // This requires the Window to be managed by shared_ptr
+    try {
+      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
+    } catch (const std::bad_weak_ptr&) {
+      // Window not yet managed by shared_ptr, skip registration
+      // Registration will happen when window is properly managed by shared_ptr
+    }
+  }
+  return new_id;
 }
 
 void* Window::GetNativeObjectInternal() const {

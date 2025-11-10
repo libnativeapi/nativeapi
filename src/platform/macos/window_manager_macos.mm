@@ -233,8 +233,7 @@ void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& eve
     WindowMovedEvent event(window_id, new_position);
     manager_->DispatchWindowEvent(event);
   } else if (event_type == "closing") {
-    WindowClosedEvent event(window_id);
-    manager_->DispatchWindowEvent(event);
+    // Window closing event - no longer emitted
   }
 }
 
@@ -244,30 +243,6 @@ WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
 
 WindowManager::~WindowManager() {
   StopEventListening();
-}
-
-// Create a new window with the given options.
-std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  NSRect frame = NSMakeRect(100, 100, options.size.width, options.size.height);
-  NSUInteger style =
-      NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
-  NSWindow* ns_window = [[NSWindow alloc] initWithContentRect:frame
-                                                    styleMask:style
-                                                      backing:NSBackingStoreBuffered
-                                                        defer:NO];
-  [ns_window setTitle:[NSString stringWithUTF8String:options.title.c_str()]];
-  [ns_window center];
-  [ns_window makeKeyAndOrderFront:nil];
-  [ns_window makeMainWindow];
-  WindowId window_id = [ns_window windowNumber];
-  auto window = std::make_shared<Window>((__bridge void*)ns_window);
-  WindowRegistry::GetInstance().Add(window_id, window);
-
-  // Dispatch window created event
-  WindowCreatedEvent created_event(window_id);
-  DispatchWindowEvent(created_event);
-
-  return window;
 }
 
 // Destroy a window by its ID. Returns true if window was destroyed.

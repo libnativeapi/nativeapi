@@ -35,13 +35,12 @@ int main() {
         std::cout << "Application deactivated event received" << std::endl;
       });
 
-  // Create a simple window
+  // Create a simple window (automatically registered)
   auto& window_manager = WindowManager::GetInstance();
 
-  WindowOptions window_options;
-  window_options.title = "Application Example Window";
+  auto window = std::make_shared<Window>();
+  window->SetTitle("Application Example Window");
 
-  auto window = window_manager.Create(window_options);
   if (!window) {
     std::cerr << "Failed to create window" << std::endl;
     return 1;

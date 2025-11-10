@@ -1,8 +1,10 @@
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
+#include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 
 // Import GTK headers
 #include <gdk/gdk.h>
@@ -17,9 +19,42 @@ class Window::Impl {
   GdkWindow* gdk_window_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
+Window::Window() {
+  // Check if GTK is available
+  GdkDisplay* display = gdk_display_get_default();
+  if (!display) {
+    std::cerr << "No display available for window creation" << std::endl;
+    pimpl_ = std::make_unique<Impl>(nullptr);
+    return;
+  }
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>((GdkWindow*)window)) {}
+  // Create a new GTK window
+  GtkWidget* gtk_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  if (!gtk_window) {
+    std::cerr << "Failed to create GTK window" << std::endl;
+    pimpl_ = std::make_unique<Impl>(nullptr);
+    return;
+  }
+
+  // Realize to ensure GdkWindow exists
+  if (!gtk_widget_get_realized(gtk_window)) {
+    gtk_widget_realize(gtk_window);
+  }
+
+  // Obtain GdkWindow
+  GdkWindow* gdk_window = gtk_widget_get_window(gtk_window);
+  if (!gdk_window) {
+    std::cerr << "Failed to get GdkWindow from GTK widget" << std::endl;
+    gtk_widget_destroy(gtk_window);
+    pimpl_ = std::make_unique<Impl>(nullptr);
+    return;
+  }
+
+  // Only create the instance, don't show the window
+  pimpl_ = std::make_unique<Impl>(gdk_window);
+}
+
+Window::Window(void* native_window) : pimpl_(std::make_unique<Impl>((GdkWindow*)native_window)) {}
 
 Window::~Window() {}
 
@@ -43,6 +78,15 @@ WindowId Window::GetId() const {
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
     window_id_map[pimpl_->gdk_window_] = new_id;
+
+    // Register window in registry (delayed registration)
+    // This requires the Window to be managed by shared_ptr
+    try {
+      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
+    } catch (const std::bad_weak_ptr&) {
+      // Window not yet managed by shared_ptr, skip registration
+      // Registration will happen when window is properly managed by shared_ptr
+    }
   }
   return new_id;
 }

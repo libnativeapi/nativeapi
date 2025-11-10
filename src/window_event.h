@@ -42,40 +42,6 @@ class WindowEvent : public Event {
 };
 
 /**
- * Event class for window creation
- *
- * This event is emitted when a new window is successfully created.
- */
-class WindowCreatedEvent : public WindowEvent {
- public:
-  explicit WindowCreatedEvent(WindowId window_id) : WindowEvent(window_id) {}
-
-  /**
-   * Get a string representation of the event type
-   */
-  std::string GetTypeName() const override { return "WindowCreatedEvent"; }
-};
-
-/**
- * Event class for window closure
- *
- * This event is emitted when a window is closed or destroyed.
- */
-class WindowClosedEvent : public WindowEvent {
- public:
-  explicit WindowClosedEvent(WindowId window_id) : WindowEvent(window_id) {}
-
-  /**
-   * Get a string representation of the event type
-   */
-  std::string GetTypeName() const override { return "WindowClosedEvent"; }
-
-  /**
-   * Get the static type index for this event type
-   */
-};
-
-/**
  * Event class for window focus gained
  *
  * This event is emitted when a window gains focus and becomes the active window.

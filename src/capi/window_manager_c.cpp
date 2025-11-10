@@ -19,25 +19,6 @@ static std::mutex g_callback_mutex;
 static std::unordered_map<int, EventCallbackInfo> g_event_callbacks;
 static int g_next_callback_id = 1;
 
-// Helper function to convert C++ WindowOptions to C options
-static WindowOptions ConvertToWindowOptions(const native_window_options_t* options) {
-  WindowOptions cpp_options;
-
-  if (options->title) {
-    cpp_options.title = std::string(options->title);
-  }
-
-  cpp_options.size.width = options->size.width;
-  cpp_options.size.height = options->size.height;
-  cpp_options.minimum_size.width = options->minimum_size.width;
-  cpp_options.minimum_size.height = options->minimum_size.height;
-  cpp_options.maximum_size.width = options->maximum_size.width;
-  cpp_options.maximum_size.height = options->maximum_size.height;
-  cpp_options.centered = options->centered;
-
-  return cpp_options;
-}
-
 // Helper function to create native_window_t from shared_ptr<Window>
 static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) {
   if (!window)
@@ -67,20 +48,6 @@ class CEventListener {
     auto& manager = WindowManager::GetInstance();
 
     // Register for various window events
-    manager.AddListener<WindowCreatedEvent>([this](const WindowCreatedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_CREATED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowClosedEvent>([this](const WindowClosedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_CLOSED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
     manager.AddListener<WindowFocusedEvent>([this](const WindowFocusedEvent& e) {
       native_window_event_t event;
       event.type = NATIVE_WINDOW_EVENT_FOCUSED;
@@ -147,15 +114,10 @@ static void* g_will_hide_ud = nullptr;
 
 // Window manager operations
 FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_create(const native_window_options_t* options) {
-  if (!options)
-    return nullptr;
-
+native_window_t native_window_manager_create(void) {
   try {
-    WindowOptions cpp_options = ConvertToWindowOptions(options);
-    auto& manager = WindowManager::GetInstance();
-    auto window = manager.Create(cpp_options);
-
+    // Create window with default settings (automatically registered)
+    auto window = std::make_shared<Window>();
     return CreateNativeWindowHandle(window);
   } catch (...) {
     return nullptr;

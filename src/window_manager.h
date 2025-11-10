@@ -64,32 +64,6 @@ class WindowManager : public EventEmitter<WindowEvent> {
   virtual ~WindowManager();
 
   /**
-   * @brief Create a new window with the specified options
-   *
-   * Creates and registers a new window instance with the given configuration.
-   * The window is automatically added to the internal window registry and
-   * a WindowCreatedEvent is emitted upon successful creation.
-   *
-   * @param options Configuration options for the new window
-   * @return Shared pointer to the created Window instance, or nullptr if creation failed
-   *
-   * @throws std::runtime_error if window creation fails due to system limitations
-   *
-   * @code
-   * WindowOptions options;
-   * options.title = "My Window";
-   * options.width = 800;
-   * options.height = 600;
-   *
-   * auto window = WindowManager::GetInstance().Create(options);
-   * if (window) {
-   *     // Window created successfully
-   * }
-   * @endcode
-   */
-  std::shared_ptr<Window> Create(const WindowOptions& options);
-
-  /**
    * @brief Get a window by its unique ID
    *
    * Retrieves a window instance from the internal registry using its ID.
@@ -148,7 +122,7 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * @brief Destroy a window by its ID
    *
    * Removes the specified window from the registry and destroys it.
-   * This will close the window, free its resources, and emit a WindowClosedEvent.
+   * This will close the window and free its resources.
    * Any remaining shared_ptr references to the window will become invalid after
    * the window is destroyed.
    *

@@ -249,47 +249,6 @@ static void UninstallGlobalShowHooks() {
 
 }  // namespace
 
-// Custom window procedure to handle window messages
-static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  switch (uMsg) {
-    case WM_WINDOWPOSCHANGING: {
-      // Intercept visibility changes BEFORE they happen (pre-show/hide "swizzle")
-      // This is the closest Windows analogue to method swizzling NSWindow show/hide
-      WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lParam);
-      if (pos) {
-        auto& manager = WindowManager::GetInstance();
-        Window temp_window(hwnd);
-        WindowId window_id = temp_window.GetId();
-        if (pos->flags & SWP_SHOWWINDOW) {
-          manager.InvokeWillShowHook(window_id);
-        }
-        if (pos->flags & SWP_HIDEWINDOW) {
-          manager.InvokeWillHideHook(window_id);
-        }
-      }
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
-    case WM_SHOWWINDOW:
-      // Keep default processing; pre-hooks are handled in WM_WINDOWPOSCHANGING
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
-    case WM_CLOSE:
-      // User clicked the close button
-      DestroyWindow(hwnd);
-      return 0;
-
-    case WM_DESTROY:
-      // Window is being destroyed
-      // For now, we'll exit the application when any window is destroyed
-      // In a more sophisticated implementation, we might want to check
-      // if this is the last window before calling PostQuitMessage
-      PostQuitMessage(0);
-      return 0;
-
-    default:
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
-  }
-}
-
 // Private implementation to hide Windows-specific details
 class WindowManager::Impl {
  public:
@@ -338,8 +297,7 @@ class WindowManager::Impl {
       WindowMovedEvent event(window_id, new_position);
       manager_->DispatchWindowEvent(event);
     } else if (event_type == "closing") {
-      WindowClosedEvent event(window_id);
-      manager_->DispatchWindowEvent(event);
+      // Window closing event - no longer emitted
     }
   }
 
@@ -358,63 +316,6 @@ WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
 
 WindowManager::~WindowManager() {
   StopEventListening();
-}
-
-// Create a new window with the given options
-std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  HINSTANCE hInstance = GetModuleHandle(nullptr);
-
-  // Register window class if not already registered
-  static bool class_registered = false;
-  static std::wstring wclass_name = StringToWString("NativeAPIWindow");
-
-  if (!class_registered) {
-    WNDCLASSW wc = {};
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = hInstance;
-    wc.lpszClassName = wclass_name.c_str();
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-
-    if (RegisterClassW(&wc)) {
-      class_registered = true;
-    } else {
-      DWORD error = GetLastError();
-      if (error != ERROR_CLASS_ALREADY_EXISTS) {
-        std::cerr << "Failed to register window class. Error: " << error << std::endl;
-        return nullptr;
-      }
-      class_registered = true;
-    }
-  }
-
-  // Create the window
-  DWORD style = WS_OVERLAPPEDWINDOW;
-  DWORD exStyle = 0;
-  std::wstring wtitle = StringToWString(options.title);
-
-  HWND hwnd =
-      CreateWindowExW(exStyle, wclass_name.c_str(), wtitle.c_str(), style, CW_USEDEFAULT,
-                      CW_USEDEFAULT, static_cast<int>(options.size.width),
-                      static_cast<int>(options.size.height), nullptr, nullptr, hInstance, nullptr);
-
-  if (!hwnd) {
-    std::cerr << "Failed to create window. Error: " << GetLastError() << std::endl;
-    return nullptr;
-  }
-
-  ShowWindow(hwnd, SW_SHOW);
-  UpdateWindow(hwnd);
-
-  auto window = std::make_shared<Window>(hwnd);
-  WindowId window_id = window->GetId();
-  WindowRegistry::GetInstance().Add(window_id, window);
-
-  // Dispatch window created event
-  WindowCreatedEvent created_event(window_id);
-  DispatchWindowEvent(created_event);
-
-  return window;
 }
 
 // Destroy a window by its ID. Returns true if window was destroyed.

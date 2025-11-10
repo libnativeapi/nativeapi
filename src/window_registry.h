@@ -16,6 +16,7 @@ class WindowRegistry {
   void Add(WindowId id, const std::shared_ptr<Window>& window);
   std::shared_ptr<Window> Get(WindowId id) const;
   std::vector<std::shared_ptr<Window>> GetAll() const;
+  bool Contains(WindowId id) const;
   bool Remove(WindowId id);
   void Clear();
 

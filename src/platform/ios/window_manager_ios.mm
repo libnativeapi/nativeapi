@@ -19,23 +19,6 @@ WindowManager::~WindowManager() {
   StopEventListening();
 }
 
-std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  // On iOS, windows are created through the UIApplication scene lifecycle
-  // This is typically handled by the app delegate, not directly
-
-  CGRect screenBounds = [UIScreen mainScreen].bounds;
-  UIWindow* uiWindow = [[UIWindow alloc] initWithFrame:screenBounds];
-
-  auto window = std::make_shared<Window>((__bridge void*)uiWindow);
-
-  if (window) {
-    WindowRegistry::GetInstance().Add(window->GetId(), window);
-    Emit<WindowCreatedEvent>(window->GetId());
-  }
-
-  return window;
-}
-
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   return WindowRegistry::GetInstance().Get(id);
 }
@@ -61,7 +44,6 @@ bool WindowManager::Destroy(WindowId id) {
   }
 
   WindowRegistry::GetInstance().Remove(id);
-  Emit<WindowClosedEvent>(id);
 
   return true;
 }

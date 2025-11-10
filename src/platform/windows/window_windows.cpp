@@ -2,12 +2,17 @@
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
+#include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
+#include "../../window_registry.h"
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
 
 namespace nativeapi {
+
+// Forward declaration
+static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Private implementation class
 class Window::Impl {
@@ -16,9 +21,86 @@ class Window::Impl {
   HWND hwnd_;
 };
 
-Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
+// Custom window procedure to handle window messages
+static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  switch (uMsg) {
+    case WM_WINDOWPOSCHANGING: {
+      // Intercept visibility changes BEFORE they happen (pre-show/hide "swizzle")
+      WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lParam);
+      if (pos) {
+        auto& manager = WindowManager::GetInstance();
+        Window temp_window(hwnd);
+        WindowId window_id = temp_window.GetId();
+        if (pos->flags & SWP_SHOWWINDOW) {
+          manager.InvokeWillShowHook(window_id);
+        }
+        if (pos->flags & SWP_HIDEWINDOW) {
+          manager.InvokeWillHideHook(window_id);
+        }
+      }
+      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+    case WM_SHOWWINDOW:
+      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    case WM_CLOSE:
+      DestroyWindow(hwnd);
+      return 0;
+    case WM_DESTROY:
+      PostQuitMessage(0);
+      return 0;
+    default:
+      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+  }
+}
 
-Window::Window(void* window) : pimpl_(std::make_unique<Impl>(static_cast<HWND>(window))) {}
+Window::Window() {
+  // Create a new window with default settings
+  HINSTANCE hInstance = GetModuleHandle(nullptr);
+
+  // Register window class if not already registered
+  static bool class_registered = false;
+  static std::wstring wclass_name = StringToWString("NativeAPIWindow");
+
+  if (!class_registered) {
+    WNDCLASSW wc = {};
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = wclass_name.c_str();
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+
+    if (RegisterClassW(&wc)) {
+      class_registered = true;
+    } else {
+      DWORD error = GetLastError();
+      if (error != ERROR_CLASS_ALREADY_EXISTS) {
+        std::cerr << "Failed to register window class. Error: " << error << std::endl;
+        pimpl_ = std::make_unique<Impl>(nullptr);
+        return;
+      }
+      class_registered = true;
+    }
+  }
+
+  // Create the window
+  DWORD style = WS_OVERLAPPEDWINDOW;
+  DWORD exStyle = 0;
+
+  HWND hwnd = CreateWindowExW(exStyle, wclass_name.c_str(), L"", style, CW_USEDEFAULT,
+                              CW_USEDEFAULT, 800, 600, nullptr, nullptr, hInstance, nullptr);
+
+  if (!hwnd) {
+    std::cerr << "Failed to create window. Error: " << GetLastError() << std::endl;
+    pimpl_ = std::make_unique<Impl>(nullptr);
+    return;
+  }
+
+  // Only create the instance, don't show the window
+  pimpl_ = std::make_unique<Impl>(hwnd);
+}
+
+Window::Window(void* native_window)
+    : pimpl_(std::make_unique<Impl>(static_cast<HWND>(native_window))) {}
 
 Window::~Window() {}
 
@@ -591,6 +673,15 @@ WindowId Window::GetId() const {
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
     window_id_map[pimpl_->hwnd_] = new_id;
+
+    // Register window in registry (delayed registration)
+    // This requires the Window to be managed by shared_ptr
+    try {
+      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
+    } catch (const std::bad_weak_ptr&) {
+      // Window not yet managed by shared_ptr, skip registration
+      // Registration will happen when window is properly managed by shared_ptr
+    }
   }
   return new_id;
 }

@@ -309,16 +309,15 @@ native_menu_t create_context_menu(void) {
 }
 
 int main() {
-  // Create a new window with options
-  native_window_options_t* options = native_window_options_create();
-  native_window_options_set_title(options, "Window Example");
-  native_window_options_set_size(options, 800, 600);
-  native_window_options_set_minimum_size(options, 400, 300);
-  native_window_options_set_maximum_size(options, 1920, 1080);
-  native_window_options_set_centered(options, true);
+  // Create a new window with default settings
+  g_window = native_window_manager_create();
 
-  g_window = native_window_manager_create(options);
-  native_window_options_destroy(options);
+  // Configure the window
+  native_window_set_title(g_window, "Window Example");
+  native_window_set_size(g_window, 800, 600, false);
+  native_window_set_minimum_size(g_window, 400, 300);
+  native_window_set_maximum_size(g_window, 1920, 1080);
+  native_window_center(g_window);
 
   // Create tray icon
   g_tray_icon = native_tray_icon_create();

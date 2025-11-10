@@ -108,16 +108,7 @@ bool WindowManager::Destroy(WindowId id) {
     return false;
   }
   WindowRegistry::GetInstance().Remove(id);
-  Emit<WindowClosedEvent>(id);
   return true;
-}
-
-std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  // On OpenHarmony, window creation is handled by the Ability lifecycle
-  // Window creation requested (OpenHarmony handles this through Ability lifecycle)
-
-  // Return nullptr as windows are created by the OpenHarmony system
-  return nullptr;
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {

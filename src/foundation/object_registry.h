@@ -59,6 +59,20 @@ class ObjectRegistry {
   }
 
   /**
+   * @brief Check if an object exists for the given ID.
+   *
+   * This operation is O(1) average-case.
+   *
+   * @param id The identifier to check.
+   * @return true If an entry exists for the given ID.
+   * @return false If no entry exists for the given ID.
+   */
+  bool Contains(TId id) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return objects_.find(id) != objects_.end();
+  }
+
+  /**
    * @brief Get a snapshot vector of all stored objects.
    *
    * The returned vector contains strong references to the objects as they

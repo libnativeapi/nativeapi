@@ -21,17 +21,6 @@ extern "C" {
 typedef long native_window_id_t;
 
 /**
- * Window options structure for creating windows
- */
-typedef struct {
-  char* title;                 // Window title
-  native_size_t size;          // Initial window size
-  native_size_t minimum_size;  // Minimum window size
-  native_size_t maximum_size;  // Maximum window size
-  bool centered;               // Whether to center the window on screen
-} native_window_options_t;
-
-/**
  * Opaque window handle
  */
 typedef void* native_window_t;
@@ -43,32 +32,6 @@ typedef struct {
   native_window_t* windows;
   long count;
 } native_window_list_t;
-
-// Window creation and destruction
-FFI_PLUGIN_EXPORT
-native_window_options_t* native_window_options_create(void);
-
-FFI_PLUGIN_EXPORT
-void native_window_options_destroy(native_window_options_t* options);
-
-FFI_PLUGIN_EXPORT
-bool native_window_options_set_title(native_window_options_t* options, const char* title);
-
-FFI_PLUGIN_EXPORT
-void native_window_options_set_size(native_window_options_t* options, double width, double height);
-
-FFI_PLUGIN_EXPORT
-void native_window_options_set_minimum_size(native_window_options_t* options,
-                                            double width,
-                                            double height);
-
-FFI_PLUGIN_EXPORT
-void native_window_options_set_maximum_size(native_window_options_t* options,
-                                            double width,
-                                            double height);
-
-FFI_PLUGIN_EXPORT
-void native_window_options_set_centered(native_window_options_t* options, bool centered);
 
 // Window basic operations
 FFI_PLUGIN_EXPORT

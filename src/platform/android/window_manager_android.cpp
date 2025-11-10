@@ -112,17 +112,7 @@ bool WindowManager::Destroy(WindowId id) {
     return false;
   }
   WindowRegistry::GetInstance().Remove(id);
-  Emit<WindowClosedEvent>(id);
   return true;
-}
-
-std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
-  // On Android, window creation is handled by the Activity lifecycle
-  // This function would typically be called from onNativeWindowCreated callback
-  ALOGI("Window creation requested (Android handles this through Activity lifecycle)");
-
-  // Return nullptr as windows are created by the Android system
-  return nullptr;
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
