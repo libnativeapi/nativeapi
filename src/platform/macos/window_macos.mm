@@ -368,11 +368,13 @@ WindowId Window::GetId() const {
   }
 
   // Store the allocated ID in a static map to ensure consistency
-  static std::unordered_map<NSWindow*, WindowId> window_id_map;
+  // Use void* as key to avoid hash function issues with Objective-C pointers
+  static std::unordered_map<void*, WindowId> window_id_map;
   static std::mutex map_mutex;
 
+  void* window_ptr = (__bridge void*)pimpl_->ns_window_;
   std::lock_guard<std::mutex> lock(map_mutex);
-  auto it = window_id_map.find(pimpl_->ns_window_);
+  auto it = window_id_map.find(window_ptr);
   if (it != window_id_map.end()) {
     return it->second;
   }
@@ -380,7 +382,7 @@ WindowId Window::GetId() const {
   // Allocate new ID using the IdAllocator
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
-    window_id_map[pimpl_->ns_window_] = new_id;
+    window_id_map[window_ptr] = new_id;
 
     // Register window in registry (delayed registration)
     // This requires the Window to be managed by shared_ptr
