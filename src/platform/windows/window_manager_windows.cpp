@@ -296,14 +296,14 @@ class WindowManager::Impl {
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
-  void SetupEventMonitoring() {
+  void StartEventListening() {
     // Windows event monitoring would typically be done through:
     // - SetWinEventHook for system-wide window events
     // - Window subclassing for specific window events
     // This is a placeholder implementation
   }
 
-  void CleanupEventMonitoring() {
+  void StopEventListening() {
     // Clean up any event hooks or monitoring
   }
 
@@ -353,26 +353,12 @@ class WindowManager::Impl {
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
+  StopEventListening();
 }
-
-void WindowManager::SetupEventMonitoring() {
-  pimpl_->SetupEventMonitoring();
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);
-}
-
-// Note: Global ShowWindow hooks are installed/uninstalled when hooks are set/cleared
 
 // Create a new window with the given options
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
@@ -505,6 +491,18 @@ void WindowManager::InvokeWillHideHook(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+void WindowManager::StartEventListening() {
+  pimpl_->StartEventListening();
+}
+
+void WindowManager::StopEventListening() {
+  pimpl_->StopEventListening();
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);
 }
 
 }  // namespace nativeapi

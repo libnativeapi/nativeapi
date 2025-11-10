@@ -12,11 +12,11 @@ class WindowManager::Impl {
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
+  StopEventListening();
 }
 
 std::shared_ptr<Window> WindowManager::Create(const WindowOptions& options) {
@@ -66,18 +66,6 @@ bool WindowManager::Destroy(WindowId id) {
   return true;
 }
 
-void WindowManager::SetupEventMonitoring() {
-  // iOS manages window events through UIKit
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  // No cleanup needed
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);
-}
-
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   // Empty implementation
 }
@@ -92,6 +80,18 @@ void WindowManager::InvokeWillShowHook(WindowId id) {
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
   // Empty implementation
+}
+
+void WindowManager::StartEventListening() {
+  // iOS manages window events through UIKit
+}
+
+void WindowManager::StopEventListening() {
+  // No cleanup needed
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);
 }
 
 }  // namespace nativeapi

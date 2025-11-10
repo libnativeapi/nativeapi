@@ -58,36 +58,24 @@ class WindowManager::Impl {
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
-  void SetupEventMonitoring() {
+  void StartEventListening() {
     // On Android, event monitoring is done through Activity callbacks
     // Setup will be handled by the Activity lifecycle
     ALOGI("Window event monitoring setup");
   }
 
-  void CleanupEventMonitoring() { ALOGI("Window event monitoring cleanup"); }
+  void StopEventListening() { ALOGI("Window event monitoring cleanup"); }
 
  private:
   WindowManager* manager_;
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
-}
-
-void WindowManager::SetupEventMonitoring() {
-  pimpl_->SetupEventMonitoring();
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);
+  StopEventListening();
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
@@ -151,6 +139,18 @@ void WindowManager::InvokeWillShowHook(WindowId id) {
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
   // Empty implementation
+}
+
+void WindowManager::StartEventListening() {
+  pimpl_->StartEventListening();
+}
+
+void WindowManager::StopEventListening() {
+  pimpl_->StopEventListening();
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);
 }
 
 }  // namespace nativeapi

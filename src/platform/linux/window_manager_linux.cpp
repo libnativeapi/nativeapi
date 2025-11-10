@@ -185,7 +185,7 @@ class WindowManager::Impl {
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
-  void SetupEventMonitoring() {
+  void StartEventListening() {
     // Install global swizzling for show/hide interception
     InstallGlobalSwizzling();
 
@@ -201,7 +201,7 @@ class WindowManager::Impl {
     }
   }
 
-  void CleanupEventMonitoring() {
+  void StopEventListening() {
     // Clear hooked widgets set
     std::lock_guard<std::mutex> lock(g_hook_mutex);
     g_hooked_widgets.clear();
@@ -236,23 +236,11 @@ WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
     // This is acceptable for headless environments
   }
 
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
-}
-
-void WindowManager::SetupEventMonitoring() {
-  pimpl_->SetupEventMonitoring();
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);
+  StopEventListening();
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
@@ -463,6 +451,18 @@ void WindowManager::InvokeWillHideHook(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+void WindowManager::StartEventListening() {
+  pimpl_->StartEventListening();
+}
+
+void WindowManager::StopEventListening() {
+  pimpl_->StopEventListening();
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);
 }
 
 }  // namespace nativeapi

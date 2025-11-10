@@ -180,6 +180,25 @@ class WindowManager : public EventEmitter<WindowEvent> {
   void InvokeWillShowHook(WindowId id);
   void InvokeWillHideHook(WindowId id);
 
+ protected:
+  /**
+   * @brief Called when the first listener is added.
+   *
+   * Subclasses can override this to start platform-specific event monitoring.
+   * This is called automatically by the EventEmitter when transitioning from
+   * 0 to 1+ listeners.
+   */
+  void StartEventListening() override;
+
+  /**
+   * @brief Called when the last listener is removed.
+   *
+   * Subclasses can override this to stop platform-specific event monitoring.
+   * This is called automatically by the EventEmitter when transitioning from
+   * 1+ to 0 listeners.
+   */
+  void StopEventListening() override;
+
  private:
   /**
    * @brief Private constructor to enforce singleton pattern
@@ -206,22 +225,6 @@ class WindowManager : public EventEmitter<WindowEvent> {
   std::unique_ptr<Impl> pimpl_;
 
   // Window instances are tracked by WindowRegistry (see window_registry.h)
-
-  /**
-   * @brief Set up platform-specific event monitoring
-   *
-   * Initializes the system for monitoring window events such as creation,
-   * destruction, focus changes, etc. This is called during construction.
-   */
-  void SetupEventMonitoring();
-
-  /**
-   * @brief Clean up platform-specific event monitoring
-   *
-   * Stops event monitoring and cleans up associated resources.
-   * This is called during destruction.
-   */
-  void CleanupEventMonitoring();
 
   /**
    * @brief Internal method to dispatch window events

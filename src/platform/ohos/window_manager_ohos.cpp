@@ -54,12 +54,12 @@ class WindowManager::Impl {
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
-  void SetupEventMonitoring() {
+  void StartEventListening() {
     // On OpenHarmony, event monitoring is done through Ability callbacks
     // Window event monitoring setup
   }
 
-  void CleanupEventMonitoring() {
+  void StopEventListening() {
     // Window event monitoring cleanup
   }
 
@@ -68,23 +68,11 @@ class WindowManager::Impl {
 };
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
-}
-
-void WindowManager::SetupEventMonitoring() {
-  pimpl_->SetupEventMonitoring();
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);
+  StopEventListening();
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
@@ -146,6 +134,18 @@ void WindowManager::InvokeWillShowHook(WindowId id) {
 
 void WindowManager::InvokeWillHideHook(WindowId id) {
   // Empty implementation
+}
+
+void WindowManager::StartEventListening() {
+  pimpl_->StartEventListening();
+}
+
+void WindowManager::StopEventListening() {
+  pimpl_->StopEventListening();
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);
 }
 
 }  // namespace nativeapi

@@ -18,8 +18,8 @@ class WindowManager::Impl {
  public:
   Impl(WindowManager* manager);
   ~Impl();
-  void SetupEventMonitoring();
-  void CleanupEventMonitoring();
+  void StartEventListening();
+  void StopEventListening();
   void OnWindowEvent(NSWindow* window, const std::string& event_type);
 
  private:
@@ -160,10 +160,10 @@ namespace nativeapi {
 WindowManager::Impl::Impl(WindowManager* manager) : manager_(manager), delegate_(nullptr) {}
 
 WindowManager::Impl::~Impl() {
-  CleanupEventMonitoring();
+  StopEventListening();
 }
 
-void WindowManager::Impl::SetupEventMonitoring() {
+void WindowManager::Impl::StartEventListening() {
   if (!delegate_) {
     delegate_ = [[NativeAPIWindowManagerDelegate alloc] initWithImpl:this];
 
@@ -199,7 +199,7 @@ void WindowManager::Impl::SetupEventMonitoring() {
   }
 }
 
-void WindowManager::Impl::CleanupEventMonitoring() {
+void WindowManager::Impl::StopEventListening() {
   if (delegate_) {
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center removeObserver:delegate_];
@@ -239,23 +239,11 @@ void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& eve
 }
 
 WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
-  SetupEventMonitoring();
+  StartEventListening();
 }
 
 WindowManager::~WindowManager() {
-  CleanupEventMonitoring();
-}
-
-void WindowManager::SetupEventMonitoring() {
-  pimpl_->SetupEventMonitoring();
-}
-
-void WindowManager::CleanupEventMonitoring() {
-  pimpl_->CleanupEventMonitoring();
-}
-
-void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);  // Use Dispatch instead of DispatchSync
+  StopEventListening();
 }
 
 // Create a new window with the given options.
@@ -371,6 +359,18 @@ void WindowManager::InvokeWillHideHook(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+void WindowManager::StartEventListening() {
+  pimpl_->StartEventListening();
+}
+
+void WindowManager::StopEventListening() {
+  pimpl_->StopEventListening();
+}
+
+void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
+  Emit(event);  // Use Dispatch instead of DispatchSync
 }
 
 }  // namespace nativeapi
