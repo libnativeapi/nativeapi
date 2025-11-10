@@ -48,8 +48,21 @@ class WindowManager::Impl {
 - (void)na_swizzled_makeKeyAndOrderFront:(id)sender {
   // Invoke hook before showing
   nativeapi::WindowManager::GetInstance().InvokeWillShowHook([self windowNumber]);
-  // Call original implementation (swapped)
-  [self na_swizzled_makeKeyAndOrderFront:sender];
+
+  // Defer calling original to the next runloop turn so Dart hook can run first
+  // Guard with associated flag to avoid multiple schedules for the same call
+  static const void* kNAWillShowScheduledKey = &kNAWillShowScheduledKey;
+  id scheduled = objc_getAssociatedObject(self, kNAWillShowScheduledKey);
+  if (!scheduled) {
+    objc_setAssociatedObject(self, kNAWillShowScheduledKey, @YES,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    dispatch_async(dispatch_get_main_queue(), ^{
+      // Clear flag
+      objc_setAssociatedObject(self, kNAWillShowScheduledKey, nil, OBJC_ASSOCIATION_ASSIGN);
+      // Call original implementation (swapped)
+      [self na_swizzled_makeKeyAndOrderFront:sender];
+    });
+  }
 }
 
 - (void)na_swizzled_orderOut:(id)sender {
