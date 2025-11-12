@@ -1,7 +1,5 @@
 #include <windows.h>
 #include <iostream>
-#include <mutex>
-#include <unordered_map>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -11,14 +9,18 @@
 
 namespace nativeapi {
 
+// Property name for storing window ID in HWND
+static const wchar_t* kWindowIdProperty = L"NativeAPIWindowId";
+
 // Forward declaration
 static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(HWND hwnd) : hwnd_(hwnd) {}
+  Impl(HWND hwnd, WindowId id) : hwnd_(hwnd), window_id_(id) {}
   HWND hwnd_;
+  WindowId window_id_;
 };
 
 // Custom window procedure to handle window messages
@@ -28,14 +30,19 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
       // Intercept visibility changes BEFORE they happen (pre-show/hide "swizzle")
       WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lParam);
       if (pos) {
-        auto& manager = WindowManager::GetInstance();
-        Window temp_window(hwnd);
-        WindowId window_id = temp_window.GetId();
-        if (pos->flags & SWP_SHOWWINDOW) {
-          manager.InvokeWillShowHook(window_id);
-        }
-        if (pos->flags & SWP_HIDEWINDOW) {
-          manager.InvokeWillHideHook(window_id);
+        // Get window ID from window's custom property (stored during window creation)
+        HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+        if (prop_handle) {
+          WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
+          if (window_id != IdAllocator::kInvalidId) {
+            auto& manager = WindowManager::GetInstance();
+            if (pos->flags & SWP_SHOWWINDOW) {
+              manager.InvokeWillShowHook(window_id);
+            }
+            if (pos->flags & SWP_HIDEWINDOW) {
+              manager.InvokeWillHideHook(window_id);
+            }
+          }
         }
       }
       return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -75,7 +82,9 @@ Window::Window() {
       DWORD error = GetLastError();
       if (error != ERROR_CLASS_ALREADY_EXISTS) {
         std::cerr << "Failed to register window class. Error: " << error << std::endl;
-        pimpl_ = std::make_unique<Impl>(nullptr);
+        // Allocate ID even for failed window creation to maintain consistency
+        WindowId id = IdAllocator::Allocate<Window>();
+        pimpl_ = std::make_unique<Impl>(nullptr, id);
         return;
       }
       class_registered = true;
@@ -91,18 +100,78 @@ Window::Window() {
 
   if (!hwnd) {
     std::cerr << "Failed to create window. Error: " << GetLastError() << std::endl;
-    pimpl_ = std::make_unique<Impl>(nullptr);
+    // Allocate ID even for failed window creation to maintain consistency
+    WindowId id = IdAllocator::Allocate<Window>();
+    pimpl_ = std::make_unique<Impl>(nullptr, id);
     return;
   }
 
-  // Only create the instance, don't show the window
-  pimpl_ = std::make_unique<Impl>(hwnd);
+  // Allocate window ID using IdAllocator
+  WindowId id = IdAllocator::Allocate<Window>();
+  if (id == IdAllocator::kInvalidId) {
+    std::cerr << "Failed to allocate window ID" << std::endl;
+    DestroyWindow(hwnd);
+    pimpl_ = std::make_unique<Impl>(nullptr, IdAllocator::kInvalidId);
+    return;
+  }
+
+  // Store window ID as a custom property in HWND for easy retrieval in WindowProc
+  SetProp(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
+
+  // Create the instance with allocated ID
+  pimpl_ = std::make_unique<Impl>(hwnd, id);
+
+  // Note: Window registration in WindowRegistry is now handled by WindowManager::GetAll()
+  // which uses EnumWindows to discover and register all windows dynamically
 }
 
-Window::Window(void* native_window)
-    : pimpl_(std::make_unique<Impl>(static_cast<HWND>(native_window))) {}
+Window::Window(void* native_window) {
+  HWND hwnd = static_cast<HWND>(native_window);
+  
+  if (!hwnd) {
+    // Allocate ID even for null window to maintain consistency
+    WindowId id = IdAllocator::Allocate<Window>();
+    pimpl_ = std::make_unique<Impl>(nullptr, id);
+    return;
+  }
 
-Window::~Window() {}
+  // Check if window already has an ID stored as a custom property
+  HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+  WindowId id = IdAllocator::kInvalidId;
+  
+  if (prop_handle) {
+    id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
+  }
+  
+  if (id == IdAllocator::kInvalidId || id == 0) {
+    // Allocate new ID if window doesn't have one
+    id = IdAllocator::Allocate<Window>();
+    if (id == IdAllocator::kInvalidId) {
+      std::cerr << "Failed to allocate window ID" << std::endl;
+      pimpl_ = std::make_unique<Impl>(nullptr, IdAllocator::kInvalidId);
+      return;
+    }
+    // Store the ID as a custom property in HWND
+    SetProp(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
+  }
+
+  pimpl_ = std::make_unique<Impl>(hwnd, id);
+
+  // Note: Window registration in WindowRegistry is now handled by WindowManager::GetAll()
+  // which uses EnumWindows to discover and register all windows dynamically
+}
+
+Window::~Window() {
+  // Remove window from registry on destruction
+  if (pimpl_ && pimpl_->window_id_ != IdAllocator::kInvalidId) {
+    WindowRegistry::GetInstance().Remove(pimpl_->window_id_);
+    
+    // Remove the custom property from HWND if window is still valid
+    if (pimpl_->hwnd_) {
+      RemoveProp(pimpl_->hwnd_, kWindowIdProperty);
+    }
+  }
+}
 
 void Window::Focus() {
   if (pimpl_->hwnd_) {
@@ -654,36 +723,10 @@ void Window::StartResizing() {
 }
 
 WindowId Window::GetId() const {
-  // Use IdAllocator to generate unique IDs instead of casting pointers
-  if (!pimpl_->hwnd_) {
+  if (!pimpl_) {
     return IdAllocator::kInvalidId;
   }
-
-  // Store the allocated ID in a static map to ensure consistency
-  static std::unordered_map<HWND, WindowId> window_id_map;
-  static std::mutex map_mutex;
-
-  std::lock_guard<std::mutex> lock(map_mutex);
-  auto it = window_id_map.find(pimpl_->hwnd_);
-  if (it != window_id_map.end()) {
-    return it->second;
-  }
-
-  // Allocate new ID using the IdAllocator
-  WindowId new_id = IdAllocator::Allocate<Window>();
-  if (new_id != IdAllocator::kInvalidId) {
-    window_id_map[pimpl_->hwnd_] = new_id;
-
-    // Register window in registry (delayed registration)
-    // This requires the Window to be managed by shared_ptr
-    try {
-      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
-    } catch (const std::bad_weak_ptr&) {
-      // Window not yet managed by shared_ptr, skip registration
-      // Registration will happen when window is properly managed by shared_ptr
-    }
-  }
-  return new_id;
+  return pimpl_->window_id_;
 }
 
 void* Window::GetNativeObjectInternal() const {

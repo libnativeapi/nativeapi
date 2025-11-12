@@ -13,6 +13,39 @@
 
 namespace nativeapi {
 
+// Property name for storing window ID in HWND (must match window_windows.cpp)
+static const wchar_t* kWindowIdProperty = L"NativeAPIWindowId";
+
+// Helper function to get window ID from HWND
+// First tries to read from custom property, then creates Window object if needed
+static WindowId GetWindowIdFromHwnd(HWND hwnd) {
+  if (!hwnd) {
+    return IdAllocator::kInvalidId;
+  }
+
+  // First, try to get window ID from HWND's custom property
+  HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+  if (prop_handle) {
+    WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
+    if (window_id != IdAllocator::kInvalidId && window_id != 0) {
+      return window_id;
+    }
+  }
+
+  // If property doesn't exist, create a new Window object and register it
+  // Use shared_ptr so it can be properly registered in WindowRegistry
+  auto window = std::make_shared<Window>(hwnd);
+  WindowId window_id = window->GetId();
+  
+  // Register the window manually since constructor's shared_from_this() fails
+  // during construction (shared_ptr control block not fully initialized yet)
+  if (window_id != IdAllocator::kInvalidId) {
+    WindowRegistry::GetInstance().Add(window_id, window);
+  }
+  
+  return window_id;
+}
+
 namespace {
 
 using PFN_ShowWindow = BOOL(WINAPI*)(HWND, int);
@@ -37,9 +70,12 @@ static bool IsShowCommandVisible(int cmd) {
 }
 
 static void InvokePreShowHideHooks(HWND hwnd, int cmd) {
+  WindowId window_id = GetWindowIdFromHwnd(hwnd);
+  if (window_id == IdAllocator::kInvalidId) {
+    return;
+  }
+
   auto& manager = WindowManager::GetInstance();
-  Window temp_window(hwnd);
-  WindowId window_id = temp_window.GetId();
   if (cmd == SW_HIDE) {
     manager.InvokeWillHideHook(window_id);
   } else if (IsShowCommandVisible(cmd)) {
@@ -59,12 +95,15 @@ static BOOL WINAPI HookedShowWindow(HWND hwnd, int nCmdShow) {
 }
 
 static BOOL WINAPI HookedShowWindowAsync(HWND hwnd, int nCmdShow) {
+  std::cout << "HookedShowWindowAsync called for hwnd: " << hwnd << " with nCmdShow: " << nCmdShow << std::endl;
   InvokePreShowHideHooks(hwnd, nCmdShow);
   if (g_original_show_window_async) {
+    std::cout << "Calling original ShowWindowAsync" << std::endl;
     return g_original_show_window_async(hwnd, nCmdShow);
   }
   auto p = reinterpret_cast<PFN_ShowWindowAsync>(
       GetProcAddress(GetModuleHandleW(L"user32.dll"), "ShowWindowAsync"));
+  std::cout << "Calling fallback ShowWindowAsync" << std::endl;
   return p ? p(hwnd, nCmdShow) : FALSE;
 }
 
@@ -267,9 +306,11 @@ class WindowManager::Impl {
   }
 
   void OnWindowEvent(HWND hwnd, const std::string& event_type) {
-    // Create a temporary Window object to get the proper WindowId
-    Window temp_window(hwnd);
-    WindowId window_id = temp_window.GetId();
+    // Get window ID, first trying custom property, then creating Window if needed
+    WindowId window_id = GetWindowIdFromHwnd(hwnd);
+    if (window_id == IdAllocator::kInvalidId) {
+      return;
+    }
 
     if (event_type == "focused") {
       WindowFocusedEvent event(window_id);
@@ -333,30 +374,72 @@ bool WindowManager::Destroy(WindowId id) {
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto cached = WindowRegistry::GetInstance().Get(id);
-  if (cached) {
-    return cached;
-  }
-  // Check if the window still exists in the system
-  HWND hwnd = reinterpret_cast<HWND>(id);
-  if (IsWindow(hwnd)) {
-    auto window = std::make_shared<Window>(hwnd);
-    WindowRegistry::GetInstance().Add(id, window);
+  // First try to get from registry
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (window) {
     return window;
   }
-  return nullptr;
+  
+  // If not in registry, enumerate all windows to find it
+  // This will create and register the window if it exists
+  GetAll();
+  
+  // Try again after enumeration
+  return WindowRegistry::GetInstance().Get(id);
+}
+
+// Callback for EnumWindows to collect all top-level windows
+static BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam) {
+  auto* windows = reinterpret_cast<std::vector<HWND>*>(lParam);
+  
+  // Only include visible windows that are not minimized to taskbar
+  // and have a title (filters out many background windows)
+  if (IsWindowVisible(hwnd)) {
+    int length = GetWindowTextLengthW(hwnd);
+    if (length > 0) {
+      // Check if it's a normal window (not tool window, etc.)
+      LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+      if (!(exStyle & WS_EX_TOOLWINDOW)) {
+        windows->push_back(hwnd);
+      }
+    }
+  }
+  
+  return TRUE;  // Continue enumeration
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
-  return WindowRegistry::GetInstance().GetAll();
+  std::vector<HWND> hwnds;
+  
+  // Enumerate all top-level windows
+  EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnds));
+  
+  std::vector<std::shared_ptr<Window>> windows;
+  windows.reserve(hwnds.size());
+  
+  for (HWND hwnd : hwnds) {
+    // Get window ID from HWND, creating Window object if needed
+    WindowId window_id = GetWindowIdFromHwnd(hwnd);
+    
+    if (window_id != IdAllocator::kInvalidId) {
+      // Try to get existing window from registry
+      auto window = WindowRegistry::GetInstance().Get(window_id);
+      if (window) {
+        windows.push_back(window);
+      }
+    }
+  }
+  
+  return windows;
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
-  HWND hwnd = GetForegroundWindow();
+  HWND hwnd = GetActiveWindow();
   if (hwnd) {
-    Window temp_window(hwnd);
-    WindowId window_id = temp_window.GetId();
-    return Get(window_id);
+    WindowId window_id = GetWindowIdFromHwnd(hwnd);
+    if (window_id != IdAllocator::kInvalidId) {
+      return Get(window_id);
+    }
   }
   return nullptr;
 }
