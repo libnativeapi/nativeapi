@@ -46,28 +46,27 @@ class WindowManager::Impl {
 @implementation NSWindow (NativeAPISwizzle)
 
 - (void)na_swizzled_makeKeyAndOrderFront:(id)sender {
-  // Invoke hook before showing
-  nativeapi::WindowManager::GetInstance().InvokeWillShowHook([self windowNumber]);
-
-  // Defer calling original to the next runloop turn so Dart hook can run first
-  // Guard with associated flag to avoid multiple schedules for the same call
-  static const void* kNAWillShowScheduledKey = &kNAWillShowScheduledKey;
-  id scheduled = objc_getAssociatedObject(self, kNAWillShowScheduledKey);
-  if (!scheduled) {
-    objc_setAssociatedObject(self, kNAWillShowScheduledKey, @YES,
-                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    dispatch_async(dispatch_get_main_queue(), ^{
-      // Clear flag
-      objc_setAssociatedObject(self, kNAWillShowScheduledKey, nil, OBJC_ASSOCIATION_ASSIGN);
-      // Call original implementation (swapped)
-      [self na_swizzled_makeKeyAndOrderFront:sender];
-    });
-  }
+    // Ensure registry is in sync and then invoke hook with correct WindowId
+    auto windows = nativeapi::WindowManager::GetInstance().GetAll();
+    for (const auto& window : windows) {
+      if (window->GetNativeObject() == (__bridge void*)self) {
+        nativeapi::WindowManager::GetInstance().InvokeWillShowHook(window->GetId());
+        break;
+      }
+    }
+    // First call original implementation so properties like title are up-to-date
+    [self na_swizzled_makeKeyAndOrderFront:sender];
 }
 
 - (void)na_swizzled_orderOut:(id)sender {
-  // Invoke hook before hiding
-  nativeapi::WindowManager::GetInstance().InvokeWillHideHook([self windowNumber]);
+  // Invoke hook before hiding, resolving id via registry without using windowNumber
+  auto windows = nativeapi::WindowManager::GetInstance().GetAll();
+  for (const auto& window : windows) {
+    if (window->GetNativeObject() == (__bridge void*)self) {
+      nativeapi::WindowManager::GetInstance().InvokeWillHideHook(window->GetId());
+      break;
+    }
+  }
   // Call original implementation (swapped)
   [self na_swizzled_orderOut:sender];
 }
@@ -277,48 +276,54 @@ bool WindowManager::Destroy(WindowId id) {
 }
 
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
-  auto cached = WindowRegistry::GetInstance().Get(id);
-  if (cached) {
-    return cached;
+  // First check if it's already in the registry
+  auto window = WindowRegistry::GetInstance().Get(id);
+  if (window) {
+    return window;
   }
-  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
-  for (NSWindow* ns_window in ns_windows) {
-    if ([ns_window windowNumber] == id) {
-      auto window = std::make_shared<Window>((__bridge void*)ns_window);
-      WindowRegistry::GetInstance().Add(id, window);
-      return window;
-    }
-  }
-  return nullptr;
+
+  // If not found, ensure all NSWindows are registered and try again
+  GetAll();
+  return WindowRegistry::GetInstance().Get(id);
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
-  std::vector<std::shared_ptr<Window>> windows;
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
+
+  // First, ensure all NSWindows are registered
   for (NSWindow* ns_window in ns_windows) {
-    WindowId window_id = [ns_window windowNumber];
+    // Create or get Window wrapper - this will handle ID assignment via associated object
+    auto window = std::make_shared<Window>((__bridge void*)ns_window);
+    WindowId window_id = window->GetId();
+    
+    // Add to registry if not already present
     if (!WindowRegistry::GetInstance().Get(window_id)) {
-      auto window = std::make_shared<Window>((__bridge void*)ns_window);
       WindowRegistry::GetInstance().Add(window_id, window);
     }
   }
-  // Merge cached windows from registry to ensure consistency
-  auto cached = WindowRegistry::GetInstance().GetAll();
-  for (const auto& w : cached) {
-    windows.push_back(w);
-  }
-  return windows;
+
+  // Then return all windows from registry (which now includes all NSWindows)
+  return WindowRegistry::GetInstance().GetAll();
 }
 
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   NSApplication* app = [NSApplication sharedApplication];
   NSArray* ns_windows = [[NSApplication sharedApplication] windows];
   NSWindow* ns_window = [app mainWindow];
-  if (ns_window == nil) {
+  if (ns_window == nil && [ns_windows count] > 0) {
     ns_window = [ns_windows objectAtIndex:0];
   }
   if (ns_window != nil) {
-    return Get([ns_window windowNumber]);
+    // Create or get Window wrapper - this will handle ID retrieval via associated object
+    auto window = std::make_shared<Window>((__bridge void*)ns_window);
+    WindowId window_id = window->GetId();
+    
+    // Ensure it's in the registry
+    if (!WindowRegistry::GetInstance().Get(window_id)) {
+      WindowRegistry::GetInstance().Add(window_id, window);
+    }
+    
+    return window;
   }
   return nullptr;
 }

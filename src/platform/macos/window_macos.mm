@@ -1,6 +1,4 @@
 #include <iostream>
-#include <mutex>
-#include <unordered_map>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -9,25 +7,54 @@
 
 // Import Cocoa headers
 #import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
+
+// Static key for associated objects
+static const void* kWindowIdKey = &kWindowIdKey;
 
 namespace nativeapi {
 
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(NSWindow* window) : ns_window_(window) {}
+  Impl(WindowId id, NSWindow* window) : id_(id), ns_window_(window) {}
+  WindowId id_;
   NSWindow* ns_window_;
 };
 
-Window::Window() {
-  NSWindow* ns_window = [[NSWindow alloc] init];
-  ns_window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
-                        NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
-  pimpl_ = std::make_unique<Impl>(ns_window);
-}
+Window::Window() : Window(nullptr) {}
 
-Window::Window(void* native_window)
-    : pimpl_(std::make_unique<Impl>((__bridge NSWindow*)native_window)) {}
+Window::Window(void* native_window) {
+  NSWindow* ns_window = nullptr;
+  WindowId id;
+
+  if (native_window == nullptr) {
+    // Create new platform object
+    id = IdAllocator::Allocate<Window>();
+    ns_window = [[NSWindow alloc] init];
+    ns_window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
+                          NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+    // Store the ID as associated object
+    objc_setAssociatedObject(ns_window, kWindowIdKey, [NSNumber numberWithUnsignedLongLong:id],
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  } else {
+    // Wrap existing platform object - check if it already has an ID
+    ns_window = (__bridge NSWindow*)native_window;
+    NSNumber* existingId = objc_getAssociatedObject(ns_window, kWindowIdKey);
+    if (existingId) {
+      // Use existing ID
+      id = [existingId unsignedLongLongValue];
+    } else {
+      // Allocate new ID and store it
+      id = IdAllocator::Allocate<Window>();
+      objc_setAssociatedObject(ns_window, kWindowIdKey, [NSNumber numberWithUnsignedLongLong:id],
+                               OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+  }
+
+  // All initialization logic in one place
+  pimpl_ = std::make_unique<Impl>(id, ns_window);
+}
 
 Window::~Window() {}
 
@@ -365,37 +392,7 @@ void Window::StartDragging() {
 void Window::StartResizing() {}
 
 WindowId Window::GetId() const {
-  if (!pimpl_ || !pimpl_->ns_window_) {
-    return IdAllocator::kInvalidId;
-  }
-
-  // Store the allocated ID in a static map to ensure consistency
-  // Use void* as key to avoid hash function issues with Objective-C pointers
-  static std::unordered_map<void*, WindowId> window_id_map;
-  static std::mutex map_mutex;
-
-  void* window_ptr = (__bridge void*)pimpl_->ns_window_;
-  std::lock_guard<std::mutex> lock(map_mutex);
-  auto it = window_id_map.find(window_ptr);
-  if (it != window_id_map.end()) {
-    return it->second;
-  }
-
-  // Allocate new ID using the IdAllocator
-  WindowId new_id = IdAllocator::Allocate<Window>();
-  if (new_id != IdAllocator::kInvalidId) {
-    window_id_map[window_ptr] = new_id;
-
-    // Register window in registry (delayed registration)
-    // This requires the Window to be managed by shared_ptr
-    try {
-      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
-    } catch (const std::bad_weak_ptr&) {
-      // Window not yet managed by shared_ptr, skip registration
-      // Registration will happen when window is properly managed by shared_ptr
-    }
-  }
-  return new_id;
+  return pimpl_->id_;
 }
 
 void* Window::GetNativeObjectInternal() const {
