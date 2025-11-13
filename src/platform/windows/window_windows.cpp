@@ -127,7 +127,7 @@ Window::Window() {
 
 Window::Window(void* native_window) {
   HWND hwnd = static_cast<HWND>(native_window);
-  
+
   if (!hwnd) {
     // Allocate ID even for null window to maintain consistency
     WindowId id = IdAllocator::Allocate<Window>();
@@ -138,11 +138,11 @@ Window::Window(void* native_window) {
   // Check if window already has an ID stored as a custom property
   HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
   WindowId id = IdAllocator::kInvalidId;
-  
+
   if (prop_handle) {
     id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
   }
-  
+
   if (id == IdAllocator::kInvalidId || id == 0) {
     // Allocate new ID if window doesn't have one
     id = IdAllocator::Allocate<Window>();
@@ -165,7 +165,7 @@ Window::~Window() {
   // Remove window from registry on destruction
   if (pimpl_ && pimpl_->window_id_ != IdAllocator::kInvalidId) {
     WindowRegistry::GetInstance().Remove(pimpl_->window_id_);
-    
+
     // Remove the custom property from HWND if window is still valid
     if (pimpl_->hwnd_) {
       RemoveProp(pimpl_->hwnd_, kWindowIdProperty);

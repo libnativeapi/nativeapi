@@ -133,6 +133,36 @@ FFI_PLUGIN_EXPORT
 void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t callback,
                                               void* user_data);
 
+/**
+ * Check if the "will show" hook is set.
+ * @return true if hook is set, false otherwise.
+ */
+FFI_PLUGIN_EXPORT
+bool native_window_manager_has_will_show_hook(void);
+
+/**
+ * Check if the "will hide" hook is set.
+ * @return true if hook is set, false otherwise.
+ */
+FFI_PLUGIN_EXPORT
+bool native_window_manager_has_will_hide_hook(void);
+
+/**
+ * Call the original native show implementation for the specified window.
+ * This bypasses the swizzled hook path on macOS.
+ * @return true on success, false if the window wasn't found or unsupported.
+ */
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_show(native_window_id_t window_id);
+
+/**
+ * Call the original native hide implementation for the specified window.
+ * This bypasses the swizzled hook path on macOS.
+ * @return true on success, false if the window wasn't found or unsupported.
+ */
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_hide(native_window_id_t window_id);
+
 #ifdef __cplusplus
 }
 #endif

@@ -118,7 +118,6 @@ class WindowManager : public EventEmitter<WindowEvent> {
    */
   std::shared_ptr<Window> GetCurrent();
 
-
   /**
    * Hooks invoked before native window show/hide operations (e.g., via swizzling).
    * These are declarations only; platform implementations can register and invoke them.
@@ -130,9 +129,21 @@ class WindowManager : public EventEmitter<WindowEvent> {
   void SetWillShowHook(std::optional<WindowWillShowHook> hook);
   void SetWillHideHook(std::optional<WindowWillHideHook> hook);
 
+  // Check if hooks are set
+  bool HasWillShowHook() const;
+  bool HasWillHideHook() const;
+
   // Called by platform layer BEFORE the actual show/hide happens
-  void InvokeWillShowHook(WindowId id);
-  void InvokeWillHideHook(WindowId id);
+  void HandleWillShow(WindowId id);
+  void HandleWillHide(WindowId id);
+
+  /**
+   * Call the platform's original show/hide implementations for a window,
+   * bypassing swizzled paths. Returns true if successfully invoked.
+   * On unsupported platforms, these return false.
+   */
+  bool CallOriginalShow(WindowId id);
+  bool CallOriginalHide(WindowId id);
 
  protected:
   /**

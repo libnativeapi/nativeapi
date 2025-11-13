@@ -36,13 +36,13 @@ static WindowId GetWindowIdFromHwnd(HWND hwnd) {
   // Use shared_ptr so it can be properly registered in WindowRegistry
   auto window = std::make_shared<Window>(hwnd);
   WindowId window_id = window->GetId();
-  
+
   // Register the window manually since constructor's shared_from_this() fails
   // during construction (shared_ptr control block not fully initialized yet)
   if (window_id != IdAllocator::kInvalidId) {
     WindowRegistry::GetInstance().Add(window_id, window);
   }
-  
+
   return window_id;
 }
 
@@ -95,7 +95,8 @@ static BOOL WINAPI HookedShowWindow(HWND hwnd, int nCmdShow) {
 }
 
 static BOOL WINAPI HookedShowWindowAsync(HWND hwnd, int nCmdShow) {
-  std::cout << "HookedShowWindowAsync called for hwnd: " << hwnd << " with nCmdShow: " << nCmdShow << std::endl;
+  std::cout << "HookedShowWindowAsync called for hwnd: " << hwnd << " with nCmdShow: " << nCmdShow
+            << std::endl;
   InvokePreShowHideHooks(hwnd, nCmdShow);
   if (g_original_show_window_async) {
     std::cout << "Calling original ShowWindowAsync" << std::endl;
@@ -365,11 +366,11 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   if (window) {
     return window;
   }
-  
+
   // If not in registry, enumerate all windows to find it
   // This will create and register the window if it exists
   GetAll();
-  
+
   // Try again after enumeration
   return WindowRegistry::GetInstance().Get(id);
 }
@@ -377,7 +378,7 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
 // Callback for EnumWindows to collect all top-level windows
 static BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam) {
   auto* windows = reinterpret_cast<std::vector<HWND>*>(lParam);
-  
+
   // Only include visible windows that are not minimized to taskbar
   // and have a title (filters out many background windows)
   if (IsWindowVisible(hwnd)) {
@@ -390,23 +391,23 @@ static BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam) {
       }
     }
   }
-  
+
   return TRUE;  // Continue enumeration
 }
 
 std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   std::vector<HWND> hwnds;
-  
+
   // Enumerate all top-level windows
   EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnds));
-  
+
   std::vector<std::shared_ptr<Window>> windows;
   windows.reserve(hwnds.size());
-  
+
   for (HWND hwnd : hwnds) {
     // Get window ID from HWND, creating Window object if needed
     WindowId window_id = GetWindowIdFromHwnd(hwnd);
-    
+
     if (window_id != IdAllocator::kInvalidId) {
       // Try to get existing window from registry
       auto window = WindowRegistry::GetInstance().Get(window_id);
@@ -415,7 +416,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
       }
     }
   }
-  
+
   return windows;
 }
 

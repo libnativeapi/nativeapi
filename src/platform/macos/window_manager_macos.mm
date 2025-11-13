@@ -46,28 +46,33 @@ class WindowManager::Impl {
 @implementation NSWindow (NativeAPISwizzle)
 
 - (void)na_swizzled_makeKeyAndOrderFront:(id)sender {
-    // Ensure registry is in sync and then invoke hook with correct WindowId
+  // Resolve window id and handle hook if present
+  if (nativeapi::WindowManager::GetInstance().HasWillShowHook()) {
     auto windows = nativeapi::WindowManager::GetInstance().GetAll();
     for (const auto& window : windows) {
       if (window->GetNativeObject() == (__bridge void*)self) {
-        nativeapi::WindowManager::GetInstance().InvokeWillShowHook(window->GetId());
-        break;
+        nativeapi::WindowManager::GetInstance().HandleWillShow(window->GetId());
+        // Hook handles all logic; never call original here
+        return;
       }
     }
-    // First call original implementation so properties like title are up-to-date
-    [self na_swizzled_makeKeyAndOrderFront:sender];
+  }
+  // No window found in registry, call original implementation (swapped)
+  [self na_swizzled_makeKeyAndOrderFront:sender];
 }
 
 - (void)na_swizzled_orderOut:(id)sender {
-  // Invoke hook before hiding, resolving id via registry without using windowNumber
-  auto windows = nativeapi::WindowManager::GetInstance().GetAll();
-  for (const auto& window : windows) {
-    if (window->GetNativeObject() == (__bridge void*)self) {
-      nativeapi::WindowManager::GetInstance().InvokeWillHideHook(window->GetId());
-      break;
+  // Resolve window id and handle hook if present
+  if (nativeapi::WindowManager::GetInstance().HasWillHideHook()) {
+    auto windows = nativeapi::WindowManager::GetInstance().GetAll();
+    for (const auto& window : windows) {
+      if (window->GetNativeObject() == (__bridge void*)self) {
+        nativeapi::WindowManager::GetInstance().HandleWillHide(window->GetId());
+        return;
+      }
     }
   }
-  // Call original implementation (swapped)
+  // No window found in registry, call original implementation (swapped)
   [self na_swizzled_orderOut:sender];
 }
 
@@ -277,7 +282,7 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
     // Create or get Window wrapper - this will handle ID assignment via associated object
     auto window = std::make_shared<Window>((__bridge void*)ns_window);
     WindowId window_id = window->GetId();
-    
+
     // Add to registry if not already present
     if (!WindowRegistry::GetInstance().Get(window_id)) {
       WindowRegistry::GetInstance().Add(window_id, window);
@@ -299,12 +304,12 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     // Create or get Window wrapper - this will handle ID retrieval via associated object
     auto window = std::make_shared<Window>((__bridge void*)ns_window);
     WindowId window_id = window->GetId();
-    
+
     // Ensure it's in the registry
     if (!WindowRegistry::GetInstance().Get(window_id)) {
       WindowRegistry::GetInstance().Add(window_id, window);
     }
-    
+
     return window;
   }
   return nullptr;
@@ -324,16 +329,52 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   }
 }
 
-void WindowManager::InvokeWillShowHook(WindowId id) {
+bool WindowManager::HasWillShowHook() const {
+  return pimpl_->will_show_hook_.has_value();
+}
+
+bool WindowManager::HasWillHideHook() const {
+  return pimpl_->will_hide_hook_.has_value();
+}
+
+void WindowManager::HandleWillShow(WindowId id) {
   if (pimpl_->will_show_hook_) {
     (*pimpl_->will_show_hook_)(id);
   }
 }
 
-void WindowManager::InvokeWillHideHook(WindowId id) {
+void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+bool WindowManager::CallOriginalShow(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  NSWindow* ns_window = (__bridge NSWindow*)native;
+  [ns_window na_swizzled_makeKeyAndOrderFront:nil];
+  return true;
+}
+
+bool WindowManager::CallOriginalHide(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  NSWindow* ns_window = (__bridge NSWindow*)native;
+  [ns_window na_swizzled_orderOut:nil];
+  return true;
 }
 
 void WindowManager::StartEventListening() {
@@ -345,7 +386,7 @@ void WindowManager::StopEventListening() {
 }
 
 void WindowManager::DispatchWindowEvent(const WindowEvent& event) {
-  Emit(event);  // Use Dispatch instead of DispatchSync
+  Emit(event);
 }
 
 }  // namespace nativeapi

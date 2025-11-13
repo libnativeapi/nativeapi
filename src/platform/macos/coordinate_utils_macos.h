@@ -38,7 +38,7 @@ struct NSPointExt {
     NSRect primaryScreenFrame = [[NSScreen screens][0] frame];
     return NSMakePoint(topLeftPoint.x, primaryScreenFrame.size.height - topLeftPoint.y);
   }
-  
+
   // Convert top-left window position to bottom-left window position
   // This is the correct method for converting window positions, as it accounts for window height
   static NSPoint bottomLeftForWindow(CGPoint topLeftPoint, CGFloat windowHeight) {

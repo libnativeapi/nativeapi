@@ -289,3 +289,43 @@ void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t
     }
   });
 }
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_has_will_show_hook(void) {
+  try {
+    auto& manager = WindowManager::GetInstance();
+    return manager.HasWillShowHook();
+  } catch (...) {
+    return false;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_has_will_hide_hook(void) {
+  try {
+    auto& manager = WindowManager::GetInstance();
+    return manager.HasWillHideHook();
+  } catch (...) {
+    return false;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_show(native_window_id_t window_id) {
+  try {
+    auto& manager = WindowManager::GetInstance();
+    return manager.CallOriginalShow(window_id);
+  } catch (...) {
+    return false;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_hide(native_window_id_t window_id) {
+  try {
+    auto& manager = WindowManager::GetInstance();
+    return manager.CallOriginalHide(window_id);
+  } catch (...) {
+    return false;
+  }
+}
