@@ -36,11 +36,24 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
           WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
           if (window_id != IdAllocator::kInvalidId) {
             auto& manager = WindowManager::GetInstance();
+            bool hook_handled = false;
+            
             if (pos->flags & SWP_SHOWWINDOW) {
-              manager.InvokeWillShowHook(window_id);
+              if (manager.HasWillShowHook()) {
+                manager.HandleWillShow(window_id);
+                hook_handled = true;
+              }
             }
             if (pos->flags & SWP_HIDEWINDOW) {
-              manager.InvokeWillHideHook(window_id);
+              if (manager.HasWillHideHook()) {
+                manager.HandleWillHide(window_id);
+                hook_handled = true;
+              }
+            }
+            
+            // If hook handled it, cancel the visibility change
+            if (hook_handled) {
+              pos->flags &= ~(SWP_SHOWWINDOW | SWP_HIDEWINDOW);
             }
           }
         }

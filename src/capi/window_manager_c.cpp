@@ -153,7 +153,7 @@ native_window_list_t native_window_manager_get_all(void) {
       return result;
     }
 
-    result.count = windows.size();
+    result.count = static_cast<long>(windows.size());
 
     for (size_t i = 0; i < windows.size(); ++i) {
       result.windows[i] = CreateNativeWindowHandle(windows[i]);

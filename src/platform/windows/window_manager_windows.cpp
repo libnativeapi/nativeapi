@@ -55,7 +55,7 @@ static PFN_ShowWindow g_original_show_window = nullptr;
 static PFN_ShowWindowAsync g_original_show_window_async = nullptr;
 static bool g_hooks_installed = false;
 
-static bool IsShowCommandVisible(int cmd) {
+static bool IsShowCommand(int cmd) {
   switch (cmd) {
     case SW_SHOW:
     case SW_SHOWNORMAL:
@@ -69,42 +69,54 @@ static bool IsShowCommandVisible(int cmd) {
   }
 }
 
-static void InvokePreShowHideHooks(HWND hwnd, int cmd) {
+// Intercept show/hide commands and invoke hooks if registered
+// Returns true if hook handled the operation (skip original implementation)
+static bool TryHandleWithHook(HWND hwnd, int cmd) {
   WindowId window_id = GetWindowIdFromHwnd(hwnd);
   if (window_id == IdAllocator::kInvalidId) {
-    return;
+    return false;
   }
 
   auto& manager = WindowManager::GetInstance();
-  if (cmd == SW_HIDE) {
-    manager.InvokeWillHideHook(window_id);
-  } else if (IsShowCommandVisible(cmd)) {
-    manager.InvokeWillShowHook(window_id);
+  
+  if (cmd == SW_HIDE && manager.HasWillHideHook()) {
+    manager.HandleWillHide(window_id);
+    return true;
   }
+  
+  if (IsShowCommand(cmd) && manager.HasWillShowHook()) {
+    manager.HandleWillShow(window_id);
+    return true;
+  }
+  
+  return false;
 }
 
 static BOOL WINAPI HookedShowWindow(HWND hwnd, int nCmdShow) {
-  InvokePreShowHideHooks(hwnd, nCmdShow);
+  if (TryHandleWithHook(hwnd, nCmdShow)) {
+    return TRUE;
+  }
+  
   if (g_original_show_window) {
     return g_original_show_window(hwnd, nCmdShow);
   }
-  // Fallback to direct call if original not captured
+  
   auto p = reinterpret_cast<PFN_ShowWindow>(
       GetProcAddress(GetModuleHandleW(L"user32.dll"), "ShowWindow"));
   return p ? p(hwnd, nCmdShow) : FALSE;
 }
 
 static BOOL WINAPI HookedShowWindowAsync(HWND hwnd, int nCmdShow) {
-  std::cout << "HookedShowWindowAsync called for hwnd: " << hwnd << " with nCmdShow: " << nCmdShow
-            << std::endl;
-  InvokePreShowHideHooks(hwnd, nCmdShow);
+  if (TryHandleWithHook(hwnd, nCmdShow)) {
+    return TRUE;
+  }
+  
   if (g_original_show_window_async) {
-    std::cout << "Calling original ShowWindowAsync" << std::endl;
     return g_original_show_window_async(hwnd, nCmdShow);
   }
+  
   auto p = reinterpret_cast<PFN_ShowWindowAsync>(
       GetProcAddress(GetModuleHandleW(L"user32.dll"), "ShowWindowAsync"));
-  std::cout << "Calling fallback ShowWindowAsync" << std::endl;
   return p ? p(hwnd, nCmdShow) : FALSE;
 }
 
@@ -245,9 +257,10 @@ static void ForEachProcessModule(std::function<void(HMODULE)> fn) {
   }
 }
 
-static void InstallGlobalShowHooks() {
+static void InstallHooks() {
   if (g_hooks_installed)
     return;
+    
   HMODULE user32 = GetModuleHandleW(L"user32.dll");
   if (!user32)
     user32 = LoadLibraryW(L"user32.dll");
@@ -272,9 +285,10 @@ static void InstallGlobalShowHooks() {
   g_hooks_installed = true;
 }
 
-static void UninstallGlobalShowHooks() {
+static void UninstallHooks() {
   if (!g_hooks_installed)
     return;
+    
   ForEachProcessModule([](HMODULE m) {
     if (g_original_show_window) {
       RestoreIATInModule(m, reinterpret_cast<FARPROC>(g_original_show_window), "ShowWindow");
@@ -433,35 +447,70 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   pimpl_->will_show_hook_ = std::move(hook);
-  // Install or uninstall global hooks based on whether any hook is present
-  bool has_any = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
-  if (has_any) {
-    InstallGlobalShowHooks();
-  } else {
-    UninstallGlobalShowHooks();
-  }
+  
+  bool has_any_hook = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
+  has_any_hook ? InstallHooks() : UninstallHooks();
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   pimpl_->will_hide_hook_ = std::move(hook);
-  bool has_any = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
-  if (has_any) {
-    InstallGlobalShowHooks();
-  } else {
-    UninstallGlobalShowHooks();
-  }
+  
+  bool has_any_hook = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
+  has_any_hook ? InstallHooks() : UninstallHooks();
 }
 
-void WindowManager::InvokeWillShowHook(WindowId id) {
+bool WindowManager::HasWillShowHook() const {
+  return pimpl_->will_show_hook_.has_value();
+}
+
+bool WindowManager::HasWillHideHook() const {
+  return pimpl_->will_hide_hook_.has_value();
+}
+
+void WindowManager::HandleWillShow(WindowId id) {
   if (pimpl_->will_show_hook_) {
     (*pimpl_->will_show_hook_)(id);
   }
 }
 
-void WindowManager::InvokeWillHideHook(WindowId id) {
+void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+bool WindowManager::CallOriginalShow(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  HWND hwnd = static_cast<HWND>(native);
+  // On Windows, call the original ShowWindow through the function pointer
+  if (g_original_show_window) {
+    return g_original_show_window(hwnd, SW_SHOW) != FALSE;
+  }
+  return false;
+}
+
+bool WindowManager::CallOriginalHide(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  HWND hwnd = static_cast<HWND>(native);
+  // On Windows, call the original ShowWindow through the function pointer
+  if (g_original_show_window) {
+    return g_original_show_window(hwnd, SW_HIDE) != FALSE;
+  }
+  return false;
 }
 
 void WindowManager::StartEventListening() {
