@@ -12,10 +12,14 @@
 
 namespace nativeapi {
 
+// Key to store/retrieve WindowId on GObjects
+static const char* kWindowIdKey = "NativeAPIWindowId";
+
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(GdkWindow* window) : gdk_window_(window) {}
+  Impl(GtkWidget* widget, GdkWindow* gdk_window) : widget_(widget), gdk_window_(gdk_window) {}
+  GtkWidget* widget_;
   GdkWindow* gdk_window_;
 };
 
@@ -24,75 +28,87 @@ Window::Window() {
   GdkDisplay* display = gdk_display_get_default();
   if (!display) {
     std::cerr << "No display available for window creation" << std::endl;
-    pimpl_ = std::make_unique<Impl>(nullptr);
+    pimpl_ = std::make_unique<Impl>(nullptr, nullptr);
     return;
   }
 
-  // Create a new GTK window
-  GtkWidget* gtk_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  if (!gtk_window) {
+  // Create a new GTK toplevel window
+  GtkWidget* widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  if (!widget) {
     std::cerr << "Failed to create GTK window" << std::endl;
-    pimpl_ = std::make_unique<Impl>(nullptr);
+    pimpl_ = std::make_unique<Impl>(nullptr, nullptr);
     return;
   }
 
   // Realize to ensure GdkWindow exists
-  if (!gtk_widget_get_realized(gtk_window)) {
-    gtk_widget_realize(gtk_window);
+  if (!gtk_widget_get_realized(widget)) {
+    gtk_widget_realize(widget);
   }
 
   // Obtain GdkWindow
-  GdkWindow* gdk_window = gtk_widget_get_window(gtk_window);
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
   if (!gdk_window) {
     std::cerr << "Failed to get GdkWindow from GTK widget" << std::endl;
-    gtk_widget_destroy(gtk_window);
-    pimpl_ = std::make_unique<Impl>(nullptr);
+    gtk_widget_destroy(widget);
+    pimpl_ = std::make_unique<Impl>(nullptr, nullptr);
     return;
   }
 
+  // Allocate and attach a stable WindowId to the native objects
+  WindowId id = IdAllocator::Allocate<Window>();
+  if (id != IdAllocator::kInvalidId) {
+    g_object_set_data(G_OBJECT(widget), kWindowIdKey, reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
+    g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey, reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
+  }
+
   // Only create the instance, don't show the window
-  pimpl_ = std::make_unique<Impl>(gdk_window);
+  pimpl_ = std::make_unique<Impl>(widget, gdk_window);
 }
 
-Window::Window(void* native_window) : pimpl_(std::make_unique<Impl>((GdkWindow*)native_window)) {}
+Window::Window(void* native_window) {
+  // Wrap existing GdkWindow or GtkWidget
+  GtkWidget* widget = nullptr;
+  GdkWindow* gdk_window = nullptr;
+
+  // Heuristic: if this looks like a GtkWidget*, use it; otherwise treat as GdkWindow*
+  // In our codebase, native Linux window handles should be GtkWidget* (GtkWindow)
+  widget = static_cast<GtkWidget*>(native_window);
+  if (widget && GTK_IS_WIDGET(widget)) {
+    if (!gtk_widget_get_realized(widget)) {
+      gtk_widget_realize(widget);
+    }
+    gdk_window = gtk_widget_get_window(widget);
+  } else {
+    // Fallback: assume GdkWindow*
+    gdk_window = static_cast<GdkWindow*>(native_window);
+  }
+
+  pimpl_ = std::make_unique<Impl>(widget, gdk_window);
+}
 
 Window::~Window() {}
 
 WindowId Window::GetId() const {
-  // Use IdAllocator to generate unique IDs instead of casting pointers
-  if (!pimpl_->gdk_window_) {
-    return IdAllocator::kInvalidId;
-  }
-
-  // Store the allocated ID in a static map to ensure consistency
-  static std::unordered_map<GdkWindow*, WindowId> window_id_map;
-  static std::mutex map_mutex;
-
-  std::lock_guard<std::mutex> lock(map_mutex);
-  auto it = window_id_map.find(pimpl_->gdk_window_);
-  if (it != window_id_map.end()) {
-    return it->second;
-  }
-
-  // Allocate new ID using the IdAllocator
-  WindowId new_id = IdAllocator::Allocate<Window>();
-  if (new_id != IdAllocator::kInvalidId) {
-    window_id_map[pimpl_->gdk_window_] = new_id;
-
-    // Register window in registry (delayed registration)
-    // This requires the Window to be managed by shared_ptr
-    try {
-      WindowRegistry::GetInstance().Add(new_id, const_cast<Window*>(this)->shared_from_this());
-    } catch (const std::bad_weak_ptr&) {
-      // Window not yet managed by shared_ptr, skip registration
-      // Registration will happen when window is properly managed by shared_ptr
+  // Prefer reading ID stored on the native objects
+  if (pimpl_->gdk_window_) {
+    gpointer data = g_object_get_data(G_OBJECT(pimpl_->gdk_window_), kWindowIdKey);
+    if (data) {
+      return static_cast<WindowId>(reinterpret_cast<uintptr_t>(data));
     }
   }
-  return new_id;
+  if (pimpl_->widget_) {
+    gpointer data = g_object_get_data(G_OBJECT(pimpl_->widget_), kWindowIdKey);
+    if (data) {
+      return static_cast<WindowId>(reinterpret_cast<uintptr_t>(data));
+    }
+  }
+  return IdAllocator::kInvalidId;
 }
 
 void Window::Focus() {
-  if (pimpl_->gdk_window_) {
+  if (pimpl_->widget_) {
+    gtk_window_present(GTK_WINDOW(pimpl_->widget_));
+  } else if (pimpl_->gdk_window_) {
     gdk_window_focus(pimpl_->gdk_window_, GDK_CURRENT_TIME);
   }
 }
@@ -120,27 +136,37 @@ bool Window::IsFocused() const {
 }
 
 void Window::Show() {
-  if (pimpl_->gdk_window_) {
+  if (pimpl_->widget_) {
+    gtk_widget_show(pimpl_->widget_);
+  } else if (pimpl_->gdk_window_) {
     gdk_window_show(pimpl_->gdk_window_);
   }
 }
 
 void Window::ShowInactive() {
-  if (pimpl_->gdk_window_) {
+  if (pimpl_->widget_) {
+    gtk_widget_show(pimpl_->widget_);
+  } else if (pimpl_->gdk_window_) {
     gdk_window_show_unraised(pimpl_->gdk_window_);
   }
 }
 
 void Window::Hide() {
-  if (pimpl_->gdk_window_) {
+  if (pimpl_->widget_) {
+    gtk_widget_hide(pimpl_->widget_);
+  } else if (pimpl_->gdk_window_) {
     gdk_window_hide(pimpl_->gdk_window_);
   }
 }
 
 bool Window::IsVisible() const {
-  if (!pimpl_->gdk_window_)
-    return false;
-  return gdk_window_is_visible(pimpl_->gdk_window_);
+  if (pimpl_->widget_) {
+    return gtk_widget_get_visible(pimpl_->widget_);
+  }
+  if (pimpl_->gdk_window_) {
+    return gdk_window_is_visible(pimpl_->gdk_window_);
+  }
+  return false;
 }
 
 void Window::Maximize() {
@@ -388,13 +414,44 @@ void Window::Center() {
 }
 
 void Window::SetTitle(std::string title) {
-  // GDK windows don't have titles directly - this would be set on the GTK
-  // widget For now, provide stub implementation
+  // Prefer setting title via GtkWindow if available
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    gtk_window_set_title(GTK_WINDOW(pimpl_->widget_), title.c_str());
+    return;
+  }
+
+  // If only GdkWindow is available, try to get associated GtkWindow
+  if (pimpl_->gdk_window_) {
+    gpointer user_data = nullptr;
+    gdk_window_get_user_data(pimpl_->gdk_window_, &user_data);
+    if (user_data && GTK_IS_WINDOW(user_data)) {
+      gtk_window_set_title(GTK_WINDOW(user_data), title.c_str());
+      return;
+    }
+
+    // Fallback: set title via GDK for toplevel windows
+    gdk_window_set_title(pimpl_->gdk_window_, title.c_str());
+  }
 }
 
 std::string Window::GetTitle() const {
-  // GDK windows don't have titles directly - this would come from the GTK
-  // widget
+  // Prefer reading title via GtkWindow if available
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    const gchar* t = gtk_window_get_title(GTK_WINDOW(pimpl_->widget_));
+    return t ? std::string(t) : std::string();
+  }
+
+  // If only GdkWindow is available, try to get associated GtkWindow
+  if (pimpl_->gdk_window_) {
+    gpointer user_data = nullptr;
+    gdk_window_get_user_data(pimpl_->gdk_window_, &user_data);
+    if (user_data && GTK_IS_WINDOW(user_data)) {
+      const gchar* t = gtk_window_get_title(GTK_WINDOW(user_data));
+      return t ? std::string(t) : std::string();
+    }
+  }
+
+  // No reliable way to get title directly from GdkWindow
   return std::string();
 }
 
@@ -460,7 +517,8 @@ void Window::StartResizing() {
 }
 
 void* Window::GetNativeObjectInternal() const {
-  return pimpl_ ? pimpl_->gdk_window_ : nullptr;
+  // Return the GtkWidget* (GtkWindow) as the native handle on Linux
+  return pimpl_ ? static_cast<void*>(pimpl_->widget_ ? pimpl_->widget_ : nullptr) : nullptr;
 }
 
 }  // namespace nativeapi

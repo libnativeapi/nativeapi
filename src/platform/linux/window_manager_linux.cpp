@@ -15,6 +15,9 @@
 
 namespace nativeapi {
 
+// Key to store/retrieve WindowId on GObjects (must match window_linux.cpp)
+static const char* kWindowIdKey = "NativeAPIWindowId";
+
 // Shared static variables for window ID mapping
 static std::unordered_map<GdkWindow*, WindowId> g_window_id_map;
 static std::mutex g_map_mutex;
@@ -32,15 +35,31 @@ static WindowId GetOrCreateWindowId(GdkWindow* gdk_window) {
     return IdAllocator::kInvalidId;
   }
 
-  std::lock_guard<std::mutex> lock(g_map_mutex);
-  auto it = g_window_id_map.find(gdk_window);
-  if (it != g_window_id_map.end()) {
-    return it->second;
+  // First, try to read ID attached to the GObject
+  gpointer data = g_object_get_data(G_OBJECT(gdk_window), kWindowIdKey);
+  if (data) {
+    WindowId id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(data));
+    // Cache it in the map for faster lookup next time
+    std::lock_guard<std::mutex> lock(g_map_mutex);
+    g_window_id_map[gdk_window] = id;
+    return id;
   }
 
-  // Allocate new ID using the IdAllocator
+  // Fallback to cached map
+  {
+    std::lock_guard<std::mutex> lock(g_map_mutex);
+    auto it = g_window_id_map.find(gdk_window);
+    if (it != g_window_id_map.end()) {
+      return it->second;
+    }
+  }
+
+  // Allocate new ID and attach to the GObject for consistency
   WindowId new_id = IdAllocator::Allocate<Window>();
   if (new_id != IdAllocator::kInvalidId) {
+    g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey,
+                      reinterpret_cast<gpointer>(static_cast<uintptr_t>(new_id)));
+    std::lock_guard<std::mutex> lock(g_map_mutex);
     g_window_id_map[gdk_window] = new_id;
   }
   return new_id;
@@ -75,7 +94,7 @@ static gboolean on_show_emission_hook(GSignalInvocationHint* ihint,
     GdkWindow* gdk_window = gtk_widget_get_window(widget);
     if (gdk_window) {
       WindowId id = GetOrCreateWindowId(gdk_window);
-      WindowManager::GetInstance().InvokeWillShowHook(id);
+      WindowManager::GetInstance().HandleWillShow(id);
     }
   }
 
@@ -96,7 +115,7 @@ static gboolean on_hide_emission_hook(GSignalInvocationHint* ihint,
     GdkWindow* gdk_window = gtk_widget_get_window(widget);
     if (gdk_window) {
       WindowId id = GetOrCreateWindowId(gdk_window);
-      WindowManager::GetInstance().InvokeWillHideHook(id);
+      WindowManager::GetInstance().HandleWillHide(id);
     }
   }
 
@@ -113,7 +132,7 @@ static gboolean OnGtkMapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_
     GdkWindow* gdk_window = gtk_widget_get_window(widget);
     if (gdk_window) {
       WindowId id = GetOrCreateWindowId(gdk_window);
-      manager.InvokeWillShowHook(id);
+      manager.HandleWillShow(id);
     }
   }
   // Return FALSE to propagate event further
@@ -129,7 +148,7 @@ static gboolean OnGtkUnmapEvent(GtkWidget* widget, GdkEvent* event, gpointer use
     GdkWindow* gdk_window = gtk_widget_get_window(widget);
     if (gdk_window) {
       WindowId id = GetOrCreateWindowId(gdk_window);
-      manager.InvokeWillHideHook(id);
+      manager.HandleWillHide(id);
     }
   }
   // Return FALSE to propagate event further
@@ -353,16 +372,46 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   }
 }
 
-void WindowManager::InvokeWillShowHook(WindowId id) {
+bool WindowManager::HasWillShowHook() const {
+  return pimpl_->will_show_hook_.has_value();
+}
+
+bool WindowManager::HasWillHideHook() const {
+  return pimpl_->will_hide_hook_.has_value();
+}
+
+void WindowManager::HandleWillShow(WindowId id) {
   if (pimpl_->will_show_hook_) {
     (*pimpl_->will_show_hook_)(id);
   }
 }
 
-void WindowManager::InvokeWillHideHook(WindowId id) {
+void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
   }
+}
+
+bool WindowManager::CallOriginalShow(WindowId id) {
+  GdkWindow* gdk_window = FindGdkWindowById(id);
+  if (!gdk_window) {
+    return false;
+  }
+  
+  // Call the original GDK show function directly
+  gdk_window_show(gdk_window);
+  return true;
+}
+
+bool WindowManager::CallOriginalHide(WindowId id) {
+  GdkWindow* gdk_window = FindGdkWindowById(id);
+  if (!gdk_window) {
+    return false;
+  }
+  
+  // Call the original GDK hide function directly
+  gdk_window_hide(gdk_window);
+  return true;
 }
 
 void WindowManager::StartEventListening() {
