@@ -118,26 +118,6 @@ class WindowManager : public EventEmitter<WindowEvent> {
    */
   std::shared_ptr<Window> GetCurrent();
 
-  /**
-   * @brief Destroy a window by its ID
-   *
-   * Removes the specified window from the registry and destroys it.
-   * This will close the window and free its resources.
-   * Any remaining shared_ptr references to the window will become invalid after
-   * the window is destroyed.
-   *
-   * @param id The unique identifier of the window to destroy
-   * @return true if the window was found and destroyed, false if window was not found
-   *
-   * @code
-   * WindowId window_id = some_window->GetId();
-   * bool success = WindowManager::GetInstance().Destroy(window_id);
-   * if (success) {
-   *     std::cout << "Window destroyed successfully" << std::endl;
-   * }
-   * @endcode
-   */
-  bool Destroy(WindowId id);
 
   /**
    * Hooks invoked before native window show/hide operations (e.g., via swizzling).

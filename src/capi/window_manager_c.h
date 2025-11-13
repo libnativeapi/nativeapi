@@ -83,14 +83,6 @@ FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get_current(void);
 
 /**
- * Destroy a window by its ID
- * @param window_id The window ID to destroy
- * @return true if window was found and destroyed, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_window_manager_destroy(native_window_id_t window_id);
-
-/**
  * Register a callback for window events
  * @param callback The callback function to register
  * @param user_data User data to pass to the callback

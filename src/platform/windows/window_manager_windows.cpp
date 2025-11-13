@@ -359,20 +359,6 @@ WindowManager::~WindowManager() {
   StopEventListening();
 }
 
-// Destroy a window by its ID. Returns true if window was destroyed.
-bool WindowManager::Destroy(WindowId id) {
-  auto window = WindowRegistry::GetInstance().Get(id);
-  if (!window) {
-    return false;
-  }
-  HWND hwnd = static_cast<HWND>(window->GetNativeObject());
-  if (IsWindow(hwnd)) {
-    DestroyWindow(hwnd);
-  }
-  WindowRegistry::GetInstance().Remove(id);
-  return true;
-}
-
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   // First try to get from registry
   auto window = WindowRegistry::GetInstance().Get(id);

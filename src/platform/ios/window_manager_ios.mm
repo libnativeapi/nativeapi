@@ -37,17 +37,6 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   return nullptr;
 }
 
-bool WindowManager::Destroy(WindowId id) {
-  auto window = WindowRegistry::GetInstance().Get(id);
-  if (!window) {
-    return false;
-  }
-
-  WindowRegistry::GetInstance().Remove(id);
-
-  return true;
-}
-
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   // Empty implementation
 }

@@ -257,24 +257,6 @@ WindowManager::~WindowManager() {
   StopEventListening();
 }
 
-// Destroy a window by its ID. Returns true if window was destroyed.
-bool WindowManager::Destroy(WindowId id) {
-  auto window = WindowRegistry::GetInstance().Get(id);
-  if (!window) {
-    return false;
-  }
-  NSArray* ns_windows = [[NSApplication sharedApplication] windows];
-  for (NSWindow* ns_window in ns_windows) {
-    if ([ns_window windowNumber] == id) {
-      [ns_window close];
-      WindowRegistry::GetInstance().Remove(id);
-      return true;
-    }
-  }
-  WindowRegistry::GetInstance().Remove(id);
-  return false;
-}
-
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   // First check if it's already in the registry
   auto window = WindowRegistry::GetInstance().Get(id);

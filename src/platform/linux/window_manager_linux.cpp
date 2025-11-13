@@ -337,16 +337,6 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   return nullptr;
 }
 
-bool WindowManager::Destroy(WindowId id) {
-  auto window = WindowRegistry::GetInstance().Get(id);
-  if (!window) {
-    return false;
-  }
-  // TODO: Implement proper GTK window destruction
-  WindowRegistry::GetInstance().Remove(id);
-  return true;
-}
-
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   pimpl_->will_show_hook_ = std::move(hook);
   if (pimpl_->will_show_hook_) {

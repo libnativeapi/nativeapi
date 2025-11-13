@@ -183,16 +183,6 @@ native_window_t native_window_manager_get_current(void) {
 }
 
 FFI_PLUGIN_EXPORT
-bool native_window_manager_destroy(native_window_id_t window_id) {
-  try {
-    auto& manager = WindowManager::GetInstance();
-    return manager.Destroy(window_id);
-  } catch (...) {
-    return false;
-  }
-}
-
-FFI_PLUGIN_EXPORT
 int native_window_manager_register_event_callback(native_window_event_callback_t callback,
                                                   void* user_data) {
   if (!callback)
