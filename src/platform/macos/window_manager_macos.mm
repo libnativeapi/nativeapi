@@ -11,6 +11,9 @@
 // Forward declaration for the delegate
 @class NativeAPIWindowManagerDelegate;
 
+// External declaration of kWindowIdKey (defined in window_macos.mm)
+extern const void* kWindowIdKey;
+
 namespace nativeapi {
 
 // Private implementation to hide Objective-C details
@@ -301,15 +304,24 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     ns_window = [ns_windows objectAtIndex:0];
   }
   if (ns_window != nil) {
-    // Create or get Window wrapper - this will handle ID retrieval via associated object
+    // First, try to get the window ID from the associated object
+    NSNumber* existingIdNumber = objc_getAssociatedObject(ns_window, kWindowIdKey);
+    if (existingIdNumber) {
+      WindowId window_id = [existingIdNumber unsignedLongLongValue];
+      
+      // Try to get the existing Window from registry
+      auto existing_window = WindowRegistry::GetInstance().Get(window_id);
+      if (existing_window) {
+        return existing_window;
+      }
+    }
+    
+    // If not found in registry, create a new Window wrapper
     auto window = std::make_shared<Window>((__bridge void*)ns_window);
     WindowId window_id = window->GetId();
 
-    // Ensure it's in the registry
-    if (!WindowRegistry::GetInstance().Get(window_id)) {
-      WindowRegistry::GetInstance().Add(window_id, window);
-    }
-
+    // Add to registry (temporary solution)
+    WindowRegistry::GetInstance().Add(window_id, window);
     return window;
   }
   return nullptr;

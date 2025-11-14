@@ -9,8 +9,8 @@
 #import <Cocoa/Cocoa.h>
 #import <objc/runtime.h>
 
-// Static key for associated objects
-static const void* kWindowIdKey = &kWindowIdKey;
+// Key for associated objects (used by both window_macos.mm and window_manager_macos.mm)
+const void* kWindowIdKey = &kWindowIdKey;
 
 namespace nativeapi {
 
@@ -323,9 +323,6 @@ Point Window::GetPosition() const {
 }
 
 void Window::Center() {
-  if (!pimpl_->ns_window_)
-    return;
-
   // Use NSWindow's center method which automatically centers on the main screen
   [pimpl_->ns_window_ center];
 }
