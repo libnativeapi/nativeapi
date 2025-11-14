@@ -542,7 +542,7 @@ int main() {
     
     // Cleanup
     native_window_manager_unregister_event_callback(callback_id);
-    native_window_manager_destroy(window->GetId());
+    native_window_destroy(window);
     
     return 0;
 }

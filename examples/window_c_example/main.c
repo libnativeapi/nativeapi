@@ -149,11 +149,10 @@ void on_auto_theme_clicked(const void* event, void* user_data) {
 
 void on_exit_clicked(const void* event, void* user_data) {
   printf("Exit clicked from context menu\n");
-  // Get all windows and destroy them to trigger app exit
+  // Hide all windows to trigger app exit
   native_window_list_t windows = native_window_manager_get_all();
   for (long i = 0; i < windows.count; i++) {
-    native_window_id_t window_id = native_window_get_id(windows.windows[i]);
-    native_window_manager_destroy(window_id);
+    native_window_hide(windows.windows[i]);
   }
   native_window_list_free(&windows);
 }
