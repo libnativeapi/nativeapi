@@ -45,11 +45,19 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   // Empty implementation
 }
 
-void WindowManager::InvokeWillShowHook(WindowId id) {
+bool WindowManager::HasWillShowHook() const {
+  return false;
+}
+
+bool WindowManager::HasWillHideHook() const {
+  return false;
+}
+
+void WindowManager::HandleWillShow(WindowId id) {
   // Empty implementation
 }
 
-void WindowManager::InvokeWillHideHook(WindowId id) {
+void WindowManager::HandleWillHide(WindowId id) {
   // Empty implementation
 }
 
