@@ -31,7 +31,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
       WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lParam);
       if (pos) {
         // Get window ID from window's custom property (stored during window creation)
-        HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+        HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
         if (prop_handle) {
           WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
           if (window_id != IdAllocator::kInvalidId) {
@@ -129,7 +129,7 @@ Window::Window() {
   }
 
   // Store window ID as a custom property in HWND for easy retrieval in WindowProc
-  SetProp(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
+  SetPropW(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
 
   // Create the instance with allocated ID
   pimpl_ = std::make_unique<Impl>(hwnd, id);
@@ -149,7 +149,7 @@ Window::Window(void* native_window) {
   }
 
   // Check if window already has an ID stored as a custom property
-  HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+  HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
   WindowId id = IdAllocator::kInvalidId;
 
   if (prop_handle) {
@@ -165,7 +165,7 @@ Window::Window(void* native_window) {
       return;
     }
     // Store the ID as a custom property in HWND
-    SetProp(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
+    SetPropW(hwnd, kWindowIdProperty, reinterpret_cast<HANDLE>(static_cast<uintptr_t>(id)));
   }
 
   pimpl_ = std::make_unique<Impl>(hwnd, id);
@@ -181,7 +181,7 @@ Window::~Window() {
 
     // Remove the custom property from HWND if window is still valid
     if (pimpl_->hwnd_) {
-      RemoveProp(pimpl_->hwnd_, kWindowIdProperty);
+      RemovePropW(pimpl_->hwnd_, kWindowIdProperty);
     }
   }
 }

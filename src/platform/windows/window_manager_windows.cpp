@@ -24,7 +24,7 @@ static WindowId GetWindowIdFromHwnd(HWND hwnd) {
   }
 
   // First, try to get window ID from HWND's custom property
-  HANDLE prop_handle = GetProp(hwnd, kWindowIdProperty);
+  HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
   if (prop_handle) {
     WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
     if (window_id != IdAllocator::kInvalidId && window_id != 0) {

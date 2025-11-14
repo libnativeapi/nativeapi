@@ -130,6 +130,18 @@ void WindowManager::HandleWillHide(WindowId id) {
   // Empty implementation
 }
 
+bool WindowManager::CallOriginalShow(WindowId id) {
+  // Android doesn't support swizzling for window show/hide
+  // Return false to indicate unsupported
+  return false;
+}
+
+bool WindowManager::CallOriginalHide(WindowId id) {
+  // Android doesn't support swizzling for window show/hide
+  // Return false to indicate unsupported
+  return false;
+}
+
 void WindowManager::StartEventListening() {
   pimpl_->StartEventListening();
 }
