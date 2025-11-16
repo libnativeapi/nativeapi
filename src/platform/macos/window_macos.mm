@@ -17,9 +17,11 @@ namespace nativeapi {
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(WindowId id, NSWindow* window) : id_(id), ns_window_(window) {}
+  Impl(WindowId id, NSWindow* window)
+      : id_(id), ns_window_(window), title_bar_style_(TitleBarStyle::Normal) {}
   WindowId id_;
   NSWindow* ns_window_;
+  TitleBarStyle title_bar_style_;
 };
 
 Window::Window() : Window(nullptr) {}
@@ -334,6 +336,41 @@ void Window::SetTitle(std::string title) {
 std::string Window::GetTitle() const {
   NSString* title = [pimpl_->ns_window_ title];
   return title ? std::string([title UTF8String]) : std::string();
+}
+
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  pimpl_->title_bar_style_ = style;
+
+  if (style == TitleBarStyle::Hidden) {
+    // Hide title bar - make it transparent and full size content view
+    pimpl_->ns_window_.titleVisibility = NSWindowTitleHidden;
+    pimpl_->ns_window_.titlebarAppearsTransparent = YES;
+    pimpl_->ns_window_.styleMask |= NSWindowStyleMaskFullSizeContentView;
+  } else {
+    // Show title bar - restore normal appearance
+    pimpl_->ns_window_.titleVisibility = NSWindowTitleVisible;
+    pimpl_->ns_window_.titlebarAppearsTransparent = NO;
+    pimpl_->ns_window_.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+  }
+
+  // Ensure window remains opaque and has shadow
+  pimpl_->ns_window_.opaque = NO;
+  pimpl_->ns_window_.hasShadow = YES;
+
+  // Show window buttons
+  NSView* titleBarView =
+      [[pimpl_->ns_window_ standardWindowButton:NSWindowCloseButton] superview].superview;
+  if (titleBarView) {
+    titleBarView.hidden = NO;
+  }
+
+  [pimpl_->ns_window_ standardWindowButton:NSWindowCloseButton].hidden = NO;
+  [pimpl_->ns_window_ standardWindowButton:NSWindowMiniaturizeButton].hidden = NO;
+  [pimpl_->ns_window_ standardWindowButton:NSWindowZoomButton].hidden = NO;
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return pimpl_->title_bar_style_;
 }
 
 void Window::SetHasShadow(bool has_shadow) {

@@ -308,14 +308,14 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     NSNumber* existingIdNumber = objc_getAssociatedObject(ns_window, kWindowIdKey);
     if (existingIdNumber) {
       WindowId window_id = [existingIdNumber unsignedLongLongValue];
-      
+
       // Try to get the existing Window from registry
       auto existing_window = WindowRegistry::GetInstance().Get(window_id);
       if (existing_window) {
         return existing_window;
       }
     }
-    
+
     // If not found in registry, create a new Window wrapper
     auto window = std::make_shared<Window>((__bridge void*)ns_window);
     WindowId window_id = window->GetId();

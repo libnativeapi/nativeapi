@@ -1,9 +1,80 @@
 #include "window_c.h"
 #include <cstring>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 #include "../window.h"
 #include "string_utils_c.h"
 
 using namespace nativeapi;
+
+// Internal registry to manage window lifetimes for C API
+// This keeps shared_ptr alive while C code holds the handle
+namespace {
+std::mutex g_windows_mutex;
+std::unordered_map<WindowId, std::shared_ptr<Window>> g_windows;
+}  // namespace
+
+// Window creation and destruction
+FFI_PLUGIN_EXPORT
+native_window_t native_window_create(void) {
+  try {
+    // Create window with default settings
+    auto window = std::make_shared<Window>();
+
+    // Store in internal registry to keep it alive
+    {
+      std::lock_guard<std::mutex> lock(g_windows_mutex);
+      g_windows[window->GetId()] = window;
+    }
+
+    // Return raw pointer (internal registry holds the shared_ptr)
+    return static_cast<void*>(window.get());
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+native_window_t native_window_create_from_native(void* native_window) {
+  if (!native_window)
+    return nullptr;
+
+  try {
+    // Wrap existing native window
+    auto window = std::make_shared<Window>(native_window);
+
+    // Store in internal registry to keep it alive
+    {
+      std::lock_guard<std::mutex> lock(g_windows_mutex);
+      g_windows[window->GetId()] = window;
+    }
+
+    // Return raw pointer (internal registry holds the shared_ptr)
+    return static_cast<void*>(window.get());
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+void native_window_destroy(native_window_t window) {
+  if (!window)
+    return;
+
+  try {
+    auto* win = static_cast<nativeapi::Window*>(window);
+    WindowId window_id = win->GetId();
+
+    // Remove from internal registry (this will destroy it if no other references exist)
+    {
+      std::lock_guard<std::mutex> lock(g_windows_mutex);
+      g_windows.erase(window_id);
+    }
+  } catch (...) {
+    // Silently fail
+  }
+}
 
 // Window basic operations
 FFI_PLUGIN_EXPORT
@@ -440,6 +511,36 @@ char* native_window_get_title(native_window_t window) {
     return to_c_str(title);
   } catch (...) {
     return nullptr;
+  }
+}
+
+FFI_PLUGIN_EXPORT
+void native_window_set_title_bar_style(native_window_t window, native_title_bar_style_t style) {
+  if (!window)
+    return;
+
+  try {
+    auto* win = static_cast<nativeapi::Window*>(window);
+    TitleBarStyle cpp_style =
+        (style == NATIVE_TITLE_BAR_STYLE_HIDDEN) ? TitleBarStyle::Hidden : TitleBarStyle::Normal;
+    win->SetTitleBarStyle(cpp_style);
+  } catch (...) {
+    // Silently fail
+  }
+}
+
+FFI_PLUGIN_EXPORT
+native_title_bar_style_t native_window_get_title_bar_style(native_window_t window) {
+  if (!window)
+    return NATIVE_TITLE_BAR_STYLE_NORMAL;
+
+  try {
+    auto* win = static_cast<nativeapi::Window*>(window);
+    TitleBarStyle cpp_style = win->GetTitleBarStyle();
+    return (cpp_style == TitleBarStyle::Hidden) ? NATIVE_TITLE_BAR_STYLE_HIDDEN
+                                                : NATIVE_TITLE_BAR_STYLE_NORMAL;
+  } catch (...) {
+    return NATIVE_TITLE_BAR_STYLE_NORMAL;
   }
 }
 

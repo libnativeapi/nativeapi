@@ -48,7 +48,7 @@ int main() {
   }
 
   // Create a simple window with default settings
-  native_window_t window = native_window_manager_create();
+  native_window_t window = native_window_create();
   if (!window) {
     fprintf(stderr, "Failed to create window\n");
     return 1;

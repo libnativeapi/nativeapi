@@ -33,6 +33,24 @@ typedef struct {
   long count;
 } native_window_list_t;
 
+/**
+ * Title bar style enumeration
+ */
+typedef enum {
+  NATIVE_TITLE_BAR_STYLE_NORMAL = 0,
+  NATIVE_TITLE_BAR_STYLE_HIDDEN = 1
+} native_title_bar_style_t;
+
+// Window creation and destruction
+FFI_PLUGIN_EXPORT
+native_window_t native_window_create(void);
+
+FFI_PLUGIN_EXPORT
+native_window_t native_window_create_from_native(void* native_window);
+
+FFI_PLUGIN_EXPORT
+void native_window_destroy(native_window_t window);
+
 // Window basic operations
 FFI_PLUGIN_EXPORT
 native_window_id_t native_window_get_id(native_window_t window);
@@ -177,6 +195,12 @@ bool native_window_set_title(native_window_t window, const char* title);
 
 FFI_PLUGIN_EXPORT
 char* native_window_get_title(native_window_t window);
+
+FFI_PLUGIN_EXPORT
+void native_window_set_title_bar_style(native_window_t window, native_title_bar_style_t style);
+
+FFI_PLUGIN_EXPORT
+native_title_bar_style_t native_window_get_title_bar_style(native_window_t window);
 
 FFI_PLUGIN_EXPORT
 void native_window_set_has_shadow(native_window_t window, bool has_shadow);

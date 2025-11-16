@@ -58,6 +58,19 @@ void on_hide_window_clicked(const void* event, void* user_data) {
   }
 }
 
+void on_toggle_title_bar_clicked(const void* event, void* user_data) {
+  printf("Toggle Title Bar clicked from context menu\n");
+  if (g_window) {
+    native_title_bar_style_t current_style = native_window_get_title_bar_style(g_window);
+    native_title_bar_style_t new_style = (current_style == NATIVE_TITLE_BAR_STYLE_HIDDEN)
+                                             ? NATIVE_TITLE_BAR_STYLE_NORMAL
+                                             : NATIVE_TITLE_BAR_STYLE_HIDDEN;
+    native_window_set_title_bar_style(g_window, new_style);
+    printf("Title bar style changed to: %s\n",
+           (new_style == NATIVE_TITLE_BAR_STYLE_HIDDEN) ? "Hidden" : "Normal");
+  }
+}
+
 void on_about_clicked(const void* event, void* user_data) {
   printf("About clicked from context menu\n");
   printf("Window Example v1.0 - Native API Demo\n");
@@ -187,6 +200,13 @@ native_menu_t create_context_menu(void) {
                                 on_hide_window_clicked, NULL);
   native_menu_add_item(context_menu, hide_window_item);
 
+  // Add Toggle Title Bar item
+  native_menu_item_t toggle_title_bar_item =
+      native_menu_item_create("Toggle Title Bar", NATIVE_MENU_ITEM_TYPE_NORMAL);
+  native_menu_item_add_listener(toggle_title_bar_item, NATIVE_MENU_ITEM_EVENT_CLICKED,
+                                on_toggle_title_bar_clicked, NULL);
+  native_menu_add_item(context_menu, toggle_title_bar_item);
+
   // Add separator
   native_menu_add_separator(context_menu);
 
@@ -309,7 +329,7 @@ native_menu_t create_context_menu(void) {
 
 int main() {
   // Create a new window with default settings
-  g_window = native_window_manager_create();
+  g_window = native_window_create();
 
   // Configure the window
   native_window_set_title(g_window, "Window Example");
@@ -380,6 +400,9 @@ int main() {
 
     // Set the context menu to the tray icon
     native_tray_icon_set_context_menu(g_tray_icon, g_context_menu);
+
+    // Set context menu to trigger on left click
+    native_tray_icon_set_context_menu_trigger(g_tray_icon, NATIVE_CONTEXT_MENU_TRIGGER_CLICKED);
 
     // Set up event listeners
     native_tray_icon_add_listener(g_tray_icon, NATIVE_TRAY_ICON_EVENT_CLICKED, on_tray_icon_clicked,

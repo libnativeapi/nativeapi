@@ -276,6 +276,14 @@ std::string Window::GetTitle() const {
   return "";
 }
 
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  // SetTitleBarStyle not supported on OpenHarmony (use system bar APIs)
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return TitleBarStyle::Normal;
+}
+
 void Window::SetHasShadow(bool has_shadow) {
   // SetHasShadow not supported on OpenHarmony
 }

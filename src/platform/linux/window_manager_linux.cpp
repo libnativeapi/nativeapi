@@ -397,7 +397,7 @@ bool WindowManager::CallOriginalShow(WindowId id) {
   if (!gdk_window) {
     return false;
   }
-  
+
   // Call the original GDK show function directly
   gdk_window_show(gdk_window);
   return true;
@@ -408,7 +408,7 @@ bool WindowManager::CallOriginalHide(WindowId id) {
   if (!gdk_window) {
     return false;
   }
-  
+
   // Call the original GDK hide function directly
   gdk_window_hide(gdk_window);
   return true;

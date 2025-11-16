@@ -73,7 +73,7 @@ native_positioning_strategy_t native_positioning_strategy_relative(const native_
  *
  * @example
  * ```c
- * native_window_t window = native_window_manager_create(&options);
+ * native_window_t window = native_window_create();
  * native_point_t offset = {0, 10};
  * native_positioning_strategy_t strategy = native_positioning_strategy_relative_to_window(window,
  * &offset); native_menu_open(menu, strategy); native_positioning_strategy_free(strategy);

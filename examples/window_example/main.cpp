@@ -281,14 +281,13 @@ int main() {
 
     // Add exit item
     auto exit_item = std::make_shared<MenuItem>("Exit", MenuItemType::Normal);
-    exit_item->AddListener<MenuItemClickedEvent>(
-        [window_ptr](const MenuItemClickedEvent& event) {
-          std::cout << "Exit clicked from context menu" << std::endl;
-          // Close the window to trigger app exit
-          if (window_ptr) {
-            window_ptr->Hide();
-          }
-        });
+    exit_item->AddListener<MenuItemClickedEvent>([window_ptr](const MenuItemClickedEvent& event) {
+      std::cout << "Exit clicked from context menu" << std::endl;
+      // Close the window to trigger app exit
+      if (window_ptr) {
+        window_ptr->Hide();
+      }
+    });
     context_menu->AddItem(exit_item);
 
     // Set the context menu to the tray icon

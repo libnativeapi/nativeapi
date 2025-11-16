@@ -331,6 +331,16 @@ std::string Window::GetTitle() const {
   return "";
 }
 
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  // iOS doesn't have traditional title bars
+  // Use UIViewController.prefersStatusBarHidden or navigation bar appearance instead
+  NSLog(@"SetTitleBarStyle not applicable on iOS (use status bar or navigation bar APIs)");
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return TitleBarStyle::Normal;
+}
+
 void Window::SetHasShadow(bool has_shadow) {
   // iOS manages shadow automatically
 }

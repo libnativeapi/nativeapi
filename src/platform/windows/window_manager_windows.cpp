@@ -78,17 +78,17 @@ static bool TryHandleWithHook(HWND hwnd, int cmd) {
   }
 
   auto& manager = WindowManager::GetInstance();
-  
+
   if (cmd == SW_HIDE && manager.HasWillHideHook()) {
     manager.HandleWillHide(window_id);
     return true;
   }
-  
+
   if (IsShowCommand(cmd) && manager.HasWillShowHook()) {
     manager.HandleWillShow(window_id);
     return true;
   }
-  
+
   return false;
 }
 
@@ -96,11 +96,11 @@ static BOOL WINAPI HookedShowWindow(HWND hwnd, int nCmdShow) {
   if (TryHandleWithHook(hwnd, nCmdShow)) {
     return TRUE;
   }
-  
+
   if (g_original_show_window) {
     return g_original_show_window(hwnd, nCmdShow);
   }
-  
+
   auto p = reinterpret_cast<PFN_ShowWindow>(
       GetProcAddress(GetModuleHandleW(L"user32.dll"), "ShowWindow"));
   return p ? p(hwnd, nCmdShow) : FALSE;
@@ -110,11 +110,11 @@ static BOOL WINAPI HookedShowWindowAsync(HWND hwnd, int nCmdShow) {
   if (TryHandleWithHook(hwnd, nCmdShow)) {
     return TRUE;
   }
-  
+
   if (g_original_show_window_async) {
     return g_original_show_window_async(hwnd, nCmdShow);
   }
-  
+
   auto p = reinterpret_cast<PFN_ShowWindowAsync>(
       GetProcAddress(GetModuleHandleW(L"user32.dll"), "ShowWindowAsync"));
   return p ? p(hwnd, nCmdShow) : FALSE;
@@ -260,7 +260,7 @@ static void ForEachProcessModule(std::function<void(HMODULE)> fn) {
 static void InstallHooks() {
   if (g_hooks_installed)
     return;
-    
+
   HMODULE user32 = GetModuleHandleW(L"user32.dll");
   if (!user32)
     user32 = LoadLibraryW(L"user32.dll");
@@ -288,7 +288,7 @@ static void InstallHooks() {
 static void UninstallHooks() {
   if (!g_hooks_installed)
     return;
-    
+
   ForEachProcessModule([](HMODULE m) {
     if (g_original_show_window) {
       RestoreIATInModule(m, reinterpret_cast<FARPROC>(g_original_show_window), "ShowWindow");
@@ -447,14 +447,14 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {
   pimpl_->will_show_hook_ = std::move(hook);
-  
+
   bool has_any_hook = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
   has_any_hook ? InstallHooks() : UninstallHooks();
 }
 
 void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   pimpl_->will_hide_hook_ = std::move(hook);
-  
+
   bool has_any_hook = pimpl_->will_show_hook_.has_value() || pimpl_->will_hide_hook_.has_value();
   has_any_hook ? InstallHooks() : UninstallHooks();
 }

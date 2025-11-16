@@ -1,3 +1,4 @@
+#include <dwmapi.h>
 #include <windows.h>
 #include <iostream>
 #include "../../foundation/id_allocator.h"
@@ -6,6 +7,8 @@
 #include "../../window_registry.h"
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
+
+#pragma comment(lib, "dwmapi.lib")
 
 namespace nativeapi {
 
@@ -18,9 +21,11 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(HWND hwnd, WindowId id) : hwnd_(hwnd), window_id_(id) {}
+  Impl(HWND hwnd, WindowId id)
+      : hwnd_(hwnd), window_id_(id), title_bar_style_(TitleBarStyle::Normal) {}
   HWND hwnd_;
   WindowId window_id_;
+  TitleBarStyle title_bar_style_;
 };
 
 // Custom window procedure to handle window messages
@@ -37,7 +42,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
           if (window_id != IdAllocator::kInvalidId) {
             auto& manager = WindowManager::GetInstance();
             bool hook_handled = false;
-            
+
             if (pos->flags & SWP_SHOWWINDOW) {
               if (manager.HasWillShowHook()) {
                 manager.HandleWillShow(window_id);
@@ -50,7 +55,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
                 hook_handled = true;
               }
             }
-            
+
             // If hook handled it, cancel the visibility change
             if (hook_handled) {
               pos->flags &= ~(SWP_SHOWWINDOW | SWP_HIDEWINDOW);
@@ -643,6 +648,29 @@ std::string Window::GetTitle() const {
   GetWindowTextW(pimpl_->hwnd_, &wtitle[0], length + 1);
   wtitle.resize(length);
   return WStringToString(wtitle);
+}
+
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  if (!pimpl_->hwnd_)
+    return;
+
+  pimpl_->title_bar_style_ = style;
+
+  // Get current window rect
+  RECT rect;
+  GetWindowRect(pimpl_->hwnd_, &rect);
+
+  // Apply DWM frame extension based on style
+  MARGINS margins = {0, 0, 0, 0};
+  DwmExtendFrameIntoClientArea(pimpl_->hwnd_, &margins);
+
+  // Trigger frame change to apply the new style
+  SetWindowPos(pimpl_->hwnd_, nullptr, rect.left, rect.top, 0, 0,
+               SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return pimpl_->title_bar_style_;
 }
 
 void Window::SetHasShadow(bool has_shadow) {

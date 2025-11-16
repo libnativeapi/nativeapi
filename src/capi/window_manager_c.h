@@ -54,13 +54,6 @@ typedef void (*native_window_event_callback_t)(const native_window_event_t* even
  */
 
 /**
- * Create a new window with default settings
- * @return Window handle, or NULL if creation failed
- */
-FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_create(void);
-
-/**
  * Get a window by its ID
  * @param window_id The window ID
  * @return Window handle, or NULL if not found

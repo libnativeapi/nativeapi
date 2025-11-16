@@ -17,6 +17,32 @@ namespace nativeapi {
 typedef IdAllocator::IdType WindowId;
 
 /**
+ * @brief Title bar style options for windows.
+ *
+ * Defines how a window's title bar should be displayed. This affects the
+ * appearance and visibility of the standard window title bar including the
+ * title text and window control buttons (minimize, maximize, close).
+ *
+ * @note Platform behavior may vary:
+ * - Windows: Hidden style removes the title bar but may retain window borders
+ * - macOS: Hidden style creates a borderless window with transparent title bar
+ * - Linux: Hidden style removes window decorations entirely
+ */
+enum class TitleBarStyle {
+  /**
+   * Standard title bar with default platform appearance.
+   * Shows title text and standard window control buttons.
+   */
+  Normal,
+
+  /**
+   * Hidden title bar with no visible decorations.
+   * The window appears without a title bar, useful for custom chrome.
+   */
+  Hidden
+};
+
+/**
  * @class Window
  * @brief Cross-platform window abstraction class.
  *
@@ -460,6 +486,27 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return std::string The current title displayed in the title bar
    */
   std::string GetTitle() const;
+
+  /**
+   * @brief Sets the style of the window's title bar.
+   *
+   * @param style The desired title bar style
+   *
+   * Controls the appearance and visibility of the window's title bar.
+   * Use TitleBarStyle::Normal for standard appearance or TitleBarStyle::Hidden
+   * to create a frameless window without title bar decorations.
+   *
+   * @note When using Hidden style, you may want to implement custom window
+   *       controls and dragging behavior using StartDragging().
+   */
+  void SetTitleBarStyle(TitleBarStyle style);
+
+  /**
+   * @brief Gets the current title bar style of the window.
+   *
+   * @return TitleBarStyle The current title bar style
+   */
+  TitleBarStyle GetTitleBarStyle() const;
   // === Appearance and Advanced Behavior ===
 
   /**

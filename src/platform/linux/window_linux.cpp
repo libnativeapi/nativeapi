@@ -15,12 +15,40 @@ namespace nativeapi {
 // Key to store/retrieve WindowId on GObjects
 static const char* kWindowIdKey = "NativeAPIWindowId";
 
+// Helper function to find header bar in widget hierarchy
+static GtkWidget* FindHeaderBar(GtkWidget* widget) {
+  if (!widget)
+    return nullptr;
+
+  // Check if this widget is a header bar
+  if (GTK_IS_HEADER_BAR(widget))
+    return widget;
+
+  // If it's a container, search children
+  if (GTK_IS_CONTAINER(widget)) {
+    GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+    for (GList* l = children; l != nullptr; l = l->next) {
+      GtkWidget* child = GTK_WIDGET(l->data);
+      GtkWidget* result = FindHeaderBar(child);
+      if (result) {
+        g_list_free(children);
+        return result;
+      }
+    }
+    g_list_free(children);
+  }
+
+  return nullptr;
+}
+
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(GtkWidget* widget, GdkWindow* gdk_window) : widget_(widget), gdk_window_(gdk_window) {}
+  Impl(GtkWidget* widget, GdkWindow* gdk_window)
+      : widget_(widget), gdk_window_(gdk_window), title_bar_style_(TitleBarStyle::Normal) {}
   GtkWidget* widget_;
   GdkWindow* gdk_window_;
+  TitleBarStyle title_bar_style_;
 };
 
 Window::Window() {
@@ -57,8 +85,10 @@ Window::Window() {
   // Allocate and attach a stable WindowId to the native objects
   WindowId id = IdAllocator::Allocate<Window>();
   if (id != IdAllocator::kInvalidId) {
-    g_object_set_data(G_OBJECT(widget), kWindowIdKey, reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
-    g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey, reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
+    g_object_set_data(G_OBJECT(widget), kWindowIdKey,
+                      reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
+    g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey,
+                      reinterpret_cast<gpointer>(static_cast<uintptr_t>(id)));
   }
 
   // Only create the instance, don't show the window
@@ -453,6 +483,37 @@ std::string Window::GetTitle() const {
 
   // No reliable way to get title directly from GdkWindow
   return std::string();
+}
+
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  pimpl_->title_bar_style_ = style;
+
+  if (!pimpl_->widget_ || !GTK_IS_WINDOW(pimpl_->widget_))
+    return;
+
+  GtkWindow* gtk_window = GTK_WINDOW(pimpl_->widget_);
+  bool show_decorations = (style == TitleBarStyle::Normal);
+
+  // Try to find and toggle header bar visibility
+  GtkWidget* header_bar = FindHeaderBar(pimpl_->widget_);
+  if (header_bar) {
+    gtk_widget_set_visible(header_bar, show_decorations);
+  } else {
+    // If no header bar found, toggle window decorations
+    const gchar* title = gtk_window_get_title(gtk_window);
+    if (title != nullptr) {
+      gtk_window_set_decorated(gtk_window, show_decorations);
+    }
+  }
+
+  // When restoring to normal, ensure decorations are shown
+  if (show_decorations) {
+    gtk_window_set_decorated(gtk_window, TRUE);
+  }
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return pimpl_->title_bar_style_;
 }
 
 void Window::SetHasShadow(bool has_shadow) {

@@ -292,6 +292,14 @@ std::string Window::GetTitle() const {
   return "";
 }
 
+void Window::SetTitleBarStyle(TitleBarStyle style) {
+  ALOGW("SetTitleBarStyle not supported on Android (use system UI visibility flags)");
+}
+
+TitleBarStyle Window::GetTitleBarStyle() const {
+  return TitleBarStyle::Normal;
+}
+
 void Window::SetHasShadow(bool has_shadow) {
   ALOGW("SetHasShadow not supported on Android");
 }

@@ -114,17 +114,6 @@ static void* g_will_hide_ud = nullptr;
 
 // Window manager operations
 FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_create(void) {
-  try {
-    // Create window with default settings (automatically registered)
-    auto window = std::make_shared<Window>();
-    return CreateNativeWindowHandle(window);
-  } catch (...) {
-    return nullptr;
-  }
-}
-
-FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get(native_window_id_t window_id) {
   try {
     auto& manager = WindowManager::GetInstance();
