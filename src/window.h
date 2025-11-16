@@ -430,6 +430,40 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
   bool IsClosable() const;
 
   /**
+   * @brief Sets the visibility of window control buttons.
+   *
+   * @param is_visible true to show window control buttons, false to hide them
+   *
+   * Controls the visibility of window control buttons (minimize, maximize, close)
+   * in the title bar. When hidden, the buttons are not visible but the window
+   * can still be controlled programmatically.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Hides/shows the traffic light buttons (red, yellow, green)
+   * - Windows: ❌ Not implemented - Returns default value (visible)
+   * - Linux: ❌ Not implemented - Returns default value (visible)
+   * - Android: ❌ Not applicable - Mobile apps don't have window control buttons
+   * - iOS: ❌ Not applicable - Mobile apps don't have window control buttons
+   * - OpenHarmony: ❌ Not applicable - Mobile apps don't have window control buttons
+   */
+  void SetWindowControlButtonsVisible(bool is_visible);
+
+  /**
+   * @brief Checks if the window control buttons are visible.
+   *
+   * @return true if window control buttons are visible, false if hidden
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Returns actual visibility state
+   * - Windows: ❌ Not implemented - Always returns true
+   * - Linux: ❌ Not implemented - Always returns true
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
+   */
+  bool IsWindowControlButtonsVisible() const;
+
+  /**
    * @brief Sets whether the window stays on top of other windows.
    *
    * @param is_always_on_top true to keep on top, false for normal behavior

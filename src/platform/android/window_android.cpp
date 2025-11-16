@@ -262,6 +262,15 @@ bool Window::IsClosable() const {
   return true;
 }
 
+void Window::SetWindowControlButtonsVisible(bool is_visible) {
+  // Not applicable to Android - mobile apps don't have window control buttons
+}
+
+bool Window::IsWindowControlButtonsVisible() const {
+  // Not applicable to Android - mobile apps don't have window control buttons
+  return false;
+}
+
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   ALOGW("SetAlwaysOnTop not fully supported on Android");
 }

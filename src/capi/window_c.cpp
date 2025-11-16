@@ -471,6 +471,22 @@ bool native_window_is_closable(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
+void native_window_set_window_control_buttons_visible(native_window_t window, bool visible) {
+  if (!window)
+    return;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  win->SetWindowControlButtonsVisible(visible);
+}
+
+FFI_PLUGIN_EXPORT
+bool native_window_is_window_control_buttons_visible(native_window_t window) {
+  if (!window)
+    return true;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  return win->IsWindowControlButtonsVisible();
+}
+
+FFI_PLUGIN_EXPORT
 void native_window_set_always_on_top(native_window_t window, bool always_on_top) {
   if (!window)
     return;

@@ -384,6 +384,16 @@ bool Window::IsClosable() const {
   return true;  // Default assumption
 }
 
+void Window::SetWindowControlButtonsVisible(bool is_visible) {
+  // TODO: Implement for Linux
+  // This would involve manipulating GTK window decorations
+}
+
+bool Window::IsWindowControlButtonsVisible() const {
+  // TODO: Implement for Linux
+  return true;  // Default to visible
+}
+
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   if (pimpl_->gdk_window_) {
     gdk_window_set_keep_above(pimpl_->gdk_window_, is_always_on_top);

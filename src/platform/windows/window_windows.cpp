@@ -573,6 +573,16 @@ bool Window::IsClosable() const {
   return (style & WS_SYSMENU) != 0;
 }
 
+void Window::SetWindowControlButtonsVisible(bool is_visible) {
+  // TODO: Implement for Windows
+  // This would involve custom window chrome or DWM frame manipulation
+}
+
+bool Window::IsWindowControlButtonsVisible() const {
+  // TODO: Implement for Windows
+  return true;  // Default to visible
+}
+
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   if (pimpl_->hwnd_) {
     SetWindowPos(pimpl_->hwnd_, is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,

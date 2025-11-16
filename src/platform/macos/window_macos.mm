@@ -299,6 +299,30 @@ bool Window::IsClosable() const {
   return [pimpl_->ns_window_ styleMask] & NSWindowStyleMaskClosable;
 }
 
+void Window::SetWindowControlButtonsVisible(bool is_visible) {
+  NSButton* closeButton = [pimpl_->ns_window_ standardWindowButton:NSWindowCloseButton];
+  NSButton* miniaturizeButton = [pimpl_->ns_window_ standardWindowButton:NSWindowMiniaturizeButton];
+  NSButton* zoomButton = [pimpl_->ns_window_ standardWindowButton:NSWindowZoomButton];
+
+  if (closeButton) {
+    [closeButton setHidden:!is_visible];
+  }
+  if (miniaturizeButton) {
+    [miniaturizeButton setHidden:!is_visible];
+  }
+  if (zoomButton) {
+    [zoomButton setHidden:!is_visible];
+  }
+}
+
+bool Window::IsWindowControlButtonsVisible() const {
+  NSButton* closeButton = [pimpl_->ns_window_ standardWindowButton:NSWindowCloseButton];
+  if (closeButton) {
+    return ![closeButton isHidden];
+  }
+  return true;  // Default to visible if button not found
+}
+
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   [pimpl_->ns_window_ setLevel:is_always_on_top ? NSFloatingWindowLevel : NSNormalWindowLevel];
 }

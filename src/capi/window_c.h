@@ -185,6 +185,12 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_closable(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+void native_window_set_window_control_buttons_visible(native_window_t window, bool visible);
+
+FFI_PLUGIN_EXPORT
+bool native_window_is_window_control_buttons_visible(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_always_on_top(native_window_t window, bool always_on_top);
 
 FFI_PLUGIN_EXPORT

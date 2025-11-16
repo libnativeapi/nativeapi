@@ -244,6 +244,15 @@ bool Window::IsClosable() const {
   return true;
 }
 
+void Window::SetWindowControlButtonsVisible(bool is_visible) {
+  // Not applicable to OpenHarmony - mobile apps don't have window control buttons
+}
+
+bool Window::IsWindowControlButtonsVisible() const {
+  // Not applicable to OpenHarmony - mobile apps don't have window control buttons
+  return false;
+}
+
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
   // SetAlwaysOnTop not fully supported on OpenHarmony
 }
