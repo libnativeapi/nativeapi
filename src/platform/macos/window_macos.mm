@@ -454,15 +454,6 @@ WindowId Window::GetId() const {
 }
 
 void* Window::GetNativeObjectInternal() const {
-  if (!pimpl_) {
-    std::cout << "GetNativeObject: pimpl_ is null" << std::endl;
-    return nullptr;
-  }
-  if (!pimpl_->ns_window_) {
-    std::cout << "GetNativeObject: ns_window_ is null" << std::endl;
-    return nullptr;
-  }
-  std::cout << "GetNativeObject: returning valid NSWindow pointer" << std::endl;
   return (__bridge void*)pimpl_->ns_window_;
 }
 
