@@ -47,6 +47,8 @@
 #include "../src/capi/message_dialog_c.h"
 #include "../src/capi/preferences_c.h"
 #include "../src/capi/secure_storage_c.h"
+#include "../src/capi/shortcut_c.h"
+#include "../src/capi/shortcut_manager_c.h"
 #include "../src/capi/string_utils_c.h"
 #include "../src/capi/tray_icon_c.h"
 #include "../src/capi/tray_manager_c.h"
