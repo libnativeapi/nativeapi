@@ -41,22 +41,22 @@ int main() {
   }
 
   // Add event listener for shortcut activations
-  auto activation_listener = manager.AddListener<ShortcutActivatedEvent>(
-      [](const ShortcutActivatedEvent& event) {
+  auto activation_listener =
+      manager.AddListener<ShortcutActivatedEvent>([](const ShortcutActivatedEvent& event) {
         std::cout << "🔔 Shortcut activated: " << event.GetAccelerator()
                   << " (ID: " << event.GetShortcutId() << ")\n";
       });
 
   // Add event listener for registration events
-  auto registration_listener = manager.AddListener<ShortcutRegisteredEvent>(
-      [](const ShortcutRegisteredEvent& event) {
+  auto registration_listener =
+      manager.AddListener<ShortcutRegisteredEvent>([](const ShortcutRegisteredEvent& event) {
         std::cout << "✓ Shortcut registered: " << event.GetAccelerator()
                   << " (ID: " << event.GetShortcutId() << ")\n";
       });
 
   // Add event listener for unregistration events
-  auto unregistration_listener = manager.AddListener<ShortcutUnregisteredEvent>(
-      [](const ShortcutUnregisteredEvent& event) {
+  auto unregistration_listener =
+      manager.AddListener<ShortcutUnregisteredEvent>([](const ShortcutUnregisteredEvent& event) {
         std::cout << "✗ Shortcut unregistered: " << event.GetAccelerator()
                   << " (ID: " << event.GetShortcutId() << ")\n";
       });
@@ -64,8 +64,8 @@ int main() {
   // Add event listener for registration failures
   auto failure_listener = manager.AddListener<ShortcutRegistrationFailedEvent>(
       [](const ShortcutRegistrationFailedEvent& event) {
-        std::cout << "❌ Failed to register shortcut: " << event.GetAccelerator()
-                  << " - " << event.GetErrorMessage() << "\n";
+        std::cout << "❌ Failed to register shortcut: " << event.GetAccelerator() << " - "
+                  << event.GetErrorMessage() << "\n";
       });
 
   std::cout << "Event listeners registered\n\n";
@@ -73,17 +73,14 @@ int main() {
   // Register shortcuts with simple callback
   std::cout << "Registering shortcuts...\n";
 
-  auto shortcut1 = manager.Register("Ctrl+Shift+A", []() {
-    std::cout << "  → Action A triggered!\n";
-  });
+  auto shortcut1 =
+      manager.Register("Ctrl+Shift+A", []() { std::cout << "  → Action A triggered!\n"; });
 
-  auto shortcut2 = manager.Register("Ctrl+Shift+B", []() {
-    std::cout << "  → Action B triggered!\n";
-  });
+  auto shortcut2 =
+      manager.Register("Ctrl+Shift+B", []() { std::cout << "  → Action B triggered!\n"; });
 
-  auto shortcut3 = manager.Register("Ctrl+Shift+C", []() {
-    std::cout << "  → Action C triggered!\n";
-  });
+  auto shortcut3 =
+      manager.Register("Ctrl+Shift+C", []() { std::cout << "  → Action C triggered!\n"; });
 
   // Register shortcut with detailed options
   ShortcutOptions options;
@@ -115,11 +112,11 @@ int main() {
   // Demonstrate validation
   std::cout << "Testing accelerator validation:\n";
   std::vector<std::string> test_accelerators = {
-      "Ctrl+A",           // Valid
-      "Ctrl+Shift+F1",    // Valid
-      "Invalid",          // Invalid
-      "Ctrl++",           // Invalid
-      "Alt+Space",        // Valid
+      "Ctrl+A",         // Valid
+      "Ctrl+Shift+F1",  // Valid
+      "Invalid",        // Invalid
+      "Ctrl++",         // Invalid
+      "Alt+Space",      // Valid
   };
 
   for (const auto& acc : test_accelerators) {
@@ -228,4 +225,3 @@ int main() {
 
   return 0;
 }
-

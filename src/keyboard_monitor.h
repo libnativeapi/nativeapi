@@ -5,30 +5,10 @@
 #include <string>
 
 #include "foundation/event_emitter.h"
+#include "foundation/keyboard.h"
 #include "keyboard_event.h"
 
 namespace nativeapi {
-
-enum class ModifierKey : uint32_t {
-  None = 0,
-  Shift = 1 << 0,
-  Ctrl = 1 << 1,
-  Alt = 1 << 2,
-  Meta = 1 << 3,  // Windows key or Cmd key
-  Fn = 1 << 4,
-  CapsLock = 1 << 5,
-  NumLock = 1 << 6,
-  ScrollLock = 1 << 7
-};
-
-// Bitwise operators for ModifierKey enum
-inline ModifierKey operator|(ModifierKey a, ModifierKey b) {
-  return static_cast<ModifierKey>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-}
-
-inline ModifierKey operator&(ModifierKey a, ModifierKey b) {
-  return static_cast<ModifierKey>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-}
 
 class KeyboardMonitor : public EventEmitter<KeyboardEvent> {
  public:

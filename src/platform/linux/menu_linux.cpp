@@ -89,7 +89,7 @@ class MenuItem::Impl {
         type_(type),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
-        accelerator_("", KeyboardAccelerator::None),
+        accelerator_("", ModifierKey::None),
         activate_handler_id_(0),
         toggled_handler_id_(0) {}
 
@@ -359,7 +359,7 @@ void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelera
   if (accelerator.has_value()) {
     pimpl_->accelerator_ = *accelerator;
   } else {
-    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    pimpl_->accelerator_ = KeyboardAccelerator("", ModifierKey::None);
   }
   // TODO: Implement GTK accelerator setting
 }

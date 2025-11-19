@@ -58,9 +58,7 @@ ShortcutManager& ShortcutManager::GetInstance() {
 
 // Private constructor
 ShortcutManager::ShortcutManager()
-    : pimpl_(std::make_unique<Impl>(this)),
-      next_shortcut_id_(1),
-      enabled_(true) {}
+    : pimpl_(std::make_unique<Impl>(this)), next_shortcut_id_(1), enabled_(true) {}
 
 // Destructor
 ShortcutManager::~ShortcutManager() {
@@ -75,7 +73,7 @@ bool ShortcutManager::IsSupported() {
 
 // Register a new keyboard shortcut with callback
 std::shared_ptr<Shortcut> ShortcutManager::Register(const std::string& accelerator,
-                                                     std::function<void()> callback) {
+                                                    std::function<void()> callback) {
   ShortcutOptions options;
   options.accelerator = accelerator;
   options.callback = callback;
@@ -89,14 +87,16 @@ std::shared_ptr<Shortcut> ShortcutManager::Register(const ShortcutOptions& optio
   // Validate accelerator format
   if (!IsValidAccelerator(options.accelerator)) {
     // Emit failure event
-    EmitAsync<ShortcutRegistrationFailedEvent>(0, options.accelerator, "Invalid accelerator format");
+    EmitAsync<ShortcutRegistrationFailedEvent>(0, options.accelerator,
+                                               "Invalid accelerator format");
     return nullptr;
   }
 
   // Check if accelerator is already registered
   if (!IsAvailable(options.accelerator)) {
     // Emit failure event
-    EmitAsync<ShortcutRegistrationFailedEvent>(0, options.accelerator, "Accelerator already registered");
+    EmitAsync<ShortcutRegistrationFailedEvent>(0, options.accelerator,
+                                               "Accelerator already registered");
     return nullptr;
   }
 
@@ -109,7 +109,8 @@ std::shared_ptr<Shortcut> ShortcutManager::Register(const ShortcutOptions& optio
   // Register with platform
   if (!pimpl_->RegisterShortcut(shortcut)) {
     // Platform registration failed
-    EmitAsync<ShortcutRegistrationFailedEvent>(id, options.accelerator, "Platform registration failed");
+    EmitAsync<ShortcutRegistrationFailedEvent>(id, options.accelerator,
+                                               "Platform registration failed");
     return nullptr;
   }
 
@@ -284,4 +285,3 @@ void ShortcutManager::StopEventListening() {
 }
 
 }  // namespace nativeapi
-

@@ -14,6 +14,7 @@
 #include "../src/foundation/event_emitter.h"
 #include "../src/foundation/geometry.h"
 #include "../src/foundation/id_allocator.h"
+#include "../src/foundation/keyboard.h"
 #include "../src/image.h"
 #include "../src/keyboard_event.h"
 #include "../src/keyboard_monitor.h"

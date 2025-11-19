@@ -98,16 +98,16 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
   }
 
   // Convert modifiers
-  if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
+  if ((accelerator.modifiers & ModifierKey::Ctrl) != ModifierKey::None) {
     modifier_mask |= NSEventModifierFlagControl;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Alt) {
+  if ((accelerator.modifiers & ModifierKey::Alt) != ModifierKey::None) {
     modifier_mask |= NSEventModifierFlagOption;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Shift) {
+  if ((accelerator.modifiers & ModifierKey::Shift) != ModifierKey::None) {
     modifier_mask |= NSEventModifierFlagShift;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Meta) {
+  if ((accelerator.modifiers & ModifierKey::Meta) != ModifierKey::None) {
     modifier_mask |= NSEventModifierFlagCommand;
   }
 
@@ -207,7 +207,7 @@ class MenuItem::Impl {
         ns_menu_item_(menu_item),
         ns_menu_item_target_([[NSMenuItemTarget alloc] init]),
         type_(type),
-        accelerator_("", KeyboardAccelerator::None),
+        accelerator_("", ModifierKey::None),
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
@@ -359,7 +359,7 @@ void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelera
     [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:key_and_modifier.second];
   } else {
     pimpl_->has_accelerator_ = false;
-    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    pimpl_->accelerator_ = KeyboardAccelerator("", ModifierKey::None);
     [pimpl_->ns_menu_item_ setKeyEquivalent:@""];
     [pimpl_->ns_menu_item_ setKeyEquivalentModifierMask:0];
   }
@@ -369,7 +369,7 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
   if (pimpl_->has_accelerator_) {
     return pimpl_->accelerator_;
   }
-  return KeyboardAccelerator("", KeyboardAccelerator::None);
+  return KeyboardAccelerator("", ModifierKey::None);
 }
 
 void MenuItem::SetEnabled(bool enabled) {

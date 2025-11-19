@@ -63,4 +63,3 @@ std::function<void()> Shortcut::GetCallback() const {
 }
 
 }  // namespace nativeapi
-

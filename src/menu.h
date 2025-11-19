@@ -9,6 +9,7 @@
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
 #include "foundation/id_allocator.h"
+#include "foundation/keyboard.h"
 #include "foundation/native_object_provider.h"
 #include "menu_event.h"
 #include "placement.h"
@@ -79,61 +80,6 @@ enum class MenuItemState {
   Mixed
 };
 
-/**
- * @brief Keyboard accelerator for menu items.
- *
- * Represents a keyboard shortcut that can trigger a menu item.
- * Supports modifier keys and regular keys.
- */
-struct KeyboardAccelerator {
-  /**
-   * Modifier key flags that can be combined.
-   */
-  enum Modifiers {
-    None = 0,
-    Ctrl = 1 << 0,
-    Alt = 1 << 1,
-    Shift = 1 << 2,
-    Meta = 1 << 3,  // Windows key on Windows, Cmd key on macOS
-  };
-
-  /**
-   * Combination of modifier flags.
-   */
-  int modifiers = None;
-
-  /**
-   * The main key code (e.g., 'A', 'F1', etc.).
-   */
-  std::string key;
-
-  /**
-   * Constructor for creating keyboard accelerators.
-   *
-   * @param key The main key (e.g., "A", "F1", "Enter")
-   * @param modifiers Combination of modifier flags
-   *
-   * @example
-   * ```cpp
-   * // Ctrl+S
-   * KeyboardAccelerator save_accel("S", KeyboardAccelerator::Ctrl);
-   *
-   * // Ctrl+Shift+N
-   * KeyboardAccelerator new_accel("N",
-   *     KeyboardAccelerator::Ctrl | KeyboardAccelerator::Shift);
-   * ```
-   */
-  KeyboardAccelerator(const std::string& key, int modifiers = None)
-      : key(key), modifiers(modifiers) {}
-
-  /**
-   * Get a human-readable string representation of the accelerator.
-   *
-   * @return String representation like "Ctrl+S" or "Alt+F4"
-   */
-  std::string ToString() const;
-};
-
 // Forward declarations
 class Menu;
 
@@ -162,7 +108,7 @@ class Menu;
  * // Create a normal menu item
  * auto item = std::make_shared<MenuItem>("Open File", MenuItemType::Normal);
  * item->SetIcon("data:image/png;base64,...");
- * item->SetAccelerator(KeyboardAccelerator("O", KeyboardAccelerator::Ctrl));
+ * item->SetAccelerator(KeyboardAccelerator("O", ModifierKey::Ctrl));
  * item->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event)
  * {
  *     // Handle menu item click
@@ -321,13 +267,13 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * @example
    * ```cpp
    * // Set Ctrl+S as accelerator
-   * item->SetAccelerator(KeyboardAccelerator("S", KeyboardAccelerator::Ctrl));
+   * item->SetAccelerator(KeyboardAccelerator("S", ModifierKey::Ctrl));
    *
    * // Set F1 as accelerator
    * item->SetAccelerator(KeyboardAccelerator("F1"));
    *
    * // Set Alt+F4 as accelerator
-   * item->SetAccelerator(KeyboardAccelerator("F4", KeyboardAccelerator::Alt));
+   * item->SetAccelerator(KeyboardAccelerator("F4", ModifierKey::Alt));
    *
    * // Remove accelerator
    * item->SetAccelerator(std::nullopt);
@@ -462,12 +408,12 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
  *
  * // Add items to the menu
  * auto new_item = std::make_shared<MenuItem>("New", MenuItemType::Normal);
- * new_item->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
+ * new_item->SetAccelerator(KeyboardAccelerator("N", ModifierKey::Ctrl));
  * file_menu->AddItem(new_item);
  *
  * auto open_item = std::make_shared<MenuItem>("Open", MenuItemType::Normal);
  * open_item->SetAccelerator(KeyboardAccelerator("O",
- * KeyboardAccelerator::Ctrl)); file_menu->AddItem(open_item);
+ * ModifierKey::Ctrl)); file_menu->AddItem(open_item);
  *
  * file_menu->AddSeparator();
  *

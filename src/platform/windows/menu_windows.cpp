@@ -79,13 +79,13 @@ std::pair<UINT, UINT> ConvertAccelerator(const KeyboardAccelerator& accelerator)
   }
 
   // Convert modifiers
-  if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
+  if ((accelerator.modifiers & ModifierKey::Ctrl) != ModifierKey::None) {
     modifiers |= FCONTROL;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Alt) {
+  if ((accelerator.modifiers & ModifierKey::Alt) != ModifierKey::None) {
     modifiers |= FALT;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Shift) {
+  if ((accelerator.modifiers & ModifierKey::Shift) != ModifierKey::None) {
     modifiers |= FSHIFT;
   }
   // Note: Windows doesn't have a direct equivalent for Meta key in accelerators
@@ -120,7 +120,7 @@ class MenuItem::Impl {
         type_(type),
         menu_icon_(nullptr),
         menu_bitmap_(nullptr),
-        accelerator_("", KeyboardAccelerator::None),
+        accelerator_("", ModifierKey::None),
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
         radio_group_(-1),
@@ -340,7 +340,7 @@ void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelera
     pimpl_->accelerator_ = *accelerator;
     pimpl_->has_accelerator_ = true;
   } else {
-    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    pimpl_->accelerator_ = KeyboardAccelerator("", ModifierKey::None);
     pimpl_->has_accelerator_ = false;
   }
   // Windows accelerators would be handled through accelerator tables
@@ -351,7 +351,7 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
   if (pimpl_->has_accelerator_) {
     return pimpl_->accelerator_;
   }
-  return KeyboardAccelerator("", KeyboardAccelerator::None);
+  return KeyboardAccelerator("", ModifierKey::None);
 }
 
 void MenuItem::SetEnabled(bool enabled) {

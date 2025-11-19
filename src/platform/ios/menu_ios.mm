@@ -24,7 +24,7 @@ class MenuItem::Impl {
   Impl(MenuItemId id, MenuItemType type)
       : id_(id),
         type_(type),
-        accelerator_("", KeyboardAccelerator::None),
+        accelerator_("", ModifierKey::None),
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
         radio_group_(-1) {}
@@ -82,7 +82,7 @@ void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelera
     pimpl_->has_accelerator_ = true;
   } else {
     pimpl_->has_accelerator_ = false;
-    pimpl_->accelerator_ = KeyboardAccelerator("", KeyboardAccelerator::None);
+    pimpl_->accelerator_ = KeyboardAccelerator("", ModifierKey::None);
   }
 }
 
@@ -90,7 +90,7 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
   if (pimpl_->has_accelerator_) {
     return pimpl_->accelerator_;
   }
-  return KeyboardAccelerator("", KeyboardAccelerator::None);
+  return KeyboardAccelerator("", ModifierKey::None);
 }
 
 void MenuItem::SetEnabled(bool enabled) {

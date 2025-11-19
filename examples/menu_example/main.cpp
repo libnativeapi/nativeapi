@@ -31,8 +31,8 @@ int main() {
     radio_item1->SetState(MenuItemState::Checked);
 
     // Set keyboard accelerators
-    file_item->SetAccelerator(KeyboardAccelerator("N", KeyboardAccelerator::Ctrl));
-    exit_item->SetAccelerator(KeyboardAccelerator("Q", KeyboardAccelerator::Ctrl));
+    file_item->SetAccelerator(KeyboardAccelerator("N", ModifierKey::Ctrl));
+    exit_item->SetAccelerator(KeyboardAccelerator("Q", ModifierKey::Ctrl));
 
     // Add event listeners using the new event system
     std::cout << "Setting up event listeners..." << std::endl;

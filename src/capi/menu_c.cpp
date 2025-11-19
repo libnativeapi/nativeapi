@@ -69,18 +69,18 @@ static native_menu_item_type_t convert_menu_item_type(MenuItemType type) {
 
 static KeyboardAccelerator convert_keyboard_accelerator(
     const native_keyboard_accelerator_t* accelerator) {
-  int modifiers = 0;
+  ModifierKey modifiers = ModifierKey::None;
   if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_CTRL) {
-    modifiers |= KeyboardAccelerator::Ctrl;
+    modifiers |= ModifierKey::Ctrl;
   }
   if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_ALT) {
-    modifiers |= KeyboardAccelerator::Alt;
+    modifiers |= ModifierKey::Alt;
   }
   if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_SHIFT) {
-    modifiers |= KeyboardAccelerator::Shift;
+    modifiers |= ModifierKey::Shift;
   }
   if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_META) {
-    modifiers |= KeyboardAccelerator::Meta;
+    modifiers |= ModifierKey::Meta;
   }
   return KeyboardAccelerator(accelerator->key, modifiers);
 }
@@ -89,16 +89,16 @@ static native_keyboard_accelerator_t convert_keyboard_accelerator(
     const KeyboardAccelerator& accelerator) {
   native_keyboard_accelerator_t result = {};
 
-  if (accelerator.modifiers & KeyboardAccelerator::Ctrl) {
+  if ((accelerator.modifiers & ModifierKey::Ctrl) != ModifierKey::None) {
     result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_CTRL;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Alt) {
+  if ((accelerator.modifiers & ModifierKey::Alt) != ModifierKey::None) {
     result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_ALT;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Shift) {
+  if ((accelerator.modifiers & ModifierKey::Shift) != ModifierKey::None) {
     result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_SHIFT;
   }
-  if (accelerator.modifiers & KeyboardAccelerator::Meta) {
+  if ((accelerator.modifiers & ModifierKey::Meta) != ModifierKey::None) {
     result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_META;
   }
 

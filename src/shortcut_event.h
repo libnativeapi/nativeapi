@@ -198,8 +198,8 @@ class ShortcutUnregisteredEvent : public ShortcutEvent {
  * auto& manager = ShortcutManager::GetInstance();
  *
  * // Listen for registration failures
- * manager.AddListener<ShortcutRegistrationFailedEvent>([](const ShortcutRegistrationFailedEvent& event) {
- *     std::cerr << "Failed to register shortcut: " << event.GetAccelerator() << std::endl;
+ * manager.AddListener<ShortcutRegistrationFailedEvent>([](const ShortcutRegistrationFailedEvent&
+ * event) { std::cerr << "Failed to register shortcut: " << event.GetAccelerator() << std::endl;
  *     std::cerr << "Reason: " << event.GetErrorMessage() << std::endl;
  * });
  * ```
@@ -240,4 +240,3 @@ class ShortcutRegistrationFailedEvent : public ShortcutEvent {
 };
 
 }  // namespace nativeapi
-

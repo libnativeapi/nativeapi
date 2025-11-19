@@ -113,7 +113,8 @@ struct ShortcutOptions {
  *
  * // Check properties
  * std::cout << "Accelerator: " << shortcut->GetAccelerator() << std::endl;
- * std::cout << "Scope: " << (shortcut->GetScope() == ShortcutScope::Global ? "Global" : "Application") << std::endl;
+ * std::cout << "Scope: " << (shortcut->GetScope() == ShortcutScope::Global ? "Global" :
+ * "Application") << std::endl;
  *
  * // Re-enable
  * shortcut->SetEnabled(true);
@@ -305,4 +306,3 @@ class Shortcut {
 };
 
 }  // namespace nativeapi
-
