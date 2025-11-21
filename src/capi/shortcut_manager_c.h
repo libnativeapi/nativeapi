@@ -44,7 +44,7 @@ typedef struct {
  * Shortcut event callback function type
  */
 typedef void (*native_shortcut_event_callback_t)(const native_shortcut_event_t* event,
-                                                  void* user_data);
+                                                 void* user_data);
 
 /**
  * Shortcut list structure
@@ -198,4 +198,3 @@ bool native_shortcut_manager_unregister_event_callback(int registration_id);
 #ifdef __cplusplus
 }
 #endif
-

@@ -80,4 +80,3 @@ void native_shortcut_invoke(native_shortcut_t shortcut) {
     return;
   GetShortcut(shortcut)->Invoke();
 }
-

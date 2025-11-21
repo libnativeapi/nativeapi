@@ -58,8 +58,7 @@ int main(void) {
   printf("Global shortcuts are supported\n\n");
 
   // Register event callback
-  int event_callback_id =
-      native_shortcut_manager_register_event_callback(on_shortcut_event, NULL);
+  int event_callback_id = native_shortcut_manager_register_event_callback(on_shortcut_event, NULL);
   if (event_callback_id < 0) {
     printf("Failed to register event callback\n");
     return 1;
@@ -71,8 +70,8 @@ int main(void) {
   printf("Registering shortcuts...\n");
 
   // Simple registration
-  native_shortcut_t shortcut1 = native_shortcut_manager_register(
-      "Ctrl+Shift+A", on_shortcut_activated, (void*)"Shortcut 1");
+  native_shortcut_t shortcut1 =
+      native_shortcut_manager_register("Ctrl+Shift+A", on_shortcut_activated, (void*)"Shortcut 1");
 
   if (!shortcut1) {
     printf("Failed to register shortcut 1\n");
@@ -110,7 +109,7 @@ int main(void) {
   } else {
     printf("Registered shortcut 3: %s (scope: %s)\n", native_shortcut_get_accelerator(shortcut3),
            native_shortcut_get_scope(shortcut3) == NATIVE_SHORTCUT_SCOPE_GLOBAL ? "Global"
-                                                                                 : "Application");
+                                                                                : "Application");
   }
 
   printf("\n");
@@ -218,4 +217,3 @@ int main(void) {
   printf("\nDone!\n");
   return 0;
 }
-

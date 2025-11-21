@@ -18,15 +18,15 @@ static std::mutex g_shortcut_callback_mutex;
 static std::unordered_map<native_shortcut_id_t, ShortcutCallbackInfo> g_shortcut_callbacks;
 
 // Global state for event callbacks
-struct EventCallbackInfo {
+struct ShortcutEventCallbackInfo {
   native_shortcut_event_callback_t callback;
   void* user_data;
   int id;
 };
 
-static std::mutex g_event_callback_mutex;
-static std::unordered_map<int, EventCallbackInfo> g_event_callbacks;
-static int g_next_callback_id = 1;
+static std::mutex g_shortcut_event_callback_mutex;
+static std::unordered_map<int, ShortcutEventCallbackInfo> g_shortcut_event_callbacks;
+static int g_shortcut_next_callback_id = 1;
 
 // Helper function to create native_shortcut_t from shared_ptr<Shortcut>
 static native_shortcut_t CreateNativeShortcutHandle(std::shared_ptr<Shortcut> shortcut) {
@@ -38,9 +38,9 @@ static native_shortcut_t CreateNativeShortcutHandle(std::shared_ptr<Shortcut> sh
 
 // Helper function to dispatch events to registered callbacks
 static void DispatchEvent(const native_shortcut_event_t& event) {
-  std::lock_guard<std::mutex> lock(g_event_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_shortcut_event_callback_mutex);
 
-  for (const auto& [id, callback_info] : g_event_callbacks) {
+  for (const auto& [id, callback_info] : g_shortcut_event_callbacks) {
     try {
       callback_info.callback(&event, callback_info.user_data);
     } catch (...) {
@@ -50,9 +50,9 @@ static void DispatchEvent(const native_shortcut_event_t& event) {
 }
 
 // Event listener class to bridge C++ events to C callbacks
-class CEventListener {
+class ShortcutCEventListener {
  public:
-  CEventListener() {
+  ShortcutCEventListener() {
     auto& manager = ShortcutManager::GetInstance();
 
     // Register for shortcut events
@@ -93,8 +93,8 @@ class CEventListener {
 };
 
 // Singleton event listener
-static CEventListener* GetEventListener() {
-  static CEventListener listener;
+static ShortcutCEventListener* GetEventListener() {
+  static ShortcutCEventListener listener;
   return &listener;
 }
 
@@ -162,7 +162,7 @@ native_shortcut_t native_shortcut_manager_register_with_options(
   cpp_options.accelerator = options->accelerator;
   cpp_options.description = options->description ? options->description : "";
   cpp_options.scope = options->scope == NATIVE_SHORTCUT_SCOPE_GLOBAL ? ShortcutScope::Global
-                                                                      : ShortcutScope::Application;
+                                                                     : ShortcutScope::Application;
   cpp_options.enabled = options->enabled;
 
   // Placeholder callback - will be replaced below
@@ -320,23 +320,22 @@ int native_shortcut_manager_register_event_callback(native_shortcut_event_callba
   // Ensure event listener is initialized
   GetEventListener();
 
-  std::lock_guard<std::mutex> lock(g_event_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_shortcut_event_callback_mutex);
 
-  int id = g_next_callback_id++;
-  g_event_callbacks[id] = {callback, user_data, id};
+  int id = g_shortcut_next_callback_id++;
+  g_shortcut_event_callbacks[id] = {callback, user_data, id};
 
   return id;
 }
 
 bool native_shortcut_manager_unregister_event_callback(int registration_id) {
-  std::lock_guard<std::mutex> lock(g_event_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_shortcut_event_callback_mutex);
 
-  auto it = g_event_callbacks.find(registration_id);
-  if (it == g_event_callbacks.end()) {
+  auto it = g_shortcut_event_callbacks.find(registration_id);
+  if (it == g_shortcut_event_callbacks.end()) {
     return false;
   }
 
-  g_event_callbacks.erase(it);
+  g_shortcut_event_callbacks.erase(it);
   return true;
 }
-

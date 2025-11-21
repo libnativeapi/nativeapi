@@ -9,15 +9,15 @@
 using namespace nativeapi;
 
 // Global state for event callbacks
-struct EventCallbackInfo {
+struct WindowEventCallbackInfo {
   native_window_event_callback_t callback;
   void* user_data;
   int id;
 };
 
-static std::mutex g_callback_mutex;
-static std::unordered_map<int, EventCallbackInfo> g_event_callbacks;
-static int g_next_callback_id = 1;
+static std::mutex g_window_callback_mutex;
+static std::unordered_map<int, WindowEventCallbackInfo> g_window_event_callbacks;
+static int g_window_next_callback_id = 1;
 
 // Helper function to create native_window_t from shared_ptr<Window>
 static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) {
@@ -30,9 +30,9 @@ static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) 
 
 // Helper function to dispatch events to registered callbacks
 static void DispatchEvent(const native_window_event_t& event) {
-  std::lock_guard<std::mutex> lock(g_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
 
-  for (const auto& [id, callback_info] : g_event_callbacks) {
+  for (const auto& [id, callback_info] : g_window_event_callbacks) {
     try {
       callback_info.callback(&event, callback_info.user_data);
     } catch (...) {
@@ -42,9 +42,9 @@ static void DispatchEvent(const native_window_event_t& event) {
 }
 
 // Event listener class to bridge C++ events to C callbacks
-class CEventListener {
+class WindowCEventListener {
  public:
-  CEventListener() {
+  WindowCEventListener() {
     auto& manager = WindowManager::GetInstance();
 
     // Register for various window events
@@ -103,7 +103,7 @@ class CEventListener {
   }
 };
 
-static std::unique_ptr<CEventListener> g_event_listener;
+static std::unique_ptr<WindowCEventListener> g_event_listener;
 
 // Hook callbacks (C API)
 static std::mutex g_hook_mutex;
@@ -177,22 +177,22 @@ int native_window_manager_register_event_callback(native_window_event_callback_t
   if (!callback)
     return -1;
 
-  std::lock_guard<std::mutex> lock(g_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
 
-  int callback_id = g_next_callback_id++;
-  EventCallbackInfo info;
+  int callback_id = g_window_next_callback_id++;
+  WindowEventCallbackInfo info;
   info.callback = callback;
   info.user_data = user_data;
   info.id = callback_id;
 
-  g_event_callbacks[callback_id] = info;
+  g_window_event_callbacks[callback_id] = info;
 
   // Initialize event listener if this is the first callback
   if (!g_event_listener) {
     try {
-      g_event_listener = std::make_unique<CEventListener>();
+      g_event_listener = std::make_unique<WindowCEventListener>();
     } catch (...) {
-      g_event_callbacks.erase(callback_id);
+      g_window_event_callbacks.erase(callback_id);
       return -1;
     }
   }
@@ -202,17 +202,17 @@ int native_window_manager_register_event_callback(native_window_event_callback_t
 
 FFI_PLUGIN_EXPORT
 bool native_window_manager_unregister_event_callback(int registration_id) {
-  std::lock_guard<std::mutex> lock(g_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
 
-  auto it = g_event_callbacks.find(registration_id);
-  if (it == g_event_callbacks.end()) {
+  auto it = g_window_event_callbacks.find(registration_id);
+  if (it == g_window_event_callbacks.end()) {
     return false;
   }
 
-  g_event_callbacks.erase(it);
+  g_window_event_callbacks.erase(it);
 
   // Clean up event listener if no callbacks remain
-  if (g_event_callbacks.empty()) {
+  if (g_window_event_callbacks.empty()) {
     g_event_listener.reset();
   }
 
@@ -221,10 +221,10 @@ bool native_window_manager_unregister_event_callback(int registration_id) {
 
 FFI_PLUGIN_EXPORT
 void native_window_manager_shutdown(void) {
-  std::lock_guard<std::mutex> lock(g_callback_mutex);
+  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
 
   // Clear all callbacks
-  g_event_callbacks.clear();
+  g_window_event_callbacks.clear();
 
   // Clean up event listener
   g_event_listener.reset();
