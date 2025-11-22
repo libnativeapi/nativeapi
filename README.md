@@ -48,21 +48,7 @@ git clone https://github.com/libnativeapi/nativeapi.git
 cd nativeapi
 ```
 
-#### Linux/macOS
-
 ```bash
-# Create build directory
-mkdir build
-cd build
-
-# Configure and build
-cmake ..
-cmake --build . --config Release
-```
-
-#### Windows
-
-```powershell
 # Create build directory
 mkdir build
 cd build
