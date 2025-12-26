@@ -335,6 +335,14 @@ VisualEffect Window::GetVisualEffect() const {
   return pimpl_->visual_effect_;
 }
 
+void Window::SetBackgroundColor(const Color& color) {
+  ALOGW("SetBackgroundColor not supported on Android");
+}
+
+Color Window::GetBackgroundColor() const {
+  return Color::White;
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
   ALOGW("SetVisibleOnAllWorkspaces not supported on Android");
 }

@@ -469,6 +469,35 @@ VisualEffect Window::GetVisualEffect() const {
   return pimpl_->visual_effect_;
 }
 
+void Window::SetBackgroundColor(const Color& color) {
+  NSColor* nsColor = [NSColor colorWithRed:color.r / 255.0
+                                     green:color.g / 255.0
+                                      blue:color.b / 255.0
+                                     alpha:color.a / 255.0];
+  [pimpl_->ns_window_ setBackgroundColor:nsColor];
+}
+
+Color Window::GetBackgroundColor() const {
+  NSColor* nsColor = [pimpl_->ns_window_ backgroundColor];
+
+  // Convert NSColor to RGB color space if needed
+  NSColor* rgbColor = [nsColor colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+  if (!rgbColor) {
+    // Fallback if conversion fails
+    return Color::White;
+  }
+
+  CGFloat r, g, b, a;
+  [rgbColor getRed:&r green:&g blue:&b alpha:&a];
+
+  return Color::FromRGBA(
+    static_cast<unsigned char>(r * 255),
+    static_cast<unsigned char>(g * 255),
+    static_cast<unsigned char>(b * 255),
+    static_cast<unsigned char>(a * 255)
+  );
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
   [pimpl_->ns_window_ setCollectionBehavior:is_visible_on_all_workspaces
                                                 ? NSWindowCollectionBehaviorCanJoinAllSpaces

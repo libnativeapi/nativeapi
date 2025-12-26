@@ -48,7 +48,8 @@ class Window::Impl {
       : widget_(widget),
         gdk_window_(gdk_window),
         title_bar_style_(TitleBarStyle::Normal),
-        visual_effect_(VisualEffect::None) {}
+        visual_effect_(VisualEffect::None),
+        background_color_(Color::White) {}
   GtkWidget* widget_;
   GdkWindow* gdk_window_;
   TitleBarStyle title_bar_style_;
@@ -558,6 +559,47 @@ void Window::SetVisualEffect(VisualEffect effect) {
 
 VisualEffect Window::GetVisualEffect() const {
   return pimpl_->visual_effect_;
+}
+
+void Window::SetBackgroundColor(const Color& color) {
+  if (!pimpl_->widget_)
+    return;
+
+  // Create CSS provider for background color
+  GtkCssProvider* provider = gtk_css_provider_new();
+  
+  // Format CSS string with RGBA color
+  gchar* css = g_strdup_printf(
+    "window { background-color: rgba(%d, %d, %d, %.2f); }",
+    color.r, color.g, color.b, color.a / 255.0);
+  
+  gtk_css_provider_load_from_data(provider, css, -1, nullptr);
+  g_free(css);
+  
+  // Apply CSS to the widget
+  GtkStyleContext* context = gtk_widget_get_style_context(pimpl_->widget_);
+  gtk_style_context_add_provider(context,
+                                 GTK_STYLE_PROVIDER(provider),
+                                 GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  
+  g_object_unref(provider);
+}
+
+Color Window::GetBackgroundColor() const {
+  if (!pimpl_->widget_)
+    return Color::White;
+  
+  GtkStyleContext* context = gtk_widget_get_style_context(pimpl_->widget_);
+  GdkRGBA rgba;
+  
+  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &rgba);
+  
+  return Color::FromRGBA(
+    static_cast<unsigned char>(rgba.red * 255),
+    static_cast<unsigned char>(rgba.green * 255),
+    static_cast<unsigned char>(rgba.blue * 255),
+    static_cast<unsigned char>(rgba.alpha * 255)
+  );
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {

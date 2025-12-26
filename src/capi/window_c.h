@@ -9,6 +9,7 @@
 #define FFI_PLUGIN_EXPORT
 #endif
 
+#include "color_c.h"
 #include "geometry_c.h"
 
 #ifdef __cplusplus
@@ -235,6 +236,12 @@ void native_window_set_visual_effect(native_window_t window, native_visual_effec
 
 FFI_PLUGIN_EXPORT
 native_visual_effect_t native_window_get_visual_effect(native_window_t window);
+
+FFI_PLUGIN_EXPORT
+void native_window_set_background_color(native_window_t window, native_color_t color);
+
+FFI_PLUGIN_EXPORT
+native_color_t native_window_get_background_color(native_window_t window);
 
 FFI_PLUGIN_EXPORT
 void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible);

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "foundation/color.h"
 #include "foundation/geometry.h"
 #include "foundation/id_allocator.h"
 #include "foundation/native_object_provider.h"
@@ -624,6 +625,29 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return VisualEffect The current visual effect
    */
   VisualEffect GetVisualEffect() const;
+
+  /**
+   * @brief Sets the background color of the window.
+   *
+   * Sets a solid color for the window background. This color will be visible
+   * if the window content does not fully cover the window area, or if visual
+   * effects are enabled.
+   *
+   * @param color The background color to apply
+   *
+   * @note Platform behavior may vary:
+   * - Windows: Sets the window background brush color
+   * - macOS: Sets the window backgroundColor property
+   * - Linux: Sets the window background color via GTK/X11
+   */
+  void SetBackgroundColor(const Color& color);
+
+  /**
+   * @brief Gets the current background color of the window.
+   *
+   * @return Color The current background color
+   */
+  Color GetBackgroundColor() const;
 
   /**
    * @brief Sets whether the window appears on all virtual desktops/workspaces.

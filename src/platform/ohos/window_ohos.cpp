@@ -319,6 +319,14 @@ VisualEffect Window::GetVisualEffect() const {
   return pimpl_->visual_effect_;
 }
 
+void Window::SetBackgroundColor(const Color& color) {
+  // SetBackgroundColor not supported on OpenHarmony
+}
+
+Color Window::GetBackgroundColor() const {
+  return Color::White;
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
   // SetVisibleOnAllWorkspaces not supported on OpenHarmony
 }

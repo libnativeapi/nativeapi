@@ -609,6 +609,29 @@ native_visual_effect_t native_window_get_visual_effect(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
+void native_window_set_background_color(native_window_t window, native_color_t color) {
+  if (!window)
+    return;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  Color cpp_color = Color::FromRGBA(color.r, color.g, color.b, color.a);
+  win->SetBackgroundColor(cpp_color);
+}
+
+FFI_PLUGIN_EXPORT
+native_color_t native_window_get_background_color(native_window_t window) {
+  native_color_t result = {255, 255, 255, 255};  // Default to white
+  if (!window)
+    return result;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  Color cpp_color = win->GetBackgroundColor();
+  result.r = cpp_color.r;
+  result.g = cpp_color.g;
+  result.b = cpp_color.b;
+  result.a = cpp_color.a;
+  return result;
+}
+
+FFI_PLUGIN_EXPORT
 void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible) {
   if (!window)
     return;

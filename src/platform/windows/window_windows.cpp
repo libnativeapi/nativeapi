@@ -755,6 +755,61 @@ VisualEffect Window::GetVisualEffect() const {
   return pimpl_->visual_effect_;
 }
 
+void Window::SetBackgroundColor(const Color& color) {
+  if (!pimpl_->hwnd_)
+    return;
+  
+  // Create new brush with the specified color
+  COLORREF colorRef = RGB(color.r, color.g, color.b);
+  HBRUSH brush = CreateSolidBrush(colorRef);
+  
+  // Get old brush to delete it later
+  HBRUSH oldBrush = reinterpret_cast<HBRUSH>(
+    SetClassLongPtr(pimpl_->hwnd_, GCLP_HBRBACKGROUND, 
+                    reinterpret_cast<LONG_PTR>(brush)));
+  
+  // Delete old brush if it's not a system brush
+  if (oldBrush && oldBrush != GetStockObject(NULL_BRUSH) &&
+      oldBrush != GetStockObject(WHITE_BRUSH) &&
+      oldBrush != GetStockObject(BLACK_BRUSH) &&
+      oldBrush != GetStockObject(GRAY_BRUSH) &&
+      oldBrush != GetStockObject(LTGRAY_BRUSH) &&
+      oldBrush != GetStockObject(DKGRAY_BRUSH)) {
+    DeleteObject(oldBrush);
+  }
+  
+  // Force window to redraw with new background color
+  InvalidateRect(pimpl_->hwnd_, nullptr, TRUE);
+}
+
+Color Window::GetBackgroundColor() const {
+  if (!pimpl_->hwnd_)
+    return Color::White;
+  
+  // Get the background brush from the window class
+  HBRUSH brush = reinterpret_cast<HBRUSH>(
+    GetClassLongPtr(pimpl_->hwnd_, GCLP_HBRBACKGROUND));
+  
+  if (!brush || brush == GetStockObject(NULL_BRUSH)) {
+    return Color::White;
+  }
+  
+  // Get the brush color using GetObject
+  LOGBRUSH logBrush;
+  if (GetObject(brush, sizeof(LOGBRUSH), &logBrush) == 0) {
+    return Color::White;
+  }
+  
+  // Extract RGB values from COLORREF
+  COLORREF colorRef = logBrush.lbColor;
+  return Color::FromRGBA(
+    GetRValue(colorRef),
+    GetGValue(colorRef),
+    GetBValue(colorRef),
+    255  // Windows doesn't store alpha in solid brush
+  );
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
   // Windows doesn't have the same concept of workspaces as macOS
   // This would require integration with virtual desktop APIs
