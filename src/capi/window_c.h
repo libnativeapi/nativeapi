@@ -41,6 +41,16 @@ typedef enum {
   NATIVE_TITLE_BAR_STYLE_HIDDEN = 1
 } native_title_bar_style_t;
 
+/**
+ * Visual effect styles for window background
+ */
+typedef enum {
+  NATIVE_VISUAL_EFFECT_NONE = 0,
+  NATIVE_VISUAL_EFFECT_BLUR = 1,
+  NATIVE_VISUAL_EFFECT_ACRYLIC = 2,
+  NATIVE_VISUAL_EFFECT_MICA = 3
+} native_visual_effect_t;
+
 // Window creation and destruction
 FFI_PLUGIN_EXPORT
 native_window_t native_window_create(void);
@@ -219,6 +229,12 @@ void native_window_set_opacity(native_window_t window, float opacity);
 
 FFI_PLUGIN_EXPORT
 float native_window_get_opacity(native_window_t window);
+
+FFI_PLUGIN_EXPORT
+void native_window_set_visual_effect(native_window_t window, native_visual_effect_t effect);
+
+FFI_PLUGIN_EXPORT
+native_visual_effect_t native_window_get_visual_effect(native_window_t window);
 
 FFI_PLUGIN_EXPORT
 void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible);

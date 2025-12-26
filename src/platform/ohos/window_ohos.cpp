@@ -14,8 +14,9 @@ namespace nativeapi {
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(void* window) : native_window_(window) {}
+  Impl(void* window) : native_window_(window), visual_effect_(VisualEffect::None) {}
   void* native_window_;
+  VisualEffect visual_effect_;
 };
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nullptr)) {}
@@ -307,6 +308,15 @@ void Window::SetOpacity(float opacity) {
 
 float Window::GetOpacity() const {
   return 1.0f;
+}
+
+void Window::SetVisualEffect(VisualEffect effect) {
+  pimpl_->visual_effect_ = effect;
+  // SetVisualEffect not supported on OpenHarmony
+}
+
+VisualEffect Window::GetVisualEffect() const {
+  return pimpl_->visual_effect_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {

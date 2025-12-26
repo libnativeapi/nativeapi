@@ -593,6 +593,22 @@ float native_window_get_opacity(native_window_t window) {
 }
 
 FFI_PLUGIN_EXPORT
+void native_window_set_visual_effect(native_window_t window, native_visual_effect_t effect) {
+  if (!window)
+    return;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  win->SetVisualEffect(static_cast<nativeapi::VisualEffect>(effect));
+}
+
+FFI_PLUGIN_EXPORT
+native_visual_effect_t native_window_get_visual_effect(native_window_t window) {
+  if (!window)
+    return NATIVE_VISUAL_EFFECT_NONE;
+  auto* win = static_cast<nativeapi::Window*>(window);
+  return static_cast<native_visual_effect_t>(win->GetVisualEffect());
+}
+
+FFI_PLUGIN_EXPORT
 void native_window_set_visible_on_all_workspaces(native_window_t window, bool visible) {
   if (!window)
     return;

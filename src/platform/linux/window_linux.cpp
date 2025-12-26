@@ -45,10 +45,14 @@ static GtkWidget* FindHeaderBar(GtkWidget* widget) {
 class Window::Impl {
  public:
   Impl(GtkWidget* widget, GdkWindow* gdk_window)
-      : widget_(widget), gdk_window_(gdk_window), title_bar_style_(TitleBarStyle::Normal) {}
+      : widget_(widget),
+        gdk_window_(gdk_window),
+        title_bar_style_(TitleBarStyle::Normal),
+        visual_effect_(VisualEffect::None) {}
   GtkWidget* widget_;
   GdkWindow* gdk_window_;
   TitleBarStyle title_bar_style_;
+  VisualEffect visual_effect_;
 };
 
 Window::Window() {
@@ -544,6 +548,16 @@ void Window::SetOpacity(float opacity) {
 float Window::GetOpacity() const {
   // GDK doesn't provide a direct way to get opacity
   return 1.0f;  // Default assumption
+}
+
+void Window::SetVisualEffect(VisualEffect effect) {
+  pimpl_->visual_effect_ = effect;
+  // TODO: Implement background blur for Linux (GTK/GDK)
+  // This typically requires compositor support or specific GTK CSS
+}
+
+VisualEffect Window::GetVisualEffect() const {
+  return pimpl_->visual_effect_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {

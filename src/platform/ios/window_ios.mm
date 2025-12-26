@@ -9,8 +9,9 @@ namespace nativeapi {
 // Private implementation class
 class Window::Impl {
  public:
-  Impl(UIWindow* window) : ui_window_(window) {}
+  Impl(UIWindow* window) : ui_window_(window), visual_effect_(VisualEffect::None) {}
   UIWindow* ui_window_;
+  VisualEffect visual_effect_;
 };
 
 Window::Window() : pimpl_(std::make_unique<Impl>(nil)) {}
@@ -366,6 +367,15 @@ void Window::SetOpacity(float opacity) {
 
 float Window::GetOpacity() const {
   return pimpl_->ui_window_ ? pimpl_->ui_window_.alpha : 1.0f;
+}
+
+void Window::SetVisualEffect(VisualEffect effect) {
+  pimpl_->visual_effect_ = effect;
+  NSLog(@"SetVisualEffect not supported on iOS");
+}
+
+VisualEffect Window::GetVisualEffect() const {
+  return pimpl_->visual_effect_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {

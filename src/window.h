@@ -43,6 +43,38 @@ enum class TitleBarStyle {
 };
 
 /**
+ * @brief Visual effect styles for window background.
+ *
+ * Defines blur or material effects applied to the window background.
+ * These effects typically provide a translucent or "frosted glass" appearance.
+ */
+enum class VisualEffect {
+  /** No visual effect. Standard solid background. */
+  None,
+
+  /**
+   * Standard background blur.
+   * - Windows: Standard blur (Blur behind)
+   * - macOS: Default vibrancy effect
+   */
+  Blur,
+
+  /**
+   * Enhanced translucent blur effect.
+   * - Windows: Acrylic effect
+   * - macOS: Thick vibrancy
+   */
+  Acrylic,
+
+  /**
+   * Material effect that samples the desktop wallpaper.
+   * - Windows: Mica effect (Windows 11+)
+   * - macOS: WindowBackground vibrancy
+   */
+  Mica
+};
+
+/**
  * @class Window
  * @brief Cross-platform window abstraction class.
  *
@@ -576,6 +608,22 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return float Current opacity value between 0.0 and 1.0
    */
   float GetOpacity() const;
+
+  /**
+   * @brief Sets the visual effect (blur/vibrancy) for the window background.
+   *
+   * Allows creating translucent windows with various platform-specific effects.
+   *
+   * @param effect The visual effect to apply
+   */
+  void SetVisualEffect(VisualEffect effect);
+
+  /**
+   * @brief Gets the current visual effect applied to the window.
+   *
+   * @return VisualEffect The current visual effect
+   */
+  VisualEffect GetVisualEffect() const;
 
   /**
    * @brief Sets whether the window appears on all virtual desktops/workspaces.

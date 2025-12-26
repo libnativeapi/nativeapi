@@ -18,10 +18,16 @@ namespace nativeapi {
 class Window::Impl {
  public:
   Impl(WindowId id, NSWindow* window)
-      : id_(id), ns_window_(window), title_bar_style_(TitleBarStyle::Normal) {}
+      : id_(id),
+        ns_window_(window),
+        title_bar_style_(TitleBarStyle::Normal),
+        visual_effect_(VisualEffect::None),
+        visual_effect_view_(nil) {}
   WindowId id_;
   NSWindow* ns_window_;
   TitleBarStyle title_bar_style_;
+  VisualEffect visual_effect_;
+  NSVisualEffectView* visual_effect_view_;
 };
 
 Window::Window() : Window(nullptr) {}
@@ -412,6 +418,55 @@ void Window::SetOpacity(float opacity) {
 
 float Window::GetOpacity() const {
   return [pimpl_->ns_window_ alphaValue];
+}
+
+void Window::SetVisualEffect(VisualEffect effect) {
+  if (pimpl_->visual_effect_ == effect)
+    return;
+
+  pimpl_->visual_effect_ = effect;
+  NSWindow* window = pimpl_->ns_window_;
+
+  if (effect == VisualEffect::None) {
+    if (pimpl_->visual_effect_view_) {
+      [pimpl_->visual_effect_view_ removeFromSuperview];
+      pimpl_->visual_effect_view_ = nil;
+    }
+    [window setOpaque:YES];
+    [window setBackgroundColor:[NSColor windowBackgroundColor]];
+    return;
+  }
+
+  if (!pimpl_->visual_effect_view_) {
+    NSView* contentView = [window contentView];
+    pimpl_->visual_effect_view_ = [[NSVisualEffectView alloc] initWithFrame:[contentView bounds]];
+    [pimpl_->visual_effect_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [pimpl_->visual_effect_view_ setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [contentView addSubview:pimpl_->visual_effect_view_ positioned:NSWindowBelow relativeTo:nil];
+  }
+
+  [window setOpaque:NO];
+  [window setBackgroundColor:[NSColor clearColor]];
+
+  switch (effect) {
+    case VisualEffect::Blur:
+      [pimpl_->visual_effect_view_ setMaterial:NSVisualEffectMaterialSidebar];
+      break;
+    case VisualEffect::Acrylic:
+      [pimpl_->visual_effect_view_ setMaterial:NSVisualEffectMaterialUnderWindowBackground];
+      break;
+    case VisualEffect::Mica:
+      [pimpl_->visual_effect_view_ setMaterial:NSVisualEffectMaterialWindowBackground];
+      break;
+    default:
+      break;
+  }
+
+  [pimpl_->visual_effect_view_ setState:NSVisualEffectStateActive];
+}
+
+VisualEffect Window::GetVisualEffect() const {
+  return pimpl_->visual_effect_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {

@@ -22,10 +22,14 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 class Window::Impl {
  public:
   Impl(HWND hwnd, WindowId id)
-      : hwnd_(hwnd), window_id_(id), title_bar_style_(TitleBarStyle::Normal) {}
+      : hwnd_(hwnd),
+        window_id_(id),
+        title_bar_style_(TitleBarStyle::Normal),
+        visual_effect_(VisualEffect::None) {}
   HWND hwnd_;
   WindowId window_id_;
   TitleBarStyle title_bar_style_;
+  VisualEffect visual_effect_;
 };
 
 // Custom window procedure to handle window messages
@@ -719,6 +723,36 @@ float Window::GetOpacity() const {
     }
   }
   return 1.0f;
+}
+
+void Window::SetVisualEffect(VisualEffect effect) {
+  if (!pimpl_->hwnd_ || pimpl_->visual_effect_ == effect)
+    return;
+
+  pimpl_->visual_effect_ = effect;
+
+  // DWM_SYSTEMBACKDROP_TYPE is available in Windows 11 Build 22621+
+  // DWMWA_SYSTEMBACKDROP_TYPE = 38
+  int backdrop_type = 1;  // DWMSBT_NONE
+
+  switch (effect) {
+    case VisualEffect::None:
+      backdrop_type = 1;  // DWMSBT_NONE
+      break;
+    case VisualEffect::Blur:
+    case VisualEffect::Acrylic:
+      backdrop_type = 3;  // DWMSBT_TRANSIENTWINDOW (Acrylic)
+      break;
+    case VisualEffect::Mica:
+      backdrop_type = 2;  // DWMSBT_MAINWINDOW (Mica)
+      break;
+  }
+
+  DwmSetWindowAttribute(pimpl_->hwnd_, 38, &backdrop_type, sizeof(backdrop_type));
+}
+
+VisualEffect Window::GetVisualEffect() const {
+  return pimpl_->visual_effect_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
