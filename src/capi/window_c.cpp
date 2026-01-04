@@ -212,7 +212,7 @@ void native_window_set_bounds(native_window_t window, native_rectangle_t bounds)
   if (!window)
     return;
   auto* win = static_cast<nativeapi::Window*>(window);
-  Rectangle rect = {bounds.x, bounds.y, bounds.height, bounds.width};
+  Rectangle rect = {bounds.x, bounds.y, bounds.width, bounds.height};
   win->SetBounds(rect);
 }
 
