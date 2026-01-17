@@ -54,6 +54,7 @@ class Window::Impl {
   GdkWindow* gdk_window_;
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
+  Color background_color_;
 };
 
 Window::Window() {
@@ -565,6 +566,9 @@ void Window::SetBackgroundColor(const Color& color) {
   if (!pimpl_->widget_)
     return;
 
+  // Store the color
+  pimpl_->background_color_ = color;
+
   // Create CSS provider for background color
   GtkCssProvider* provider = gtk_css_provider_new();
   
@@ -589,17 +593,9 @@ Color Window::GetBackgroundColor() const {
   if (!pimpl_->widget_)
     return Color::White;
   
-  GtkStyleContext* context = gtk_widget_get_style_context(pimpl_->widget_);
-  GdkRGBA rgba;
-  
-  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &rgba);
-  
-  return Color::FromRGBA(
-    static_cast<unsigned char>(rgba.red * 255),
-    static_cast<unsigned char>(rgba.green * 255),
-    static_cast<unsigned char>(rgba.blue * 255),
-    static_cast<unsigned char>(rgba.alpha * 255)
-  );
+  // Return the stored background color
+  // Since we set it via CSS, we track it ourselves to avoid using deprecated APIs
+  return pimpl_->background_color_;
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
