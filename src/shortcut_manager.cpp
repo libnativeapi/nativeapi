@@ -4,66 +4,10 @@
 
 namespace nativeapi {
 
-// Forward declaration of platform-specific implementation
-class ShortcutManager::Impl {
- public:
-  explicit Impl(ShortcutManager* manager) : manager_(manager) {}
-
-  ~Impl() = default;
-
-  // Platform-specific methods to be implemented
-  bool IsSupported() {
-    // TODO: Implement platform-specific support check
-    // Windows: Always supported
-    // macOS: Check for accessibility permissions
-    // Linux: Check for X11/Wayland support
-    return true;
-  }
-
-  bool RegisterShortcut(const std::shared_ptr<Shortcut>& shortcut) {
-    // TODO: Implement platform-specific shortcut registration
-    // Windows: RegisterHotKey()
-    // macOS: CGEventTapCreate() or Carbon HotKey API
-    // Linux: XGrabKey() or similar
-    return true;
-  }
-
-  bool UnregisterShortcut(const std::shared_ptr<Shortcut>& shortcut) {
-    // TODO: Implement platform-specific shortcut unregistration
-    // Windows: UnregisterHotKey()
-    // macOS: Remove event tap or Carbon HotKey
-    // Linux: XUngrabKey() or similar
-    return true;
-  }
-
-  void SetupEventMonitoring() {
-    // TODO: Implement platform-specific event monitoring setup
-    // This should start listening for registered shortcuts
-  }
-
-  void CleanupEventMonitoring() {
-    // TODO: Implement platform-specific event monitoring cleanup
-    // This should stop listening for shortcuts
-  }
-
- private:
-  ShortcutManager* manager_;
-};
-
 // Singleton instance
 ShortcutManager& ShortcutManager::GetInstance() {
   static ShortcutManager instance;
   return instance;
-}
-
-// Private constructor
-ShortcutManager::ShortcutManager()
-    : pimpl_(std::make_unique<Impl>(this)), next_shortcut_id_(1), enabled_(true) {}
-
-// Destructor
-ShortcutManager::~ShortcutManager() {
-  // Unregister all shortcuts before cleanup
-  UnregisterAll();
 }
 
 // Check if global shortcuts are supported
@@ -82,7 +26,7 @@ std::shared_ptr<Shortcut> ShortcutManager::Register(const std::string& accelerat
 
 // Register a new keyboard shortcut with options
 std::shared_ptr<Shortcut> ShortcutManager::Register(const ShortcutOptions& options) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
 
   // Validate accelerator format
   if (!IsValidAccelerator(options.accelerator)) {
@@ -126,7 +70,7 @@ std::shared_ptr<Shortcut> ShortcutManager::Register(const ShortcutOptions& optio
 
 // Unregister a shortcut by ID
 bool ShortcutManager::Unregister(ShortcutId id) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
 
   auto it = shortcuts_by_id_.find(id);
   if (it == shortcuts_by_id_.end()) {
@@ -151,7 +95,7 @@ bool ShortcutManager::Unregister(ShortcutId id) {
 
 // Unregister a shortcut by accelerator
 bool ShortcutManager::Unregister(const std::string& accelerator) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
 
   auto it = shortcuts_by_accelerator_.find(accelerator);
   if (it == shortcuts_by_accelerator_.end()) {
@@ -160,17 +104,16 @@ bool ShortcutManager::Unregister(const std::string& accelerator) {
 
   ShortcutId id = it->second->GetId();
 
-  // Unlock and call the ID-based unregister (which will re-lock)
-  mutex_.unlock();
+  lock.unlock();
   bool result = Unregister(id);
-  mutex_.lock();
+  lock.lock();
 
   return result;
 }
 
 // Unregister all shortcuts
 int ShortcutManager::UnregisterAll() {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
 
   int count = 0;
 
@@ -181,14 +124,13 @@ int ShortcutManager::UnregisterAll() {
     ids.push_back(id);
   }
 
-  // Unregister each shortcut
-  mutex_.unlock();
+  lock.unlock();
   for (ShortcutId id : ids) {
     if (Unregister(id)) {
       count++;
     }
   }
-  mutex_.lock();
+  lock.lock();
 
   return count;
 }
@@ -272,6 +214,10 @@ void ShortcutManager::SetEnabled(bool enabled) {
 bool ShortcutManager::IsEnabled() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return enabled_;
+}
+
+void ShortcutManager::EmitShortcutActivated(ShortcutId id, const std::string& accelerator) {
+  EmitAsync<ShortcutActivatedEvent>(id, accelerator);
 }
 
 // Start event listening (called when first listener is added)

@@ -329,11 +329,31 @@ class ShortcutManager : public EventEmitter<ShortcutEvent> {
    */
   bool IsEnabled() const;
 
+  /**
+   * @brief Emit a shortcut activated event (internal use).
+   *
+   * Platform implementations should call this when a registered shortcut fires.
+   */
+  void EmitShortcutActivated(ShortcutId id, const std::string& accelerator);
+
   // Prevent copy construction and assignment to maintain singleton property
   ShortcutManager(const ShortcutManager&) = delete;
   ShortcutManager& operator=(const ShortcutManager&) = delete;
   ShortcutManager(ShortcutManager&&) = delete;
   ShortcutManager& operator=(ShortcutManager&&) = delete;
+
+  /**
+   * @brief Private implementation class using the PIMPL idiom.
+   */
+  class Impl {
+   public:
+    virtual ~Impl() = default;
+    virtual bool IsSupported() = 0;
+    virtual bool RegisterShortcut(const std::shared_ptr<Shortcut>& shortcut) = 0;
+    virtual bool UnregisterShortcut(const std::shared_ptr<Shortcut>& shortcut) = 0;
+    virtual void SetupEventMonitoring() = 0;
+    virtual void CleanupEventMonitoring() = 0;
+  };
 
  protected:
   /**
@@ -359,11 +379,6 @@ class ShortcutManager : public EventEmitter<ShortcutEvent> {
    * Initializes the ShortcutManager instance and sets up initial state.
    */
   ShortcutManager();
-
-  /**
-   * @brief Private implementation class using the PIMPL idiom.
-   */
-  class Impl;
 
   /**
    * @brief Pointer to the private implementation instance.
