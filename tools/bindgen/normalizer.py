@@ -12,6 +12,7 @@ from .ir.model import (
     IREnum,
     IREnumValue,
     IRField,
+    IRFile,
     IRFunction,
     IRMethod,
     IRModule,
@@ -47,6 +48,37 @@ def _is_excluded(cursor, exclude_dirs: set[str]) -> bool:
         return False
     path = Path(str(cursor.location.file)).resolve()
     return any(part in exclude_dirs for part in path.parts)
+
+
+def _find_project_root(start: Path) -> Path:
+    for base in [start] + list(start.parents):
+        if (base / "src").is_dir():
+            return base
+    return start
+
+
+def _cursor_path(cursor) -> Optional[str]:
+    if cursor.location.file is None:
+        return None
+    path = Path(str(cursor.location.file)).resolve()
+    root = _find_project_root(Path.cwd().resolve())
+    rel_path = None
+    try:
+        rel_path = path.relative_to(root)
+    except ValueError:
+        rel_path = None
+
+    if rel_path is not None:
+        rel = str(rel_path).replace("\\", "/")
+        if rel.startswith("src/"):
+            return rel
+
+    parts = path.parts
+    if "src" in parts:
+        idx = parts.index("src")
+        rel = Path(*parts[idx:]).as_posix()
+        return rel
+    return path.as_posix()
 
 
 def _type_from_clang(tp) -> IRType:
@@ -90,6 +122,14 @@ def _type_from_clang(tp) -> IRType:
     if kind == cindex.TypeKind.DOUBLE:
         return IRType(kind="float64", qualifiers=qualifiers)
 
+    if kind == cindex.TypeKind.LVALUEREFERENCE:
+        pointee = _type_from_clang(tp.get_pointee())
+        return IRType(kind="reference", to=pointee, qualifiers=qualifiers)
+
+    if kind == cindex.TypeKind.RVALUEREFERENCE:
+        pointee = _type_from_clang(tp.get_pointee())
+        return IRType(kind="rvalue_reference", to=pointee, qualifiers=qualifiers)
+
     if kind == cindex.TypeKind.POINTER:
         pointee = _type_from_clang(tp.get_pointee())
         if tp.get_pointee().kind == cindex.TypeKind.CHAR_S:
@@ -107,6 +147,12 @@ def _type_from_clang(tp) -> IRType:
 
     if kind == cindex.TypeKind.ENUM:
         return IRType(kind="enum", name=tp.spelling, qualifiers=qualifiers)
+
+    if kind in (cindex.TypeKind.ELABORATED, cindex.TypeKind.UNEXPOSED):
+        canonical = tp.get_canonical()
+        if canonical.kind != kind:
+            return _type_from_clang(canonical)
+        return IRType(kind="unknown", name=tp.spelling, qualifiers=qualifiers)
 
     if kind == cindex.TypeKind.TYPEDEF:
         if tp.spelling == "size_t":
@@ -149,9 +195,20 @@ def _struct_from_cursor(cursor, name_override: Optional[str] = None) -> IRStruct
     for field in cursor.get_children():
         if field.kind != cindex.CursorKind.FIELD_DECL:
             continue
-        fields.append(IRField(name=field.spelling, type=_type_from_clang(field.type)))
+        fields.append(
+            IRField(
+                name=field.spelling,
+                type=_type_from_clang(field.type),
+                source_path=_cursor_path(field),
+            )
+        )
     name = name_override or cursor.spelling
-    return IRStruct(name=name, fields=fields, qualified_name=_qualified_name(cursor))
+    return IRStruct(
+        name=name,
+        fields=fields,
+        qualified_name=_qualified_name(cursor),
+        source_path=_cursor_path(cursor),
+    )
 
 
 def _enum_from_cursor(cursor, name_override: Optional[str] = None) -> IREnum:
@@ -168,10 +225,11 @@ def _enum_from_cursor(cursor, name_override: Optional[str] = None) -> IREnum:
         values=values,
         scoped=cursor.is_scoped_enum(),
         qualified_name=_qualified_name(cursor),
+        source_path=_cursor_path(cursor),
     )
 
 
-def _method_from_cursor(cursor) -> IRMethod:
+def _method_from_cursor(cursor, kind: str = "method") -> IRMethod:
     params = []
     for arg in cursor.get_arguments():
         params.append(IRParam(name=arg.spelling, type=_type_from_clang(arg.type)))
@@ -183,12 +241,14 @@ def _method_from_cursor(cursor) -> IRMethod:
         name=cursor.spelling,
         return_type=_type_from_clang(cursor.result_type),
         params=params,
+        kind=kind,
         static=cursor.is_static_method(),
         const=cursor.is_const_method(),
         access=str(cursor.access_specifier).split(".")[-1].lower()
         if cursor.access_specifier
         else None,
         variadic=variadic,
+        source_path=_cursor_path(cursor),
     )
 
 
@@ -196,7 +256,18 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
     from clang import cindex  # type: ignore
 
     allow, deny, exclude = _compile_filters(cfg)
-    module = IRModule(headers=cfg.entry_headers)
+    module = IRModule()
+
+    def _bucket_for(path: Optional[str]) -> IRFile:
+        key = path or "unknown"
+        bucket = module.files.get(key)
+        if bucket is None:
+            bucket = IRFile()
+            module.files[key] = bucket
+        return bucket
+
+    def _is_operator(name: str) -> bool:
+        return name.startswith("operator")
 
     def _is_cpp_record(node) -> bool:
         for child in node.get_children():
@@ -232,24 +303,74 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 return
             if _is_cpp_record(cursor):
                 methods = []
+                fields = []
+                bases = []
                 for child in cursor.get_children():
-                    if child.kind == cindex.CursorKind.CXX_METHOD:
+                    if child.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
+                        base = child.type.spelling
+                        if base:
+                            bases.append(base)
+                        continue
+                    if child.kind == cindex.CursorKind.FIELD_DECL:
                         if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
                             continue
                         if not child.spelling or not _passes_name_filters(
                             child.spelling, allow, deny
                         ):
                             continue
+                        fields.append(
+                            IRField(
+                                name=child.spelling,
+                                type=_type_from_clang(child.type),
+                                source_path=_cursor_path(child),
+                            )
+                        )
+                        continue
+                    if child.kind == cindex.CursorKind.CXX_METHOD:
+                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                            continue
+                        if (
+                            not child.spelling
+                            or _is_operator(child.spelling)
+                            or not _passes_name_filters(child.spelling, allow, deny)
+                        ):
+                            continue
                         methods.append(_method_from_cursor(child))
-                module.classes.append(
+                        continue
+                    if child.kind == cindex.CursorKind.CONSTRUCTOR:
+                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                            continue
+                        if not _passes_name_filters(name, allow, deny):
+                            continue
+                        ctor = _method_from_cursor(child, kind="constructor")
+                        ctor.name = name
+                        ctor.return_type = IRType(kind="void")
+                        methods.append(ctor)
+                        continue
+                    if child.kind == cindex.CursorKind.DESTRUCTOR:
+                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                            continue
+                        if not _passes_name_filters(name, allow, deny):
+                            continue
+                        dtor = _method_from_cursor(child, kind="destructor")
+                        dtor.name = f"~{name}"
+                        dtor.return_type = IRType(kind="void")
+                        methods.append(dtor)
+                        continue
+                bucket = _bucket_for(_cursor_path(cursor))
+                bucket.classes.append(
                     IRClass(
                         name=name,
                         qualified_name=_qualified_name(cursor),
+                        fields=fields,
+                        bases=bases,
                         methods=methods,
+                        source_path=_cursor_path(cursor),
                     )
                 )
                 return
-            module.types.append(_struct_from_cursor(cursor))
+            bucket = _bucket_for(_cursor_path(cursor))
+            bucket.types.append(_struct_from_cursor(cursor))
             return
 
         if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
@@ -257,20 +378,69 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             if not name or not _passes_name_filters(name, allow, deny):
                 return
             methods = []
+            fields = []
+            bases = []
             for child in cursor.get_children():
-                if child.kind == cindex.CursorKind.CXX_METHOD:
+                if child.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
+                    base = child.type.spelling
+                    if base:
+                        bases.append(base)
+                    continue
+                if child.kind == cindex.CursorKind.FIELD_DECL:
                     if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
                         continue
                     if not child.spelling or not _passes_name_filters(
                         child.spelling, allow, deny
                     ):
                         continue
+                    fields.append(
+                        IRField(
+                            name=child.spelling,
+                            type=_type_from_clang(child.type),
+                            source_path=_cursor_path(child),
+                        )
+                    )
+                    continue
+                if child.kind == cindex.CursorKind.CXX_METHOD:
+                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                        continue
+                    if (
+                        not child.spelling
+                        or _is_operator(child.spelling)
+                        or not _passes_name_filters(child.spelling, allow, deny)
+                    ):
+                        continue
                     methods.append(_method_from_cursor(child))
-            module.classes.append(
+                    continue
+                if child.kind == cindex.CursorKind.CONSTRUCTOR:
+                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                        continue
+                    if not _passes_name_filters(name, allow, deny):
+                        continue
+                    ctor = _method_from_cursor(child, kind="constructor")
+                    ctor.name = name
+                    ctor.return_type = IRType(kind="void")
+                    methods.append(ctor)
+                    continue
+                if child.kind == cindex.CursorKind.DESTRUCTOR:
+                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                        continue
+                    if not _passes_name_filters(name, allow, deny):
+                        continue
+                    dtor = _method_from_cursor(child, kind="destructor")
+                    dtor.name = f"~{name}"
+                    dtor.return_type = IRType(kind="void")
+                    methods.append(dtor)
+                    continue
+            bucket = _bucket_for(_cursor_path(cursor))
+            bucket.classes.append(
                 IRClass(
                     name=name,
                     qualified_name=_qualified_name(cursor),
+                    fields=fields,
+                    bases=bases,
                     methods=methods,
+                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -279,12 +449,15 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
                 return
-            module.enums.append(_enum_from_cursor(cursor))
+            bucket = _bucket_for(_cursor_path(cursor))
+            bucket.enums.append(_enum_from_cursor(cursor))
             return
 
         if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
+                return
+            if _is_operator(name):
                 return
             params = []
             for arg in cursor.get_arguments():
@@ -295,13 +468,15 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             if hasattr(cursor, "type") and cursor.type is not None:
                 if hasattr(cursor.type, "is_function_variadic"):
                     variadic = cursor.type.is_function_variadic()
-            module.functions.append(
+            bucket = _bucket_for(_cursor_path(cursor))
+            bucket.functions.append(
                 IRFunction(
                     name=name,
                     qualified_name=_qualified_name(cursor),
                     return_type=_type_from_clang(cursor.result_type),
                     params=params,
                     variadic=variadic,
+                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -318,15 +493,20 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 and decl.is_definition()
             ):
                 if not decl.spelling:
-                    module.types.append(_struct_from_cursor(decl, name_override=name))
+                    bucket = _bucket_for(_cursor_path(decl))
+                    bucket.types.append(_struct_from_cursor(decl, name_override=name))
                     return
             if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
                 if not decl.spelling:
-                    module.enums.append(_enum_from_cursor(decl, name_override=name))
+                    bucket = _bucket_for(_cursor_path(decl))
+                    bucket.enums.append(_enum_from_cursor(decl, name_override=name))
                     return
-            module.aliases.append(
+            bucket = _bucket_for(_cursor_path(cursor))
+            bucket.aliases.append(
                 IRAlias(
-                    name=name, target=_type_from_clang(cursor.underlying_typedef_type)
+                    name=name,
+                    target=_type_from_clang(cursor.underlying_typedef_type),
+                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -342,20 +522,27 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 parsed = _parse_macro_value(value)
                 if parsed is None:
                     return
-                module.constants.append(
-                    IRConstant(name=name, type=parsed[0], value=parsed[1])
+                bucket = _bucket_for(_cursor_path(cursor))
+                bucket.constants.append(
+                    IRConstant(
+                        name=name,
+                        type=parsed[0],
+                        value=parsed[1],
+                        source_path=_cursor_path(cursor),
+                    )
                 )
             return
 
     for cursor in tu.cursor.get_children():
         _visit(cursor)
 
-    module.types.sort(key=lambda t: t.name)
-    module.enums.sort(key=lambda e: e.name)
-    module.functions.sort(key=lambda f: f.name)
-    module.classes.sort(key=lambda c: c.name)
-    module.constants.sort(key=lambda c: c.name)
-    module.aliases.sort(key=lambda a: a.name)
+    for bucket in module.files.values():
+        bucket.types.sort(key=lambda t: t.name)
+        bucket.enums.sort(key=lambda e: e.name)
+        bucket.functions.sort(key=lambda f: f.name)
+        bucket.classes.sort(key=lambda c: c.name)
+        bucket.constants.sort(key=lambda c: c.name)
+        bucket.aliases.sort(key=lambda a: a.name)
     return module
 
 

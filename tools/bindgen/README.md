@@ -102,44 +102,68 @@ C++ Headers
 
 ### 模块（IRModule）
 
-- headers
-- types
-- functions
-- classes
-- constants
-- aliases
+- IR 输出为 `path -> IRFile` 的 map（不再包含 `headers` 节点）
+- `IRFile` 结构包含：
+  - types
+  - enums
+  - functions
+  - classes
+  - constants
+  - aliases
+- `source_path`：结构体/枚举/函数/别名/常量/类/方法/字段所在头文件路径（如 `src/foundation/color.h`）
 
 ### IR JSON 示例（最小）
 
 ```json
 {
-  "headers": ["include/nativeapi.h"],
-  "types": [
-    {
-      "kind": "struct",
-      "name": "Point",
-      "fields": [
-        {"name": "x", "type": {"kind": "float32"}},
-        {"name": "y", "type": {"kind": "float32"}}
-      ]
-    }
-  ],
-  "functions": [
-    {
-      "name": "na_distance",
-      "return_type": {"kind": "float32"},
-      "params": [
-        {"name": "a", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false},
-        {"name": "b", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false}
-      ]
-    }
-  ],
-  "constants": [
-    {"name": "NA_OK", "type": {"kind": "int32"}, "value": 0}
-  ],
-  "aliases": [
-    {"name": "NAHandle", "target": {"kind": "uintptr"}}
-  ]
+  "src/foundation/geometry.h": {
+    "types": [
+      {
+        "kind": "struct",
+        "name": "Point",
+        "source_path": "src/foundation/geometry.h",
+        "fields": [
+          {"name": "x", "type": {"kind": "float32"}, "source_path": "src/foundation/geometry.h"},
+          {"name": "y", "type": {"kind": "float32"}, "source_path": "src/foundation/geometry.h"}
+        ]
+      }
+    ],
+    "functions": [
+      {
+        "name": "na_distance",
+        "source_path": "src/foundation/geometry.h",
+        "return_type": {"kind": "float32"},
+        "params": [
+          {"name": "a", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false},
+          {"name": "b", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false}
+        ]
+      }
+    ],
+    "enums": [],
+    "classes": [],
+    "constants": [],
+    "aliases": []
+  },
+  "src/foundation/error.h": {
+    "types": [],
+    "enums": [],
+    "functions": [],
+    "classes": [],
+    "constants": [
+      {"name": "NA_OK", "type": {"kind": "int32"}, "value": 0, "source_path": "src/foundation/error.h"}
+    ],
+    "aliases": []
+  },
+  "src/foundation/types.h": {
+    "types": [],
+    "enums": [],
+    "functions": [],
+    "classes": [],
+    "constants": [],
+    "aliases": [
+      {"name": "NAHandle", "target": {"kind": "uintptr"}, "source_path": "src/foundation/types.h"}
+    ]
+  }
 }
 ```
 
@@ -207,11 +231,13 @@ render_to_files(templates, context, out_dir)
 
 **模板上下文约定（建议）**
 
-- `module`: 当前模块信息（headers, namespaces）
-- `types`: 结构体/枚举/别名列表（已排序）
-- `functions`: 函数列表（已过滤）
+- `module`: 当前模块信息（含 `files`）
+- `files`: path -> IRFile 的 map
+- `file_paths`: 排序后的文件路径列表
+- `types`: 结构体/枚举/别名列表（已扁平化并排序）
+- `functions`: 函数列表（已过滤并扁平化）
 - `classes`: C++ 类/struct 列表（public methods）
-- `constants`: 常量列表
+- `constants`: 常量列表（扁平化）
 - `mapping`: 语言映射配置（types/conventions/naming）
 
 **优点**

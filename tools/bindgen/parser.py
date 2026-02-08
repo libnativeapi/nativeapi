@@ -105,7 +105,12 @@ def _discover_entry_headers(exclude_dirs: List[str] | None = None) -> List[str]:
             continue
         headers.append(path)
 
-    return [str(p) for p in sorted(headers)]
+    def _sort_key(p: Path) -> tuple[int, str]:
+        # Put subdirectories (e.g., src/foundation/...) before files directly under src/.
+        is_root_file = 1 if p.parent == src_dir else 0
+        return (is_root_file, str(p))
+
+    return [str(p) for p in sorted(headers, key=_sort_key)]
 
 
 def _default_include_paths() -> List[str]:

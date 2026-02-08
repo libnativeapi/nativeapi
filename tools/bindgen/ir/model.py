@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -19,6 +19,7 @@ class IRType:
 class IRField:
     name: str
     type: IRType
+    source_path: Optional[str] = None
 
 
 @dataclass
@@ -26,6 +27,7 @@ class IRStruct:
     name: str
     fields: List[IRField]
     qualified_name: Optional[str] = None
+    source_path: Optional[str] = None
 
 
 @dataclass
@@ -40,12 +42,14 @@ class IREnum:
     values: List[IREnumValue]
     scoped: bool = False
     qualified_name: Optional[str] = None
+    source_path: Optional[str] = None
 
 
 @dataclass
 class IRAlias:
     name: str
     target: IRType
+    source_path: Optional[str] = None
 
 
 @dataclass
@@ -64,6 +68,7 @@ class IRFunction:
     callconv: Optional[str] = None
     variadic: bool = False
     qualified_name: Optional[str] = None
+    source_path: Optional[str] = None
 
 
 @dataclass
@@ -71,17 +76,22 @@ class IRMethod:
     name: str
     return_type: IRType
     params: List[IRParam]
+    kind: str = "method"
     static: bool = False
     const: bool = False
     access: Optional[str] = None
     variadic: bool = False
+    source_path: Optional[str] = None
 
 
 @dataclass
 class IRClass:
     name: str
+    fields: List[IRField] = field(default_factory=list)
     methods: List[IRMethod] = field(default_factory=list)
+    bases: List[str] = field(default_factory=list)
     qualified_name: Optional[str] = None
+    source_path: Optional[str] = None
 
 
 @dataclass
@@ -89,14 +99,19 @@ class IRConstant:
     name: str
     type: IRType
     value: int | float | str
+    source_path: Optional[str] = None
 
 
 @dataclass
-class IRModule:
-    headers: List[str]
+class IRFile:
     types: List[IRStruct] = field(default_factory=list)
     enums: List[IREnum] = field(default_factory=list)
     functions: List[IRFunction] = field(default_factory=list)
     classes: List[IRClass] = field(default_factory=list)
     constants: List[IRConstant] = field(default_factory=list)
     aliases: List[IRAlias] = field(default_factory=list)
+
+
+@dataclass
+class IRModule:
+    files: Dict[str, IRFile] = field(default_factory=dict)
