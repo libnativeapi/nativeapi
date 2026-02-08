@@ -1,0 +1,30 @@
+language: dart
+types:
+  void: Void
+  bool: Uint8
+  int8: Int8
+  uint8: Uint8
+  int16: Int16
+  uint16: Uint16
+  int32: Int32
+  uint32: Uint32
+  int64: Int64
+  uint64: Uint64
+  float32: Float
+  float64: Double
+  intptr: IntPtr
+  uintptr: UintPtr
+  size_t: UintPtr
+  ssize_t: IntPtr
+  cstring: Pointer<Utf8>
+annotations:
+  int8: Int8
+  uint8: Uint8
+  int16: Int16
+  uint16: Uint16
+  int32: Int32
+  uint32: Uint32
+  int64: Int64
+  uint64: Uint64
+  float32: Float
+  float64: Double
