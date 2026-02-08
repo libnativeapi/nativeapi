@@ -1,14 +1,14 @@
 {#- Partial template for rendering a single function -#}
-{#- Expected context: item (IRFunction) -#}
+{#- Expected context: item (IRFunction), type_mapping (TypeMappingConfig) -#}
 {%- macro render_function(item) -%}
 // Function: {{ item.name }}
 // Source: {{ item.source_path }}
 fn {{ item.name }}(
 {%- for param in item.params %}
-    {{ param.name }}: {{ param.type.kind }}{% if param.type.name %}<{{ param.type.name }}>{% endif %}{% if param.nullable %} | null{% endif %}{% if not loop.last %},{% endif %}
+    {{ param.name }}: {{ param.type | map_type }}{% if param.nullable %} | null{% endif %}{% if not loop.last %},{% endif %}
 
 {%- endfor %}
-) -> {{ item.return_type.kind }}{% if item.return_type.name %}<{{ item.return_type.name }}>{% endif %};
+) -> {{ item.return_type | map_type }};
 {%- endmacro -%}
 
 {#- Render function if item is provided directly in context -#}

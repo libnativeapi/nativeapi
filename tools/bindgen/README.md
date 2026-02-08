@@ -238,15 +238,133 @@ tools/bindgen/
 
 **语言映射配置（示例）**
 
-语言相关配置统一写在 `config.yaml` 的 `mapping` 字段中：
+语言相关配置统一写在 `config.yaml` 的 `mapping` 字段中，包括类型映射：
 
 ```yaml
 mapping:
   language: example
-  conventions:
+  
+  # 类型映射配置
+  types:
+    void: void
+    bool: bool
+    int: int
+    float: double
+    "void*": "Pointer<Void>"
+    "const char*": "Pointer<Utf8>"
+  
+  pointer_format: "Pointer<{inner}>"
+  void_pointer_type: "Pointer<Void>"
+  const_char_pointer_type: "Pointer<Utf8>"
+  
+  # 自定义选项（模板可访问）
+  options:
     enum_as_int: true
-  naming:
-    function: camel
+    naming_function: camel
+```
+
+**类型映射配置**
+
+类型映射配置直接写在 `mapping` 字段中，用于将 C/C++ 类型映射到目标语言类型。支持以下配置项：
+
+```yaml
+mapping:
+  language: dart
+  
+  # 直接类型名映射: C 类型名 -> 目标语言类型
+  types:
+    # 基本类型
+    void: void
+    bool: bool
+    int: int
+    float: double
+    double: double
+    
+    # 固定宽度整数
+    int8_t: int
+    int16_t: int
+    int32_t: int
+    int64_t: int
+    uint8_t: int
+    uint16_t: int
+    uint32_t: int
+    uint64_t: int
+    size_t: int
+    
+    # 指针类型快捷映射
+    "void*": "Pointer<Void>"
+    "char*": "Pointer<Utf8>"
+    "const char*": "Pointer<Utf8>"
+    
+    # 函数指针
+    function_pointer: "Pointer<NativeFunction>"
+  
+  # 指针类型格式，使用 {inner} 作为占位符
+  # 例如 Dart FFI: "Pointer<{inner}>"
+  pointer_format: "Pointer<{inner}>"
+  
+  # const 指针类型格式
+  const_pointer_format: "Pointer<{inner}>"
+  
+  # 数组类型格式，使用 {element} 和 {length} 作为占位符
+  array_format: "Array<{element}>"
+  
+  # 引用类型格式
+  reference_format: "{inner}"
+  
+  # 未找到映射时的默认类型（可选）
+  # default_type: dynamic
+  
+  # 未找到映射时是否保留原始类型名
+  passthrough_unknown: true
+  
+  # 映射后类型名的前缀/后缀（可选）
+  # type_prefix: ""
+  # type_suffix: ""
+  
+  # void* 的特殊映射（常用作不透明句柄）
+  void_pointer_type: "Pointer<Void>"
+  
+  # const char* 的特殊映射（常用作字符串）
+  const_char_pointer_type: "Pointer<Utf8>"
+```
+
+**类型映射过滤器**
+
+在模板中可使用以下过滤器处理类型映射：
+
+| 过滤器 | 说明 | 示例 |
+|--------|------|------|
+| `map_type` | 将 IRType 映射为目标语言类型字符串 | `{{ param.type \| map_type }}` |
+| `map_type_name` | 简单类型名查找映射 | `{{ "int" \| map_type_name }}` |
+| `format_type` | 自定义格式的类型映射 | `{{ type \| format_type(pointer_fmt="*{inner}") }}` |
+| `is_pointer_type` | 检查是否为指针类型 | `{% if type \| is_pointer_type %}` |
+| `is_array_type` | 检查是否为数组类型 | `{% if type \| is_array_type %}` |
+| `is_void_type` | 检查是否为 void 类型 | `{% if type \| is_void_type %}` |
+| `get_inner_type` | 获取指针/引用的内部类型 | `{{ type \| get_inner_type \| map_type }}` |
+| `get_element_type` | 获取数组的元素类型 | `{{ type \| get_element_type \| map_type }}` |
+
+**模板中使用类型映射示例**
+
+```jinja2
+{# 函数参数和返回值类型映射 #}
+fn {{ item.name }}(
+{%- for param in item.params %}
+    {{ param.name }}: {{ param.type | map_type }}{% if not loop.last %},{% endif %}
+{%- endfor %}
+) -> {{ item.return_type | map_type }};
+
+{# 结构体字段类型映射 #}
+struct {{ item.name }} {
+{%- for field in item.fields %}
+    {{ field.name }}: {{ field.type | map_type }};
+{%- endfor %}
+}
+
+{# 条件处理指针类型 #}
+{% if param.type | is_pointer_type %}
+// This is a pointer parameter
+{% endif %}
 ```
 
 **通用生成器伪代码**
@@ -268,7 +386,7 @@ render_to_files(templates, context, out_dir)
 - `functions`: 函数列表（已过滤并扁平化）
 - `classes`: C++ 类/struct 列表（public methods）
 - `constants`: 常量列表（扁平化）
-- `mapping`: 语言映射配置（types/conventions/naming）
+- `mapping`: 语言映射配置（MappingConfig 对象，包含 language、types、pointer_format 等）
 
 **按文件模板渲染规则**
 
@@ -377,6 +495,35 @@ PYTHONPATH=../.. python3 -m bindgen \
 - **宏复杂度高**：MVP 仅处理简单宏
 - **C++ 语义**：默认 `extern "C"` 入口
 - **跨平台 ABI**：需在生成器中区分平台（Windows/Linux/macOS）
+
+## 内置过滤器
+
+### 命名转换过滤器
+
+| 过滤器 | 说明 | 示例 |
+|--------|------|------|
+| `snake_case` | 转换为 snake_case | `{{ "MyClass" \| snake_case }}` → `my_class` |
+| `camel_case` | 转换为 camelCase | `{{ "my_function" \| camel_case }}` → `myFunction` |
+| `pascal_case` | 转换为 PascalCase | `{{ "my_class" \| pascal_case }}` → `MyClass` |
+| `screaming_snake_case` | 转换为 SCREAMING_SNAKE_CASE | `{{ "myConst" \| screaming_snake_case }}` → `MY_CONST` |
+| `kebab_case` | 转换为 kebab-case | `{{ "MyClass" \| kebab_case }}` → `my-class` |
+| `strip_prefix` | 移除前缀 | `{{ "na_init" \| strip_prefix("na_") }}` → `init` |
+| `strip_suffix` | 移除后缀 | `{{ "WindowHandle" \| strip_suffix("Handle") }}` → `Window` |
+| `add_prefix` | 添加前缀 | `{{ "Window" \| add_prefix("NA") }}` → `NAWindow` |
+| `add_suffix` | 添加后缀 | `{{ "Window" \| add_suffix("Impl") }}` → `WindowImpl` |
+
+### 类型映射过滤器
+
+| 过滤器 | 说明 | 示例 |
+|--------|------|------|
+| `map_type` | IRType 映射为目标类型 | `{{ param.type \| map_type }}` |
+| `map_type_name` | 类型名直接映射 | `{{ "int32_t" \| map_type_name }}` |
+| `format_type` | 自定义格式映射 | `{{ type \| format_type(pointer_fmt="*{inner}") }}` |
+| `is_pointer_type` | 是否指针类型 | `{% if type \| is_pointer_type %}` |
+| `is_array_type` | 是否数组类型 | `{% if type \| is_array_type %}` |
+| `is_void_type` | 是否 void 类型 | `{% if type \| is_void_type %}` |
+| `get_inner_type` | 获取指针内部类型 | `{{ type \| get_inner_type }}` |
+| `get_element_type` | 获取数组元素类型 | `{{ type \| get_element_type }}` |
 
 ## 下一步
 

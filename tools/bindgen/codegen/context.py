@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Dict
+from typing import Any, Dict
 
+from ..config import MappingConfig
 from ..ir.model import IRModule
 
 
-def build_context(module: IRModule, mapping: Dict) -> Dict:
+def build_context(module: IRModule, mapping: MappingConfig) -> Dict[str, Any]:
     files = module.files
     sorted_paths = sorted(files.keys())
     types = []
