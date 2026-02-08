@@ -46,14 +46,23 @@ def parse_headers(cfg: BindgenConfig):
     cindex = _load_clang()
     index = cindex.Index.create()
     args: List[str] = []
-    for path in cfg.include_paths:
+    include_paths = cfg.include_paths
+    if not include_paths:
+        include_paths = _default_include_paths()
+        cfg.include_paths = include_paths
+    for path in include_paths:
         args.append(f"-I{path}")
     args.extend(cfg.clang_flags)
     if not any(a == "-x" or a.startswith("-x") for a in args):
         args.extend(["-x", "c++"])
 
+    discovered = _discover_entry_headers()
+    if discovered:
+        cfg.entry_headers = discovered
     if not cfg.entry_headers:
-        raise ParseError("No entry_headers specified in config.")
+        raise ParseError(
+            "No headers discovered under src/. Add entry_headers or check project root."
+        )
 
     # Parse all headers into a single translation unit by including them in an ad-hoc file.
     header_includes = "\n".join([f'#include "{h}"' for h in cfg.entry_headers])
@@ -72,3 +81,33 @@ def parse_headers(cfg: BindgenConfig):
         ) from exc
 
     return tu
+
+
+def _find_project_root(start: Path) -> Path:
+    for base in [start] + list(start.parents):
+        if (base / "src").is_dir():
+            return base
+    return start
+
+
+def _discover_entry_headers() -> List[str]:
+    root = _find_project_root(Path.cwd().resolve())
+    src_dir = root / "src"
+    if not src_dir.is_dir():
+        return []
+
+    headers: List[Path] = []
+    for path in src_dir.rglob("*.h"):
+        if "platform" in path.parts:
+            continue
+        headers.append(path)
+
+    return [str(p) for p in sorted(headers)]
+
+
+def _default_include_paths() -> List[str]:
+    root = _find_project_root(Path.cwd().resolve())
+    src_dir = root / "src"
+    if src_dir.is_dir():
+        return [str(src_dir)]
+    return []

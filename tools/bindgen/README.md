@@ -1,6 +1,6 @@
 # Bindgen 设计文档（Python）
 
-本目录目标：使用 Python 实现一个面向 C++ Headers 的 bindgen，自动解析头文件并生成多语言绑定（Dart / Swift / Rust 等）。各语言 API **统一调用 C API**，再由 C API 调用 C++ 实现，确保 ABI 稳定与可移植性。
+本目录目标：使用 Python 实现一个面向 C++ Headers 的 bindgen，自动解析头文件并生成多语言绑定。各语言 API **统一调用 C API**，再由 C API 调用 C++ 实现，确保 ABI 稳定与可移植性。模板不内置于本仓库，由使用方在自己的仓库提供；本仓库仅保留示例模板用于验证与参考。
 
 本文档说明核心需求、架构、数据模型、生成流程、CLI、可扩展性与里程碑计划。
 
@@ -9,7 +9,7 @@
 **目标**
 
 - 解析 C++ 公开 API（以头文件为主）
-- 生成多语言 bindings（Dart FFI、Swift bridging、Rust FFI）
+- 生成多语言 bindings（模板由使用方仓库提供）
 - 所有语言绑定统一调用 C API 层（避免直接绑定 C++ ABI）
 - 统一的中间表示（IR），减少多语言实现成本
 - 可配置、可扩展、可测试
@@ -38,15 +38,12 @@ C++ Headers
       v
  Code Generator (通用生成器)
       |
-      +--------------------+--------------------+--------------------+
-      |                    |                    |
-      v                    v                    v
-  Dart Templates       Swift Templates       Rust Templates
-      |                    |                    |
-      +---------+----------+---------+----------+---------+
-                |                    |
-                v                    v
-      Output bindings (ffi glue per language)
+      |
+      v
+  External Templates
+      |
+      v
+  Bindings Output
                 |
                 v
             C API (extern "C")
@@ -59,8 +56,8 @@ C++ Headers
 - **Normalizer**：将 AST 规约为可生成的 IR（类型、函数、常量、结构体）
 - **IR**：语言无关的描述结构
 - **Code Generator**：通用生成器，负责加载模板与语言映射配置并输出 bindings
-- **Templates**：语言模板 + 语言映射配置（类型映射、命名风格、ABI 约定）
-- **C API**：稳定 ABI 层，`extern "C"` 函数，供所有语言 bindings 调用
+- **Templates**：使用方自定义模板 + 映射配置（类型映射、命名风格、ABI 约定）
+- **C API**：稳定 ABI 层，`extern "C"` 函数
 - **C++ Implementation**：真实实现层，仅由 C API 访问
 
 ## 输入与约束
@@ -149,7 +146,7 @@ C++ Headers
 
 **绑定链路约束**
 
-- 生成的 Dart/Swift/Rust bindings **只调用 C API**，不直接依赖 C++ 符号
+- 生成的 bindings **只调用 C API**，不直接依赖 C++ 符号
 - C API 负责：参数规约、ABI 稳定、与 C++ 实现交互
 - C++ 实现层可自由演进，但对外 ABI 需保持稳定
 
@@ -176,38 +173,25 @@ tools/bindgen/
   codegen/
     generator.py       # 通用生成器入口
     context.py         # 模板上下文构建
-  templates/
-    dart/
-      bindings.j2
-      helpers.j2
-      lang.yaml
-    swift/
-      bindings.j2
-      modulemap.j2
-      lang.yaml
-    rust/
-      bindings.j2
-      lib.j2
-      lang.yaml
+  example/
+    bindgen/
+      config.yaml      # 示例配置
+      template/
+        example.txt.j2 # 示例目标语言模板（用于验证与参考）
+    README.md
 ```
 
 **语言映射配置（示例）**
 
+语言相关配置统一写在 `config.yaml` 的 `mapping` 字段中：
+
 ```yaml
-language: dart
-types:
-  void: Void
-  int32: Int32
-  uint32: Uint32
-  float32: Float
-  cstring: Pointer<Utf8>
-conventions:
-  enum_as_int: true
-  struct_layout: ffi.Struct
-  callconv: native
-naming:
-  function: camel
-  constant: upper_snake
+mapping:
+  language: example
+  conventions:
+    enum_as_int: true
+  naming:
+    function: camel
 ```
 
 **通用生成器伪代码**
@@ -227,7 +211,6 @@ render_to_files(templates, context, out_dir)
 - `functions`: 函数列表（已过滤）
 - `constants`: 常量列表
 - `mapping`: 语言映射配置（types/conventions/naming）
-- `helpers`: 预计算字段（如 dart ffi 类型名、rust type 名）
 
 **优点**
 
@@ -235,54 +218,28 @@ render_to_files(templates, context, out_dir)
 - 语言差异集中可见，维护成本低
 - 测试可按模板/映射分层
 
-### Dart
+### Templates (External)
 
-- 生成 `ffi.DynamicLibrary` + `typedef` + `lookupFunction`
-- `struct` 映射为 `ffi.Struct`
-- `enum` 映射为 `int`
-- `cstring` -> `Pointer<Utf8>` + helper
-- 输出文件（建议）：`bindings.dart`, `helpers.dart`
-
-### Swift
-
-- C header 生成 module map（如需）
-- `struct` 使用 `@frozen struct` 或 `UnsafePointer`
-- `enum` -> Swift `enum` with rawValue
-- 暴露 C 函数桥接层
-- 输出文件（建议）：`Bindings.swift`, `module.modulemap`（可选）
-
-### Rust
-
-- 生成 `extern "C"` block
-- `struct` -> `#[repr(C)] struct`
-- `enum` -> `#[repr(C)] enum` or `type alias` for constants
-- `cstring` -> `*const c_char`
-- 输出文件（建议）：`lib.rs`, `bindings.rs`
+- 本仓库仅保留示例模板用于验证
+- 实际多语言绑定由使用方在自己的仓库提供模板与映射配置
 
 ## 配置与注解
 
 ### YAML 配置文件
 
 ```yaml
-entry_headers:
-  - include/nativeapi.h
-include_paths:
-  - include
 clang_flags:
   - -std=c11
   - -DNATIVEAPI_EXPORT
-languages:
-  - dart
-  - swift
-  - rust
+mapping:
+  language: example
 filters:
   export_macro: NATIVEAPI_EXPORT
   allowlist_regex: []
   denylist_regex: []
-platform:
-  os: macos
-  abi: clang
 ```
+
+说明：`entry_headers` 将自动从 `src/` 目录下收集所有 `.h`（忽略 `platform/`），`include_paths` 也会默认指向 `src/`，无需在配置中手动列出。模板目录默认读取 `config.yaml` 同路径下的 `template/`。
 
 ### 注解建议（可扩展）
 
@@ -295,30 +252,32 @@ platform:
 ## CLI 设计
 
 ```
-PYTHONPATH=tools python -m bindgen \
-  --config tools/bindgen/bindgen.yaml \
-  --out tools/bindgen/out
+cd tools/bindgen/example
+PYTHONPATH=../.. python3 -m bindgen \
+  --config bindgen/config.yaml \
+  --dump-ir out/ir.json \
+  --out out
 ```
+
+示例运行后将使用 `bindgen/template` 中的模板，并把 IR 与生成结果都写到 `out`。
 
 常用参数：
 
 - `--config` 配置文件
 - `--out` 输出目录
-- `--lang` 指定语言（可覆盖配置）
 - `--dump-ir` 输出 IR JSON 便于调试
-- `--platform` 指定平台（如 `windows-msvc`、`linux-gnu`、`macos-clang`）
 
 ## 开发计划（里程碑）
 
 1. **MVP**
    - 支持解析函数 + 基础类型
-   - 生成 Dart bindings
+   - 生成示例模板输出
    - IR JSON dump
    - 最小可用示例（单头文件 -> bindings）
 
 2. **扩展**
    - 支持 struct、enum
-   - 生成 Swift/Rust bindings
+   - 按需扩展多语言模板
 
 3. **增强**
    - 增加注解/宏过滤

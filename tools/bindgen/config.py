@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _load_yaml(path: Path) -> dict:
@@ -24,37 +24,28 @@ class FilterConfig:
 
 
 @dataclass
-class PlatformConfig:
-    os: str
-    abi: str
-
-
-@dataclass
 class BindgenConfig:
     entry_headers: List[str]
     include_paths: List[str]
     clang_flags: List[str]
-    languages: List[str]
+    mapping: Dict[str, Any]
     filters: FilterConfig
-    platform: PlatformConfig
 
 
 def load_config(path: Path) -> BindgenConfig:
     data = _load_yaml(path)
     filters = data.get("filters", {})
-    platform = data.get("platform", {})
+    mapping = data.get("mapping", {})
+    if mapping is None:
+        mapping = {}
     return BindgenConfig(
         entry_headers=data.get("entry_headers", []),
         include_paths=data.get("include_paths", []),
         clang_flags=data.get("clang_flags", []),
-        languages=data.get("languages", []),
+        mapping=dict(mapping),
         filters=FilterConfig(
             export_macro=filters.get("export_macro"),
             allowlist_regex=list(filters.get("allowlist_regex", []) or []),
             denylist_regex=list(filters.get("denylist_regex", []) or []),
-        ),
-        platform=PlatformConfig(
-            os=platform.get("os", ""),
-            abi=platform.get("abi", ""),
         ),
     )
