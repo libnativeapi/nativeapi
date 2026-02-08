@@ -223,7 +223,8 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
       return DefWindowProc(hwnd, msg, wparam, lparam);
     }
 
-    auto* self = reinterpret_cast<Impl*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto* self =
+        reinterpret_cast<ShortcutManagerImpl*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     if (!self) {
       return DefWindowProc(hwnd, msg, wparam, lparam);
     }
