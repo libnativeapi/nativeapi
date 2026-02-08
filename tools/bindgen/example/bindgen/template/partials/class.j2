@@ -1,5 +1,5 @@
 {#- Partial template for rendering a single class -#}
-{#- Expected context: item (IRClass), type_mapping (TypeMappingConfig) -#}
+{#- Expected context: item (MappedClass) -#}
 {%- macro render_class(item) -%}
 // Class: {{ item.name }}
 // Source: {{ item.source_path }}
@@ -10,7 +10,7 @@ class {{ item.name }}{% if item.bases %} extends {{ item.bases | join(', ') }}{%
 {%- if item.fields %}
     // Fields
 {%- for field in item.fields %}
-    {{ field.name }}: {{ field.type | map_type }};
+    {{ field.name }}: {{ field.type }};
 {%- endfor %}
 {%- endif %}
 {%- if item.methods %}
@@ -18,7 +18,7 @@ class {{ item.name }}{% if item.bases %} extends {{ item.bases | join(', ') }}{%
     // Methods
 {%- for method in item.methods %}
     {% if method.static %}static {% endif %}{% if method.const %}const {% endif %}{{ method.name }}(
-{%- for param in method.params %}{{ param.name }}: {{ param.type | map_type }}{% if not loop.last %}, {% endif %}{%- endfor %}) -> {{ method.return_type | map_type }};
+{%- for param in method.params %}{{ param.name }}: {{ param.type }}{% if not loop.last %}, {% endif %}{%- endfor %}) -> {{ method.return_type }};
 {%- endfor %}
 {%- endif %}
 }

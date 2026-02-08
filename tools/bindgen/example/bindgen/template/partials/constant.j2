@@ -1,9 +1,9 @@
 {#- Partial template for rendering a single constant -#}
-{#- Expected context: item (IRConstant), type_mapping (TypeMappingConfig) -#}
+{#- Expected context: item (MappedConstant) -#}
 {%- macro render_constant(item) -%}
 // Constant: {{ item.name }}
 // Source: {{ item.source_path }}
-const {{ item.name }}: {{ item.type | map_type }} = {{ item.value }};
+const {{ item.name }}: {{ item.type }} = {{ item.value }};
 {%- endmacro -%}
 
 {#- Render constant if item is provided directly in context -#}

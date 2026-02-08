@@ -1,11 +1,11 @@
 {#- Partial template for rendering a single struct type -#}
-{#- Expected context: item (IRStruct), type_mapping (TypeMappingConfig) -#}
+{#- Expected context: item (MappedStruct) -#}
 {%- macro render_type(item) -%}
 // Struct: {{ item.name }}
 // Source: {{ item.source_path }}
 struct {{ item.name }} {
 {%- for field in item.fields %}
-    {{ field.name }}: {{ field.type | map_type }};
+    {{ field.name }}: {{ field.type }};
 {%- endfor %}
 }
 {%- endmacro -%}

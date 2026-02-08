@@ -1,9 +1,9 @@
 {#- Partial template for rendering a single type alias -#}
-{#- Expected context: item (IRAlias), type_mapping (TypeMappingConfig) -#}
+{#- Expected context: item (MappedAlias) -#}
 {%- macro render_alias(item) -%}
 // Alias: {{ item.name }}
 // Source: {{ item.source_path }}
-type {{ item.name }} = {{ item.target | map_type }};
+type {{ item.name }} = {{ item.target }};
 {%- endmacro -%}
 
 {#- Render alias if item is provided directly in context -#}

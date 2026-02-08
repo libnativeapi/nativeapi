@@ -1,0 +1,419 @@
+{
+  "src/foundation/geometry.h": [
+    {
+      "kind": "struct",
+      "name": "Point",
+      "source_path": "src/foundation/geometry.h",
+      "fields": [
+        {
+          "name": "x",
+          "type": { "kind": "primitive", "name": "float" },
+          "source_path": "src/foundation/geometry.h"
+        },
+        {
+          "name": "y",
+          "type": { "kind": "primitive", "name": "float" },
+          "source_path": "src/foundation/geometry.h"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "Rect",
+      "source_path": "src/foundation/geometry.h",
+      "fields": [
+        {
+          "name": "x",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "source_path": "src/foundation/geometry.h"
+        },
+        {
+          "name": "y",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "source_path": "src/foundation/geometry.h"
+        },
+        {
+          "name": "width",
+          "type": { "kind": "primitive", "name": "uint32_t" },
+          "source_path": "src/foundation/geometry.h"
+        },
+        {
+          "name": "height",
+          "type": { "kind": "primitive", "name": "uint32_t" },
+          "source_path": "src/foundation/geometry.h"
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_point_distance",
+      "source_path": "src/foundation/geometry.h",
+      "return_type": { "kind": "primitive", "name": "double" },
+      "params": [
+        {
+          "name": "a",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "named", "name": "Point" },
+            "qualifiers": []
+          },
+          "nullable": false
+        },
+        {
+          "name": "b",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "named", "name": "Point" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_rect_contains",
+      "source_path": "src/foundation/geometry.h",
+      "return_type": { "kind": "primitive", "name": "bool" },
+      "params": [
+        {
+          "name": "rect",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "named", "name": "Rect" },
+            "qualifiers": []
+          },
+          "nullable": false
+        },
+        {
+          "name": "x",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "nullable": false
+        },
+        {
+          "name": "y",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "nullable": false
+        }
+      ]
+    }
+  ],
+  "src/foundation/string.h": [
+    {
+      "kind": "function",
+      "name": "na_string_create",
+      "source_path": "src/foundation/string.h",
+      "return_type": {
+        "kind": "pointer",
+        "to": { "kind": "void" },
+        "qualifiers": []
+      },
+      "params": [
+        {
+          "name": "str",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "char" },
+            "qualifiers": ["const"]
+          },
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_string_length",
+      "source_path": "src/foundation/string.h",
+      "return_type": { "kind": "primitive", "name": "size_t" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_string_get",
+      "source_path": "src/foundation/string.h",
+      "return_type": {
+        "kind": "pointer",
+        "to": { "kind": "primitive", "name": "char" },
+        "qualifiers": ["const"]
+      },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_string_destroy",
+      "source_path": "src/foundation/string.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    }
+  ],
+  "src/ui/window.h": [
+    {
+      "kind": "enum",
+      "name": "WindowStyle",
+      "source_path": "src/ui/window.h",
+      "scoped": false,
+      "values": [
+        { "name": "WINDOW_STYLE_DEFAULT", "value": 0 },
+        { "name": "WINDOW_STYLE_BORDERLESS", "value": 1 },
+        { "name": "WINDOW_STYLE_FULLSCREEN", "value": 2 }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "WindowConfig",
+      "source_path": "src/ui/window.h",
+      "fields": [
+        {
+          "name": "title",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "char" },
+            "qualifiers": ["const"]
+          },
+          "source_path": "src/ui/window.h"
+        },
+        {
+          "name": "width",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "source_path": "src/ui/window.h"
+        },
+        {
+          "name": "height",
+          "type": { "kind": "primitive", "name": "int32_t" },
+          "source_path": "src/ui/window.h"
+        },
+        {
+          "name": "resizable",
+          "type": { "kind": "primitive", "name": "bool" },
+          "source_path": "src/ui/window.h"
+        }
+      ]
+    },
+    {
+      "kind": "alias",
+      "name": "WindowHandle",
+      "target": {
+        "kind": "pointer",
+        "to": { "kind": "void" },
+        "qualifiers": []
+      },
+      "source_path": "src/ui/window.h"
+    },
+    {
+      "kind": "constant",
+      "name": "NA_WINDOW_MIN_WIDTH",
+      "type": { "kind": "primitive", "name": "int32_t" },
+      "value": 100,
+      "source_path": "src/ui/window.h"
+    },
+    {
+      "kind": "constant",
+      "name": "NA_WINDOW_MIN_HEIGHT",
+      "type": { "kind": "primitive", "name": "int32_t" },
+      "value": 100,
+      "source_path": "src/ui/window.h"
+    },
+    {
+      "kind": "function",
+      "name": "na_window_create",
+      "source_path": "src/ui/window.h",
+      "return_type": {
+        "kind": "pointer",
+        "to": { "kind": "void" },
+        "qualifiers": []
+      },
+      "params": [
+        {
+          "name": "config",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "named", "name": "WindowConfig" },
+            "qualifiers": ["const"]
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_window_show",
+      "source_path": "src/ui/window.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_window_set_title",
+      "source_path": "src/ui/window.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "char" },
+            "qualifiers": ["const"]
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_window_get_size",
+      "source_path": "src/ui/window.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        },
+        {
+          "name": "width",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "int32_t" },
+            "qualifiers": []
+          },
+          "nullable": false,
+          "direction": "out"
+        },
+        {
+          "name": "height",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "int32_t" },
+            "qualifiers": []
+          },
+          "nullable": false,
+          "direction": "out"
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_window_destroy",
+      "source_path": "src/ui/window.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        }
+      ]
+    }
+  ],
+  "src/ui/button.h": [
+    {
+      "kind": "function",
+      "name": "na_button_create",
+      "source_path": "src/ui/button.h",
+      "return_type": {
+        "kind": "pointer",
+        "to": { "kind": "void" },
+        "qualifiers": []
+      },
+      "params": [
+        {
+          "name": "label",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "primitive", "name": "char" },
+            "qualifiers": ["const"]
+          },
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "kind": "function",
+      "name": "na_button_set_callback",
+      "source_path": "src/ui/button.h",
+      "return_type": { "kind": "void" },
+      "params": [
+        {
+          "name": "handle",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": false
+        },
+        {
+          "name": "callback",
+          "type": { "kind": "function_pointer" },
+          "nullable": true
+        },
+        {
+          "name": "user_data",
+          "type": {
+            "kind": "pointer",
+            "to": { "kind": "void" },
+            "qualifiers": []
+          },
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
