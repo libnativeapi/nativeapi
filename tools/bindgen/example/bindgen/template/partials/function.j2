@@ -1,0 +1,17 @@
+{#- Partial template for rendering a single function -#}
+{#- Expected context: item (IRFunction) -#}
+{%- macro render_function(item) -%}
+// Function: {{ item.name }}
+// Source: {{ item.source_path }}
+fn {{ item.name }}(
+{%- for param in item.params %}
+    {{ param.name }}: {{ param.type.kind }}{% if param.type.name %}<{{ param.type.name }}>{% endif %}{% if param.nullable %} | null{% endif %}{% if not loop.last %},{% endif %}
+
+{%- endfor %}
+) -> {{ item.return_type.kind }}{% if item.return_type.name %}<{{ item.return_type.name }}>{% endif %};
+{%- endmacro -%}
+
+{#- Render function if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_function(item) }}
+{%- endif -%}

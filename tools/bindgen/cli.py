@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .codegen.generator import generate_bindings
 from .config import load_config
-from .ir.serializer import dump_ir_json
+from .ir.serializer import dump_ir_json, load_ir_json
 from .normalizer import normalize_translation_unit
 from .parser import parse_headers
 
@@ -12,6 +12,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="bindgen")
     parser.add_argument("--config", required=True, help="Path to config.yaml")
     parser.add_argument("--out", required=True, help="Output directory")
+    parser.add_argument("--ir", help="Load IR from existing JSON file (skips parsing)")
     parser.add_argument("--dump-ir", help="Write IR JSON to path")
 
     args = parser.parse_args(argv)
@@ -19,8 +20,13 @@ def main(argv=None) -> int:
     config_path = Path(args.config)
     cfg = load_config(config_path)
 
-    tu = parse_headers(cfg)
-    module = normalize_translation_unit(tu, cfg)
+    if args.ir:
+        # Load from existing IR JSON
+        module = load_ir_json(Path(args.ir))
+    else:
+        # Parse headers and normalize
+        tu = parse_headers(cfg)
+        module = normalize_translation_unit(tu, cfg)
 
     if args.dump_ir:
         dump_ir_json(module, Path(args.dump_ir))

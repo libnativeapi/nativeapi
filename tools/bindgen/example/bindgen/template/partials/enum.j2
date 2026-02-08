@@ -1,0 +1,17 @@
+{#- Partial template for rendering a single enum -#}
+{#- Expected context: item (IREnum) -#}
+{%- macro render_enum(item) -%}
+// Enum: {{ item.name }}
+// Source: {{ item.source_path }}
+// Scoped: {{ item.scoped }}
+enum {{ item.name }} {
+{%- for value in item.values %}
+    {{ value.name }} = {{ value.value }},
+{%- endfor %}
+}
+{%- endmacro -%}
+
+{#- Render enum if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_enum(item) }}
+{%- endif -%}

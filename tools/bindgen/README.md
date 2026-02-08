@@ -202,8 +202,38 @@ tools/bindgen/
     bindgen/
       config.yaml      # 示例配置
       template/
-        example.txt.j2 # 示例目标语言模板（用于验证与参考）
+        *.j2           # 全局模板（渲染一次）
+        file/
+          *.j2         # 按文件模板（每个 IR 文件渲染一次）
+        partials/
+          type.j2      # 结构体片段模板
+          enum.j2      # 枚举片段模板
+          function.j2  # 函数片段模板
+          class.j2     # 类片段模板
+          constant.j2  # 常量片段模板
+          alias.j2     # 类型别名片段模板
     README.md
+```
+
+**模板目录结构说明**
+
+- `template/*.j2` - 全局模板，只渲染一次，生成单个输出文件
+- `template/file/*.j2` - 按文件模板，为每个 IR 源文件渲染一次
+- `template/partials/*.j2` - 片段模板（宏），可被其他模板导入使用
+
+**使用 partials 片段模板**
+
+片段模板定义了可复用的宏，用于渲染单个 IR 元素：
+
+```jinja2
+{# 在 file/*.j2 中导入并使用 partials #}
+{% from 'partials/type.j2' import render_type %}
+{% from 'partials/enum.j2' import render_enum %}
+{% from 'partials/class.j2' import render_class %}
+
+{% for item in types %}
+{{ render_type(item) }}
+{% endfor %}
 ```
 
 **语言映射配置（示例）**
@@ -240,11 +270,33 @@ render_to_files(templates, context, out_dir)
 - `constants`: 常量列表（扁平化）
 - `mapping`: 语言映射配置（types/conventions/naming）
 
+**按文件模板渲染规则**
+
+`template/file/*.j2` 中的模板会按 IR 的 `file_paths` 逐文件渲染：
+
+- 渲染时 `types/enums/functions/classes/constants/aliases` 仅包含当前文件的内容
+- 额外提供全量列表：`all_types/all_enums/all_functions/all_classes/all_constants/all_aliases`
+- `file_path` 与 `file` 提供当前文件信息
+
+**输出路径规则**
+
+输出路径由 IR 文件路径和模板名称决定：
+
+```
+out/<ir_dir>/<ir_stem>.<template_stem>
+```
+
+示例：
+- IR 文件：`src/foundation/geometry.h` + 模板：`file/bindings.j2` → `out/src/foundation/geometry.bindings`
+- IR 文件：`src/window.h` + 模板：`file/dart.j2` → `out/src/window.dart`
+- IR 文件：`src/menu.h` + 模板：`file/rs.j2` → `out/src/menu.rs`
+
 **优点**
 
 - 新增语言只需新增模板 + 映射配置
 - 语言差异集中可见，维护成本低
 - 测试可按模板/映射分层
+- 支持一比一文件映射，保持源码结构
 
 ### Templates (External)
 

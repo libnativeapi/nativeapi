@@ -1,0 +1,30 @@
+{#- Partial template for rendering a single class -#}
+{#- Expected context: item (IRClass) -#}
+{%- macro render_class(item) -%}
+// Class: {{ item.name }}
+// Source: {{ item.source_path }}
+{%- if item.bases %}
+// Bases: {{ item.bases | join(', ') }}
+{%- endif %}
+class {{ item.name }}{% if item.bases %} extends {{ item.bases | join(', ') }}{% endif %} {
+{%- if item.fields %}
+    // Fields
+{%- for field in item.fields %}
+    {{ field.name }}: {{ field.type.kind }}{% if field.type.name %}<{{ field.type.name }}>{% endif %};
+{%- endfor %}
+{%- endif %}
+{%- if item.methods %}
+
+    // Methods
+{%- for method in item.methods %}
+    {% if method.static %}static {% endif %}{% if method.const %}const {% endif %}{{ method.name }}(
+{%- for param in method.params %}{{ param.name }}: {{ param.type.kind }}{% if param.type.name %}<{{ param.type.name }}>{% endif %}{% if not loop.last %}, {% endif %}{%- endfor %}) -> {{ method.return_type.kind }}{% if method.return_type.name %}<{{ method.return_type.name }}>{% endif %};
+{%- endfor %}
+{%- endif %}
+}
+{%- endmacro -%}
+
+{#- Render class if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_class(item) }}
+{%- endif -%}

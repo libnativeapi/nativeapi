@@ -1,0 +1,12 @@
+{#- Partial template for rendering a single type alias -#}
+{#- Expected context: item (IRAlias) -#}
+{%- macro render_alias(item) -%}
+// Alias: {{ item.name }}
+// Source: {{ item.source_path }}
+type {{ item.name }} = {{ item.target.kind }}{% if item.target.name %}<{{ item.target.name }}>{% endif %};
+{%- endmacro -%}
+
+{#- Render alias if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_alias(item) }}
+{%- endif -%}

@@ -1,0 +1,16 @@
+{#- Partial template for rendering a single struct type -#}
+{#- Expected context: item (IRStruct) -#}
+{%- macro render_type(item) -%}
+// Struct: {{ item.name }}
+// Source: {{ item.source_path }}
+struct {{ item.name }} {
+{%- for field in item.fields %}
+    {{ field.name }}: {{ field.type.kind }}{% if field.type.name %}<{{ field.type.name }}>{% endif %};
+{%- endfor %}
+}
+{%- endmacro -%}
+
+{#- Render type if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_type(item) }}
+{%- endif -%}

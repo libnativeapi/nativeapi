@@ -1,0 +1,12 @@
+{#- Partial template for rendering a single constant -#}
+{#- Expected context: item (IRConstant) -#}
+{%- macro render_constant(item) -%}
+// Constant: {{ item.name }}
+// Source: {{ item.source_path }}
+const {{ item.name }}: {{ item.type.kind }}{% if item.type.name %}<{{ item.type.name }}>{% endif %} = {{ item.value }};
+{%- endmacro -%}
+
+{#- Render constant if item is provided directly in context -#}
+{%- if item is defined -%}
+{{ render_constant(item) }}
+{%- endif -%}

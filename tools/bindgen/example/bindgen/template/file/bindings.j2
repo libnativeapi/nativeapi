@@ -1,0 +1,97 @@
+{#- Per-file template that generates bindings for each IR source file -#}
+{#- This template is rendered once per IR file -#}
+
+{#- Import partial macros -#}
+{% from 'partials/type.j2' import render_type %}
+{% from 'partials/enum.j2' import render_enum %}
+{% from 'partials/function.j2' import render_function %}
+{% from 'partials/class.j2' import render_class %}
+{% from 'partials/constant.j2' import render_constant %}
+{% from 'partials/alias.j2' import render_alias %}
+
+// =============================================================================
+// Auto-generated bindings for: {{ file_path }}
+// Language: {{ mapping.language | default("example") }}
+// =============================================================================
+
+{% if is_empty %}
+// This file has no exported symbols.
+{% else %}
+// Summary:
+//   Types:     {{ types | length }}
+//   Enums:     {{ enums | length }}
+//   Functions: {{ functions | length }}
+//   Classes:   {{ classes | length }}
+//   Constants: {{ constants | length }}
+//   Aliases:   {{ aliases | length }}
+
+{#- ========== Types (Structs) ========== -#}
+{% if has_types %}
+// -----------------------------------------------------------------------------
+// Types (Structs)
+// -----------------------------------------------------------------------------
+
+{% for item in types %}
+{{ render_type(item) }}
+
+{% endfor %}
+{% endif %}
+{#- ========== Enums ========== -#}
+{% if has_enums %}
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+{% for item in enums %}
+{{ render_enum(item) }}
+
+{% endfor %}
+{% endif %}
+{#- ========== Functions ========== -#}
+{% if has_functions %}
+// -----------------------------------------------------------------------------
+// Functions
+// -----------------------------------------------------------------------------
+
+{% for item in functions %}
+{{ render_function(item) }}
+
+{% endfor %}
+{% endif %}
+{#- ========== Classes ========== -#}
+{% if has_classes %}
+// -----------------------------------------------------------------------------
+// Classes
+// -----------------------------------------------------------------------------
+
+{% for item in classes %}
+{{ render_class(item) }}
+
+{% endfor %}
+{% endif %}
+{#- ========== Constants ========== -#}
+{% if has_constants %}
+// -----------------------------------------------------------------------------
+// Constants
+// -----------------------------------------------------------------------------
+
+{% for item in constants %}
+{{ render_constant(item) }}
+
+{% endfor %}
+{% endif %}
+{#- ========== Aliases ========== -#}
+{% if has_aliases %}
+// -----------------------------------------------------------------------------
+// Type Aliases
+// -----------------------------------------------------------------------------
+
+{% for item in aliases %}
+{{ render_alias(item) }}
+
+{% endfor %}
+{% endif %}
+{% endif %}
+// =============================================================================
+// End of {{ file_name }}
+// =============================================================================
