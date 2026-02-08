@@ -1,14 +1,12 @@
 {#- Per-file template that generates bindings for each IR source file -#}
 {#- Items are rendered in declaration order -#}
-
 {#- Import partial macros -#}
-{% from 'partials/type.j2' import render_type %}
-{% from 'partials/enum.j2' import render_enum %}
-{% from 'partials/function.j2' import render_function %}
-{% from 'partials/class.j2' import render_class %}
-{% from 'partials/constant.j2' import render_constant %}
-{% from 'partials/alias.j2' import render_alias %}
-
+{%- from 'partials/type.j2' import render_type %}
+{%- from 'partials/enum.j2' import render_enum %}
+{%- from 'partials/function.j2' import render_function %}
+{%- from 'partials/class.j2' import render_class %}
+{%- from 'partials/constant.j2' import render_constant %}
+{%- from 'partials/alias.j2' import render_alias %}
 // =============================================================================
 // Auto-generated bindings for: {{ file_path }}
 // Language: {{ mapping.language }}

@@ -23,7 +23,6 @@ class IRField:
 
     name: str
     type: IRType
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -56,7 +55,6 @@ class IRMethod:
     const: bool = False
     access: Optional[str] = None
     variadic: bool = False
-    source_path: Optional[str] = None
 
 
 # =============================================================================
@@ -72,7 +70,6 @@ class IRStruct:
     name: str = ""
     fields: List[IRField] = field(default_factory=list)
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -84,7 +81,6 @@ class IREnum:
     values: List[IREnumValue] = field(default_factory=list)
     scoped: bool = False
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -94,7 +90,6 @@ class IRAlias:
     kind: str = field(default="alias", init=False)
     name: str = ""
     target: Optional[IRType] = None
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -108,7 +103,6 @@ class IRFunction:
     callconv: Optional[str] = None
     variadic: bool = False
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -121,7 +115,6 @@ class IRClass:
     methods: List[IRMethod] = field(default_factory=list)
     bases: List[str] = field(default_factory=list)
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
 
 
 @dataclass
@@ -132,7 +125,6 @@ class IRConstant:
     name: str = ""
     type: Optional[IRType] = None
     value: Union[int, float, str] = 0
-    source_path: Optional[str] = None
 
 
 # Union type for all IR items

@@ -24,6 +24,54 @@ class FilterConfig:
 
 
 @dataclass
+class NamingConfig:
+    """Configuration for naming conventions."""
+
+    # Naming style for output file names (without extension)
+    # Options: "snake_case", "camel_case", "pascal_case", "kebab_case", "screaming_snake_case", "original"
+    file_name: str = "original"
+
+    # Naming style for type/struct names
+    type_name: str = "original"
+
+    # Naming style for enum names
+    enum_name: str = "original"
+
+    # Naming style for enum value names
+    enum_value_name: str = "original"
+
+    # Naming style for function names
+    function_name: str = "original"
+
+    # Naming style for method names
+    method_name: str = "original"
+
+    # Naming style for class names
+    class_name: str = "original"
+
+    # Naming style for field/property names
+    field_name: str = "original"
+
+    # Naming style for parameter names
+    param_name: str = "original"
+
+    # Naming style for constant names
+    constant_name: str = "original"
+
+    # Naming style for alias names
+    alias_name: str = "original"
+
+    # Prefix/suffix stripping before applying naming style
+    # e.g., strip "na_" prefix from "na_window_create" before converting
+    strip_prefixes: List[str] = field(default_factory=list)
+    strip_suffixes: List[str] = field(default_factory=list)
+
+    # Prefix/suffix to add after applying naming style
+    add_prefix: str = ""
+    add_suffix: str = ""
+
+
+@dataclass
 class MappingConfig:
     """Configuration for language mapping including type mappings."""
 
@@ -68,6 +116,9 @@ class MappingConfig:
     # Special mapping for const char* (often used as string)
     const_char_pointer_type: Optional[str] = None
 
+    # Naming conventions configuration
+    naming: NamingConfig = field(default_factory=NamingConfig)
+
     # Additional custom options (for template use)
     options: Dict[str, Any] = field(default_factory=dict)
 
@@ -79,6 +130,30 @@ class BindgenConfig:
     clang_flags: List[str]
     mapping: MappingConfig
     filters: FilterConfig
+
+
+def _parse_naming(data: Optional[Dict[str, Any]]) -> NamingConfig:
+    """Parse naming configuration from config dict."""
+    if data is None:
+        return NamingConfig()
+
+    return NamingConfig(
+        file_name=data.get("file_name", "original"),
+        type_name=data.get("type_name", "original"),
+        enum_name=data.get("enum_name", "original"),
+        enum_value_name=data.get("enum_value_name", "original"),
+        function_name=data.get("function_name", "original"),
+        method_name=data.get("method_name", "original"),
+        class_name=data.get("class_name", "original"),
+        field_name=data.get("field_name", "original"),
+        param_name=data.get("param_name", "original"),
+        constant_name=data.get("constant_name", "original"),
+        alias_name=data.get("alias_name", "original"),
+        strip_prefixes=list(data.get("strip_prefixes", []) or []),
+        strip_suffixes=list(data.get("strip_suffixes", []) or []),
+        add_prefix=data.get("add_prefix", ""),
+        add_suffix=data.get("add_suffix", ""),
+    )
 
 
 def _parse_mapping(data: Optional[Dict[str, Any]]) -> MappingConfig:
@@ -100,6 +175,7 @@ def _parse_mapping(data: Optional[Dict[str, Any]]) -> MappingConfig:
         "type_suffix",
         "void_pointer_type",
         "const_char_pointer_type",
+        "naming",
         "options",
     }
 
@@ -122,6 +198,7 @@ def _parse_mapping(data: Optional[Dict[str, Any]]) -> MappingConfig:
         type_suffix=data.get("type_suffix", ""),
         void_pointer_type=data.get("void_pointer_type"),
         const_char_pointer_type=data.get("const_char_pointer_type"),
+        naming=_parse_naming(data.get("naming")),
         options=options,
     )
 

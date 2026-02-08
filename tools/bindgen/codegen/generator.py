@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Any, Dict
 
 from ..config import BindgenConfig
-from ..ir.model import IRFile, IRModule
+from ..ir.model import IRModule
 from .context import MappedFile, build_context
+from .naming import NameTransformer
 
 
 def _load_jinja():
@@ -34,8 +35,10 @@ def _build_file_context(
         "files": global_context["files"],
         "file_paths": global_context["file_paths"],
         "mapping": global_context["mapping"],
+        "namer": global_context["namer"],
         "raw": global_context["raw"],
         # All items (for cross-referencing)
+        "all_items": global_context["items"],
         "all_types": global_context["types"],
         "all_enums": global_context["enums"],
         "all_functions": global_context["functions"],
@@ -49,6 +52,7 @@ def _build_file_context(
         "file_name": p.name,
         "file_stem": p.stem,
         "file_ext": p.suffix,
+        "items": mapped_file.items,
         "types": mapped_file.types,
         "enums": mapped_file.enums,
         "functions": mapped_file.functions,
@@ -56,14 +60,7 @@ def _build_file_context(
         "constants": mapped_file.constants,
         "aliases": mapped_file.aliases,
         # Convenience flags
-        "is_empty": (
-            not mapped_file.types
-            and not mapped_file.enums
-            and not mapped_file.functions
-            and not mapped_file.classes
-            and not mapped_file.constants
-            and not mapped_file.aliases
-        ),
+        "is_empty": not mapped_file.items,
         "has_types": bool(mapped_file.types),
         "has_enums": bool(mapped_file.enums),
         "has_functions": bool(mapped_file.functions),
@@ -77,6 +74,7 @@ def _compute_output_path(
     ir_file_path: str,
     template_name: str,
     out_dir: Path,
+    namer: NameTransformer,
 ) -> Path:
     """
     Compute output path from IR file path and template name.
@@ -85,6 +83,8 @@ def _compute_output_path(
     - IR path: src/foundation/geometry.h
     - Template: file/dart.j2 -> out/src/foundation/geometry.dart
     - Template: file/rs.j2 -> out/src/foundation/geometry.rs
+
+    File name is transformed according to naming config.
     """
     from pathlib import PurePosixPath
 
@@ -92,8 +92,11 @@ def _compute_output_path(
     # Template stem becomes the new extension
     template_stem = Path(template_name).stem  # e.g., "dart" from "dart.j2"
 
-    # Build output path: out_dir / ir_dir / ir_stem.template_stem
-    output_name = f"{ir_path.stem}.{template_stem}"
+    # Apply naming transformation to the file stem
+    transformed_stem = namer.file_name(ir_path.stem)
+
+    # Build output path: out_dir / ir_dir / transformed_stem.template_stem
+    output_name = f"{transformed_stem}.{template_stem}"
     output_path = out_dir / ir_path.parent / output_name
 
     return output_path
@@ -129,6 +132,7 @@ def generate_bindings(
 
     # Build context with preprocessed (mapped) data
     global_context = build_context(module, cfg.mapping)
+    namer = global_context["namer"]
 
     # 1. Render global templates (template/*.j2)
     for template_path in config_template_root.glob("*.j2"):
@@ -151,7 +155,7 @@ def generate_bindings(
             for template_path in file_templates:
                 template = env.get_template(f"file/{template_path.name}")
                 output_path = _compute_output_path(
-                    ir_file_path, template_path.name, out_dir
+                    ir_file_path, template_path.name, out_dir, namer
                 )
 
                 # Create output directory if needed

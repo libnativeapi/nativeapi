@@ -19,6 +19,7 @@ from ..ir.model import (
     IRStruct,
     IRType,
 )
+from .naming import NameTransformer
 
 
 @dataclass
@@ -56,7 +57,6 @@ class MappedField:
 
     name: str
     type: MappedType
-    source_path: Optional[str] = None
     raw: Optional[IRField] = None
 
 
@@ -79,8 +79,15 @@ class MappedStruct:
     name: str = ""
     fields: List[MappedField] = field(default_factory=list)
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
     raw: Optional[IRStruct] = None
+
+
+@dataclass
+class MappedEnumValue:
+    """An enum value."""
+
+    name: str = ""
+    value: int = 0
 
 
 @dataclass
@@ -89,10 +96,9 @@ class MappedEnum:
 
     kind: str = "enum"
     name: str = ""
-    values: List[Dict[str, Any]] = field(default_factory=list)
+    values: List[MappedEnumValue] = field(default_factory=list)
     scoped: bool = False
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
     raw: Optional[IREnum] = None
 
 
@@ -103,7 +109,6 @@ class MappedAlias:
     kind: str = "alias"
     name: str = ""
     target: Optional[MappedType] = None
-    source_path: Optional[str] = None
     raw: Optional[IRAlias] = None
 
 
@@ -118,7 +123,6 @@ class MappedFunction:
     callconv: Optional[str] = None
     variadic: bool = False
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
     raw: Optional[IRFunction] = None
 
 
@@ -134,7 +138,6 @@ class MappedMethod:
     const: bool = False
     access: Optional[str] = None
     variadic: bool = False
-    source_path: Optional[str] = None
     raw: Optional[IRMethod] = None
 
 
@@ -148,7 +151,6 @@ class MappedClass:
     methods: List[MappedMethod] = field(default_factory=list)
     bases: List[str] = field(default_factory=list)
     qualified_name: Optional[str] = None
-    source_path: Optional[str] = None
     raw: Optional[IRClass] = None
 
 
@@ -160,7 +162,6 @@ class MappedConstant:
     name: str = ""
     type: Optional[MappedType] = None
     value: Any = 0
-    source_path: Optional[str] = None
     raw: Optional[IRConstant] = None
 
 
@@ -213,6 +214,7 @@ class TypeMapper:
 
     def __init__(self, config: MappingConfig):
         self.config = config
+        self.namer = NameTransformer(config.naming)
 
     def map_type(self, ir_type: Optional[IRType]) -> MappedType:
         """Map an IRType to a MappedType."""
@@ -402,16 +404,15 @@ class TypeMapper:
     def map_field(self, ir_field: IRField) -> MappedField:
         """Map an IRField to a MappedField."""
         return MappedField(
-            name=ir_field.name,
+            name=self.namer.field_name(ir_field.name),
             type=self.map_type(ir_field.type),
-            source_path=ir_field.source_path,
             raw=ir_field,
         )
 
     def map_param(self, ir_param: IRParam) -> MappedParam:
         """Map an IRParam to a MappedParam."""
         return MappedParam(
-            name=ir_param.name,
+            name=self.namer.param_name(ir_param.name),
             type=self.map_type(ir_param.type),
             nullable=ir_param.nullable,
             direction=ir_param.direction,
@@ -422,10 +423,9 @@ class TypeMapper:
         """Map an IRStruct to a MappedStruct."""
         return MappedStruct(
             kind="struct",
-            name=ir_struct.name,
+            name=self.namer.type_name(ir_struct.name),
             fields=[self.map_field(f) for f in ir_struct.fields],
             qualified_name=ir_struct.qualified_name,
-            source_path=ir_struct.source_path,
             raw=ir_struct,
         )
 
@@ -433,11 +433,16 @@ class TypeMapper:
         """Map an IREnum to a MappedEnum."""
         return MappedEnum(
             kind="enum",
-            name=ir_enum.name,
-            values=[{"name": v.name, "value": v.value} for v in ir_enum.values],
+            name=self.namer.enum_name(ir_enum.name),
+            values=[
+                MappedEnumValue(
+                    name=self.namer.enum_value_name(v.name),
+                    value=v.value,
+                )
+                for v in ir_enum.values
+            ],
             scoped=ir_enum.scoped,
             qualified_name=ir_enum.qualified_name,
-            source_path=ir_enum.source_path,
             raw=ir_enum,
         )
 
@@ -445,9 +450,8 @@ class TypeMapper:
         """Map an IRAlias to a MappedAlias."""
         return MappedAlias(
             kind="alias",
-            name=ir_alias.name,
+            name=self.namer.alias_name(ir_alias.name),
             target=self.map_type(ir_alias.target),
-            source_path=ir_alias.source_path,
             raw=ir_alias,
         )
 
@@ -455,20 +459,19 @@ class TypeMapper:
         """Map an IRFunction to a MappedFunction."""
         return MappedFunction(
             kind="function",
-            name=ir_func.name,
+            name=self.namer.function_name(ir_func.name),
             return_type=self.map_type(ir_func.return_type),
             params=[self.map_param(p) for p in ir_func.params],
             callconv=ir_func.callconv,
             variadic=ir_func.variadic,
             qualified_name=ir_func.qualified_name,
-            source_path=ir_func.source_path,
             raw=ir_func,
         )
 
     def map_method(self, ir_method: IRMethod) -> MappedMethod:
         """Map an IRMethod to a MappedMethod."""
         return MappedMethod(
-            name=ir_method.name,
+            name=self.namer.method_name(ir_method.name),
             return_type=self.map_type(ir_method.return_type),
             params=[self.map_param(p) for p in ir_method.params],
             method_kind=ir_method.kind,
@@ -476,7 +479,6 @@ class TypeMapper:
             const=ir_method.const,
             access=ir_method.access,
             variadic=ir_method.variadic,
-            source_path=ir_method.source_path,
             raw=ir_method,
         )
 
@@ -484,12 +486,11 @@ class TypeMapper:
         """Map an IRClass to a MappedClass."""
         return MappedClass(
             kind="class",
-            name=ir_class.name,
+            name=self.namer.class_name(ir_class.name),
             fields=[self.map_field(f) for f in ir_class.fields],
             methods=[self.map_method(m) for m in ir_class.methods],
             bases=ir_class.bases,
             qualified_name=ir_class.qualified_name,
-            source_path=ir_class.source_path,
             raw=ir_class,
         )
 
@@ -497,10 +498,9 @@ class TypeMapper:
         """Map an IRConstant to a MappedConstant."""
         return MappedConstant(
             kind="constant",
-            name=ir_const.name,
+            name=self.namer.constant_name(ir_const.name),
             type=self.map_type(ir_const.type),
             value=ir_const.value,
-            source_path=ir_const.source_path,
             raw=ir_const,
         )
 
@@ -535,12 +535,14 @@ def build_context(module: IRModule, mapping: MappingConfig) -> Dict[str, Any]:
 
     The context provides:
     - Mapped data with types already converted to target language
+    - Names transformed according to naming config
     - Items in declaration order (via 'items' list)
     - Filtered accessors (types, enums, functions, etc.)
     - Raw IR data accessible via .raw attribute on each item
     - Global raw module accessible via 'raw' key
     """
     mapper = TypeMapper(mapping)
+    namer = NameTransformer(mapping.naming)
 
     files = module.files
     sorted_paths = sorted(files.keys())
@@ -583,6 +585,8 @@ def build_context(module: IRModule, mapping: MappingConfig) -> Dict[str, Any]:
         "constants": constants,
         "aliases": aliases,
         "mapping": mapping,
+        # Name transformer for custom transformations in templates
+        "namer": namer,
         # Raw IR data for direct access
         "raw": module,
     }

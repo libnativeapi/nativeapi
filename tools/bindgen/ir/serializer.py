@@ -78,7 +78,6 @@ def _parse_ir_field(data: Dict[str, Any]) -> IRField:
     return IRField(
         name=data.get("name", ""),
         type=_parse_ir_type(data.get("type", {})),
-        source_path=data.get("source_path"),
     )
 
 
@@ -111,7 +110,6 @@ def _parse_ir_method(data: Dict[str, Any]) -> IRMethod:
         const=data.get("const", False),
         access=data.get("access"),
         variadic=data.get("variadic", False),
-        source_path=data.get("source_path"),
     )
 
 
@@ -121,7 +119,6 @@ def _parse_ir_struct(data: Dict[str, Any]) -> IRStruct:
         name=data.get("name", ""),
         fields=[_parse_ir_field(f) for f in data.get("fields", [])],
         qualified_name=data.get("qualified_name"),
-        source_path=data.get("source_path"),
     )
     return item
 
@@ -133,7 +130,6 @@ def _parse_ir_enum(data: Dict[str, Any]) -> IREnum:
         values=[_parse_ir_enum_value(v) for v in data.get("values", [])],
         scoped=data.get("scoped", False),
         qualified_name=data.get("qualified_name"),
-        source_path=data.get("source_path"),
     )
     return item
 
@@ -143,7 +139,6 @@ def _parse_ir_alias(data: Dict[str, Any]) -> IRAlias:
     item = IRAlias(
         name=data.get("name", ""),
         target=_parse_ir_type(data.get("target", {})),
-        source_path=data.get("source_path"),
     )
     return item
 
@@ -157,7 +152,6 @@ def _parse_ir_function(data: Dict[str, Any]) -> IRFunction:
         callconv=data.get("callconv"),
         variadic=data.get("variadic", False),
         qualified_name=data.get("qualified_name"),
-        source_path=data.get("source_path"),
     )
     return item
 
@@ -170,7 +164,6 @@ def _parse_ir_class(data: Dict[str, Any]) -> IRClass:
         methods=[_parse_ir_method(m) for m in data.get("methods", [])],
         bases=data.get("bases", []),
         qualified_name=data.get("qualified_name"),
-        source_path=data.get("source_path"),
     )
     return item
 
@@ -181,7 +174,6 @@ def _parse_ir_constant(data: Dict[str, Any]) -> IRConstant:
         name=data.get("name", ""),
         type=_parse_ir_type(data.get("type", {})),
         value=data.get("value", 0),
-        source_path=data.get("source_path"),
     )
     return item
 

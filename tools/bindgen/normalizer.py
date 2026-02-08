@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from .config import BindgenConfig
 from .ir.model import (
@@ -199,7 +199,6 @@ def _struct_from_cursor(cursor, name_override: Optional[str] = None) -> IRStruct
             IRField(
                 name=field.spelling,
                 type=_type_from_clang(field.type),
-                source_path=_cursor_path(field),
             )
         )
     name = name_override or cursor.spelling
@@ -207,7 +206,6 @@ def _struct_from_cursor(cursor, name_override: Optional[str] = None) -> IRStruct
         name=name,
         fields=fields,
         qualified_name=_qualified_name(cursor),
-        source_path=_cursor_path(cursor),
     )
 
 
@@ -225,7 +223,6 @@ def _enum_from_cursor(cursor, name_override: Optional[str] = None) -> IREnum:
         values=values,
         scoped=cursor.is_scoped_enum(),
         qualified_name=_qualified_name(cursor),
-        source_path=_cursor_path(cursor),
     )
 
 
@@ -248,7 +245,6 @@ def _method_from_cursor(cursor, kind: str = "method") -> IRMethod:
         if cursor.access_specifier
         else None,
         variadic=variadic,
-        source_path=_cursor_path(cursor),
     )
 
 
@@ -322,7 +318,6 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                             IRField(
                                 name=child.spelling,
                                 type=_type_from_clang(child.type),
-                                source_path=_cursor_path(child),
                             )
                         )
                         continue
@@ -358,19 +353,18 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                         methods.append(dtor)
                         continue
                 bucket = _bucket_for(_cursor_path(cursor))
-                bucket.classes.append(
+                bucket.items.append(
                     IRClass(
                         name=name,
                         qualified_name=_qualified_name(cursor),
                         fields=fields,
                         bases=bases,
                         methods=methods,
-                        source_path=_cursor_path(cursor),
                     )
                 )
                 return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.types.append(_struct_from_cursor(cursor))
+            bucket.items.append(_struct_from_cursor(cursor))
             return
 
         if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
@@ -397,7 +391,6 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                         IRField(
                             name=child.spelling,
                             type=_type_from_clang(child.type),
-                            source_path=_cursor_path(child),
                         )
                     )
                     continue
@@ -433,14 +426,13 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                     methods.append(dtor)
                     continue
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.classes.append(
+            bucket.items.append(
                 IRClass(
                     name=name,
                     qualified_name=_qualified_name(cursor),
                     fields=fields,
                     bases=bases,
                     methods=methods,
-                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -450,7 +442,7 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             if not name or not _passes_name_filters(name, allow, deny):
                 return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.enums.append(_enum_from_cursor(cursor))
+            bucket.items.append(_enum_from_cursor(cursor))
             return
 
         if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
@@ -469,14 +461,13 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 if hasattr(cursor.type, "is_function_variadic"):
                     variadic = cursor.type.is_function_variadic()
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.functions.append(
+            bucket.items.append(
                 IRFunction(
                     name=name,
                     qualified_name=_qualified_name(cursor),
                     return_type=_type_from_clang(cursor.result_type),
                     params=params,
                     variadic=variadic,
-                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -494,19 +485,18 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             ):
                 if not decl.spelling:
                     bucket = _bucket_for(_cursor_path(decl))
-                    bucket.types.append(_struct_from_cursor(decl, name_override=name))
+                    bucket.items.append(_struct_from_cursor(decl, name_override=name))
                     return
             if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
                 if not decl.spelling:
                     bucket = _bucket_for(_cursor_path(decl))
-                    bucket.enums.append(_enum_from_cursor(decl, name_override=name))
+                    bucket.items.append(_enum_from_cursor(decl, name_override=name))
                     return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.aliases.append(
+            bucket.items.append(
                 IRAlias(
                     name=name,
                     target=_type_from_clang(cursor.underlying_typedef_type),
-                    source_path=_cursor_path(cursor),
                 )
             )
             return
@@ -523,12 +513,11 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 if parsed is None:
                     return
                 bucket = _bucket_for(_cursor_path(cursor))
-                bucket.constants.append(
+                bucket.items.append(
                     IRConstant(
                         name=name,
                         type=parsed[0],
                         value=parsed[1],
-                        source_path=_cursor_path(cursor),
                     )
                 )
             return
@@ -537,12 +526,7 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
         _visit(cursor)
 
     for bucket in module.files.values():
-        bucket.types.sort(key=lambda t: t.name)
-        bucket.enums.sort(key=lambda e: e.name)
-        bucket.functions.sort(key=lambda f: f.name)
-        bucket.classes.sort(key=lambda c: c.name)
-        bucket.constants.sort(key=lambda c: c.name)
-        bucket.aliases.sort(key=lambda a: a.name)
+        bucket.items.sort(key=lambda item: item.name)
     return module
 
 
