@@ -18,9 +18,9 @@ def _load_yaml(path: Path) -> dict:
 
 @dataclass
 class FilterConfig:
-    export_macro: Optional[str]
     allowlist_regex: List[str]
     denylist_regex: List[str]
+    exclude_dirs: List[str]
 
 
 @dataclass
@@ -44,8 +44,8 @@ def load_config(path: Path) -> BindgenConfig:
         clang_flags=data.get("clang_flags", []),
         mapping=dict(mapping),
         filters=FilterConfig(
-            export_macro=filters.get("export_macro"),
             allowlist_regex=list(filters.get("allowlist_regex", []) or []),
             denylist_regex=list(filters.get("denylist_regex", []) or []),
+            exclude_dirs=list(filters.get("exclude_dirs", []) or []),
         ),
     )

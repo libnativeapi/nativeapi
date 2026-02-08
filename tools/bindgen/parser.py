@@ -56,7 +56,7 @@ def parse_headers(cfg: BindgenConfig):
     if not any(a == "-x" or a.startswith("-x") for a in args):
         args.extend(["-x", "c++"])
 
-    discovered = _discover_entry_headers()
+    discovered = _discover_entry_headers(cfg.filters.exclude_dirs)
     if discovered:
         cfg.entry_headers = discovered
     if not cfg.entry_headers:
@@ -90,15 +90,18 @@ def _find_project_root(start: Path) -> Path:
     return start
 
 
-def _discover_entry_headers() -> List[str]:
+def _discover_entry_headers(exclude_dirs: List[str] | None = None) -> List[str]:
     root = _find_project_root(Path.cwd().resolve())
     src_dir = root / "src"
     if not src_dir.is_dir():
         return []
 
+    exclude = set(exclude_dirs or [])
     headers: List[Path] = []
     for path in src_dir.rglob("*.h"):
         if "platform" in path.parts:
+            continue
+        if exclude and any(part in exclude for part in path.parts):
             continue
         headers.append(path)
 

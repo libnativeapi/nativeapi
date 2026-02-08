@@ -25,6 +25,7 @@ class IRField:
 class IRStruct:
     name: str
     fields: List[IRField]
+    qualified_name: Optional[str] = None
 
 
 @dataclass
@@ -38,6 +39,7 @@ class IREnum:
     name: str
     values: List[IREnumValue]
     scoped: bool = False
+    qualified_name: Optional[str] = None
 
 
 @dataclass
@@ -61,6 +63,25 @@ class IRFunction:
     params: List[IRParam]
     callconv: Optional[str] = None
     variadic: bool = False
+    qualified_name: Optional[str] = None
+
+
+@dataclass
+class IRMethod:
+    name: str
+    return_type: IRType
+    params: List[IRParam]
+    static: bool = False
+    const: bool = False
+    access: Optional[str] = None
+    variadic: bool = False
+
+
+@dataclass
+class IRClass:
+    name: str
+    methods: List[IRMethod] = field(default_factory=list)
+    qualified_name: Optional[str] = None
 
 
 @dataclass
@@ -76,5 +97,6 @@ class IRModule:
     types: List[IRStruct] = field(default_factory=list)
     enums: List[IREnum] = field(default_factory=list)
     functions: List[IRFunction] = field(default_factory=list)
+    classes: List[IRClass] = field(default_factory=list)
     constants: List[IRConstant] = field(default_factory=list)
     aliases: List[IRAlias] = field(default_factory=list)

@@ -11,6 +11,7 @@ def build_context(module: IRModule, mapping: Dict) -> Dict:
         "types": module.types,
         "enums": module.enums,
         "functions": module.functions,
+        "classes": module.classes,
         "constants": module.constants,
         "aliases": module.aliases,
         "mapping": mapping,

@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Iterable, Optional
 
 from .config import BindgenConfig
 from .ir.model import (
     IRAlias,
+    IRClass,
     IRConstant,
     IREnum,
     IREnumValue,
     IRField,
     IRFunction,
+    IRMethod,
     IRModule,
     IRParam,
     IRStruct,
@@ -21,7 +24,8 @@ from .ir.model import (
 def _compile_filters(cfg: BindgenConfig):
     allow = [re.compile(p) for p in cfg.filters.allowlist_regex]
     deny = [re.compile(p) for p in cfg.filters.denylist_regex]
-    return allow, deny
+    exclude = set(cfg.filters.exclude_dirs)
+    return allow, deny, exclude
 
 
 def _passes_name_filters(name: str, allow, deny) -> bool:
@@ -32,17 +36,17 @@ def _passes_name_filters(name: str, allow, deny) -> bool:
     return True
 
 
-def _has_export_macro(cursor, macro: Optional[str]) -> bool:
-    if not macro:
-        return True
-    tokens = [t.spelling for t in cursor.get_tokens()]
-    return macro in tokens
-
-
 def _is_ignored(cursor) -> bool:
     if cursor.raw_comment and "bindgen:ignore" in cursor.raw_comment:
         return True
     return False
+
+
+def _is_excluded(cursor, exclude_dirs: set[str]) -> bool:
+    if not exclude_dirs or cursor.location.file is None:
+        return False
+    path = Path(str(cursor.location.file)).resolve()
+    return any(part in exclude_dirs for part in path.parts)
 
 
 def _type_from_clang(tp) -> IRType:
@@ -118,96 +122,238 @@ def _type_from_clang(tp) -> IRType:
     return IRType(kind="unknown", name=tp.spelling, qualifiers=qualifiers)
 
 
+def _qualified_name(cursor) -> Optional[str]:
+    from clang import cindex  # type: ignore
+
+    parts = []
+    current = cursor
+    while current and current.kind != cindex.CursorKind.TRANSLATION_UNIT:
+        if current.spelling and current.kind in (
+            cindex.CursorKind.NAMESPACE,
+            cindex.CursorKind.STRUCT_DECL,
+            cindex.CursorKind.CLASS_DECL,
+            cindex.CursorKind.ENUM_DECL,
+            cindex.CursorKind.FUNCTION_DECL,
+        ):
+            parts.append(current.spelling)
+        current = current.semantic_parent
+    if not parts:
+        return None
+    return "::".join(reversed(parts))
+
+
+def _struct_from_cursor(cursor, name_override: Optional[str] = None) -> IRStruct:
+    from clang import cindex  # type: ignore
+
+    fields = []
+    for field in cursor.get_children():
+        if field.kind != cindex.CursorKind.FIELD_DECL:
+            continue
+        fields.append(IRField(name=field.spelling, type=_type_from_clang(field.type)))
+    name = name_override or cursor.spelling
+    return IRStruct(name=name, fields=fields, qualified_name=_qualified_name(cursor))
+
+
+def _enum_from_cursor(cursor, name_override: Optional[str] = None) -> IREnum:
+    from clang import cindex  # type: ignore
+
+    values = []
+    for child in cursor.get_children():
+        if child.kind != cindex.CursorKind.ENUM_CONSTANT_DECL:
+            continue
+        values.append(IREnumValue(name=child.spelling, value=child.enum_value))
+    name = name_override or cursor.spelling
+    return IREnum(
+        name=name,
+        values=values,
+        scoped=cursor.is_scoped_enum(),
+        qualified_name=_qualified_name(cursor),
+    )
+
+
+def _method_from_cursor(cursor) -> IRMethod:
+    params = []
+    for arg in cursor.get_arguments():
+        params.append(IRParam(name=arg.spelling, type=_type_from_clang(arg.type)))
+    variadic = False
+    if hasattr(cursor, "type") and cursor.type is not None:
+        if hasattr(cursor.type, "is_function_variadic"):
+            variadic = cursor.type.is_function_variadic()
+    return IRMethod(
+        name=cursor.spelling,
+        return_type=_type_from_clang(cursor.result_type),
+        params=params,
+        static=cursor.is_static_method(),
+        const=cursor.is_const_method(),
+        access=str(cursor.access_specifier).split(".")[-1].lower()
+        if cursor.access_specifier
+        else None,
+        variadic=variadic,
+    )
+
+
 def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
     from clang import cindex  # type: ignore
 
-    allow, deny = _compile_filters(cfg)
+    allow, deny, exclude = _compile_filters(cfg)
     module = IRModule(headers=cfg.entry_headers)
 
-    for cursor in tu.cursor.get_children():
+    def _is_cpp_record(node) -> bool:
+        for child in node.get_children():
+            if child.kind in (
+                cindex.CursorKind.CXX_METHOD,
+                cindex.CursorKind.CONSTRUCTOR,
+                cindex.CursorKind.DESTRUCTOR,
+                cindex.CursorKind.CXX_BASE_SPECIFIER,
+            ):
+                return True
+        return False
+
+    def _visit(cursor) -> None:
         if cursor.location.file is None:
-            continue
+            return
+        if _is_excluded(cursor, exclude):
+            return
         if _is_ignored(cursor):
-            continue
+            return
+
+        if cursor.kind in (
+            cindex.CursorKind.NAMESPACE,
+            cindex.CursorKind.LINKAGE_SPEC,
+            cindex.CursorKind.UNEXPOSED_DECL,
+        ):
+            for child in cursor.get_children():
+                _visit(child)
+            return
 
         if cursor.kind == cindex.CursorKind.STRUCT_DECL and cursor.is_definition():
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
-                continue
-            fields = []
-            for field in cursor.get_children():
-                if field.kind != cindex.CursorKind.FIELD_DECL:
-                    continue
-                fields.append(
-                    IRField(name=field.spelling, type=_type_from_clang(field.type))
+                return
+            if _is_cpp_record(cursor):
+                methods = []
+                for child in cursor.get_children():
+                    if child.kind == cindex.CursorKind.CXX_METHOD:
+                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                            continue
+                        if not child.spelling or not _passes_name_filters(
+                            child.spelling, allow, deny
+                        ):
+                            continue
+                        methods.append(_method_from_cursor(child))
+                module.classes.append(
+                    IRClass(
+                        name=name,
+                        qualified_name=_qualified_name(cursor),
+                        methods=methods,
+                    )
                 )
-            module.types.append(IRStruct(name=name, fields=fields))
+                return
+            module.types.append(_struct_from_cursor(cursor))
+            return
 
-        elif cursor.kind == cindex.CursorKind.ENUM_DECL:
+        if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
-                continue
-            values = []
+                return
+            methods = []
             for child in cursor.get_children():
-                if child.kind != cindex.CursorKind.ENUM_CONSTANT_DECL:
-                    continue
-                values.append(IREnumValue(name=child.spelling, value=child.enum_value))
-            module.enums.append(
-                IREnum(name=name, values=values, scoped=cursor.is_scoped_enum())
+                if child.kind == cindex.CursorKind.CXX_METHOD:
+                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                        continue
+                    if not child.spelling or not _passes_name_filters(
+                        child.spelling, allow, deny
+                    ):
+                        continue
+                    methods.append(_method_from_cursor(child))
+            module.classes.append(
+                IRClass(
+                    name=name,
+                    qualified_name=_qualified_name(cursor),
+                    methods=methods,
+                )
             )
+            return
 
-        elif cursor.kind == cindex.CursorKind.FUNCTION_DECL:
+        if cursor.kind == cindex.CursorKind.ENUM_DECL:
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
-                continue
-            if not _has_export_macro(cursor, cfg.filters.export_macro):
-                continue
-            if cursor.is_variadic():
-                variadic = True
-            else:
-                variadic = False
+                return
+            module.enums.append(_enum_from_cursor(cursor))
+            return
+
+        if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
+            name = cursor.spelling
+            if not name or not _passes_name_filters(name, allow, deny):
+                return
             params = []
             for arg in cursor.get_arguments():
                 params.append(
                     IRParam(name=arg.spelling, type=_type_from_clang(arg.type))
                 )
+            variadic = False
+            if hasattr(cursor, "type") and cursor.type is not None:
+                if hasattr(cursor.type, "is_function_variadic"):
+                    variadic = cursor.type.is_function_variadic()
             module.functions.append(
                 IRFunction(
                     name=name,
+                    qualified_name=_qualified_name(cursor),
                     return_type=_type_from_clang(cursor.result_type),
                     params=params,
                     variadic=variadic,
                 )
             )
+            return
 
-        elif cursor.kind == cindex.CursorKind.TYPEDEF_DECL:
+        if cursor.kind == cindex.CursorKind.TYPEDEF_DECL:
             name = cursor.spelling
             if not name or not _passes_name_filters(name, allow, deny):
-                continue
+                return
+            underlying = cursor.underlying_typedef_type
+            decl = underlying.get_declaration()
+            if (
+                decl
+                and decl.kind == cindex.CursorKind.STRUCT_DECL
+                and decl.is_definition()
+            ):
+                if not decl.spelling:
+                    module.types.append(_struct_from_cursor(decl, name_override=name))
+                    return
+            if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
+                if not decl.spelling:
+                    module.enums.append(_enum_from_cursor(decl, name_override=name))
+                    return
             module.aliases.append(
                 IRAlias(
                     name=name, target=_type_from_clang(cursor.underlying_typedef_type)
                 )
             )
+            return
 
-        elif cursor.kind == cindex.CursorKind.MACRO_DEFINITION:
+        if cursor.kind == cindex.CursorKind.MACRO_DEFINITION:
             if not cursor.spelling:
-                continue
+                return
             tokens = [t.spelling for t in cursor.get_tokens()]
             if len(tokens) == 2:
                 name, value = tokens
                 if not _passes_name_filters(name, allow, deny):
-                    continue
+                    return
                 parsed = _parse_macro_value(value)
                 if parsed is None:
-                    continue
+                    return
                 module.constants.append(
                     IRConstant(name=name, type=parsed[0], value=parsed[1])
                 )
+            return
+
+    for cursor in tu.cursor.get_children():
+        _visit(cursor)
 
     module.types.sort(key=lambda t: t.name)
     module.enums.sort(key=lambda e: e.name)
     module.functions.sort(key=lambda f: f.name)
+    module.classes.sort(key=lambda c: c.name)
     module.constants.sort(key=lambda c: c.name)
     module.aliases.sort(key=lambda a: a.name)
     return module

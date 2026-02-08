@@ -63,13 +63,13 @@ C++ Headers
 ## 输入与约束
 
 - 入口：一组 C++ 头文件 + include paths + compile flags
-- 建议约定宏：用于筛选可导出 API（例如 `NATIVEAPI_EXPORT`）
 - 过滤方式：
-  - `export_macro`：只导出带宏标记的符号
   - `// bindgen:ignore`：显式忽略
   - 可选白名单/黑名单（按正则匹配函数/类型名）
+  - 可选排除目录（例如 `capi`）
 - 只处理（MVP）：
-  - 可导出的 C API 函数（`extern "C"`）
+  - `extern "C"` 函数
+  - C++ class/struct 的 public 方法（不含继承、多态、异常语义）
   - `struct` + POD 类型
   - `enum` 常量
   - `#define` 的简单常量
@@ -105,6 +105,7 @@ C++ Headers
 - headers
 - types
 - functions
+- classes
 - constants
 - aliases
 
@@ -209,6 +210,7 @@ render_to_files(templates, context, out_dir)
 - `module`: 当前模块信息（headers, namespaces）
 - `types`: 结构体/枚举/别名列表（已排序）
 - `functions`: 函数列表（已过滤）
+- `classes`: C++ 类/struct 列表（public methods）
 - `constants`: 常量列表
 - `mapping`: 语言映射配置（types/conventions/naming）
 
@@ -230,13 +232,13 @@ render_to_files(templates, context, out_dir)
 ```yaml
 clang_flags:
   - -std=c11
-  - -DNATIVEAPI_EXPORT
 mapping:
   language: example
 filters:
-  export_macro: NATIVEAPI_EXPORT
   allowlist_regex: []
   denylist_regex: []
+  exclude_dirs:
+    - capi
 ```
 
 说明：`entry_headers` 将自动从 `src/` 目录下收集所有 `.h`（忽略 `platform/`），`include_paths` 也会默认指向 `src/`，无需在配置中手动列出。模板目录默认读取 `config.yaml` 同路径下的 `template/`。
@@ -244,7 +246,6 @@ filters:
 ### 注解建议（可扩展）
 
 - 使用宏或注释标注 API，如：
-  - `NATIVEAPI_EXPORT` 标记导出
   - `// bindgen:ignore` 跳过
   - `// bindgen:nullable` 标记可为空
   - `// bindgen:rename <NewName>` 重命名
@@ -295,12 +296,11 @@ PYTHONPATH=../.. python3 -m bindgen \
 
 ## 风险与规避
 
-- **宏复杂度高**：MVP 仅处理简单宏与 export 宏
+- **宏复杂度高**：MVP 仅处理简单宏
 - **C++ 语义**：默认 `extern "C"` 入口
 - **跨平台 ABI**：需在生成器中区分平台（Windows/Linux/macOS）
 
 ## 下一步
 
-- 补充 `bindgen.yaml` 示例
-- 实现 `parser.py` 与 `ir.py` 的最小骨架
-- 选择模板引擎（如 `jinja2`）用于 codegen
+- 补充更多模板示例
+- 扩展 C++ 类方法语义（如继承信息、构造/析构、const 重载等）
