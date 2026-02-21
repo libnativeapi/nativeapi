@@ -1,0 +1,3 @@
+add_executable(url_opener_test url_opener_test.cpp)
+target_link_libraries(url_opener_test PRIVATE nativeapi)
+add_test(NAME url_opener_test COMMAND url_opener_test)

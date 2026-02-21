@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(nativeapi_library VERSION 0.0.1 LANGUAGES CXX C)
 
+include(CTest)
+
 # Add library subdirectory
 add_subdirectory(src)
 
@@ -24,3 +26,7 @@ add_subdirectory(examples/tray_icon_example)
 add_subdirectory(examples/tray_icon_c_example)
 add_subdirectory(examples/window_c_example)
 add_subdirectory(examples/window_example)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
