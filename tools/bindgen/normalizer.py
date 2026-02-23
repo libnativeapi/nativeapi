@@ -78,7 +78,7 @@ def _cursor_path(cursor) -> Optional[str]:
         idx = parts.index("src")
         rel = Path(*parts[idx:]).as_posix()
         return rel
-    return path.as_posix()
+    return "unknown"
 
 
 def _type_from_clang(tp) -> IRType:
@@ -90,7 +90,63 @@ def _type_from_clang(tp) -> IRType:
     if tp.is_volatile_qualified():
         qualifiers.append("volatile")
 
-    kind = tp.kind
+    try:
+        kind = tp.kind
+    except ValueError:
+        spelling = (tp.spelling or "").strip()
+        lower = spelling.lower()
+
+        if lower in ("void",):
+            return IRType(kind="void", qualifiers=qualifiers)
+        if lower in ("bool", "_bool"):
+            return IRType(kind="bool", qualifiers=qualifiers)
+        if lower in ("char", "signed char"):
+            return IRType(kind="int8", qualifiers=qualifiers)
+        if lower in ("unsigned char",):
+            return IRType(kind="uint8", qualifiers=qualifiers)
+        if lower in ("short", "short int", "signed short"):
+            return IRType(kind="int16", qualifiers=qualifiers)
+        if lower in ("unsigned short", "unsigned short int"):
+            return IRType(kind="uint16", qualifiers=qualifiers)
+        if lower in ("int", "signed int"):
+            return IRType(kind="int32", qualifiers=qualifiers)
+        if lower in ("unsigned int",):
+            return IRType(kind="uint32", qualifiers=qualifiers)
+        if lower in ("long", "long int", "signed long"):
+            return IRType(kind="int64", qualifiers=qualifiers)
+        if lower in ("unsigned long", "unsigned long int"):
+            return IRType(kind="uint64", qualifiers=qualifiers)
+        if lower in ("long long", "long long int", "signed long long"):
+            return IRType(kind="int64", qualifiers=qualifiers)
+        if lower in ("unsigned long long", "unsigned long long int"):
+            return IRType(kind="uint64", qualifiers=qualifiers)
+        if lower in ("float",):
+            return IRType(kind="float32", qualifiers=qualifiers)
+        if lower in ("double", "long double"):
+            return IRType(kind="float64", qualifiers=qualifiers)
+        if lower == "size_t":
+            return IRType(kind="size_t", qualifiers=qualifiers)
+        if lower == "ssize_t":
+            return IRType(kind="ssize_t", qualifiers=qualifiers)
+        if lower == "intptr_t":
+            return IRType(kind="intptr", qualifiers=qualifiers)
+        if lower == "uintptr_t":
+            return IRType(kind="uintptr", qualifiers=qualifiers)
+
+        if lower.endswith("&&"):
+            pointee = IRType(kind="unknown", name=spelling[:-2].strip())
+            return IRType(kind="rvalue_reference", to=pointee, qualifiers=qualifiers)
+        if lower.endswith("&"):
+            pointee = IRType(kind="unknown", name=spelling[:-1].strip())
+            return IRType(kind="reference", to=pointee, qualifiers=qualifiers)
+        if lower.endswith("*"):
+            base = spelling[:-1].strip()
+            if base in ("char", "const char"):
+                return IRType(kind="cstring", qualifiers=qualifiers)
+            pointee = IRType(kind="unknown", name=base)
+            return IRType(kind="pointer", to=pointee, qualifiers=qualifiers)
+
+        return IRType(kind="unknown", name=spelling, qualifiers=qualifiers)
     if kind == cindex.TypeKind.VOID:
         return IRType(kind="void", qualifiers=qualifiers)
     if kind == cindex.TypeKind.BOOL:

@@ -464,6 +464,32 @@ PYTHONPATH=../.. python3 -m bindgen \
 - `--out` 输出目录
 - `--dump-ir` 输出 IR JSON 便于调试
 
+### 生成后格式化（Post Formatters）
+
+可在 `mapping.options.formatters` 配置生成完成后的格式化命令：
+
+```yaml
+mapping:
+  options:
+    formatters:
+      - name: swiftformat-generated
+        cmd: ["swiftformat", "{out_dir}/src"]
+        continue_on_error: true
+      - name: dart-format-generated
+        cmd: ["dart", "format", "{out_dir}/src"]
+        continue_on_error: true
+```
+
+说明：
+
+- `cmd`：必填，命令与参数数组（不走 shell）。
+- `continue_on_error`：可选，默认 `true`。失败时仅 warning 并继续。
+- `enabled`：可选，默认 `true`，可按项关闭 formatter。
+- 占位符支持：
+  - `{out_dir}`：`--out` 指定的输出目录（绝对路径）
+  - `{config_dir}`：`config.yaml` 所在目录
+  - `{project_dir}`：执行 bindgen 时的当前工作目录
+
 ## 开发计划（里程碑）
 
 1. **MVP**
