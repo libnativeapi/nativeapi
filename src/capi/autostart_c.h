@@ -132,12 +132,20 @@ char* native_autostart_get_executable_path(native_autostart_t autostart);
  * @param autostart     AutoStart handle.
  * @param out_arguments Output pointer to an array of newly allocated strings.
  * @param out_count     Output pointer to receive the number of arguments.
- * @return true on success; false on error. On success, free each string with
- *         free_c_str() and the array with delete[].
+ * @return true on success; false on error. On success, free the result with
+ *         native_autostart_free_arguments().
  */
 bool native_autostart_get_arguments(native_autostart_t autostart,
                                     char*** out_arguments,
                                     size_t* out_count);
+
+/**
+ * Free an arguments array returned by native_autostart_get_arguments.
+ *
+ * @param arguments Array of strings returned by native_autostart_get_arguments.
+ * @param count     Number of strings in the array (as set by native_autostart_get_arguments).
+ */
+void native_autostart_free_arguments(char** arguments, size_t count);
 
 /**
  * Enable auto-start at user login for the configured program and arguments.

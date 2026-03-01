@@ -172,6 +172,15 @@ bool native_autostart_get_arguments(native_autostart_t autostart,
   }
 }
 
+void native_autostart_free_arguments(char** arguments, size_t count) {
+  if (arguments) {
+    for (size_t i = 0; i < count; ++i) {
+      free_c_str(arguments[i]);
+    }
+    delete[] arguments;
+  }
+}
+
 bool native_autostart_enable(native_autostart_t autostart) {
   if (!autostart) {
     return false;
