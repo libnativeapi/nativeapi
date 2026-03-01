@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC authentication with pub.dev
+
+    steps:
+      - name: Checkout nativeapi-flutter
+        uses: actions/checkout@v4
+        with:
+          repository: libnativeapi/nativeapi-flutter
+          submodules: recursive
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.7"
+          channel: stable
+          cache: true
+
+      - name: Install melos
+        run: dart pub global activate melos
+
+      - name: Add melos to PATH
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Bootstrap melos
+        run: melos bootstrap
+
+      - name: Publish packages to pub.dev
+        run: melos publish --no-dry-run --yes
