@@ -9,6 +9,7 @@ build-macos/
 build-ohos/
 build-windows/
 cmake-build-debug/
+_codeql_detected_source_root
 
 # Generated test binaries and object files
 *.o
