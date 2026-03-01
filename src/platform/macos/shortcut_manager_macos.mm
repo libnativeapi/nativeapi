@@ -1,6 +1,9 @@
 #include <algorithm>
+#include <atomic>
 #include <cctype>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -138,12 +141,26 @@ bool ParseAcceleratorMac(const std::string& accelerator, UInt32& modifiers, UInt
     }
   }
 
-  if (key_token.rfind("f", 0) == 0) {
-    int fnum = std::stoi(key_token.substr(1));
-    if (fnum >= 1 && fnum <= 24) {
-      keycode = kVK_F1 + (fnum - 1);
-      return true;
+  if (key_token.rfind("f", 0) == 0 && key_token.size() > 1) {
+    // Carbon virtual key codes for function keys are non-contiguous; use explicit table.
+    static const UInt32 kFKeyCodes[] = {
+        kVK_F1,  kVK_F2,  kVK_F3,  kVK_F4,  kVK_F5,
+        kVK_F6,  kVK_F7,  kVK_F8,  kVK_F9,  kVK_F10,
+        kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15,
+        kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20,
+    };
+    try {
+      int fnum = std::stoi(key_token.substr(1));
+      if (fnum >= 1 && fnum <= static_cast<int>(std::size(kFKeyCodes))) {
+        keycode = kFKeyCodes[fnum - 1];
+        return true;
+      }
+    } catch (const std::invalid_argument&) {
+      return false;
+    } catch (const std::out_of_range&) {
+      return false;
     }
+    return false;
   }
 
   if (key_token == "space") {
@@ -189,11 +206,17 @@ bool ParseAcceleratorMac(const std::string& accelerator, UInt32& modifiers, UInt
 
 }  // namespace
 
+// Polling interval for the background event thread (seconds).
+static constexpr EventTimeout kEventPollTimeout = kEventDurationSecond * 0.1;
+
 class ShortcutManagerImpl final : public ShortcutManager::Impl {
  public:
   explicit ShortcutManagerImpl(ShortcutManager* manager) : manager_(manager) {}
 
   ~ShortcutManagerImpl() override {
+    StopThread();
+    JoinThread();
+
     for (const auto& [id, hotkey] : hotkeys_) {
       UnregisterEventHotKey(hotkey);
     }
@@ -208,7 +231,7 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
   bool IsSupported() override { return true; }
 
   bool RegisterShortcut(const std::shared_ptr<Shortcut>& shortcut) override {
-    EnsureHandler();
+    EnsureThread();
 
     UInt32 modifiers = 0;
     UInt32 keycode = 0;
@@ -242,10 +265,10 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
     return true;
   }
 
-  void SetupEventMonitoring() override { EnsureHandler(); }
+  void SetupEventMonitoring() override { EnsureThread(); }
 
   void CleanupEventMonitoring() override {
-    // Keep handler installed as long as shortcuts exist.
+    // Keep thread running while shortcuts may still be registered.
   }
 
  private:
@@ -279,6 +302,59 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
                         &handler_);
   }
 
+  void EnsureThread() {
+    std::lock_guard<std::mutex> lock(thread_mutex_);
+    if (running_.load()) {
+      return;
+    }
+
+    EnsureHandler();
+
+    running_.store(true);
+    thread_ = std::thread([this]() { ThreadMain(); });
+  }
+
+  void StopThread() {
+    std::lock_guard<std::mutex> lock(thread_mutex_);
+    if (!running_.load()) {
+      return;
+    }
+
+    running_.store(false);
+    // Unlock before joining so the thread can complete any in-progress work.
+    // Note: the thread only touches running_ and Carbon APIs, so this is safe.
+  }
+
+  // Must be called without thread_mutex_ held (to allow the thread to finish).
+  void JoinThread() {
+    if (thread_.joinable()) {
+      thread_.join();
+    }
+  }
+
+  void ThreadMain() {
+    const EventTypeSpec hotkey_spec = {kEventClassKeyboard, kEventHotKeyPressed};
+
+    while (running_.load()) {
+      EventRef event = nullptr;
+      // Use a short timeout so the loop can check the running_ flag periodically.
+      OSStatus status =
+          ReceiveNextEvent(1, &hotkey_spec, kEventPollTimeout, true, &event);
+
+      if (!running_.load()) {
+        if (status == noErr && event) {
+          ReleaseEvent(event);
+        }
+        break;
+      }
+
+      if (status == noErr && event) {
+        SendEventToEventTarget(event, GetApplicationEventTarget());
+        ReleaseEvent(event);
+      }
+    }
+  }
+
   void HandleHotKey(ShortcutId shortcut_id) {
     auto shortcut = manager_->Get(shortcut_id);
     if (!shortcut) {
@@ -296,6 +372,10 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
   ShortcutManager* manager_;
   std::unordered_map<ShortcutId, EventHotKeyRef> hotkeys_;
   EventHandlerRef handler_ = nullptr;
+
+  std::atomic<bool> running_{false};
+  std::thread thread_;
+  std::mutex thread_mutex_;
 };
 
 ShortcutManager::ShortcutManager()
