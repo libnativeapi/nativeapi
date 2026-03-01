@@ -10,6 +10,8 @@ add_subdirectory(src)
 # Add example programs subdirectory
 add_subdirectory(examples/application_example)
 add_subdirectory(examples/application_c_example)
+add_subdirectory(examples/autostart_example)
+add_subdirectory(examples/autostart_c_example)
 add_subdirectory(examples/display_example)
 add_subdirectory(examples/display_c_example)
 add_subdirectory(examples/id_allocator_example)
