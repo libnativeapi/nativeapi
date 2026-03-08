@@ -109,7 +109,7 @@ jobs:
         run: |
           cmake --version
           sudo apt-get update
-          sudo apt-get install -y ninja-build libgtk-3-dev libx11-dev libxi-dev libayatana-appindicator3-dev
+          sudo apt-get install -y ninja-build libgtk-3-dev libx11-dev libxi-dev
 
       - name: Configure CMake
         shell: bash
