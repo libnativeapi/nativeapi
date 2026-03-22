@@ -1,33 +1,9 @@
+#include <gio/gio.h>
 #include <memory>
 #include <mutex>
 
 #include "../../tray_icon.h"
 #include "../../tray_manager.h"
-
-// Import headers
-#ifdef __has_include
-#if __has_include(<gtk/gtk.h>)
-#include <gtk/gtk.h>
-#define HAS_GTK 1
-#else
-#define HAS_GTK 0
-#endif
-#else
-// Fallback for older compilers
-#define HAS_GTK 0
-#endif
-
-#ifdef __has_include
-#if __has_include(<libayatana-appindicator/app-indicator.h>)
-#include <libayatana-appindicator/app-indicator.h>
-#define HAS_AYATANA_APPINDICATOR 1
-#else
-#define HAS_AYATANA_APPINDICATOR 0
-#endif
-#else
-// Fallback for older compilers
-#define HAS_AYATANA_APPINDICATOR 0
-#endif
 
 namespace nativeapi {
 
@@ -41,24 +17,22 @@ TrayManager::TrayManager() : next_tray_id_(1), pimpl_(std::make_unique<Impl>()) 
 
 TrayManager::~TrayManager() {
   std::lock_guard<std::mutex> lock(mutex_);
-  // Clean up all managed tray icons
-  for (auto& pair : trays_) {
-    auto tray = pair.second;
-    if (tray) {
-      // The TrayIcon destructor will handle cleanup of the AppIndicator
-    }
-  }
   trays_.clear();
 }
 
 bool TrayManager::IsSupported() {
-#if HAS_GTK && HAS_AYATANA_APPINDICATOR
-  // Check if GTK is initialized and AppIndicator is available
-  return gtk_init_check(nullptr, nullptr);
-#else
-  // If GTK or AppIndicator is not available, assume no system tray support
-  return false;
-#endif
+  // Cache the result: session bus availability does not change during runtime.
+  static bool checked = false;
+  static bool supported = false;
+  if (!checked) {
+    GDBusConnection* conn = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
+    if (conn) {
+      g_object_unref(conn);
+      supported = true;
+    }
+    checked = true;
+  }
+  return supported;
 }
 
 std::shared_ptr<TrayIcon> TrayManager::Get(TrayIconId id) {
