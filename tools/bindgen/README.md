@@ -81,17 +81,16 @@ C++ Headers
 
 ### 类型系统（IRType）
 
+- IR JSON 的类型引用采用“最小必要字段”编码，不再输出大量空字段
 - 基础类型：`void`, `bool`, `int8/16/32/64`, `uint8/16/32/64`, `float32/64`
 - 扩展基础类型：`size_t`, `ssize_t`, `intptr`, `uintptr`
-- 类型别名：`typedef/using` 归一化为 `alias`
-- 指针类型：`pointer<T>`
-- 数组类型：`array<T, N>`
-- 结构体：`struct { fields }`
-- 枚举：`enum { values }`
 - 字符串：`char*` 规范化为 `cstring`
-- 函数指针：`fnptr(ret, params)`（MVP 可忽略，后续支持）
-- 限定符：`const/volatile` 记录在 `qualifiers`
-- C++ `enum class` 归一化为 `enum`（保留 `scoped` 标记）
+- 命名类型引用：`{ "kind": "named", "name": "...", "type_kind": "struct|enum|class|alias|unknown" }`
+- 指针/引用：`pointer<T>`, `reference<T>`, `rvalue_reference<T>`
+- 数组：`array<T, N>`
+- 函数指针：`function_pointer`（MVP 先保留占位）
+- 限定符：仅在存在时输出 `qualifiers`
+- C++ `enum class` 归一化为 `enum`，定义节点保留 `scoped`
 
 ### 函数（IRFunction）
 
@@ -102,67 +101,53 @@ C++ Headers
 
 ### 模块（IRModule）
 
-- IR 输出为 `path -> IRFile` 的 map（不再包含 `headers` 节点）
+- IR JSON 顶层包含 `files`
+- `files` 为 `path -> IRFile` 的 map（不再包含 `headers` 节点）
 - `IRFile` 结构包含：
   - types
   - enums
+  - aliases
   - functions
   - classes
   - constants
-  - aliases
-- `source_path`：结构体/枚举/函数/别名/常量/类/方法/字段所在头文件路径（如 `src/foundation/color.h`）
+- 顶层声明节点统一包含：
+  - `source_path`
+  - `decl_index`
+- `IRFile` 在 JSON 中按类别分组；空分组不会输出
+- Python 内部仍提供按声明顺序展开的 `items` 视图供模板消费
 
 ### IR JSON 示例（最小）
 
 ```json
 {
-  "src/foundation/geometry.h": {
-    "types": [
-      {
-        "kind": "struct",
-        "name": "Point",
-        "source_path": "src/foundation/geometry.h",
-        "fields": [
-          {"name": "x", "type": {"kind": "float32"}, "source_path": "src/foundation/geometry.h"},
-          {"name": "y", "type": {"kind": "float32"}, "source_path": "src/foundation/geometry.h"}
-        ]
-      }
-    ],
-    "functions": [
-      {
-        "name": "na_distance",
-        "source_path": "src/foundation/geometry.h",
-        "return_type": {"kind": "float32"},
-        "params": [
-          {"name": "a", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false},
-          {"name": "b", "type": {"kind": "pointer", "to": {"kind": "struct", "name": "Point"}}, "nullable": false}
-        ]
-      }
-    ],
-    "enums": [],
-    "classes": [],
-    "constants": [],
-    "aliases": []
-  },
-  "src/foundation/error.h": {
-    "types": [],
-    "enums": [],
-    "functions": [],
-    "classes": [],
-    "constants": [
-      {"name": "NA_OK", "type": {"kind": "int32"}, "value": 0, "source_path": "src/foundation/error.h"}
-    ],
-    "aliases": []
-  },
-  "src/foundation/types.h": {
-    "types": [],
-    "enums": [],
-    "functions": [],
-    "classes": [],
-    "constants": [],
-    "aliases": [
-      {"name": "NAHandle", "target": {"kind": "uintptr"}, "source_path": "src/foundation/types.h"}
-    ]
+  "files": {
+    "src/foundation/geometry.h": {
+      "types": [
+        {
+          "kind": "struct",
+          "name": "Point",
+          "source_path": "src/foundation/geometry.h",
+          "decl_index": 1008,
+          "fields": [
+            {"name": "x", "type": {"kind": "float32"}},
+            {"name": "y", "type": {"kind": "float32"}}
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "kind": "function",
+          "name": "na_distance",
+          "source_path": "src/foundation/geometry.h",
+          "decl_index": 2008,
+          "return_type": {"kind": "float32"},
+          "params": [
+            {"name": "a", "type": {"kind": "pointer", "to": {"kind": "named", "name": "Point", "type_kind": "struct"}}},
+            {"name": "b", "type": {"kind": "pointer", "to": {"kind": "named", "name": "Point", "type_kind": "struct"}}}
+          ]
+        }
+      ]
+    }
   }
 }
 ```

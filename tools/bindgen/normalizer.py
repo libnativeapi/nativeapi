@@ -81,6 +81,15 @@ def _cursor_path(cursor) -> Optional[str]:
     return "unknown"
 
 
+def _unqualified_type_name(spelling: str) -> str:
+    name = (spelling or "").strip()
+    if not name:
+        return name
+    if "::" in name:
+        name = name.split("::")[-1]
+    return name
+
+
 def _type_from_clang(tp) -> IRType:
     from clang import cindex  # type: ignore
 
@@ -134,19 +143,29 @@ def _type_from_clang(tp) -> IRType:
             return IRType(kind="uintptr", qualifiers=qualifiers)
 
         if lower.endswith("&&"):
-            pointee = IRType(kind="unknown", name=spelling[:-2].strip())
+            pointee = IRType(
+                kind="unknown",
+                name=_unqualified_type_name(spelling[:-2]),
+            )
             return IRType(kind="rvalue_reference", to=pointee, qualifiers=qualifiers)
         if lower.endswith("&"):
-            pointee = IRType(kind="unknown", name=spelling[:-1].strip())
+            pointee = IRType(
+                kind="unknown",
+                name=_unqualified_type_name(spelling[:-1]),
+            )
             return IRType(kind="reference", to=pointee, qualifiers=qualifiers)
         if lower.endswith("*"):
             base = spelling[:-1].strip()
             if base in ("char", "const char"):
                 return IRType(kind="cstring", qualifiers=qualifiers)
-            pointee = IRType(kind="unknown", name=base)
+            pointee = IRType(kind="unknown", name=_unqualified_type_name(base))
             return IRType(kind="pointer", to=pointee, qualifiers=qualifiers)
 
-        return IRType(kind="unknown", name=spelling, qualifiers=qualifiers)
+        return IRType(
+            kind="unknown",
+            name=_unqualified_type_name(spelling),
+            qualifiers=qualifiers,
+        )
     if kind == cindex.TypeKind.VOID:
         return IRType(kind="void", qualifiers=qualifiers)
     if kind == cindex.TypeKind.BOOL:
@@ -199,16 +218,28 @@ def _type_from_clang(tp) -> IRType:
         )
 
     if kind == cindex.TypeKind.RECORD:
-        return IRType(kind="struct", name=tp.spelling, qualifiers=qualifiers)
+        return IRType(
+            kind="struct",
+            name=_unqualified_type_name(tp.spelling),
+            qualifiers=qualifiers,
+        )
 
     if kind == cindex.TypeKind.ENUM:
-        return IRType(kind="enum", name=tp.spelling, qualifiers=qualifiers)
+        return IRType(
+            kind="enum",
+            name=_unqualified_type_name(tp.spelling),
+            qualifiers=qualifiers,
+        )
 
     if kind in (cindex.TypeKind.ELABORATED, cindex.TypeKind.UNEXPOSED):
         canonical = tp.get_canonical()
         if canonical.kind != kind:
             return _type_from_clang(canonical)
-        return IRType(kind="unknown", name=tp.spelling, qualifiers=qualifiers)
+        return IRType(
+            kind="unknown",
+            name=_unqualified_type_name(tp.spelling),
+            qualifiers=qualifiers,
+        )
 
     if kind == cindex.TypeKind.TYPEDEF:
         if tp.spelling == "size_t":
@@ -219,9 +250,17 @@ def _type_from_clang(tp) -> IRType:
             return IRType(kind="intptr", qualifiers=qualifiers)
         if tp.spelling == "uintptr_t":
             return IRType(kind="uintptr", qualifiers=qualifiers)
-        return IRType(kind="alias", name=tp.spelling, qualifiers=qualifiers)
+        return IRType(
+            kind="alias",
+            name=_unqualified_type_name(tp.spelling),
+            qualifiers=qualifiers,
+        )
 
-    return IRType(kind="unknown", name=tp.spelling, qualifiers=qualifiers)
+    return IRType(
+        kind="unknown",
+        name=_unqualified_type_name(tp.spelling),
+        qualifiers=qualifiers,
+    )
 
 
 def _qualified_name(cursor) -> Optional[str]:
@@ -302,6 +341,13 @@ def _method_from_cursor(cursor, kind: str = "method") -> IRMethod:
         else None,
         variadic=variadic,
     )
+
+
+def _decl_index(cursor) -> int:
+    location = getattr(cursor, "location", None)
+    line = getattr(location, "line", 0) or 0
+    column = getattr(location, "column", 0) or 0
+    return (line * 1000) + column
 
 
 def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
@@ -409,10 +455,12 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                         methods.append(dtor)
                         continue
                 bucket = _bucket_for(_cursor_path(cursor))
-                bucket.items.append(
+                bucket.append(
                     IRClass(
                         name=name,
+                        source_path=_cursor_path(cursor),
                         qualified_name=_qualified_name(cursor),
+                        decl_index=_decl_index(cursor),
                         fields=fields,
                         bases=bases,
                         methods=methods,
@@ -420,7 +468,10 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 )
                 return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.items.append(_struct_from_cursor(cursor))
+            item = _struct_from_cursor(cursor)
+            item.source_path = _cursor_path(cursor)
+            item.decl_index = _decl_index(cursor)
+            bucket.append(item)
             return
 
         if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
@@ -482,10 +533,12 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                     methods.append(dtor)
                     continue
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.items.append(
+            bucket.append(
                 IRClass(
                     name=name,
+                    source_path=_cursor_path(cursor),
                     qualified_name=_qualified_name(cursor),
+                    decl_index=_decl_index(cursor),
                     fields=fields,
                     bases=bases,
                     methods=methods,
@@ -498,7 +551,10 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             if not name or not _passes_name_filters(name, allow, deny):
                 return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.items.append(_enum_from_cursor(cursor))
+            item = _enum_from_cursor(cursor)
+            item.source_path = _cursor_path(cursor)
+            item.decl_index = _decl_index(cursor)
+            bucket.append(item)
             return
 
         if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
@@ -517,10 +573,12 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 if hasattr(cursor.type, "is_function_variadic"):
                     variadic = cursor.type.is_function_variadic()
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.items.append(
+            bucket.append(
                 IRFunction(
                     name=name,
+                    source_path=_cursor_path(cursor),
                     qualified_name=_qualified_name(cursor),
+                    decl_index=_decl_index(cursor),
                     return_type=_type_from_clang(cursor.result_type),
                     params=params,
                     variadic=variadic,
@@ -541,17 +599,25 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
             ):
                 if not decl.spelling:
                     bucket = _bucket_for(_cursor_path(decl))
-                    bucket.items.append(_struct_from_cursor(decl, name_override=name))
+                    item = _struct_from_cursor(decl, name_override=name)
+                    item.source_path = _cursor_path(decl)
+                    item.decl_index = _decl_index(cursor)
+                    bucket.append(item)
                     return
             if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
                 if not decl.spelling:
                     bucket = _bucket_for(_cursor_path(decl))
-                    bucket.items.append(_enum_from_cursor(decl, name_override=name))
+                    item = _enum_from_cursor(decl, name_override=name)
+                    item.source_path = _cursor_path(decl)
+                    item.decl_index = _decl_index(cursor)
+                    bucket.append(item)
                     return
             bucket = _bucket_for(_cursor_path(cursor))
-            bucket.items.append(
+            bucket.append(
                 IRAlias(
                     name=name,
+                    source_path=_cursor_path(cursor),
+                    decl_index=_decl_index(cursor),
                     target=_type_from_clang(cursor.underlying_typedef_type),
                 )
             )
@@ -569,9 +635,11 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
                 if parsed is None:
                     return
                 bucket = _bucket_for(_cursor_path(cursor))
-                bucket.items.append(
+                bucket.append(
                     IRConstant(
                         name=name,
+                        source_path=_cursor_path(cursor),
+                        decl_index=_decl_index(cursor),
                         type=parsed[0],
                         value=parsed[1],
                     )
@@ -581,8 +649,6 @@ def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
     for cursor in tu.cursor.get_children():
         _visit(cursor)
 
-    for bucket in module.files.values():
-        bucket.items.sort(key=lambda item: item.name)
     return module
 
 
