@@ -10,6 +10,10 @@ using namespace nativeapi;
 
 namespace {
 
+UrlOpener* GetUrlOpener(native_url_opener_t opener) {
+  return static_cast<UrlOpener*>(opener);
+}
+
 native_url_open_error_code_t ToCErrorCode(UrlOpenErrorCode code) {
   switch (code) {
     case UrlOpenErrorCode::kNone:
@@ -41,7 +45,23 @@ native_url_open_result_t MakeResult(bool success,
 
 }  // namespace
 
-bool native_url_opener_is_supported(void) {
+native_url_opener_t native_url_opener_create(void) {
+  try {
+    return static_cast<native_url_opener_t>(new UrlOpener());
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+void native_url_opener_destroy(native_url_opener_t opener) {
+  delete GetUrlOpener(opener);
+}
+
+bool native_url_opener_is_supported(native_url_opener_t opener) {
+  if (!opener) {
+    return false;
+  }
+
   try {
     return UrlOpener::IsSupported();
   } catch (...) {
@@ -49,14 +69,17 @@ bool native_url_opener_is_supported(void) {
   }
 }
 
-native_url_open_result_t native_url_opener_open(const char* url) {
+native_url_open_result_t native_url_opener_open(native_url_opener_t opener, const char* url) {
+  if (!opener) {
+    return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, "URL opener is null.");
+  }
+
   if (!url) {
     return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVALID_URL_EMPTY, "URL is empty.");
   }
 
   try {
-    UrlOpener opener;
-    const UrlOpenResult result = opener.Open(std::string(url));
+    const UrlOpenResult result = GetUrlOpener(opener)->Open(std::string(url));
     return MakeResult(result.success, ToCErrorCode(result.error_code), result.error_message);
   } catch (const std::exception& e) {
     return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, e.what());

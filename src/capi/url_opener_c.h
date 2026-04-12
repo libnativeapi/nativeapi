@@ -1,10 +1,21 @@
 #pragma once
 
+#include <stdbool.h>
+
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h>
+/**
+ * @brief Opaque handle for a URL opener instance.
+ */
+typedef void* native_url_opener_t;
 
 /**
  * @brief Error codes returned by URL opening APIs.
@@ -28,20 +39,35 @@ typedef struct {
 } native_url_open_result_t;
 
 /**
+ * @brief Create a URL opener instance.
+ */
+FFI_PLUGIN_EXPORT
+native_url_opener_t native_url_opener_create(void);
+
+/**
+ * @brief Destroy a URL opener instance.
+ */
+FFI_PLUGIN_EXPORT
+void native_url_opener_destroy(native_url_opener_t opener);
+
+/**
  * @brief Check whether URL opening is supported on this platform.
  */
-bool native_url_opener_is_supported(void);
+FFI_PLUGIN_EXPORT
+bool native_url_opener_is_supported(native_url_opener_t opener);
 
 /**
  * @brief Attempt to open URL with the system default browser.
  *
  * Caller must release result.error_message via native_url_open_result_free().
  */
-native_url_open_result_t native_url_opener_open(const char* url);
+FFI_PLUGIN_EXPORT
+native_url_open_result_t native_url_opener_open(native_url_opener_t opener, const char* url);
 
 /**
  * @brief Free owned memory inside a native_url_open_result_t.
  */
+FFI_PLUGIN_EXPORT
 void native_url_open_result_free(native_url_open_result_t* result);
 
 #ifdef __cplusplus

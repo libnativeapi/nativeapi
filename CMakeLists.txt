@@ -26,6 +26,7 @@ add_subdirectory(examples/storage_example)
 add_subdirectory(examples/storage_c_example)
 add_subdirectory(examples/tray_icon_example)
 add_subdirectory(examples/tray_icon_c_example)
+add_subdirectory(examples/url_opener_c_example)
 add_subdirectory(examples/window_c_example)
 add_subdirectory(examples/window_example)
 
