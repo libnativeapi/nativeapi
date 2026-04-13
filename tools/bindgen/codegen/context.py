@@ -225,6 +225,7 @@ class TypeMapper:
         options = config.options or {}
         self.symbol_overrides: Dict[str, str] = dict(options.get("symbol_overrides", {}) or {})
         self.singleton_classes = set(options.get("singleton_classes", []) or [])
+        self.force_instance_methods = set(options.get("force_instance_methods", []) or [])
         self.cstring_free_symbols: Dict[str, str] = dict(options.get("cstring_free_symbols", {}) or {})
         self.bridge_types: Dict[str, str] = dict(options.get("bridge_types", {}) or {})
         self.api_type_exact: Dict[str, str] = dict(
@@ -558,6 +559,9 @@ class TypeMapper:
         api_return_type = self._api_type(return_type)
         call_symbol = self._symbol_for_method(ir_class, ir_method)
         params = [self.map_param(p) for p in ir_method.params]
+        class_key = ir_class.qualified_name or ir_class.name
+        method_key = f"{class_key}::{ir_method.name}"
+        force_instance = method_key in self.force_instance_methods
 
         call_args: List[str] = []
         for param in params:
@@ -600,8 +604,8 @@ class TypeMapper:
             is_property=is_property,
             property_name=property_name,
             method_kind=ir_method.kind,
-            static=ir_method.static,
-            needs_instance_handle=not ir_method.static,
+            static=ir_method.static and not force_instance,
+            needs_instance_handle=(not ir_method.static) or force_instance,
             const=ir_method.const,
             access=ir_method.access,
             variadic=ir_method.variadic,

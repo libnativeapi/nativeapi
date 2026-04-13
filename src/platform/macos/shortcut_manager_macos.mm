@@ -14,13 +14,13 @@
 namespace nativeapi {
 namespace {
 
-std::string ToLower(std::string value) {
+std::string ShortcutToLower(std::string value) {
   std::transform(value.begin(), value.end(), value.begin(),
                  [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
   return value;
 }
 
-std::vector<std::string> SplitAccelerator(const std::string& accelerator) {
+std::vector<std::string> SplitShortcutAccelerator(const std::string& accelerator) {
   std::vector<std::string> parts;
   std::string current;
   for (char ch : accelerator) {
@@ -39,19 +39,19 @@ std::vector<std::string> SplitAccelerator(const std::string& accelerator) {
   return parts;
 }
 
-bool ParseAcceleratorTokens(const std::string& accelerator,
-                            std::vector<std::string>& modifiers,
-                            std::string& key_token) {
+bool ParseShortcutAcceleratorTokens(const std::string& accelerator,
+                                    std::vector<std::string>& modifiers,
+                                    std::string& key_token) {
   modifiers.clear();
   key_token.clear();
 
-  auto parts = SplitAccelerator(accelerator);
+  auto parts = SplitShortcutAccelerator(accelerator);
   if (parts.empty()) {
     return false;
   }
 
   for (auto& part : parts) {
-    std::string token = ToLower(part);
+    std::string token = ShortcutToLower(part);
     if (token == "ctrl" || token == "control" || token == "alt" || token == "shift" ||
         token == "cmd" || token == "command" || token == "super" || token == "meta" ||
         token == "cmdorctrl") {
@@ -67,13 +67,15 @@ bool ParseAcceleratorTokens(const std::string& accelerator,
   return !key_token.empty();
 }
 
-bool ParseAcceleratorMac(const std::string& accelerator, UInt32& modifiers, UInt32& keycode) {
+bool ParseMacShortcutAccelerator(const std::string& accelerator,
+                                 UInt32& modifiers,
+                                 UInt32& keycode) {
   modifiers = 0;
   keycode = 0;
 
   std::vector<std::string> modifier_tokens;
   std::string key_token;
-  if (!ParseAcceleratorTokens(accelerator, modifier_tokens, key_token)) {
+  if (!ParseShortcutAcceleratorTokens(accelerator, modifier_tokens, key_token)) {
     return false;
   }
 
@@ -235,7 +237,7 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
 
     UInt32 modifiers = 0;
     UInt32 keycode = 0;
-    if (!ParseAcceleratorMac(shortcut->GetAccelerator(), modifiers, keycode)) {
+    if (!ParseMacShortcutAccelerator(shortcut->GetAccelerator(), modifiers, keycode)) {
       return false;
     }
 
