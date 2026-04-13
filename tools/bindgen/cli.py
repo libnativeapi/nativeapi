@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+from .codegen.context import dump_context_json
 from .codegen.generator import generate_bindings
 from .config import load_config
 from .ir.serializer import dump_ir_json, load_ir_json
@@ -14,6 +15,10 @@ def main(argv=None) -> int:
     parser.add_argument("--out", required=True, help="Output directory")
     parser.add_argument("--ir", help="Load IR from existing JSON file (skips parsing)")
     parser.add_argument("--dump-ir", help="Write IR JSON to path")
+    parser.add_argument(
+        "--dump-context",
+        help="Write mapped template context JSON to path",
+    )
 
     args = parser.parse_args(argv)
 
@@ -30,6 +35,8 @@ def main(argv=None) -> int:
 
     if args.dump_ir:
         dump_ir_json(module, Path(args.dump_ir))
+    if args.dump_context:
+        dump_context_json(module, cfg.mapping, Path(args.dump_context))
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)

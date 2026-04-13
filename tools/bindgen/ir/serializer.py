@@ -42,6 +42,7 @@ def _type_ref_kind(ir_type: IRType) -> str:
         "intptr",
         "uintptr",
         "cstring",
+        "string",
     }
     if ir_type.kind in builtin_kinds:
         return ir_type.kind

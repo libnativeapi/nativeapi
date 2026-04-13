@@ -438,16 +438,18 @@ cd tools/bindgen/example
 PYTHONPATH=../.. python3 -m bindgen \
   --config bindgen/config.yaml \
   --dump-ir out/ir.json \
+  --dump-context out/context.json \
   --out out
 ```
 
-示例运行后将使用 `bindgen/template` 中的模板，并把 IR 与生成结果都写到 `out`。
+示例运行后将使用 `bindgen/template` 中的模板，并把 IR、模板上下文与生成结果都写到 `out`。
 
 常用参数：
 
 - `--config` 配置文件
 - `--out` 输出目录
 - `--dump-ir` 输出 IR JSON 便于调试
+- `--dump-context` 输出模板实际消费的映射后上下文 JSON，便于排查类型/符号/桥接配置
 
 ### 生成后格式化（Post Formatters）
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass, field, fields, is_dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from ..config import MappingConfig
@@ -37,6 +39,8 @@ class MappedType:
     inner: Optional["MappedType"] = None
     element: Optional["MappedType"] = None
     length: Optional[int] = None
+    native_type: str = ""
+    bridge_kind: str = "plain"
 
     def __str__(self) -> str:
         return self.mapped
@@ -72,6 +76,9 @@ class MappedStruct:
     name: str = ""
     fields: List[MappedField] = field(default_factory=list)
     qualified_name: Optional[str] = None
+    native_type: str = ""
+    free_symbol: str = ""
+    has_string_fields: bool = False
     raw: Optional[IRStruct] = None
 
 
@@ -92,6 +99,7 @@ class MappedEnum:
     values: List[MappedEnumValue] = field(default_factory=list)
     scoped: bool = False
     qualified_name: Optional[str] = None
+    native_type: str = ""
     raw: Optional[IREnum] = None
 
 
@@ -118,7 +126,11 @@ class MappedFunction:
     params: List[MappedParam] = field(default_factory=list)
     call_symbol: str = ""
     call_args: List[str] = field(default_factory=list)
+    pre_call_lines: List[str] = field(default_factory=list)
+    post_call_lines: List[str] = field(default_factory=list)
     string_free_symbol: str = ""
+    struct_free_symbol: str = ""
+    native_return_type: str = ""
     callconv: Optional[str] = None
     variadic: bool = False
     qualified_name: Optional[str] = None
@@ -138,7 +150,11 @@ class MappedMethod:
     params: List[MappedParam] = field(default_factory=list)
     call_symbol: str = ""
     call_args: List[str] = field(default_factory=list)
+    pre_call_lines: List[str] = field(default_factory=list)
+    post_call_lines: List[str] = field(default_factory=list)
     string_free_symbol: str = ""
+    struct_free_symbol: str = ""
+    native_return_type: str = ""
     skip: bool = False
     is_property: bool = False
     property_name: str = ""
@@ -161,6 +177,8 @@ class MappedClass:
     methods: List[MappedMethod] = field(default_factory=list)
     bases: List[str] = field(default_factory=list)
     handle_alias: str = ""
+    create_symbol: str = ""
+    destroy_symbol: str = ""
     is_singleton: bool = False
     singleton_symbol: str = ""
     qualified_name: Optional[str] = None
@@ -240,6 +258,15 @@ class TypeMapper:
             (options.get("return_bridge_map", {}) or {})
         )
         self.param_bridges: List[Dict[str, Any]] = list(options.get("param_bridges", []) or [])
+        self.struct_free_symbols: Dict[str, str] = dict(
+            (options.get("struct_free_symbols", {}) or {})
+        )
+        self.class_create_symbols: Dict[str, str] = dict(
+            (options.get("class_create_symbols", {}) or {})
+        )
+        self.class_destroy_symbols: Dict[str, str] = dict(
+            (options.get("class_destroy_symbols", {}) or {})
+        )
 
     def map_type(self, ir_type: Optional[IRType]) -> MappedType:
         if ir_type is None:
@@ -261,6 +288,17 @@ class TypeMapper:
                 kind=kind,
                 is_void=True,
                 is_const=is_const,
+            )
+
+        if kind in ("cstring", "string"):
+            mapped_str = self._lookup_type(kind, is_const)
+            return MappedType(
+                mapped=mapped_str,
+                raw=ir_type,
+                kind=kind,
+                is_const=is_const,
+                native_type="ffi.Pointer<ffi.Char>" if kind == "cstring" else "",
+                bridge_kind="string",
             )
 
         if kind == "pointer":
@@ -353,12 +391,22 @@ class TypeMapper:
         if kind in ("named", "struct", "enum", "class", "typedef", "elaborated"):
             type_name = ir_type.name or "unknown"
             mapped_str = self._lookup_type(type_name, is_const)
+            bridge_kind = "plain"
+            native_type = ""
+            if kind == "struct":
+                bridge_kind = "struct"
+                native_type = self._native_struct_type(type_name)
+            elif kind == "enum":
+                bridge_kind = "enum"
+                native_type = self._native_enum_type(type_name)
             return MappedType(
                 mapped=mapped_str,
                 raw=ir_type,
                 kind=kind,
                 name=type_name,
                 is_const=is_const,
+                native_type=native_type,
+                bridge_kind=bridge_kind,
             )
 
         if kind == "function_pointer":
@@ -390,6 +438,11 @@ class TypeMapper:
             mapped = self.config.types[type_name]
             return f"{self.config.type_prefix}{mapped}{self.config.type_suffix}"
 
+        # Preserve named declarations such as structs/enums/classes in the
+        # generated API surface even when passthrough_unknown is disabled.
+        if type_name and type_name[:1].isupper():
+            return f"{self.config.type_prefix}{type_name}{self.config.type_suffix}"
+
         if self.config.passthrough_unknown:
             return f"{self.config.type_prefix}{type_name}{self.config.type_suffix}"
         if self.config.default_type:
@@ -398,6 +451,15 @@ class TypeMapper:
 
     def _api_void_type(self) -> str:
         return self.config.types.get("void", "void")
+
+    def _native_struct_type(self, type_name: str) -> str:
+        return f"native_{to_snake_case(type_name)}_t"
+
+    def _native_enum_type(self, type_name: str) -> str:
+        return f"native_{to_snake_case(type_name)}_t"
+
+    def _default_struct_free_symbol(self, type_name: str) -> str:
+        return f"native_{to_snake_case(type_name)}_free"
 
     def _api_type(self, mapped_type: Optional[MappedType]) -> str:
         if mapped_type is None:
@@ -415,6 +477,12 @@ class TypeMapper:
     def _return_bridge(self, api_type: str, return_type: Optional[MappedType]) -> str:
         if return_type is None or return_type.kind == "void":
             return "void"
+        if return_type.kind == "enum":
+            return "enum"
+        if return_type.kind == "struct":
+            return "struct"
+        if return_type.kind in ("cstring", "string"):
+            return "string"
         return self.return_bridge_map.get(api_type, "plain")
 
     def _symbol_for_function(self, ir_func: IRFunction) -> str:
@@ -433,11 +501,27 @@ class TypeMapper:
         fallback = f"native_{to_snake_case(ir_class.name)}_get_instance"
         return self.symbol_overrides.get(key, fallback)
 
+    def _symbol_for_class_create(self, ir_class: IRClass) -> str:
+        class_key = ir_class.qualified_name or ir_class.name
+        return self.class_create_symbols.get(
+            class_key,
+            f"native_{to_snake_case(ir_class.name)}_create",
+        )
+
+    def _symbol_for_class_destroy(self, ir_class: IRClass) -> str:
+        class_key = ir_class.qualified_name or ir_class.name
+        return self.class_destroy_symbols.get(
+            class_key,
+            f"native_{to_snake_case(ir_class.name)}_destroy",
+        )
+
     def _default_bridge_type(self, key: str) -> str:
         return self.bridge_types.get(key, "")
 
     def _param_call_args(self, param: MappedParam, symbol: str) -> List[str]:
         name = param.name
+        if param.type.kind in ("cstring", "string"):
+            return [f"{name}Native"]
         for bridge in self.param_bridges:
             type_key = bridge.get("type_key")
             api_type = self._default_bridge_type(type_key) if type_key else bridge.get("api_type", "")
@@ -451,6 +535,20 @@ class TypeMapper:
                 return [str(t).replace("{name}", name) for t in templates]
 
         return [name]
+
+    def _param_setup_lines(self, param: MappedParam) -> List[str]:
+        if param.type.kind in ("cstring", "string"):
+            native_name = f"{param.name}Native"
+            return [
+                f"final {native_name} = {param.name}.toNativeUtf8().cast<ffi.Char>();",
+            ]
+        return []
+
+    def _param_cleanup_lines(self, param: MappedParam) -> List[str]:
+        if param.type.kind in ("cstring", "string"):
+            native_name = f"{param.name}Native"
+            return [f"pkgffi.malloc.free({native_name}.cast());"]
+        return []
 
     def _string_free_symbol(self, symbol: str) -> str:
         if not self.cstring_free_symbols:
@@ -479,7 +577,7 @@ class TypeMapper:
 
     def map_param(self, ir_param: IRParam) -> MappedParam:
         mapped_type = self.map_type(ir_param.type)
-        return MappedParam(
+        mapped = MappedParam(
             name=self.namer.param_name(ir_param.name),
             type=mapped_type,
             api_type=self._api_type(mapped_type),
@@ -488,13 +586,28 @@ class TypeMapper:
             direction=ir_param.direction,
             raw=ir_param,
         )
+        if mapped_type.kind in ("cstring", "string"):
+            mapped.call_args = [f"{mapped.name}Native"]
+        return mapped
 
     def map_struct(self, ir_struct: IRStruct) -> MappedStruct:
+        fields = [self.map_field(f) for f in ir_struct.fields]
+        has_string_fields = any(field.type.kind in ("cstring", "string") for field in fields)
+        qualified_name = ir_struct.qualified_name or ir_struct.name
         return MappedStruct(
             kind="struct",
             name=self.namer.type_name(ir_struct.name),
-            fields=[self.map_field(f) for f in ir_struct.fields],
+            fields=fields,
             qualified_name=ir_struct.qualified_name,
+            native_type=self._native_struct_type(ir_struct.name),
+            free_symbol=self.struct_free_symbols.get(
+                qualified_name,
+                self.struct_free_symbols.get(
+                    ir_struct.name,
+                    self._default_struct_free_symbol(ir_struct.name) if has_string_fields else "",
+                ),
+            ),
+            has_string_fields=has_string_fields,
             raw=ir_struct,
         )
 
@@ -511,6 +624,7 @@ class TypeMapper:
             ],
             scoped=ir_enum.scoped,
             qualified_name=ir_enum.qualified_name,
+            native_type=self._native_enum_type(ir_enum.name),
             raw=ir_enum,
         )
 
@@ -529,12 +643,24 @@ class TypeMapper:
         params = [self.map_param(p) for p in ir_func.params]
 
         call_args: List[str] = []
+        pre_call_lines: List[str] = []
+        post_call_lines: List[str] = []
         for param in params:
+            pre_call_lines.extend(self._param_setup_lines(param))
             param.call_args = self._param_call_args(param, call_symbol)
             call_args.extend(param.call_args)
+            post_call_lines[0:0] = self._param_cleanup_lines(param)
 
         return_bridge = self._return_bridge(api_return_type, return_type)
         string_free_symbol = self._string_free_symbol(call_symbol) if return_bridge == "string" else ""
+        struct_free_symbol = ""
+        native_return_type = return_type.native_type if return_type else ""
+        if return_bridge == "struct" and return_type is not None:
+            qualified = ir_func.return_type.name if ir_func.return_type else ""
+            struct_free_symbol = self.struct_free_symbols.get(
+                qualified,
+                self._default_struct_free_symbol(qualified) if qualified else "",
+            )
 
         api_name = self.namer.function_name(ir_func.name)
         return MappedFunction(
@@ -547,7 +673,11 @@ class TypeMapper:
             params=params,
             call_symbol=call_symbol,
             call_args=call_args,
+            pre_call_lines=pre_call_lines,
+            post_call_lines=post_call_lines,
             string_free_symbol=string_free_symbol,
+            struct_free_symbol=struct_free_symbol,
+            native_return_type=native_return_type,
             callconv=ir_func.callconv,
             variadic=ir_func.variadic,
             qualified_name=ir_func.qualified_name,
@@ -564,9 +694,13 @@ class TypeMapper:
         force_instance = method_key in self.force_instance_methods
 
         call_args: List[str] = []
+        pre_call_lines: List[str] = []
+        post_call_lines: List[str] = []
         for param in params:
+            pre_call_lines.extend(self._param_setup_lines(param))
             param.call_args = self._param_call_args(param, call_symbol)
             call_args.extend(param.call_args)
+            post_call_lines[0:0] = self._param_cleanup_lines(param)
 
         raw_name = ir_method.name
         skip = raw_name == ir_class.name or raw_name.startswith("~") or raw_name == "GetInstance"
@@ -587,6 +721,14 @@ class TypeMapper:
 
         return_bridge = self._return_bridge(api_return_type, return_type)
         string_free_symbol = self._string_free_symbol(call_symbol) if return_bridge == "string" else ""
+        struct_free_symbol = ""
+        native_return_type = return_type.native_type if return_type else ""
+        if return_bridge == "struct" and return_type is not None:
+            qualified = ir_method.return_type.name if ir_method.return_type else ""
+            struct_free_symbol = self.struct_free_symbols.get(
+                qualified,
+                self._default_struct_free_symbol(qualified) if qualified else "",
+            )
 
         api_name = self.namer.method_name(raw_name)
         return MappedMethod(
@@ -599,7 +741,11 @@ class TypeMapper:
             params=params,
             call_symbol=call_symbol,
             call_args=call_args,
+            pre_call_lines=pre_call_lines,
+            post_call_lines=post_call_lines,
             string_free_symbol=string_free_symbol,
+            struct_free_symbol=struct_free_symbol,
+            native_return_type=native_return_type,
             skip=skip,
             is_property=is_property,
             property_name=property_name,
@@ -624,6 +770,8 @@ class TypeMapper:
             methods=[self.map_method(m, ir_class) for m in ir_class.methods],
             bases=ir_class.bases,
             handle_alias=f"native_{to_snake_case(ir_class.name)}_t",
+            create_symbol=self._symbol_for_class_create(ir_class),
+            destroy_symbol=self._symbol_for_class_destroy(ir_class),
             is_singleton=is_singleton,
             singleton_symbol=singleton_symbol,
             qualified_name=ir_class.qualified_name,
@@ -705,3 +853,49 @@ def build_context(module: IRModule, mapping: MappingConfig) -> Dict[str, Any]:
         "namer": namer,
         "raw": module,
     }
+
+
+def _jsonify(value: Any) -> Any:
+    if is_dataclass(value):
+        payload: Dict[str, Any] = {}
+        for item in fields(value):
+            if item.name == "raw":
+                continue
+            payload[item.name] = _jsonify(getattr(value, item.name))
+        return payload
+    if isinstance(value, dict):
+        return {str(key): _jsonify(val) for key, val in value.items()}
+    if isinstance(value, list):
+        return [_jsonify(item) for item in value]
+    if isinstance(value, tuple):
+        return [_jsonify(item) for item in value]
+    return value
+
+
+def dump_context_json(module: IRModule, mapping: MappingConfig, path: Path) -> None:
+    context = build_context(module, mapping)
+    files_payload = {}
+    for file_path, mapped_file in context["files"].items():
+        files_payload[file_path] = {
+            "items": _jsonify(mapped_file.items),
+            "types": _jsonify(mapped_file.types),
+            "enums": _jsonify(mapped_file.enums),
+            "aliases": _jsonify(mapped_file.aliases),
+            "functions": _jsonify(mapped_file.functions),
+            "classes": _jsonify(mapped_file.classes),
+            "constants": _jsonify(mapped_file.constants),
+        }
+    payload = {
+        "file_paths": context["file_paths"],
+        "files": files_payload,
+        "items": _jsonify(context["items"]),
+        "types": _jsonify(context["types"]),
+        "enums": _jsonify(context["enums"]),
+        "functions": _jsonify(context["functions"]),
+        "classes": _jsonify(context["classes"]),
+        "constants": _jsonify(context["constants"]),
+        "aliases": _jsonify(context["aliases"]),
+        "mapping": _jsonify(mapping),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

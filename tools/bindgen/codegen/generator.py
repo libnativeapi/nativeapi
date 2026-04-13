@@ -131,6 +131,28 @@ def _build_file_context(
     """Build context for a single file template."""
     from pathlib import PurePosixPath
 
+    def _iter_callable_bridges():
+        for fn in mapped_file.functions:
+            yield fn
+        for cls in mapped_file.classes:
+            for method in cls.methods:
+                yield method
+
+    callables = list(_iter_callable_bridges())
+    uses_ui = any(
+        callable_item.return_bridge in {"offset", "size", "rect"}
+        for callable_item in callables
+    )
+    uses_ffi = any(
+        callable_item.return_bridge in {"string", "struct"}
+        or callable_item.pre_call_lines
+        or callable_item.post_call_lines
+        for callable_item in callables
+    ) or any(
+        item.has_string_fields for item in mapped_file.types
+    )
+    uses_pkgffi = uses_ffi
+
     p = PurePosixPath(file_path)
 
     return {
@@ -171,6 +193,9 @@ def _build_file_context(
         "has_classes": bool(mapped_file.classes),
         "has_constants": bool(mapped_file.constants),
         "has_aliases": bool(mapped_file.aliases),
+        "uses_ffi": uses_ffi,
+        "uses_pkgffi": uses_pkgffi,
+        "uses_ui": uses_ui,
     }
 
 
