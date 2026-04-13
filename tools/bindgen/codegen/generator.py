@@ -143,6 +143,7 @@ def _build_file_context(
         callable_item.return_bridge in {"offset", "size", "rect"}
         for callable_item in callables
     )
+    has_handle_classes = any(not cls.is_singleton or cls.singleton_has_handle for cls in mapped_file.classes)
     uses_ffi = any(
         callable_item.return_bridge in {"string", "struct"}
         or callable_item.pre_call_lines
@@ -191,6 +192,7 @@ def _build_file_context(
         "has_enums": bool(mapped_file.enums),
         "has_functions": bool(mapped_file.functions),
         "has_classes": bool(mapped_file.classes),
+        "has_handle_classes": has_handle_classes,
         "has_constants": bool(mapped_file.constants),
         "has_aliases": bool(mapped_file.aliases),
         "uses_ffi": uses_ffi,

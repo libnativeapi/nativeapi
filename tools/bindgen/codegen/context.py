@@ -181,6 +181,7 @@ class MappedClass:
     destroy_symbol: str = ""
     is_singleton: bool = False
     singleton_symbol: str = ""
+    singleton_has_handle: bool = False
     qualified_name: Optional[str] = None
     raw: Optional[IRClass] = None
 
@@ -692,6 +693,7 @@ class TypeMapper:
         class_key = ir_class.qualified_name or ir_class.name
         method_key = f"{class_key}::{ir_method.name}"
         force_instance = method_key in self.force_instance_methods
+        is_singleton = self.namer.class_name(ir_class.name) in self.singleton_classes
 
         call_args: List[str] = []
         pre_call_lines: List[str] = []
@@ -751,7 +753,7 @@ class TypeMapper:
             property_name=property_name,
             method_kind=ir_method.kind,
             static=ir_method.static and not force_instance,
-            needs_instance_handle=(not ir_method.static) or force_instance,
+            needs_instance_handle=((not ir_method.static) or force_instance) and not is_singleton,
             const=ir_method.const,
             access=ir_method.access,
             variadic=ir_method.variadic,
@@ -774,6 +776,7 @@ class TypeMapper:
             destroy_symbol=self._symbol_for_class_destroy(ir_class),
             is_singleton=is_singleton,
             singleton_symbol=singleton_symbol,
+            singleton_has_handle=False,
             qualified_name=ir_class.qualified_name,
             raw=ir_class,
         )
