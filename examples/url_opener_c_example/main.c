@@ -5,22 +5,15 @@ int main(void) {
   printf("URL Opener C API Example\n");
   printf("========================\n\n");
 
-  native_url_opener_t opener = native_url_opener_create();
-  if (!opener) {
-    fprintf(stderr, "Failed to create URL opener instance.\n");
-    return 1;
-  }
-
-  if (!native_url_opener_is_supported(opener)) {
+  if (!native_url_opener_is_supported()) {
     printf("URL opening is not supported on this platform.\n");
-    native_url_opener_destroy(opener);
     return 0;
   }
 
   printf("URL opening is supported.\n");
   printf("Opening https://example.com ...\n");
 
-  native_url_open_result_t result = native_url_opener_open(opener, "https://example.com");
+  native_url_open_result_t result = native_url_opener_open("https://example.com");
   if (result.success) {
     printf("URL opened successfully.\n");
   } else {
@@ -30,6 +23,5 @@ int main(void) {
   }
 
   native_url_open_result_free(&result);
-  native_url_opener_destroy(opener);
   return result.success ? 0 : 1;
 }

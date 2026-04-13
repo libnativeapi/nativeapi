@@ -21,9 +21,19 @@ struct UrlOpenResult {
 
 class UrlOpener {
  public:
-  static bool IsSupported();
+  static UrlOpener& GetInstance();
+
+  bool IsSupported() const;
 
   UrlOpenResult Open(const std::string& url) const;
+
+  UrlOpener(const UrlOpener&) = delete;
+  UrlOpener& operator=(const UrlOpener&) = delete;
+  UrlOpener(UrlOpener&&) = delete;
+  UrlOpener& operator=(UrlOpener&&) = delete;
+
+ private:
+  UrlOpener() = default;
 };
 
 }  // namespace nativeapi

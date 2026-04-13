@@ -10,10 +10,6 @@ using namespace nativeapi;
 
 namespace {
 
-UrlOpener* GetUrlOpener(native_url_opener_t opener) {
-  return static_cast<UrlOpener*>(opener);
-}
-
 native_url_open_error_code_t ToCErrorCode(UrlOpenErrorCode code) {
   switch (code) {
     case UrlOpenErrorCode::kNone:
@@ -33,9 +29,9 @@ native_url_open_error_code_t ToCErrorCode(UrlOpenErrorCode code) {
   }
 }
 
-native_url_open_result_t MakeResult(bool success,
-                                    native_url_open_error_code_t error_code,
-                                    const std::string& message) {
+native_url_open_result_t MakeUrlOpenResult(bool success,
+                                           native_url_open_error_code_t error_code,
+                                           const std::string& message) {
   native_url_open_result_t result = {};
   result.success = success;
   result.error_code = error_code;
@@ -45,47 +41,27 @@ native_url_open_result_t MakeResult(bool success,
 
 }  // namespace
 
-native_url_opener_t native_url_opener_create(void) {
+bool native_url_opener_is_supported(void) {
   try {
-    return static_cast<native_url_opener_t>(new UrlOpener());
-  } catch (...) {
-    return nullptr;
-  }
-}
-
-void native_url_opener_destroy(native_url_opener_t opener) {
-  delete GetUrlOpener(opener);
-}
-
-bool native_url_opener_is_supported(native_url_opener_t opener) {
-  if (!opener) {
-    return false;
-  }
-
-  try {
-    return UrlOpener::IsSupported();
+    return UrlOpener::GetInstance().IsSupported();
   } catch (...) {
     return false;
   }
 }
 
-native_url_open_result_t native_url_opener_open(native_url_opener_t opener, const char* url) {
-  if (!opener) {
-    return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, "URL opener is null.");
-  }
-
+native_url_open_result_t native_url_opener_open(const char* url) {
   if (!url) {
-    return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVALID_URL_EMPTY, "URL is empty.");
+    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVALID_URL_EMPTY, "URL is empty.");
   }
 
   try {
-    const UrlOpenResult result = GetUrlOpener(opener)->Open(std::string(url));
-    return MakeResult(result.success, ToCErrorCode(result.error_code), result.error_message);
+    const UrlOpenResult result = UrlOpener::GetInstance().Open(std::string(url));
+    return MakeUrlOpenResult(result.success, ToCErrorCode(result.error_code), result.error_message);
   } catch (const std::exception& e) {
-    return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, e.what());
+    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, e.what());
   } catch (...) {
-    return MakeResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED,
-                      "Unexpected error while opening URL.");
+    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED,
+                             "Unexpected error while opening URL.");
   }
 }
 

@@ -11,7 +11,12 @@ UrlLaunchOutcome LaunchUnsupported(const std::string& url) {
 
 }  // namespace
 
-bool UrlOpener::IsSupported() {
+UrlOpener& UrlOpener::GetInstance() {
+  static UrlOpener instance;
+  return instance;
+}
+
+bool UrlOpener::IsSupported() const {
   return false;
 }
 
