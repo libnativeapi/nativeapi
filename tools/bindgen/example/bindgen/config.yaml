@@ -1,3 +1,5 @@
+output_dir: bindgen/out
+
 clang_flags:
   - -x
   - c++

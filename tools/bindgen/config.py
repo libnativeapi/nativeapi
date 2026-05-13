@@ -125,6 +125,7 @@ class MappingConfig:
 
 @dataclass
 class BindgenConfig:
+    output_dir: str
     entry_headers: List[str]
     include_paths: List[str]
     clang_flags: List[str]
@@ -209,6 +210,7 @@ def load_config(path: Path) -> BindgenConfig:
     mapping_data = data.get("mapping", {})
 
     return BindgenConfig(
+        output_dir=data.get("output_dir", "bindgen/out"),
         entry_headers=data.get("entry_headers", []),
         include_paths=data.get("include_paths", []),
         clang_flags=data.get("clang_flags", []),

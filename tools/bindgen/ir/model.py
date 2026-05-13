@@ -61,6 +61,7 @@ class IRMethod:
 class IRDecl:
     """Common metadata for top-level declarations."""
 
+    kind: str = "decl"
     name: str = ""
     source_path: Optional[str] = None
     qualified_name: Optional[str] = None
@@ -71,7 +72,7 @@ class IRDecl:
 class IRStruct(IRDecl):
     """Represents a struct type definition."""
 
-    kind: str = field(default="struct", init=False)
+    kind: str = "struct"
     fields: List[IRField] = field(default_factory=list)
 
 
@@ -79,7 +80,7 @@ class IRStruct(IRDecl):
 class IREnum(IRDecl):
     """Represents an enum type definition."""
 
-    kind: str = field(default="enum", init=False)
+    kind: str = "enum"
     values: List[IREnumValue] = field(default_factory=list)
     scoped: bool = False
 
@@ -88,7 +89,7 @@ class IREnum(IRDecl):
 class IRAlias(IRDecl):
     """Represents a type alias (typedef/using)."""
 
-    kind: str = field(default="alias", init=False)
+    kind: str = "alias"
     target: Optional[IRType] = None
 
 
@@ -96,7 +97,7 @@ class IRAlias(IRDecl):
 class IRFunction(IRDecl):
     """Represents a function declaration."""
 
-    kind: str = field(default="function", init=False)
+    kind: str = "function"
     return_type: Optional[IRType] = None
     params: List[IRParam] = field(default_factory=list)
     callconv: Optional[str] = None
@@ -107,7 +108,7 @@ class IRFunction(IRDecl):
 class IRClass(IRDecl):
     """Represents a class/struct with methods."""
 
-    kind: str = field(default="class", init=False)
+    kind: str = "class"
     fields: List[IRField] = field(default_factory=list)
     methods: List[IRMethod] = field(default_factory=list)
     bases: List[str] = field(default_factory=list)
@@ -117,7 +118,7 @@ class IRClass(IRDecl):
 class IRConstant(IRDecl):
     """Represents a constant definition."""
 
-    kind: str = field(default="constant", init=False)
+    kind: str = "constant"
     type: Optional[IRType] = None
     value: Union[int, float, str] = 0
 
@@ -131,56 +132,35 @@ class IRFile:
     """
     Represents a single source file's IR.
 
-    Items are stored in declaration order, each with a 'kind' field:
-    - "struct": IRStruct
-    - "enum": IREnum
-    - "alias": IRAlias
-    - "function": IRFunction
-    - "class": IRClass
-    - "constant": IRConstant
+    Items are stored in declaration order as a single list.
+    Typed convenience properties (``types``, ``enums``, etc.) filter on demand.
     """
 
-    types: List[IRStruct] = field(default_factory=list)
-    enums: List[IREnum] = field(default_factory=list)
-    aliases: List[IRAlias] = field(default_factory=list)
-    functions: List[IRFunction] = field(default_factory=list)
-    classes: List[IRClass] = field(default_factory=list)
-    constants: List[IRConstant] = field(default_factory=list)
+    items: List[IRItem] = field(default_factory=list)
 
     @property
-    def items(self) -> List[IRItem]:
-        """Get all items in declaration order."""
-        items: List[IRItem] = [
-            *self.types,
-            *self.enums,
-            *self.aliases,
-            *self.functions,
-            *self.classes,
-            *self.constants,
-        ]
-        return sorted(items, key=lambda item: (item.decl_index, item.name))
+    def types(self) -> List[IRStruct]:
+        return [i for i in self.items if isinstance(i, IRStruct)]
 
-    def append(self, item: IRItem) -> None:
-        """Append an item to its typed bucket."""
-        if isinstance(item, IRStruct):
-            self.types.append(item)
-            return
-        if isinstance(item, IREnum):
-            self.enums.append(item)
-            return
-        if isinstance(item, IRAlias):
-            self.aliases.append(item)
-            return
-        if isinstance(item, IRFunction):
-            self.functions.append(item)
-            return
-        if isinstance(item, IRClass):
-            self.classes.append(item)
-            return
-        if isinstance(item, IRConstant):
-            self.constants.append(item)
-            return
-        raise ValueError(f"Unknown IR item type: {type(item)}")
+    @property
+    def enums(self) -> List[IREnum]:
+        return [i for i in self.items if isinstance(i, IREnum)]
+
+    @property
+    def aliases(self) -> List[IRAlias]:
+        return [i for i in self.items if isinstance(i, IRAlias)]
+
+    @property
+    def functions(self) -> List[IRFunction]:
+        return [i for i in self.items if isinstance(i, IRFunction)]
+
+    @property
+    def classes(self) -> List[IRClass]:
+        return [i for i in self.items if isinstance(i, IRClass)]
+
+    @property
+    def constants(self) -> List[IRConstant]:
+        return [i for i in self.items if isinstance(i, IRConstant)]
 
 
 @dataclass

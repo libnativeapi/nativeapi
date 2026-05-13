@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Any, Dict, List
 
 from ..config import BindgenConfig
 from ..ir.model import IRModule
-from .context import MappedFile, build_context
+from .context import MappedFile, TemplateContext, build_context
 from .naming import NameTransformer
+from .post_formatters import run_post_formatters
 
 
 def _load_jinja():
@@ -20,123 +20,23 @@ def _load_jinja():
     return Environment, FileSystemLoader
 
 
-def _normalize_formatters(mapping_options: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Normalize formatter configs from mapping.options.formatters."""
-    raw = mapping_options.get("formatters", [])
-    if not isinstance(raw, list):
-        print("[bindgen] warning: mapping.options.formatters must be a list, ignoring")
-        return []
-
-    normalized: List[Dict[str, Any]] = []
-    for index, item in enumerate(raw):
-        if not isinstance(item, dict):
-            print(f"[bindgen] warning: formatter[{index}] must be an object, skipping")
-            continue
-
-        enabled = bool(item.get("enabled", True))
-        if not enabled:
-            continue
-
-        cmd = item.get("cmd")
-        if not isinstance(cmd, list) or not cmd or not all(
-            isinstance(token, str) and token for token in cmd
-        ):
-            print(
-                f"[bindgen] warning: formatter[{index}].cmd must be a non-empty string array, skipping"
-            )
-            continue
-
-        normalized.append(
-            {
-                "name": str(item.get("name", f"formatter[{index}]")),
-                "cmd": cmd,
-                "continue_on_error": bool(item.get("continue_on_error", True)),
-            }
-        )
-
-    return normalized
-
-
-def _expand_tokens(cmd: List[str], placeholders: Dict[str, str]) -> List[str]:
-    expanded: List[str] = []
-    for token in cmd:
-        value = token
-        for key, replacement in placeholders.items():
-            value = value.replace(key, replacement)
-        expanded.append(value)
-    return expanded
-
-
 def _run_post_formatters(cfg: BindgenConfig, out_dir: Path, config_path: Path) -> None:
-    """Run post-generation formatter commands."""
-    formatters = _normalize_formatters(cfg.mapping.options or {})
-    if not formatters:
-        return
-
-    placeholders = {
-        "{out_dir}": str(out_dir.resolve()),
-        "{config_dir}": str(config_path.resolve().parent),
-        "{project_dir}": str(Path.cwd().resolve()),
-    }
-    run_cwd = str(config_path.resolve().parent)
-
-    for formatter in formatters:
-        name = formatter["name"]
-        command = _expand_tokens(formatter["cmd"], placeholders)
-        continue_on_error = formatter["continue_on_error"]
-
-        print(f"[bindgen] formatter {name}: {' '.join(command)}")
-        try:
-            result = subprocess.run(
-                command,
-                cwd=run_cwd,
-                capture_output=True,
-                text=True,
-            )
-        except FileNotFoundError as exc:
-            message = (
-                f"[bindgen] formatter {name} failed: command not found: {command[0]}"
-            )
-            if continue_on_error:
-                print(f"{message} (continuing)")
-                continue
-            raise RuntimeError(message) from exc
-        except OSError as exc:
-            message = f"[bindgen] formatter {name} failed: {exc}"
-            if continue_on_error:
-                print(f"{message} (continuing)")
-                continue
-            raise RuntimeError(message) from exc
-
-        if result.stdout.strip():
-            print(result.stdout.rstrip())
-
-        if result.returncode != 0:
-            stderr = result.stderr.strip()
-            suffix = f": {stderr}" if stderr else ""
-            message = (
-                f"[bindgen] formatter {name} exited with {result.returncode}{suffix}"
-            )
-            if continue_on_error:
-                print(f"{message} (continuing)")
-                continue
-            raise RuntimeError(message)
+    """Run post-generation formatter commands. Delegates to post_formatters module."""
+    run_post_formatters(cfg, out_dir, config_path)
 
 
 def _build_file_context(
     file_path: str,
     mapped_file: MappedFile,
-    global_context: Dict[str, Any],
+    ctx: "TemplateContext",
 ) -> Dict[str, Any]:
-    """Build context for a single file template."""
+    """Build context dict for a single file Jinja2 template."""
     from pathlib import PurePosixPath
 
     def _iter_callable_bridges():
-        for fn in mapped_file.functions:
-            yield fn
+        yield from mapped_file.functions
         for cls in mapped_file.classes:
-            for method in cls.methods:
-                yield method
+            yield from cls.methods
 
     callables = list(_iter_callable_bridges())
     uses_ui = any(
@@ -157,21 +57,21 @@ def _build_file_context(
     p = PurePosixPath(file_path)
 
     return {
-        # Global context
-        "module": global_context["module"],
-        "files": global_context["files"],
-        "file_paths": global_context["file_paths"],
-        "mapping": global_context["mapping"],
-        "namer": global_context["namer"],
-        "raw": global_context["raw"],
+        # Global context (flattened for Jinja2)
+        "module": ctx.module,
+        "files": ctx.files,
+        "file_paths": ctx.file_paths,
+        "mapping": ctx.mapping,
+        "namer": ctx.namer,
+        "raw": ctx.raw,
         # All items (for cross-referencing)
-        "all_items": global_context["items"],
-        "all_types": global_context["types"],
-        "all_enums": global_context["enums"],
-        "all_functions": global_context["functions"],
-        "all_classes": global_context["classes"],
-        "all_constants": global_context["constants"],
-        "all_aliases": global_context["aliases"],
+        "all_items": ctx.items,
+        "all_types": ctx.types,
+        "all_enums": ctx.enums,
+        "all_functions": ctx.functions,
+        "all_classes": ctx.classes,
+        "all_constants": ctx.constants,
+        "all_aliases": ctx.aliases,
         # Current file items (mapped)
         "file": mapped_file,
         "file_path": file_path,
@@ -206,20 +106,32 @@ def _compute_output_path(
     template_name: str,
     out_dir: Path,
     namer: NameTransformer,
+    strip_prefix: str = "",
 ) -> Path:
     """
     Compute output path from IR file path and template name.
 
+    If *strip_prefix* is given, the first occurrence of it in the IR file
+    path is removed before computing the output sub-directory.  This allows
+    stripping an outer prefix such as ``Sources/CNativeAPI/src`` so that
+    the output lands directly under *out_dir*.
+
     Rules:
-    - IR path: src/foundation/geometry.h
-    - Template: file/dart.j2 -> out/src/foundation/geometry.dart
-    - Template: file/rs.j2 -> out/src/foundation/geometry.rs
+    - IR path: src/foundation/geometry.h, strip_prefix="src/"
+           -> out/foundation/geometry.dart
+    - Template: file/dart.j2 -> out/geometry.dart (stem "dart")
 
     File name is transformed according to naming config.
     """
     from pathlib import PurePosixPath
 
-    ir_path = PurePosixPath(ir_file_path)
+    adjusted = ir_file_path
+    if strip_prefix:
+        idx = adjusted.find(strip_prefix)
+        if idx >= 0:
+            adjusted = adjusted[idx + len(strip_prefix):]
+
+    ir_path = PurePosixPath(adjusted)
     # Template stem becomes the new extension
     template_stem = Path(template_name).stem  # e.g., "dart" from "dart.j2"
 
@@ -262,14 +174,14 @@ def generate_bindings(
     _register_filters(env)
 
     # Build context with preprocessed (mapped) data
-    global_context = build_context(module, cfg.mapping)
-    namer = global_context["namer"]
+    ctx = build_context(module, cfg.mapping)
+    namer = ctx.namer
 
     # 1. Render global templates (template/*.j2)
     for template_path in config_template_root.glob("*.j2"):
         template = env.get_template(template_path.name)
         output_name = template_path.stem
-        rendered = template.render(**global_context)
+        rendered = template.render(**vars(ctx))
         (out_dir / output_name).write_text(rendered + "\n", encoding="utf-8")
 
     # 2. Render per-file templates (template/file/*.j2)
@@ -277,16 +189,22 @@ def generate_bindings(
     if file_template_dir.exists():
         file_templates = list(file_template_dir.glob("*.j2"))
 
-        for ir_file_path in global_context["file_paths"]:
-            mapped_file = global_context["files"][ir_file_path]
+        for ir_file_path in ctx.file_paths:
+            mapped_file = ctx.files[ir_file_path]
             file_context = _build_file_context(
-                ir_file_path, mapped_file, global_context
+                ir_file_path, mapped_file, ctx
+            )
+
+            # Resolve output path prefix to strip from IR file paths
+            output_strip_prefix = (
+                (cfg.mapping.options or {}).get("output_path_prefix", "")
             )
 
             for template_path in file_templates:
                 template = env.get_template(f"file/{template_path.name}")
                 output_path = _compute_output_path(
-                    ir_file_path, template_path.name, out_dir, namer
+                    ir_file_path, template_path.name, out_dir, namer,
+                    strip_prefix=output_strip_prefix,
                 )
 
                 # Create output directory if needed
@@ -300,62 +218,45 @@ def generate_bindings(
 
 
 def _register_filters(env) -> None:
-    """Register custom Jinja2 filters for naming conventions."""
-    import re
+    """Register custom Jinja2 filters for naming conventions.
 
-    def snake_case(s: str) -> str:
-        """Convert to snake_case."""
-        s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", s)
-        s = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", s)
-        return s.lower().replace("-", "_")
+    Delegates to naming.py to avoid duplicating naming logic.
+    """
+    from .naming import (
+        to_snake_case,
+        to_camel_case,
+        to_pascal_case,
+        to_screaming_snake_case,
+        to_kebab_case,
+    )
 
-    def camel_case(s: str) -> str:
-        """Convert to camelCase."""
-        parts = re.split(r"[_\-\s]+", s)
-        if not parts:
-            return s
-        return parts[0].lower() + "".join(p.title() for p in parts[1:])
-
-    def pascal_case(s: str) -> str:
-        """Convert to PascalCase."""
-        parts = re.split(r"[_\-\s]+", s)
-        return "".join(p.title() for p in parts)
-
-    def screaming_snake_case(s: str) -> str:
-        """Convert to SCREAMING_SNAKE_CASE."""
-        return snake_case(s).upper()
-
-    def kebab_case(s: str) -> str:
-        """Convert to kebab-case."""
-        return snake_case(s).replace("_", "-")
-
-    def strip_prefix(s: str, prefix: str) -> str:
+    def _strip_prefix(s: str, prefix: str) -> str:
         """Strip prefix from string."""
         if s.startswith(prefix):
             return s[len(prefix) :]
         return s
 
-    def strip_suffix(s: str, suffix: str) -> str:
+    def _strip_suffix(s: str, suffix: str) -> str:
         """Strip suffix from string."""
         if s.endswith(suffix):
             return s[: -len(suffix)]
         return s
 
-    def add_prefix(s: str, prefix: str) -> str:
+    def _add_prefix(s: str, prefix: str) -> str:
         """Add prefix to string."""
         return prefix + s
 
-    def add_suffix(s: str, suffix: str) -> str:
+    def _add_suffix(s: str, suffix: str) -> str:
         """Add suffix to string."""
         return s + suffix
 
     # Register naming filters
-    env.filters["snake_case"] = snake_case
-    env.filters["camel_case"] = camel_case
-    env.filters["pascal_case"] = pascal_case
-    env.filters["screaming_snake_case"] = screaming_snake_case
-    env.filters["kebab_case"] = kebab_case
-    env.filters["strip_prefix"] = strip_prefix
-    env.filters["strip_suffix"] = strip_suffix
-    env.filters["add_prefix"] = add_prefix
-    env.filters["add_suffix"] = add_suffix
+    env.filters["snake_case"] = to_snake_case
+    env.filters["camel_case"] = to_camel_case
+    env.filters["pascal_case"] = to_pascal_case
+    env.filters["screaming_snake_case"] = to_screaming_snake_case
+    env.filters["kebab_case"] = to_kebab_case
+    env.filters["strip_prefix"] = _strip_prefix
+    env.filters["strip_suffix"] = _strip_suffix
+    env.filters["add_prefix"] = _add_prefix
+    env.filters["add_suffix"] = _add_suffix

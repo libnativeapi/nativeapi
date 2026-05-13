@@ -44,14 +44,22 @@ def _load_clang():
     return cindex
 
 
+def _resolve_include_paths(cfg: BindgenConfig) -> List[str]:
+    """Resolve include paths from config or default."""
+    return cfg.include_paths or _default_include_paths()
+
+
+def _resolve_entry_headers(cfg: BindgenConfig) -> List[str]:
+    """Resolve entry headers from config or auto-discovery."""
+    return cfg.entry_headers or _discover_entry_headers(cfg.filters.exclude_dirs)
+
+
 def parse_headers(cfg: BindgenConfig):
     cindex = _load_clang()
     index = cindex.Index.create()
     args: List[str] = []
-    include_paths = cfg.include_paths
-    if not include_paths:
-        include_paths = _default_include_paths()
-        cfg.include_paths = include_paths
+
+    include_paths = _resolve_include_paths(cfg)
     for path in include_paths:
         args.append(f"-I{path}")
     args.extend(_default_system_include_args())
@@ -59,16 +67,14 @@ def parse_headers(cfg: BindgenConfig):
     if not any(a == "-x" or a.startswith("-x") for a in args):
         args.extend(["-x", "c++"])
 
-    discovered = _discover_entry_headers(cfg.filters.exclude_dirs)
-    if discovered:
-        cfg.entry_headers = discovered
-    if not cfg.entry_headers:
+    entry_headers = _resolve_entry_headers(cfg)
+    if not entry_headers:
         raise ParseError(
             "No headers discovered under src/. Add entry_headers or check project root."
         )
 
     # Parse all headers into a single translation unit by including them in an ad-hoc file.
-    header_includes = "\n".join([f'#include "{h}"' for h in cfg.entry_headers])
+    header_includes = "\n".join([f'#include "{h}"' for h in entry_headers])
     tmp_source = "// bindgen entry\n" + header_includes + "\n"
 
     try:

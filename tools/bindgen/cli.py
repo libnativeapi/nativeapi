@@ -12,7 +12,6 @@ from .parser import parse_headers
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="bindgen")
     parser.add_argument("--config", required=True, help="Path to config.yaml")
-    parser.add_argument("--out", required=True, help="Output directory")
     parser.add_argument("--ir", help="Load IR from existing JSON file (skips parsing)")
     parser.add_argument("--dump-ir", help="Write IR JSON to path")
     parser.add_argument(
@@ -38,7 +37,7 @@ def main(argv=None) -> int:
     if args.dump_context:
         dump_context_json(module, cfg.mapping, Path(args.dump_context))
 
-    out_dir = Path(args.out)
+    out_dir = Path(cfg.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     generate_bindings(module, cfg, out_dir, config_path)
 

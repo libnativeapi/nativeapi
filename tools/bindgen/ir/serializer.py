@@ -166,19 +166,18 @@ def _serialize_item(item: IRItem) -> Dict[str, Any]:
 
 def _serialize_file(ir_file: IRFile) -> Dict[str, List[Dict[str, Any]]]:
     payload: Dict[str, List[Dict[str, Any]]] = {}
-    grouped_items = {
-        "types": ir_file.types,
-        "enums": ir_file.enums,
-        "aliases": ir_file.aliases,
-        "functions": ir_file.functions,
-        "classes": ir_file.classes,
-        "constants": ir_file.constants,
-    }
-
-    for key, items in grouped_items.items():
-        if items:
-            payload[key] = [_serialize_item(item) for item in items]
-
+    if ir_file.types:
+        payload["types"] = [_serialize_item(item) for item in ir_file.types]
+    if ir_file.enums:
+        payload["enums"] = [_serialize_item(item) for item in ir_file.enums]
+    if ir_file.aliases:
+        payload["aliases"] = [_serialize_item(item) for item in ir_file.aliases]
+    if ir_file.functions:
+        payload["functions"] = [_serialize_item(item) for item in ir_file.functions]
+    if ir_file.classes:
+        payload["classes"] = [_serialize_item(item) for item in ir_file.classes]
+    if ir_file.constants:
+        payload["constants"] = [_serialize_item(item) for item in ir_file.constants]
     return payload
 
 
@@ -384,29 +383,12 @@ def _parse_typed_items(
 
 
 def _parse_ir_file(data: Dict[str, Any], file_path: str) -> IRFile:
-    return IRFile(
-        types=[
-            item for item in _parse_typed_items(data.get("types", []), file_path, _parse_ir_struct)
-            if isinstance(item, IRStruct)
-        ],
-        enums=[
-            item for item in _parse_typed_items(data.get("enums", []), file_path, _parse_ir_enum)
-            if isinstance(item, IREnum)
-        ],
-        aliases=[
-            item for item in _parse_typed_items(data.get("aliases", []), file_path, _parse_ir_alias)
-            if isinstance(item, IRAlias)
-        ],
-        functions=[
-            item for item in _parse_typed_items(data.get("functions", []), file_path, _parse_ir_function)
-            if isinstance(item, IRFunction)
-        ],
-        classes=[
-            item for item in _parse_typed_items(data.get("classes", []), file_path, _parse_ir_class)
-            if isinstance(item, IRClass)
-        ],
-        constants=[
-            item for item in _parse_typed_items(data.get("constants", []), file_path, _parse_ir_constant)
-            if isinstance(item, IRConstant)
-        ],
-    )
+    items: list[IRItem] = []
+    items.extend(_parse_typed_items(data.get("types", []), file_path, _parse_ir_struct))
+    items.extend(_parse_typed_items(data.get("enums", []), file_path, _parse_ir_enum))
+    items.extend(_parse_typed_items(data.get("aliases", []), file_path, _parse_ir_alias))
+    items.extend(_parse_typed_items(data.get("functions", []), file_path, _parse_ir_function))
+    items.extend(_parse_typed_items(data.get("classes", []), file_path, _parse_ir_class))
+    items.extend(_parse_typed_items(data.get("constants", []), file_path, _parse_ir_constant))
+    items.sort(key=lambda item: (item.decl_index, item.name))
+    return IRFile(items=items)

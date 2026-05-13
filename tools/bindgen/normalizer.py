@@ -71,13 +71,16 @@ def _cursor_path(cursor) -> Optional[str]:
     if rel_path is not None:
         rel = str(rel_path).replace("\\", "/")
         if rel.startswith("src/"):
-            return rel
+            return rel[4:]
 
     parts = path.parts
     if "src" in parts:
         idx = parts.index("src")
-        rel = Path(*parts[idx:]).as_posix()
-        return rel
+        # Skip "src" directory to avoid src/ prefix in output paths
+        rest = parts[idx + 1:]
+        if not rest:
+            return "unknown"
+        return Path(*rest).as_posix()
     return "unknown"
 
 
@@ -99,6 +102,42 @@ def _is_std_string_type(spelling: str) -> bool:
     )
 
 
+# Mapping from lower-cased C type spelling -> IRType kind
+_PRIMITIVE_TYPE_BY_NAME: dict[str, str] = {
+    "void": "void",
+    "bool": "bool",
+    "_bool": "bool",
+    "char": "int8",
+    "signed char": "int8",
+    "unsigned char": "uint8",
+    "short": "int16",
+    "short int": "int16",
+    "signed short": "int16",
+    "unsigned short": "uint16",
+    "unsigned short int": "uint16",
+    "int": "int32",
+    "signed int": "int32",
+    "unsigned int": "uint32",
+    "long": "int64",
+    "long int": "int64",
+    "signed long": "int64",
+    "unsigned long": "uint64",
+    "unsigned long int": "uint64",
+    "long long": "int64",
+    "long long int": "int64",
+    "signed long long": "int64",
+    "unsigned long long": "uint64",
+    "unsigned long long int": "uint64",
+    "float": "float32",
+    "double": "float64",
+    "long double": "float64",
+    "size_t": "size_t",
+    "ssize_t": "ssize_t",
+    "intptr_t": "intptr",
+    "uintptr_t": "uintptr",
+}
+
+
 def _type_from_clang(tp) -> IRType:
     from clang import cindex  # type: ignore
 
@@ -117,43 +156,12 @@ def _type_from_clang(tp) -> IRType:
     except ValueError:
         lower = spelling.lower()
 
-        if lower in ("void",):
-            return IRType(kind="void", qualifiers=qualifiers)
-        if lower in ("bool", "_bool"):
-            return IRType(kind="bool", qualifiers=qualifiers)
-        if lower in ("char", "signed char"):
-            return IRType(kind="int8", qualifiers=qualifiers)
-        if lower in ("unsigned char",):
-            return IRType(kind="uint8", qualifiers=qualifiers)
-        if lower in ("short", "short int", "signed short"):
-            return IRType(kind="int16", qualifiers=qualifiers)
-        if lower in ("unsigned short", "unsigned short int"):
-            return IRType(kind="uint16", qualifiers=qualifiers)
-        if lower in ("int", "signed int"):
-            return IRType(kind="int32", qualifiers=qualifiers)
-        if lower in ("unsigned int",):
-            return IRType(kind="uint32", qualifiers=qualifiers)
-        if lower in ("long", "long int", "signed long"):
-            return IRType(kind="int64", qualifiers=qualifiers)
-        if lower in ("unsigned long", "unsigned long int"):
-            return IRType(kind="uint64", qualifiers=qualifiers)
-        if lower in ("long long", "long long int", "signed long long"):
-            return IRType(kind="int64", qualifiers=qualifiers)
-        if lower in ("unsigned long long", "unsigned long long int"):
-            return IRType(kind="uint64", qualifiers=qualifiers)
-        if lower in ("float",):
-            return IRType(kind="float32", qualifiers=qualifiers)
-        if lower in ("double", "long double"):
-            return IRType(kind="float64", qualifiers=qualifiers)
-        if lower == "size_t":
-            return IRType(kind="size_t", qualifiers=qualifiers)
-        if lower == "ssize_t":
-            return IRType(kind="ssize_t", qualifiers=qualifiers)
-        if lower == "intptr_t":
-            return IRType(kind="intptr", qualifiers=qualifiers)
-        if lower == "uintptr_t":
-            return IRType(kind="uintptr", qualifiers=qualifiers)
+        # Try lookup in the primitive type name map first
+        ir_kind = _PRIMITIVE_TYPE_BY_NAME.get(lower)
+        if ir_kind is not None:
+            return IRType(kind=ir_kind, qualifiers=qualifiers)
 
+        # Pointer/reference detection via string suffixes (fallback path)
         if lower.endswith("&&"):
             pointee = IRType(
                 kind="unknown",
@@ -178,36 +186,29 @@ def _type_from_clang(tp) -> IRType:
             name=_unqualified_type_name(spelling),
             qualifiers=qualifiers,
         )
-    if kind == cindex.TypeKind.VOID:
-        return IRType(kind="void", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.BOOL:
-        return IRType(kind="bool", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.CHAR_S:
-        return IRType(kind="int8", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.SCHAR:
-        return IRType(kind="int8", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.UCHAR:
-        return IRType(kind="uint8", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.SHORT:
-        return IRType(kind="int16", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.USHORT:
-        return IRType(kind="uint16", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.INT:
-        return IRType(kind="int32", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.UINT:
-        return IRType(kind="uint32", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.LONG:
-        return IRType(kind="int64", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.ULONG:
-        return IRType(kind="uint64", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.LONGLONG:
-        return IRType(kind="int64", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.ULONGLONG:
-        return IRType(kind="uint64", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.FLOAT:
-        return IRType(kind="float32", qualifiers=qualifiers)
-    if kind == cindex.TypeKind.DOUBLE:
-        return IRType(kind="float64", qualifiers=qualifiers)
+
+    # ---- libclang TypeKind path ----
+    _TYPEKIND_MAP: dict[int, str] = {
+        cindex.TypeKind.VOID: "void",
+        cindex.TypeKind.BOOL: "bool",
+        cindex.TypeKind.CHAR_S: "int8",
+        cindex.TypeKind.SCHAR: "int8",
+        cindex.TypeKind.UCHAR: "uint8",
+        cindex.TypeKind.SHORT: "int16",
+        cindex.TypeKind.USHORT: "uint16",
+        cindex.TypeKind.INT: "int32",
+        cindex.TypeKind.UINT: "uint32",
+        cindex.TypeKind.LONG: "int64",
+        cindex.TypeKind.ULONG: "uint64",
+        cindex.TypeKind.LONGLONG: "int64",
+        cindex.TypeKind.ULONGLONG: "uint64",
+        cindex.TypeKind.FLOAT: "float32",
+        cindex.TypeKind.DOUBLE: "float64",
+    }
+
+    ir_kind = _TYPEKIND_MAP.get(kind)
+    if ir_kind is not None:
+        return IRType(kind=ir_kind, qualifiers=qualifiers)
 
     if kind == cindex.TypeKind.LVALUEREFERENCE:
         pointee = _type_from_clang(tp.get_pointee())
@@ -254,14 +255,11 @@ def _type_from_clang(tp) -> IRType:
         )
 
     if kind == cindex.TypeKind.TYPEDEF:
-        if tp.spelling == "size_t":
-            return IRType(kind="size_t", qualifiers=qualifiers)
-        if tp.spelling == "ssize_t":
-            return IRType(kind="ssize_t", qualifiers=qualifiers)
-        if tp.spelling == "intptr_t":
-            return IRType(kind="intptr", qualifiers=qualifiers)
-        if tp.spelling == "uintptr_t":
-            return IRType(kind="uintptr", qualifiers=qualifiers)
+        # Check known size typedefs
+        lower = spelling.lower()
+        ir_kind = _PRIMITIVE_TYPE_BY_NAME.get(lower)
+        if ir_kind is not None:
+            return IRType(kind=ir_kind, qualifiers=qualifiers)
         return IRType(
             kind="alias",
             name=_unqualified_type_name(tp.spelling),
@@ -362,333 +360,302 @@ def _decl_index(cursor) -> int:
     return (line * 1000) + column
 
 
+def _make_class(cursor, fields, methods, bases, source_path, allow, deny):
+    """Build an IRClass from a class/struct cursor."""
+    name = cursor.spelling
+    return IRClass(
+        name=name,
+        source_path=source_path,
+        qualified_name=_qualified_name(cursor),
+        decl_index=_decl_index(cursor),
+        fields=fields,
+        bases=bases,
+        methods=methods,
+    )
+
+
+def _visit_normalizer(
+    cursor,
+    *,
+    module: IRModule,
+    allow: list,
+    deny: list,
+    exclude: set[str],
+    _is_cpp_record,
+) -> None:
+    """Visit a cursor and populate the IR module."""
+    from clang import cindex  # type: ignore
+
+    if cursor.location.file is None:
+        return
+    if _is_excluded(cursor, exclude):
+        return
+    if _is_ignored(cursor):
+        return
+
+    source_path = _source_path(cursor)
+
+    # ---- Namespace / linkage spec: recurse into children ----
+    if cursor.kind in (
+        cindex.CursorKind.NAMESPACE,
+        cindex.CursorKind.LINKAGE_SPEC,
+        cindex.CursorKind.UNEXPOSED_DECL,
+    ):
+        for child in cursor.get_children():
+            _visit_normalizer(
+                child,
+                module=module,
+                allow=allow,
+                deny=deny,
+                exclude=exclude,
+                _is_cpp_record=_is_cpp_record,
+            )
+        return
+
+    if cursor.kind == cindex.CursorKind.STRUCT_DECL and cursor.is_definition():
+        if source_path is None:
+            return
+        name = cursor.spelling
+        if not name or not _passes_name_filters(name, allow, deny):
+            return
+
+        if _is_cpp_record(cursor):
+            fields, methods, bases = _extract_class_members(cursor, allow, deny)
+            klass = _make_class(cursor, fields, methods, bases, source_path, allow, deny)
+            _bucket_for(source_path, module).items.append(klass)
+        else:
+            item = _struct_from_cursor(cursor)
+            item.source_path = source_path
+            item.decl_index = _decl_index(cursor)
+            _bucket_for(source_path, module).items.append(item)
+        return
+
+    if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
+        if source_path is None:
+            return
+        name = cursor.spelling
+        if not name or not _passes_name_filters(name, allow, deny):
+            return
+        fields, methods, bases = _extract_class_members(cursor, allow, deny)
+        klass = _make_class(cursor, fields, methods, bases, source_path, allow, deny)
+        _bucket_for(source_path, module).items.append(klass)
+        return
+
+    if cursor.kind == cindex.CursorKind.ENUM_DECL:
+        if source_path is None:
+            return
+        name = cursor.spelling
+        if not name or not _passes_name_filters(name, allow, deny):
+            return
+        item = _enum_from_cursor(cursor)
+        item.source_path = source_path
+        item.decl_index = _decl_index(cursor)
+        _bucket_for(source_path, module).items.append(item)
+        return
+
+    if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
+        if source_path is None:
+            return
+        name = cursor.spelling
+        if not name or not _passes_name_filters(name, allow, deny):
+            return
+        if name.startswith("operator"):
+            return
+        params = []
+        for arg in cursor.get_arguments():
+            params.append(IRParam(name=arg.spelling, type=_type_from_clang(arg.type)))
+        variadic = False
+        if hasattr(cursor, "type") and cursor.type is not None:
+            if hasattr(cursor.type, "is_function_variadic"):
+                variadic = cursor.type.is_function_variadic()
+        _bucket_for(source_path, module).items.append(
+            IRFunction(
+                name=name,
+                source_path=source_path,
+                qualified_name=_qualified_name(cursor),
+                decl_index=_decl_index(cursor),
+                return_type=_type_from_clang(cursor.result_type),
+                params=params,
+                variadic=variadic,
+            )
+        )
+        return
+
+    if cursor.kind == cindex.CursorKind.TYPEDEF_DECL:
+        if source_path is None:
+            return
+        name = cursor.spelling
+        if not name or not _passes_name_filters(name, allow, deny):
+            return
+        underlying = cursor.underlying_typedef_type
+        decl = underlying.get_declaration()
+        if (
+            decl
+            and decl.kind == cindex.CursorKind.STRUCT_DECL
+            and decl.is_definition()
+        ):
+            if not decl.spelling:
+                decl_source_path = _source_path(decl)
+                if decl_source_path is None:
+                    return
+                item = _struct_from_cursor(decl, name_override=name)
+                item.source_path = decl_source_path
+                item.decl_index = _decl_index(cursor)
+                _bucket_for(decl_source_path, module).items.append(item)
+                return
+        if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
+            if not decl.spelling:
+                decl_source_path = _source_path(decl)
+                if decl_source_path is None:
+                    return
+                item = _enum_from_cursor(decl, name_override=name)
+                item.source_path = decl_source_path
+                item.decl_index = _decl_index(cursor)
+                _bucket_for(decl_source_path, module).items.append(item)
+                return
+        _bucket_for(source_path, module).items.append(
+            IRAlias(
+                name=name,
+                source_path=source_path,
+                decl_index=_decl_index(cursor),
+                target=_type_from_clang(cursor.underlying_typedef_type),
+            )
+        )
+        return
+
+    if cursor.kind == cindex.CursorKind.MACRO_DEFINITION:
+        if source_path is None:
+            return
+        if not cursor.spelling:
+            return
+        tokens = [t.spelling for t in cursor.get_tokens()]
+        if len(tokens) == 2:
+            name, value = tokens
+            if not _passes_name_filters(name, allow, deny):
+                return
+            parsed = _parse_macro_value(value)
+            if parsed is None:
+                return
+            _bucket_for(source_path, module).items.append(
+                IRConstant(
+                    name=name,
+                    source_path=source_path,
+                    decl_index=_decl_index(cursor),
+                    type=parsed[0],
+                    value=parsed[1],
+                )
+            )
+        return
+
+
+def _is_cpp_record(node) -> bool:
+    """Check if a struct cursor has C++ features (methods, bases, etc.)."""
+    from clang import cindex  # type: ignore
+
+    for child in node.get_children():
+        if child.kind in (
+            cindex.CursorKind.CXX_METHOD,
+            cindex.CursorKind.CONSTRUCTOR,
+            cindex.CursorKind.DESTRUCTOR,
+            cindex.CursorKind.CXX_BASE_SPECIFIER,
+        ):
+            return True
+    return False
+
+
+def _bucket_for(path: Optional[str], module: IRModule) -> IRFile:
+    """Get or create an IRFile bucket for the given source path."""
+    key = path or "unknown"
+    bucket = module.files.get(key)
+    if bucket is None:
+        bucket = IRFile(items=[])
+        module.files[key] = bucket
+    return bucket
+
+
+def _source_path(cursor) -> Optional[str]:
+    """Resolve the source path for a cursor relative to the project root."""
+    path = _cursor_path(cursor)
+    if not path or path == "unknown":
+        return None
+    return path
+
+
 def normalize_translation_unit(tu, cfg: BindgenConfig) -> IRModule:
     from clang import cindex  # type: ignore
 
     allow, deny, exclude = _compile_filters(cfg)
     module = IRModule()
 
-    def _bucket_for(path: Optional[str]) -> IRFile:
-        key = path or "unknown"
-        bucket = module.files.get(key)
-        if bucket is None:
-            bucket = IRFile()
-            module.files[key] = bucket
-        return bucket
-
-    def _source_path(cursor) -> Optional[str]:
-        path = _cursor_path(cursor)
-        if not path or path == "unknown":
-            return None
-        if not path.startswith("src/"):
-            return None
-        return path
-
-    def _is_operator(name: str) -> bool:
-        return name.startswith("operator")
-
-    def _is_cpp_record(node) -> bool:
-        for child in node.get_children():
-            if child.kind in (
-                cindex.CursorKind.CXX_METHOD,
-                cindex.CursorKind.CONSTRUCTOR,
-                cindex.CursorKind.DESTRUCTOR,
-                cindex.CursorKind.CXX_BASE_SPECIFIER,
-            ):
-                return True
-        return False
-
-    def _visit(cursor) -> None:
-        if cursor.location.file is None:
-            return
-        if _is_excluded(cursor, exclude):
-            return
-        if _is_ignored(cursor):
-            return
-        source_path = _source_path(cursor)
-
-        if cursor.kind in (
-            cindex.CursorKind.NAMESPACE,
-            cindex.CursorKind.LINKAGE_SPEC,
-            cindex.CursorKind.UNEXPOSED_DECL,
-        ):
-            for child in cursor.get_children():
-                _visit(child)
-            return
-
-        if cursor.kind == cindex.CursorKind.STRUCT_DECL and cursor.is_definition():
-            if source_path is None:
-                return
-            name = cursor.spelling
-            if not name or not _passes_name_filters(name, allow, deny):
-                return
-            if _is_cpp_record(cursor):
-                methods = []
-                fields = []
-                bases = []
-                for child in cursor.get_children():
-                    if child.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
-                        base = child.type.spelling
-                        if base:
-                            bases.append(base)
-                        continue
-                    if child.kind == cindex.CursorKind.FIELD_DECL:
-                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                            continue
-                        if not child.spelling or not _passes_name_filters(
-                            child.spelling, allow, deny
-                        ):
-                            continue
-                        fields.append(
-                            IRField(
-                                name=child.spelling,
-                                type=_type_from_clang(child.type),
-                            )
-                        )
-                        continue
-                    if child.kind == cindex.CursorKind.CXX_METHOD:
-                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                            continue
-                        if (
-                            not child.spelling
-                            or _is_operator(child.spelling)
-                            or not _passes_name_filters(child.spelling, allow, deny)
-                        ):
-                            continue
-                        methods.append(_method_from_cursor(child))
-                        continue
-                    if child.kind == cindex.CursorKind.CONSTRUCTOR:
-                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                            continue
-                        if not _passes_name_filters(name, allow, deny):
-                            continue
-                        ctor = _method_from_cursor(child, kind="constructor")
-                        ctor.name = name
-                        ctor.return_type = IRType(kind="void")
-                        methods.append(ctor)
-                        continue
-                    if child.kind == cindex.CursorKind.DESTRUCTOR:
-                        if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                            continue
-                        if not _passes_name_filters(name, allow, deny):
-                            continue
-                        dtor = _method_from_cursor(child, kind="destructor")
-                        dtor.name = f"~{name}"
-                        dtor.return_type = IRType(kind="void")
-                        methods.append(dtor)
-                        continue
-                bucket = _bucket_for(source_path)
-                bucket.append(
-                    IRClass(
-                        name=name,
-                        source_path=source_path,
-                        qualified_name=_qualified_name(cursor),
-                        decl_index=_decl_index(cursor),
-                        fields=fields,
-                        bases=bases,
-                        methods=methods,
-                    )
-                )
-                return
-            bucket = _bucket_for(source_path)
-            item = _struct_from_cursor(cursor)
-            item.source_path = source_path
-            item.decl_index = _decl_index(cursor)
-            bucket.append(item)
-            return
-
-        if cursor.kind == cindex.CursorKind.CLASS_DECL and cursor.is_definition():
-            if source_path is None:
-                return
-            name = cursor.spelling
-            if not name or not _passes_name_filters(name, allow, deny):
-                return
-            methods = []
-            fields = []
-            bases = []
-            for child in cursor.get_children():
-                if child.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
-                    base = child.type.spelling
-                    if base:
-                        bases.append(base)
-                    continue
-                if child.kind == cindex.CursorKind.FIELD_DECL:
-                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                        continue
-                    if not child.spelling or not _passes_name_filters(
-                        child.spelling, allow, deny
-                    ):
-                        continue
-                    fields.append(
-                        IRField(
-                            name=child.spelling,
-                            type=_type_from_clang(child.type),
-                        )
-                    )
-                    continue
-                if child.kind == cindex.CursorKind.CXX_METHOD:
-                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                        continue
-                    if (
-                        not child.spelling
-                        or _is_operator(child.spelling)
-                        or not _passes_name_filters(child.spelling, allow, deny)
-                    ):
-                        continue
-                    methods.append(_method_from_cursor(child))
-                    continue
-                if child.kind == cindex.CursorKind.CONSTRUCTOR:
-                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                        continue
-                    if not _passes_name_filters(name, allow, deny):
-                        continue
-                    ctor = _method_from_cursor(child, kind="constructor")
-                    ctor.name = name
-                    ctor.return_type = IRType(kind="void")
-                    methods.append(ctor)
-                    continue
-                if child.kind == cindex.CursorKind.DESTRUCTOR:
-                    if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
-                        continue
-                    if not _passes_name_filters(name, allow, deny):
-                        continue
-                    dtor = _method_from_cursor(child, kind="destructor")
-                    dtor.name = f"~{name}"
-                    dtor.return_type = IRType(kind="void")
-                    methods.append(dtor)
-                    continue
-            bucket = _bucket_for(source_path)
-            bucket.append(
-                IRClass(
-                    name=name,
-                    source_path=source_path,
-                    qualified_name=_qualified_name(cursor),
-                    decl_index=_decl_index(cursor),
-                    fields=fields,
-                    bases=bases,
-                    methods=methods,
-                )
-            )
-            return
-
-        if cursor.kind == cindex.CursorKind.ENUM_DECL:
-            if source_path is None:
-                return
-            name = cursor.spelling
-            if not name or not _passes_name_filters(name, allow, deny):
-                return
-            bucket = _bucket_for(source_path)
-            item = _enum_from_cursor(cursor)
-            item.source_path = source_path
-            item.decl_index = _decl_index(cursor)
-            bucket.append(item)
-            return
-
-        if cursor.kind == cindex.CursorKind.FUNCTION_DECL:
-            if source_path is None:
-                return
-            name = cursor.spelling
-            if not name or not _passes_name_filters(name, allow, deny):
-                return
-            if _is_operator(name):
-                return
-            params = []
-            for arg in cursor.get_arguments():
-                params.append(
-                    IRParam(name=arg.spelling, type=_type_from_clang(arg.type))
-                )
-            variadic = False
-            if hasattr(cursor, "type") and cursor.type is not None:
-                if hasattr(cursor.type, "is_function_variadic"):
-                    variadic = cursor.type.is_function_variadic()
-            bucket = _bucket_for(source_path)
-            bucket.append(
-                IRFunction(
-                    name=name,
-                    source_path=source_path,
-                    qualified_name=_qualified_name(cursor),
-                    decl_index=_decl_index(cursor),
-                    return_type=_type_from_clang(cursor.result_type),
-                    params=params,
-                    variadic=variadic,
-                )
-            )
-            return
-
-        if cursor.kind == cindex.CursorKind.TYPEDEF_DECL:
-            if source_path is None:
-                return
-            name = cursor.spelling
-            if not name or not _passes_name_filters(name, allow, deny):
-                return
-            underlying = cursor.underlying_typedef_type
-            decl = underlying.get_declaration()
-            if (
-                decl
-                and decl.kind == cindex.CursorKind.STRUCT_DECL
-                and decl.is_definition()
-            ):
-                if not decl.spelling:
-                    decl_source_path = _source_path(decl)
-                    if decl_source_path is None:
-                        return
-                    bucket = _bucket_for(decl_source_path)
-                    item = _struct_from_cursor(decl, name_override=name)
-                    item.source_path = decl_source_path
-                    item.decl_index = _decl_index(cursor)
-                    bucket.append(item)
-                    return
-            if decl and decl.kind == cindex.CursorKind.ENUM_DECL:
-                if not decl.spelling:
-                    decl_source_path = _source_path(decl)
-                    if decl_source_path is None:
-                        return
-                    bucket = _bucket_for(decl_source_path)
-                    item = _enum_from_cursor(decl, name_override=name)
-                    item.source_path = decl_source_path
-                    item.decl_index = _decl_index(cursor)
-                    bucket.append(item)
-                    return
-            bucket = _bucket_for(source_path)
-            bucket.append(
-                IRAlias(
-                    name=name,
-                    source_path=source_path,
-                    decl_index=_decl_index(cursor),
-                    target=_type_from_clang(cursor.underlying_typedef_type),
-                )
-            )
-            return
-
-        if cursor.kind == cindex.CursorKind.MACRO_DEFINITION:
-            if source_path is None:
-                return
-            if not cursor.spelling:
-                return
-            tokens = [t.spelling for t in cursor.get_tokens()]
-            if len(tokens) == 2:
-                name, value = tokens
-                if not _passes_name_filters(name, allow, deny):
-                    return
-                parsed = _parse_macro_value(value)
-                if parsed is None:
-                    return
-                bucket = _bucket_for(source_path)
-                bucket.append(
-                    IRConstant(
-                        name=name,
-                        source_path=source_path,
-                        decl_index=_decl_index(cursor),
-                        type=parsed[0],
-                        value=parsed[1],
-                    )
-                )
-            return
-
     for cursor in tu.cursor.get_children():
-        _visit(cursor)
+        _visit_normalizer(
+            cursor,
+            module=module,
+            allow=allow,
+            deny=deny,
+            exclude=exclude,
+            _is_cpp_record=_is_cpp_record,
+        )
 
     return module
+
+
+def _extract_class_members(cursor, allow, deny):
+    """Extract public fields, methods, and base classes from a struct/class cursor.
+
+    Shared by both STRUCT_DECL and CLASS_DECL visit handlers to avoid
+    ~90 lines of duplicated traversal logic.
+    """
+    from clang import cindex  # type: ignore
+
+    fields: list[IRField] = []
+    methods: list[IRMethod] = []
+    bases: list[str] = []
+    name = cursor.spelling
+
+    for child in cursor.get_children():
+        if child.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
+            base = child.type.spelling
+            if base:
+                bases.append(base)
+        elif child.kind == cindex.CursorKind.FIELD_DECL:
+            if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                continue
+            if not child.spelling or not _passes_name_filters(child.spelling, allow, deny):
+                continue
+            fields.append(
+                IRField(name=child.spelling, type=_type_from_clang(child.type))
+            )
+        elif child.kind == cindex.CursorKind.CXX_METHOD:
+            if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                continue
+            if (
+                not child.spelling
+                or child.spelling.startswith("operator")
+                or not _passes_name_filters(child.spelling, allow, deny)
+            ):
+                continue
+            methods.append(_method_from_cursor(child))
+        elif child.kind == cindex.CursorKind.CONSTRUCTOR:
+            if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                continue
+            if not _passes_name_filters(name, allow, deny):
+                continue
+            ctor = _method_from_cursor(child, kind="constructor")
+            ctor.name = name
+            ctor.return_type = IRType(kind="void")
+            methods.append(ctor)
+        elif child.kind == cindex.CursorKind.DESTRUCTOR:
+            if child.access_specifier != cindex.AccessSpecifier.PUBLIC:
+                continue
+            if not _passes_name_filters(name, allow, deny):
+                continue
+            dtor = _method_from_cursor(child, kind="destructor")
+            dtor.name = f"~{name}"
+            dtor.return_type = IRType(kind="void")
+            methods.append(dtor)
+
+    return fields, methods, bases
 
 
 def _parse_macro_value(value: str) -> Optional[tuple[IRType, int | float | str]]:
