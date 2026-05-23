@@ -7,9 +7,9 @@
 namespace nativeapi {
 
 /**
- * @brief Manage application auto-start behavior on user login (cross-platform).
+ * @brief Manage launching the application at user login (cross-platform).
  *
- * AutoStart provides a unified API to enable or disable starting your application
+ * LaunchAtLogin provides a unified API to enable or disable starting your application
  * automatically when the user logs in. The actual mechanism is platform-specific,
  * but this class abstracts away those differences.
  *
@@ -31,36 +31,36 @@ namespace nativeapi {
  * @code
  * using namespace nativeapi;
  *
- * if (AutoStart::IsSupported()) {
- *   AutoStart autostart("com.example.myapp", "MyApp");
+ * if (LaunchAtLogin::IsSupported()) {
+ *   LaunchAtLogin launch_at_login("com.example.myapp", "MyApp");
  *   // Optionally override the program and arguments (defaults to current executable):
- *   autostart.SetProgram("/usr/local/bin/myapp", {"--minimized"});
+ *   launch_at_login.SetProgram("/usr/local/bin/myapp", {"--minimized"});
  *
- *   autostart.Enable();
- *   bool enabled = autostart.IsEnabled(); // should be true
+ *   launch_at_login.Enable();
+ *   bool enabled = launch_at_login.IsEnabled(); // should be true
  * }
  * @endcode
  */
-class AutoStart {
+class LaunchAtLogin {
  public:
   /**
-   * @brief Check whether auto-start is supported on this platform.
+   * @brief Check whether launch-at-login is supported on this platform.
    *
    * @return true if supported; false for unsupported platforms (e.g., mobile).
    */
   static bool IsSupported();
 
   /**
-   * @brief Construct an AutoStart manager with default identifier and display name.
+   * @brief Construct a LaunchAtLogin manager with default identifier and display name.
    *
    * The default identifier and display name are implementation-defined. Typically,
    * the identifier is derived from the current process/bundle information, and the
    * display name is derived from the application or executable name.
    */
-  AutoStart();
+  LaunchAtLogin();
 
   /**
-   * @brief Construct an AutoStart manager with a custom identifier.
+   * @brief Construct a LaunchAtLogin manager with a custom identifier.
    *
    * @param id A stable, unique identifier for your app.
    *           Examples:
@@ -70,20 +70,20 @@ class AutoStart {
    *
    * Recommendation: Use a reverse-DNS identifier when possible, e.g., "com.example.myapp".
    */
-  explicit AutoStart(const std::string& id);
+  explicit LaunchAtLogin(const std::string& id);
 
   /**
-   * @brief Construct an AutoStart manager with a custom identifier and display name.
+   * @brief Construct a LaunchAtLogin manager with a custom identifier and display name.
    *
    * @param id           Stable, unique identifier (see above).
    * @param display_name Human-readable name shown in OS surfaces where applicable.
    */
-  AutoStart(const std::string& id, const std::string& display_name);
+  LaunchAtLogin(const std::string& id, const std::string& display_name);
 
-  virtual ~AutoStart();
+  virtual ~LaunchAtLogin();
 
   /**
-   * @brief Get the unique identifier associated with this AutoStart instance.
+   * @brief Get the unique identifier associated with this LaunchAtLogin instance.
    *
    * @return The identifier string.
    */
@@ -108,7 +108,7 @@ class AutoStart {
   bool SetDisplayName(const std::string& display_name);
 
   /**
-   * @brief Set the program (executable) path and optional arguments used for auto-start.
+   * @brief Set the program (executable) path and optional arguments used to launch at login.
    *
    * If not set, implementations will try to use the current process executable path.
    * On platforms that require a single string (e.g., Windows registry), arguments will
@@ -123,7 +123,7 @@ class AutoStart {
                   const std::vector<std::string>& arguments = {});
 
   /**
-   * @brief Get the currently configured executable path used for auto-start.
+   * @brief Get the currently configured executable path used to launch at login.
    *
    * This returns the locally configured value (not necessarily what is stored in the OS).
    * If never set explicitly and cannot be resolved from the current process, it may be empty.
@@ -133,7 +133,7 @@ class AutoStart {
   std::string GetExecutablePath() const;
 
   /**
-   * @brief Get the currently configured arguments used for auto-start.
+   * @brief Get the currently configured arguments used to launch at login.
    *
    * This returns the locally configured value (not necessarily what is stored in the OS).
    *
@@ -142,7 +142,7 @@ class AutoStart {
   std::vector<std::string> GetArguments() const;
 
   /**
-   * @brief Enable auto-start at user login for the configured program and arguments.
+   * @brief Enable launch-at-login for the configured program and arguments.
    *
    * If no program was explicitly set via SetProgram(), the implementation will attempt
    * to resolve the current executable path and use that as the program to start.
@@ -152,14 +152,14 @@ class AutoStart {
   bool Enable();
 
   /**
-   * @brief Disable auto-start at user login.
+   * @brief Disable launch-at-login.
    *
    * @return true on success; false on error or when unsupported.
    */
   bool Disable();
 
   /**
-   * @brief Query whether auto-start is currently enabled for this manager's identifier.
+   * @brief Query whether launch-at-login is currently enabled for this manager's identifier.
    *
    * This checks the platform-specific mechanism to determine whether the app (program path
    * and arguments currently configured) is registered to start at user login.
@@ -169,10 +169,10 @@ class AutoStart {
   bool IsEnabled() const;
 
   // Prevent copying and moving
-  AutoStart(const AutoStart&) = delete;
-  AutoStart& operator=(const AutoStart&) = delete;
-  AutoStart(AutoStart&&) = delete;
-  AutoStart& operator=(AutoStart&&) = delete;
+  LaunchAtLogin(const LaunchAtLogin&) = delete;
+  LaunchAtLogin& operator=(const LaunchAtLogin&) = delete;
+  LaunchAtLogin(LaunchAtLogin&&) = delete;
+  LaunchAtLogin& operator=(LaunchAtLogin&&) = delete;
 
  private:
   class Impl;

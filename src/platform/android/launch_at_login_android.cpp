@@ -1,16 +1,15 @@
-#include "../../autostart.h"
+#include "../../launch_at_login.h"
 
 namespace nativeapi {
 
 /**
- * OHOS stub implementation for AutoStart.
+ * Android stub implementation for LaunchAtLogin.
  *
- * Auto-start at user login/session is not supported on OHOS in this library.
- * All operations that would enable/disable or configure auto-start return false.
- * Getters return the locally stored values (typically empty), while setters
- * return false and do not modify state.
+ * Auto-start at user login is not supported on Android. All operations that would
+ * enable/disable or configure launch-at-login return false. Getters return the locally
+ * stored values (typically empty), while setters return false and do not modify state.
  */
-class AutoStart::Impl {
+class LaunchAtLogin::Impl {
  public:
   // Unsupported platform semantics
   static bool IsSupported() { return false; }
@@ -50,55 +49,55 @@ class AutoStart::Impl {
   std::vector<std::string> arguments_;
 };
 
-// AutoStart public API forwarding to Impl
+// LaunchAtLogin public API forwarding to Impl
 
-AutoStart::AutoStart() : pimpl_(std::make_unique<Impl>()) {}
+LaunchAtLogin::LaunchAtLogin() : pimpl_(std::make_unique<Impl>()) {}
 
-AutoStart::AutoStart(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
+LaunchAtLogin::LaunchAtLogin(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
 
-AutoStart::AutoStart(const std::string& id, const std::string& display_name)
+LaunchAtLogin::LaunchAtLogin(const std::string& id, const std::string& display_name)
     : pimpl_(std::make_unique<Impl>(id, display_name)) {}
 
-AutoStart::~AutoStart() = default;
+LaunchAtLogin::~LaunchAtLogin() = default;
 
-bool AutoStart::IsSupported() {
+bool LaunchAtLogin::IsSupported() {
   return Impl::IsSupported();
 }
 
-std::string AutoStart::GetId() const {
+std::string LaunchAtLogin::GetId() const {
   return pimpl_->GetId();
 }
 
-std::string AutoStart::GetDisplayName() const {
+std::string LaunchAtLogin::GetDisplayName() const {
   return pimpl_->GetDisplayName();
 }
 
-bool AutoStart::SetDisplayName(const std::string& display_name) {
+bool LaunchAtLogin::SetDisplayName(const std::string& display_name) {
   return pimpl_->SetDisplayName(display_name);
 }
 
-bool AutoStart::SetProgram(const std::string& executable_path,
-                           const std::vector<std::string>& arguments) {
+bool LaunchAtLogin::SetProgram(const std::string& executable_path,
+                               const std::vector<std::string>& arguments) {
   return pimpl_->SetProgram(executable_path, arguments);
 }
 
-std::string AutoStart::GetExecutablePath() const {
+std::string LaunchAtLogin::GetExecutablePath() const {
   return pimpl_->GetExecutablePath();
 }
 
-std::vector<std::string> AutoStart::GetArguments() const {
+std::vector<std::string> LaunchAtLogin::GetArguments() const {
   return pimpl_->GetArguments();
 }
 
-bool AutoStart::Enable() {
+bool LaunchAtLogin::Enable() {
   return pimpl_->Enable();
 }
 
-bool AutoStart::Disable() {
+bool LaunchAtLogin::Disable() {
   return pimpl_->Disable();
 }
 
-bool AutoStart::IsEnabled() const {
+bool LaunchAtLogin::IsEnabled() const {
   return pimpl_->IsEnabled();
 }
 

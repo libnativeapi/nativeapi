@@ -3,7 +3,7 @@
 #import <mach-o/dyld.h>
 #include <unistd.h>
 
-#include "../../autostart.h"
+#include "../../launch_at_login.h"
 
 namespace nativeapi {
 
@@ -42,7 +42,8 @@ static NSString* SanitizeIdentifierForFileName(NSString* identifier) {
   }
 }
 
-// Best-effort default identifier: CFBundleIdentifier or "com.nativeapi.autostart.<process-name>"
+// Best-effort default identifier: CFBundleIdentifier or
+// "com.nativeapi.launch_at_login.<process-name>"
 static std::string DetectDefaultId() {
   @autoreleasepool {
     NSString* bundleId = [[NSBundle mainBundle] bundleIdentifier];
@@ -53,7 +54,8 @@ static std::string DetectDefaultId() {
     if (processName.length == 0) {
       processName = @"app";
     }
-    NSString* fallback = [NSString stringWithFormat:@"com.nativeapi.autostart.%@", processName];
+    NSString* fallback =
+        [NSString stringWithFormat:@"com.nativeapi.launch_at_login.%@", processName];
     return ToStdString(fallback);
   }
 }
@@ -108,7 +110,7 @@ static std::string DetectDefaultProgramPath() {
 
 }  // namespace
 
-class AutoStart::Impl {
+class LaunchAtLogin::Impl {
  public:
   static bool IsSupported() {
     // On macOS desktop, LaunchAgents are supported.
@@ -191,7 +193,7 @@ class AutoStart::Impl {
 
       // Name can be included for some tools even though not required by launchd
       if (nsDisplayName.length > 0) {
-        plist[@"_Comment"] = [NSString stringWithFormat:@"AutoStart for %@", nsDisplayName];
+        plist[@"_Comment"] = [NSString stringWithFormat:@"LaunchAtLogin for %@", nsDisplayName];
       }
 
       NSError* error = nil;
@@ -275,55 +277,55 @@ class AutoStart::Impl {
   std::vector<std::string> arguments_;
 };
 
-// AutoStart public API implementations
+// LaunchAtLogin public API implementations
 
-AutoStart::AutoStart() : pimpl_(std::make_unique<Impl>()) {}
+LaunchAtLogin::LaunchAtLogin() : pimpl_(std::make_unique<Impl>()) {}
 
-AutoStart::AutoStart(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
+LaunchAtLogin::LaunchAtLogin(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
 
-AutoStart::AutoStart(const std::string& id, const std::string& display_name)
+LaunchAtLogin::LaunchAtLogin(const std::string& id, const std::string& display_name)
     : pimpl_(std::make_unique<Impl>(id, display_name)) {}
 
-AutoStart::~AutoStart() = default;
+LaunchAtLogin::~LaunchAtLogin() = default;
 
-bool AutoStart::IsSupported() {
+bool LaunchAtLogin::IsSupported() {
   return Impl::IsSupported();
 }
 
-std::string AutoStart::GetId() const {
+std::string LaunchAtLogin::GetId() const {
   return pimpl_->GetId();
 }
 
-std::string AutoStart::GetDisplayName() const {
+std::string LaunchAtLogin::GetDisplayName() const {
   return pimpl_->GetDisplayName();
 }
 
-bool AutoStart::SetDisplayName(const std::string& display_name) {
+bool LaunchAtLogin::SetDisplayName(const std::string& display_name) {
   return pimpl_->SetDisplayName(display_name);
 }
 
-bool AutoStart::SetProgram(const std::string& executable_path,
-                           const std::vector<std::string>& arguments) {
+bool LaunchAtLogin::SetProgram(const std::string& executable_path,
+                               const std::vector<std::string>& arguments) {
   return pimpl_->SetProgram(executable_path, arguments);
 }
 
-std::string AutoStart::GetExecutablePath() const {
+std::string LaunchAtLogin::GetExecutablePath() const {
   return pimpl_->GetExecutablePath();
 }
 
-std::vector<std::string> AutoStart::GetArguments() const {
+std::vector<std::string> LaunchAtLogin::GetArguments() const {
   return pimpl_->GetArguments();
 }
 
-bool AutoStart::Enable() {
+bool LaunchAtLogin::Enable() {
   return pimpl_->Enable();
 }
 
-bool AutoStart::Disable() {
+bool LaunchAtLogin::Disable() {
   return pimpl_->Disable();
 }
 
-bool AutoStart::IsEnabled() const {
+bool LaunchAtLogin::IsEnabled() const {
   return pimpl_->IsEnabled();
 }
 

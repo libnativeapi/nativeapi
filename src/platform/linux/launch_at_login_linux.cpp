@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "../../autostart.h"
+#include "../../launch_at_login.h"
 
 namespace nativeapi {
 
@@ -132,13 +132,13 @@ static std::string Basename(const std::string& path) {
   return path.substr(pos + 1);
 }
 
-// Detect a default identifier: "com.nativeapi.autostart.<program-name>"
+// Detect a default identifier: "com.nativeapi.launch_at_login.<program-name>"
 static std::string DetectDefaultId() {
   std::string prog = DetectDefaultProgramPath();
   std::string name = Basename(prog);
   if (name.empty())
     name = "app";
-  return "com.nativeapi.autostart." + name;
+  return "com.nativeapi.launch_at_login." + name;
 }
 
 // Detect default display name: program name
@@ -222,7 +222,7 @@ static bool WriteFileAtomic(const std::string& path, const std::string& content,
 
 }  // namespace
 
-class AutoStart::Impl {
+class LaunchAtLogin::Impl {
  public:
   static bool IsSupported() { return true; }
 
@@ -279,7 +279,7 @@ class AutoStart::Impl {
     content << "Type=Application\n";
     content << "Name=" << display_name_ << "\n";
     // Optional comment
-    content << "Comment=AutoStart entry for " << display_name_ << "\n";
+    content << "Comment=LaunchAtLogin entry for " << display_name_ << "\n";
     content << "Exec=" << BuildExecLine(program_path_, arguments_) << "\n";
     content << "X-GNOME-Autostart-enabled=true\n";
     content << "Hidden=false\n";
@@ -322,55 +322,55 @@ class AutoStart::Impl {
   std::vector<std::string> arguments_;
 };
 
-// AutoStart public API implementations
+// LaunchAtLogin public API implementations
 
-AutoStart::AutoStart() : pimpl_(std::make_unique<Impl>()) {}
+LaunchAtLogin::LaunchAtLogin() : pimpl_(std::make_unique<Impl>()) {}
 
-AutoStart::AutoStart(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
+LaunchAtLogin::LaunchAtLogin(const std::string& id) : pimpl_(std::make_unique<Impl>(id)) {}
 
-AutoStart::AutoStart(const std::string& id, const std::string& display_name)
+LaunchAtLogin::LaunchAtLogin(const std::string& id, const std::string& display_name)
     : pimpl_(std::make_unique<Impl>(id, display_name)) {}
 
-AutoStart::~AutoStart() = default;
+LaunchAtLogin::~LaunchAtLogin() = default;
 
-bool AutoStart::IsSupported() {
+bool LaunchAtLogin::IsSupported() {
   return Impl::IsSupported();
 }
 
-std::string AutoStart::GetId() const {
+std::string LaunchAtLogin::GetId() const {
   return pimpl_->GetId();
 }
 
-std::string AutoStart::GetDisplayName() const {
+std::string LaunchAtLogin::GetDisplayName() const {
   return pimpl_->GetDisplayName();
 }
 
-bool AutoStart::SetDisplayName(const std::string& display_name) {
+bool LaunchAtLogin::SetDisplayName(const std::string& display_name) {
   return pimpl_->SetDisplayName(display_name);
 }
 
-bool AutoStart::SetProgram(const std::string& executable_path,
-                           const std::vector<std::string>& arguments) {
+bool LaunchAtLogin::SetProgram(const std::string& executable_path,
+                               const std::vector<std::string>& arguments) {
   return pimpl_->SetProgram(executable_path, arguments);
 }
 
-std::string AutoStart::GetExecutablePath() const {
+std::string LaunchAtLogin::GetExecutablePath() const {
   return pimpl_->GetExecutablePath();
 }
 
-std::vector<std::string> AutoStart::GetArguments() const {
+std::vector<std::string> LaunchAtLogin::GetArguments() const {
   return pimpl_->GetArguments();
 }
 
-bool AutoStart::Enable() {
+bool LaunchAtLogin::Enable() {
   return pimpl_->Enable();
 }
 
-bool AutoStart::Disable() {
+bool LaunchAtLogin::Disable() {
   return pimpl_->Disable();
 }
 
-bool AutoStart::IsEnabled() const {
+bool LaunchAtLogin::IsEnabled() const {
   return pimpl_->IsEnabled();
 }
 

@@ -5,7 +5,7 @@
 #include "../src/accessibility_manager.h"
 #include "../src/application.h"
 #include "../src/application_event.h"
-#include "../src/autostart.h"
+#include "../src/launch_at_login.h"
 #include "../src/dialog.h"
 #include "../src/display.h"
 #include "../src/display_event.h"
@@ -38,7 +38,7 @@
 // C API headers (available for both C and C++)
 #include "../src/capi/accessibility_manager_c.h"
 #include "../src/capi/application_c.h"
-#include "../src/capi/autostart_c.h"
+#include "../src/capi/launch_at_login_c.h"
 #include "../src/capi/display_c.h"
 #include "../src/capi/display_manager_c.h"
 #include "../src/capi/geometry_c.h"
