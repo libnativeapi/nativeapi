@@ -112,6 +112,23 @@ static void* g_will_show_ud = nullptr;
 static native_window_will_hide_callback_t g_will_hide_cb = nullptr;
 static void* g_will_hide_ud = nullptr;
 
+// Static bridge functions for will show/hide hooks
+// These are non-capturing function pointers (always valid, in code section)
+// instead of capturing lambdas that may hold dangling NativeCallable pointers.
+static void WillShowHookBridge(WindowId id) {
+    std::lock_guard<std::mutex> lock(g_hook_mutex);
+    if (g_will_show_cb) {
+        g_will_show_cb(id, g_will_show_ud);
+    }
+}
+
+static void WillHideHookBridge(WindowId id) {
+    std::lock_guard<std::mutex> lock(g_hook_mutex);
+    if (g_will_hide_cb) {
+        g_will_hide_cb(id, g_will_hide_ud);
+    }
+}
+
 // Window manager operations
 FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get(native_window_id_t window_id) {
@@ -247,13 +264,9 @@ void native_window_manager_set_will_show_hook(native_window_will_show_callback_t
   }
 
   // Bridge C callback through C++ hook
-  manager.SetWillShowHook([cb = callback, ud = user_data](WindowId id) {
-    try {
-      cb(id, ud);
-    } catch (...) {
-      // Swallow exceptions to avoid unwinding across API boundary
-    }
-  });
+  // Use a non-capturing function pointer (stable address, never dangling)
+  // instead of a capturing lambda that may reference freed NativeCallable trampolines.
+  manager.SetWillShowHook(WillShowHookBridge);
 }
 
 FFI_PLUGIN_EXPORT
@@ -270,13 +283,9 @@ void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t
   }
 
   // Bridge C callback through C++ hook
-  manager.SetWillHideHook([cb = callback, ud = user_data](WindowId id) {
-    try {
-      cb(id, ud);
-    } catch (...) {
-      // Swallow exceptions to avoid unwinding across API boundary
-    }
-  });
+  // Use a non-capturing function pointer (stable address, never dangling)
+  // instead of a capturing lambda that may reference freed NativeCallable trampolines.
+  manager.SetWillHideHook(WillHideHookBridge);
 }
 
 FFI_PLUGIN_EXPORT
