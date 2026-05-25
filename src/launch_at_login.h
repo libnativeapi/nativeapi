@@ -15,7 +15,7 @@ namespace nativeapi {
  *
  * Platform implementations:
  * - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run registry key
- * - macOS: Launch Agents (~/Library/LaunchAgents/[app_id].plist) with ProgramArguments
+ * - macOS: ServiceManagement SMAppService for the main app or bundled login item helpers
  * - Linux (XDG): ~/.config/autostart/[app_id].desktop
  * - Android/iOS/OHOS: Not supported (returns false from IsSupported/operations)
  *
@@ -23,7 +23,10 @@ namespace nativeapi {
  * - This API is intended for desktop environments. On mobile platforms this API is
  *   typically unsupported by design. Methods will fail gracefully.
  * - You can let the implementation determine the current executable path, or call
- *   SetProgram() to customize the target binary and arguments recorded in the OS.
+ *   SetProgram() to customize the target binary and arguments recorded in the OS where the
+ *   platform supports arbitrary launch commands. On macOS, SMAppService can only register
+ *   the main app or a bundled helper, so custom executable paths and arguments are not
+ *   supported.
  * - Some platforms may require application-specific permissions or entitlements
  *   (e.g., sandbox restrictions on macOS). In such cases, operations may fail.
  *
@@ -33,7 +36,7 @@ namespace nativeapi {
  *
  * if (LaunchAtLogin::IsSupported()) {
  *   LaunchAtLogin launch_at_login("com.example.myapp", "MyApp");
- *   // Optionally override the program and arguments (defaults to current executable):
+ *   // Optionally override the program and arguments where supported:
  *   launch_at_login.SetProgram("/usr/local/bin/myapp", {"--minimized"});
  *
  *   launch_at_login.Enable();
@@ -65,7 +68,8 @@ class LaunchAtLogin {
    * @param id A stable, unique identifier for your app.
    *           Examples:
    *           - Windows: used as the registry value name, e.g., "MyApp"
-   *           - macOS: used as LaunchAgent Label, e.g., "com.example.myapp"
+   *           - macOS: bundle identifier for a bundled LoginItem helper, e.g.,
+   *             "com.example.myapp.Helper"; the default constructor registers the main app
    *           - Linux: used as the .desktop file name (without extension), e.g., "myapp"
    *
    * Recommendation: Use a reverse-DNS identifier when possible, e.g., "com.example.myapp".
@@ -99,8 +103,7 @@ class LaunchAtLogin {
   /**
    * @brief Set a human-readable display name used where applicable.
    *
-   * Some platforms surface a name in their UI (e.g., Linux .desktop Name, macOS LaunchAgent Label
-   * often mirrors the identifier but may display the name in some tools).
+   * Some platforms surface a name in their UI (e.g., Linux .desktop Name).
    *
    * @param display_name The human-readable name.
    * @return true if the value was stored locally; does not change OS registration until Enable().
@@ -112,8 +115,9 @@ class LaunchAtLogin {
    *
    * If not set, implementations will try to use the current process executable path.
    * On platforms that require a single string (e.g., Windows registry), arguments will
-   * be encoded appropriately (quoted when needed). On macOS/Linux, arguments are stored
-   * as vector items (.plist ProgramArguments / .desktop Exec respectively).
+   * be encoded appropriately (quoted when needed). On Linux, arguments are stored in
+   * the .desktop Exec line. On macOS, SMAppService does not support arbitrary
+   * executable paths or arguments for main-app login items.
    *
    * @param executable_path Absolute path to the executable to run on login.
    * @param arguments       Optional arguments; order is preserved.

@@ -17,7 +17,7 @@ extern "C" {
  *
  * Platform behavior:
  * - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run registry value
- * - macOS:   Launch Agents in ~/Library/LaunchAgents (plist with ProgramArguments)
+ * - macOS:   ServiceManagement SMAppService for the main app or bundled login item helpers
  * - Linux:   XDG autostart in ~/.config/autostart (Desktop Entry Exec line)
  * - Mobile (Android/iOS/OHOS): Typically unsupported (functions return false)
  *
@@ -106,6 +106,8 @@ bool native_launch_at_login_set_display_name(native_launch_at_login_t launch_at_
  *
  * If not set, the implementation attempts to use the current process executable.
  * Pass NULL for arguments or argument_count == 0 when no arguments are needed.
+ * On macOS, SMAppService does not support arbitrary executable paths or arguments for
+ * main-app login items.
  *
  * @param launch_at_login       LaunchAtLogin handle.
  * @param executable_path Absolute path to the executable to launch on login.

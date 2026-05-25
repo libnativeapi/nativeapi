@@ -14,9 +14,17 @@ int main(void) {
 
   printf("LaunchAtLogin is supported on this platform.\n\n");
 
+#if defined(__APPLE__)
+  /*
+   * On macOS, the default constructor registers the main app with SMAppService.
+   * Custom identifiers are for bundled login item helpers.
+   */
+  native_launch_at_login_t launch_at_login = native_launch_at_login_create();
+#else
   /* Create a LaunchAtLogin manager with a custom identifier and display name */
   native_launch_at_login_t launch_at_login =
       native_launch_at_login_create_with_id_and_name("com.example.myapp.c", "My C Example App");
+#endif
   if (!launch_at_login) {
     printf("Failed to create LaunchAtLogin instance.\n");
     return 1;
@@ -35,16 +43,22 @@ int main(void) {
   free_c_str(id);
   free_c_str(display_name);
 
+#if !defined(__APPLE__)
   /* Set a custom program path and arguments */
   const char* arguments[] = {"--minimized", "--launch_at_login"};
   native_launch_at_login_set_program(launch_at_login, executable ? executable : "", arguments, 2);
+#endif
   free_c_str(executable);
 
   /* Retrieve and display the updated executable path */
   char* exec_path = native_launch_at_login_get_executable_path(launch_at_login);
   printf("After SetProgram:\n");
   printf("  Executable: %s\n", exec_path ? exec_path : "(null)");
+#if defined(__APPLE__)
+  printf("  Arguments:  (not supported by macOS SMAppService main-app login items)\n\n");
+#else
   printf("  Arguments:  --minimized --launch_at_login\n\n");
+#endif
   free_c_str(exec_path);
 
   /* Check current state before enabling */

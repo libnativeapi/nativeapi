@@ -1,4 +1,10 @@
 #import <Foundation/Foundation.h>
+#if __has_include(<ServiceManagement/SMAppService.h>)
+#import <ServiceManagement/SMAppService.h>
+#define NATIVEAPI_HAS_SM_APP_SERVICE 1
+#else
+#define NATIVEAPI_HAS_SM_APP_SERVICE 0
+#endif
 #include <limits.h>
 #import <mach-o/dyld.h>
 #include <unistd.h>
@@ -19,27 +25,6 @@ static inline std::string ToStdString(NSString* s) {
     return std::string();
   const char* cstr = [s UTF8String];
   return cstr ? std::string(cstr) : std::string();
-}
-
-// Return the user's Library/LaunchAgents directory path.
-static NSString* GetLaunchAgentsDir() {
-  @autoreleasepool {
-    NSArray<NSString*>* paths =
-        NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES);
-    NSString* libraryPath = (paths.count > 0) ? paths.firstObject : nil;
-    if (!libraryPath || libraryPath.length == 0) {
-      // Fallback to ~/Library
-      libraryPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library"];
-    }
-    return [libraryPath stringByAppendingPathComponent:@"LaunchAgents"];
-  }
-}
-
-// Replace any '/' in identifier to avoid nested paths in file name.
-static NSString* SanitizeIdentifierForFileName(NSString* identifier) {
-  @autoreleasepool {
-    return [identifier stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
-  }
 }
 
 // Best-effort default identifier: CFBundleIdentifier or
@@ -108,27 +93,56 @@ static std::string DetectDefaultProgramPath() {
   }
 }
 
+static bool IsCurrentProgram(const std::string& executable_path) {
+  if (executable_path.empty()) {
+    return true;
+  }
+
+  std::string current = DetectDefaultProgramPath();
+  if (current.empty()) {
+    return false;
+  }
+
+  @autoreleasepool {
+    NSString* requested = [ToNSString(executable_path) stringByStandardizingPath];
+    NSString* detected = [ToNSString(current) stringByStandardizingPath];
+    return [requested isEqualToString:detected];
+  }
+}
+
 }  // namespace
 
 class LaunchAtLogin::Impl {
  public:
   static bool IsSupported() {
-    // On macOS desktop, LaunchAgents are supported.
-    return true;
+#if NATIVEAPI_HAS_SM_APP_SERVICE
+    if (@available(macOS 13.0, *)) {
+      return true;
+    }
+#endif
+    return false;
   }
 
   Impl()
       : id_(DetectDefaultId()),
         display_name_(DetectDefaultDisplayName()),
-        program_path_(DetectDefaultProgramPath()) {}
+        program_path_(DetectDefaultProgramPath()),
+        default_id_(id_),
+        default_program_path_(program_path_) {}
 
   explicit Impl(const std::string& id)
       : id_(id),
         display_name_(DetectDefaultDisplayName()),
-        program_path_(DetectDefaultProgramPath()) {}
+        program_path_(DetectDefaultProgramPath()),
+        default_id_(DetectDefaultId()),
+        default_program_path_(program_path_) {}
 
   Impl(const std::string& id, const std::string& display_name)
-      : id_(id), display_name_(display_name), program_path_(DetectDefaultProgramPath()) {}
+      : id_(id),
+        display_name_(display_name),
+        program_path_(DetectDefaultProgramPath()),
+        default_id_(DetectDefaultId()),
+        default_program_path_(program_path_) {}
 
   ~Impl() = default;
 
@@ -152,122 +166,96 @@ class LaunchAtLogin::Impl {
   std::vector<std::string> GetArguments() const { return arguments_; }
 
   bool Enable() {
+#if NATIVEAPI_HAS_SM_APP_SERVICE
     @autoreleasepool {
-      if (!EnsureLaunchAgentsDir()) {
-        return false;
-      }
-
-      NSString* nsId = ToNSString(id_);
-      NSString* nsDisplayName = ToNSString(display_name_);
-      NSString* nsProgram = ToNSString(program_path_);
-
-      if (nsProgram.length == 0) {
-        // Attempt to detect again if not set
-        program_path_ = DetectDefaultProgramPath();
-        nsProgram = ToNSString(program_path_);
-        if (nsProgram.length == 0) {
+      if (@available(macOS 13.0, *)) {
+        if (!CanUseConfiguredProgram()) {
           return false;
         }
+
+        SMAppService* service = Service();
+        if (!service) {
+          return false;
+        }
+
+        SMAppServiceStatus status = service.status;
+        if (status == SMAppServiceStatusEnabled) {
+          return true;
+        }
+        if (status == SMAppServiceStatusRequiresApproval) {
+          return false;
+        }
+
+        NSError* error = nil;
+        return [service registerAndReturnError:&error] == YES;
       }
-
-      NSMutableArray<NSString*>* programArguments = [NSMutableArray array];
-      [programArguments addObject:nsProgram];
-      for (const auto& arg : arguments_) {
-        [programArguments addObject:ToNSString(arg)];
-      }
-
-      // Build the plist dictionary in LaunchAgents format
-      NSMutableDictionary* plist = [NSMutableDictionary dictionary];
-      plist[@"Label"] = nsId;
-      plist[@"RunAtLoad"] = @YES;
-      plist[@"ProgramArguments"] = programArguments;
-      // Optional logging to /tmp
-      NSString* outPath =
-          [[@"/tmp" stringByAppendingPathComponent:SanitizeIdentifierForFileName(nsId)]
-              stringByAppendingString:@".out.log"];
-      NSString* errPath =
-          [[@"/tmp" stringByAppendingPathComponent:SanitizeIdentifierForFileName(nsId)]
-              stringByAppendingString:@".err.log"];
-      plist[@"StandardOutPath"] = outPath;
-      plist[@"StandardErrorPath"] = errPath;
-
-      // Name can be included for some tools even though not required by launchd
-      if (nsDisplayName.length > 0) {
-        plist[@"_Comment"] = [NSString stringWithFormat:@"LaunchAtLogin for %@", nsDisplayName];
-      }
-
-      NSError* error = nil;
-      NSData* data = [NSPropertyListSerialization dataWithPropertyList:plist
-                                                                format:NSPropertyListXMLFormat_v1_0
-                                                               options:0
-                                                                 error:&error];
-      if (!data || error) {
-        return false;
-      }
-
-      NSString* plistPath = PlistPath();
-      if (![data writeToFile:plistPath atomically:YES]) {
-        return false;
-      }
-
-      // Set permissions to 0644 (owner read/write, group/others read)
-      NSDictionary* attrs = @{NSFilePosixPermissions : @(0644)};
-      [[NSFileManager defaultManager] setAttributes:attrs ofItemAtPath:plistPath error:nil];
-
-      // Note: We intentionally do not invoke `launchctl load` here. The agent
-      // will take effect on next login. Callers may choose to load/unload manually.
-      return true;
     }
+#endif
+    return false;
   }
 
   bool Disable() {
+#if NATIVEAPI_HAS_SM_APP_SERVICE
     @autoreleasepool {
-      NSString* path = PlistPath();
-      NSFileManager* fm = [NSFileManager defaultManager];
-      if ([fm fileExistsAtPath:path]) {
-        NSError* error = nil;
-        if (![fm removeItemAtPath:path error:&error]) {
+      if (@available(macOS 13.0, *)) {
+        SMAppService* service = Service();
+        if (!service) {
           return false;
         }
+
+        if (service.status == SMAppServiceStatusNotRegistered) {
+          return true;
+        }
+
+        NSError* error = nil;
+        return [service unregisterAndReturnError:&error] == YES ||
+               service.status == SMAppServiceStatusNotRegistered;
       }
-      return true;
     }
+#endif
+    return false;
   }
 
   bool IsEnabled() const {
+#if NATIVEAPI_HAS_SM_APP_SERVICE
     @autoreleasepool {
-      NSString* path = PlistPath();
-      return [[NSFileManager defaultManager] fileExistsAtPath:path];
+      if (@available(macOS 13.0, *)) {
+        SMAppService* service = Service();
+        if (!service) {
+          return false;
+        }
+
+        SMAppServiceStatus status = service.status;
+        return status == SMAppServiceStatusEnabled;
+      }
     }
+#endif
+    return false;
   }
 
  private:
-  NSString* PlistPath() const {
+#if NATIVEAPI_HAS_SM_APP_SERVICE
+  SMAppService* Service() const API_AVAILABLE(macos(13.0)) {
     @autoreleasepool {
-      NSString* baseDir = GetLaunchAgentsDir();
-      NSString* fileName =
-          [SanitizeIdentifierForFileName(ToNSString(id_)) stringByAppendingString:@".plist"];
-      return [baseDir stringByAppendingPathComponent:fileName];
+      if (id_.empty() || id_ == default_id_) {
+        return [SMAppService mainAppService];
+      }
+
+      NSString* identifier = ToNSString(id_);
+      if (identifier.length == 0) {
+        return nil;
+      }
+      return [SMAppService loginItemServiceWithIdentifier:identifier];
     }
   }
+#endif
 
-  bool EnsureLaunchAgentsDir() const {
-    @autoreleasepool {
-      NSString* dir = GetLaunchAgentsDir();
-      NSFileManager* fm = [NSFileManager defaultManager];
-      BOOL isDir = NO;
-      if ([fm fileExistsAtPath:dir isDirectory:&isDir]) {
-        return isDir == YES;
-      }
-      NSError* error = nil;
-      BOOL ok = [fm createDirectoryAtPath:dir
-              withIntermediateDirectories:YES
-                               attributes:@{
-                                 NSFilePosixPermissions : @(0755)
-                               }
-                                    error:&error];
-      return ok && error == nil;
-    }
+  bool CanUseConfiguredProgram() const {
+    // SMAppService registers the main app or bundled helpers. It cannot register
+    // an arbitrary executable path or ProgramArguments like a legacy LaunchAgent.
+    return arguments_.empty() &&
+           (program_path_.empty() || program_path_ == default_program_path_ ||
+            IsCurrentProgram(program_path_));
   }
 
  private:
@@ -275,6 +263,8 @@ class LaunchAtLogin::Impl {
   std::string display_name_;
   std::string program_path_;
   std::vector<std::string> arguments_;
+  std::string default_id_;
+  std::string default_program_path_;
 };
 
 // LaunchAtLogin public API implementations
