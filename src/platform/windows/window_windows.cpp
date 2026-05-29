@@ -7,6 +7,7 @@
 #include "../../window_registry.h"
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
+#include "window_message_dispatcher.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -30,6 +31,9 @@ class Window::Impl {
   WindowId window_id_;
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
+  Size min_size_{0, 0};
+  Size max_size_{0, 0};
+  int min_max_handler_id_ = 0;
 };
 
 // Custom window procedure to handle window messages
@@ -184,8 +188,14 @@ Window::Window(void* native_window) {
 }
 
 Window::~Window() {
-  // Remove window from registry on destruction
   if (pimpl_ && pimpl_->window_id_ != IdAllocator::kInvalidId) {
+    // Unregister WM_GETMINMAXINFO handler if registered
+    if (pimpl_->min_max_handler_id_ != 0 && pimpl_->hwnd_) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(
+          pimpl_->min_max_handler_id_);
+    }
+
+    // Remove window from registry on destruction
     WindowRegistry::GetInstance().Remove(pimpl_->window_id_);
 
     // Remove the custom property from HWND if window is still valid
@@ -453,25 +463,80 @@ Rectangle Window::GetContentBounds() const {
   return bounds;
 }
 
+// Helper function: registers a WM_GETMINMAXINFO handler for the given HWND
+// via WindowMessageDispatcher if not already registered. Returns the handler ID.
+static int RegisterMinMaxInfoHandler(HWND hwnd, int existing_handler_id) {
+  if (existing_handler_id != 0) {
+    return existing_handler_id;
+  }
+  if (!hwnd || !IsWindow(hwnd)) {
+    return 0;
+  }
+  auto& dispatcher = WindowMessageDispatcher::GetInstance();
+  return dispatcher.RegisterHandler(
+      hwnd,
+      [](HWND hwnd, UINT msg, WPARAM wparam,
+         LPARAM lparam) -> std::optional<LRESULT> {
+        if (msg == WM_GETMINMAXINFO) {
+          HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
+          if (prop_handle) {
+            WindowId window_id = static_cast<WindowId>(
+                reinterpret_cast<uintptr_t>(prop_handle));
+            if (window_id != IdAllocator::kInvalidId) {
+              auto window = WindowRegistry::GetInstance().Get(window_id);
+              if (window) {
+                auto minSize = window->GetMinimumSize();
+                auto maxSize = window->GetMaximumSize();
+                MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+                if (minSize.width > 0 && minSize.height > 0) {
+                  mmi->ptMinTrackSize.x = static_cast<LONG>(minSize.width);
+                  mmi->ptMinTrackSize.y = static_cast<LONG>(minSize.height);
+                }
+                if (maxSize.width > 0 && maxSize.height > 0) {
+                  mmi->ptMaxTrackSize.x = static_cast<LONG>(maxSize.width);
+                  mmi->ptMaxTrackSize.y = static_cast<LONG>(maxSize.height);
+                }
+                return std::make_optional(0);
+              }
+            }
+          }
+        }
+        return std::nullopt;
+      });
+}
+
 void Window::SetMinimumSize(Size size) {
-  // Windows minimum size would be handled in WM_GETMINMAXINFO message
-  // This is a placeholder implementation
+  pimpl_->min_size_ = size;
+
+  if (pimpl_->hwnd_) {
+    pimpl_->min_max_handler_id_ =
+        RegisterMinMaxInfoHandler(pimpl_->hwnd_, pimpl_->min_max_handler_id_);
+
+    // Trigger the window to re-evaluate its size constraints
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+  }
 }
 
 Size Window::GetMinimumSize() const {
-  // Return default minimum size
-  return {0, 0};
+  return pimpl_->min_size_;
 }
 
 void Window::SetMaximumSize(Size size) {
-  // Windows maximum size would be handled in WM_GETMINMAXINFO message
-  // This is a placeholder implementation
+  pimpl_->max_size_ = size;
+
+  if (pimpl_->hwnd_) {
+    pimpl_->min_max_handler_id_ =
+        RegisterMinMaxInfoHandler(pimpl_->hwnd_, pimpl_->min_max_handler_id_);
+
+    // Trigger the window to re-evaluate its size constraints
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+  }
 }
 
 Size Window::GetMaximumSize() const {
-  // Return default maximum size (screen size)
-  return {static_cast<double>(GetSystemMetrics(SM_CXSCREEN)),
-          static_cast<double>(GetSystemMetrics(SM_CYSCREEN))};
+  return pimpl_->max_size_;
 }
 
 void Window::SetResizable(bool is_resizable) {
