@@ -124,6 +124,10 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     if (!menu_item)
       return;
 
+    // Ignore clicks on disabled items as an extra safety net.
+    if (![menu_item isEnabled])
+      return;
+
     // Call the block if it exists
     if (_clickedBlock) {
       // Get the MenuItemId from the menu item's associated object
@@ -160,6 +164,14 @@ std::pair<NSString*, NSUInteger> ConvertAccelerator(const KeyboardAccelerator& a
     // Log the exception but don't crash
     NSLog(@"Exception in menuWillOpen: %@", [exception reason]);
   }
+}
+
+- (BOOL)menu:(NSMenu*)menu validateMenuItem:(NSMenuItem*)item {
+  // Respect the programmatically set enabled state on NSMenuItem.
+  // Without this override, NSMenu's default autoenablesItems (YES)
+  // would re-enable all items whose target responds to the action,
+  // overriding explicit setEnabled:NO calls.
+  return [item isEnabled];
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
@@ -509,6 +521,8 @@ class Menu::Impl {
   Impl(MenuId id, NSMenu* menu)
       : id_(id), ns_menu_(menu), delegate_([[NSMenuDelegateImpl alloc] init]) {
     [ns_menu_ setDelegate:delegate_];
+    // Disable auto-enabling so explicit setEnabled: calls are respected.
+    [ns_menu_ setAutoenablesItems:NO];
   }
 
   ~Impl() {
