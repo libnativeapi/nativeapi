@@ -102,7 +102,7 @@ class MenuItem::Impl {
   std::optional<std::string> label_;
   std::shared_ptr<Image> image_;
   HICON menu_icon_;      // Stored icon for menu item with transparency support
-  HBITMAP menu_bitmap_;  // Stored bitmap with icon drawn on menu background
+  HBITMAP menu_bitmap_;  // Stored 32-bit ARGB bitmap with icon and transparent background
   std::optional<std::string> tooltip_;
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
@@ -287,15 +287,12 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
       HBITMAP hBmp = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
 
       if (hBmp && pBits) {
-        // Fill with system menu background color
-        COLORREF bgColor = GetSysColor(COLOR_MENU);
-        DWORD bgPixel = (0xFF << 24) | (GetRValue(bgColor) << 16) | (GetGValue(bgColor) << 8) |
-                        GetBValue(bgColor);
-
+        // Fill with fully transparent pixels (all-zero ARGB)
+        // This ensures the icon blends seamlessly with the menu background.
+        // On Windows Vista+, MIIM_BITMAP with a 32-bit ARGB DIB section
+        // respects the alpha channel for proper transparency.
         DWORD* pixels = static_cast<DWORD*>(pBits);
-        for (int i = 0; i < iconSize * iconSize; i++) {
-          pixels[i] = bgPixel;  // System menu background color (ARGB)
-        }
+        memset(pixels, 0, iconSize * iconSize * sizeof(DWORD));
 
         // Draw the icon on the bitmap
         HDC hdcMem = CreateCompatibleDC(hdc);
