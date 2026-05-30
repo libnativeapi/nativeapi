@@ -1,5 +1,6 @@
 #include <dwmapi.h>
 #include <windows.h>
+#include <cmath>
 #include <iostream>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
@@ -7,6 +8,7 @@
 #include "../../window_registry.h"
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
+#include "window_message_dispatcher.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -30,6 +32,9 @@ class Window::Impl {
   WindowId window_id_;
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
+  Size min_size_{0, 0};
+  Size max_size_{0, 0};
+  int min_max_handler_id_ = 0;
 };
 
 // Custom window procedure to handle window messages
@@ -184,8 +189,14 @@ Window::Window(void* native_window) {
 }
 
 Window::~Window() {
-  // Remove window from registry on destruction
   if (pimpl_ && pimpl_->window_id_ != IdAllocator::kInvalidId) {
+    // Unregister WM_GETMINMAXINFO handler if registered
+    if (pimpl_->min_max_handler_id_ != 0 && pimpl_->hwnd_) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(
+          pimpl_->min_max_handler_id_);
+    }
+
+    // Remove window from registry on destruction
     WindowRegistry::GetInstance().Remove(pimpl_->window_id_);
 
     // Remove the custom property from HWND if window is still valid
@@ -336,8 +347,14 @@ bool Window::IsFullScreen() const {
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(bounds.x), static_cast<int>(bounds.y),
-                 static_cast<int>(bounds.width), static_cast<int>(bounds.height), SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr,
+                 static_cast<int>(std::lround(bounds.x * scale)),
+                 static_cast<int>(std::lround(bounds.y * scale)),
+                 static_cast<int>(std::lround(bounds.width * scale)),
+                 static_cast<int>(std::lround(bounds.height * scale)), SWP_NOZORDER);
   }
 }
 
@@ -346,10 +363,13 @@ Rectangle Window::GetBounds() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    bounds.x = rect.left;
-    bounds.y = rect.top;
-    bounds.width = rect.right - rect.left;
-    bounds.height = rect.bottom - rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    bounds.x = static_cast<double>(rect.left) / scale;
+    bounds.y = static_cast<double>(rect.top) / scale;
+    bounds.width = static_cast<double>(rect.right - rect.left) / scale;
+    bounds.height = static_cast<double>(rect.bottom - rect.top) / scale;
   }
   return bounds;
 }
@@ -358,8 +378,13 @@ void Window::SetSize(Size size, bool animate) {
   if (pimpl_->hwnd_) {
     // Windows doesn't have built-in animation for window resizing
     // Animation would require custom implementation
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width),
-                 static_cast<int>(size.height), SWP_NOMOVE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
+                 static_cast<int>(std::lround(size.width * scale)),
+                 static_cast<int>(std::lround(size.height * scale)),
+                 SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -368,8 +393,11 @@ Size Window::GetSize() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    size.width = rect.right - rect.left;
-    size.height = rect.bottom - rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    size.width = static_cast<double>(rect.right - rect.left) / scale;
+    size.height = static_cast<double>(rect.bottom - rect.top) / scale;
   }
   return size;
 }
@@ -384,8 +412,13 @@ void Window::SetContentSize(Size size) {
     int borderWidth = (windowRect.right - windowRect.left) - clientRect.right;
     int borderHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
 
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width) + borderWidth,
-                 static_cast<int>(size.height) + borderHeight, SWP_NOMOVE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
+                 static_cast<int>(std::lround(size.width * scale)) + borderWidth,
+                 static_cast<int>(std::lround(size.height * scale)) + borderHeight,
+                 SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -394,8 +427,11 @@ Size Window::GetContentSize() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetClientRect(pimpl_->hwnd_, &rect);
-    size.width = rect.right;
-    size.height = rect.bottom;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    size.width = static_cast<double>(rect.right) / scale;
+    size.height = static_cast<double>(rect.bottom) / scale;
   }
   return size;
 }
@@ -418,11 +454,15 @@ void Window::SetContentBounds(Rectangle bounds) {
     int offsetX = clientTopLeft.x - windowRect.left;
     int offsetY = clientTopLeft.y - windowRect.top;
 
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+
     // Calculate window position so that client area is at bounds position
-    int windowX = static_cast<int>(bounds.x) - offsetX;
-    int windowY = static_cast<int>(bounds.y) - offsetY;
-    int windowWidth = static_cast<int>(bounds.width) + borderWidth;
-    int windowHeight = static_cast<int>(bounds.height) + borderHeight;
+    int windowX = static_cast<int>(std::lround(bounds.x * scale)) - offsetX;
+    int windowY = static_cast<int>(std::lround(bounds.y * scale)) - offsetY;
+    int windowWidth = static_cast<int>(std::lround(bounds.width * scale)) + borderWidth;
+    int windowHeight = static_cast<int>(std::lround(bounds.height * scale)) + borderHeight;
 
     SetWindowPos(pimpl_->hwnd_, nullptr, windowX, windowY, windowWidth, windowHeight, SWP_NOZORDER);
   }
@@ -453,25 +493,83 @@ Rectangle Window::GetContentBounds() const {
   return bounds;
 }
 
+// Helper function: registers a WM_GETMINMAXINFO handler for the given HWND
+// via WindowMessageDispatcher if not already registered. Returns the handler ID.
+static int RegisterMinMaxInfoHandler(HWND hwnd, int existing_handler_id) {
+  if (existing_handler_id != 0) {
+    return existing_handler_id;
+  }
+  if (!hwnd || !IsWindow(hwnd)) {
+    return 0;
+  }
+  auto& dispatcher = WindowMessageDispatcher::GetInstance();
+  return dispatcher.RegisterHandler(
+      hwnd,
+      [](HWND hwnd, UINT msg, WPARAM wparam,
+         LPARAM lparam) -> std::optional<LRESULT> {
+        if (msg == WM_GETMINMAXINFO) {
+          HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
+          if (prop_handle) {
+            WindowId window_id = static_cast<WindowId>(
+                reinterpret_cast<uintptr_t>(prop_handle));
+            if (window_id != IdAllocator::kInvalidId) {
+              auto window = WindowRegistry::GetInstance().Get(window_id);
+              if (window) {
+                auto minSize = window->GetMinimumSize();
+                auto maxSize = window->GetMaximumSize();
+                MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+                double scale_mm = GetScaleFactorForWindow(hwnd);
+                if (scale_mm <= 0.0)
+                  scale_mm = 1.0;
+                if (minSize.width > 0 && minSize.height > 0) {
+                  mmi->ptMinTrackSize.x = static_cast<LONG>(std::lround(minSize.width * scale_mm));
+                  mmi->ptMinTrackSize.y = static_cast<LONG>(std::lround(minSize.height * scale_mm));
+                }
+                if (maxSize.width > 0 && maxSize.height > 0) {
+                  mmi->ptMaxTrackSize.x = static_cast<LONG>(std::lround(maxSize.width * scale_mm));
+                  mmi->ptMaxTrackSize.y = static_cast<LONG>(std::lround(maxSize.height * scale_mm));
+                }
+                return std::make_optional(0);
+              }
+            }
+          }
+        }
+        return std::nullopt;
+      });
+}
+
 void Window::SetMinimumSize(Size size) {
-  // Windows minimum size would be handled in WM_GETMINMAXINFO message
-  // This is a placeholder implementation
+  pimpl_->min_size_ = size;
+
+  if (pimpl_->hwnd_) {
+    pimpl_->min_max_handler_id_ =
+        RegisterMinMaxInfoHandler(pimpl_->hwnd_, pimpl_->min_max_handler_id_);
+
+    // Trigger the window to re-evaluate its size constraints
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+  }
 }
 
 Size Window::GetMinimumSize() const {
-  // Return default minimum size
-  return {0, 0};
+  return pimpl_->min_size_;
 }
 
 void Window::SetMaximumSize(Size size) {
-  // Windows maximum size would be handled in WM_GETMINMAXINFO message
-  // This is a placeholder implementation
+  pimpl_->max_size_ = size;
+
+  if (pimpl_->hwnd_) {
+    pimpl_->min_max_handler_id_ =
+        RegisterMinMaxInfoHandler(pimpl_->hwnd_, pimpl_->min_max_handler_id_);
+
+    // Trigger the window to re-evaluate its size constraints
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+  }
 }
 
 Size Window::GetMaximumSize() const {
-  // Return default maximum size (screen size)
-  return {static_cast<double>(GetSystemMetrics(SM_CXSCREEN)),
-          static_cast<double>(GetSystemMetrics(SM_CYSCREEN))};
+  return pimpl_->max_size_;
 }
 
 void Window::SetResizable(bool is_resizable) {
@@ -603,8 +701,13 @@ bool Window::IsAlwaysOnTop() const {
 
 void Window::SetPosition(Point point) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(point.x), static_cast<int>(point.y), 0, 0,
-                 SWP_NOSIZE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr,
+                 static_cast<int>(std::lround(point.x * scale)),
+                 static_cast<int>(std::lround(point.y * scale)),
+                 0, 0, SWP_NOSIZE | SWP_NOZORDER);
   }
 }
 
@@ -613,8 +716,11 @@ Point Window::GetPosition() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    point.x = rect.left;
-    point.y = rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    point.x = static_cast<double>(rect.left) / scale;
+    point.y = static_cast<double>(rect.top) / scale;
   }
   return point;
 }
@@ -635,6 +741,7 @@ void Window::Center() {
   GetMonitorInfo(monitor, &mi);
 
   // Calculate the center position on the monitor's work area
+  // All values here are in physical pixels (GetWindowRect and rcWork), so no DPI scaling needed
   int centerX = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - windowWidth) / 2;
   int centerY = mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - windowHeight) / 2;
 

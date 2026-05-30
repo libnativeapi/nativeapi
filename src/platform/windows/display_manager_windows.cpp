@@ -6,6 +6,7 @@
 #include "../../display.h"
 #include "../../display_event.h"
 #include "../../display_manager.h"
+#include "dpi_utils_windows.h"
 
 namespace nativeapi {
 
@@ -68,7 +69,14 @@ Display DisplayManager::GetPrimary() {
 Point DisplayManager::GetCursorPosition() {
   POINT cursorPos;
   if (GetCursorPos(&cursorPos)) {
-    return {static_cast<double>(cursorPos.x), static_cast<double>(cursorPos.y)};
+    // Determine which monitor the cursor is on for DPI scaling
+    HMONITOR hMonitor =
+        MonitorFromPoint(cursorPos, MONITOR_DEFAULTTONEAREST);
+    double scale = GetScaleFactorForMonitor(hMonitor);
+    if (scale <= 0.0)
+      scale = 1.0;
+    return {static_cast<double>(cursorPos.x) / scale,
+            static_cast<double>(cursorPos.y) / scale};
   }
   return {0.0, 0.0};
 }
