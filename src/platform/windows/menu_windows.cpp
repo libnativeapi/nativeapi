@@ -107,6 +107,7 @@ class MenuItem::Impl {
   KeyboardAccelerator accelerator_;
   bool has_accelerator_;
   MenuItemState state_;
+  bool enabled_;
   int radio_group_;
   std::shared_ptr<Menu> submenu_;
   int window_proc_handle_id_;
@@ -123,6 +124,7 @@ class MenuItem::Impl {
         accelerator_("", ModifierKey::None),
         has_accelerator_(false),
         state_(MenuItemState::Unchecked),
+        enabled_(true),
         radio_group_(-1),
         window_proc_handle_id_(-1),
         submenu_opened_listener_id_(0),
@@ -355,19 +357,14 @@ KeyboardAccelerator MenuItem::GetAccelerator() const {
 }
 
 void MenuItem::SetEnabled(bool enabled) {
+  pimpl_->enabled_ = enabled;
   if (pimpl_->parent_menu_) {
     EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_, enabled ? MF_ENABLED : MF_GRAYED);
   }
 }
 
 bool MenuItem::IsEnabled() const {
-  if (pimpl_->parent_menu_) {
-    UINT state = GetMenuState(pimpl_->parent_menu_, pimpl_->id_, MF_BYCOMMAND);
-    if (state != (UINT)-1) {
-      return !(state & MF_GRAYED);
-    }
-  }
-  return true;
+  return pimpl_->enabled_;
 }
 
 void MenuItem::SetState(MenuItemState state) {
@@ -575,9 +572,15 @@ void Menu::AddItem(std::shared_ptr<MenuItem> item) {
   if (item->GetType() == MenuItemType::Separator) {
     flags = MF_SEPARATOR;
   } else if (item->GetType() == MenuItemType::Checkbox) {
-    flags |= MF_UNCHECKED;
+    flags |= (item->GetState() == MenuItemState::Checked) ? MF_CHECKED
+                                                           : MF_UNCHECKED;
   } else if (item->GetType() == MenuItemType::Radio) {
-    flags |= MF_UNCHECKED;
+    flags |= (item->GetState() == MenuItemState::Checked) ? MF_CHECKED
+                                                           : MF_UNCHECKED;
+  }
+
+  if (!item->IsEnabled()) {
+    flags |= MF_GRAYED;
   }
 
   UINT_PTR menu_id = item->GetId();
@@ -611,12 +614,31 @@ void Menu::InsertItem(size_t index, std::shared_ptr<MenuItem> item) {
   UINT flags = MF_STRING | MF_BYPOSITION;
   if (item->GetType() == MenuItemType::Separator) {
     flags = MF_SEPARATOR | MF_BYPOSITION;
+  } else if (item->GetType() == MenuItemType::Checkbox) {
+    flags |= (item->GetState() == MenuItemState::Checked) ? MF_CHECKED
+                                                           : MF_UNCHECKED;
+  } else if (item->GetType() == MenuItemType::Radio) {
+    flags |= (item->GetState() == MenuItemState::Checked) ? MF_CHECKED
+                                                           : MF_UNCHECKED;
+  }
+
+  if (!item->IsEnabled()) {
+    flags |= MF_GRAYED;
+  }
+
+  UINT_PTR menu_id = item->GetId();
+  if (item->GetSubmenu()) {
+    auto sub_menu =
+        static_cast<HMENU>(item->GetSubmenu()->GetNativeObject());
+    flags |= MF_POPUP;
+    menu_id = reinterpret_cast<UINT_PTR>(sub_menu);
   }
 
   auto label_opt = item->GetLabel();
   std::string label_str = label_opt.has_value() ? *label_opt : "";
   std::wstring w_label_str = StringToWString(label_str);
-  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, item->GetId(), w_label_str.c_str());
+  InsertMenuW(pimpl_->hmenu_, static_cast<UINT>(index), flags, menu_id,
+              w_label_str.c_str());
 
   item->pimpl_->parent_menu_ = pimpl_->hmenu_;
 }
