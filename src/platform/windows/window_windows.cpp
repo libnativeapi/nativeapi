@@ -1,5 +1,6 @@
 #include <dwmapi.h>
 #include <windows.h>
+#include <cmath>
 #include <iostream>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
@@ -346,8 +347,14 @@ bool Window::IsFullScreen() const {
 
 void Window::SetBounds(Rectangle bounds) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(bounds.x), static_cast<int>(bounds.y),
-                 static_cast<int>(bounds.width), static_cast<int>(bounds.height), SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr,
+                 static_cast<int>(std::lround(bounds.x * scale)),
+                 static_cast<int>(std::lround(bounds.y * scale)),
+                 static_cast<int>(std::lround(bounds.width * scale)),
+                 static_cast<int>(std::lround(bounds.height * scale)), SWP_NOZORDER);
   }
 }
 
@@ -356,10 +363,13 @@ Rectangle Window::GetBounds() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    bounds.x = rect.left;
-    bounds.y = rect.top;
-    bounds.width = rect.right - rect.left;
-    bounds.height = rect.bottom - rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    bounds.x = static_cast<double>(rect.left) / scale;
+    bounds.y = static_cast<double>(rect.top) / scale;
+    bounds.width = static_cast<double>(rect.right - rect.left) / scale;
+    bounds.height = static_cast<double>(rect.bottom - rect.top) / scale;
   }
   return bounds;
 }
@@ -368,8 +378,13 @@ void Window::SetSize(Size size, bool animate) {
   if (pimpl_->hwnd_) {
     // Windows doesn't have built-in animation for window resizing
     // Animation would require custom implementation
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width),
-                 static_cast<int>(size.height), SWP_NOMOVE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
+                 static_cast<int>(std::lround(size.width * scale)),
+                 static_cast<int>(std::lround(size.height * scale)),
+                 SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -378,8 +393,11 @@ Size Window::GetSize() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    size.width = rect.right - rect.left;
-    size.height = rect.bottom - rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    size.width = static_cast<double>(rect.right - rect.left) / scale;
+    size.height = static_cast<double>(rect.bottom - rect.top) / scale;
   }
   return size;
 }
@@ -394,8 +412,13 @@ void Window::SetContentSize(Size size) {
     int borderWidth = (windowRect.right - windowRect.left) - clientRect.right;
     int borderHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
 
-    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, static_cast<int>(size.width) + borderWidth,
-                 static_cast<int>(size.height) + borderHeight, SWP_NOMOVE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0,
+                 static_cast<int>(std::lround(size.width * scale)) + borderWidth,
+                 static_cast<int>(std::lround(size.height * scale)) + borderHeight,
+                 SWP_NOMOVE | SWP_NOZORDER);
   }
 }
 
@@ -404,8 +427,11 @@ Size Window::GetContentSize() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetClientRect(pimpl_->hwnd_, &rect);
-    size.width = rect.right;
-    size.height = rect.bottom;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    size.width = static_cast<double>(rect.right) / scale;
+    size.height = static_cast<double>(rect.bottom) / scale;
   }
   return size;
 }
@@ -428,11 +454,15 @@ void Window::SetContentBounds(Rectangle bounds) {
     int offsetX = clientTopLeft.x - windowRect.left;
     int offsetY = clientTopLeft.y - windowRect.top;
 
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+
     // Calculate window position so that client area is at bounds position
-    int windowX = static_cast<int>(bounds.x) - offsetX;
-    int windowY = static_cast<int>(bounds.y) - offsetY;
-    int windowWidth = static_cast<int>(bounds.width) + borderWidth;
-    int windowHeight = static_cast<int>(bounds.height) + borderHeight;
+    int windowX = static_cast<int>(std::lround(bounds.x * scale)) - offsetX;
+    int windowY = static_cast<int>(std::lround(bounds.y * scale)) - offsetY;
+    int windowWidth = static_cast<int>(std::lround(bounds.width * scale)) + borderWidth;
+    int windowHeight = static_cast<int>(std::lround(bounds.height * scale)) + borderHeight;
 
     SetWindowPos(pimpl_->hwnd_, nullptr, windowX, windowY, windowWidth, windowHeight, SWP_NOZORDER);
   }
@@ -488,13 +518,16 @@ static int RegisterMinMaxInfoHandler(HWND hwnd, int existing_handler_id) {
                 auto minSize = window->GetMinimumSize();
                 auto maxSize = window->GetMaximumSize();
                 MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+                double scale_mm = GetScaleFactorForWindow(hwnd);
+                if (scale_mm <= 0.0)
+                  scale_mm = 1.0;
                 if (minSize.width > 0 && minSize.height > 0) {
-                  mmi->ptMinTrackSize.x = static_cast<LONG>(minSize.width);
-                  mmi->ptMinTrackSize.y = static_cast<LONG>(minSize.height);
+                  mmi->ptMinTrackSize.x = static_cast<LONG>(std::lround(minSize.width * scale_mm));
+                  mmi->ptMinTrackSize.y = static_cast<LONG>(std::lround(minSize.height * scale_mm));
                 }
                 if (maxSize.width > 0 && maxSize.height > 0) {
-                  mmi->ptMaxTrackSize.x = static_cast<LONG>(maxSize.width);
-                  mmi->ptMaxTrackSize.y = static_cast<LONG>(maxSize.height);
+                  mmi->ptMaxTrackSize.x = static_cast<LONG>(std::lround(maxSize.width * scale_mm));
+                  mmi->ptMaxTrackSize.y = static_cast<LONG>(std::lround(maxSize.height * scale_mm));
                 }
                 return std::make_optional(0);
               }
@@ -668,8 +701,13 @@ bool Window::IsAlwaysOnTop() const {
 
 void Window::SetPosition(Point point) {
   if (pimpl_->hwnd_) {
-    SetWindowPos(pimpl_->hwnd_, nullptr, static_cast<int>(point.x), static_cast<int>(point.y), 0, 0,
-                 SWP_NOSIZE | SWP_NOZORDER);
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    SetWindowPos(pimpl_->hwnd_, nullptr,
+                 static_cast<int>(std::lround(point.x * scale)),
+                 static_cast<int>(std::lround(point.y * scale)),
+                 0, 0, SWP_NOSIZE | SWP_NOZORDER);
   }
 }
 
@@ -678,8 +716,11 @@ Point Window::GetPosition() const {
   if (pimpl_->hwnd_) {
     RECT rect;
     GetWindowRect(pimpl_->hwnd_, &rect);
-    point.x = rect.left;
-    point.y = rect.top;
+    double scale = GetScaleFactorForWindow(pimpl_->hwnd_);
+    if (scale <= 0.0)
+      scale = 1.0;
+    point.x = static_cast<double>(rect.left) / scale;
+    point.y = static_cast<double>(rect.top) / scale;
   }
   return point;
 }
@@ -700,6 +741,7 @@ void Window::Center() {
   GetMonitorInfo(monitor, &mi);
 
   // Calculate the center position on the monitor's work area
+  // All values here are in physical pixels (GetWindowRect and rcWork), so no DPI scaling needed
   int centerX = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - windowWidth) / 2;
   int centerY = mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - windowHeight) / 2;
 

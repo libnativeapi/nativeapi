@@ -3,7 +3,7 @@
 namespace nativeapi {
 
 // Internal: per-monitor DPI via Shcore when available
-static double GetScaleFactorForMonitor(HMONITOR hmonitor) {
+double GetScaleFactorForMonitor(HMONITOR hmonitor) {
   if (!hmonitor)
     return 1.0;
   typedef HRESULT(WINAPI * GetDpiForMonitorFunc)(HMONITOR, int, UINT*, UINT*);

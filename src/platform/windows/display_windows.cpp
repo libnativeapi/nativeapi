@@ -1,6 +1,7 @@
 #include "../../display.h"
 
 #include <windows.h>
+#include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
 
 namespace nativeapi {
@@ -73,7 +74,11 @@ Point Display::GetPosition() const {
     return {0.0, 0.0};
   MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT rect = monitorInfo.rcMonitor;
-  return {static_cast<double>(rect.left), static_cast<double>(rect.top)};
+  double scale = GetScaleFactorForMonitor(pimpl_->h_monitor_);
+  if (scale <= 0.0)
+    scale = 1.0;
+  return {static_cast<double>(rect.left) / scale,
+          static_cast<double>(rect.top) / scale};
 }
 
 Size Display::GetSize() const {
@@ -81,7 +86,11 @@ Size Display::GetSize() const {
     return {0.0, 0.0};
   MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT rect = monitorInfo.rcMonitor;
-  return {static_cast<double>(rect.right - rect.left), static_cast<double>(rect.bottom - rect.top)};
+  double scale = GetScaleFactorForMonitor(pimpl_->h_monitor_);
+  if (scale <= 0.0)
+    scale = 1.0;
+  return {static_cast<double>(rect.right - rect.left) / scale,
+          static_cast<double>(rect.bottom - rect.top) / scale};
 }
 
 Rectangle Display::GetWorkArea() const {
@@ -89,22 +98,20 @@ Rectangle Display::GetWorkArea() const {
     return {0.0, 0.0, 0.0, 0.0};
   MONITORINFOEXW monitorInfo = GetMonitorInfoEx(pimpl_->h_monitor_);
   RECT workRect = monitorInfo.rcWork;
-  return {static_cast<double>(workRect.left), static_cast<double>(workRect.top),
-          static_cast<double>(workRect.right - workRect.left),
-          static_cast<double>(workRect.bottom - workRect.top)};
+  double scale = GetScaleFactorForMonitor(pimpl_->h_monitor_);
+  if (scale <= 0.0)
+    scale = 1.0;
+  return {static_cast<double>(workRect.left) / scale,
+          static_cast<double>(workRect.top) / scale,
+          static_cast<double>(workRect.right - workRect.left) / scale,
+          static_cast<double>(workRect.bottom - workRect.top) / scale};
 }
 
 double Display::GetScaleFactor() const {
   if (!pimpl_->h_monitor_)
     return 1.0;
-  HDC hdc = GetDC(nullptr);
-  double scaleFactor = 1.0;
-  if (hdc) {
-    int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-    scaleFactor = dpiX / 96.0;  // 96 DPI is 100% scale
-    ReleaseDC(nullptr, hdc);
-  }
-  return scaleFactor;
+  double scale = GetScaleFactorForMonitor(pimpl_->h_monitor_);
+  return (scale > 0.0) ? scale : 1.0;
 }
 
 bool Display::IsPrimary() const {
