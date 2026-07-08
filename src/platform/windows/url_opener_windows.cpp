@@ -4,36 +4,39 @@
 #include <sstream>
 
 #include "../../url_opener.h"
-#include "../../url_opener_internal.h"
 
 namespace nativeapi {
 namespace {
 
-UrlLaunchOutcome LaunchUrl(const std::string& url) {
-  HINSTANCE launch_result =
-      ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-  const auto code = reinterpret_cast<intptr_t>(launch_result);
-  if (code <= 32) {
-    std::ostringstream oss;
-    oss << "ShellExecute failed with code " << code << ".";
-    return {false, oss.str()};
+class WindowsUrlOpenerImpl final : public UrlOpener::Impl {
+ public:
+  bool IsSupported() const override { return true; }
+
+  UrlOpenResult Open(const std::string& url) const override {
+    HINSTANCE launch_result =
+        ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    const auto code = reinterpret_cast<intptr_t>(launch_result);
+    if (code <= 32) {
+      std::ostringstream oss;
+      oss << "ShellExecute failed with code " << code << ".";
+      UrlOpenResult result;
+      result.success = false;
+      result.error_code = UrlOpenErrorCode::kInvocationFailed;
+      result.error_message = oss.str();
+      return result;
+    }
+
+    UrlOpenResult result;
+    result.success = true;
+    result.error_code = UrlOpenErrorCode::kNone;
+    return result;
   }
-  return {true, ""};
-}
+};
 
 }  // namespace
 
-UrlOpener& UrlOpener::GetInstance() {
-  static UrlOpener instance;
-  return instance;
-}
+UrlOpener::UrlOpener() : pimpl_(std::make_unique<WindowsUrlOpenerImpl>()) {}
 
-bool UrlOpener::IsSupported() const {
-  return true;
-}
-
-UrlOpenResult UrlOpener::Open(const std::string& url) const {
-  return OpenUrlWithLauncher(url, LaunchUrl);
-}
+UrlOpener::~UrlOpener() = default;
 
 }  // namespace nativeapi

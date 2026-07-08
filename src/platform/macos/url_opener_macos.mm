@@ -2,44 +2,55 @@
 #import <Foundation/Foundation.h>
 
 #include "../../url_opener.h"
-#include "../../url_opener_internal.h"
 
 namespace nativeapi {
 namespace {
 
-UrlLaunchOutcome LaunchUrl(const std::string& url) {
-  @autoreleasepool {
-    NSString* ns_url = [NSString stringWithUTF8String:url.c_str()];
-    if (!ns_url) {
-      return {false, "Failed to build NSURL from UTF-8 input."};
-    }
+class MacosUrlOpenerImpl final : public UrlOpener::Impl {
+ public:
+  bool IsSupported() const override { return true; }
 
-    NSURL* target = [NSURL URLWithString:ns_url];
-    if (!target) {
-      return {false, "Failed to parse URL."};
-    }
+  UrlOpenResult Open(const std::string& url) const override {
+    @autoreleasepool {
+      NSString* ns_url = [NSString stringWithUTF8String:url.c_str()];
+      if (!ns_url) {
+        UrlOpenResult result;
+        result.success = false;
+        result.error_code = UrlOpenErrorCode::kInvocationFailed;
+        result.error_message = "Failed to build NSURL from UTF-8 input.";
+        return result;
+      }
 
-    const BOOL opened = [[NSWorkspace sharedWorkspace] openURL:target];
-    if (!opened) {
-      return {false, "NSWorkspace could not open the URL."};
+      NSURL* target = [NSURL URLWithString:ns_url];
+      if (!target) {
+        UrlOpenResult result;
+        result.success = false;
+        result.error_code = UrlOpenErrorCode::kInvocationFailed;
+        result.error_message = "Failed to parse URL.";
+        return result;
+      }
+
+      const BOOL opened = [[NSWorkspace sharedWorkspace] openURL:target];
+      if (!opened) {
+        UrlOpenResult result;
+        result.success = false;
+        result.error_code = UrlOpenErrorCode::kInvocationFailed;
+        result.error_message = "NSWorkspace could not open the URL.";
+        return result;
+      }
+
+      UrlOpenResult result;
+      result.success = true;
+      result.error_code = UrlOpenErrorCode::kNone;
+      return result;
     }
-    return {true, ""};
   }
-}
+};
 
 }  // namespace
 
-UrlOpener& UrlOpener::GetInstance() {
-  static UrlOpener instance;
-  return instance;
-}
+UrlOpener::UrlOpener() : pimpl_(std::make_unique<MacosUrlOpenerImpl>()) {}
 
-bool UrlOpener::IsSupported() const {
-  return true;
-}
-
-UrlOpenResult UrlOpener::Open(const std::string& url) const {
-  return OpenUrlWithLauncher(url, LaunchUrl);
-}
+UrlOpener::~UrlOpener() = default;
 
 }  // namespace nativeapi

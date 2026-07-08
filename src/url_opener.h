@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 namespace nativeapi {
@@ -24,7 +25,7 @@ class UrlOpener {
   static UrlOpener& GetInstance();
 
   bool IsSupported() const;
-
+  bool CanOpen(const std::string& url) const;
   UrlOpenResult Open(const std::string& url) const;
 
   UrlOpener(const UrlOpener&) = delete;
@@ -32,8 +33,20 @@ class UrlOpener {
   UrlOpener(UrlOpener&&) = delete;
   UrlOpener& operator=(UrlOpener&&) = delete;
 
+  class Impl {
+   public:
+    virtual ~Impl() = default;
+
+    virtual bool IsSupported() const = 0;
+    virtual bool CanOpen(const std::string& url) const;
+    virtual UrlOpenResult Open(const std::string& url) const = 0;
+  };
+
  private:
-  UrlOpener() = default;
+  UrlOpener();
+  ~UrlOpener();
+
+  std::unique_ptr<Impl> pimpl_;
 };
 
 }  // namespace nativeapi

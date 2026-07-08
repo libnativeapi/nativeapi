@@ -1,31 +1,26 @@
 #include "../../url_opener.h"
-#include "../../url_opener_internal.h"
 
 namespace nativeapi {
 namespace {
 
-UrlLaunchOutcome LaunchUnsupported(const std::string& url) {
-  (void)url;
-  return {false, "URL opening is not implemented on Android in this native layer."};
-}
+class AndroidUrlOpenerImpl final : public UrlOpener::Impl {
+ public:
+  bool IsSupported() const override { return false; }
+
+  UrlOpenResult Open(const std::string& url) const override {
+    (void)url;
+    UrlOpenResult result;
+    result.success = false;
+    result.error_code = UrlOpenErrorCode::kUnsupportedPlatform;
+    result.error_message = "URL opening is not implemented on Android in this native layer.";
+    return result;
+  }
+};
 
 }  // namespace
 
-UrlOpener& UrlOpener::GetInstance() {
-  static UrlOpener instance;
-  return instance;
-}
+UrlOpener::UrlOpener() : pimpl_(std::make_unique<AndroidUrlOpenerImpl>()) {}
 
-bool UrlOpener::IsSupported() const {
-  return false;
-}
-
-UrlOpenResult UrlOpener::Open(const std::string& url) const {
-  UrlOpenResult result = OpenUrlWithLauncher(url, LaunchUnsupported);
-  if (!result.success && result.error_code == UrlOpenErrorCode::kInvocationFailed) {
-    result.error_code = UrlOpenErrorCode::kUnsupportedPlatform;
-  }
-  return result;
-}
+UrlOpener::~UrlOpener() = default;
 
 }  // namespace nativeapi

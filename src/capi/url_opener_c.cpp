@@ -1,41 +1,55 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "url_opener_c.h"
 
-#include <exception>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 
 #include "../url_opener.h"
-#include "string_utils_c.h"
 
-using namespace nativeapi;
+#include <cstdio>
 
 namespace {
 
-native_url_open_error_code_t ToCErrorCode(UrlOpenErrorCode code) {
-  switch (code) {
-    case UrlOpenErrorCode::kNone:
-      return NATIVE_URL_OPEN_ERROR_NONE;
-    case UrlOpenErrorCode::kInvalidUrlEmpty:
-      return NATIVE_URL_OPEN_ERROR_INVALID_URL_EMPTY;
-    case UrlOpenErrorCode::kInvalidUrlMissingScheme:
-      return NATIVE_URL_OPEN_ERROR_INVALID_URL_MISSING_SCHEME;
-    case UrlOpenErrorCode::kInvalidUrlUnsupportedScheme:
-      return NATIVE_URL_OPEN_ERROR_INVALID_URL_UNSUPPORTED_SCHEME;
-    case UrlOpenErrorCode::kUnsupportedPlatform:
-      return NATIVE_URL_OPEN_ERROR_UNSUPPORTED_PLATFORM;
-    case UrlOpenErrorCode::kInvocationFailed:
-      return NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED;
+char* DupString(const std::string& value) {
+  if (value.empty()) {
+    return nullptr;
+  }
+  const auto size = value.size() + 1;
+  auto* buffer = static_cast<char*>(std::malloc(size));
+  if (!buffer) {
+    return nullptr;
+  }
+  std::memcpy(buffer, value.c_str(), size);
+  return buffer;
+}
+
+native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode value) {
+  switch (value) {
+    case nativeapi::UrlOpenErrorCode::kNone:
+      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME;
+    case nativeapi::UrlOpenErrorCode::kUnsupportedPlatform:
+      return NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM;
+    case nativeapi::UrlOpenErrorCode::kInvocationFailed:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED;
     default:
-      return NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED;
+      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
   }
 }
 
-native_url_open_result_t MakeUrlOpenResult(bool success,
-                                           native_url_open_error_code_t error_code,
-                                           const std::string& message) {
+native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value) {
   native_url_open_result_t result = {};
-  result.success = success;
-  result.error_code = error_code;
-  result.error_message = message.empty() ? nullptr : to_c_str(message);
+  result.success = value.success;
+  result.error_code = ToCUrlOpenErrorCode(value.error_code);
+  result.error_message = DupString(value.error_message);
   return result;
 }
 
@@ -43,37 +57,39 @@ native_url_open_result_t MakeUrlOpenResult(bool success,
 
 bool native_url_opener_is_supported(void) {
   try {
-    return UrlOpener::GetInstance().IsSupported();
+    return nativeapi::UrlOpener::GetInstance().IsSupported();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_url_opener_is_supported");
+    return false;
+  }
+}
+
+bool native_url_opener_can_open(const char* url) {
+  try {
+    return nativeapi::UrlOpener::GetInstance().CanOpen(std::string(url ? url : ""));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_url_opener_can_open");
     return false;
   }
 }
 
 native_url_open_result_t native_url_opener_open(const char* url) {
-  if (!url) {
-    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVALID_URL_EMPTY, "URL is empty.");
-  }
-
   try {
-    const UrlOpenResult result = UrlOpener::GetInstance().Open(std::string(url));
-    return MakeUrlOpenResult(result.success, ToCErrorCode(result.error_code), result.error_message);
-  } catch (const std::exception& e) {
-    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED, e.what());
+    const auto cpp_result = nativeapi::UrlOpener::GetInstance().Open(std::string(url ? url : ""));
+    return ToCUrlOpenResult(cpp_result);
   } catch (...) {
-    return MakeUrlOpenResult(false, NATIVE_URL_OPEN_ERROR_INVOCATION_FAILED,
-                             "Unexpected error while opening URL.");
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_url_opener_open");
+    native_url_open_result_t result = {};
+    result.success = false;
+    return result;
   }
 }
 
-void native_url_open_result_free(native_url_open_result_t* result) {
-  if (!result) {
+void native_url_open_result_free(native_url_open_result_t* value) {
+  if (!value) {
     return;
   }
-
-  if (result->error_message) {
-    free_c_str(result->error_message);
-    result->error_message = nullptr;
-  }
-  result->success = false;
-  result->error_code = NATIVE_URL_OPEN_ERROR_NONE;
+  std::free(value->error_message);
+  value->error_message = nullptr;
 }
+
