@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "geometry_c.h"
+#include "placement_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -17,6 +18,7 @@ extern "C" {
 
 #include "geometry_c.h"
 #include "image_c.h"
+#include "placement_c.h"
 #include "positioning_strategy_c.h"
 
 /**
