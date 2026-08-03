@@ -36,8 +36,10 @@ std::shared_ptr<Shortcut> ShortcutManager::Register(const ShortcutOptions& optio
     return nullptr;
   }
 
-  // Check if accelerator is already registered
-  if (!IsAvailable(options.accelerator)) {
+  // Check if accelerator is already registered.
+  // NOTE: must use the *Unlocked variant — we already hold mutex_, and the
+  // check must stay atomic with the insert below.
+  if (!IsAvailableUnlocked(options.accelerator)) {
     // Emit failure event
     EmitAsync<ShortcutRegistrationFailedEvent>(0, options.accelerator,
                                                "Accelerator already registered");
@@ -183,6 +185,11 @@ std::vector<std::shared_ptr<Shortcut>> ShortcutManager::GetByScope(ShortcutScope
 // Check if an accelerator is available
 bool ShortcutManager::IsAvailable(const std::string& accelerator) {
   std::lock_guard<std::mutex> lock(mutex_);
+  return IsAvailableUnlocked(accelerator);
+}
+
+// Availability check for callers that already hold mutex_.
+bool ShortcutManager::IsAvailableUnlocked(const std::string& accelerator) const {
   return shortcuts_by_accelerator_.find(accelerator) == shortcuts_by_accelerator_.end();
 }
 
