@@ -23,9 +23,10 @@ int main(void) {
 #else
   /* Create a LaunchAtLogin manager with a custom identifier and display name */
   native_launch_at_login_t launch_at_login =
-      native_launch_at_login_create_with_id_and_name("com.example.myapp.c", "My C Example App");
+      native_launch_at_login_create_with_id_and_display_name("com.example.myapp.c",
+                                                             "My C Example App");
 #endif
-  if (!launch_at_login) {
+  if (launch_at_login == NATIVE_INVALID_LAUNCH_AT_LOGIN) {
     printf("Failed to create LaunchAtLogin instance.\n");
     return 1;
   }
@@ -45,8 +46,9 @@ int main(void) {
 
 #if !defined(__APPLE__)
   /* Set a custom program path and arguments */
-  const char* arguments[] = {"--minimized", "--launch_at_login"};
-  native_launch_at_login_set_program(launch_at_login, executable ? executable : "", arguments, 2);
+  char* argument_items[] = {"--minimized", "--launch_at_login"};
+  native_string_list_t arguments = {argument_items, 2};
+  native_launch_at_login_set_program(launch_at_login, executable ? executable : "", arguments);
 #endif
   free_c_str(executable);
 
@@ -71,7 +73,7 @@ int main(void) {
     printf("Launch-at-login enabled successfully.\n");
   } else {
     printf("Failed to enable launch-at-login.\n");
-    native_launch_at_login_destroy(launch_at_login);
+    native_launch_at_login_free(launch_at_login);
     return 1;
   }
 
@@ -92,7 +94,7 @@ int main(void) {
     printf("Launch-at-login disabled successfully.\n");
   } else {
     printf("Failed to disable launch-at-login.\n");
-    native_launch_at_login_destroy(launch_at_login);
+    native_launch_at_login_free(launch_at_login);
     return 1;
   }
 
@@ -101,12 +103,12 @@ int main(void) {
          native_launch_at_login_is_enabled(launch_at_login) ? "yes" : "no");
 
   /* Clean up */
-  native_launch_at_login_destroy(launch_at_login);
+  native_launch_at_login_free(launch_at_login);
 
   printf("Example completed successfully!\n\n");
   printf("This example demonstrated:\n");
   printf("  * native_launch_at_login_is_supported()              - Check platform support\n");
-  printf("  * native_launch_at_login_create_with_id_and_name()   - Create with ID and name\n");
+  printf("  * native_launch_at_login_create_with_id_and_display_name() - Create with ID and name\n");
   printf("  * native_launch_at_login_get_id()                    - Get identifier\n");
   printf("  * native_launch_at_login_get_display_name()          - Get display name\n");
   printf("  * native_launch_at_login_set_display_name()          - Update display name\n");
@@ -121,7 +123,7 @@ int main(void) {
   printf(
       "  * native_launch_at_login_is_enabled()                - Query current registration "
       "state\n");
-  printf("  * native_launch_at_login_destroy()                   - Free resources\n");
+  printf("  * native_launch_at_login_free()                   - Free resources\n");
 
   return 0;
 }

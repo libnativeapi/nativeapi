@@ -3,28 +3,19 @@
 
 #include "url_opener_c.h"
 
-#include <cstdlib>
-#include <cstring>
+#include <cstdio>
+#include <memory>
+#include <new>
+#include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "string_utils_c.h"
+#include "../foundation/handle_table.h"
 #include "../url_opener.h"
 
-#include <cstdio>
-
 namespace {
-
-char* DupString(const std::string& value) {
-  if (value.empty()) {
-    return nullptr;
-  }
-  const auto size = value.size() + 1;
-  auto* buffer = static_cast<char*>(std::malloc(size));
-  if (!buffer) {
-    return nullptr;
-  }
-  std::memcpy(buffer, value.c_str(), size);
-  return buffer;
-}
 
 native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode value) {
   switch (value) {
@@ -45,15 +36,50 @@ native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode val
   }
 }
 
+nativeapi::UrlOpenErrorCode ToCppUrlOpenErrorCode(native_url_open_error_code_t value) {
+  switch (value) {
+    case NATIVE_URL_OPEN_ERROR_CODE_NONE:
+      return nativeapi::UrlOpenErrorCode::kNone;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme;
+    case NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM:
+      return nativeapi::UrlOpenErrorCode::kUnsupportedPlatform;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED:
+      return nativeapi::UrlOpenErrorCode::kInvocationFailed;
+    default:
+      return nativeapi::UrlOpenErrorCode::kNone;
+  }
+}
+
 native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value) {
   native_url_open_result_t result = {};
   result.success = value.success;
   result.error_code = ToCUrlOpenErrorCode(value.error_code);
-  result.error_message = DupString(value.error_message);
+  result.error_message = to_c_str(value.error_message);
+  return result;
+}
+
+nativeapi::UrlOpenResult ToCppUrlOpenResult(const native_url_open_result_t& value) {
+  nativeapi::UrlOpenResult result = {};
+  result.success = value.success;
+  result.error_code = ToCppUrlOpenErrorCode(value.error_code);
+  result.error_message = value.error_message ? value.error_message : "";
   return result;
 }
 
 }  // namespace
+
+void native_url_open_result_free(native_url_open_result_t* value) {
+  if (!value) {
+    return;
+  }
+  free_c_str(value->error_message);
+  value->error_message = nullptr;
+}
 
 bool native_url_opener_is_supported(void) {
   try {
@@ -83,13 +109,5 @@ native_url_open_result_t native_url_opener_open(const char* url) {
     result.success = false;
     return result;
   }
-}
-
-void native_url_open_result_free(native_url_open_result_t* value) {
-  if (!value) {
-    return;
-  }
-  std::free(value->error_message);
-  value->error_message = nullptr;
 }
 

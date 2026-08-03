@@ -5,6 +5,7 @@
 #include "../../src/capi/display_c.h"
 #include "../../src/capi/display_manager_c.h"
 #include "../../src/capi/geometry_c.h"
+#include "../../src/capi/string_utils_c.h"
 
 int main() {
   printf("=== Native API C Display Example ===\n\n");
@@ -23,11 +24,11 @@ int main() {
       // Use getter functions for all properties
       char* name = native_display_get_name(display);
       printf("  Name: %s\n", name ? name : "Unknown");
-      free(name);
+      free_c_str(name);
 
       char* id = native_display_get_id(display);
       printf("  ID: %s\n", id ? id : "Unknown");
-      free(id);
+      free_c_str(id);
 
       native_point_t position = native_display_get_position(display);
       printf("  Position: (%.0f, %.0f)\n", position.x, position.y);
@@ -88,7 +89,7 @@ int main() {
   if (primary) {
     char* name = native_display_get_name(primary);
     printf("Primary display: %s\n", name ? name : "Unknown");
-    free(name);
+    free_c_str(name);
 
     native_size_t size = native_display_get_size(primary);
     printf("Size: %.0f x %.0f\n", size.width, size.height);

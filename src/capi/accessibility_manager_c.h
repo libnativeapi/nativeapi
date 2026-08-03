@@ -4,6 +4,9 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "common_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)

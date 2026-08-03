@@ -1,90 +1,111 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "display_manager_c.h"
-#include <iostream>
+
+#include <cstdio>
 #include <memory>
+#include <new>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../foundation/geometry.h"
+#include "geometry_c.h"
 #include "../display.h"
-#include "../display_manager.h"
 #include "display_c.h"
+#include "../display_manager.h"
 
-using namespace nativeapi;
+namespace {
 
-DisplayManager& g_display_manager = DisplayManager::GetInstance();
+native_point_t ToCPoint(const nativeapi::Point& value) {
+  native_point_t result = {};
+  result.x = value.x;
+  result.y = value.y;
+  return result;
+}
 
-FFI_PLUGIN_EXPORT
-native_display_list_t native_display_manager_get_all() {
-  native_display_list_t list = {};
+nativeapi::Point ToCppPoint(const native_point_t& value) {
+  nativeapi::Point result = {};
+  result.x = value.x;
+  result.y = value.y;
+  return result;
+}
 
+}  // namespace
+
+native_display_list_t native_display_manager_get_all(void) {
   try {
-    auto displays = g_display_manager.GetAll();
-
-    list.count = static_cast<long>(displays.size());
-    if (list.count > 0) {
-      // Allocate array for display handles
-      list.displays = new (std::nothrow) native_display_t[list.count];
-      if (list.displays) {
-        for (size_t i = 0; i < displays.size(); i++) {
-          try {
-            list.displays[i] = new (std::nothrow) Display(displays[i]);
-            if (!list.displays[i]) {
-              // If creation fails, clean up and return empty list
-              for (size_t j = 0; j < i; j++) {
-                native_display_free(list.displays[j]);
-              }
-              delete[] list.displays;
-              list.displays = nullptr;
-              list.count = 0;
-              break;
-            }
-          } catch (const std::exception&) {
-            // If creation fails, clean up and return empty list
-            for (size_t j = 0; j < i; j++) {
-              native_display_free(list.displays[j]);
-            }
-            delete[] list.displays;
-            list.displays = nullptr;
-            list.count = 0;
-            break;
-          }
-        }
-      } else {
-        list.count = 0;
-      }
-    } else {
-      list.displays = nullptr;
+    const auto items = nativeapi::DisplayManager::GetInstance().GetAll();
+    native_display_list_t list = {};
+    if (items.empty()) {
+      return list;
     }
-
+    list.displays = new (std::nothrow) native_display_t[items.size()];
+    if (!list.displays) {
+      return list;
+    }
+    for (size_t i = 0; i < items.size(); ++i) {
+      list.displays[i] = nativeapi::HandleTable::GetInstance().Insert(
+          std::make_shared<nativeapi::Display>(items[i]));
+    }
+    list.count = static_cast<long>(items.size());
     return list;
-  } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_all: " << e.what() << std::endl;
-    list.count = 0;
-    list.displays = nullptr;
-    return list;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_manager_get_all");
+    native_display_list_t empty = {};
+    return empty;
   }
 }
 
-FFI_PLUGIN_EXPORT
-native_display_t native_display_manager_get_primary() {
+native_display_t native_display_manager_get_primary(void) {
   try {
-    auto primary_display = g_display_manager.GetPrimary();
-    auto* handle = new (std::nothrow) Display(primary_display);
-    return handle;
-  } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_primary: " << e.what() << std::endl;
-    return nullptr;
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::Display>(nativeapi::DisplayManager::GetInstance().GetPrimary()));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_manager_get_primary");
+    return 0;
   }
 }
 
-FFI_PLUGIN_EXPORT
-native_point_t native_display_manager_get_cursor_position() {
-  native_point_t point = {0.0, 0.0};
-
+native_point_t native_display_manager_get_cursor_position(void) {
   try {
-    auto cursor_position = g_display_manager.GetCursorPosition();
-    point.x = cursor_position.x;
-    point.y = cursor_position.y;
-    return point;
-  } catch (const std::exception& e) {
-    std::cerr << "Error in native_display_manager_get_cursor_position: " << e.what() << std::endl;
-    return point;
+    const auto cpp_result = nativeapi::DisplayManager::GetInstance().GetCursorPosition();
+    return ToCPoint(cpp_result);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_manager_get_cursor_position");
+    native_point_t result = {};
+    return result;
   }
 }
+
+native_listener_id_t native_display_manager_add_listener(native_display_event_callback_t callback, void* user_data) {
+  if (!callback) {
+    return 0;
+  }
+  try {
+    return static_cast<native_listener_id_t>(nativeapi::DisplayManager::GetInstance().AddListener<nativeapi::DisplayEvent>(
+        [callback, user_data](const nativeapi::DisplayEvent& event) {
+          native_display_event_t c_event = {};
+          if (!ToCDisplayEvent(event, &c_event)) {
+            return;
+          }
+          callback(&c_event, user_data);
+          FreeCDisplayEvent(&c_event);
+        }));
+  } catch (...) {
+    return 0;
+  }
+}
+
+bool native_display_manager_remove_listener(native_listener_id_t listener_id) {
+  try {
+    return nativeapi::DisplayManager::GetInstance().RemoveListener(static_cast<size_t>(listener_id));
+  } catch (...) {
+    return false;
+  }
+}
+

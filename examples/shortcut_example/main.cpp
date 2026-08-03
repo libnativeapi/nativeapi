@@ -168,10 +168,19 @@ int main() {
   std::cout << "Press the shortcuts above to see them in action.\n";
   std::cout << "Press Ctrl+C to exit.\n\n";
 
-  // Keep the main thread alive to receive shortcut events
+  // Keep the main thread alive AND service the main-thread work queue.
+  //
+  // Events are delivered on the main thread, which means something has to run
+  // the platform main loop. A GUI app gets that from its UI framework; a console
+  // program like this one asks the library to do it. Plain sleeping here would
+  // keep the process alive but no event would ever arrive.
   int seconds = 0;
   while (g_running) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (!RunMainThreadLoopFor(1000)) {
+      // Platform without main-loop integration — fall back to sleeping so the
+      // example still terminates cleanly.
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
     seconds++;
 
     // After 10 seconds, demonstrate unregistering a shortcut

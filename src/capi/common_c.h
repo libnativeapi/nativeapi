@@ -6,8 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "common_c.h"
-
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
 #else
@@ -18,22 +16,11 @@
 extern "C" {
 #endif
 
-typedef struct {
-  double x;
-  double y;
-} native_point_t;
+/// Identifies one registered event listener.
+typedef uint64_t native_listener_id_t;
 
-typedef struct {
-  double width;
-  double height;
-} native_size_t;
-
-typedef struct {
-  double x;
-  double y;
-  double width;
-  double height;
-} native_rectangle_t;
+/// Returned by add_listener when registration failed.
+#define NATIVE_INVALID_LISTENER_ID ((native_listener_id_t)0)
 
 #ifdef __cplusplus
 }

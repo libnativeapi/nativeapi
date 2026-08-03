@@ -1,27 +1,29 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #ifdef __cplusplus
-// C++ API headers
+// C++ API
 #include "../src/accessibility_manager.h"
 #include "../src/application.h"
-#include "../src/launch_at_login.h"
 #include "../src/dialog.h"
 #include "../src/display.h"
 #include "../src/display_manager.h"
-#include "../src/foundation/event.h"
-#include "../src/foundation/event_emitter.h"
+#include "../src/foundation/color.h"
 #include "../src/foundation/geometry.h"
-#include "../src/foundation/id_allocator.h"
 #include "../src/foundation/keyboard.h"
 #include "../src/image.h"
 #include "../src/keyboard_monitor.h"
+#include "../src/launch_at_login.h"
 #include "../src/menu.h"
 #include "../src/message_dialog.h"
+#include "../src/placement.h"
+#include "../src/positioning_strategy.h"
 #include "../src/preferences.h"
 #include "../src/secure_storage.h"
 #include "../src/shortcut.h"
 #include "../src/shortcut_manager.h"
-#include "../src/storage.h"
 #include "../src/tray_icon.h"
 #include "../src/tray_manager.h"
 #include "../src/url_opener.h"
@@ -29,17 +31,23 @@
 #include "../src/window_manager.h"
 #endif
 
-// C API headers (available for both C and C++)
+// C API (usable from both C and C++)
 #include "../src/capi/accessibility_manager_c.h"
 #include "../src/capi/application_c.h"
-#include "../src/capi/launch_at_login_c.h"
+#include "../src/capi/color_c.h"
+#include "../src/capi/common_c.h"
+#include "../src/capi/dialog_c.h"
 #include "../src/capi/display_c.h"
 #include "../src/capi/display_manager_c.h"
 #include "../src/capi/geometry_c.h"
 #include "../src/capi/image_c.h"
+#include "../src/capi/keyboard_c.h"
 #include "../src/capi/keyboard_monitor_c.h"
+#include "../src/capi/launch_at_login_c.h"
 #include "../src/capi/menu_c.h"
 #include "../src/capi/message_dialog_c.h"
+#include "../src/capi/placement_c.h"
+#include "../src/capi/positioning_strategy_c.h"
 #include "../src/capi/preferences_c.h"
 #include "../src/capi/secure_storage_c.h"
 #include "../src/capi/shortcut_c.h"

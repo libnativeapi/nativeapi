@@ -1,126 +1,124 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "image_c.h"
 
-#include <cstring>
-#include "../image.h"
+#include <cstdio>
+#include <memory>
+#include <new>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../foundation/geometry.h"
+#include "geometry_c.h"
+#include "../image.h"
 
-using namespace nativeapi;
+namespace {
 
-// Create an image from a file path
-native_image_t native_image_from_file(const char* file_path) {
-  if (!file_path) {
-    return nullptr;
-  }
-
-  try {
-    auto image = Image::FromFile(file_path);
-    if (image) {
-      auto size = image->GetSize();
-      if (size.width > 0 && size.height > 0) {
-        return new std::shared_ptr<Image>(image);
-      }
-    }
-  } catch (...) {
-    // Handle exceptions
-  }
-
-  return nullptr;
-}
-
-// Create an image from base64-encoded data
-native_image_t native_image_from_base64(const char* base64_data) {
-  if (!base64_data) {
-    return nullptr;
-  }
-
-  try {
-    auto image = Image::FromBase64(base64_data);
-    if (image) {
-      auto size = image->GetSize();
-      if (size.width > 0 && size.height > 0) {
-        return new std::shared_ptr<Image>(image);
-      }
-    }
-  } catch (...) {
-    // Handle exceptions
-  }
-
-  return nullptr;
-}
-
-// Destroy an image and release its resources
-void native_image_destroy(native_image_t image) {
-  if (image) {
-    delete static_cast<std::shared_ptr<Image>*>(image);
-  }
-}
-
-// Get the size of an image in pixels
-native_size_t native_image_get_size(native_image_t image) {
-  native_size_t result = {0.0, 0.0};
-
-  if (!image) {
-    return result;
-  }
-
-  try {
-    auto img = static_cast<std::shared_ptr<Image>*>(image);
-    auto size = (*img)->GetSize();
-    result.width = size.width;
-    result.height = size.height;
-  } catch (...) {
-    // Return zero size on error
-  }
-
+native_size_t ToCSize(const nativeapi::Size& value) {
+  native_size_t result = {};
+  result.width = value.width;
+  result.height = value.height;
   return result;
 }
 
-// Get the image format string for debugging purposes
+nativeapi::Size ToCppSize(const native_size_t& value) {
+  nativeapi::Size result = {};
+  result.width = value.width;
+  result.height = value.height;
+  return result;
+}
+
+}  // namespace
+
+native_image_t native_image_from_file(const char* file_path) {
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::Image::FromFile(std::string(file_path ? file_path : "")));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_from_file");
+    return 0;
+  }
+}
+
+native_image_t native_image_from_base64(const char* base64_data) {
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::Image::FromBase64(std::string(base64_data ? base64_data : "")));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_from_base64");
+    return 0;
+  }
+}
+
+native_size_t native_image_get_size(native_image_t image) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+  if (!self) {
+    native_size_t result = {};
+    return result;
+  }
+  try {
+    const auto cpp_result = self->GetSize();
+    return ToCSize(cpp_result);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_get_size");
+    native_size_t result = {};
+    return result;
+  }
+}
+
 char* native_image_get_format(native_image_t image) {
-  if (!image) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+  if (!self) {
     return nullptr;
   }
-
   try {
-    auto img = static_cast<std::shared_ptr<Image>*>(image);
-    std::string format = (*img)->GetFormat();
-
-    return to_c_str(format);
+    return to_c_str(self->GetFormat());
   } catch (...) {
-    // Handle exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_get_format");
+    return nullptr;
   }
-
-  return nullptr;
 }
 
-// Convert an image to base64-encoded PNG data
 char* native_image_to_base64(native_image_t image) {
-  if (!image) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+  if (!self) {
     return nullptr;
   }
-
   try {
-    auto img = static_cast<std::shared_ptr<Image>*>(image);
-    std::string base64 = (*img)->ToBase64();
-
-    return to_c_str(base64);
+    return to_c_str(self->ToBase64());
   } catch (...) {
-    // Handle exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_to_base64");
+    return nullptr;
   }
-
-  return nullptr;
 }
 
-// Save an image to a file
 bool native_image_save_to_file(native_image_t image, const char* file_path) {
-  if (!image || !file_path) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+  if (!self) {
     return false;
   }
-
   try {
-    auto img = static_cast<std::shared_ptr<Image>*>(image);
-    return (*img)->SaveToFile(file_path);
+    return self->SaveToFile(std::string(file_path ? file_path : ""));
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_save_to_file");
     return false;
   }
 }
+
+void* native_image_get_native_object(native_image_t image) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+  if (!self) {
+    return nullptr;
+  }
+  return self->GetNativeObject();
+}
+
+void native_image_free(native_image_t image) {
+  // The table invalidates the handle itself, so releasing an unknown or
+  // already-released one is a no-op rather than a double free.
+  nativeapi::HandleTable::GetInstance().Release(image);
+}
+

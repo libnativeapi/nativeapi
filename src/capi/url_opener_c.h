@@ -4,6 +4,9 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "common_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -30,6 +33,10 @@ typedef struct {
   char* error_message;
 } native_url_open_result_t;
 
+/// Frees everything the struct owns.
+FFI_PLUGIN_EXPORT
+void native_url_open_result_free(native_url_open_result_t* value);
+
 FFI_PLUGIN_EXPORT
 bool native_url_opener_is_supported(void);
 
@@ -38,9 +45,6 @@ bool native_url_opener_can_open(const char* url);
 
 FFI_PLUGIN_EXPORT
 native_url_open_result_t native_url_opener_open(const char* url);
-
-FFI_PLUGIN_EXPORT
-void native_url_open_result_free(native_url_open_result_t* value);
 
 #ifdef __cplusplus
 }

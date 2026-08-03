@@ -1,7 +1,13 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "common_c.h"
+#include "window_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -13,148 +19,53 @@
 extern "C" {
 #endif
 
-#include "window_c.h"
+typedef void (*native_window_manager_set_will_show_hook_callback_t)(unsigned int arg0, void* user_data);
 
-/**
- * Window event types
- */
-typedef enum {
-  NATIVE_WINDOW_EVENT_FOCUSED = 0,
-  NATIVE_WINDOW_EVENT_BLURRED = 1,
-  NATIVE_WINDOW_EVENT_MINIMIZED = 2,
-  NATIVE_WINDOW_EVENT_MAXIMIZED = 3,
-  NATIVE_WINDOW_EVENT_RESTORED = 4,
-  NATIVE_WINDOW_EVENT_MOVED = 5,
-  NATIVE_WINDOW_EVENT_RESIZED = 6
-} native_window_event_type_t;
+typedef void (*native_window_manager_set_will_hide_hook_callback_t)(unsigned int arg0, void* user_data);
 
-/**
- * Window event structure
- */
-typedef struct {
-  native_window_event_type_t type;
-  native_window_id_t window_id;
-  union {
-    struct {
-      native_point_t position;
-    } moved;
-    struct {
-      native_size_t size;
-    } resized;
-  } data;
-} native_window_event_t;
-
-/**
- * Window event callback function type
- */
-typedef void (*native_window_event_callback_t)(const native_window_event_t* event, void* user_data);
-
-/**
- * Window manager singleton operations
- */
-
-/**
- * Get a window by its ID
- * @param window_id The window ID
- * @return Window handle, or NULL if not found
- */
+/// Caller owns the returned handle; release it with native_window_free().
 FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_get(native_window_id_t window_id);
+native_window_t native_window_manager_get(native_window_id_t id);
 
-/**
- * Get all managed windows
- * @return List of all windows (caller must free with native_window_list_free)
- */
 FFI_PLUGIN_EXPORT
 native_window_list_t native_window_manager_get_all(void);
 
-/**
- * Get the currently active/focused window
- * @return Current window handle, or NULL if no window is active
- */
+/// Caller owns the returned handle; release it with native_window_free().
 FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get_current(void);
 
-/**
- * Register a callback for window events
- * @param callback The callback function to register
- * @param user_data User data to pass to the callback
- * @return Registration ID, or -1 on failure
- */
 FFI_PLUGIN_EXPORT
-int native_window_manager_register_event_callback(native_window_event_callback_t callback,
-                                                  void* user_data);
+void native_window_manager_set_will_show_hook(native_window_manager_set_will_show_hook_callback_t hook, void* hook_user_data);
 
-/**
- * Unregister a window event callback
- * @param registration_id The registration ID returned by register_event_callback
- * @return true if callback was found and unregistered, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_window_manager_unregister_event_callback(int registration_id);
+void native_window_manager_set_will_hide_hook(native_window_manager_set_will_hide_hook_callback_t hook, void* hook_user_data);
 
-/**
- * Shutdown the window manager and cleanup resources
- */
-FFI_PLUGIN_EXPORT
-void native_window_manager_shutdown(void);
-
-/**
- * Hooks called BEFORE a native window is shown/hidden.
- * Passing NULL clears the corresponding hook.
- */
-typedef void (*native_window_will_show_callback_t)(native_window_id_t window_id, void* user_data);
-typedef void (*native_window_will_hide_callback_t)(native_window_id_t window_id, void* user_data);
-
-/**
- * Set (or clear) the "will show" hook.
- * @param callback Function called before window is shown (e.g., makeKeyAndOrderFront: on macOS).
- * NULL to clear.
- * @param user_data Opaque pointer passed back to callback.
- */
-FFI_PLUGIN_EXPORT
-void native_window_manager_set_will_show_hook(native_window_will_show_callback_t callback,
-                                              void* user_data);
-
-/**
- * Set (or clear) the "will hide" hook.
- * @param callback Function called before window is hidden (e.g., orderOut: on macOS). NULL to
- * clear.
- * @param user_data Opaque pointer passed back to callback.
- */
-FFI_PLUGIN_EXPORT
-void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t callback,
-                                              void* user_data);
-
-/**
- * Check if the "will show" hook is set.
- * @return true if hook is set, false otherwise.
- */
 FFI_PLUGIN_EXPORT
 bool native_window_manager_has_will_show_hook(void);
 
-/**
- * Check if the "will hide" hook is set.
- * @return true if hook is set, false otherwise.
- */
 FFI_PLUGIN_EXPORT
 bool native_window_manager_has_will_hide_hook(void);
 
-/**
- * Call the original native show implementation for the specified window.
- * This bypasses the swizzled hook path on macOS.
- * @return true on success, false if the window wasn't found or unsupported.
- */
 FFI_PLUGIN_EXPORT
-bool native_window_manager_call_original_show(native_window_id_t window_id);
+void native_window_manager_handle_will_show(native_window_id_t id);
 
-/**
- * Call the original native hide implementation for the specified window.
- * This bypasses the swizzled hook path on macOS.
- * @return true on success, false if the window wasn't found or unsupported.
- */
 FFI_PLUGIN_EXPORT
-bool native_window_manager_call_original_hide(native_window_id_t window_id);
+void native_window_manager_handle_will_hide(native_window_id_t id);
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_show(native_window_id_t id);
+
+FFI_PLUGIN_EXPORT
+bool native_window_manager_call_original_hide(native_window_id_t id);
+
+/// Registers @p callback for every WindowEvent this WindowManager emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+FFI_PLUGIN_EXPORT
+native_listener_id_t native_window_manager_add_listener(native_window_event_callback_t callback, void* user_data);
+
+/// Unregisters a listener. Returns false if unknown.
+FFI_PLUGIN_EXPORT
+bool native_window_manager_remove_listener(native_listener_id_t listener_id);
 
 #ifdef __cplusplus
 }

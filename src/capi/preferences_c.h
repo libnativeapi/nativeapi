@@ -1,114 +1,76 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "common_c.h"
+#include "string_utils_c.h"
+
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h>
-#include <stddef.h>
+/// Opaque Preferences handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_PREFERENCES rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_preferences_t;
 
-// Opaque handle type
-typedef void* native_preferences_t;
+/// Never refers to a live Preferences.
+#define NATIVE_INVALID_PREFERENCES ((native_preferences_t)0)
 
-// Preferences API
-
-/**
- * @brief Create a preferences storage with default scope.
- * @return Handle to preferences storage, or NULL on failure
- */
+/// Creates a Preferences instance; release it with native_preferences_free().
+FFI_PLUGIN_EXPORT
 native_preferences_t native_preferences_create(void);
 
-/**
- * @brief Create a preferences storage with custom scope.
- * @param scope Scope for isolating preferences
- * @return Handle to preferences storage, or NULL on failure
- */
+/// Creates a Preferences instance; release it with native_preferences_free().
+FFI_PLUGIN_EXPORT
 native_preferences_t native_preferences_create_with_scope(const char* scope);
 
-/**
- * @brief Destroy a preferences storage instance.
- * @param prefs Handle to preferences storage
- */
-void native_preferences_destroy(native_preferences_t prefs);
+FFI_PLUGIN_EXPORT
+bool native_preferences_set(native_preferences_t preferences, const char* key, const char* value);
 
-/**
- * @brief Set a key-value pair.
- * @param prefs Handle to preferences storage
- * @param key The key to set
- * @param value The value to store
- * @return true if successful, false otherwise
- */
-bool native_preferences_set(native_preferences_t prefs, const char* key, const char* value);
+/// Caller owns the returned string; free it with free_c_str().
+FFI_PLUGIN_EXPORT
+char* native_preferences_get(native_preferences_t preferences, const char* key, const char* default_value);
 
-/**
- * @brief Get the value for a given key.
- * @param prefs Handle to preferences storage
- * @param key The key to retrieve
- * @param default_value Default value if key doesn't exist
- * @return The stored value or default_value. Caller must free the returned string.
- */
-char* native_preferences_get(native_preferences_t prefs,
-                             const char* key,
-                             const char* default_value);
+FFI_PLUGIN_EXPORT
+bool native_preferences_remove(native_preferences_t preferences, const char* key);
 
-/**
- * @brief Remove a key-value pair.
- * @param prefs Handle to preferences storage
- * @param key The key to remove
- * @return true if successful, false if key doesn't exist
- */
-bool native_preferences_remove(native_preferences_t prefs, const char* key);
+FFI_PLUGIN_EXPORT
+bool native_preferences_clear(native_preferences_t preferences);
 
-/**
- * @brief Clear all key-value pairs.
- * @param prefs Handle to preferences storage
- * @return true if successful, false otherwise
- */
-bool native_preferences_clear(native_preferences_t prefs);
+FFI_PLUGIN_EXPORT
+bool native_preferences_contains(native_preferences_t preferences, const char* key);
 
-/**
- * @brief Check if a key exists.
- * @param prefs Handle to preferences storage
- * @param key The key to check
- * @return true if key exists, false otherwise
- */
-bool native_preferences_contains(native_preferences_t prefs, const char* key);
+FFI_PLUGIN_EXPORT
+native_string_list_t native_preferences_get_keys(native_preferences_t preferences);
 
-/**
- * @brief Get all keys.
- * @param prefs Handle to preferences storage
- * @param out_keys Pointer to array of keys (allocated by function)
- * @param out_count Pointer to receive number of keys
- * @return true if successful, false otherwise. Caller must free each key and the array.
- */
-bool native_preferences_get_keys(native_preferences_t prefs, char*** out_keys, size_t* out_count);
+FFI_PLUGIN_EXPORT
+unsigned long native_preferences_get_size(native_preferences_t preferences);
 
-/**
- * @brief Get the number of stored items.
- * @param prefs Handle to preferences storage
- * @return Number of key-value pairs
- */
-size_t native_preferences_get_size(native_preferences_t prefs);
+FFI_PLUGIN_EXPORT
+native_string_map_t native_preferences_get_all(native_preferences_t preferences);
 
-/**
- * @brief Get the scope.
- * @param prefs Handle to preferences storage
- * @return The scope. Caller must free the returned string.
- */
-char* native_preferences_get_scope(native_preferences_t prefs);
+/// Caller owns the returned string; free it with free_c_str().
+FFI_PLUGIN_EXPORT
+char* native_preferences_get_scope(native_preferences_t preferences);
 
-/**
- * @brief Free a string returned by preferences functions.
- * @param str String to free
- */
-void native_preferences_free_string(char* str);
-
-/**
- * @brief Free a string array returned by preferences functions.
- * @param strings Array of strings to free
- * @param count Number of strings in the array
- */
-void native_preferences_free_string_array(char** strings, size_t count);
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+FFI_PLUGIN_EXPORT
+void native_preferences_free(native_preferences_t preferences);
 
 #ifdef __cplusplus
 }

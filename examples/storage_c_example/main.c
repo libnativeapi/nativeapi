@@ -26,50 +26,55 @@ void demo_preferences() {
   printf("Theme: %s\n", theme);
   printf("Font size: %s\n", font_size);
 
-  native_preferences_free_string(username);
-  native_preferences_free_string(theme);
-  native_preferences_free_string(font_size);
+  free_c_str(username);
+  free_c_str(theme);
+  free_c_str(font_size);
 
   // Check if key exists
   if (native_preferences_contains(prefs, "language")) {
     char* language = native_preferences_get(prefs, "language", "");
     printf("Language: %s\n", language);
-    native_preferences_free_string(language);
+    free_c_str(language);
   } else {
     char* default_lang = native_preferences_get(prefs, "language", "en");
     printf("Language not set, using default: %s\n", default_lang);
-    native_preferences_free_string(default_lang);
+    free_c_str(default_lang);
   }
 
   // Get all keys
-  char** keys = NULL;
-  size_t count = 0;
-  if (native_preferences_get_keys(prefs, &keys, &count)) {
-    printf("\nAll keys (%zu):\n", count);
-    for (size_t i = 0; i < count; i++) {
-      char* value = native_preferences_get(prefs, keys[i], "");
-      printf("  - %s: %s\n", keys[i], value);
-      native_preferences_free_string(value);
-    }
-    native_preferences_free_string_array(keys, count);
+  native_string_list_t keys = native_preferences_get_keys(prefs);
+  printf("\nAll keys (%ld):\n", keys.count);
+  for (long i = 0; i < keys.count; i++) {
+    char* value = native_preferences_get(prefs, keys.items[i], "");
+    printf("  - %s: %s\n", keys.items[i], value);
+    free_c_str(value);
   }
+  native_string_list_free(&keys);
+
+  // Get every entry in one call
+  native_string_map_t all = native_preferences_get_all(prefs);
+  printf("\nAll entries (%ld):\n", all.count);
+  for (long i = 0; i < all.count; i++) {
+    printf("  - %s = %s\n", all.keys[i], all.values[i]);
+  }
+  native_string_map_free(&all);
 
   // Get size
-  size_t size = native_preferences_get_size(prefs);
-  printf("Total items: %zu\n", size);
+  unsigned long size = native_preferences_get_size(prefs);
+  printf("Total items: %lu\n", size);
 
   // Remove a key
   printf("\nRemoving 'font_size'...\n");
   native_preferences_remove(prefs, "font_size");
-  printf("Size after removal: %zu\n", native_preferences_get_size(prefs));
+  printf("Size after removal: %lu\n", native_preferences_get_size(prefs));
 
   // Get scope
   char* scope = native_preferences_get_scope(prefs);
   printf("Scope: %s\n", scope);
-  native_preferences_free_string(scope);
+  free_c_str(scope);
 
   // Clean up
-  native_preferences_destroy(prefs);
+  native_preferences_free(prefs);
 
   printf("\n");
 }
@@ -102,19 +107,16 @@ void demo_secure_storage() {
   printf("API Key: %s\n", api_key);
   printf("Secret: %s\n", secret);
 
-  native_secure_storage_free_string(api_key);
-  native_secure_storage_free_string(secret);
+  free_c_str(api_key);
+  free_c_str(secret);
 
   // Get all keys
-  char** keys = NULL;
-  size_t count = 0;
-  if (native_secure_storage_get_keys(storage, &keys, &count)) {
-    printf("\nStored secure items (%zu):\n", count);
-    for (size_t i = 0; i < count; i++) {
-      printf("  - %s: [encrypted]\n", keys[i]);
-    }
-    native_secure_storage_free_string_array(keys, count);
+  native_string_list_t keys = native_secure_storage_get_keys(storage);
+  printf("\nStored secure items (%ld):\n", keys.count);
+  for (long i = 0; i < keys.count; i++) {
+    printf("  - %s: [encrypted]\n", keys.items[i]);
   }
+  native_string_list_free(&keys);
 
   // Check existence
   if (native_secure_storage_contains(storage, "api_key")) {
@@ -122,23 +124,23 @@ void demo_secure_storage() {
   }
 
   // Get size
-  size_t size = native_secure_storage_get_size(storage);
-  printf("Total secure items: %zu\n", size);
+  unsigned long size = native_secure_storage_get_size(storage);
+  printf("Total secure items: %lu\n", size);
 
   // Remove sensitive data
   printf("\nRemoving 'token'...\n");
   native_secure_storage_remove(storage, "token");
-  printf("Size after removal: %zu\n", native_secure_storage_get_size(storage));
+  printf("Size after removal: %lu\n", native_secure_storage_get_size(storage));
 
   // Get scope
   char* storage_scope = native_secure_storage_get_scope(storage);
   printf("Scope: %s\n", storage_scope);
-  native_secure_storage_free_string(storage_scope);
+  free_c_str(storage_scope);
 
   // Clean up (optional: clear all for this demo)
   // native_secure_storage_clear(storage);
 
-  native_secure_storage_destroy(storage);
+  native_secure_storage_free(storage);
 
   printf("\n");
 }

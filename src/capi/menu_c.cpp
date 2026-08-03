@@ -1,960 +1,896 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "menu_c.h"
-#include <cstdlib>
-#include <cstring>
-#include <map>
+
+#include <cstdio>
 #include <memory>
+#include <new>
 #include <optional>
-#include "../image.h"
-#include "../menu.h"
-#include "../placement.h"
-#include "../positioning_strategy.h"
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../foundation/keyboard.h"
+#include "keyboard_c.h"
+#include "../placement.h"
+#include "placement_c.h"
+#include "../image.h"
+#include "image_c.h"
+#include "../positioning_strategy.h"
+#include "positioning_strategy_c.h"
+#include "../menu.h"
 
-using namespace nativeapi;
+namespace {
 
-// Internal structures to manage event listeners
-
-// Event listener data structures
-struct EventListenerData {
-  native_menu_item_event_callback_t callback;
-  void* user_data;
-};
-
-struct MenuEventListenerData {
-  native_menu_event_callback_t callback;
-  void* user_data;
-};
-
-// Global maps to store event listeners
-// Key is the C++ listener ID returned by AddListener
-static std::map<native_menu_item_t, std::map<size_t, std::shared_ptr<EventListenerData>>>
-    g_menu_item_listeners;
-static std::map<native_menu_t, std::map<size_t, std::shared_ptr<MenuEventListenerData>>>
-    g_menu_listeners;
-
-// Helper functions
-static MenuItemType convert_menu_item_type(native_menu_item_type_t type) {
-  switch (type) {
-    case NATIVE_MENU_ITEM_TYPE_NORMAL:
-      return MenuItemType::Normal;
-    case NATIVE_MENU_ITEM_TYPE_CHECKBOX:
-      return MenuItemType::Checkbox;
-    case NATIVE_MENU_ITEM_TYPE_RADIO:
-      return MenuItemType::Radio;
-    case NATIVE_MENU_ITEM_TYPE_SEPARATOR:
-      return MenuItemType::Separator;
-    case NATIVE_MENU_ITEM_TYPE_SUBMENU:
-      return MenuItemType::Submenu;
-    default:
-      return MenuItemType::Normal;
-  }
-}
-
-static native_menu_item_type_t convert_menu_item_type(MenuItemType type) {
-  switch (type) {
-    case MenuItemType::Normal:
+native_menu_item_type_t ToCMenuItemType(nativeapi::MenuItemType value) {
+  switch (value) {
+    case nativeapi::MenuItemType::Normal:
       return NATIVE_MENU_ITEM_TYPE_NORMAL;
-    case MenuItemType::Checkbox:
+    case nativeapi::MenuItemType::Checkbox:
       return NATIVE_MENU_ITEM_TYPE_CHECKBOX;
-    case MenuItemType::Radio:
+    case nativeapi::MenuItemType::Radio:
       return NATIVE_MENU_ITEM_TYPE_RADIO;
-    case MenuItemType::Separator:
+    case nativeapi::MenuItemType::Separator:
       return NATIVE_MENU_ITEM_TYPE_SEPARATOR;
-    case MenuItemType::Submenu:
+    case nativeapi::MenuItemType::Submenu:
       return NATIVE_MENU_ITEM_TYPE_SUBMENU;
     default:
       return NATIVE_MENU_ITEM_TYPE_NORMAL;
   }
 }
 
-static KeyboardAccelerator convert_keyboard_accelerator(
-    const native_keyboard_accelerator_t* accelerator) {
-  ModifierKey modifiers = ModifierKey::None;
-  if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_CTRL) {
-    modifiers |= ModifierKey::Ctrl;
-  }
-  if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_ALT) {
-    modifiers |= ModifierKey::Alt;
-  }
-  if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_SHIFT) {
-    modifiers |= ModifierKey::Shift;
-  }
-  if (accelerator->modifiers & NATIVE_ACCELERATOR_MODIFIER_META) {
-    modifiers |= ModifierKey::Meta;
-  }
-  return KeyboardAccelerator(accelerator->key, modifiers);
-}
-
-static native_keyboard_accelerator_t convert_keyboard_accelerator(
-    const KeyboardAccelerator& accelerator) {
-  native_keyboard_accelerator_t result = {};
-
-  if ((accelerator.modifiers & ModifierKey::Ctrl) != ModifierKey::None) {
-    result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_CTRL;
-  }
-  if ((accelerator.modifiers & ModifierKey::Alt) != ModifierKey::None) {
-    result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_ALT;
-  }
-  if ((accelerator.modifiers & ModifierKey::Shift) != ModifierKey::None) {
-    result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_SHIFT;
-  }
-  if ((accelerator.modifiers & ModifierKey::Meta) != ModifierKey::None) {
-    result.modifiers |= NATIVE_ACCELERATOR_MODIFIER_META;
-  }
-
-  strncpy(result.key, accelerator.key.c_str(), sizeof(result.key) - 1);
-  result.key[sizeof(result.key) - 1] = '\0';
-
-  return result;
-}
-
-static MenuItemState convert_menu_item_state(native_menu_item_state_t state) {
-  switch (state) {
-    case NATIVE_MENU_ITEM_STATE_UNCHECKED:
-      return MenuItemState::Unchecked;
-    case NATIVE_MENU_ITEM_STATE_CHECKED:
-      return MenuItemState::Checked;
-    case NATIVE_MENU_ITEM_STATE_MIXED:
-      return MenuItemState::Mixed;
+nativeapi::MenuItemType ToCppMenuItemType(native_menu_item_type_t value) {
+  switch (value) {
+    case NATIVE_MENU_ITEM_TYPE_NORMAL:
+      return nativeapi::MenuItemType::Normal;
+    case NATIVE_MENU_ITEM_TYPE_CHECKBOX:
+      return nativeapi::MenuItemType::Checkbox;
+    case NATIVE_MENU_ITEM_TYPE_RADIO:
+      return nativeapi::MenuItemType::Radio;
+    case NATIVE_MENU_ITEM_TYPE_SEPARATOR:
+      return nativeapi::MenuItemType::Separator;
+    case NATIVE_MENU_ITEM_TYPE_SUBMENU:
+      return nativeapi::MenuItemType::Submenu;
     default:
-      return MenuItemState::Unchecked;
+      return nativeapi::MenuItemType::Normal;
   }
 }
 
-static native_menu_item_state_t convert_menu_item_state(MenuItemState state) {
-  switch (state) {
-    case MenuItemState::Unchecked:
+native_menu_item_state_t ToCMenuItemState(nativeapi::MenuItemState value) {
+  switch (value) {
+    case nativeapi::MenuItemState::Unchecked:
       return NATIVE_MENU_ITEM_STATE_UNCHECKED;
-    case MenuItemState::Checked:
+    case nativeapi::MenuItemState::Checked:
       return NATIVE_MENU_ITEM_STATE_CHECKED;
-    case MenuItemState::Mixed:
+    case nativeapi::MenuItemState::Mixed:
       return NATIVE_MENU_ITEM_STATE_MIXED;
     default:
       return NATIVE_MENU_ITEM_STATE_UNCHECKED;
   }
 }
 
-// MenuItem C API Implementation
-
-native_menu_item_t native_menu_item_create(const char* label, native_menu_item_type_t type) {
-  if (!label)
-    return nullptr;
-
-  try {
-    auto menu_item_raw = new MenuItem(label, convert_menu_item_type(type));
-    return static_cast<native_menu_item_t>(menu_item_raw);
-  } catch (...) {
-    return nullptr;
+nativeapi::MenuItemState ToCppMenuItemState(native_menu_item_state_t value) {
+  switch (value) {
+    case NATIVE_MENU_ITEM_STATE_UNCHECKED:
+      return nativeapi::MenuItemState::Unchecked;
+    case NATIVE_MENU_ITEM_STATE_CHECKED:
+      return nativeapi::MenuItemState::Checked;
+    case NATIVE_MENU_ITEM_STATE_MIXED:
+      return nativeapi::MenuItemState::Mixed;
+    default:
+      return nativeapi::MenuItemState::Unchecked;
   }
 }
 
-native_menu_item_t native_menu_item_create_separator(void) {
-  try {
-    auto menu_item_raw = new MenuItem("", MenuItemType::Separator);
-    return static_cast<native_menu_item_t>(menu_item_raw);
-  } catch (...) {
-    return nullptr;
+native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
+  switch (value) {
+    case nativeapi::ModifierKey::None:
+      return NATIVE_MODIFIER_KEY_NONE;
+    case nativeapi::ModifierKey::Shift:
+      return NATIVE_MODIFIER_KEY_SHIFT;
+    case nativeapi::ModifierKey::Ctrl:
+      return NATIVE_MODIFIER_KEY_CTRL;
+    case nativeapi::ModifierKey::Alt:
+      return NATIVE_MODIFIER_KEY_ALT;
+    case nativeapi::ModifierKey::Meta:
+      return NATIVE_MODIFIER_KEY_META;
+    case nativeapi::ModifierKey::Fn:
+      return NATIVE_MODIFIER_KEY_FN;
+    case nativeapi::ModifierKey::CapsLock:
+      return NATIVE_MODIFIER_KEY_CAPS_LOCK;
+    case nativeapi::ModifierKey::NumLock:
+      return NATIVE_MODIFIER_KEY_NUM_LOCK;
+    case nativeapi::ModifierKey::ScrollLock:
+      return NATIVE_MODIFIER_KEY_SCROLL_LOCK;
+    default:
+      return NATIVE_MODIFIER_KEY_NONE;
   }
 }
 
-void native_menu_item_destroy(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return;
-
-  // Remove event listeners first
-  auto listeners_it = g_menu_item_listeners.find(menu_item);
-  if (listeners_it != g_menu_item_listeners.end()) {
-    g_menu_item_listeners.erase(listeners_it);
+nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
+  switch (value) {
+    case NATIVE_MODIFIER_KEY_NONE:
+      return nativeapi::ModifierKey::None;
+    case NATIVE_MODIFIER_KEY_SHIFT:
+      return nativeapi::ModifierKey::Shift;
+    case NATIVE_MODIFIER_KEY_CTRL:
+      return nativeapi::ModifierKey::Ctrl;
+    case NATIVE_MODIFIER_KEY_ALT:
+      return nativeapi::ModifierKey::Alt;
+    case NATIVE_MODIFIER_KEY_META:
+      return nativeapi::ModifierKey::Meta;
+    case NATIVE_MODIFIER_KEY_FN:
+      return nativeapi::ModifierKey::Fn;
+    case NATIVE_MODIFIER_KEY_CAPS_LOCK:
+      return nativeapi::ModifierKey::CapsLock;
+    case NATIVE_MODIFIER_KEY_NUM_LOCK:
+      return nativeapi::ModifierKey::NumLock;
+    case NATIVE_MODIFIER_KEY_SCROLL_LOCK:
+      return nativeapi::ModifierKey::ScrollLock;
+    default:
+      return nativeapi::ModifierKey::None;
   }
+}
 
-  // Delete MenuItem instance
-  auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-  delete menu_item_ptr;
+native_placement_t ToCPlacement(nativeapi::Placement value) {
+  switch (value) {
+    case nativeapi::Placement::Top:
+      return NATIVE_PLACEMENT_TOP;
+    case nativeapi::Placement::TopStart:
+      return NATIVE_PLACEMENT_TOP_START;
+    case nativeapi::Placement::TopEnd:
+      return NATIVE_PLACEMENT_TOP_END;
+    case nativeapi::Placement::Right:
+      return NATIVE_PLACEMENT_RIGHT;
+    case nativeapi::Placement::RightStart:
+      return NATIVE_PLACEMENT_RIGHT_START;
+    case nativeapi::Placement::RightEnd:
+      return NATIVE_PLACEMENT_RIGHT_END;
+    case nativeapi::Placement::Bottom:
+      return NATIVE_PLACEMENT_BOTTOM;
+    case nativeapi::Placement::BottomStart:
+      return NATIVE_PLACEMENT_BOTTOM_START;
+    case nativeapi::Placement::BottomEnd:
+      return NATIVE_PLACEMENT_BOTTOM_END;
+    case nativeapi::Placement::Left:
+      return NATIVE_PLACEMENT_LEFT;
+    case nativeapi::Placement::LeftStart:
+      return NATIVE_PLACEMENT_LEFT_START;
+    case nativeapi::Placement::LeftEnd:
+      return NATIVE_PLACEMENT_LEFT_END;
+    default:
+      return NATIVE_PLACEMENT_TOP;
+  }
+}
+
+nativeapi::Placement ToCppPlacement(native_placement_t value) {
+  switch (value) {
+    case NATIVE_PLACEMENT_TOP:
+      return nativeapi::Placement::Top;
+    case NATIVE_PLACEMENT_TOP_START:
+      return nativeapi::Placement::TopStart;
+    case NATIVE_PLACEMENT_TOP_END:
+      return nativeapi::Placement::TopEnd;
+    case NATIVE_PLACEMENT_RIGHT:
+      return nativeapi::Placement::Right;
+    case NATIVE_PLACEMENT_RIGHT_START:
+      return nativeapi::Placement::RightStart;
+    case NATIVE_PLACEMENT_RIGHT_END:
+      return nativeapi::Placement::RightEnd;
+    case NATIVE_PLACEMENT_BOTTOM:
+      return nativeapi::Placement::Bottom;
+    case NATIVE_PLACEMENT_BOTTOM_START:
+      return nativeapi::Placement::BottomStart;
+    case NATIVE_PLACEMENT_BOTTOM_END:
+      return nativeapi::Placement::BottomEnd;
+    case NATIVE_PLACEMENT_LEFT:
+      return nativeapi::Placement::Left;
+    case NATIVE_PLACEMENT_LEFT_START:
+      return nativeapi::Placement::LeftStart;
+    case NATIVE_PLACEMENT_LEFT_END:
+      return nativeapi::Placement::LeftEnd;
+    default:
+      return nativeapi::Placement::Top;
+  }
+}
+
+native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
+  native_keyboard_accelerator_t result = {};
+  result.modifiers = ToCModifierKey(value.modifiers);
+  result.key = to_c_str(value.key);
+  return result;
+}
+
+nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
+  nativeapi::KeyboardAccelerator result = {};
+  result.modifiers = ToCppModifierKey(value.modifiers);
+  result.key = value.key ? value.key : "";
+  return result;
+}
+
+}  // namespace
+
+native_menu_item_t native_menu_item_create_with_label_and_type(const char* label, native_menu_item_type_t type) {
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::MenuItem>(std::string(label ? label : ""), ToCppMenuItemType(type)));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_create_with_label_and_type");
+    return 0;
+  }
+}
+
+native_menu_item_t native_menu_item_create_with_native_item(void* native_item) {
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::MenuItem>(native_item));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_create_with_native_item");
+    return 0;
+  }
 }
 
 native_menu_item_id_t native_menu_item_get_id(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return -1;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    if (!menu_item_ptr)
-      return -1;
-    return menu_item_ptr->GetId();
+    return self->GetId();
   } catch (...) {
-    return -1;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_id");
+    return 0;
   }
 }
 
 native_menu_item_type_t native_menu_item_get_type(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return NATIVE_MENU_ITEM_TYPE_NORMAL;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return (native_menu_item_type_t)NATIVE_MENU_ITEM_TYPE_NORMAL;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    return convert_menu_item_type(menu_item_ptr->GetType());
+    return ToCMenuItemType(self->GetType());
   } catch (...) {
-    return NATIVE_MENU_ITEM_TYPE_NORMAL;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_type");
+    return (native_menu_item_type_t)NATIVE_MENU_ITEM_TYPE_NORMAL;
   }
 }
 
 void native_menu_item_set_label(native_menu_item_t menu_item, const char* label) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    std::optional<std::string> label_cpp;
     if (label) {
-      menu_item_ptr->SetLabel(std::string(label));
-    } else {
-      menu_item_ptr->SetLabel(std::nullopt);
+      label_cpp = std::string(label);
     }
+    self->SetLabel(label_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_label");
+    return;
   }
 }
 
 char* native_menu_item_get_label(native_menu_item_t menu_item) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return nullptr;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    auto labelOpt = menu_item_ptr->GetLabel();
-
-    if (!labelOpt.has_value()) {
-      return nullptr;
-    }
-
-    const std::string& label = labelOpt.value();
-    return to_c_str(label);
+    const auto cpp_result = self->GetLabel();
+    return cpp_result ? to_c_str(*cpp_result) : nullptr;
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_label");
     return nullptr;
   }
 }
 
 void native_menu_item_set_icon(native_menu_item_t menu_item, native_image_t image) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    if (image) {
-      // Extract the shared_ptr from the native_image_t handle
-      auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
-      menu_item_ptr->SetIcon(*image_ptr);
-    } else {
-      menu_item_ptr->SetIcon(nullptr);
-    }
+    auto image_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+    self->SetIcon(image_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_icon");
+    return;
   }
 }
 
 native_image_t native_menu_item_get_icon(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return nullptr;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    auto image = menu_item_ptr->GetIcon();
-
-    if (!image) {
-      return nullptr;
-    }
-
-    // Create a new shared_ptr wrapper for the C API
-    return new std::shared_ptr<Image>(image);
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetIcon());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_icon");
+    return 0;
   }
 }
 
 void native_menu_item_set_tooltip(native_menu_item_t menu_item, const char* tooltip) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    std::optional<std::string> tooltip_cpp;
     if (tooltip) {
-      menu_item_ptr->SetTooltip(std::string(tooltip));
-    } else {
-      menu_item_ptr->SetTooltip(std::nullopt);
+      tooltip_cpp = std::string(tooltip);
     }
+    self->SetTooltip(tooltip_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_tooltip");
+    return;
   }
 }
 
 char* native_menu_item_get_tooltip(native_menu_item_t menu_item) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return nullptr;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    auto tooltipOpt = menu_item_ptr->GetTooltip();
-
-    if (!tooltipOpt.has_value()) {
-      return nullptr;
-    }
-
-    const std::string& tooltip = tooltipOpt.value();
-    return to_c_str(tooltip);
+    const auto cpp_result = self->GetTooltip();
+    return cpp_result ? to_c_str(*cpp_result) : nullptr;
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_tooltip");
     return nullptr;
   }
 }
 
-void native_menu_item_set_accelerator(native_menu_item_t menu_item,
-                                      const native_keyboard_accelerator_t* accelerator) {
-  if (!menu_item)
+void native_menu_item_set_accelerator(native_menu_item_t menu_item, const native_keyboard_accelerator_t* accelerator) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
+    std::optional<nativeapi::KeyboardAccelerator> accelerator_cpp;
     if (accelerator) {
-      KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
-      menu_item_ptr->SetAccelerator(cpp_accelerator);
-    } else {
-      menu_item_ptr->SetAccelerator(std::nullopt);
+      accelerator_cpp = ToCppKeyboardAccelerator(*accelerator);
     }
+    self->SetAccelerator(accelerator_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_accelerator");
+    return;
   }
 }
 
-bool native_menu_item_get_accelerator(native_menu_item_t menu_item,
-                                      native_keyboard_accelerator_t* accelerator) {
-  if (!menu_item || !accelerator)
-    return false;
-
+native_keyboard_accelerator_t native_menu_item_get_accelerator(native_menu_item_t menu_item) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    native_keyboard_accelerator_t result = {};
+    return result;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    KeyboardAccelerator cpp_accelerator = menu_item_ptr->GetAccelerator();
-
-    if (cpp_accelerator.key.empty()) {
-      return false;
-    }
-
-    *accelerator = convert_keyboard_accelerator(cpp_accelerator);
-    return true;
+    const auto cpp_result = self->GetAccelerator();
+    return ToCKeyboardAccelerator(cpp_result);
   } catch (...) {
-    return false;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_accelerator");
+    native_keyboard_accelerator_t result = {};
+    return result;
   }
 }
 
 void native_menu_item_set_enabled(native_menu_item_t menu_item, bool enabled) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    menu_item_ptr->SetEnabled(enabled);
+    self->SetEnabled(enabled);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_enabled");
+    return;
   }
 }
 
 bool native_menu_item_is_enabled(native_menu_item_t menu_item) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    return menu_item_ptr->IsEnabled();
+    return self->IsEnabled();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_is_enabled");
     return false;
   }
 }
 
 void native_menu_item_set_state(native_menu_item_t menu_item, native_menu_item_state_t state) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    menu_item_ptr->SetState(convert_menu_item_state(state));
+    self->SetState(ToCppMenuItemState(state));
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_state");
+    return;
   }
 }
 
 native_menu_item_state_t native_menu_item_get_state(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return NATIVE_MENU_ITEM_STATE_UNCHECKED;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return (native_menu_item_state_t)NATIVE_MENU_ITEM_STATE_UNCHECKED;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    return convert_menu_item_state(menu_item_ptr->GetState());
+    return ToCMenuItemState(self->GetState());
   } catch (...) {
-    return NATIVE_MENU_ITEM_STATE_UNCHECKED;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_state");
+    return (native_menu_item_state_t)NATIVE_MENU_ITEM_STATE_UNCHECKED;
   }
 }
 
 void native_menu_item_set_radio_group(native_menu_item_t menu_item, int group_id) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    menu_item_ptr->SetRadioGroup(group_id);
+    self->SetRadioGroup(group_id);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_radio_group");
+    return;
   }
 }
 
 int native_menu_item_get_radio_group(native_menu_item_t menu_item) {
-  if (!menu_item)
-    return -1;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    return menu_item_ptr->GetRadioGroup();
+    return self->GetRadioGroup();
   } catch (...) {
-    return -1;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_radio_group");
+    return 0;
   }
 }
 
 void native_menu_item_set_submenu(native_menu_item_t menu_item, native_menu_t submenu) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    if (!menu_item_ptr)
-      return;
-    if (submenu) {
-      // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
-      // Menu objects are owned by the C API caller. Creating an owning shared_ptr
-      // would introduce a separate control block and cause double-deletion during shutdown.
-      // Use a non-owning aliasing shared_ptr with an empty deleter instead.
-      auto menu_raw = static_cast<Menu*>(submenu);
-      auto menu_ptr = std::shared_ptr<Menu>(menu_raw, [](Menu*) {});
-      menu_item_ptr->SetSubmenu(menu_ptr);
-    } else {
-      menu_item_ptr->SetSubmenu(nullptr);
-    }
+    auto submenu_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(submenu);
+    self->SetSubmenu(submenu_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_submenu");
+    return;
   }
 }
 
 native_menu_t native_menu_item_get_submenu(native_menu_item_t menu_item) {
-  if (!menu_item)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetSubmenu());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_submenu");
+    return 0;
+  }
+}
+
+void* native_menu_item_get_native_object(native_menu_item_t menu_item) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
     return nullptr;
+  }
+  return self->GetNativeObject();
+}
 
+void native_menu_item_free(native_menu_item_t menu_item) {
+  // The table invalidates the handle itself, so releasing an unknown or
+  // already-released one is a no-op rather than a double free.
+  nativeapi::HandleTable::GetInstance().Release(menu_item);
+}
+
+void native_menu_item_list_free(native_menu_item_list_t* list) {
+  if (!list || !list->menu_items) {
+    return;
+  }
+  for (long i = 0; i < list->count; ++i) {
+    nativeapi::HandleTable::GetInstance().Release(list->menu_items[i]);
+  }
+  delete[] list->menu_items;
+  list->menu_items = nullptr;
+  list->count = 0;
+}
+
+void native_menu_item_list_release(native_menu_item_list_t* list) {
+  if (!list) {
+    return;
+  }
+  delete[] list->menu_items;
+  list->menu_items = nullptr;
+  list->count = 0;
+}
+
+native_listener_id_t native_menu_item_add_listener(native_menu_item_t menu_item, native_menu_event_callback_t callback, void* user_data) {
+  if (!callback) {
+    return 0;
+  }
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    auto submenu = menu_item_ptr->GetSubmenu();
-    return submenu ? static_cast<native_menu_t>(submenu.get()) : nullptr;
+    return static_cast<native_listener_id_t>(self->AddListener<nativeapi::MenuEvent>(
+        [callback, user_data](const nativeapi::MenuEvent& event) {
+          native_menu_event_t c_event = {};
+          if (!ToCMenuEvent(event, &c_event)) {
+            return;
+          }
+          callback(&c_event, user_data);
+          FreeCMenuEvent(&c_event);
+        }));
   } catch (...) {
-    return nullptr;
+    return 0;
   }
 }
 
-// New event listener API implementation
-int native_menu_item_add_listener(native_menu_item_t menu_item,
-                                  native_menu_item_event_type_t event_type,
-                                  native_menu_item_event_callback_t callback,
-                                  void* user_data) {
-  if (!menu_item || !callback)
-    return -1;
-
-  try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-
-    // Create listener data
-    auto listener_data = std::make_shared<EventListenerData>();
-    listener_data->callback = callback;
-    listener_data->user_data = user_data;
-
-    // Add the appropriate event listener based on event type
-    size_t cpp_listener_id = 0;
-    if (event_type == NATIVE_MENU_ITEM_EVENT_CLICKED) {
-      cpp_listener_id = menu_item_ptr->AddListener<MenuItemClickedEvent>(
-          [listener_data](const MenuItemClickedEvent& event) {
-            if (listener_data && listener_data->callback) {
-              native_menu_item_clicked_event_t c_event = {};
-              c_event.item_id = event.GetItemId();
-
-              listener_data->callback(&c_event, listener_data->user_data);
-            }
-          });
-    } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED) {
-      cpp_listener_id = menu_item_ptr->AddListener<MenuItemSubmenuOpenedEvent>(
-          [listener_data](const MenuItemSubmenuOpenedEvent& event) {
-            if (listener_data && listener_data->callback) {
-              native_menu_item_submenu_opened_event_t c_event = {};
-              c_event.item_id = event.GetItemId();
-
-              listener_data->callback(&c_event, listener_data->user_data);
-            }
-          });
-    } else if (event_type == NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED) {
-      cpp_listener_id = menu_item_ptr->AddListener<MenuItemSubmenuClosedEvent>(
-          [listener_data](const MenuItemSubmenuClosedEvent& event) {
-            if (listener_data && listener_data->callback) {
-              native_menu_item_submenu_closed_event_t c_event = {};
-              c_event.item_id = event.GetItemId();
-
-              listener_data->callback(&c_event, listener_data->user_data);
-            }
-          });
-    }
-
-    // Store the listener data using C++ listener ID as key
-    g_menu_item_listeners[menu_item][cpp_listener_id] = listener_data;
-
-    return static_cast<int>(cpp_listener_id);
-  } catch (...) {
-    return -1;
+bool native_menu_item_remove_listener(native_menu_item_t menu_item, native_listener_id_t listener_id) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(menu_item);
+  if (!self) {
+    return false;
   }
-}
-
-bool native_menu_item_remove_listener(native_menu_item_t menu_item, int listener_id) {
-  if (!menu_item)
-    return false;
-
   try {
-    auto menu_item_ptr = static_cast<MenuItem*>(menu_item);
-    if (!menu_item_ptr)
-      return false;
-
-    // Convert C API listener_id (int) to C++ listener_id (size_t)
-    size_t cpp_listener_id = static_cast<size_t>(listener_id);
-
-    auto menu_item_it = g_menu_item_listeners.find(menu_item);
-    if (menu_item_it != g_menu_item_listeners.end()) {
-      auto listener_it = menu_item_it->second.find(cpp_listener_id);
-      if (listener_it != menu_item_it->second.end()) {
-        // Remove the C++ listener first
-        menu_item_ptr->RemoveListener(cpp_listener_id);
-
-        // Remove the listener data
-        menu_item_it->second.erase(listener_it);
-
-        // If no more listeners for this menu_item, remove the menu_item entry
-        if (menu_item_it->second.empty()) {
-          g_menu_item_listeners.erase(menu_item_it);
-        }
-
-        return true;
-      }
-    }
-    return false;
+    return self->RemoveListener(static_cast<size_t>(listener_id));
   } catch (...) {
     return false;
   }
 }
-
-// Menu C API Implementation
 
 native_menu_t native_menu_create(void) {
   try {
-    auto menu_raw = new Menu();
-    return static_cast<native_menu_t>(menu_raw);
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::Menu>());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_create");
+    return 0;
   }
 }
 
-void native_menu_destroy(native_menu_t menu) {
-  if (!menu)
-    return;
-
-  // Remove event listeners first
-  auto listeners_it = g_menu_listeners.find(menu);
-  if (listeners_it != g_menu_listeners.end()) {
-    g_menu_listeners.erase(listeners_it);
+native_menu_t native_menu_create_with_native_menu(void* native_menu) {
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::Menu>(native_menu));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_create_with_native_menu");
+    return 0;
   }
-
-  // Delete Menu instance
-  auto menu_ptr = static_cast<Menu*>(menu);
-  delete menu_ptr;
 }
 
 native_menu_id_t native_menu_get_id(native_menu_t menu) {
-  if (!menu)
-    return -1;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    if (!menu_ptr)
-      return -1;
-    return menu_ptr->GetId();
+    return self->GetId();
   } catch (...) {
-    return -1;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_id");
+    return 0;
   }
 }
 
-void native_menu_add_item(native_menu_t menu, native_menu_item_t menu_item) {
-  if (!menu || !menu_item)
+void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    if (!menu_ptr)
-      return;
-    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
-    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
-    // would introduce a separate control block and cause double-deletion during shutdown.
-    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
-    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
-    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
-    menu_ptr->AddItem(menu_item_ptr);
-  } catch (...) {
-    // Ignore exceptions
   }
-}
-
-void native_menu_insert_item(native_menu_t menu, native_menu_item_t menu_item, size_t index) {
-  if (!menu || !menu_item)
+  try {
+    auto item_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(item);
+    self->AddItem(item_cpp);
     return;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    if (!menu_ptr)
-      return;
-    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
-    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
-    // would introduce a separate control block and cause double-deletion during shutdown.
-    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
-    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
-    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
-    menu_ptr->InsertItem(index, menu_item_ptr);
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_add_item");
+    return;
   }
 }
 
-bool native_menu_remove_item(native_menu_t menu, native_menu_item_t menu_item) {
-  if (!menu || !menu_item)
+void native_menu_insert_item(native_menu_t menu, unsigned long index, native_menu_item_t item) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return;
+  }
+  try {
+    auto item_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(item);
+    self->InsertItem(index, item_cpp);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_insert_item");
+    return;
+  }
+}
+
+bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    if (!menu_ptr)
-      return false;
-    // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
-    // MenuItem objects are owned by the C API caller. Creating an owning shared_ptr
-    // would introduce a separate control block and cause double-deletion during shutdown.
-    // Use a non-owning aliasing shared_ptr with an empty deleter instead.
-    auto menu_item_raw = static_cast<MenuItem*>(menu_item);
-    auto menu_item_ptr = std::shared_ptr<MenuItem>(menu_item_raw, [](MenuItem*) {});
-    return menu_ptr->RemoveItem(menu_item_ptr);
+    auto item_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MenuItem>(item);
+    return self->RemoveItem(item_cpp);
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_remove_item");
     return false;
   }
 }
 
 bool native_menu_remove_item_by_id(native_menu_t menu, native_menu_item_id_t item_id) {
-  if (!menu)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->RemoveItemById(static_cast<MenuItemId>(item_id));
+    return self->RemoveItemById(item_id);
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_remove_item_by_id");
     return false;
   }
 }
 
-bool native_menu_remove_item_at(native_menu_t menu, size_t index) {
-  if (!menu)
+bool native_menu_remove_item_at(native_menu_t menu, unsigned long index) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->RemoveItemAt(index);
+    return self->RemoveItemAt(index);
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_remove_item_at");
     return false;
   }
 }
 
 void native_menu_clear(native_menu_t menu) {
-  if (!menu)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    menu_ptr->Clear();
+    self->Clear();
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_clear");
+    return;
   }
 }
 
 void native_menu_add_separator(native_menu_t menu) {
-  if (!menu)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    menu_ptr->AddSeparator();
-  } catch (...) {
-    // Ignore exceptions
   }
-}
-
-void native_menu_insert_separator(native_menu_t menu, size_t index) {
-  if (!menu)
+  try {
+    self->AddSeparator();
     return;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    menu_ptr->InsertSeparator(index);
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_add_separator");
+    return;
   }
 }
 
-size_t native_menu_get_item_count(native_menu_t menu) {
-  if (!menu)
-    return 0;
-
+void native_menu_insert_separator(native_menu_t menu, unsigned long index) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return;
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->GetItemCount();
+    self->InsertSeparator(index);
+    return;
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_insert_separator");
+    return;
+  }
+}
+
+unsigned long native_menu_get_item_count(native_menu_t menu) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return self->GetItemCount();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_item_count");
     return 0;
   }
 }
 
-native_menu_item_t native_menu_get_item_at(native_menu_t menu, size_t index) {
-  if (!menu)
-    return nullptr;
-
+native_menu_item_t native_menu_get_item_at(native_menu_t menu, unsigned long index) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto menu_item = menu_ptr->GetItemAt(index);
-    return menu_item ? static_cast<native_menu_item_t>(menu_item.get()) : nullptr;
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetItemAt(index));
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_item_at");
+    return 0;
   }
 }
 
 native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_item_id_t item_id) {
-  if (!menu)
-    return nullptr;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto menu_item = menu_ptr->GetItemById(static_cast<MenuItemId>(item_id));
-    return menu_item ? static_cast<native_menu_item_t>(menu_item.get()) : nullptr;
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetItemById(item_id));
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_item_by_id");
+    return 0;
   }
 }
 
 native_menu_item_list_t native_menu_get_all_items(native_menu_t menu) {
-  native_menu_item_list_t result = {nullptr, 0};
-
-  if (!menu)
-    return result;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    native_menu_item_list_t empty = {};
+    return empty;
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto items = menu_ptr->GetAllItems();
-
+    const auto items = self->GetAllItems();
+    native_menu_item_list_t list = {};
     if (items.empty()) {
-      return result;
+      return list;
     }
-
-    result.items =
-        static_cast<native_menu_item_t*>(malloc(items.size() * sizeof(native_menu_item_t)));
-    if (!result.items) {
-      return result;
+    list.menu_items = new (std::nothrow) native_menu_item_t[items.size()];
+    if (!list.menu_items) {
+      return list;
     }
-
-    result.count = items.size();
     for (size_t i = 0; i < items.size(); ++i) {
-      result.items[i] = static_cast<native_menu_item_t>(items[i].get());
+      list.menu_items[i] = nativeapi::HandleTable::GetInstance().Insert(items[i]);
     }
-
-    return result;
+    list.count = static_cast<long>(items.size());
+    return list;
   } catch (...) {
-    if (result.items) {
-      free(result.items);
-      result.items = nullptr;
-      result.count = 0;
-    }
-    return result;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_all_items");
+    native_menu_item_list_t empty = {};
+    return empty;
   }
 }
 
-bool native_menu_open(native_menu_t menu,
-                      native_positioning_strategy_t strategy,
-                      native_placement_t placement) {
-  if (!menu || !strategy)
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    auto strategy_ptr = static_cast<PositioningStrategy*>(strategy);
-
-    // Convert C placement enum to C++ placement enum
-    Placement cpp_placement;
-    switch (placement) {
-      case NATIVE_PLACEMENT_TOP:
-        cpp_placement = Placement::Top;
-        break;
-      case NATIVE_PLACEMENT_TOP_START:
-        cpp_placement = Placement::TopStart;
-        break;
-      case NATIVE_PLACEMENT_TOP_END:
-        cpp_placement = Placement::TopEnd;
-        break;
-      case NATIVE_PLACEMENT_RIGHT:
-        cpp_placement = Placement::Right;
-        break;
-      case NATIVE_PLACEMENT_RIGHT_START:
-        cpp_placement = Placement::RightStart;
-        break;
-      case NATIVE_PLACEMENT_RIGHT_END:
-        cpp_placement = Placement::RightEnd;
-        break;
-      case NATIVE_PLACEMENT_BOTTOM:
-        cpp_placement = Placement::Bottom;
-        break;
-      case NATIVE_PLACEMENT_BOTTOM_START:
-        cpp_placement = Placement::BottomStart;
-        break;
-      case NATIVE_PLACEMENT_BOTTOM_END:
-        cpp_placement = Placement::BottomEnd;
-        break;
-      case NATIVE_PLACEMENT_LEFT:
-        cpp_placement = Placement::Left;
-        break;
-      case NATIVE_PLACEMENT_LEFT_START:
-        cpp_placement = Placement::LeftStart;
-        break;
-      case NATIVE_PLACEMENT_LEFT_END:
-        cpp_placement = Placement::LeftEnd;
-        break;
-      default:
-        cpp_placement = Placement::BottomStart;
-        break;
+    auto strategy_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::PositioningStrategy>(strategy);
+    if (!strategy_cpp) {
+      return false;
     }
-
-    return menu_ptr->Open(*strategy_ptr, cpp_placement);
+    return self->Open(*strategy_cpp, ToCppPlacement(placement));
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_open");
     return false;
   }
 }
 
 bool native_menu_close(native_menu_t menu) {
-  if (!menu)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    return menu_ptr->Close();
+    return self->Close();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_close");
     return false;
   }
 }
 
-// New menu event listener API implementation
-int native_menu_add_listener(native_menu_t menu,
-                             native_menu_event_type_t event_type,
-                             native_menu_event_callback_t callback,
-                             void* user_data) {
-  if (!menu || !callback)
-    return -1;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-
-    // Create listener data
-    auto listener_data = std::make_shared<MenuEventListenerData>();
-    listener_data->callback = callback;
-    listener_data->user_data = user_data;
-
-    // Add the appropriate event listener based on event type
-    size_t cpp_listener_id = 0;
-    if (event_type == NATIVE_MENU_EVENT_OPENED) {
-      cpp_listener_id =
-          menu_ptr->AddListener<MenuOpenedEvent>([listener_data](const MenuOpenedEvent& event) {
-            if (listener_data && listener_data->callback) {
-              native_menu_opened_event_t c_event = {};
-              c_event.menu_id = event.GetMenuId();
-
-              listener_data->callback(&c_event, listener_data->user_data);
-            }
-          });
-    } else if (event_type == NATIVE_MENU_EVENT_CLOSED) {
-      cpp_listener_id =
-          menu_ptr->AddListener<MenuClosedEvent>([listener_data](const MenuClosedEvent& event) {
-            if (listener_data && listener_data->callback) {
-              native_menu_closed_event_t c_event = {};
-              c_event.menu_id = event.GetMenuId();
-
-              listener_data->callback(&c_event, listener_data->user_data);
-            }
-          });
-    }
-
-    // Store the listener data using C++ listener ID as key
-    g_menu_listeners[menu][cpp_listener_id] = listener_data;
-
-    return static_cast<int>(cpp_listener_id);
-  } catch (...) {
-    return -1;
-  }
-}
-
-bool native_menu_remove_listener(native_menu_t menu, int listener_id) {
-  if (!menu)
-    return false;
-
-  try {
-    auto menu_ptr = static_cast<Menu*>(menu);
-    if (!menu_ptr)
-      return false;
-
-    // Convert C API listener_id (int) to C++ listener_id (size_t)
-    size_t cpp_listener_id = static_cast<size_t>(listener_id);
-
-    auto menu_it = g_menu_listeners.find(menu);
-    if (menu_it != g_menu_listeners.end()) {
-      auto listener_it = menu_it->second.find(cpp_listener_id);
-      if (listener_it != menu_it->second.end()) {
-        // Remove the C++ listener first
-        menu_ptr->RemoveListener(cpp_listener_id);
-
-        // Remove the listener data
-        menu_it->second.erase(listener_it);
-
-        // If no more listeners for this menu, remove the menu entry
-        if (menu_it->second.empty()) {
-          g_menu_listeners.erase(menu_it);
-        }
-
-        return true;
-      }
-    }
-    return false;
-  } catch (...) {
-    return false;
-  }
-}
-
-// Utility functions
-
-void native_menu_item_list_free(native_menu_item_list_t list) {
-  if (list.items) {
-    free(list.items);
-  }
-}
-
-char* native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator) {
-  if (!accelerator)
-    return nullptr;
-
-  try {
-    KeyboardAccelerator cpp_accelerator = convert_keyboard_accelerator(accelerator);
-    std::string str = cpp_accelerator.ToString();
-    return to_c_str(str);
-  } catch (...) {
+void* native_menu_get_native_object(native_menu_t menu) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
     return nullptr;
   }
+  return self->GetNativeObject();
 }
+
+void native_menu_free(native_menu_t menu) {
+  // The table invalidates the handle itself, so releasing an unknown or
+  // already-released one is a no-op rather than a double free.
+  nativeapi::HandleTable::GetInstance().Release(menu);
+}
+
+native_listener_id_t native_menu_add_listener(native_menu_t menu, native_menu_event_callback_t callback, void* user_data) {
+  if (!callback) {
+    return 0;
+  }
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return static_cast<native_listener_id_t>(self->AddListener<nativeapi::MenuEvent>(
+        [callback, user_data](const nativeapi::MenuEvent& event) {
+          native_menu_event_t c_event = {};
+          if (!ToCMenuEvent(event, &c_event)) {
+            return;
+          }
+          callback(&c_event, user_data);
+          FreeCMenuEvent(&c_event);
+        }));
+  } catch (...) {
+    return 0;
+  }
+}
+
+bool native_menu_remove_listener(native_menu_t menu, native_listener_id_t listener_id) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->RemoveListener(static_cast<size_t>(listener_id));
+  } catch (...) {
+    return false;
+  }
+}
+
+bool ToCMenuEvent(const nativeapi::MenuEvent& event, native_menu_event_t* out) {
+  if (!out) {
+    return false;
+  }
+  *out = native_menu_event_t{};
+  if (const auto* typed = dynamic_cast<const nativeapi::MenuOpenedEvent*>(&event)) {
+    out->type = NATIVE_MENU_EVENT_TYPE_OPENED;
+    out->data.opened.menu_id = typed->GetMenuId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::MenuClosedEvent*>(&event)) {
+    out->type = NATIVE_MENU_EVENT_TYPE_CLOSED;
+    out->data.closed.menu_id = typed->GetMenuId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::MenuItemClickedEvent*>(&event)) {
+    out->type = NATIVE_MENU_EVENT_TYPE_ITEM_CLICKED;
+    out->data.item_clicked.item_id = typed->GetItemId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::MenuItemSubmenuOpenedEvent*>(&event)) {
+    out->type = NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_OPENED;
+    out->data.item_submenu_opened.item_id = typed->GetItemId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::MenuItemSubmenuClosedEvent*>(&event)) {
+    out->type = NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_CLOSED;
+    out->data.item_submenu_closed.item_id = typed->GetItemId();
+    return true;
+  }
+  return false;
+}
+
+void FreeCMenuEvent(native_menu_event_t* value) {
+  if (!value) {
+    return;
+  }
+}
+

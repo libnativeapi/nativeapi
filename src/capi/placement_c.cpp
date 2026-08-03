@@ -3,6 +3,16 @@
 
 #include "placement_c.h"
 
+#include <cstdio>
+#include <memory>
+#include <new>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "string_utils_c.h"
+#include "../foundation/handle_table.h"
 #include "../placement.h"
 
 namespace {
@@ -35,6 +45,37 @@ native_placement_t ToCPlacement(nativeapi::Placement value) {
       return NATIVE_PLACEMENT_LEFT_END;
     default:
       return NATIVE_PLACEMENT_TOP;
+  }
+}
+
+nativeapi::Placement ToCppPlacement(native_placement_t value) {
+  switch (value) {
+    case NATIVE_PLACEMENT_TOP:
+      return nativeapi::Placement::Top;
+    case NATIVE_PLACEMENT_TOP_START:
+      return nativeapi::Placement::TopStart;
+    case NATIVE_PLACEMENT_TOP_END:
+      return nativeapi::Placement::TopEnd;
+    case NATIVE_PLACEMENT_RIGHT:
+      return nativeapi::Placement::Right;
+    case NATIVE_PLACEMENT_RIGHT_START:
+      return nativeapi::Placement::RightStart;
+    case NATIVE_PLACEMENT_RIGHT_END:
+      return nativeapi::Placement::RightEnd;
+    case NATIVE_PLACEMENT_BOTTOM:
+      return nativeapi::Placement::Bottom;
+    case NATIVE_PLACEMENT_BOTTOM_START:
+      return nativeapi::Placement::BottomStart;
+    case NATIVE_PLACEMENT_BOTTOM_END:
+      return nativeapi::Placement::BottomEnd;
+    case NATIVE_PLACEMENT_LEFT:
+      return nativeapi::Placement::Left;
+    case NATIVE_PLACEMENT_LEFT_START:
+      return nativeapi::Placement::LeftStart;
+    case NATIVE_PLACEMENT_LEFT_END:
+      return nativeapi::Placement::LeftEnd;
+    default:
+      return nativeapi::Placement::Top;
   }
 }
 

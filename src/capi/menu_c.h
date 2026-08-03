@@ -1,10 +1,16 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
-#include "geometry_c.h"
+
+#include "common_c.h"
+#include "image_c.h"
+#include "keyboard_c.h"
 #include "placement_c.h"
+#include "positioning_strategy_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -16,515 +22,266 @@
 extern "C" {
 #endif
 
-#include "geometry_c.h"
-#include "image_c.h"
-#include "placement_c.h"
-#include "positioning_strategy_c.h"
+typedef unsigned int native_menu_id_t;
 
-/**
- * Opaque handles for menu objects
- */
-typedef void* native_menu_t;
-typedef void* native_menu_item_t;
+typedef unsigned int native_menu_item_id_t;
 
-/**
- * Menu and menu item identifiers
- */
-typedef long native_menu_id_t;
-typedef long native_menu_item_id_t;
-
-/**
- * Menu item types
- */
 typedef enum {
   NATIVE_MENU_ITEM_TYPE_NORMAL = 0,
   NATIVE_MENU_ITEM_TYPE_CHECKBOX = 1,
   NATIVE_MENU_ITEM_TYPE_RADIO = 2,
   NATIVE_MENU_ITEM_TYPE_SEPARATOR = 3,
-  NATIVE_MENU_ITEM_TYPE_SUBMENU = 4
+  NATIVE_MENU_ITEM_TYPE_SUBMENU = 4,
 } native_menu_item_type_t;
 
-/**
- * Menu item states
- */
 typedef enum {
   NATIVE_MENU_ITEM_STATE_UNCHECKED = 0,
   NATIVE_MENU_ITEM_STATE_CHECKED = 1,
-  NATIVE_MENU_ITEM_STATE_MIXED = 2
+  NATIVE_MENU_ITEM_STATE_MIXED = 2,
 } native_menu_item_state_t;
 
-/**
- * Keyboard accelerator modifier flags
- */
-typedef enum {
-  NATIVE_ACCELERATOR_MODIFIER_NONE = 0,
-  NATIVE_ACCELERATOR_MODIFIER_CTRL = 1 << 0,
-  NATIVE_ACCELERATOR_MODIFIER_ALT = 1 << 1,
-  NATIVE_ACCELERATOR_MODIFIER_SHIFT = 1 << 2,
-  NATIVE_ACCELERATOR_MODIFIER_META = 1 << 3
-} native_accelerator_modifier_t;
+/// Opaque MenuItem handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_MENU_ITEM rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_menu_item_t;
 
-/**
- * Keyboard accelerator structure
- */
-typedef struct {
-  int modifiers;
-  char key[64];
-} native_keyboard_accelerator_t;
+/// Never refers to a live MenuItem.
+#define NATIVE_INVALID_MENU_ITEM ((native_menu_item_t)0)
 
-/**
- * Menu item clicked event
- */
+/// Owning list of MenuItem handles.
 typedef struct {
-  native_menu_item_id_t item_id;
-} native_menu_item_clicked_event_t;
-
-/**
- * Menu item submenu opened event
- */
-typedef struct {
-  native_menu_item_id_t item_id;
-} native_menu_item_submenu_opened_event_t;
-
-/**
- * Menu item submenu closed event
- */
-typedef struct {
-  native_menu_item_id_t item_id;
-} native_menu_item_submenu_closed_event_t;
-
-/**
- * Menu item list structure
- */
-typedef struct {
-  native_menu_item_t* items;
-  size_t count;
+  native_menu_item_t* menu_items;
+  long count;
 } native_menu_item_list_t;
 
-/**
- * Menu opened event
- */
-typedef struct {
-  native_menu_id_t menu_id;
-} native_menu_opened_event_t;
+/// Opaque Menu handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_MENU rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_menu_t;
 
-/**
- * Menu closed event
- */
-typedef struct {
-  native_menu_id_t menu_id;
-} native_menu_closed_event_t;
+/// Never refers to a live Menu.
+#define NATIVE_INVALID_MENU ((native_menu_t)0)
 
-/**
- * Event listener registration function types
- */
-typedef void (*native_menu_item_event_callback_t)(const void* event, void* user_data);
-typedef void (*native_menu_event_callback_t)(const void* event, void* user_data);
-
-/**
- * Event types for menu item events
- */
+/// Which concrete MenuEvent arrived.
 typedef enum {
-  NATIVE_MENU_ITEM_EVENT_CLICKED = 0,
-  NATIVE_MENU_ITEM_EVENT_SUBMENU_OPENED = 1,
-  NATIVE_MENU_ITEM_EVENT_SUBMENU_CLOSED = 2
-} native_menu_item_event_type_t;
-
-/**
- * Event types for menu events
- */
-typedef enum {
-  NATIVE_MENU_EVENT_OPENED = 0,
-  NATIVE_MENU_EVENT_CLOSED = 1
+  NATIVE_MENU_EVENT_TYPE_OPENED = 0,
+  NATIVE_MENU_EVENT_TYPE_CLOSED = 1,
+  NATIVE_MENU_EVENT_TYPE_ITEM_CLICKED = 2,
+  NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_OPENED = 3,
+  NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_CLOSED = 4,
 } native_menu_event_type_t;
 
-/**
- * MenuItem operations
- */
+/// One MenuEvent, tagged by its concrete type.
+///
+/// Valid only for the duration of the callback: anything it points at
+/// is released as soon as the callback returns. Copy what you need.
+typedef struct {
+  native_menu_event_type_t type;
+  union {
+    struct {
+      native_menu_id_t menu_id;
+    } opened;
+    struct {
+      native_menu_id_t menu_id;
+    } closed;
+    struct {
+      native_menu_item_id_t item_id;
+    } item_clicked;
+    struct {
+      native_menu_item_id_t item_id;
+    } item_submenu_opened;
+    struct {
+      native_menu_item_id_t item_id;
+    } item_submenu_closed;
+  } data;
+} native_menu_event_t;
 
-/**
- * Create a new menu item
- * @param label The display label for the menu item
- * @param type The type of menu item to create
- * @return Menu item handle, or NULL if creation failed
- */
+typedef void (*native_menu_event_callback_t)(const native_menu_event_t* event, void* user_data);
+
+/// Creates a MenuItem instance; release it with native_menu_item_free().
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_item_create(const char* label, native_menu_item_type_t type);
+native_menu_item_t native_menu_item_create_with_label_and_type(const char* label, native_menu_item_type_t type);
 
-/**
- * Create a separator menu item
- * @return Menu item handle, or NULL if creation failed
- */
+/// Creates a MenuItem instance; release it with native_menu_item_free().
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_item_create_separator(void);
+native_menu_item_t native_menu_item_create_with_native_item(void* native_item);
 
-/**
- * Destroy a menu item and release its resources
- * @param item The menu item to destroy
- */
 FFI_PLUGIN_EXPORT
-void native_menu_item_destroy(native_menu_item_t item);
+native_menu_item_id_t native_menu_item_get_id(native_menu_item_t menu_item);
 
-/**
- * Get the ID of a menu item
- * @param item The menu item
- * @return The menu item ID
- */
 FFI_PLUGIN_EXPORT
-native_menu_item_id_t native_menu_item_get_id(native_menu_item_t item);
+native_menu_item_type_t native_menu_item_get_type(native_menu_item_t menu_item);
 
-/**
- * Get the type of a menu item
- * @param item The menu item
- * @return The menu item type
- */
 FFI_PLUGIN_EXPORT
-native_menu_item_type_t native_menu_item_get_type(native_menu_item_t item);
+void native_menu_item_set_label(native_menu_item_t menu_item, const char* label);
 
-/**
- * Set the label of a menu item
- * @param item The menu item
- * @param label The label to set
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_label(native_menu_item_t item, const char* label);
+char* native_menu_item_get_label(native_menu_item_t menu_item);
 
-/**
- * Get the label of a menu item
- * @param item The menu item
- * @return The label string (caller must free), or NULL if item is invalid
- */
 FFI_PLUGIN_EXPORT
-char* native_menu_item_get_label(native_menu_item_t item);
+void native_menu_item_set_icon(native_menu_item_t menu_item, native_image_t image);
 
-/**
- * Set the icon of a menu item using an Image object
- * @param item The menu item
- * @param image The Image object to set as the icon, or NULL to clear the icon
- */
+/// Caller owns the returned handle; release it with native_image_free().
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_icon(native_menu_item_t item, native_image_t image);
+native_image_t native_menu_item_get_icon(native_menu_item_t menu_item);
 
-/**
- * Get the current icon image of the menu item
- * @param item The menu item
- * @return The Image object, or NULL if no icon is set. Caller must call
- *         native_image_destroy() when done.
- */
 FFI_PLUGIN_EXPORT
-native_image_t native_menu_item_get_icon(native_menu_item_t item);
+void native_menu_item_set_tooltip(native_menu_item_t menu_item, const char* tooltip);
 
-/**
- * Set the tooltip of a menu item
- * @param item The menu item
- * @param tooltip The tooltip text to set
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_tooltip(native_menu_item_t item, const char* tooltip);
+char* native_menu_item_get_tooltip(native_menu_item_t menu_item);
 
-/**
- * Get the tooltip of a menu item
- * @param item The menu item
- * @return The tooltip string (caller must free), or NULL if item is invalid or no tooltip set
- */
 FFI_PLUGIN_EXPORT
-char* native_menu_item_get_tooltip(native_menu_item_t item);
+void native_menu_item_set_accelerator(native_menu_item_t menu_item, const native_keyboard_accelerator_t* accelerator);
 
-/**
- * Set the keyboard accelerator for a menu item
- * @param item The menu item
- * @param accelerator The keyboard accelerator to set, or NULL to remove the accelerator
- */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_accelerator(native_menu_item_t item,
-                                      const native_keyboard_accelerator_t* accelerator);
+native_keyboard_accelerator_t native_menu_item_get_accelerator(native_menu_item_t menu_item);
 
-/**
- * Get the keyboard accelerator of a menu item
- * @param item The menu item
- * @param accelerator Pointer to store the accelerator (caller allocated)
- * @return true if accelerator exists, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_menu_item_get_accelerator(native_menu_item_t item,
-                                      native_keyboard_accelerator_t* accelerator);
+void native_menu_item_set_enabled(native_menu_item_t menu_item, bool enabled);
 
-/**
- * Set the enabled state of a menu item
- * @param item The menu item
- * @param enabled true to enable, false to disable
- */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_enabled(native_menu_item_t item, bool enabled);
+bool native_menu_item_is_enabled(native_menu_item_t menu_item);
 
-/**
- * Check if a menu item is enabled
- * @param item The menu item
- * @return true if enabled, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_menu_item_is_enabled(native_menu_item_t item);
+void native_menu_item_set_state(native_menu_item_t menu_item, native_menu_item_state_t state);
 
-/**
- * Set the state of a checkbox/radio menu item
- * @param item The menu item
- * @param state The state to set (unchecked, checked, or mixed)
- */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_state(native_menu_item_t item, native_menu_item_state_t state);
+native_menu_item_state_t native_menu_item_get_state(native_menu_item_t menu_item);
 
-/**
- * Get the state of a menu item
- * @param item The menu item
- * @return The current state of the menu item
- */
 FFI_PLUGIN_EXPORT
-native_menu_item_state_t native_menu_item_get_state(native_menu_item_t item);
+void native_menu_item_set_radio_group(native_menu_item_t menu_item, int group_id);
 
-/**
- * Set the radio group ID for a radio menu item
- * @param item The menu item
- * @param group_id The radio group identifier
- */
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_radio_group(native_menu_item_t item, int group_id);
+int native_menu_item_get_radio_group(native_menu_item_t menu_item);
 
-/**
- * Get the radio group ID of a menu item
- * @param item The menu item
- * @return The radio group ID, or -1 if not set
- */
 FFI_PLUGIN_EXPORT
-int native_menu_item_get_radio_group(native_menu_item_t item);
+void native_menu_item_set_submenu(native_menu_item_t menu_item, native_menu_t submenu);
 
-/**
- * Set the submenu for a menu item
- * @param item The menu item
- * @param submenu The submenu to attach, or NULL to remove the submenu
- */
+/// Caller owns the returned handle; release it with native_menu_free().
 FFI_PLUGIN_EXPORT
-void native_menu_item_set_submenu(native_menu_item_t item, native_menu_t submenu);
+native_menu_t native_menu_item_get_submenu(native_menu_item_t menu_item);
 
-/**
- * Get the submenu of a menu item
- * @param item The menu item
- * @return The submenu handle, or NULL if no submenu
- */
+/// Platform-specific native object (NSScreen*, HMONITOR, ...).
 FFI_PLUGIN_EXPORT
-native_menu_t native_menu_item_get_submenu(native_menu_item_t item);
+void* native_menu_item_get_native_object(native_menu_item_t menu_item);
 
-/**
- * Add event listener for a menu item
- * @param item The menu item
- * @param event_type The type of event to listen for
- * @param callback The callback function
- * @param user_data User data passed to callback
- * @return A listener ID that can be used to remove the listener, or -1 on error
- */
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
 FFI_PLUGIN_EXPORT
-int native_menu_item_add_listener(native_menu_item_t item,
-                                  native_menu_item_event_type_t event_type,
-                                  native_menu_item_event_callback_t callback,
-                                  void* user_data);
+void native_menu_item_free(native_menu_item_t menu_item);
 
-/**
- * Remove event listener from a menu item
- * @param item The menu item
- * @param listener_id The listener ID returned by native_menu_item_add_listener
- * @return true if removed successfully, false otherwise
- */
+/// Frees the array and releases every handle it contains.
 FFI_PLUGIN_EXPORT
-bool native_menu_item_remove_listener(native_menu_item_t item, int listener_id);
+void native_menu_item_list_free(native_menu_item_list_t* list);
 
-/**
- * Menu operations
- */
+/// Frees only the array; the caller takes over the handles.
+FFI_PLUGIN_EXPORT
+void native_menu_item_list_release(native_menu_item_list_t* list);
 
-/**
- * Create a new menu
- * @return Menu handle, or NULL if creation failed
- */
+/// Registers @p callback for every MenuEvent this MenuItem emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+FFI_PLUGIN_EXPORT
+native_listener_id_t native_menu_item_add_listener(native_menu_item_t menu_item, native_menu_event_callback_t callback, void* user_data);
+
+/// Unregisters a listener. Returns false if unknown.
+FFI_PLUGIN_EXPORT
+bool native_menu_item_remove_listener(native_menu_item_t menu_item, native_listener_id_t listener_id);
+
+/// Creates a Menu instance; release it with native_menu_free().
 FFI_PLUGIN_EXPORT
 native_menu_t native_menu_create(void);
 
-/**
- * Destroy a menu and release its resources
- * @param menu The menu to destroy
- */
+/// Creates a Menu instance; release it with native_menu_free().
 FFI_PLUGIN_EXPORT
-void native_menu_destroy(native_menu_t menu);
+native_menu_t native_menu_create_with_native_menu(void* native_menu);
 
-/**
- * Get the ID of a menu
- * @param menu The menu
- * @return The menu ID
- */
 FFI_PLUGIN_EXPORT
 native_menu_id_t native_menu_get_id(native_menu_t menu);
 
-/**
- * Add a menu item to the end of the menu
- * @param menu The menu
- * @param item The menu item to add
- */
 FFI_PLUGIN_EXPORT
 void native_menu_add_item(native_menu_t menu, native_menu_item_t item);
 
-/**
- * Insert a menu item at a specific position
- * @param menu The menu
- * @param item The menu item to insert
- * @param index The position to insert at (0-based)
- */
 FFI_PLUGIN_EXPORT
-void native_menu_insert_item(native_menu_t menu, native_menu_item_t item, size_t index);
+void native_menu_insert_item(native_menu_t menu, unsigned long index, native_menu_item_t item);
 
-/**
- * Remove a menu item from the menu
- * @param menu The menu
- * @param item The menu item to remove
- * @return true if item was found and removed, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_menu_remove_item(native_menu_t menu, native_menu_item_t item);
 
-/**
- * Remove a menu item by its ID
- * @param menu The menu
- * @param item_id The ID of the item to remove
- * @return true if item was found and removed, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_menu_remove_item_by_id(native_menu_t menu, native_menu_item_id_t item_id);
 
-/**
- * Remove a menu item at a specific position
- * @param menu The menu
- * @param index The position of the item to remove (0-based)
- * @return true if item was removed, false if index out of bounds
- */
 FFI_PLUGIN_EXPORT
-bool native_menu_remove_item_at(native_menu_t menu, size_t index);
+bool native_menu_remove_item_at(native_menu_t menu, unsigned long index);
 
-/**
- * Remove all items from the menu
- * @param menu The menu
- */
 FFI_PLUGIN_EXPORT
 void native_menu_clear(native_menu_t menu);
 
-/**
- * Add a separator to the end of the menu
- * @param menu The menu
- */
 FFI_PLUGIN_EXPORT
 void native_menu_add_separator(native_menu_t menu);
 
-/**
- * Insert a separator at a specific position
- * @param menu The menu
- * @param index The position to insert the separator at (0-based)
- */
 FFI_PLUGIN_EXPORT
-void native_menu_insert_separator(native_menu_t menu, size_t index);
+void native_menu_insert_separator(native_menu_t menu, unsigned long index);
 
-/**
- * Get the number of items in the menu
- * @param menu The menu
- * @return The number of items
- */
 FFI_PLUGIN_EXPORT
-size_t native_menu_get_item_count(native_menu_t menu);
+unsigned long native_menu_get_item_count(native_menu_t menu);
 
-/**
- * Get a menu item at a specific position
- * @param menu The menu
- * @param index The position of the item (0-based)
- * @return The menu item handle, or NULL if index out of bounds
- */
+/// Caller owns the returned handle; release it with native_menu_item_free().
 FFI_PLUGIN_EXPORT
-native_menu_item_t native_menu_get_item_at(native_menu_t menu, size_t index);
+native_menu_item_t native_menu_get_item_at(native_menu_t menu, unsigned long index);
 
-/**
- * Get a menu item by its ID
- * @param menu The menu
- * @param item_id The ID of the item to find
- * @return The menu item handle, or NULL if not found
- */
+/// Caller owns the returned handle; release it with native_menu_item_free().
 FFI_PLUGIN_EXPORT
 native_menu_item_t native_menu_get_item_by_id(native_menu_t menu, native_menu_item_id_t item_id);
 
-/**
- * Get all menu items
- * @param menu The menu
- * @return List of menu items (caller must free with native_menu_item_list_free)
- */
 FFI_PLUGIN_EXPORT
 native_menu_item_list_t native_menu_get_all_items(native_menu_t menu);
 
-/**
- * Open the menu as a context menu using the specified positioning strategy
- * @param menu The menu
- * @param strategy The positioning strategy determining where to display the menu
- * @param placement The placement option determining how the menu is positioned
- *                  relative to the reference point (default: NATIVE_PLACEMENT_BOTTOM_START)
- * @return true if menu was opened successfully, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_menu_open(native_menu_t menu,
-                      native_positioning_strategy_t strategy,
-                      native_placement_t placement);
+bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy, native_placement_t placement);
 
-/**
- * Close the menu if it's currently showing
- * @param menu The menu
- * @return true if menu was closed, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_menu_close(native_menu_t menu);
 
-/**
- * Add event listener for a menu
- * @param menu The menu
- * @param event_type The type of event to listen for
- * @param callback The callback function
- * @param user_data User data passed to callback
- * @return A listener ID that can be used to remove the listener, or -1 on error
- */
+/// Platform-specific native object (NSScreen*, HMONITOR, ...).
 FFI_PLUGIN_EXPORT
-int native_menu_add_listener(native_menu_t menu,
-                             native_menu_event_type_t event_type,
-                             native_menu_event_callback_t callback,
-                             void* user_data);
+void* native_menu_get_native_object(native_menu_t menu);
 
-/**
- * Remove event listener from a menu
- * @param menu The menu
- * @param listener_id The listener ID returned by native_menu_add_listener
- * @return true if removed successfully, false otherwise
- */
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
 FFI_PLUGIN_EXPORT
-bool native_menu_remove_listener(native_menu_t menu, int listener_id);
+void native_menu_free(native_menu_t menu);
 
-/**
- * Utility functions
- */
-
-/**
- * Free a menu item list
- * @param list The list to free
- */
+/// Registers @p callback for every MenuEvent this Menu emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
 FFI_PLUGIN_EXPORT
-void native_menu_item_list_free(native_menu_item_list_t list);
+native_listener_id_t native_menu_add_listener(native_menu_t menu, native_menu_event_callback_t callback, void* user_data);
 
-/**
- * Convert keyboard accelerator to string representation
- * @param accelerator The accelerator
- * @return The string representation (caller must free), or NULL if accelerator is invalid
- */
+/// Unregisters a listener. Returns false if unknown.
 FFI_PLUGIN_EXPORT
-char* native_keyboard_accelerator_to_string(const native_keyboard_accelerator_t* accelerator);
+bool native_menu_remove_listener(native_menu_t menu, native_listener_id_t listener_id);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+namespace nativeapi {
+class MenuEvent;
+}  // namespace nativeapi
+
+/// Fills @p out from @p event. Returns false when the event is not one
+/// of the concrete types the C ABI knows about.
+bool ToCMenuEvent(const nativeapi::MenuEvent& event, native_menu_event_t* out);
+/// Releases everything ToCMenuEvent() allocated.
+void FreeCMenuEvent(native_menu_event_t* value);
+
 #endif

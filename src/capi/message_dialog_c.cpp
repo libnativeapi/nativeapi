@@ -1,182 +1,172 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "message_dialog_c.h"
-#include <cstring>
-#include "../dialog.h"
-#include "../message_dialog.h"
+
+#include <cstdio>
+#include <memory>
+#include <new>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../dialog.h"
+#include "dialog_c.h"
+#include "../message_dialog.h"
 
-using namespace nativeapi;
+namespace {
 
-// Helper function to convert C dialog modality to C++ DialogModality
-static DialogModality convert_dialog_modality(native_dialog_modality_t modality) {
-  switch (modality) {
-    case NATIVE_DIALOG_MODALITY_NONE:
-      return DialogModality::None;
-    case NATIVE_DIALOG_MODALITY_APPLICATION:
-      return DialogModality::Application;
-    case NATIVE_DIALOG_MODALITY_WINDOW:
-      return DialogModality::Window;
-    default:
-      return DialogModality::None;
-  }
-}
-
-// Helper function to convert C++ DialogModality to C dialog modality
-static native_dialog_modality_t convert_dialog_modality(DialogModality modality) {
-  switch (modality) {
-    case DialogModality::None:
+native_dialog_modality_t ToCDialogModality(nativeapi::DialogModality value) {
+  switch (value) {
+    case nativeapi::DialogModality::None:
       return NATIVE_DIALOG_MODALITY_NONE;
-    case DialogModality::Application:
+    case nativeapi::DialogModality::Application:
       return NATIVE_DIALOG_MODALITY_APPLICATION;
-    case DialogModality::Window:
+    case nativeapi::DialogModality::Window:
       return NATIVE_DIALOG_MODALITY_WINDOW;
     default:
       return NATIVE_DIALOG_MODALITY_NONE;
   }
 }
 
-// MessageDialog C API Implementation
+nativeapi::DialogModality ToCppDialogModality(native_dialog_modality_t value) {
+  switch (value) {
+    case NATIVE_DIALOG_MODALITY_NONE:
+      return nativeapi::DialogModality::None;
+    case NATIVE_DIALOG_MODALITY_APPLICATION:
+      return nativeapi::DialogModality::Application;
+    case NATIVE_DIALOG_MODALITY_WINDOW:
+      return nativeapi::DialogModality::Window;
+    default:
+      return nativeapi::DialogModality::None;
+  }
+}
+
+}  // namespace
 
 native_message_dialog_t native_message_dialog_create(const char* title, const char* message) {
-  if (!title || !message)
-    return nullptr;
-
   try {
-    auto dialog = new MessageDialog(std::string(title), std::string(message));
-    return static_cast<native_message_dialog_t>(dialog);
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::MessageDialog>(std::string(title ? title : ""), std::string(message ? message : "")));
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_create");
+    return 0;
   }
 }
 
-void native_message_dialog_destroy(native_message_dialog_t dialog) {
-  if (!dialog)
+void native_message_dialog_set_title(native_message_dialog_t message_dialog, const char* title) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
     return;
-
-  // Delete MessageDialog instance
-  auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-  delete dialog_ptr;
-}
-
-void native_message_dialog_set_title(native_message_dialog_t dialog, const char* title) {
-  if (!dialog)
+  }
+  try {
+    self->SetTitle(std::string(title ? title : ""));
     return;
-
-  try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return;
-    if (title) {
-      dialog_ptr->SetTitle(std::string(title));
-    }
   } catch (...) {
-    // Ignore exceptions
-  }
-}
-
-char* native_message_dialog_get_title(native_message_dialog_t dialog) {
-  if (!dialog)
-    return nullptr;
-
-  try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return nullptr;
-
-    std::string title = dialog_ptr->GetTitle();
-    return to_c_str(title);
-  } catch (...) {
-    return nullptr;
-  }
-}
-
-void native_message_dialog_set_message(native_message_dialog_t dialog, const char* message) {
-  if (!dialog)
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_title");
     return;
-
-  try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return;
-    if (message) {
-      dialog_ptr->SetMessage(std::string(message));
-    }
-  } catch (...) {
-    // Ignore exceptions
   }
 }
 
-char* native_message_dialog_get_message(native_message_dialog_t dialog) {
-  if (!dialog)
+char* native_message_dialog_get_title(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
     return nullptr;
-
+  }
   try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return nullptr;
-
-    std::string message = dialog_ptr->GetMessage();
-    return to_c_str(message);
+    return to_c_str(self->GetTitle());
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_title");
     return nullptr;
   }
 }
 
-void native_message_dialog_set_modality(native_message_dialog_t dialog,
-                                        native_dialog_modality_t modality) {
-  if (!dialog)
+void native_message_dialog_set_message(native_message_dialog_t message_dialog, const char* message) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
     return;
-
+  }
   try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return;
-    dialog_ptr->SetModality(convert_dialog_modality(modality));
+    self->SetMessage(std::string(message ? message : ""));
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_message");
+    return;
   }
 }
 
-native_dialog_modality_t native_message_dialog_get_modality(native_message_dialog_t dialog) {
-  if (!dialog)
-    return NATIVE_DIALOG_MODALITY_NONE;
-
+char* native_message_dialog_get_message(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return nullptr;
+  }
   try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return NATIVE_DIALOG_MODALITY_NONE;
-
-    return convert_dialog_modality(dialog_ptr->GetModality());
+    return to_c_str(self->GetMessage());
   } catch (...) {
-    return NATIVE_DIALOG_MODALITY_NONE;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_message");
+    return nullptr;
   }
 }
 
-bool native_message_dialog_open(native_message_dialog_t dialog) {
-  if (!dialog)
+native_dialog_modality_t native_message_dialog_get_modality(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return (native_dialog_modality_t)0;
+  }
+  try {
+    return ToCDialogModality(self->GetModality());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_modality");
+    return (native_dialog_modality_t)0;
+  }
+}
+
+void native_message_dialog_set_modality(native_message_dialog_t message_dialog, native_dialog_modality_t modality) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetModality(ToCppDialogModality(modality));
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_modality");
+    return;
+  }
+}
+
+bool native_message_dialog_open(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return false;
-
-    return dialog_ptr->Open();
+    return self->Open();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_open");
     return false;
   }
 }
 
-bool native_message_dialog_close(native_message_dialog_t dialog) {
-  if (!dialog)
+bool native_message_dialog_close(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto dialog_ptr = static_cast<MessageDialog*>(dialog);
-    if (!dialog_ptr)
-      return false;
-
-    return dialog_ptr->Close();
+    return self->Close();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_close");
     return false;
   }
 }
+
+void native_message_dialog_free(native_message_dialog_t message_dialog) {
+  // The table invalidates the handle itself, so releasing an unknown or
+  // already-released one is a no-op rather than a double free.
+  nativeapi::HandleTable::GetInstance().Release(message_dialog);
+}
+

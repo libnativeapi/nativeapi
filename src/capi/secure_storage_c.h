@@ -1,122 +1,79 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "common_c.h"
+#include "string_utils_c.h"
+
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h>
-#include <stddef.h>
+/// Opaque SecureStorage handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_SECURE_STORAGE rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_secure_storage_t;
 
-// Opaque handle type
-typedef void* native_secure_storage_t;
+/// Never refers to a live SecureStorage.
+#define NATIVE_INVALID_SECURE_STORAGE ((native_secure_storage_t)0)
 
-// SecureStorage API
-
-/**
- * @brief Create a secure storage with default scope.
- * @return Handle to secure storage, or NULL on failure
- */
+/// Creates a SecureStorage instance; release it with native_secure_storage_free().
+FFI_PLUGIN_EXPORT
 native_secure_storage_t native_secure_storage_create(void);
 
-/**
- * @brief Create a secure storage with custom scope.
- * @param scope Scope/application identifier
- * @return Handle to secure storage, or NULL on failure
- */
+/// Creates a SecureStorage instance; release it with native_secure_storage_free().
+FFI_PLUGIN_EXPORT
 native_secure_storage_t native_secure_storage_create_with_scope(const char* scope);
 
-/**
- * @brief Destroy a secure storage instance.
- * @param storage Handle to secure storage
- */
-void native_secure_storage_destroy(native_secure_storage_t storage);
+FFI_PLUGIN_EXPORT
+bool native_secure_storage_set(native_secure_storage_t secure_storage, const char* key, const char* value);
 
-/**
- * @brief Set a key-value pair in secure storage.
- * @param storage Handle to secure storage
- * @param key The key to set
- * @param value The value to store
- * @return true if successful, false otherwise
- */
-bool native_secure_storage_set(native_secure_storage_t storage, const char* key, const char* value);
+/// Caller owns the returned string; free it with free_c_str().
+FFI_PLUGIN_EXPORT
+char* native_secure_storage_get(native_secure_storage_t secure_storage, const char* key, const char* default_value);
 
-/**
- * @brief Get the value for a given key from secure storage.
- * @param storage Handle to secure storage
- * @param key The key to retrieve
- * @param default_value Default value if key doesn't exist
- * @return The stored value or default_value. Caller must free the returned string.
- */
-char* native_secure_storage_get(native_secure_storage_t storage,
-                                const char* key,
-                                const char* default_value);
+FFI_PLUGIN_EXPORT
+bool native_secure_storage_remove(native_secure_storage_t secure_storage, const char* key);
 
-/**
- * @brief Remove a key-value pair from secure storage.
- * @param storage Handle to secure storage
- * @param key The key to remove
- * @return true if successful, false if key doesn't exist
- */
-bool native_secure_storage_remove(native_secure_storage_t storage, const char* key);
+FFI_PLUGIN_EXPORT
+bool native_secure_storage_clear(native_secure_storage_t secure_storage);
 
-/**
- * @brief Clear all key-value pairs from secure storage.
- * @param storage Handle to secure storage
- * @return true if successful, false otherwise
- */
-bool native_secure_storage_clear(native_secure_storage_t storage);
+FFI_PLUGIN_EXPORT
+bool native_secure_storage_contains(native_secure_storage_t secure_storage, const char* key);
 
-/**
- * @brief Check if a key exists in secure storage.
- * @param storage Handle to secure storage
- * @param key The key to check
- * @return true if key exists, false otherwise
- */
-bool native_secure_storage_contains(native_secure_storage_t storage, const char* key);
+FFI_PLUGIN_EXPORT
+native_string_list_t native_secure_storage_get_keys(native_secure_storage_t secure_storage);
 
-/**
- * @brief Get all keys from secure storage.
- * @param storage Handle to secure storage
- * @param out_keys Pointer to array of keys (allocated by function)
- * @param out_count Pointer to receive number of keys
- * @return true if successful, false otherwise. Caller must free each key and the array.
- */
-bool native_secure_storage_get_keys(native_secure_storage_t storage,
-                                    char*** out_keys,
-                                    size_t* out_count);
+FFI_PLUGIN_EXPORT
+unsigned long native_secure_storage_get_size(native_secure_storage_t secure_storage);
 
-/**
- * @brief Get the number of stored items in secure storage.
- * @param storage Handle to secure storage
- * @return Number of key-value pairs
- */
-size_t native_secure_storage_get_size(native_secure_storage_t storage);
+FFI_PLUGIN_EXPORT
+native_string_map_t native_secure_storage_get_all(native_secure_storage_t secure_storage);
 
-/**
- * @brief Get the scope.
- * @param storage Handle to secure storage
- * @return The scope. Caller must free the returned string.
- */
-char* native_secure_storage_get_scope(native_secure_storage_t storage);
+/// Caller owns the returned string; free it with free_c_str().
+FFI_PLUGIN_EXPORT
+char* native_secure_storage_get_scope(native_secure_storage_t secure_storage);
 
-/**
- * @brief Check if secure storage is available on this platform.
- * @return true if platform supports secure storage, false otherwise
- */
+FFI_PLUGIN_EXPORT
 bool native_secure_storage_is_available(void);
 
-/**
- * @brief Free a string returned by secure storage functions.
- * @param str String to free
- */
-void native_secure_storage_free_string(char* str);
-
-/**
- * @brief Free a string array returned by secure storage functions.
- * @param strings Array of strings to free
- * @param count Number of strings in the array
- */
-void native_secure_storage_free_string_array(char** strings, size_t count);
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+FFI_PLUGIN_EXPORT
+void native_secure_storage_free(native_secure_storage_t secure_storage);
 
 #ifdef __cplusplus
 }

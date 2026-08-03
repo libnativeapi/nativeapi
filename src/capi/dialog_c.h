@@ -18,22 +18,11 @@
 extern "C" {
 #endif
 
-typedef struct {
-  double x;
-  double y;
-} native_point_t;
-
-typedef struct {
-  double width;
-  double height;
-} native_size_t;
-
-typedef struct {
-  double x;
-  double y;
-  double width;
-  double height;
-} native_rectangle_t;
+typedef enum {
+  NATIVE_DIALOG_MODALITY_NONE = 0,
+  NATIVE_DIALOG_MODALITY_APPLICATION = 1,
+  NATIVE_DIALOG_MODALITY_WINDOW = 2,
+} native_dialog_modality_t;
 
 #ifdef __cplusplus
 }

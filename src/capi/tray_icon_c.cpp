@@ -1,472 +1,422 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "tray_icon_c.h"
-#include <cstring>
-#include <map>
+
+#include <cstdio>
 #include <memory>
+#include <new>
 #include <optional>
-#include "../image.h"
-#include "../tray_icon.h"
-#include "../tray_icon.h"
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../foundation/geometry.h"
+#include "geometry_c.h"
+#include "../image.h"
+#include "image_c.h"
+#include "../menu.h"
+#include "menu_c.h"
+#include "../tray_icon.h"
 
-using namespace nativeapi;
+namespace {
 
-// Internal structure to manage C event listeners
-struct TrayIconListenerData {
-  native_tray_icon_event_type_t event_type;
-  native_tray_icon_event_callback_t callback;
-  void* user_data;
-  size_t listener_id;
-};
+native_context_menu_trigger_t ToCContextMenuTrigger(nativeapi::ContextMenuTrigger value) {
+  switch (value) {
+    case nativeapi::ContextMenuTrigger::None:
+      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+    case nativeapi::ContextMenuTrigger::Clicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_CLICKED;
+    case nativeapi::ContextMenuTrigger::RightClicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED;
+    case nativeapi::ContextMenuTrigger::DoubleClicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED;
+    default:
+      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+  }
+}
 
-// Global maps to store listener data
-static std::map<native_tray_icon_t, std::vector<std::shared_ptr<TrayIconListenerData>>>
-    g_tray_icon_listeners;
-static std::atomic<int> g_tray_icon_next_listener_id{1};
+nativeapi::ContextMenuTrigger ToCppContextMenuTrigger(native_context_menu_trigger_t value) {
+  switch (value) {
+    case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
+      return nativeapi::ContextMenuTrigger::None;
+    case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
+      return nativeapi::ContextMenuTrigger::Clicked;
+    case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
+      return nativeapi::ContextMenuTrigger::RightClicked;
+    case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
+      return nativeapi::ContextMenuTrigger::DoubleClicked;
+    default:
+      return nativeapi::ContextMenuTrigger::None;
+  }
+}
 
-// TrayIcon C API Implementation
+native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
+  native_rectangle_t result = {};
+  result.x = value.x;
+  result.y = value.y;
+  result.width = value.width;
+  result.height = value.height;
+  return result;
+}
+
+nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
+  nativeapi::Rectangle result = {};
+  result.x = value.x;
+  result.y = value.y;
+  result.width = value.width;
+  result.height = value.height;
+  return result;
+}
+
+}  // namespace
 
 native_tray_icon_t native_tray_icon_create(void) {
   try {
-    auto tray_icon_raw = new TrayIcon();
-    return static_cast<native_tray_icon_t>(tray_icon_raw);
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::TrayIcon>());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_create");
+    return 0;
   }
 }
 
-native_tray_icon_t native_tray_icon_create_from_native(void* native_tray) {
-  if (!native_tray)
-    return nullptr;
-
+native_tray_icon_t native_tray_icon_create_with_tray(void* tray) {
   try {
-    auto tray_icon_raw = new TrayIcon(native_tray);
-    return static_cast<native_tray_icon_t>(tray_icon_raw);
+    return nativeapi::HandleTable::GetInstance().Insert(
+        std::make_shared<nativeapi::TrayIcon>(tray));
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_create_with_tray");
+    return 0;
   }
-}
-
-void native_tray_icon_destroy(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return;
-
-  // Remove event listeners first
-  auto listeners_it = g_tray_icon_listeners.find(tray_icon);
-  if (listeners_it != g_tray_icon_listeners.end()) {
-    g_tray_icon_listeners.erase(listeners_it);
-  }
-
-  // Delete TrayIcon instance
-  auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-  delete tray_icon_ptr;
 }
 
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return -1;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return -1;
-    return tray_icon_ptr->GetId();
+    return self->GetId();
   } catch (...) {
-    return -1;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_id");
+    return 0;
   }
 }
 
 void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return;
-    if (image) {
-      // Extract the shared_ptr from the native_image_t handle
-      auto image_ptr = static_cast<std::shared_ptr<Image>*>(image);
-      tray_icon_ptr->SetIcon(*image_ptr);
-    } else {
-      tray_icon_ptr->SetIcon(nullptr);
-    }
+    auto image_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Image>(image);
+    self->SetIcon(image_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_icon");
+    return;
   }
 }
 
 native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return nullptr;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return nullptr;
-    auto image = tray_icon_ptr->GetIcon();
-
-    if (!image) {
-      return nullptr;
-    }
-
-    // Create a new shared_ptr wrapper for the C API
-    return new std::shared_ptr<Image>(image);
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetIcon());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_icon");
+    return 0;
   }
 }
 
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return;
+    std::optional<std::string> title_cpp;
     if (title) {
-      tray_icon_ptr->SetTitle(std::string(title));
-    } else {
-      tray_icon_ptr->SetTitle(std::nullopt);
+      title_cpp = std::string(title);
     }
+    self->SetTitle(title_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_title");
+    return;
   }
 }
 
 char* native_tray_icon_get_title(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return nullptr;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return nullptr;
-    auto title = tray_icon_ptr->GetTitle();
-    if (title.has_value()) {
-      return to_c_str(title.value());
-    } else {
-      return nullptr;
-    }
+    const auto cpp_result = self->GetTitle();
+    return cpp_result ? to_c_str(*cpp_result) : nullptr;
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_title");
     return nullptr;
   }
 }
 
 void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return;
+    std::optional<std::string> tooltip_cpp;
     if (tooltip) {
-      tray_icon_ptr->SetTooltip(std::string(tooltip));
-    } else {
-      tray_icon_ptr->SetTooltip(std::nullopt);
+      tooltip_cpp = std::string(tooltip);
     }
+    self->SetTooltip(tooltip_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_tooltip");
+    return;
   }
 }
 
 char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return nullptr;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return nullptr;
-    auto tooltip = tray_icon_ptr->GetTooltip();
-    if (tooltip.has_value()) {
-      return to_c_str(tooltip.value());
-    } else {
-      return nullptr;
-    }
+    const auto cpp_result = self->GetTooltip();
+    return cpp_result ? to_c_str(*cpp_result) : nullptr;
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_tooltip");
     return nullptr;
   }
 }
 
 void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return;
-    if (menu) {
-      // IMPORTANT: Do NOT create an owning shared_ptr from a raw pointer here.
-      // Menu objects are owned by the global registry in menu_c.cpp and by
-      // Swift-side references. Creating an owning shared_ptr would introduce a
-      // separate control block and cause double-deletion during shutdown. Use a
-      // non-owning aliasing shared_ptr with an empty deleter instead.
-      auto menu_raw = static_cast<Menu*>(menu);
-      auto menu_ptr = std::shared_ptr<Menu>(menu_raw, [](Menu*) {});
-      tray_icon_ptr->SetContextMenu(menu_ptr);
-    } else {
-      tray_icon_ptr->SetContextMenu(nullptr);
-    }
+    auto menu_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+    self->SetContextMenu(menu_cpp);
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_context_menu");
+    return;
   }
 }
 
 native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return nullptr;
-
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return 0;
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return nullptr;
-    auto menu = tray_icon_ptr->GetContextMenu();
-    return menu ? static_cast<native_menu_t>(menu.get()) : nullptr;
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetContextMenu());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_context_menu");
+    return 0;
   }
 }
 
-void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
-                                               native_context_menu_trigger_t trigger) {
-  if (!tray_icon)
+void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon, native_context_menu_trigger_t trigger) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return;
-
-    // Convert C enum to C++ enum
-    ContextMenuTrigger cpp_trigger;
-    switch (trigger) {
-      case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
-        cpp_trigger = ContextMenuTrigger::None;
-        break;
-      case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
-        cpp_trigger = ContextMenuTrigger::Clicked;
-        break;
-      case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
-        cpp_trigger = ContextMenuTrigger::RightClicked;
-        break;
-      case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
-        cpp_trigger = ContextMenuTrigger::DoubleClicked;
-        break;
-      default:
-        cpp_trigger = ContextMenuTrigger::None;
-        break;
-    }
-
-    tray_icon_ptr->SetContextMenuTrigger(cpp_trigger);
+    self->SetContextMenuTrigger(ToCppContextMenuTrigger(trigger));
+    return;
   } catch (...) {
-    // Ignore exceptions
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_context_menu_trigger");
+    return;
   }
 }
 
-native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
-    native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-
+native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return (native_context_menu_trigger_t)NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-    ContextMenuTrigger cpp_trigger = tray_icon_ptr->GetContextMenuTrigger();
-
-    // Convert C++ enum to C enum
-    switch (cpp_trigger) {
-      case ContextMenuTrigger::None:
-        return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-      case ContextMenuTrigger::Clicked:
-        return NATIVE_CONTEXT_MENU_TRIGGER_CLICKED;
-      case ContextMenuTrigger::RightClicked:
-        return NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED;
-      case ContextMenuTrigger::DoubleClicked:
-        return NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED;
-      default:
-        return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-    }
+    return ToCContextMenuTrigger(self->GetContextMenuTrigger());
   } catch (...) {
-    return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_context_menu_trigger");
+    return (native_context_menu_trigger_t)NATIVE_CONTEXT_MENU_TRIGGER_NONE;
   }
 }
 
-bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds) {
-  if (!tray_icon || !bounds)
-    return false;
-
+native_rectangle_t native_tray_icon_get_bounds(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    native_rectangle_t result = {};
+    return result;
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-    Rectangle cpp_bounds = tray_icon_ptr->GetBounds();
-
-    bounds->x = cpp_bounds.x;
-    bounds->y = cpp_bounds.y;
-    bounds->width = cpp_bounds.width;
-    bounds->height = cpp_bounds.height;
-
-    return true;
+    const auto cpp_result = self->GetBounds();
+    return ToCRectangle(cpp_result);
   } catch (...) {
-    return false;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_bounds");
+    native_rectangle_t result = {};
+    return result;
   }
 }
 
 bool native_tray_icon_set_visible(native_tray_icon_t tray_icon, bool visible) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-    return tray_icon_ptr->SetVisible(visible);
+    return self->SetVisible(visible);
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_visible");
     return false;
   }
 }
 
 bool native_tray_icon_is_visible(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
-    return false;
-
-  try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-    return tray_icon_ptr->IsVisible();
-  } catch (...) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return false;
   }
-}
-
-int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
-                                  native_tray_icon_event_type_t event_type,
-                                  native_tray_icon_event_callback_t callback,
-                                  void* user_data) {
-  if (!tray_icon || !callback)
-    return -1;
-
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return -1;
-
-    // Create listener data
-    auto listener_data = std::make_shared<TrayIconListenerData>();
-    listener_data->event_type = event_type;
-    listener_data->callback = callback;
-    listener_data->user_data = user_data;
-    listener_data->listener_id = g_tray_icon_next_listener_id++;
-
-    // Get or create listener list for this tray icon
-    auto& listeners = g_tray_icon_listeners[tray_icon];
-
-    // Add event listener based on type
-    size_t cpp_listener_id = 0;
-    switch (event_type) {
-      case NATIVE_TRAY_ICON_EVENT_CLICKED:
-        cpp_listener_id = tray_icon_ptr->AddListener<TrayIconClickedEvent>(
-            [listener_data](const TrayIconClickedEvent& event) {
-              if (listener_data && listener_data->callback) {
-                native_tray_icon_clicked_event_t c_event;
-                c_event.tray_icon_id = event.GetTrayIconId();
-                listener_data->callback(&c_event, listener_data->user_data);
-              }
-            });
-        break;
-
-      case NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED:
-        cpp_listener_id = tray_icon_ptr->AddListener<TrayIconRightClickedEvent>(
-            [listener_data](const TrayIconRightClickedEvent& event) {
-              if (listener_data && listener_data->callback) {
-                native_tray_icon_right_clicked_event_t c_event;
-                c_event.tray_icon_id = event.GetTrayIconId();
-                listener_data->callback(&c_event, listener_data->user_data);
-              }
-            });
-        break;
-
-      case NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED:
-        cpp_listener_id = tray_icon_ptr->AddListener<TrayIconDoubleClickedEvent>(
-            [listener_data](const TrayIconDoubleClickedEvent& event) {
-              if (listener_data && listener_data->callback) {
-                native_tray_icon_double_clicked_event_t c_event;
-                c_event.tray_icon_id = event.GetTrayIconId();
-                listener_data->callback(&c_event, listener_data->user_data);
-              }
-            });
-        break;
-
-      default:
-        return -1;
-    }
-
-    // Store the C++ listener ID in our data structure
-    listener_data->listener_id = cpp_listener_id;
-    listeners.push_back(listener_data);
-
-    return static_cast<int>(cpp_listener_id);
+    return self->IsVisible();
   } catch (...) {
-    return -1;
-  }
-}
-
-bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id) {
-  if (!tray_icon)
-    return false;
-
-  try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-
-    // Find and remove the listener
-    auto it = g_tray_icon_listeners.find(tray_icon);
-    if (it != g_tray_icon_listeners.end()) {
-      auto& listeners = it->second;
-      for (auto lit = listeners.begin(); lit != listeners.end(); ++lit) {
-        if (static_cast<int>((*lit)->listener_id) == listener_id) {
-          tray_icon_ptr->RemoveListener((*lit)->listener_id);
-          listeners.erase(lit);
-          return true;
-        }
-      }
-    }
-    return false;
-  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_is_visible");
     return false;
   }
 }
 
 bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-    return tray_icon_ptr->OpenContextMenu();
+    return self->OpenContextMenu();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_open_context_menu");
     return false;
   }
 }
 
 bool native_tray_icon_close_context_menu(native_tray_icon_t tray_icon) {
-  if (!tray_icon)
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
     return false;
-
+  }
   try {
-    auto tray_icon_ptr = static_cast<TrayIcon*>(tray_icon);
-    if (!tray_icon_ptr)
-      return false;
-    return tray_icon_ptr->CloseContextMenu();
+    return self->CloseContextMenu();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_close_context_menu");
+    return false;
+  }
+}
+
+void* native_tray_icon_get_native_object(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return nullptr;
+  }
+  return self->GetNativeObject();
+}
+
+void native_tray_icon_free(native_tray_icon_t tray_icon) {
+  // The table invalidates the handle itself, so releasing an unknown or
+  // already-released one is a no-op rather than a double free.
+  nativeapi::HandleTable::GetInstance().Release(tray_icon);
+}
+
+void native_tray_icon_list_free(native_tray_icon_list_t* list) {
+  if (!list || !list->tray_icons) {
+    return;
+  }
+  for (long i = 0; i < list->count; ++i) {
+    nativeapi::HandleTable::GetInstance().Release(list->tray_icons[i]);
+  }
+  delete[] list->tray_icons;
+  list->tray_icons = nullptr;
+  list->count = 0;
+}
+
+void native_tray_icon_list_release(native_tray_icon_list_t* list) {
+  if (!list) {
+    return;
+  }
+  delete[] list->tray_icons;
+  list->tray_icons = nullptr;
+  list->count = 0;
+}
+
+native_listener_id_t native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon_event_callback_t callback, void* user_data) {
+  if (!callback) {
+    return 0;
+  }
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return static_cast<native_listener_id_t>(self->AddListener<nativeapi::TrayIconEvent>(
+        [callback, user_data](const nativeapi::TrayIconEvent& event) {
+          native_tray_icon_event_t c_event = {};
+          if (!ToCTrayIconEvent(event, &c_event)) {
+            return;
+          }
+          callback(&c_event, user_data);
+          FreeCTrayIconEvent(&c_event);
+        }));
+  } catch (...) {
+    return 0;
+  }
+}
+
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, native_listener_id_t listener_id) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->RemoveListener(static_cast<size_t>(listener_id));
   } catch (...) {
     return false;
   }
 }
+
+bool ToCTrayIconEvent(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out) {
+  if (!out) {
+    return false;
+  }
+  *out = native_tray_icon_event_t{};
+  if (const auto* typed = dynamic_cast<const nativeapi::TrayIconClickedEvent*>(&event)) {
+    out->type = NATIVE_TRAY_ICON_EVENT_TYPE_CLICKED;
+    out->data.clicked.tray_icon_id = typed->GetTrayIconId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::TrayIconRightClickedEvent*>(&event)) {
+    out->type = NATIVE_TRAY_ICON_EVENT_TYPE_RIGHT_CLICKED;
+    out->data.right_clicked.tray_icon_id = typed->GetTrayIconId();
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::TrayIconDoubleClickedEvent*>(&event)) {
+    out->type = NATIVE_TRAY_ICON_EVENT_TYPE_DOUBLE_CLICKED;
+    out->data.double_clicked.tray_icon_id = typed->GetTrayIconId();
+    return true;
+  }
+  return false;
+}
+
+void FreeCTrayIconEvent(native_tray_icon_event_t* value) {
+  if (!value) {
+    return;
+  }
+}
+

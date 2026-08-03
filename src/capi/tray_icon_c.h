@@ -1,8 +1,15 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
+
+#include "common_c.h"
+#include "geometry_c.h"
+#include "image_c.h"
+#include "menu_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -14,251 +21,159 @@
 extern "C" {
 #endif
 
-#include "geometry_c.h"
-#include "image_c.h"
-#include "menu_c.h"
+typedef unsigned int native_tray_icon_id_t;
 
-/**
- * Opaque handle for tray icon objects
- */
-typedef void* native_tray_icon_t;
-
-/**
- * Tray icon identifier
- */
-typedef long native_tray_icon_id_t;
-
-/**
- * Tray icon clicked event
- */
-typedef struct {
-  native_tray_icon_id_t tray_icon_id;
-} native_tray_icon_clicked_event_t;
-
-/**
- * Tray icon right-clicked event
- */
-typedef struct {
-  native_tray_icon_id_t tray_icon_id;
-} native_tray_icon_right_clicked_event_t;
-
-/**
- * Tray icon double-clicked event
- */
-typedef struct {
-  native_tray_icon_id_t tray_icon_id;
-} native_tray_icon_double_clicked_event_t;
-
-/**
- * Event types for tray icon events
- */
 typedef enum {
-  NATIVE_TRAY_ICON_EVENT_CLICKED = 0,
-  NATIVE_TRAY_ICON_EVENT_RIGHT_CLICKED = 1,
-  NATIVE_TRAY_ICON_EVENT_DOUBLE_CLICKED = 2
-} native_tray_icon_event_type_t;
-
-/**
- * Context menu trigger modes
- * Defines how the context menu is triggered for a tray icon
- */
-typedef enum {
-  NATIVE_CONTEXT_MENU_TRIGGER_NONE = 0,           // Manual control only
-  NATIVE_CONTEXT_MENU_TRIGGER_CLICKED = 1,        // Left click triggers menu
-  NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED = 2,  // Right click triggers menu
-  NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED = 3  // Double click triggers menu
+  NATIVE_CONTEXT_MENU_TRIGGER_NONE = 0,
+  NATIVE_CONTEXT_MENU_TRIGGER_CLICKED = 1,
+  NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED = 2,
+  NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED = 3,
 } native_context_menu_trigger_t;
 
-/**
- * Event callback function type
- */
-typedef void (*native_tray_icon_event_callback_t)(const void* event, void* user_data);
+/// Opaque TrayIcon handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_TRAY_ICON rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_tray_icon_t;
 
-/**
- * TrayIcon operations
- */
+/// Never refers to a live TrayIcon.
+#define NATIVE_INVALID_TRAY_ICON ((native_tray_icon_t)0)
 
-/**
- * Create a new tray icon
- * @return Tray icon handle, or NULL if creation failed
- */
+/// Owning list of TrayIcon handles.
+typedef struct {
+  native_tray_icon_t* tray_icons;
+  long count;
+} native_tray_icon_list_t;
+
+/// Which concrete TrayIconEvent arrived.
+typedef enum {
+  NATIVE_TRAY_ICON_EVENT_TYPE_CLICKED = 0,
+  NATIVE_TRAY_ICON_EVENT_TYPE_RIGHT_CLICKED = 1,
+  NATIVE_TRAY_ICON_EVENT_TYPE_DOUBLE_CLICKED = 2,
+} native_tray_icon_event_type_t;
+
+/// One TrayIconEvent, tagged by its concrete type.
+///
+/// Valid only for the duration of the callback: anything it points at
+/// is released as soon as the callback returns. Copy what you need.
+typedef struct {
+  native_tray_icon_event_type_t type;
+  union {
+    struct {
+      native_tray_icon_id_t tray_icon_id;
+    } clicked;
+    struct {
+      native_tray_icon_id_t tray_icon_id;
+    } right_clicked;
+    struct {
+      native_tray_icon_id_t tray_icon_id;
+    } double_clicked;
+  } data;
+} native_tray_icon_event_t;
+
+typedef void (*native_tray_icon_event_callback_t)(const native_tray_icon_event_t* event, void* user_data);
+
+/// Creates a TrayIcon instance; release it with native_tray_icon_free().
 FFI_PLUGIN_EXPORT
 native_tray_icon_t native_tray_icon_create(void);
 
-/**
- * Create a tray icon from a native platform object
- * @param native_tray Pointer to platform-specific tray icon object
- * @return Tray icon handle, or NULL if creation failed
- */
+/// Creates a TrayIcon instance; release it with native_tray_icon_free().
 FFI_PLUGIN_EXPORT
-native_tray_icon_t native_tray_icon_create_from_native(void* native_tray);
+native_tray_icon_t native_tray_icon_create_with_tray(void* tray);
 
-/**
- * Destroy a tray icon and release its resources
- * @param tray_icon The tray icon to destroy
- */
-FFI_PLUGIN_EXPORT
-void native_tray_icon_destroy(native_tray_icon_t tray_icon);
-
-/**
- * Get the ID of a tray icon
- * @param tray_icon The tray icon
- * @return The tray icon ID
- */
 FFI_PLUGIN_EXPORT
 native_tray_icon_id_t native_tray_icon_get_id(native_tray_icon_t tray_icon);
 
-/**
- * Set the icon image for the tray icon using an Image object
- * @param tray_icon The tray icon
- * @param image The Image object to set as the icon, or NULL to clear the icon
- */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t image);
 
-/**
- * Get the current icon image of the tray icon
- * @param tray_icon The tray icon
- * @return The Image object, or NULL if no icon is set. Caller must call
- *         native_image_destroy() when done.
- */
+/// Caller owns the returned handle; release it with native_image_free().
 FFI_PLUGIN_EXPORT
 native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon);
 
-/**
- * Set the title text for the tray icon
- * @param tray_icon The tray icon
- * @param title The title text to set, or NULL to clear the title
- */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title);
 
-/**
- * Get the title text of the tray icon
- * @param tray_icon The tray icon
- * @return The title text, or NULL if no title is set or error. Caller must free
- * the returned string.
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
 char* native_tray_icon_get_title(native_tray_icon_t tray_icon);
 
-/**
- * Set the tooltip text for the tray icon
- * @param tray_icon The tray icon
- * @param tooltip The tooltip text to set, or NULL to clear the tooltip
- */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_tooltip(native_tray_icon_t tray_icon, const char* tooltip);
 
-/**
- * Get the tooltip text of the tray icon
- * @param tray_icon The tray icon
- * @return The tooltip text, or NULL if no tooltip is set or error. Caller must
- * free the returned string.
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
 char* native_tray_icon_get_tooltip(native_tray_icon_t tray_icon);
 
-/**
- * Set the context menu for the tray icon
- * @param tray_icon The tray icon
- * @param menu The context menu to set
- */
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_context_menu(native_tray_icon_t tray_icon, native_menu_t menu);
 
-/**
- * Get the context menu of the tray icon
- * @param tray_icon The tray icon
- * @return The context menu handle, or NULL if no menu set
- */
+/// Caller owns the returned handle; release it with native_menu_free().
 FFI_PLUGIN_EXPORT
 native_menu_t native_tray_icon_get_context_menu(native_tray_icon_t tray_icon);
 
-/**
- * Set the context menu trigger behavior
- * @param tray_icon The tray icon
- * @param trigger The desired trigger behavior
- */
 FFI_PLUGIN_EXPORT
-void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon,
-                                               native_context_menu_trigger_t trigger);
+void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon, native_context_menu_trigger_t trigger);
 
-/**
- * Get the current context menu trigger behavior
- * @param tray_icon The tray icon
- * @return The current trigger behavior
- */
 FFI_PLUGIN_EXPORT
-native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
-    native_tray_icon_t tray_icon);
+native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(native_tray_icon_t tray_icon);
 
-/**
- * Get the screen bounds of the tray icon
- * @param tray_icon The tray icon
- * @param bounds Pointer to store the bounds (caller allocated)
- * @return true if bounds were retrieved successfully, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_tray_icon_get_bounds(native_tray_icon_t tray_icon, native_rectangle_t* bounds);
+native_rectangle_t native_tray_icon_get_bounds(native_tray_icon_t tray_icon);
 
-/**
- * Set the visibility of the tray icon in the system tray
- * @param tray_icon The tray icon
- * @param visible true to show the icon, false to hide it
- * @return true if visibility was changed successfully, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_tray_icon_set_visible(native_tray_icon_t tray_icon, bool visible);
 
-/**
- * Check if the tray icon is currently visible
- * @param tray_icon The tray icon
- * @return true if visible, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_tray_icon_is_visible(native_tray_icon_t tray_icon);
 
-/**
- * Add an event listener for tray icon events
- * @param tray_icon The tray icon
- * @param event_type The type of event to listen for
- * @param callback The callback function
- * @param user_data User data to pass to callback
- * @return Listener ID that can be used to remove the listener, or -1 on error
- */
-FFI_PLUGIN_EXPORT
-int native_tray_icon_add_listener(native_tray_icon_t tray_icon,
-                                  native_tray_icon_event_type_t event_type,
-                                  native_tray_icon_event_callback_t callback,
-                                  void* user_data);
-
-/**
- * Remove an event listener
- * @param tray_icon The tray icon
- * @param listener_id The listener ID returned by add_listener
- * @return true if the listener was found and removed, false otherwise
- */
-FFI_PLUGIN_EXPORT
-bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, int listener_id);
-
-/**
- * Open the context menu at default location
- * @param tray_icon The tray icon
- * @return true if menu was opened successfully, false otherwise
- */
 FFI_PLUGIN_EXPORT
 bool native_tray_icon_open_context_menu(native_tray_icon_t tray_icon);
 
-/**
- * Close the currently displayed context menu
- * @param tray_icon The tray icon
- * @return true if menu was closed successfully or wasn't visible, false on
- * error
- */
 FFI_PLUGIN_EXPORT
 bool native_tray_icon_close_context_menu(native_tray_icon_t tray_icon);
 
+/// Platform-specific native object (NSScreen*, HMONITOR, ...).
+FFI_PLUGIN_EXPORT
+void* native_tray_icon_get_native_object(native_tray_icon_t tray_icon);
+
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+FFI_PLUGIN_EXPORT
+void native_tray_icon_free(native_tray_icon_t tray_icon);
+
+/// Frees the array and releases every handle it contains.
+FFI_PLUGIN_EXPORT
+void native_tray_icon_list_free(native_tray_icon_list_t* list);
+
+/// Frees only the array; the caller takes over the handles.
+FFI_PLUGIN_EXPORT
+void native_tray_icon_list_release(native_tray_icon_list_t* list);
+
+/// Registers @p callback for every TrayIconEvent this TrayIcon emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+FFI_PLUGIN_EXPORT
+native_listener_id_t native_tray_icon_add_listener(native_tray_icon_t tray_icon, native_tray_icon_event_callback_t callback, void* user_data);
+
+/// Unregisters a listener. Returns false if unknown.
+FFI_PLUGIN_EXPORT
+bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, native_listener_id_t listener_id);
+
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+namespace nativeapi {
+class TrayIconEvent;
+}  // namespace nativeapi
+
+/// Fills @p out from @p event. Returns false when the event is not one
+/// of the concrete types the C ABI knows about.
+bool ToCTrayIconEvent(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out);
+/// Releases everything ToCTrayIconEvent() allocated.
+void FreeCTrayIconEvent(native_tray_icon_event_t* value);
+
 #endif

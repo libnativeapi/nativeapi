@@ -1,329 +1,171 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #include "window_manager_c.h"
+
+#include <cstdio>
 #include <memory>
-#include <mutex>
+#include <new>
 #include <optional>
-#include <unordered_map>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include "string_utils_c.h"
+#include "../foundation/handle_table.h"
+#include "../window.h"
+#include "window_c.h"
 #include "../window_manager.h"
 
-using namespace nativeapi;
-
-// Global state for event callbacks
-struct WindowEventCallbackInfo {
-  native_window_event_callback_t callback;
-  void* user_data;
-  int id;
-};
-
-static std::mutex g_window_callback_mutex;
-static std::unordered_map<int, WindowEventCallbackInfo> g_window_event_callbacks;
-static int g_window_next_callback_id = 1;
-
-// Helper function to create native_window_t from shared_ptr<Window>
-static native_window_t CreateNativeWindowHandle(std::shared_ptr<Window> window) {
-  if (!window)
-    return nullptr;
-  // Cast shared_ptr to void* - the WindowManager maintains the actual
-  // shared_ptr
-  return static_cast<void*>(window.get());
-}
-
-// Helper function to dispatch events to registered callbacks
-static void DispatchEvent(const native_window_event_t& event) {
-  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
-
-  for (const auto& [id, callback_info] : g_window_event_callbacks) {
-    try {
-      callback_info.callback(&event, callback_info.user_data);
-    } catch (...) {
-      // Ignore exceptions from callbacks
-    }
-  }
-}
-
-// Event listener class to bridge C++ events to C callbacks
-class WindowCEventListener {
- public:
-  WindowCEventListener() {
-    auto& manager = WindowManager::GetInstance();
-
-    // Register for various window events
-    manager.AddListener<WindowFocusedEvent>([this](const WindowFocusedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_FOCUSED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowBlurredEvent>([this](const WindowBlurredEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_BLURRED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowMinimizedEvent>([this](const WindowMinimizedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_MINIMIZED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowMaximizedEvent>([this](const WindowMaximizedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_MAXIMIZED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowRestoredEvent>([this](const WindowRestoredEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_RESTORED;
-      event.window_id = e.GetWindowId();
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowMovedEvent>([this](const WindowMovedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_MOVED;
-      event.window_id = e.GetWindowId();
-      event.data.moved.position.x = e.GetNewPosition().x;
-      event.data.moved.position.y = e.GetNewPosition().y;
-      DispatchEvent(event);
-    });
-
-    manager.AddListener<WindowResizedEvent>([this](const WindowResizedEvent& e) {
-      native_window_event_t event;
-      event.type = NATIVE_WINDOW_EVENT_RESIZED;
-      event.window_id = e.GetWindowId();
-      event.data.resized.size.width = e.GetNewSize().width;
-      event.data.resized.size.height = e.GetNewSize().height;
-      DispatchEvent(event);
-    });
-  }
-};
-
-static std::unique_ptr<WindowCEventListener> g_event_listener;
-
-// Hook callbacks (C API)
-static std::mutex g_hook_mutex;
-static native_window_will_show_callback_t g_will_show_cb = nullptr;
-static void* g_will_show_ud = nullptr;
-static native_window_will_hide_callback_t g_will_hide_cb = nullptr;
-static void* g_will_hide_ud = nullptr;
-
-// Static bridge functions for will show/hide hooks
-// These are non-capturing function pointers (always valid, in code section)
-// instead of capturing lambdas that may hold dangling NativeCallable pointers.
-static void WillShowHookBridge(WindowId id) {
-    std::lock_guard<std::mutex> lock(g_hook_mutex);
-    if (g_will_show_cb) {
-        g_will_show_cb(id, g_will_show_ud);
-    }
-}
-
-static void WillHideHookBridge(WindowId id) {
-    std::lock_guard<std::mutex> lock(g_hook_mutex);
-    if (g_will_hide_cb) {
-        g_will_hide_cb(id, g_will_hide_ud);
-    }
-}
-
-// Window manager operations
-FFI_PLUGIN_EXPORT
-native_window_t native_window_manager_get(native_window_id_t window_id) {
+native_window_t native_window_manager_get(native_window_id_t id) {
   try {
-    auto& manager = WindowManager::GetInstance();
-    auto window = manager.Get(window_id);
-
-    return CreateNativeWindowHandle(window);
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::WindowManager::GetInstance().Get(id));
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_get");
+    return 0;
   }
 }
 
-FFI_PLUGIN_EXPORT
 native_window_list_t native_window_manager_get_all(void) {
-  native_window_list_t result = {nullptr, 0};
-
   try {
-    auto& manager = WindowManager::GetInstance();
-    auto windows = manager.GetAll();
-
-    if (windows.empty()) {
-      return result;
+    const auto items = nativeapi::WindowManager::GetInstance().GetAll();
+    native_window_list_t list = {};
+    if (items.empty()) {
+      return list;
     }
-
-    result.windows = new (std::nothrow) native_window_t[windows.size()];
-    if (!result.windows) {
-      return result;
+    list.windows = new (std::nothrow) native_window_t[items.size()];
+    if (!list.windows) {
+      return list;
     }
-
-    result.count = static_cast<long>(windows.size());
-
-    for (size_t i = 0; i < windows.size(); ++i) {
-      result.windows[i] = CreateNativeWindowHandle(windows[i]);
+    for (size_t i = 0; i < items.size(); ++i) {
+      list.windows[i] = nativeapi::HandleTable::GetInstance().Insert(items[i]);
     }
-
-    return result;
+    list.count = static_cast<long>(items.size());
+    return list;
   } catch (...) {
-    if (result.windows) {
-      delete[] result.windows;
-      result.windows = nullptr;
-      result.count = 0;
-    }
-    return result;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_get_all");
+    native_window_list_t empty = {};
+    return empty;
   }
 }
 
-FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get_current(void) {
   try {
-    auto& manager = WindowManager::GetInstance();
-    auto current_window = manager.GetCurrent();
-
-    return CreateNativeWindowHandle(current_window);
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::WindowManager::GetInstance().GetCurrent());
   } catch (...) {
-    return nullptr;
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_get_current");
+    return 0;
   }
 }
 
-FFI_PLUGIN_EXPORT
-int native_window_manager_register_event_callback(native_window_event_callback_t callback,
-                                                  void* user_data) {
-  if (!callback)
-    return -1;
-
-  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
-
-  int callback_id = g_window_next_callback_id++;
-  WindowEventCallbackInfo info;
-  info.callback = callback;
-  info.user_data = user_data;
-  info.id = callback_id;
-
-  g_window_event_callbacks[callback_id] = info;
-
-  // Initialize event listener if this is the first callback
-  if (!g_event_listener) {
-    try {
-      g_event_listener = std::make_unique<WindowCEventListener>();
-    } catch (...) {
-      g_window_event_callbacks.erase(callback_id);
-      return -1;
+void native_window_manager_set_will_show_hook(native_window_manager_set_will_show_hook_callback_t hook, void* hook_user_data) {
+  try {
+    std::optional<std::function<void(unsigned int)>> hook_cpp;
+    if (hook) {
+      hook_cpp = [hook, hook_user_data](unsigned int arg0) { hook(arg0, hook_user_data); };
     }
-  }
-
-  return callback_id;
-}
-
-FFI_PLUGIN_EXPORT
-bool native_window_manager_unregister_event_callback(int registration_id) {
-  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
-
-  auto it = g_window_event_callbacks.find(registration_id);
-  if (it == g_window_event_callbacks.end()) {
-    return false;
-  }
-
-  g_window_event_callbacks.erase(it);
-
-  // Clean up event listener if no callbacks remain
-  if (g_window_event_callbacks.empty()) {
-    g_event_listener.reset();
-  }
-
-  return true;
-}
-
-FFI_PLUGIN_EXPORT
-void native_window_manager_shutdown(void) {
-  std::lock_guard<std::mutex> lock(g_window_callback_mutex);
-
-  // Clear all callbacks
-  g_window_event_callbacks.clear();
-
-  // Clean up event listener
-  g_event_listener.reset();
-
-  // Note: We don't explicitly destroy the WindowManager singleton
-  // as it will be cleaned up automatically when the application exits
-}
-
-FFI_PLUGIN_EXPORT
-void native_window_manager_set_will_show_hook(native_window_will_show_callback_t callback,
-                                              void* user_data) {
-  std::lock_guard<std::mutex> lock(g_hook_mutex);
-  g_will_show_cb = callback;
-  g_will_show_ud = user_data;
-
-  auto& manager = WindowManager::GetInstance();
-  if (callback == nullptr) {
-    manager.SetWillShowHook(std::nullopt);
+    nativeapi::WindowManager::GetInstance().SetWillShowHook(hook_cpp);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_set_will_show_hook");
     return;
   }
-
-  // Bridge C callback through C++ hook
-  // Use a non-capturing function pointer (stable address, never dangling)
-  // instead of a capturing lambda that may reference freed NativeCallable trampolines.
-  manager.SetWillShowHook(WillShowHookBridge);
 }
 
-FFI_PLUGIN_EXPORT
-void native_window_manager_set_will_hide_hook(native_window_will_hide_callback_t callback,
-                                              void* user_data) {
-  std::lock_guard<std::mutex> lock(g_hook_mutex);
-  g_will_hide_cb = callback;
-  g_will_hide_ud = user_data;
-
-  auto& manager = WindowManager::GetInstance();
-  if (callback == nullptr) {
-    manager.SetWillHideHook(std::nullopt);
+void native_window_manager_set_will_hide_hook(native_window_manager_set_will_hide_hook_callback_t hook, void* hook_user_data) {
+  try {
+    std::optional<std::function<void(unsigned int)>> hook_cpp;
+    if (hook) {
+      hook_cpp = [hook, hook_user_data](unsigned int arg0) { hook(arg0, hook_user_data); };
+    }
+    nativeapi::WindowManager::GetInstance().SetWillHideHook(hook_cpp);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_set_will_hide_hook");
     return;
   }
-
-  // Bridge C callback through C++ hook
-  // Use a non-capturing function pointer (stable address, never dangling)
-  // instead of a capturing lambda that may reference freed NativeCallable trampolines.
-  manager.SetWillHideHook(WillHideHookBridge);
 }
 
-FFI_PLUGIN_EXPORT
 bool native_window_manager_has_will_show_hook(void) {
   try {
-    auto& manager = WindowManager::GetInstance();
-    return manager.HasWillShowHook();
+    return nativeapi::WindowManager::GetInstance().HasWillShowHook();
   } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_has_will_show_hook");
     return false;
   }
 }
 
-FFI_PLUGIN_EXPORT
 bool native_window_manager_has_will_hide_hook(void) {
   try {
-    auto& manager = WindowManager::GetInstance();
-    return manager.HasWillHideHook();
+    return nativeapi::WindowManager::GetInstance().HasWillHideHook();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_has_will_hide_hook");
+    return false;
+  }
+}
+
+void native_window_manager_handle_will_show(native_window_id_t id) {
+  try {
+    nativeapi::WindowManager::GetInstance().HandleWillShow(id);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_handle_will_show");
+    return;
+  }
+}
+
+void native_window_manager_handle_will_hide(native_window_id_t id) {
+  try {
+    nativeapi::WindowManager::GetInstance().HandleWillHide(id);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_handle_will_hide");
+    return;
+  }
+}
+
+bool native_window_manager_call_original_show(native_window_id_t id) {
+  try {
+    return nativeapi::WindowManager::GetInstance().CallOriginalShow(id);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_call_original_show");
+    return false;
+  }
+}
+
+bool native_window_manager_call_original_hide(native_window_id_t id) {
+  try {
+    return nativeapi::WindowManager::GetInstance().CallOriginalHide(id);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_call_original_hide");
+    return false;
+  }
+}
+
+native_listener_id_t native_window_manager_add_listener(native_window_event_callback_t callback, void* user_data) {
+  if (!callback) {
+    return 0;
+  }
+  try {
+    return static_cast<native_listener_id_t>(nativeapi::WindowManager::GetInstance().AddListener<nativeapi::WindowEvent>(
+        [callback, user_data](const nativeapi::WindowEvent& event) {
+          native_window_event_t c_event = {};
+          if (!ToCWindowEvent(event, &c_event)) {
+            return;
+          }
+          callback(&c_event, user_data);
+          FreeCWindowEvent(&c_event);
+        }));
+  } catch (...) {
+    return 0;
+  }
+}
+
+bool native_window_manager_remove_listener(native_listener_id_t listener_id) {
+  try {
+    return nativeapi::WindowManager::GetInstance().RemoveListener(static_cast<size_t>(listener_id));
   } catch (...) {
     return false;
   }
 }
 
-FFI_PLUGIN_EXPORT
-bool native_window_manager_call_original_show(native_window_id_t window_id) {
-  try {
-    auto& manager = WindowManager::GetInstance();
-    return manager.CallOriginalShow(window_id);
-  } catch (...) {
-    return false;
-  }
-}
-
-FFI_PLUGIN_EXPORT
-bool native_window_manager_call_original_hide(native_window_id_t window_id) {
-  try {
-    auto& manager = WindowManager::GetInstance();
-    return manager.CallOriginalHide(window_id);
-  } catch (...) {
-    return false;
-  }
-}

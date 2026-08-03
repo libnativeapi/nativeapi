@@ -1,102 +1,61 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "common_c.h"
+#include "keyboard_c.h"
+
+#if _WIN32
+#define FFI_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FFI_PLUGIN_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * Modifier key enumeration for C API
- */
-typedef enum {
-  NATIVE_MODIFIER_KEY_NONE = 0,
-  NATIVE_MODIFIER_KEY_SHIFT = 1 << 0,
-  NATIVE_MODIFIER_KEY_CTRL = 1 << 1,
-  NATIVE_MODIFIER_KEY_ALT = 1 << 2,
-  NATIVE_MODIFIER_KEY_META = 1 << 3,  // Windows key or Cmd key
-  NATIVE_MODIFIER_KEY_FN = 1 << 4,
-  NATIVE_MODIFIER_KEY_CAPS_LOCK = 1 << 5,
-  NATIVE_MODIFIER_KEY_NUM_LOCK = 1 << 6,
-  NATIVE_MODIFIER_KEY_SCROLL_LOCK = 1 << 7
-} native_modifier_key_t;
+/// Opaque KeyboardMonitor handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_KEYBOARD_MONITOR rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_keyboard_monitor_t;
 
-/**
- * Callback function type for key pressed events
- * @param keycode The key code that was pressed
- * @param user_data User-provided data passed to the callback
- */
-typedef void (*native_key_pressed_callback_t)(int keycode, void* user_data);
+/// Never refers to a live KeyboardMonitor.
+#define NATIVE_INVALID_KEYBOARD_MONITOR ((native_keyboard_monitor_t)0)
 
-/**
- * Callback function type for key released events
- * @param keycode The key code that was released
- * @param user_data User-provided data passed to the callback
- */
-typedef void (*native_key_released_callback_t)(int keycode, void* user_data);
+/// Creates a KeyboardMonitor instance; release it with native_keyboard_monitor_free().
+FFI_PLUGIN_EXPORT
+native_keyboard_monitor_t native_keyboard_monitor_create(void);
 
-/**
- * Callback function type for modifier keys changed events
- * @param modifier_keys Bitwise OR of active modifier keys
- * @param user_data User-provided data passed to the callback
- */
-typedef void (*native_modifier_keys_changed_callback_t)(uint32_t modifier_keys, void* user_data);
+FFI_PLUGIN_EXPORT
+void native_keyboard_monitor_start(native_keyboard_monitor_t keyboard_monitor);
 
-/**
- * Opaque handle to keyboard monitor instance
- */
-typedef struct native_keyboard_monitor_t native_keyboard_monitor_t;
+FFI_PLUGIN_EXPORT
+void native_keyboard_monitor_stop(native_keyboard_monitor_t keyboard_monitor);
 
-/**
- * Create a new keyboard monitor instance
- * @return Pointer to keyboard monitor instance, or NULL on failure
- */
-native_keyboard_monitor_t* native_keyboard_monitor_create(void);
+FFI_PLUGIN_EXPORT
+bool native_keyboard_monitor_is_monitoring(native_keyboard_monitor_t keyboard_monitor);
 
-/**
- * Destroy a keyboard monitor instance
- * @param monitor Pointer to keyboard monitor instance to destroy
- */
-void native_keyboard_monitor_destroy(native_keyboard_monitor_t* monitor);
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+FFI_PLUGIN_EXPORT
+void native_keyboard_monitor_free(native_keyboard_monitor_t keyboard_monitor);
 
-/**
- * Set callback functions for keyboard events
- * @param monitor Pointer to keyboard monitor instance
- * @param on_key_pressed Callback for key pressed events (can be NULL)
- * @param on_key_released Callback for key released events (can be NULL)
- * @param on_modifier_keys_changed Callback for modifier keys changed events
- * (can be NULL)
- * @param user_data User data to pass to callbacks
- * @return true on success, false on failure
- */
-bool native_keyboard_monitor_set_callbacks(
-    native_keyboard_monitor_t* monitor,
-    native_key_pressed_callback_t on_key_pressed,
-    native_key_released_callback_t on_key_released,
-    native_modifier_keys_changed_callback_t on_modifier_keys_changed,
-    void* user_data);
+/// Registers @p callback for every KeyboardEvent this KeyboardMonitor emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+FFI_PLUGIN_EXPORT
+native_listener_id_t native_keyboard_monitor_add_listener(native_keyboard_monitor_t keyboard_monitor, native_keyboard_event_callback_t callback, void* user_data);
 
-/**
- * Start keyboard monitoring
- * @param monitor Pointer to keyboard monitor instance
- * @return true on success, false on failure
- */
-bool native_keyboard_monitor_start(native_keyboard_monitor_t* monitor);
-
-/**
- * Stop keyboard monitoring
- * @param monitor Pointer to keyboard monitor instance
- * @return true on success, false on failure
- */
-bool native_keyboard_monitor_stop(native_keyboard_monitor_t* monitor);
-
-/**
- * Check if keyboard monitoring is active
- * @param monitor Pointer to keyboard monitor instance
- * @return true if monitoring is active, false otherwise
- */
-bool native_keyboard_monitor_is_monitoring(const native_keyboard_monitor_t* monitor);
+/// Unregisters a listener. Returns false if unknown.
+FFI_PLUGIN_EXPORT
+bool native_keyboard_monitor_remove_listener(native_keyboard_monitor_t keyboard_monitor, native_listener_id_t listener_id);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,13 @@
+// AUTO-GENERATED. DO NOT EDIT.
+// Any manual changes WILL BE LOST when this file is regenerated.
+
 #pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "common_c.h"
+#include "dialog_c.h"
 
 #if _WIN32
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
@@ -13,104 +19,51 @@
 extern "C" {
 #endif
 
-/**
- * Dialog modality types
- */
-typedef enum {
-  NATIVE_DIALOG_MODALITY_NONE = 0,
-  NATIVE_DIALOG_MODALITY_APPLICATION = 1,
-  NATIVE_DIALOG_MODALITY_WINDOW = 2
-} native_dialog_modality_t;
+/// Opaque MessageDialog handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_MESSAGE_DIALOG rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef uint64_t native_message_dialog_t;
 
-/**
- * Opaque handle for message dialog objects
- */
-typedef void* native_message_dialog_t;
+/// Never refers to a live MessageDialog.
+#define NATIVE_INVALID_MESSAGE_DIALOG ((native_message_dialog_t)0)
 
-/**
- * MessageDialog operations
- */
-
-/**
- * Create a new message dialog with title and message
- * @param title The dialog title
- * @param message The dialog message
- * @return Message dialog handle, or NULL if creation failed
- */
+/// Creates a MessageDialog instance; release it with native_message_dialog_free().
 FFI_PLUGIN_EXPORT
 native_message_dialog_t native_message_dialog_create(const char* title, const char* message);
 
-/**
- * Destroy a message dialog and release its resources
- * @param dialog The message dialog to destroy
- */
 FFI_PLUGIN_EXPORT
-void native_message_dialog_destroy(native_message_dialog_t dialog);
+void native_message_dialog_set_title(native_message_dialog_t message_dialog, const char* title);
 
-/**
- * Set the dialog title
- * @param dialog The message dialog
- * @param title The title to set
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
-void native_message_dialog_set_title(native_message_dialog_t dialog, const char* title);
+char* native_message_dialog_get_title(native_message_dialog_t message_dialog);
 
-/**
- * Get the dialog title
- * @param dialog The message dialog
- * @return The title string (caller must free), or NULL if dialog is invalid
- */
 FFI_PLUGIN_EXPORT
-char* native_message_dialog_get_title(native_message_dialog_t dialog);
+void native_message_dialog_set_message(native_message_dialog_t message_dialog, const char* message);
 
-/**
- * Set the dialog message
- * @param dialog The message dialog
- * @param message The message to set
- */
+/// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT
-void native_message_dialog_set_message(native_message_dialog_t dialog, const char* message);
+char* native_message_dialog_get_message(native_message_dialog_t message_dialog);
 
-/**
- * Get the dialog message
- * @param dialog The message dialog
- * @return The message string (caller must free), or NULL if dialog is invalid
- */
 FFI_PLUGIN_EXPORT
-char* native_message_dialog_get_message(native_message_dialog_t dialog);
+native_dialog_modality_t native_message_dialog_get_modality(native_message_dialog_t message_dialog);
 
-/**
- * Set the modality of the dialog
- * @param dialog The message dialog
- * @param modality The modality type to set
- */
 FFI_PLUGIN_EXPORT
-void native_message_dialog_set_modality(native_message_dialog_t dialog,
-                                        native_dialog_modality_t modality);
+void native_message_dialog_set_modality(native_message_dialog_t message_dialog, native_dialog_modality_t modality);
 
-/**
- * Get the current modality setting of the dialog
- * @param dialog The message dialog
- * @return The current modality type
- */
 FFI_PLUGIN_EXPORT
-native_dialog_modality_t native_message_dialog_get_modality(native_message_dialog_t dialog);
+bool native_message_dialog_open(native_message_dialog_t message_dialog);
 
-/**
- * Open the dialog according to its modality setting
- * @param dialog The message dialog
- * @return true if the dialog was successfully opened, false otherwise
- */
 FFI_PLUGIN_EXPORT
-bool native_message_dialog_open(native_message_dialog_t dialog);
+bool native_message_dialog_close(native_message_dialog_t message_dialog);
 
-/**
- * Close the dialog programmatically
- * @param dialog The message dialog
- * @return true if the dialog was successfully closed, false otherwise
- */
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
 FFI_PLUGIN_EXPORT
-bool native_message_dialog_close(native_message_dialog_t dialog);
+void native_message_dialog_free(native_message_dialog_t message_dialog);
 
 #ifdef __cplusplus
 }
