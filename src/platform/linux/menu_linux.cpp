@@ -11,7 +11,6 @@
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
-#include "../../menu_event.h"
 #include "../../window.h"
 
 namespace nativeapi {

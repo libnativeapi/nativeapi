@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "../../keyboard_event.h"
+#include "../../foundation/keyboard.h"
 #include "../../keyboard_monitor.h"
 
 namespace nativeapi {

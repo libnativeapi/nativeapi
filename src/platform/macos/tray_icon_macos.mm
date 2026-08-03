@@ -4,7 +4,6 @@
 #include "../../menu.h"
 #include "../../positioning_strategy.h"
 #include "../../tray_icon.h"
-#include "../../tray_icon_event.h"
 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>

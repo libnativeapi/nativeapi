@@ -9,7 +9,6 @@
 #include "../../foundation/id_allocator.h"
 #include "../../image.h"
 #include "../../menu.h"
-#include "../../menu_event.h"
 #include "../../window.h"
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"

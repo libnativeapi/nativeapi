@@ -1,6 +1,6 @@
 #include "keyboard_monitor_c.h"
 #include <memory>
-#include "../keyboard_event.h"
+#include "../foundation/keyboard.h"
 #include "../keyboard_monitor.h"
 
 // Internal structure to hold C API state

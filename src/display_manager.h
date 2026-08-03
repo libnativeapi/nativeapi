@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "display.h"
-#include "display_event.h"
 #include "foundation/event.h"
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"

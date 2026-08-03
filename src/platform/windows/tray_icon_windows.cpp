@@ -14,7 +14,6 @@
 #include "../../menu.h"
 #include "../../positioning_strategy.h"
 #include "../../tray_icon.h"
-#include "../../tray_icon_event.h"
 #include "string_utils_windows.h"
 #include "window_message_dispatcher.h"
 

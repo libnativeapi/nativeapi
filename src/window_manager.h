@@ -11,7 +11,6 @@
 #include "foundation/event_emitter.h"
 #include "foundation/geometry.h"
 #include "window.h"
-#include "window_event.h"
 
 namespace nativeapi {
 

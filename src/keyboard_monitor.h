@@ -6,7 +6,6 @@
 
 #include "foundation/event_emitter.h"
 #include "foundation/keyboard.h"
-#include "keyboard_event.h"
 
 namespace nativeapi {
 

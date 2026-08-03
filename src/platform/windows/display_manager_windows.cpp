@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "../../display.h"
-#include "../../display_event.h"
 #include "../../display_manager.h"
 #include "dpi_utils_windows.h"
 

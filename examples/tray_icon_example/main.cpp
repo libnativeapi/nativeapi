@@ -4,11 +4,9 @@
 #include <thread>
 
 #include "../../src/application.h"
-#include "../../src/application_event.h"
 #include "../../src/image.h"
 #include "../../src/menu.h"
 #include "../../src/tray_icon.h"
-#include "../../src/tray_icon_event.h"
 #include "../../src/tray_manager.h"
 
 using namespace nativeapi;

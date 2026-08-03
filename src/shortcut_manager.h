@@ -10,7 +10,6 @@
 #include "foundation/event_emitter.h"
 #include "foundation/id_allocator.h"
 #include "shortcut.h"
-#include "shortcut_event.h"
 
 namespace nativeapi {
 
@@ -421,6 +420,19 @@ class ShortcutManager : public EventEmitter<ShortcutEvent> {
    * when multiple threads access the ShortcutManager simultaneously.
    */
   mutable std::mutex mutex_;
+
+  /**
+   * @brief Availability check for callers that already hold mutex_.
+   *
+   * The public IsAvailable() acquires mutex_, so calling it from an already-
+   * locked section self-deadlocks (mutex_ is not recursive). Register() needs
+   * the check and the subsequent insert to be one atomic step, so it must not
+   * drop the lock in between — it uses this helper instead.
+   *
+   * @param accelerator The accelerator string to check.
+   * @return true if no shortcut is currently registered for this accelerator.
+   */
+  bool IsAvailableUnlocked(const std::string& accelerator) const;
 };
 
 }  // namespace nativeapi

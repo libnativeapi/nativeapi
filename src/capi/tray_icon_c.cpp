@@ -5,7 +5,7 @@
 #include <optional>
 #include "../image.h"
 #include "../tray_icon.h"
-#include "../tray_icon_event.h"
+#include "../tray_icon.h"
 #include "string_utils_c.h"
 
 using namespace nativeapi;
