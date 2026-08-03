@@ -51,6 +51,15 @@ add_library(nativeapi STATIC
 )
 
 # Set library properties
+# Propagate the language requirement to anything that links nativeapi.
+#
+# The CMAKE_CXX_STANDARD variables above are directory-scoped: they govern this
+# subdirectory's own targets and nothing else. Consumers (tests, examples, and
+# any downstream project doing add_subdirectory or find_package) were therefore
+# compiled at the toolchain default, which is how a header using std::optional
+# could fail to compile in a target that links this library.
+target_compile_features(nativeapi PUBLIC cxx_std_17)
+
 set_target_properties(nativeapi PROPERTIES
   PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../include/**/*.h"
 )
