@@ -8,12 +8,15 @@
 
 using namespace nativeapi;
 
-// Define some example types for demonstration
-struct Window {};
-struct Menu {};
-struct MenuItem {};
-struct TrayIcon {};
-struct Display {};
+// Window, Menu, MenuItem, TrayIcon and Display come from the IdTypeTag registry
+// in id_allocator.h. They are only ever used as template arguments here, so the
+// forward declarations that header already provides are enough — no need to pull
+// in the full class definitions.
+//
+// This example used to declare its own placeholder structs with these names.
+// That worked back when type tags were assigned by a runtime counter and any
+// type at all could be passed. Tags are now compile-time constants from a
+// central registry, so a type must be registered to be allocatable.
 
 int main() {
   std::cout << "IdAllocator Template Example" << std::endl;
