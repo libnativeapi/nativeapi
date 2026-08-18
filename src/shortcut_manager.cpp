@@ -199,13 +199,27 @@ bool ShortcutManager::IsValidAccelerator(const std::string& accelerator) {
     return false;
   }
 
-  // Basic validation using regex
+  // Basic validation using regex.
   // Format: [Modifier+]*Key
-  // Modifiers: Ctrl, Alt, Shift, Cmd, Super, Meta
-  // Keys: A-Z, 0-9, F1-F24, Space, Tab, Enter, Escape, etc.
-
-  std::regex accelerator_regex(
-      R"(^(?:(?:Ctrl|Alt|Shift|Cmd|Super|Meta|CmdOrCtrl)\+)*(?:[A-Za-z0-9]|F[1-9]|F1[0-9]|F2[0-4]|Space|Tab|Enter|Escape|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Up|Down|Left|Right|Plus|Minus|Equal)$)",
+  //
+  // Modifiers: Ctrl/Control, Alt/Option, Shift, Cmd/Command, Super, Meta,
+  //            CmdOrCtrl/CommandOrControl
+  // Keys:      A-Z, 0-9, F1-F24, named keys (Space, Enter, PageUp, Comma, ...),
+  //            the keypad (Num0-Num9, NumAdd, ...), and the literal punctuation
+  //            characters those names stand for (",", ".", "/", ...).
+  //
+  // This has to stay in step with the per-platform token tables in
+  // src/platform/*/shortcut_manager_*. Anything accepted here but unknown to a
+  // platform parser degrades to a ShortcutRegistrationFailedEvent rather than a
+  // silent no-op, but the two lists are meant to agree.
+  static const std::regex accelerator_regex(
+      R"(^(?:(?:Ctrl|Control|Alt|Option|Shift|Cmd|Command|Super|Meta|CmdOrCtrl|CommandOrControl)\+)*)"
+      R"((?:F1[0-9]|F2[0-4]|F[1-9]|Num[0-9]|NumDec|NumAdd|NumSub|NumMult|NumDiv|NumEnter)"
+      R"(|Space|Tab|Enter|Return|Escape|Esc|Backspace|ForwardDelete|Delete|Insert|Help)"
+      R"(|Home|End|PageUp|PageDown|Up|Down|Left|Right)"
+      R"(|Plus|Minus|Equal|Comma|Period|Slash|Backslash|Semicolon|Quote)"
+      R"(|LeftBracket|RightBracket|Grave|Backquote)"
+      R"(|[A-Za-z0-9]|[,./\\;'\[\]`=\-])$)",
       std::regex::icase);
 
   return std::regex_match(accelerator, accelerator_regex);

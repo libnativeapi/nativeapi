@@ -53,9 +53,9 @@ bool ParseAcceleratorTokens(const std::string& accelerator,
 
   for (auto& part : parts) {
     std::string token = ToLower(part);
-    if (token == "ctrl" || token == "control" || token == "alt" || token == "shift" ||
-        token == "cmd" || token == "command" || token == "super" || token == "meta" ||
-        token == "cmdorctrl") {
+    if (token == "ctrl" || token == "control" || token == "alt" || token == "option" ||
+        token == "shift" || token == "cmd" || token == "command" || token == "super" ||
+        token == "meta" || token == "cmdorctrl" || token == "commandorcontrol") {
       modifiers.push_back(token);
     } else {
       if (!key_token.empty()) {
@@ -68,7 +68,64 @@ bool ParseAcceleratorTokens(const std::string& accelerator,
   return !key_token.empty();
 }
 
+// Token -> X11 KeySym.
+//
+// Mirrors the token set in src/shortcut_manager.cpp's validator and the tables
+// in the macOS/Windows backends, so the same accelerator string means the same
+// key on every platform.
 KeySym KeySymFromToken(const std::string& token) {
+  static const std::unordered_map<std::string, KeySym> kKeySyms = {
+      // Whitespace and editing.
+      {"space", XK_space},
+      {"tab", XK_Tab},
+      {"enter", XK_Return},
+      {"return", XK_Return},
+      {"escape", XK_Escape},
+      {"esc", XK_Escape},
+      {"backspace", XK_BackSpace},
+      {"delete", XK_Delete},
+      {"forwarddelete", XK_Delete},
+      {"insert", XK_Insert},
+      {"help", XK_Help},
+
+      // Navigation.
+      {"home", XK_Home},
+      {"end", XK_End},
+      {"pageup", XK_Page_Up},
+      {"pagedown", XK_Page_Down},
+      {"up", XK_Up},
+      {"down", XK_Down},
+      {"left", XK_Left},
+      {"right", XK_Right},
+
+      // Punctuation, by name and by literal character.
+      {"plus", XK_plus},
+      {"equal", XK_equal},                {"=", XK_equal},
+      {"minus", XK_minus},                {"-", XK_minus},
+      {"comma", XK_comma},                {",", XK_comma},
+      {"period", XK_period},              {".", XK_period},
+      {"slash", XK_slash},                {"/", XK_slash},
+      {"backslash", XK_backslash},        {"\\", XK_backslash},
+      {"semicolon", XK_semicolon},        {";", XK_semicolon},
+      {"quote", XK_apostrophe},           {"'", XK_apostrophe},
+      {"leftbracket", XK_bracketleft},    {"[", XK_bracketleft},
+      {"rightbracket", XK_bracketright},  {"]", XK_bracketright},
+      {"grave", XK_grave}, {"backquote", XK_grave}, {"`", XK_grave},
+
+      // Keypad.
+      {"num0", XK_KP_0}, {"num1", XK_KP_1}, {"num2", XK_KP_2},
+      {"num3", XK_KP_3}, {"num4", XK_KP_4}, {"num5", XK_KP_5},
+      {"num6", XK_KP_6}, {"num7", XK_KP_7}, {"num8", XK_KP_8},
+      {"num9", XK_KP_9},
+      {"numdec", XK_KP_Decimal},
+      {"numadd", XK_KP_Add},
+      {"numsub", XK_KP_Subtract},
+      {"nummult", XK_KP_Multiply},
+      {"numdiv", XK_KP_Divide},
+      {"numenter", XK_KP_Enter},
+  };
+
+  // Letters and digits resolve through Xlib's own name table.
   if (token.size() == 1) {
     char ch = token[0];
     if (std::isalpha(static_cast<unsigned char>(ch))) {
@@ -79,33 +136,18 @@ KeySym KeySymFromToken(const std::string& token) {
     }
   }
 
-  if (token.rfind("f", 0) == 0) {
+  // Function keys. XK_F1..XK_F24 are contiguous.
+  if (token.size() > 1 && token[0] == 'f' &&
+      token.find_first_not_of("0123456789", 1) == std::string::npos) {
     int fnum = std::stoi(token.substr(1));
     if (fnum >= 1 && fnum <= 24) {
       return XK_F1 + (fnum - 1);
     }
+    return NoSymbol;
   }
 
-  if (token == "space") return XK_space;
-  if (token == "tab") return XK_Tab;
-  if (token == "enter" || token == "return") return XK_Return;
-  if (token == "escape" || token == "esc") return XK_Escape;
-  if (token == "backspace") return XK_BackSpace;
-  if (token == "delete") return XK_Delete;
-  if (token == "insert") return XK_Insert;
-  if (token == "home") return XK_Home;
-  if (token == "end") return XK_End;
-  if (token == "pageup") return XK_Page_Up;
-  if (token == "pagedown") return XK_Page_Down;
-  if (token == "up") return XK_Up;
-  if (token == "down") return XK_Down;
-  if (token == "left") return XK_Left;
-  if (token == "right") return XK_Right;
-  if (token == "plus") return XK_plus;
-  if (token == "equal") return XK_equal;
-  if (token == "minus") return XK_minus;
-
-  return NoSymbol;
+  auto it = kKeySyms.find(token);
+  return it == kKeySyms.end() ? NoSymbol : it->second;
 }
 
 bool ParseAcceleratorLinux(const std::string& accelerator,
@@ -122,9 +164,10 @@ bool ParseAcceleratorLinux(const std::string& accelerator,
   }
 
   for (const auto& token : modifier_tokens) {
-    if (token == "ctrl" || token == "control" || token == "cmdorctrl") {
+    if (token == "ctrl" || token == "control" || token == "cmdorctrl" ||
+        token == "commandorcontrol") {
       modifiers |= ControlMask;
-    } else if (token == "alt") {
+    } else if (token == "alt" || token == "option") {
       modifiers |= Mod1Mask;
     } else if (token == "shift") {
       modifiers |= ShiftMask;

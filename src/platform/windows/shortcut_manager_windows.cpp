@@ -53,9 +53,9 @@ bool ParseAcceleratorTokens(const std::string& accelerator,
 
   for (auto& part : parts) {
     std::string token = ToLower(part);
-    if (token == "ctrl" || token == "control" || token == "alt" || token == "shift" ||
-        token == "cmd" || token == "command" || token == "super" || token == "meta" ||
-        token == "cmdorctrl") {
+    if (token == "ctrl" || token == "control" || token == "alt" || token == "option" ||
+        token == "shift" || token == "cmd" || token == "command" || token == "super" ||
+        token == "meta" || token == "cmdorctrl" || token == "commandorcontrol") {
       modifiers.push_back(token);
     } else {
       if (!key_token.empty()) {
@@ -66,6 +66,97 @@ bool ParseAcceleratorTokens(const std::string& accelerator,
   }
 
   return !key_token.empty();
+}
+
+
+// Token -> Windows virtual-key code.
+//
+// Mirrors the token set in src/shortcut_manager.cpp's validator and the tables
+// in the macOS/Linux backends, so the same accelerator string means the same
+// key on every platform.
+bool LookupWindowsKeyCode(const std::string& token, UINT& vk) {
+  static const std::unordered_map<std::string, UINT> kKeyCodes = {
+      // Whitespace and editing.
+      {"space", VK_SPACE},
+      {"tab", VK_TAB},
+      {"enter", VK_RETURN},
+      {"return", VK_RETURN},
+      {"escape", VK_ESCAPE},
+      {"esc", VK_ESCAPE},
+      {"backspace", VK_BACK},
+      {"delete", VK_DELETE},
+      {"forwarddelete", VK_DELETE},
+      {"insert", VK_INSERT},
+      {"help", VK_HELP},
+
+      // Navigation.
+      {"home", VK_HOME},
+      {"end", VK_END},
+      {"pageup", VK_PRIOR},
+      {"pagedown", VK_NEXT},
+      {"up", VK_UP},
+      {"down", VK_DOWN},
+      {"left", VK_LEFT},
+      {"right", VK_RIGHT},
+
+      // Punctuation, by name and by literal character.
+      {"plus", VK_OEM_PLUS},
+      {"equal", VK_OEM_PLUS},            {"=", VK_OEM_PLUS},
+      {"minus", VK_OEM_MINUS},           {"-", VK_OEM_MINUS},
+      {"comma", VK_OEM_COMMA},           {",", VK_OEM_COMMA},
+      {"period", VK_OEM_PERIOD},         {".", VK_OEM_PERIOD},
+      {"slash", VK_OEM_2},               {"/", VK_OEM_2},
+      {"backslash", VK_OEM_5},           {"\\", VK_OEM_5},
+      {"semicolon", VK_OEM_1},           {";", VK_OEM_1},
+      {"quote", VK_OEM_7},               {"'", VK_OEM_7},
+      {"leftbracket", VK_OEM_4},         {"[", VK_OEM_4},
+      {"rightbracket", VK_OEM_6},        {"]", VK_OEM_6},
+      {"grave", VK_OEM_3}, {"backquote", VK_OEM_3}, {"`", VK_OEM_3},
+
+      // Keypad.
+      {"num0", VK_NUMPAD0}, {"num1", VK_NUMPAD1}, {"num2", VK_NUMPAD2},
+      {"num3", VK_NUMPAD3}, {"num4", VK_NUMPAD4}, {"num5", VK_NUMPAD5},
+      {"num6", VK_NUMPAD6}, {"num7", VK_NUMPAD7}, {"num8", VK_NUMPAD8},
+      {"num9", VK_NUMPAD9},
+      {"numdec", VK_DECIMAL},
+      {"numadd", VK_ADD},
+      {"numsub", VK_SUBTRACT},
+      {"nummult", VK_MULTIPLY},
+      {"numdiv", VK_DIVIDE},
+      // Windows has no separate numpad-Enter virtual key; it reports VK_RETURN.
+      {"numenter", VK_RETURN},
+  };
+
+  // Letters and digits map to their ASCII value as a virtual-key code.
+  if (token.size() == 1) {
+    unsigned char ch = static_cast<unsigned char>(token[0]);
+    if (std::isalpha(ch)) {
+      vk = static_cast<UINT>(std::toupper(ch));
+      return true;
+    }
+    if (std::isdigit(ch)) {
+      vk = static_cast<UINT>(ch);
+      return true;
+    }
+  }
+
+  // Function keys. VK_F1..VK_F24 are contiguous, unlike the Carbon equivalents.
+  if (token.size() > 1 && token[0] == 'f' &&
+      token.find_first_not_of("0123456789", 1) == std::string::npos) {
+    int fnum = std::stoi(token.substr(1));
+    if (fnum >= 1 && fnum <= 24) {
+      vk = VK_F1 + (fnum - 1);
+      return true;
+    }
+    return false;
+  }
+
+  auto it = kKeyCodes.find(token);
+  if (it == kKeyCodes.end()) {
+    return false;
+  }
+  vk = it->second;
+  return true;
 }
 
 bool ParseAcceleratorWindows(const std::string& accelerator, UINT& modifiers, UINT& vk) {
@@ -79,9 +170,10 @@ bool ParseAcceleratorWindows(const std::string& accelerator, UINT& modifiers, UI
   }
 
   for (const auto& token : modifier_tokens) {
-    if (token == "ctrl" || token == "control" || token == "cmdorctrl") {
+    if (token == "ctrl" || token == "control" || token == "cmdorctrl" ||
+        token == "commandorcontrol") {
       modifiers |= MOD_CONTROL;
-    } else if (token == "alt") {
+    } else if (token == "alt" || token == "option") {
       modifiers |= MOD_ALT;
     } else if (token == "shift") {
       modifiers |= MOD_SHIFT;
@@ -93,66 +185,9 @@ bool ParseAcceleratorWindows(const std::string& accelerator, UINT& modifiers, UI
 
   modifiers |= MOD_NOREPEAT;
 
-  if (key_token.size() == 1) {
-    char ch = key_token[0];
-    if (std::isalpha(static_cast<unsigned char>(ch))) {
-      vk = static_cast<UINT>(std::toupper(ch));
-      return true;
-    }
-    if (std::isdigit(static_cast<unsigned char>(ch))) {
-      vk = static_cast<UINT>(ch);
-      return true;
-    }
-  }
-
-  if (key_token.rfind("f", 0) == 0) {
-    int fnum = std::stoi(key_token.substr(1));
-    if (fnum >= 1 && fnum <= 24) {
-      vk = VK_F1 + (fnum - 1);
-      return true;
-    }
-  }
-
-  if (key_token == "space") {
-    vk = VK_SPACE;
-  } else if (key_token == "tab") {
-    vk = VK_TAB;
-  } else if (key_token == "enter" || key_token == "return") {
-    vk = VK_RETURN;
-  } else if (key_token == "escape" || key_token == "esc") {
-    vk = VK_ESCAPE;
-  } else if (key_token == "backspace") {
-    vk = VK_BACK;
-  } else if (key_token == "delete") {
-    vk = VK_DELETE;
-  } else if (key_token == "insert") {
-    vk = VK_INSERT;
-  } else if (key_token == "home") {
-    vk = VK_HOME;
-  } else if (key_token == "end") {
-    vk = VK_END;
-  } else if (key_token == "pageup") {
-    vk = VK_PRIOR;
-  } else if (key_token == "pagedown") {
-    vk = VK_NEXT;
-  } else if (key_token == "up") {
-    vk = VK_UP;
-  } else if (key_token == "down") {
-    vk = VK_DOWN;
-  } else if (key_token == "left") {
-    vk = VK_LEFT;
-  } else if (key_token == "right") {
-    vk = VK_RIGHT;
-  } else if (key_token == "plus" || key_token == "equal") {
-    vk = VK_OEM_PLUS;
-  } else if (key_token == "minus") {
-    vk = VK_OEM_MINUS;
-  } else {
-    return false;
-  }
-
-  return true;
+  return LookupWindowsKeyCode(key_token, vk);
 }
+
 
 }  // namespace
 

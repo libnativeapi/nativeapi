@@ -1,5 +1,6 @@
 #include "../../foundation/dispatcher_platform.h"
 
+#import <Carbon/Carbon.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #include <dispatch/dispatch.h>
@@ -37,9 +38,34 @@ bool PlatformRunOnMainThread(std::function<void()> fn) {
 }
 
 bool PlatformRunMainThreadLoopFor(int timeout_ms) {
-  // Servicing the GCD main queue means running the main run loop; there is no
-  // way to drain that queue without it.
-  CFRunLoopRunInMode(kCFRunLoopDefaultMode, timeout_ms / 1000.0, false);
+  // Two queues have to be serviced here, and only one call does both.
+  //
+  // The GCD main queue carries RunOnMainThread() work, and draining it means
+  // running the main run loop. The Carbon event queue carries global hotkeys
+  // (see shortcut_manager_macos.mm) and other OS events; a bare
+  // CFRunLoopRunInMode() does *not* dispatch those, which is why a program
+  // without a Cocoa run loop would register a shortcut successfully and then
+  // never see it fire.
+  //
+  // ReceiveNextEvent() runs the main run loop internally — so it drains the
+  // GCD main queue too — and additionally hands back the next OS event, which
+  // we forward to the Carbon dispatcher. That is the same routing
+  // `[NSApp sendEvent:]` performs in a Cocoa app; an app that has one keeps
+  // using it and never calls this function.
+  //
+  // Must be called on the main thread: ReceiveNextEvent() drains the calling
+  // thread's event queue, and OS events are only ever posted to the main one.
+  if (!PlatformIsMainThread()) {
+    return false;
+  }
+
+  EventRef event = nullptr;
+  const EventTimeout timeout = timeout_ms / 1000.0 * kEventDurationSecond;
+  OSStatus status = ReceiveNextEvent(0, nullptr, timeout, true, &event);
+  if (status == noErr && event) {
+    SendEventToEventTarget(event, GetEventDispatcherTarget());
+    ReleaseEvent(event);
+  }
   return true;
 }
 

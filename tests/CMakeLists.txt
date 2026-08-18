@@ -19,3 +19,7 @@ add_executable(handle_table_test handle_table_test.cpp)
 target_link_libraries(handle_table_test PRIVATE nativeapi Threads::Threads)
 add_test(NAME handle_table_test COMMAND handle_table_test)
 set_tests_properties(handle_table_test PROPERTIES TIMEOUT 120)
+
+add_executable(shortcut_accelerator_test shortcut_accelerator_test.cpp)
+target_link_libraries(shortcut_accelerator_test PRIVATE nativeapi)
+add_test(NAME shortcut_accelerator_test COMMAND shortcut_accelerator_test)
