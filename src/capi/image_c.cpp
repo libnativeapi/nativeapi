@@ -17,23 +17,21 @@
 #include "geometry_c.h"
 #include "../image.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_size_t ToCSize(const nativeapi::Size& value) {
+inline native_size_t ToCSize(const nativeapi::Size& value) {
   native_size_t result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
 
-nativeapi::Size ToCppSize(const native_size_t& value) {
+inline nativeapi::Size ToCppSize(const native_size_t& value) {
   nativeapi::Size result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
-
-}  // namespace
 
 native_image_t native_image_from_file(const char* file_path) {
   try {

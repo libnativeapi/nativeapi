@@ -15,9 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../placement.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_placement_t ToCPlacement(nativeapi::Placement value) {
+inline native_placement_t ToCPlacement(nativeapi::Placement value) {
   switch (value) {
     case nativeapi::Placement::Top:
       return NATIVE_PLACEMENT_TOP;
@@ -48,7 +48,7 @@ native_placement_t ToCPlacement(nativeapi::Placement value) {
   }
 }
 
-nativeapi::Placement ToCppPlacement(native_placement_t value) {
+inline nativeapi::Placement ToCppPlacement(native_placement_t value) {
   switch (value) {
     case NATIVE_PLACEMENT_TOP:
       return nativeapi::Placement::Top;
@@ -78,6 +78,4 @@ nativeapi::Placement ToCppPlacement(native_placement_t value) {
       return nativeapi::Placement::Top;
   }
 }
-
-}  // namespace
 

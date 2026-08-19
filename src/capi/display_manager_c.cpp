@@ -19,23 +19,21 @@
 #include "display_c.h"
 #include "../display_manager.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_point_t ToCPoint(const nativeapi::Point& value) {
+inline native_point_t ToCPoint(const nativeapi::Point& value) {
   native_point_t result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
 
-nativeapi::Point ToCppPoint(const native_point_t& value) {
+inline nativeapi::Point ToCppPoint(const native_point_t& value) {
   nativeapi::Point result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
-
-}  // namespace
 
 native_display_list_t native_display_manager_get_all(void) {
   try {

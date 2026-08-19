@@ -15,9 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../shortcut.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_shortcut_scope_t ToCShortcutScope(nativeapi::ShortcutScope value) {
+inline native_shortcut_scope_t ToCShortcutScope(nativeapi::ShortcutScope value) {
   switch (value) {
     case nativeapi::ShortcutScope::Global:
       return NATIVE_SHORTCUT_SCOPE_GLOBAL;
@@ -28,7 +28,7 @@ native_shortcut_scope_t ToCShortcutScope(nativeapi::ShortcutScope value) {
   }
 }
 
-nativeapi::ShortcutScope ToCppShortcutScope(native_shortcut_scope_t value) {
+inline nativeapi::ShortcutScope ToCppShortcutScope(native_shortcut_scope_t value) {
   switch (value) {
     case NATIVE_SHORTCUT_SCOPE_GLOBAL:
       return nativeapi::ShortcutScope::Global;
@@ -39,7 +39,7 @@ nativeapi::ShortcutScope ToCppShortcutScope(native_shortcut_scope_t value) {
   }
 }
 
-native_shortcut_options_t ToCShortcutOptions(const nativeapi::ShortcutOptions& value) {
+inline native_shortcut_options_t ToCShortcutOptions(const nativeapi::ShortcutOptions& value) {
   native_shortcut_options_t result = {};
   result.accelerator = to_c_str(value.accelerator);
   result.description = to_c_str(value.description);
@@ -48,7 +48,7 @@ native_shortcut_options_t ToCShortcutOptions(const nativeapi::ShortcutOptions& v
   return result;
 }
 
-nativeapi::ShortcutOptions ToCppShortcutOptions(const native_shortcut_options_t& value) {
+inline nativeapi::ShortcutOptions ToCppShortcutOptions(const native_shortcut_options_t& value) {
   nativeapi::ShortcutOptions result = {};
   result.accelerator = value.accelerator ? value.accelerator : "";
   if (value.callback) {
@@ -61,8 +61,6 @@ nativeapi::ShortcutOptions ToCppShortcutOptions(const native_shortcut_options_t&
   result.enabled = value.enabled;
   return result;
 }
-
-}  // namespace
 
 void native_shortcut_options_free(native_shortcut_options_t* value) {
   if (!value) {

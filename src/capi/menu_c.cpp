@@ -23,9 +23,9 @@
 #include "positioning_strategy_c.h"
 #include "../menu.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_menu_item_type_t ToCMenuItemType(nativeapi::MenuItemType value) {
+inline native_menu_item_type_t ToCMenuItemType(nativeapi::MenuItemType value) {
   switch (value) {
     case nativeapi::MenuItemType::Normal:
       return NATIVE_MENU_ITEM_TYPE_NORMAL;
@@ -42,7 +42,7 @@ native_menu_item_type_t ToCMenuItemType(nativeapi::MenuItemType value) {
   }
 }
 
-nativeapi::MenuItemType ToCppMenuItemType(native_menu_item_type_t value) {
+inline nativeapi::MenuItemType ToCppMenuItemType(native_menu_item_type_t value) {
   switch (value) {
     case NATIVE_MENU_ITEM_TYPE_NORMAL:
       return nativeapi::MenuItemType::Normal;
@@ -59,7 +59,7 @@ nativeapi::MenuItemType ToCppMenuItemType(native_menu_item_type_t value) {
   }
 }
 
-native_menu_item_state_t ToCMenuItemState(nativeapi::MenuItemState value) {
+inline native_menu_item_state_t ToCMenuItemState(nativeapi::MenuItemState value) {
   switch (value) {
     case nativeapi::MenuItemState::Unchecked:
       return NATIVE_MENU_ITEM_STATE_UNCHECKED;
@@ -72,7 +72,7 @@ native_menu_item_state_t ToCMenuItemState(nativeapi::MenuItemState value) {
   }
 }
 
-nativeapi::MenuItemState ToCppMenuItemState(native_menu_item_state_t value) {
+inline nativeapi::MenuItemState ToCppMenuItemState(native_menu_item_state_t value) {
   switch (value) {
     case NATIVE_MENU_ITEM_STATE_UNCHECKED:
       return nativeapi::MenuItemState::Unchecked;
@@ -85,7 +85,7 @@ nativeapi::MenuItemState ToCppMenuItemState(native_menu_item_state_t value) {
   }
 }
 
-native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
+inline native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
   switch (value) {
     case nativeapi::ModifierKey::None:
       return NATIVE_MODIFIER_KEY_NONE;
@@ -110,7 +110,7 @@ native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
   }
 }
 
-nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
+inline nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
   switch (value) {
     case NATIVE_MODIFIER_KEY_NONE:
       return nativeapi::ModifierKey::None;
@@ -135,7 +135,7 @@ nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
   }
 }
 
-native_placement_t ToCPlacement(nativeapi::Placement value) {
+inline native_placement_t ToCPlacement(nativeapi::Placement value) {
   switch (value) {
     case nativeapi::Placement::Top:
       return NATIVE_PLACEMENT_TOP;
@@ -166,7 +166,7 @@ native_placement_t ToCPlacement(nativeapi::Placement value) {
   }
 }
 
-nativeapi::Placement ToCppPlacement(native_placement_t value) {
+inline nativeapi::Placement ToCppPlacement(native_placement_t value) {
   switch (value) {
     case NATIVE_PLACEMENT_TOP:
       return nativeapi::Placement::Top;
@@ -197,21 +197,19 @@ nativeapi::Placement ToCppPlacement(native_placement_t value) {
   }
 }
 
-native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
+inline native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
   native_keyboard_accelerator_t result = {};
   result.modifiers = ToCModifierKey(value.modifiers);
   result.key = to_c_str(value.key);
   return result;
 }
 
-nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
+inline nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
   nativeapi::KeyboardAccelerator result = {};
   result.modifiers = ToCppModifierKey(value.modifiers);
   result.key = value.key ? value.key : "";
   return result;
 }
-
-}  // namespace
 
 native_menu_item_t native_menu_item_create_with_label_and_type(const char* label, native_menu_item_type_t type) {
   try {

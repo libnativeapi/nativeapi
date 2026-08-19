@@ -15,9 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../foundation/color.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_color_t ToCColor(const nativeapi::Color& value) {
+inline native_color_t ToCColor(const nativeapi::Color& value) {
   native_color_t result = {};
   result.r = value.r;
   result.g = value.g;
@@ -26,7 +26,7 @@ native_color_t ToCColor(const nativeapi::Color& value) {
   return result;
 }
 
-nativeapi::Color ToCppColor(const native_color_t& value) {
+inline nativeapi::Color ToCppColor(const native_color_t& value) {
   nativeapi::Color result = {};
   result.r = value.r;
   result.g = value.g;
@@ -34,8 +34,6 @@ nativeapi::Color ToCppColor(const native_color_t& value) {
   result.a = value.a;
   return result;
 }
-
-}  // namespace
 
 const native_color_t NATIVE_COLOR_TRANSPARENT = ToCColor(nativeapi::Color::Transparent);
 

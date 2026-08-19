@@ -15,9 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../foundation/keyboard.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
+inline native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
   switch (value) {
     case nativeapi::ModifierKey::None:
       return NATIVE_MODIFIER_KEY_NONE;
@@ -42,7 +42,7 @@ native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
   }
 }
 
-nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
+inline nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
   switch (value) {
     case NATIVE_MODIFIER_KEY_NONE:
       return nativeapi::ModifierKey::None;
@@ -67,21 +67,19 @@ nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
   }
 }
 
-native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
+inline native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
   native_keyboard_accelerator_t result = {};
   result.modifiers = ToCModifierKey(value.modifiers);
   result.key = to_c_str(value.key);
   return result;
 }
 
-nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
+inline nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
   nativeapi::KeyboardAccelerator result = {};
   result.modifiers = ToCppModifierKey(value.modifiers);
   result.key = value.key ? value.key : "";
   return result;
 }
-
-}  // namespace
 
 char* native_keyboard_accelerator_to_string(native_keyboard_accelerator_t keyboard_accelerator) {
   try {

@@ -17,9 +17,9 @@
 #include "geometry_c.h"
 #include "../display.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_display_orientation_t ToCDisplayOrientation(nativeapi::DisplayOrientation value) {
+inline native_display_orientation_t ToCDisplayOrientation(nativeapi::DisplayOrientation value) {
   switch (value) {
     case nativeapi::DisplayOrientation::kPortrait:
       return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
@@ -34,7 +34,7 @@ native_display_orientation_t ToCDisplayOrientation(nativeapi::DisplayOrientation
   }
 }
 
-nativeapi::DisplayOrientation ToCppDisplayOrientation(native_display_orientation_t value) {
+inline nativeapi::DisplayOrientation ToCppDisplayOrientation(native_display_orientation_t value) {
   switch (value) {
     case NATIVE_DISPLAY_ORIENTATION_PORTRAIT:
       return nativeapi::DisplayOrientation::kPortrait;
@@ -49,35 +49,35 @@ nativeapi::DisplayOrientation ToCppDisplayOrientation(native_display_orientation
   }
 }
 
-native_point_t ToCPoint(const nativeapi::Point& value) {
+inline native_point_t ToCPoint(const nativeapi::Point& value) {
   native_point_t result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
 
-nativeapi::Point ToCppPoint(const native_point_t& value) {
+inline nativeapi::Point ToCppPoint(const native_point_t& value) {
   nativeapi::Point result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
 
-native_size_t ToCSize(const nativeapi::Size& value) {
+inline native_size_t ToCSize(const nativeapi::Size& value) {
   native_size_t result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
 
-nativeapi::Size ToCppSize(const native_size_t& value) {
+inline nativeapi::Size ToCppSize(const native_size_t& value) {
   nativeapi::Size result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
 
-native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
+inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   native_rectangle_t result = {};
   result.x = value.x;
   result.y = value.y;
@@ -86,7 +86,7 @@ native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   return result;
 }
 
-nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
+inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   nativeapi::Rectangle result = {};
   result.x = value.x;
   result.y = value.y;
@@ -94,8 +94,6 @@ nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   result.height = value.height;
   return result;
 }
-
-}  // namespace
 
 native_display_t native_display_create(void) {
   try {

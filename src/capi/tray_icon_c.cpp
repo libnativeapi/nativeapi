@@ -21,9 +21,9 @@
 #include "menu_c.h"
 #include "../tray_icon.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_context_menu_trigger_t ToCContextMenuTrigger(nativeapi::ContextMenuTrigger value) {
+inline native_context_menu_trigger_t ToCContextMenuTrigger(nativeapi::ContextMenuTrigger value) {
   switch (value) {
     case nativeapi::ContextMenuTrigger::None:
       return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
@@ -38,7 +38,7 @@ native_context_menu_trigger_t ToCContextMenuTrigger(nativeapi::ContextMenuTrigge
   }
 }
 
-nativeapi::ContextMenuTrigger ToCppContextMenuTrigger(native_context_menu_trigger_t value) {
+inline nativeapi::ContextMenuTrigger ToCppContextMenuTrigger(native_context_menu_trigger_t value) {
   switch (value) {
     case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
       return nativeapi::ContextMenuTrigger::None;
@@ -53,7 +53,7 @@ nativeapi::ContextMenuTrigger ToCppContextMenuTrigger(native_context_menu_trigge
   }
 }
 
-native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
+inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   native_rectangle_t result = {};
   result.x = value.x;
   result.y = value.y;
@@ -62,7 +62,7 @@ native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   return result;
 }
 
-nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
+inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   nativeapi::Rectangle result = {};
   result.x = value.x;
   result.y = value.y;
@@ -70,8 +70,6 @@ nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   result.height = value.height;
   return result;
 }
-
-}  // namespace
 
 native_tray_icon_t native_tray_icon_create(void) {
   try {

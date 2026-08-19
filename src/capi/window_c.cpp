@@ -19,9 +19,9 @@
 #include "color_c.h"
 #include "../window.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_title_bar_style_t ToCTitleBarStyle(nativeapi::TitleBarStyle value) {
+inline native_title_bar_style_t ToCTitleBarStyle(nativeapi::TitleBarStyle value) {
   switch (value) {
     case nativeapi::TitleBarStyle::Normal:
       return NATIVE_TITLE_BAR_STYLE_NORMAL;
@@ -32,7 +32,7 @@ native_title_bar_style_t ToCTitleBarStyle(nativeapi::TitleBarStyle value) {
   }
 }
 
-nativeapi::TitleBarStyle ToCppTitleBarStyle(native_title_bar_style_t value) {
+inline nativeapi::TitleBarStyle ToCppTitleBarStyle(native_title_bar_style_t value) {
   switch (value) {
     case NATIVE_TITLE_BAR_STYLE_NORMAL:
       return nativeapi::TitleBarStyle::Normal;
@@ -43,7 +43,7 @@ nativeapi::TitleBarStyle ToCppTitleBarStyle(native_title_bar_style_t value) {
   }
 }
 
-native_visual_effect_t ToCVisualEffect(nativeapi::VisualEffect value) {
+inline native_visual_effect_t ToCVisualEffect(nativeapi::VisualEffect value) {
   switch (value) {
     case nativeapi::VisualEffect::None:
       return NATIVE_VISUAL_EFFECT_NONE;
@@ -58,7 +58,7 @@ native_visual_effect_t ToCVisualEffect(nativeapi::VisualEffect value) {
   }
 }
 
-nativeapi::VisualEffect ToCppVisualEffect(native_visual_effect_t value) {
+inline nativeapi::VisualEffect ToCppVisualEffect(native_visual_effect_t value) {
   switch (value) {
     case NATIVE_VISUAL_EFFECT_NONE:
       return nativeapi::VisualEffect::None;
@@ -73,35 +73,35 @@ nativeapi::VisualEffect ToCppVisualEffect(native_visual_effect_t value) {
   }
 }
 
-native_point_t ToCPoint(const nativeapi::Point& value) {
+inline native_point_t ToCPoint(const nativeapi::Point& value) {
   native_point_t result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
 
-nativeapi::Point ToCppPoint(const native_point_t& value) {
+inline nativeapi::Point ToCppPoint(const native_point_t& value) {
   nativeapi::Point result = {};
   result.x = value.x;
   result.y = value.y;
   return result;
 }
 
-native_size_t ToCSize(const nativeapi::Size& value) {
+inline native_size_t ToCSize(const nativeapi::Size& value) {
   native_size_t result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
 
-nativeapi::Size ToCppSize(const native_size_t& value) {
+inline nativeapi::Size ToCppSize(const native_size_t& value) {
   nativeapi::Size result = {};
   result.width = value.width;
   result.height = value.height;
   return result;
 }
 
-native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
+inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   native_rectangle_t result = {};
   result.x = value.x;
   result.y = value.y;
@@ -110,7 +110,7 @@ native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
   return result;
 }
 
-nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
+inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   nativeapi::Rectangle result = {};
   result.x = value.x;
   result.y = value.y;
@@ -119,7 +119,7 @@ nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
   return result;
 }
 
-native_color_t ToCColor(const nativeapi::Color& value) {
+inline native_color_t ToCColor(const nativeapi::Color& value) {
   native_color_t result = {};
   result.r = value.r;
   result.g = value.g;
@@ -128,7 +128,7 @@ native_color_t ToCColor(const nativeapi::Color& value) {
   return result;
 }
 
-nativeapi::Color ToCppColor(const native_color_t& value) {
+inline nativeapi::Color ToCppColor(const native_color_t& value) {
   nativeapi::Color result = {};
   result.r = value.r;
   result.g = value.g;
@@ -136,8 +136,6 @@ nativeapi::Color ToCppColor(const native_color_t& value) {
   result.a = value.a;
   return result;
 }
-
-}  // namespace
 
 native_window_t native_window_create(void) {
   try {

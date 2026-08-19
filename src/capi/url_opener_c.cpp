@@ -15,9 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../url_opener.h"
 
-namespace {
+// Conversion helpers between the C ABI types and their C++ originals.
 
-native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode value) {
+inline native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode value) {
   switch (value) {
     case nativeapi::UrlOpenErrorCode::kNone:
       return NATIVE_URL_OPEN_ERROR_CODE_NONE;
@@ -36,7 +36,7 @@ native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode val
   }
 }
 
-nativeapi::UrlOpenErrorCode ToCppUrlOpenErrorCode(native_url_open_error_code_t value) {
+inline nativeapi::UrlOpenErrorCode ToCppUrlOpenErrorCode(native_url_open_error_code_t value) {
   switch (value) {
     case NATIVE_URL_OPEN_ERROR_CODE_NONE:
       return nativeapi::UrlOpenErrorCode::kNone;
@@ -55,7 +55,7 @@ nativeapi::UrlOpenErrorCode ToCppUrlOpenErrorCode(native_url_open_error_code_t v
   }
 }
 
-native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value) {
+inline native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value) {
   native_url_open_result_t result = {};
   result.success = value.success;
   result.error_code = ToCUrlOpenErrorCode(value.error_code);
@@ -63,15 +63,13 @@ native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value)
   return result;
 }
 
-nativeapi::UrlOpenResult ToCppUrlOpenResult(const native_url_open_result_t& value) {
+inline nativeapi::UrlOpenResult ToCppUrlOpenResult(const native_url_open_result_t& value) {
   nativeapi::UrlOpenResult result = {};
   result.success = value.success;
   result.error_code = ToCppUrlOpenErrorCode(value.error_code);
   result.error_message = value.error_message ? value.error_message : "";
   return result;
 }
-
-}  // namespace
 
 void native_url_open_result_free(native_url_open_result_t* value) {
   if (!value) {
