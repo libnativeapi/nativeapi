@@ -325,24 +325,11 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     return nullptr;
   }
 
-  // Try to get the focused window
-  GdkSeat* seat = gdk_display_get_default_seat(display);
-  if (seat) {
-    GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
-    if (keyboard) {
-      GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
-      if (focused_window) {
-        WindowId window_id = GetOrCreateWindowId(focused_window);
-        return Get(window_id);
-      }
-    }
-  }
-
-  // Fallback: get the first visible window
+  // GTK tracks the active toplevel, which is the window receiving keystrokes.
   GList* toplevels = gtk_window_list_toplevels();
   for (GList* l = toplevels; l != nullptr; l = l->next) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
-    if (gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
+    if (gtk_window_is_active(gtk_window)) {
       GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
       if (gdk_window) {
         WindowId window_id = GetOrCreateWindowId(gdk_window);
