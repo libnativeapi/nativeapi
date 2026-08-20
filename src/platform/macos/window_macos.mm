@@ -12,6 +12,40 @@
 // Key for associated objects (used by both window_macos.mm and window_manager_macos.mm)
 const void* kWindowIdKey = &kWindowIdKey;
 
+@interface NativeAPIWindow : NSWindow
+@end
+
+@implementation NativeAPIWindow
+
+- (void)mouseUp:(NSEvent*)event {
+  if (event.clickCount == 2) {
+    if ((self.styleMask & NSWindowStyleMaskFullSizeContentView) &&
+        self.titlebarAppearsTransparent) {
+      NSPoint locationInWindow = [event locationInWindow];
+      NSRect contentLayoutRect = [self contentLayoutRect];
+      NSRect windowFrame = [[self contentView] frame];
+
+      NSRect titleBarRect = NSMakeRect(
+          contentLayoutRect.origin.x, contentLayoutRect.origin.y + contentLayoutRect.size.height,
+          contentLayoutRect.size.width, windowFrame.size.height - contentLayoutRect.size.height);
+
+      if (NSPointInRect(locationInWindow, titleBarRect)) {
+        NSString* action =
+            [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleActionOnDoubleClick"];
+        if ([action isEqualToString:@"Minimize"]) {
+          [self miniaturize:nil];
+        } else {
+          [self performZoom:nil];
+        }
+        return;
+      }
+    }
+  }
+  [super mouseUp:event];
+}
+
+@end
+
 namespace nativeapi {
 
 // Private implementation class
@@ -39,7 +73,7 @@ Window::Window(void* native_window) {
   if (native_window == nullptr) {
     // Create new platform object
     id = IdAllocator::Allocate<Window>();
-    ns_window = [[NSWindow alloc] init];
+    ns_window = [[NativeAPIWindow alloc] init];
     ns_window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
                           NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
     // Store the ID as associated object

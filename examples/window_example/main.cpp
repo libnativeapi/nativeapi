@@ -35,6 +35,7 @@ int main() {
   // Create a new window (automatically registered)
   std::shared_ptr<Window> window_ptr = std::make_shared<Window>();
   window_ptr->SetTitle("Window Example");
+  window_ptr->SetTitleBarStyle(nativeapi::TitleBarStyle::Hidden);
   window_ptr->SetSize({800, 600}, false);
   window_ptr->SetMinimumSize({400, 300});
   window_ptr->SetMaximumSize({1920, 1080});
