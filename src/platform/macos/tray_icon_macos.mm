@@ -4,6 +4,7 @@
 #include "../../menu.h"
 #include "../../positioning_strategy.h"
 #include "../../tray_icon.h"
+#include "coordinate_utils_macos.h"
 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -311,20 +312,21 @@ std::shared_ptr<Menu> TrayIcon::GetContextMenu() {
 Rectangle TrayIcon::GetBounds() {
   Rectangle bounds = {0, 0, 0, 0};
 
-  if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button) {
+  if (pimpl_->ns_status_item_ && pimpl_->ns_status_item_.button && pimpl_->ns_status_item_.button.window) {
     NSStatusBarButton* button = pimpl_->ns_status_item_.button;
-    NSRect button_frame = button.frame;
-    NSRect screen_frame = [button convertRect:button_frame toView:nil];
-    NSRect window_frame = [button.window convertRectToScreen:screen_frame];
+    NSRect window_rect = [button convertRect:button.bounds toView:nil];
+    NSRect screen_rect = [button.window convertRectToScreen:window_rect];
 
-    // Convert from Cocoa coordinates (bottom-left origin) to standard coordinates (top-left origin)
-    NSScreen* screen = [NSScreen mainScreen];
-    CGFloat screen_height = screen.frame.size.height;
+    // Flip against the primary screen ([NSScreen screens][0]), matching every
+    // other coordinate conversion in this library. Do NOT use mainScreen here:
+    // it is the screen of the current key window, which makes the result depend
+    // on where keyboard focus happens to be on multi-display setups.
+    CGPoint top_left = NSRectExt::topLeft(screen_rect);
 
-    bounds.x = window_frame.origin.x;
-    bounds.y = screen_height - window_frame.origin.y - window_frame.size.height;
-    bounds.width = window_frame.size.width;
-    bounds.height = window_frame.size.height;
+    bounds.x = top_left.x;
+    bounds.y = top_left.y;
+    bounds.width = screen_rect.size.width;
+    bounds.height = screen_rect.size.height;
   }
 
   return bounds;
