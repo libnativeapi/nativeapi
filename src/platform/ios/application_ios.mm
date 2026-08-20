@@ -2,6 +2,7 @@
 #import <UIKit/UIKit.h>
 #include <string>
 #include "../../application.h"
+#include "../../window_manager.h"
 
 namespace nativeapi {
 
@@ -59,6 +60,11 @@ std::shared_ptr<Window> Application::GetPrimaryWindow() const {
 
 void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
   // iOS manages primary window through UIApplication
+}
+
+std::vector<std::shared_ptr<Window>> Application::GetAllWindows() const {
+  auto& window_manager = WindowManager::GetInstance();
+  return window_manager.GetAll();
 }
 
 }  // namespace nativeapi

@@ -3,6 +3,7 @@
 #endif
 #include <iostream>
 #include "../../application.h"
+#include "../../window_manager.h"
 
 // Temporarily disable logging to avoid macro conflicts
 #define HILOG_WARN(...) ((void)0)
@@ -60,6 +61,11 @@ std::shared_ptr<Window> Application::GetPrimaryWindow() const {
 
 void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
   HILOG_WARN("Application::SetPrimaryWindow not implemented on OpenHarmony");
+}
+
+std::vector<std::shared_ptr<Window>> Application::GetAllWindows() const {
+  auto& window_manager = WindowManager::GetInstance();
+  return window_manager.GetAll();
 }
 
 }  // namespace nativeapi

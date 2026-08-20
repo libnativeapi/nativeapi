@@ -143,7 +143,7 @@ void TestConcurrentAllocationIsUnique() {
   std::vector<std::thread> threads;
 
   for (int t = 0; t < kThreads; ++t) {
-    threads.emplace_back([&per_thread, t] {
+    threads.emplace_back([&per_thread, t, kPerThread] {
       per_thread[t].reserve(kPerThread);
       for (int i = 0; i < kPerThread; ++i) {
         per_thread[t].push_back(IdAllocator::Allocate<MenuItem>());

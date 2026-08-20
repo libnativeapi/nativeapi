@@ -1,5 +1,6 @@
 #include <android/log.h>
 #include "../../application.h"
+#include "../../window_manager.h"
 
 #define LOG_TAG "NativeApi"
 #define ALOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
@@ -57,6 +58,11 @@ std::shared_ptr<Window> Application::GetPrimaryWindow() const {
 
 void Application::SetPrimaryWindow(std::shared_ptr<Window> window) {
   ALOGW("Application::SetPrimaryWindow not implemented on Android");
+}
+
+std::vector<std::shared_ptr<Window>> Application::GetAllWindows() const {
+  auto& window_manager = WindowManager::GetInstance();
+  return window_manager.GetAll();
 }
 
 }  // namespace nativeapi
