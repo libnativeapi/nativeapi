@@ -3,10 +3,8 @@
 #include <iostream>
 #include <thread>
 
-extern "C" {
 #include "../../src/capi/keyboard_c.h"
 #include "../../src/capi/keyboard_monitor_c.h"
-}
 
 // Global monitor handle for cleanup
 static native_keyboard_monitor_t g_monitor = NATIVE_INVALID_KEYBOARD_MONITOR;

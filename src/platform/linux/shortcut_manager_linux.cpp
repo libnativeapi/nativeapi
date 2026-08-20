@@ -153,7 +153,7 @@ KeySym KeySymFromToken(const std::string& token) {
 bool ParseAcceleratorLinux(const std::string& accelerator,
                            unsigned int& modifiers,
                            KeyCode& keycode,
-                           Display* display) {
+                           ::Display* display) {
   modifiers = 0;
   keycode = 0;
 
@@ -373,8 +373,10 @@ class ShortcutManagerImpl final : public ShortcutManager::Impl {
   }
 
   ShortcutManager* manager_;
-  Display* display_ = nullptr;
-  Window root_ = 0;
+  // ::-qualified: nativeapi::Display/Window (via id_allocator.h) shadow the
+  // X11 typedefs inside this namespace.
+  ::Display* display_ = nullptr;
+  ::Window root_ = 0;
   Atom exit_atom_ = None;
 
   std::mutex mutex_;
