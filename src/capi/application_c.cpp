@@ -145,11 +145,11 @@ native_listener_id_t native_application_add_listener(native_application_event_ca
     return static_cast<native_listener_id_t>(nativeapi::Application::GetInstance().AddListener<nativeapi::ApplicationEvent>(
         [callback, user_data](const nativeapi::ApplicationEvent& event) {
           native_application_event_t c_event = {};
-          if (!ToCApplicationEvent(event, &c_event)) {
+          if (!to_c_application_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCApplicationEvent(&c_event);
+          free_c_application_event(&c_event);
         }));
   } catch (...) {
     return 0;
@@ -164,7 +164,7 @@ bool native_application_remove_listener(native_listener_id_t listener_id) {
   }
 }
 
-bool ToCApplicationEvent(const nativeapi::ApplicationEvent& event, native_application_event_t* out) {
+bool to_c_application_event(const nativeapi::ApplicationEvent& event, native_application_event_t* out) {
   if (!out) {
     return false;
   }
@@ -197,7 +197,7 @@ bool ToCApplicationEvent(const nativeapi::ApplicationEvent& event, native_applic
   return false;
 }
 
-void FreeCApplicationEvent(native_application_event_t* value) {
+void free_c_application_event(native_application_event_t* value) {
   if (!value) {
     return;
   }

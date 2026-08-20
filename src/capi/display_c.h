@@ -135,8 +135,49 @@ class DisplayEvent;
 
 /// Fills @p out from @p event. Returns false when the event is not one
 /// of the concrete types the C ABI knows about.
-bool ToCDisplayEvent(const nativeapi::DisplayEvent& event, native_display_event_t* out);
-/// Releases everything ToCDisplayEvent() allocated.
-void FreeCDisplayEvent(native_display_event_t* value);
+bool to_c_display_event(const nativeapi::DisplayEvent& event, native_display_event_t* out);
+/// Releases everything to_c_display_event() allocated.
+void free_c_display_event(native_display_event_t* value);
 
 #endif
+
+#ifdef __cplusplus
+#include "../display.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_display_orientation_t to_c_display_orientation(nativeapi::DisplayOrientation value);
+inline nativeapi::DisplayOrientation to_cpp_display_orientation(native_display_orientation_t value);
+
+inline native_display_orientation_t to_c_display_orientation(nativeapi::DisplayOrientation value) {
+  switch (value) {
+    case nativeapi::DisplayOrientation::kPortrait:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
+    case nativeapi::DisplayOrientation::kLandscape:
+      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE;
+    case nativeapi::DisplayOrientation::kPortraitFlipped:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED;
+    case nativeapi::DisplayOrientation::kLandscapeFlipped:
+      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED;
+    default:
+      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
+  }
+}
+
+inline nativeapi::DisplayOrientation to_cpp_display_orientation(native_display_orientation_t value) {
+  switch (value) {
+    case NATIVE_DISPLAY_ORIENTATION_PORTRAIT:
+      return nativeapi::DisplayOrientation::kPortrait;
+    case NATIVE_DISPLAY_ORIENTATION_LANDSCAPE:
+      return nativeapi::DisplayOrientation::kLandscape;
+    case NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED:
+      return nativeapi::DisplayOrientation::kPortraitFlipped;
+    case NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED:
+      return nativeapi::DisplayOrientation::kLandscapeFlipped;
+    default:
+      return nativeapi::DisplayOrientation::kPortrait;
+  }
+}
+
+#endif  // __cplusplus

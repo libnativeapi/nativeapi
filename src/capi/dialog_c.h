@@ -27,3 +27,40 @@ typedef enum {
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+#include "../dialog.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_dialog_modality_t to_c_dialog_modality(nativeapi::DialogModality value);
+inline nativeapi::DialogModality to_cpp_dialog_modality(native_dialog_modality_t value);
+
+inline native_dialog_modality_t to_c_dialog_modality(nativeapi::DialogModality value) {
+  switch (value) {
+    case nativeapi::DialogModality::None:
+      return NATIVE_DIALOG_MODALITY_NONE;
+    case nativeapi::DialogModality::Application:
+      return NATIVE_DIALOG_MODALITY_APPLICATION;
+    case nativeapi::DialogModality::Window:
+      return NATIVE_DIALOG_MODALITY_WINDOW;
+    default:
+      return NATIVE_DIALOG_MODALITY_NONE;
+  }
+}
+
+inline nativeapi::DialogModality to_cpp_dialog_modality(native_dialog_modality_t value) {
+  switch (value) {
+    case NATIVE_DIALOG_MODALITY_NONE:
+      return nativeapi::DialogModality::None;
+    case NATIVE_DIALOG_MODALITY_APPLICATION:
+      return nativeapi::DialogModality::Application;
+    case NATIVE_DIALOG_MODALITY_WINDOW:
+      return nativeapi::DialogModality::Window;
+    default:
+      return nativeapi::DialogModality::None;
+  }
+}
+
+#endif  // __cplusplus

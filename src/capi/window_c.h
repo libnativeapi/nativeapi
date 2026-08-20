@@ -319,8 +319,73 @@ class WindowEvent;
 
 /// Fills @p out from @p event. Returns false when the event is not one
 /// of the concrete types the C ABI knows about.
-bool ToCWindowEvent(const nativeapi::WindowEvent& event, native_window_event_t* out);
-/// Releases everything ToCWindowEvent() allocated.
-void FreeCWindowEvent(native_window_event_t* value);
+bool to_c_window_event(const nativeapi::WindowEvent& event, native_window_event_t* out);
+/// Releases everything to_c_window_event() allocated.
+void free_c_window_event(native_window_event_t* value);
 
 #endif
+
+#ifdef __cplusplus
+#include "../window.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_title_bar_style_t to_c_title_bar_style(nativeapi::TitleBarStyle value);
+inline nativeapi::TitleBarStyle to_cpp_title_bar_style(native_title_bar_style_t value);
+inline native_visual_effect_t to_c_visual_effect(nativeapi::VisualEffect value);
+inline nativeapi::VisualEffect to_cpp_visual_effect(native_visual_effect_t value);
+
+inline native_title_bar_style_t to_c_title_bar_style(nativeapi::TitleBarStyle value) {
+  switch (value) {
+    case nativeapi::TitleBarStyle::Normal:
+      return NATIVE_TITLE_BAR_STYLE_NORMAL;
+    case nativeapi::TitleBarStyle::Hidden:
+      return NATIVE_TITLE_BAR_STYLE_HIDDEN;
+    default:
+      return NATIVE_TITLE_BAR_STYLE_NORMAL;
+  }
+}
+
+inline nativeapi::TitleBarStyle to_cpp_title_bar_style(native_title_bar_style_t value) {
+  switch (value) {
+    case NATIVE_TITLE_BAR_STYLE_NORMAL:
+      return nativeapi::TitleBarStyle::Normal;
+    case NATIVE_TITLE_BAR_STYLE_HIDDEN:
+      return nativeapi::TitleBarStyle::Hidden;
+    default:
+      return nativeapi::TitleBarStyle::Normal;
+  }
+}
+
+inline native_visual_effect_t to_c_visual_effect(nativeapi::VisualEffect value) {
+  switch (value) {
+    case nativeapi::VisualEffect::None:
+      return NATIVE_VISUAL_EFFECT_NONE;
+    case nativeapi::VisualEffect::Blur:
+      return NATIVE_VISUAL_EFFECT_BLUR;
+    case nativeapi::VisualEffect::Acrylic:
+      return NATIVE_VISUAL_EFFECT_ACRYLIC;
+    case nativeapi::VisualEffect::Mica:
+      return NATIVE_VISUAL_EFFECT_MICA;
+    default:
+      return NATIVE_VISUAL_EFFECT_NONE;
+  }
+}
+
+inline nativeapi::VisualEffect to_cpp_visual_effect(native_visual_effect_t value) {
+  switch (value) {
+    case NATIVE_VISUAL_EFFECT_NONE:
+      return nativeapi::VisualEffect::None;
+    case NATIVE_VISUAL_EFFECT_BLUR:
+      return nativeapi::VisualEffect::Blur;
+    case NATIVE_VISUAL_EFFECT_ACRYLIC:
+      return nativeapi::VisualEffect::Acrylic;
+    case NATIVE_VISUAL_EFFECT_MICA:
+      return nativeapi::VisualEffect::Mica;
+    default:
+      return nativeapi::VisualEffect::None;
+  }
+}
+
+#endif  // __cplusplus

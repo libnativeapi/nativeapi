@@ -17,53 +17,6 @@
 #include "shortcut_c.h"
 #include "../shortcut_manager.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_shortcut_scope_t ToCShortcutScope(nativeapi::ShortcutScope value) {
-  switch (value) {
-    case nativeapi::ShortcutScope::Global:
-      return NATIVE_SHORTCUT_SCOPE_GLOBAL;
-    case nativeapi::ShortcutScope::Application:
-      return NATIVE_SHORTCUT_SCOPE_APPLICATION;
-    default:
-      return NATIVE_SHORTCUT_SCOPE_GLOBAL;
-  }
-}
-
-inline nativeapi::ShortcutScope ToCppShortcutScope(native_shortcut_scope_t value) {
-  switch (value) {
-    case NATIVE_SHORTCUT_SCOPE_GLOBAL:
-      return nativeapi::ShortcutScope::Global;
-    case NATIVE_SHORTCUT_SCOPE_APPLICATION:
-      return nativeapi::ShortcutScope::Application;
-    default:
-      return nativeapi::ShortcutScope::Global;
-  }
-}
-
-inline native_shortcut_options_t ToCShortcutOptions(const nativeapi::ShortcutOptions& value) {
-  native_shortcut_options_t result = {};
-  result.accelerator = to_c_str(value.accelerator);
-  result.description = to_c_str(value.description);
-  result.scope = ToCShortcutScope(value.scope);
-  result.enabled = value.enabled;
-  return result;
-}
-
-inline nativeapi::ShortcutOptions ToCppShortcutOptions(const native_shortcut_options_t& value) {
-  nativeapi::ShortcutOptions result = {};
-  result.accelerator = value.accelerator ? value.accelerator : "";
-  if (value.callback) {
-    auto callback = value.callback;
-    auto* data = value.callback_user_data;
-    result.callback = [callback, data]() { callback(data); };
-  }
-  result.description = value.description ? value.description : "";
-  result.scope = ToCppShortcutScope(value.scope);
-  result.enabled = value.enabled;
-  return result;
-}
-
 bool native_shortcut_manager_is_supported(void) {
   try {
     return nativeapi::ShortcutManager::GetInstance().IsSupported();
@@ -88,7 +41,7 @@ native_shortcut_t native_shortcut_manager_register_with_accelerator_and_callback
 
 native_shortcut_t native_shortcut_manager_register_with_options(native_shortcut_options_t options) {
   try {
-    auto options_cpp = ToCppShortcutOptions(options);
+    auto options_cpp = to_cpp_shortcut_options(options);
     return nativeapi::HandleTable::GetInstance().Insert(nativeapi::ShortcutManager::GetInstance().Register(options_cpp));
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_shortcut_manager_register_with_options");
@@ -166,7 +119,7 @@ native_shortcut_list_t native_shortcut_manager_get_all(void) {
 
 native_shortcut_list_t native_shortcut_manager_get_by_scope(native_shortcut_scope_t scope) {
   try {
-    const auto items = nativeapi::ShortcutManager::GetInstance().GetByScope(ToCppShortcutScope(scope));
+    const auto items = nativeapi::ShortcutManager::GetInstance().GetByScope(to_cpp_shortcut_scope(scope));
     native_shortcut_list_t list = {};
     if (items.empty()) {
       return list;
@@ -242,11 +195,11 @@ native_listener_id_t native_shortcut_manager_add_listener(native_shortcut_event_
     return static_cast<native_listener_id_t>(nativeapi::ShortcutManager::GetInstance().AddListener<nativeapi::ShortcutEvent>(
         [callback, user_data](const nativeapi::ShortcutEvent& event) {
           native_shortcut_event_t c_event = {};
-          if (!ToCShortcutEvent(event, &c_event)) {
+          if (!to_c_shortcut_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCShortcutEvent(&c_event);
+          free_c_shortcut_event(&c_event);
         }));
   } catch (...) {
     return 0;

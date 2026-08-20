@@ -67,3 +67,32 @@ unsigned int native_color_to_argb(native_color_t color);
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+#include "../foundation/color.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_color_t to_c_color(const nativeapi::Color& value);
+inline nativeapi::Color to_cpp_color(const native_color_t& value);
+
+inline native_color_t to_c_color(const nativeapi::Color& value) {
+  native_color_t result = {};
+  result.r = value.r;
+  result.g = value.g;
+  result.b = value.b;
+  result.a = value.a;
+  return result;
+}
+
+inline nativeapi::Color to_cpp_color(const native_color_t& value) {
+  nativeapi::Color result = {};
+  result.r = value.r;
+  result.g = value.g;
+  result.b = value.b;
+  result.a = value.a;
+  return result;
+}
+
+#endif  // __cplusplus

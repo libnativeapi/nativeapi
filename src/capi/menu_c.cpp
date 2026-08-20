@@ -23,198 +23,10 @@
 #include "positioning_strategy_c.h"
 #include "../menu.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_menu_item_type_t ToCMenuItemType(nativeapi::MenuItemType value) {
-  switch (value) {
-    case nativeapi::MenuItemType::Normal:
-      return NATIVE_MENU_ITEM_TYPE_NORMAL;
-    case nativeapi::MenuItemType::Checkbox:
-      return NATIVE_MENU_ITEM_TYPE_CHECKBOX;
-    case nativeapi::MenuItemType::Radio:
-      return NATIVE_MENU_ITEM_TYPE_RADIO;
-    case nativeapi::MenuItemType::Separator:
-      return NATIVE_MENU_ITEM_TYPE_SEPARATOR;
-    case nativeapi::MenuItemType::Submenu:
-      return NATIVE_MENU_ITEM_TYPE_SUBMENU;
-    default:
-      return NATIVE_MENU_ITEM_TYPE_NORMAL;
-  }
-}
-
-inline nativeapi::MenuItemType ToCppMenuItemType(native_menu_item_type_t value) {
-  switch (value) {
-    case NATIVE_MENU_ITEM_TYPE_NORMAL:
-      return nativeapi::MenuItemType::Normal;
-    case NATIVE_MENU_ITEM_TYPE_CHECKBOX:
-      return nativeapi::MenuItemType::Checkbox;
-    case NATIVE_MENU_ITEM_TYPE_RADIO:
-      return nativeapi::MenuItemType::Radio;
-    case NATIVE_MENU_ITEM_TYPE_SEPARATOR:
-      return nativeapi::MenuItemType::Separator;
-    case NATIVE_MENU_ITEM_TYPE_SUBMENU:
-      return nativeapi::MenuItemType::Submenu;
-    default:
-      return nativeapi::MenuItemType::Normal;
-  }
-}
-
-inline native_menu_item_state_t ToCMenuItemState(nativeapi::MenuItemState value) {
-  switch (value) {
-    case nativeapi::MenuItemState::Unchecked:
-      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
-    case nativeapi::MenuItemState::Checked:
-      return NATIVE_MENU_ITEM_STATE_CHECKED;
-    case nativeapi::MenuItemState::Mixed:
-      return NATIVE_MENU_ITEM_STATE_MIXED;
-    default:
-      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
-  }
-}
-
-inline nativeapi::MenuItemState ToCppMenuItemState(native_menu_item_state_t value) {
-  switch (value) {
-    case NATIVE_MENU_ITEM_STATE_UNCHECKED:
-      return nativeapi::MenuItemState::Unchecked;
-    case NATIVE_MENU_ITEM_STATE_CHECKED:
-      return nativeapi::MenuItemState::Checked;
-    case NATIVE_MENU_ITEM_STATE_MIXED:
-      return nativeapi::MenuItemState::Mixed;
-    default:
-      return nativeapi::MenuItemState::Unchecked;
-  }
-}
-
-inline native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
-  switch (value) {
-    case nativeapi::ModifierKey::None:
-      return NATIVE_MODIFIER_KEY_NONE;
-    case nativeapi::ModifierKey::Shift:
-      return NATIVE_MODIFIER_KEY_SHIFT;
-    case nativeapi::ModifierKey::Ctrl:
-      return NATIVE_MODIFIER_KEY_CTRL;
-    case nativeapi::ModifierKey::Alt:
-      return NATIVE_MODIFIER_KEY_ALT;
-    case nativeapi::ModifierKey::Meta:
-      return NATIVE_MODIFIER_KEY_META;
-    case nativeapi::ModifierKey::Fn:
-      return NATIVE_MODIFIER_KEY_FN;
-    case nativeapi::ModifierKey::CapsLock:
-      return NATIVE_MODIFIER_KEY_CAPS_LOCK;
-    case nativeapi::ModifierKey::NumLock:
-      return NATIVE_MODIFIER_KEY_NUM_LOCK;
-    case nativeapi::ModifierKey::ScrollLock:
-      return NATIVE_MODIFIER_KEY_SCROLL_LOCK;
-    default:
-      return NATIVE_MODIFIER_KEY_NONE;
-  }
-}
-
-inline nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
-  switch (value) {
-    case NATIVE_MODIFIER_KEY_NONE:
-      return nativeapi::ModifierKey::None;
-    case NATIVE_MODIFIER_KEY_SHIFT:
-      return nativeapi::ModifierKey::Shift;
-    case NATIVE_MODIFIER_KEY_CTRL:
-      return nativeapi::ModifierKey::Ctrl;
-    case NATIVE_MODIFIER_KEY_ALT:
-      return nativeapi::ModifierKey::Alt;
-    case NATIVE_MODIFIER_KEY_META:
-      return nativeapi::ModifierKey::Meta;
-    case NATIVE_MODIFIER_KEY_FN:
-      return nativeapi::ModifierKey::Fn;
-    case NATIVE_MODIFIER_KEY_CAPS_LOCK:
-      return nativeapi::ModifierKey::CapsLock;
-    case NATIVE_MODIFIER_KEY_NUM_LOCK:
-      return nativeapi::ModifierKey::NumLock;
-    case NATIVE_MODIFIER_KEY_SCROLL_LOCK:
-      return nativeapi::ModifierKey::ScrollLock;
-    default:
-      return nativeapi::ModifierKey::None;
-  }
-}
-
-inline native_placement_t ToCPlacement(nativeapi::Placement value) {
-  switch (value) {
-    case nativeapi::Placement::Top:
-      return NATIVE_PLACEMENT_TOP;
-    case nativeapi::Placement::TopStart:
-      return NATIVE_PLACEMENT_TOP_START;
-    case nativeapi::Placement::TopEnd:
-      return NATIVE_PLACEMENT_TOP_END;
-    case nativeapi::Placement::Right:
-      return NATIVE_PLACEMENT_RIGHT;
-    case nativeapi::Placement::RightStart:
-      return NATIVE_PLACEMENT_RIGHT_START;
-    case nativeapi::Placement::RightEnd:
-      return NATIVE_PLACEMENT_RIGHT_END;
-    case nativeapi::Placement::Bottom:
-      return NATIVE_PLACEMENT_BOTTOM;
-    case nativeapi::Placement::BottomStart:
-      return NATIVE_PLACEMENT_BOTTOM_START;
-    case nativeapi::Placement::BottomEnd:
-      return NATIVE_PLACEMENT_BOTTOM_END;
-    case nativeapi::Placement::Left:
-      return NATIVE_PLACEMENT_LEFT;
-    case nativeapi::Placement::LeftStart:
-      return NATIVE_PLACEMENT_LEFT_START;
-    case nativeapi::Placement::LeftEnd:
-      return NATIVE_PLACEMENT_LEFT_END;
-    default:
-      return NATIVE_PLACEMENT_TOP;
-  }
-}
-
-inline nativeapi::Placement ToCppPlacement(native_placement_t value) {
-  switch (value) {
-    case NATIVE_PLACEMENT_TOP:
-      return nativeapi::Placement::Top;
-    case NATIVE_PLACEMENT_TOP_START:
-      return nativeapi::Placement::TopStart;
-    case NATIVE_PLACEMENT_TOP_END:
-      return nativeapi::Placement::TopEnd;
-    case NATIVE_PLACEMENT_RIGHT:
-      return nativeapi::Placement::Right;
-    case NATIVE_PLACEMENT_RIGHT_START:
-      return nativeapi::Placement::RightStart;
-    case NATIVE_PLACEMENT_RIGHT_END:
-      return nativeapi::Placement::RightEnd;
-    case NATIVE_PLACEMENT_BOTTOM:
-      return nativeapi::Placement::Bottom;
-    case NATIVE_PLACEMENT_BOTTOM_START:
-      return nativeapi::Placement::BottomStart;
-    case NATIVE_PLACEMENT_BOTTOM_END:
-      return nativeapi::Placement::BottomEnd;
-    case NATIVE_PLACEMENT_LEFT:
-      return nativeapi::Placement::Left;
-    case NATIVE_PLACEMENT_LEFT_START:
-      return nativeapi::Placement::LeftStart;
-    case NATIVE_PLACEMENT_LEFT_END:
-      return nativeapi::Placement::LeftEnd;
-    default:
-      return nativeapi::Placement::Top;
-  }
-}
-
-inline native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
-  native_keyboard_accelerator_t result = {};
-  result.modifiers = ToCModifierKey(value.modifiers);
-  result.key = to_c_str(value.key);
-  return result;
-}
-
-inline nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
-  nativeapi::KeyboardAccelerator result = {};
-  result.modifiers = ToCppModifierKey(value.modifiers);
-  result.key = value.key ? value.key : "";
-  return result;
-}
-
 native_menu_item_t native_menu_item_create_with_label_and_type(const char* label, native_menu_item_type_t type) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::MenuItem>(std::string(label ? label : ""), ToCppMenuItemType(type)));
+        std::make_shared<nativeapi::MenuItem>(std::string(label ? label : ""), to_cpp_menu_item_type(type)));
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_create_with_label_and_type");
     return 0;
@@ -250,7 +62,7 @@ native_menu_item_type_t native_menu_item_get_type(native_menu_item_t menu_item) 
     return (native_menu_item_type_t)NATIVE_MENU_ITEM_TYPE_NORMAL;
   }
   try {
-    return ToCMenuItemType(self->GetType());
+    return to_c_menu_item_type(self->GetType());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_type");
     return (native_menu_item_type_t)NATIVE_MENU_ITEM_TYPE_NORMAL;
@@ -357,7 +169,7 @@ void native_menu_item_set_accelerator(native_menu_item_t menu_item, const native
   try {
     std::optional<nativeapi::KeyboardAccelerator> accelerator_cpp;
     if (accelerator) {
-      accelerator_cpp = ToCppKeyboardAccelerator(*accelerator);
+      accelerator_cpp = to_cpp_keyboard_accelerator(*accelerator);
     }
     self->SetAccelerator(accelerator_cpp);
     return;
@@ -375,7 +187,7 @@ native_keyboard_accelerator_t native_menu_item_get_accelerator(native_menu_item_
   }
   try {
     const auto cpp_result = self->GetAccelerator();
-    return ToCKeyboardAccelerator(cpp_result);
+    return to_c_keyboard_accelerator(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_accelerator");
     native_keyboard_accelerator_t result = {};
@@ -416,7 +228,7 @@ void native_menu_item_set_state(native_menu_item_t menu_item, native_menu_item_s
     return;
   }
   try {
-    self->SetState(ToCppMenuItemState(state));
+    self->SetState(to_cpp_menu_item_state(state));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_set_state");
@@ -430,7 +242,7 @@ native_menu_item_state_t native_menu_item_get_state(native_menu_item_t menu_item
     return (native_menu_item_state_t)NATIVE_MENU_ITEM_STATE_UNCHECKED;
   }
   try {
-    return ToCMenuItemState(self->GetState());
+    return to_c_menu_item_state(self->GetState());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_item_get_state");
     return (native_menu_item_state_t)NATIVE_MENU_ITEM_STATE_UNCHECKED;
@@ -539,11 +351,11 @@ native_listener_id_t native_menu_item_add_listener(native_menu_item_t menu_item,
     return static_cast<native_listener_id_t>(self->AddListener<nativeapi::MenuEvent>(
         [callback, user_data](const nativeapi::MenuEvent& event) {
           native_menu_event_t c_event = {};
-          if (!ToCMenuEvent(event, &c_event)) {
+          if (!to_c_menu_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCMenuEvent(&c_event);
+          free_c_menu_event(&c_event);
         }));
   } catch (...) {
     return 0;
@@ -784,7 +596,7 @@ bool native_menu_open(native_menu_t menu, native_positioning_strategy_t strategy
     if (!strategy_cpp) {
       return false;
     }
-    return self->Open(*strategy_cpp, ToCppPlacement(placement));
+    return self->Open(*strategy_cpp, to_cpp_placement(placement));
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_open");
     return false;
@@ -830,11 +642,11 @@ native_listener_id_t native_menu_add_listener(native_menu_t menu, native_menu_ev
     return static_cast<native_listener_id_t>(self->AddListener<nativeapi::MenuEvent>(
         [callback, user_data](const nativeapi::MenuEvent& event) {
           native_menu_event_t c_event = {};
-          if (!ToCMenuEvent(event, &c_event)) {
+          if (!to_c_menu_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCMenuEvent(&c_event);
+          free_c_menu_event(&c_event);
         }));
   } catch (...) {
     return 0;
@@ -853,7 +665,7 @@ bool native_menu_remove_listener(native_menu_t menu, native_listener_id_t listen
   }
 }
 
-bool ToCMenuEvent(const nativeapi::MenuEvent& event, native_menu_event_t* out) {
+bool to_c_menu_event(const nativeapi::MenuEvent& event, native_menu_event_t* out) {
   if (!out) {
     return false;
   }
@@ -886,7 +698,7 @@ bool ToCMenuEvent(const nativeapi::MenuEvent& event, native_menu_event_t* out) {
   return false;
 }
 
-void FreeCMenuEvent(native_menu_event_t* value) {
+void free_c_menu_event(native_menu_event_t* value) {
   if (!value) {
     return;
   }

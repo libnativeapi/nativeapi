@@ -73,3 +73,40 @@ void native_positioning_strategy_free(native_positioning_strategy_t positioning_
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+#include "../positioning_strategy.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_positioning_strategy_type_t to_c_positioning_strategy_type(nativeapi::PositioningStrategy::Type value);
+inline nativeapi::PositioningStrategy::Type to_cpp_positioning_strategy_type(native_positioning_strategy_type_t value);
+
+inline native_positioning_strategy_type_t to_c_positioning_strategy_type(nativeapi::PositioningStrategy::Type value) {
+  switch (value) {
+    case nativeapi::PositioningStrategy::Type::Absolute:
+      return NATIVE_POSITIONING_STRATEGY_TYPE_ABSOLUTE;
+    case nativeapi::PositioningStrategy::Type::CursorPosition:
+      return NATIVE_POSITIONING_STRATEGY_TYPE_CURSOR_POSITION;
+    case nativeapi::PositioningStrategy::Type::Relative:
+      return NATIVE_POSITIONING_STRATEGY_TYPE_RELATIVE;
+    default:
+      return NATIVE_POSITIONING_STRATEGY_TYPE_ABSOLUTE;
+  }
+}
+
+inline nativeapi::PositioningStrategy::Type to_cpp_positioning_strategy_type(native_positioning_strategy_type_t value) {
+  switch (value) {
+    case NATIVE_POSITIONING_STRATEGY_TYPE_ABSOLUTE:
+      return nativeapi::PositioningStrategy::Type::Absolute;
+    case NATIVE_POSITIONING_STRATEGY_TYPE_CURSOR_POSITION:
+      return nativeapi::PositioningStrategy::Type::CursorPosition;
+    case NATIVE_POSITIONING_STRATEGY_TYPE_RELATIVE:
+      return nativeapi::PositioningStrategy::Type::Relative;
+    default:
+      return nativeapi::PositioningStrategy::Type::Absolute;
+  }
+}
+
+#endif  // __cplusplus

@@ -150,11 +150,11 @@ native_listener_id_t native_window_manager_add_listener(native_window_event_call
     return static_cast<native_listener_id_t>(nativeapi::WindowManager::GetInstance().AddListener<nativeapi::WindowEvent>(
         [callback, user_data](const nativeapi::WindowEvent& event) {
           native_window_event_t c_event = {};
-          if (!ToCWindowEvent(event, &c_event)) {
+          if (!to_c_window_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCWindowEvent(&c_event);
+          free_c_window_event(&c_event);
         }));
   } catch (...) {
     return 0;

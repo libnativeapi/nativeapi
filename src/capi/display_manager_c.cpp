@@ -19,22 +19,6 @@
 #include "display_c.h"
 #include "../display_manager.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_point_t ToCPoint(const nativeapi::Point& value) {
-  native_point_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
-inline nativeapi::Point ToCppPoint(const native_point_t& value) {
-  nativeapi::Point result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
 native_display_list_t native_display_manager_get_all(void) {
   try {
     const auto items = nativeapi::DisplayManager::GetInstance().GetAll();
@@ -72,7 +56,7 @@ native_display_t native_display_manager_get_primary(void) {
 native_point_t native_display_manager_get_cursor_position(void) {
   try {
     const auto cpp_result = nativeapi::DisplayManager::GetInstance().GetCursorPosition();
-    return ToCPoint(cpp_result);
+    return to_c_point(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_manager_get_cursor_position");
     native_point_t result = {};
@@ -88,11 +72,11 @@ native_listener_id_t native_display_manager_add_listener(native_display_event_ca
     return static_cast<native_listener_id_t>(nativeapi::DisplayManager::GetInstance().AddListener<nativeapi::DisplayEvent>(
         [callback, user_data](const nativeapi::DisplayEvent& event) {
           native_display_event_t c_event = {};
-          if (!ToCDisplayEvent(event, &c_event)) {
+          if (!to_c_display_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCDisplayEvent(&c_event);
+          free_c_display_event(&c_event);
         }));
   } catch (...) {
     return 0;

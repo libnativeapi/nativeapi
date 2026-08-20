@@ -17,34 +17,6 @@
 #include "dialog_c.h"
 #include "../message_dialog.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_dialog_modality_t ToCDialogModality(nativeapi::DialogModality value) {
-  switch (value) {
-    case nativeapi::DialogModality::None:
-      return NATIVE_DIALOG_MODALITY_NONE;
-    case nativeapi::DialogModality::Application:
-      return NATIVE_DIALOG_MODALITY_APPLICATION;
-    case nativeapi::DialogModality::Window:
-      return NATIVE_DIALOG_MODALITY_WINDOW;
-    default:
-      return NATIVE_DIALOG_MODALITY_NONE;
-  }
-}
-
-inline nativeapi::DialogModality ToCppDialogModality(native_dialog_modality_t value) {
-  switch (value) {
-    case NATIVE_DIALOG_MODALITY_NONE:
-      return nativeapi::DialogModality::None;
-    case NATIVE_DIALOG_MODALITY_APPLICATION:
-      return nativeapi::DialogModality::Application;
-    case NATIVE_DIALOG_MODALITY_WINDOW:
-      return nativeapi::DialogModality::Window;
-    default:
-      return nativeapi::DialogModality::None;
-  }
-}
-
 native_message_dialog_t native_message_dialog_create(const char* title, const char* message) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
@@ -115,7 +87,7 @@ native_dialog_modality_t native_message_dialog_get_modality(native_message_dialo
     return (native_dialog_modality_t)0;
   }
   try {
-    return ToCDialogModality(self->GetModality());
+    return to_c_dialog_modality(self->GetModality());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_modality");
     return (native_dialog_modality_t)0;
@@ -128,7 +100,7 @@ void native_message_dialog_set_modality(native_message_dialog_t message_dialog, 
     return;
   }
   try {
-    self->SetModality(ToCppDialogModality(modality));
+    self->SetModality(to_cpp_dialog_modality(modality));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_modality");

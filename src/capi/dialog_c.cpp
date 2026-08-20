@@ -15,31 +15,3 @@
 #include "../foundation/handle_table.h"
 #include "../dialog.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_dialog_modality_t ToCDialogModality(nativeapi::DialogModality value) {
-  switch (value) {
-    case nativeapi::DialogModality::None:
-      return NATIVE_DIALOG_MODALITY_NONE;
-    case nativeapi::DialogModality::Application:
-      return NATIVE_DIALOG_MODALITY_APPLICATION;
-    case nativeapi::DialogModality::Window:
-      return NATIVE_DIALOG_MODALITY_WINDOW;
-    default:
-      return NATIVE_DIALOG_MODALITY_NONE;
-  }
-}
-
-inline nativeapi::DialogModality ToCppDialogModality(native_dialog_modality_t value) {
-  switch (value) {
-    case NATIVE_DIALOG_MODALITY_NONE:
-      return nativeapi::DialogModality::None;
-    case NATIVE_DIALOG_MODALITY_APPLICATION:
-      return nativeapi::DialogModality::Application;
-    case NATIVE_DIALOG_MODALITY_WINDOW:
-      return nativeapi::DialogModality::Window;
-    default:
-      return nativeapi::DialogModality::None;
-  }
-}
-

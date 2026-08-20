@@ -98,8 +98,8 @@ class ApplicationEvent;
 
 /// Fills @p out from @p event. Returns false when the event is not one
 /// of the concrete types the C ABI knows about.
-bool ToCApplicationEvent(const nativeapi::ApplicationEvent& event, native_application_event_t* out);
-/// Releases everything ToCApplicationEvent() allocated.
-void FreeCApplicationEvent(native_application_event_t* value);
+bool to_c_application_event(const nativeapi::ApplicationEvent& event, native_application_event_t* out);
+/// Releases everything to_c_application_event() allocated.
+void free_c_application_event(native_application_event_t* value);
 
 #endif

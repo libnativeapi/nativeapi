@@ -172,8 +172,49 @@ class TrayIconEvent;
 
 /// Fills @p out from @p event. Returns false when the event is not one
 /// of the concrete types the C ABI knows about.
-bool ToCTrayIconEvent(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out);
-/// Releases everything ToCTrayIconEvent() allocated.
-void FreeCTrayIconEvent(native_tray_icon_event_t* value);
+bool to_c_tray_icon_event(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out);
+/// Releases everything to_c_tray_icon_event() allocated.
+void free_c_tray_icon_event(native_tray_icon_event_t* value);
 
 #endif
+
+#ifdef __cplusplus
+#include "../tray_icon.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_context_menu_trigger_t to_c_context_menu_trigger(nativeapi::ContextMenuTrigger value);
+inline nativeapi::ContextMenuTrigger to_cpp_context_menu_trigger(native_context_menu_trigger_t value);
+
+inline native_context_menu_trigger_t to_c_context_menu_trigger(nativeapi::ContextMenuTrigger value) {
+  switch (value) {
+    case nativeapi::ContextMenuTrigger::None:
+      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+    case nativeapi::ContextMenuTrigger::Clicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_CLICKED;
+    case nativeapi::ContextMenuTrigger::RightClicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED;
+    case nativeapi::ContextMenuTrigger::DoubleClicked:
+      return NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED;
+    default:
+      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
+  }
+}
+
+inline nativeapi::ContextMenuTrigger to_cpp_context_menu_trigger(native_context_menu_trigger_t value) {
+  switch (value) {
+    case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
+      return nativeapi::ContextMenuTrigger::None;
+    case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
+      return nativeapi::ContextMenuTrigger::Clicked;
+    case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
+      return nativeapi::ContextMenuTrigger::RightClicked;
+    case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
+      return nativeapi::ContextMenuTrigger::DoubleClicked;
+    default:
+      return nativeapi::ContextMenuTrigger::None;
+  }
+}
+
+#endif  // __cplusplus

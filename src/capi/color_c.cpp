@@ -15,48 +15,28 @@
 #include "../foundation/handle_table.h"
 #include "../foundation/color.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
+const native_color_t NATIVE_COLOR_TRANSPARENT = to_c_color(nativeapi::Color::Transparent);
 
-inline native_color_t ToCColor(const nativeapi::Color& value) {
-  native_color_t result = {};
-  result.r = value.r;
-  result.g = value.g;
-  result.b = value.b;
-  result.a = value.a;
-  return result;
-}
+const native_color_t NATIVE_COLOR_BLACK = to_c_color(nativeapi::Color::Black);
 
-inline nativeapi::Color ToCppColor(const native_color_t& value) {
-  nativeapi::Color result = {};
-  result.r = value.r;
-  result.g = value.g;
-  result.b = value.b;
-  result.a = value.a;
-  return result;
-}
+const native_color_t NATIVE_COLOR_WHITE = to_c_color(nativeapi::Color::White);
 
-const native_color_t NATIVE_COLOR_TRANSPARENT = ToCColor(nativeapi::Color::Transparent);
+const native_color_t NATIVE_COLOR_RED = to_c_color(nativeapi::Color::Red);
 
-const native_color_t NATIVE_COLOR_BLACK = ToCColor(nativeapi::Color::Black);
+const native_color_t NATIVE_COLOR_GREEN = to_c_color(nativeapi::Color::Green);
 
-const native_color_t NATIVE_COLOR_WHITE = ToCColor(nativeapi::Color::White);
+const native_color_t NATIVE_COLOR_BLUE = to_c_color(nativeapi::Color::Blue);
 
-const native_color_t NATIVE_COLOR_RED = ToCColor(nativeapi::Color::Red);
+const native_color_t NATIVE_COLOR_YELLOW = to_c_color(nativeapi::Color::Yellow);
 
-const native_color_t NATIVE_COLOR_GREEN = ToCColor(nativeapi::Color::Green);
+const native_color_t NATIVE_COLOR_CYAN = to_c_color(nativeapi::Color::Cyan);
 
-const native_color_t NATIVE_COLOR_BLUE = ToCColor(nativeapi::Color::Blue);
-
-const native_color_t NATIVE_COLOR_YELLOW = ToCColor(nativeapi::Color::Yellow);
-
-const native_color_t NATIVE_COLOR_CYAN = ToCColor(nativeapi::Color::Cyan);
-
-const native_color_t NATIVE_COLOR_MAGENTA = ToCColor(nativeapi::Color::Magenta);
+const native_color_t NATIVE_COLOR_MAGENTA = to_c_color(nativeapi::Color::Magenta);
 
 native_color_t native_color_from_rgba(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
   try {
     const auto cpp_result = nativeapi::Color::FromRGBA(red, green, blue, alpha);
-    return ToCColor(cpp_result);
+    return to_c_color(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_color_from_rgba");
     native_color_t result = {};
@@ -67,7 +47,7 @@ native_color_t native_color_from_rgba(unsigned char red, unsigned char green, un
 native_color_t native_color_from_hex(const char* hex) {
   try {
     const auto cpp_result = nativeapi::Color::FromHex(hex);
-    return ToCColor(cpp_result);
+    return to_c_color(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_color_from_hex");
     native_color_t result = {};
@@ -77,7 +57,7 @@ native_color_t native_color_from_hex(const char* hex) {
 
 unsigned int native_color_to_rgba(native_color_t color) {
   try {
-    const auto self = ToCppColor(color);
+    const auto self = to_cpp_color(color);
     return self.ToRGBA();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_color_to_rgba");
@@ -87,7 +67,7 @@ unsigned int native_color_to_rgba(native_color_t color) {
 
 unsigned int native_color_to_argb(native_color_t color) {
   try {
-    const auto self = ToCppColor(color);
+    const auto self = to_cpp_color(color);
     return self.ToARGB();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_color_to_argb");

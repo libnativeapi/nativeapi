@@ -86,11 +86,11 @@ native_listener_id_t native_keyboard_monitor_add_listener(native_keyboard_monito
     return static_cast<native_listener_id_t>(self->AddListener<nativeapi::KeyboardEvent>(
         [callback, user_data](const nativeapi::KeyboardEvent& event) {
           native_keyboard_event_t c_event = {};
-          if (!ToCKeyboardEvent(event, &c_event)) {
+          if (!to_c_keyboard_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCKeyboardEvent(&c_event);
+          free_c_keyboard_event(&c_event);
         }));
   } catch (...) {
     return 0;

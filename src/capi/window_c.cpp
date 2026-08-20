@@ -19,124 +19,6 @@
 #include "color_c.h"
 #include "../window.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_title_bar_style_t ToCTitleBarStyle(nativeapi::TitleBarStyle value) {
-  switch (value) {
-    case nativeapi::TitleBarStyle::Normal:
-      return NATIVE_TITLE_BAR_STYLE_NORMAL;
-    case nativeapi::TitleBarStyle::Hidden:
-      return NATIVE_TITLE_BAR_STYLE_HIDDEN;
-    default:
-      return NATIVE_TITLE_BAR_STYLE_NORMAL;
-  }
-}
-
-inline nativeapi::TitleBarStyle ToCppTitleBarStyle(native_title_bar_style_t value) {
-  switch (value) {
-    case NATIVE_TITLE_BAR_STYLE_NORMAL:
-      return nativeapi::TitleBarStyle::Normal;
-    case NATIVE_TITLE_BAR_STYLE_HIDDEN:
-      return nativeapi::TitleBarStyle::Hidden;
-    default:
-      return nativeapi::TitleBarStyle::Normal;
-  }
-}
-
-inline native_visual_effect_t ToCVisualEffect(nativeapi::VisualEffect value) {
-  switch (value) {
-    case nativeapi::VisualEffect::None:
-      return NATIVE_VISUAL_EFFECT_NONE;
-    case nativeapi::VisualEffect::Blur:
-      return NATIVE_VISUAL_EFFECT_BLUR;
-    case nativeapi::VisualEffect::Acrylic:
-      return NATIVE_VISUAL_EFFECT_ACRYLIC;
-    case nativeapi::VisualEffect::Mica:
-      return NATIVE_VISUAL_EFFECT_MICA;
-    default:
-      return NATIVE_VISUAL_EFFECT_NONE;
-  }
-}
-
-inline nativeapi::VisualEffect ToCppVisualEffect(native_visual_effect_t value) {
-  switch (value) {
-    case NATIVE_VISUAL_EFFECT_NONE:
-      return nativeapi::VisualEffect::None;
-    case NATIVE_VISUAL_EFFECT_BLUR:
-      return nativeapi::VisualEffect::Blur;
-    case NATIVE_VISUAL_EFFECT_ACRYLIC:
-      return nativeapi::VisualEffect::Acrylic;
-    case NATIVE_VISUAL_EFFECT_MICA:
-      return nativeapi::VisualEffect::Mica;
-    default:
-      return nativeapi::VisualEffect::None;
-  }
-}
-
-inline native_point_t ToCPoint(const nativeapi::Point& value) {
-  native_point_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
-inline nativeapi::Point ToCppPoint(const native_point_t& value) {
-  nativeapi::Point result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
-inline native_size_t ToCSize(const nativeapi::Size& value) {
-  native_size_t result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Size ToCppSize(const native_size_t& value) {
-  nativeapi::Size result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
-  native_rectangle_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
-  nativeapi::Rectangle result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline native_color_t ToCColor(const nativeapi::Color& value) {
-  native_color_t result = {};
-  result.r = value.r;
-  result.g = value.g;
-  result.b = value.b;
-  result.a = value.a;
-  return result;
-}
-
-inline nativeapi::Color ToCppColor(const native_color_t& value) {
-  nativeapi::Color result = {};
-  result.r = value.r;
-  result.g = value.g;
-  result.b = value.b;
-  result.a = value.a;
-  return result;
-}
-
 native_window_t native_window_create(void) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
@@ -381,7 +263,7 @@ void native_window_set_bounds(native_window_t window, native_rectangle_t bounds)
     return;
   }
   try {
-    auto bounds_cpp = ToCppRectangle(bounds);
+    auto bounds_cpp = to_cpp_rectangle(bounds);
     self->SetBounds(bounds_cpp);
     return;
   } catch (...) {
@@ -398,7 +280,7 @@ native_rectangle_t native_window_get_bounds(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetBounds();
-    return ToCRectangle(cpp_result);
+    return to_c_rectangle(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_bounds");
     native_rectangle_t result = {};
@@ -412,7 +294,7 @@ void native_window_set_content_bounds(native_window_t window, native_rectangle_t
     return;
   }
   try {
-    auto bounds_cpp = ToCppRectangle(bounds);
+    auto bounds_cpp = to_cpp_rectangle(bounds);
     self->SetContentBounds(bounds_cpp);
     return;
   } catch (...) {
@@ -429,7 +311,7 @@ native_rectangle_t native_window_get_content_bounds(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetContentBounds();
-    return ToCRectangle(cpp_result);
+    return to_c_rectangle(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_content_bounds");
     native_rectangle_t result = {};
@@ -443,7 +325,7 @@ void native_window_set_size(native_window_t window, native_size_t size, bool ani
     return;
   }
   try {
-    auto size_cpp = ToCppSize(size);
+    auto size_cpp = to_cpp_size(size);
     self->SetSize(size_cpp, animate);
     return;
   } catch (...) {
@@ -460,7 +342,7 @@ native_size_t native_window_get_size(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_size");
     native_size_t result = {};
@@ -474,7 +356,7 @@ void native_window_set_content_size(native_window_t window, native_size_t size) 
     return;
   }
   try {
-    auto size_cpp = ToCppSize(size);
+    auto size_cpp = to_cpp_size(size);
     self->SetContentSize(size_cpp);
     return;
   } catch (...) {
@@ -491,7 +373,7 @@ native_size_t native_window_get_content_size(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetContentSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_content_size");
     native_size_t result = {};
@@ -505,7 +387,7 @@ void native_window_set_minimum_size(native_window_t window, native_size_t size) 
     return;
   }
   try {
-    auto size_cpp = ToCppSize(size);
+    auto size_cpp = to_cpp_size(size);
     self->SetMinimumSize(size_cpp);
     return;
   } catch (...) {
@@ -522,7 +404,7 @@ native_size_t native_window_get_minimum_size(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetMinimumSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_minimum_size");
     native_size_t result = {};
@@ -536,7 +418,7 @@ void native_window_set_maximum_size(native_window_t window, native_size_t size) 
     return;
   }
   try {
-    auto size_cpp = ToCppSize(size);
+    auto size_cpp = to_cpp_size(size);
     self->SetMaximumSize(size_cpp);
     return;
   } catch (...) {
@@ -553,7 +435,7 @@ native_size_t native_window_get_maximum_size(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetMaximumSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_maximum_size");
     native_size_t result = {};
@@ -783,7 +665,7 @@ void native_window_set_position(native_window_t window, native_point_t point) {
     return;
   }
   try {
-    auto point_cpp = ToCppPoint(point);
+    auto point_cpp = to_cpp_point(point);
     self->SetPosition(point_cpp);
     return;
   } catch (...) {
@@ -800,7 +682,7 @@ native_point_t native_window_get_position(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetPosition();
-    return ToCPoint(cpp_result);
+    return to_c_point(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_position");
     native_point_t result = {};
@@ -855,7 +737,7 @@ void native_window_set_title_bar_style(native_window_t window, native_title_bar_
     return;
   }
   try {
-    self->SetTitleBarStyle(ToCppTitleBarStyle(style));
+    self->SetTitleBarStyle(to_cpp_title_bar_style(style));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_title_bar_style");
@@ -869,7 +751,7 @@ native_title_bar_style_t native_window_get_title_bar_style(native_window_t windo
     return (native_title_bar_style_t)NATIVE_TITLE_BAR_STYLE_NORMAL;
   }
   try {
-    return ToCTitleBarStyle(self->GetTitleBarStyle());
+    return to_c_title_bar_style(self->GetTitleBarStyle());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_title_bar_style");
     return (native_title_bar_style_t)NATIVE_TITLE_BAR_STYLE_NORMAL;
@@ -936,7 +818,7 @@ void native_window_set_visual_effect(native_window_t window, native_visual_effec
     return;
   }
   try {
-    self->SetVisualEffect(ToCppVisualEffect(effect));
+    self->SetVisualEffect(to_cpp_visual_effect(effect));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_visual_effect");
@@ -950,7 +832,7 @@ native_visual_effect_t native_window_get_visual_effect(native_window_t window) {
     return (native_visual_effect_t)NATIVE_VISUAL_EFFECT_NONE;
   }
   try {
-    return ToCVisualEffect(self->GetVisualEffect());
+    return to_c_visual_effect(self->GetVisualEffect());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_visual_effect");
     return (native_visual_effect_t)NATIVE_VISUAL_EFFECT_NONE;
@@ -963,7 +845,7 @@ void native_window_set_background_color(native_window_t window, native_color_t c
     return;
   }
   try {
-    auto color_cpp = ToCppColor(color);
+    auto color_cpp = to_cpp_color(color);
     self->SetBackgroundColor(color_cpp);
     return;
   } catch (...) {
@@ -980,7 +862,7 @@ native_color_t native_window_get_background_color(native_window_t window) {
   }
   try {
     const auto cpp_result = self->GetBackgroundColor();
-    return ToCColor(cpp_result);
+    return to_c_color(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_background_color");
     native_color_t result = {};
@@ -1132,7 +1014,7 @@ void native_window_list_release(native_window_list_t* list) {
   list->count = 0;
 }
 
-bool ToCWindowEvent(const nativeapi::WindowEvent& event, native_window_event_t* out) {
+bool to_c_window_event(const nativeapi::WindowEvent& event, native_window_event_t* out) {
   if (!out) {
     return false;
   }
@@ -1165,18 +1047,18 @@ bool ToCWindowEvent(const nativeapi::WindowEvent& event, native_window_event_t* 
   }
   if (const auto* typed = dynamic_cast<const nativeapi::WindowMovedEvent*>(&event)) {
     out->type = NATIVE_WINDOW_EVENT_TYPE_MOVED;
-    out->data.moved.new_position = ToCPoint(typed->GetNewPosition());
+    out->data.moved.new_position = to_c_point(typed->GetNewPosition());
     return true;
   }
   if (const auto* typed = dynamic_cast<const nativeapi::WindowResizedEvent*>(&event)) {
     out->type = NATIVE_WINDOW_EVENT_TYPE_RESIZED;
-    out->data.resized.new_size = ToCSize(typed->GetNewSize());
+    out->data.resized.new_size = to_c_size(typed->GetNewSize());
     return true;
   }
   return false;
 }
 
-void FreeCWindowEvent(native_window_event_t* value) {
+void free_c_window_event(native_window_event_t* value) {
   if (!value) {
     return;
   }

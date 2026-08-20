@@ -17,84 +17,6 @@
 #include "geometry_c.h"
 #include "../display.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_display_orientation_t ToCDisplayOrientation(nativeapi::DisplayOrientation value) {
-  switch (value) {
-    case nativeapi::DisplayOrientation::kPortrait:
-      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
-    case nativeapi::DisplayOrientation::kLandscape:
-      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE;
-    case nativeapi::DisplayOrientation::kPortraitFlipped:
-      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED;
-    case nativeapi::DisplayOrientation::kLandscapeFlipped:
-      return NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED;
-    default:
-      return NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
-  }
-}
-
-inline nativeapi::DisplayOrientation ToCppDisplayOrientation(native_display_orientation_t value) {
-  switch (value) {
-    case NATIVE_DISPLAY_ORIENTATION_PORTRAIT:
-      return nativeapi::DisplayOrientation::kPortrait;
-    case NATIVE_DISPLAY_ORIENTATION_LANDSCAPE:
-      return nativeapi::DisplayOrientation::kLandscape;
-    case NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED:
-      return nativeapi::DisplayOrientation::kPortraitFlipped;
-    case NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED:
-      return nativeapi::DisplayOrientation::kLandscapeFlipped;
-    default:
-      return nativeapi::DisplayOrientation::kPortrait;
-  }
-}
-
-inline native_point_t ToCPoint(const nativeapi::Point& value) {
-  native_point_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
-inline nativeapi::Point ToCppPoint(const native_point_t& value) {
-  nativeapi::Point result = {};
-  result.x = value.x;
-  result.y = value.y;
-  return result;
-}
-
-inline native_size_t ToCSize(const nativeapi::Size& value) {
-  native_size_t result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Size ToCppSize(const native_size_t& value) {
-  nativeapi::Size result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
-  native_rectangle_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
-  nativeapi::Rectangle result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
 native_display_t native_display_create(void) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
@@ -149,7 +71,7 @@ native_point_t native_display_get_position(native_display_t display) {
   }
   try {
     const auto cpp_result = self->GetPosition();
-    return ToCPoint(cpp_result);
+    return to_c_point(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_get_position");
     native_point_t result = {};
@@ -165,7 +87,7 @@ native_size_t native_display_get_size(native_display_t display) {
   }
   try {
     const auto cpp_result = self->GetSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_get_size");
     native_size_t result = {};
@@ -181,7 +103,7 @@ native_rectangle_t native_display_get_work_area(native_display_t display) {
   }
   try {
     const auto cpp_result = self->GetWorkArea();
-    return ToCRectangle(cpp_result);
+    return to_c_rectangle(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_get_work_area");
     native_rectangle_t result = {};
@@ -221,7 +143,7 @@ native_display_orientation_t native_display_get_orientation(native_display_t dis
     return (native_display_orientation_t)NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
   }
   try {
-    return ToCDisplayOrientation(self->GetOrientation());
+    return to_c_display_orientation(self->GetOrientation());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_get_orientation");
     return (native_display_orientation_t)NATIVE_DISPLAY_ORIENTATION_PORTRAIT;
@@ -289,7 +211,7 @@ void native_display_list_release(native_display_list_t* list) {
   list->count = 0;
 }
 
-bool ToCDisplayEvent(const nativeapi::DisplayEvent& event, native_display_event_t* out) {
+bool to_c_display_event(const nativeapi::DisplayEvent& event, native_display_event_t* out) {
   if (!out) {
     return false;
   }
@@ -317,7 +239,7 @@ bool ToCDisplayEvent(const nativeapi::DisplayEvent& event, native_display_event_
   return false;
 }
 
-void FreeCDisplayEvent(native_display_event_t* value) {
+void free_c_display_event(native_display_event_t* value) {
   if (!value) {
     return;
   }

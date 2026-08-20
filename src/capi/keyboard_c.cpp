@@ -15,75 +15,9 @@
 #include "../foundation/handle_table.h"
 #include "../foundation/keyboard.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_modifier_key_t ToCModifierKey(nativeapi::ModifierKey value) {
-  switch (value) {
-    case nativeapi::ModifierKey::None:
-      return NATIVE_MODIFIER_KEY_NONE;
-    case nativeapi::ModifierKey::Shift:
-      return NATIVE_MODIFIER_KEY_SHIFT;
-    case nativeapi::ModifierKey::Ctrl:
-      return NATIVE_MODIFIER_KEY_CTRL;
-    case nativeapi::ModifierKey::Alt:
-      return NATIVE_MODIFIER_KEY_ALT;
-    case nativeapi::ModifierKey::Meta:
-      return NATIVE_MODIFIER_KEY_META;
-    case nativeapi::ModifierKey::Fn:
-      return NATIVE_MODIFIER_KEY_FN;
-    case nativeapi::ModifierKey::CapsLock:
-      return NATIVE_MODIFIER_KEY_CAPS_LOCK;
-    case nativeapi::ModifierKey::NumLock:
-      return NATIVE_MODIFIER_KEY_NUM_LOCK;
-    case nativeapi::ModifierKey::ScrollLock:
-      return NATIVE_MODIFIER_KEY_SCROLL_LOCK;
-    default:
-      return NATIVE_MODIFIER_KEY_NONE;
-  }
-}
-
-inline nativeapi::ModifierKey ToCppModifierKey(native_modifier_key_t value) {
-  switch (value) {
-    case NATIVE_MODIFIER_KEY_NONE:
-      return nativeapi::ModifierKey::None;
-    case NATIVE_MODIFIER_KEY_SHIFT:
-      return nativeapi::ModifierKey::Shift;
-    case NATIVE_MODIFIER_KEY_CTRL:
-      return nativeapi::ModifierKey::Ctrl;
-    case NATIVE_MODIFIER_KEY_ALT:
-      return nativeapi::ModifierKey::Alt;
-    case NATIVE_MODIFIER_KEY_META:
-      return nativeapi::ModifierKey::Meta;
-    case NATIVE_MODIFIER_KEY_FN:
-      return nativeapi::ModifierKey::Fn;
-    case NATIVE_MODIFIER_KEY_CAPS_LOCK:
-      return nativeapi::ModifierKey::CapsLock;
-    case NATIVE_MODIFIER_KEY_NUM_LOCK:
-      return nativeapi::ModifierKey::NumLock;
-    case NATIVE_MODIFIER_KEY_SCROLL_LOCK:
-      return nativeapi::ModifierKey::ScrollLock;
-    default:
-      return nativeapi::ModifierKey::None;
-  }
-}
-
-inline native_keyboard_accelerator_t ToCKeyboardAccelerator(const nativeapi::KeyboardAccelerator& value) {
-  native_keyboard_accelerator_t result = {};
-  result.modifiers = ToCModifierKey(value.modifiers);
-  result.key = to_c_str(value.key);
-  return result;
-}
-
-inline nativeapi::KeyboardAccelerator ToCppKeyboardAccelerator(const native_keyboard_accelerator_t& value) {
-  nativeapi::KeyboardAccelerator result = {};
-  result.modifiers = ToCppModifierKey(value.modifiers);
-  result.key = value.key ? value.key : "";
-  return result;
-}
-
 char* native_keyboard_accelerator_to_string(native_keyboard_accelerator_t keyboard_accelerator) {
   try {
-    const auto self = ToCppKeyboardAccelerator(keyboard_accelerator);
+    const auto self = to_cpp_keyboard_accelerator(keyboard_accelerator);
     return to_c_str(self.ToString());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_keyboard_accelerator_to_string");
@@ -93,7 +27,7 @@ char* native_keyboard_accelerator_to_string(native_keyboard_accelerator_t keyboa
 
 bool native_keyboard_accelerator_is_empty(native_keyboard_accelerator_t keyboard_accelerator) {
   try {
-    const auto self = ToCppKeyboardAccelerator(keyboard_accelerator);
+    const auto self = to_cpp_keyboard_accelerator(keyboard_accelerator);
     return self.IsEmpty();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_keyboard_accelerator_is_empty");
@@ -109,7 +43,7 @@ void native_keyboard_accelerator_free(native_keyboard_accelerator_t* value) {
   value->key = nullptr;
 }
 
-bool ToCKeyboardEvent(const nativeapi::KeyboardEvent& event, native_keyboard_event_t* out) {
+bool to_c_keyboard_event(const nativeapi::KeyboardEvent& event, native_keyboard_event_t* out) {
   if (!out) {
     return false;
   }
@@ -133,7 +67,7 @@ bool ToCKeyboardEvent(const nativeapi::KeyboardEvent& event, native_keyboard_eve
   return false;
 }
 
-void FreeCKeyboardEvent(native_keyboard_event_t* value) {
+void free_c_keyboard_event(native_keyboard_event_t* value) {
   if (!value) {
     return;
   }

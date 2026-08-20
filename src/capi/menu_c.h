@@ -280,8 +280,81 @@ class MenuEvent;
 
 /// Fills @p out from @p event. Returns false when the event is not one
 /// of the concrete types the C ABI knows about.
-bool ToCMenuEvent(const nativeapi::MenuEvent& event, native_menu_event_t* out);
-/// Releases everything ToCMenuEvent() allocated.
-void FreeCMenuEvent(native_menu_event_t* value);
+bool to_c_menu_event(const nativeapi::MenuEvent& event, native_menu_event_t* out);
+/// Releases everything to_c_menu_event() allocated.
+void free_c_menu_event(native_menu_event_t* value);
 
 #endif
+
+#ifdef __cplusplus
+#include "../menu.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_menu_item_type_t to_c_menu_item_type(nativeapi::MenuItemType value);
+inline nativeapi::MenuItemType to_cpp_menu_item_type(native_menu_item_type_t value);
+inline native_menu_item_state_t to_c_menu_item_state(nativeapi::MenuItemState value);
+inline nativeapi::MenuItemState to_cpp_menu_item_state(native_menu_item_state_t value);
+
+inline native_menu_item_type_t to_c_menu_item_type(nativeapi::MenuItemType value) {
+  switch (value) {
+    case nativeapi::MenuItemType::Normal:
+      return NATIVE_MENU_ITEM_TYPE_NORMAL;
+    case nativeapi::MenuItemType::Checkbox:
+      return NATIVE_MENU_ITEM_TYPE_CHECKBOX;
+    case nativeapi::MenuItemType::Radio:
+      return NATIVE_MENU_ITEM_TYPE_RADIO;
+    case nativeapi::MenuItemType::Separator:
+      return NATIVE_MENU_ITEM_TYPE_SEPARATOR;
+    case nativeapi::MenuItemType::Submenu:
+      return NATIVE_MENU_ITEM_TYPE_SUBMENU;
+    default:
+      return NATIVE_MENU_ITEM_TYPE_NORMAL;
+  }
+}
+
+inline nativeapi::MenuItemType to_cpp_menu_item_type(native_menu_item_type_t value) {
+  switch (value) {
+    case NATIVE_MENU_ITEM_TYPE_NORMAL:
+      return nativeapi::MenuItemType::Normal;
+    case NATIVE_MENU_ITEM_TYPE_CHECKBOX:
+      return nativeapi::MenuItemType::Checkbox;
+    case NATIVE_MENU_ITEM_TYPE_RADIO:
+      return nativeapi::MenuItemType::Radio;
+    case NATIVE_MENU_ITEM_TYPE_SEPARATOR:
+      return nativeapi::MenuItemType::Separator;
+    case NATIVE_MENU_ITEM_TYPE_SUBMENU:
+      return nativeapi::MenuItemType::Submenu;
+    default:
+      return nativeapi::MenuItemType::Normal;
+  }
+}
+
+inline native_menu_item_state_t to_c_menu_item_state(nativeapi::MenuItemState value) {
+  switch (value) {
+    case nativeapi::MenuItemState::Unchecked:
+      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
+    case nativeapi::MenuItemState::Checked:
+      return NATIVE_MENU_ITEM_STATE_CHECKED;
+    case nativeapi::MenuItemState::Mixed:
+      return NATIVE_MENU_ITEM_STATE_MIXED;
+    default:
+      return NATIVE_MENU_ITEM_STATE_UNCHECKED;
+  }
+}
+
+inline nativeapi::MenuItemState to_cpp_menu_item_state(native_menu_item_state_t value) {
+  switch (value) {
+    case NATIVE_MENU_ITEM_STATE_UNCHECKED:
+      return nativeapi::MenuItemState::Unchecked;
+    case NATIVE_MENU_ITEM_STATE_CHECKED:
+      return nativeapi::MenuItemState::Checked;
+    case NATIVE_MENU_ITEM_STATE_MIXED:
+      return nativeapi::MenuItemState::Mixed;
+    default:
+      return nativeapi::MenuItemState::Unchecked;
+  }
+}
+
+#endif  // __cplusplus

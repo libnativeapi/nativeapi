@@ -21,56 +21,6 @@
 #include "menu_c.h"
 #include "../tray_icon.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_context_menu_trigger_t ToCContextMenuTrigger(nativeapi::ContextMenuTrigger value) {
-  switch (value) {
-    case nativeapi::ContextMenuTrigger::None:
-      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-    case nativeapi::ContextMenuTrigger::Clicked:
-      return NATIVE_CONTEXT_MENU_TRIGGER_CLICKED;
-    case nativeapi::ContextMenuTrigger::RightClicked:
-      return NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED;
-    case nativeapi::ContextMenuTrigger::DoubleClicked:
-      return NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED;
-    default:
-      return NATIVE_CONTEXT_MENU_TRIGGER_NONE;
-  }
-}
-
-inline nativeapi::ContextMenuTrigger ToCppContextMenuTrigger(native_context_menu_trigger_t value) {
-  switch (value) {
-    case NATIVE_CONTEXT_MENU_TRIGGER_NONE:
-      return nativeapi::ContextMenuTrigger::None;
-    case NATIVE_CONTEXT_MENU_TRIGGER_CLICKED:
-      return nativeapi::ContextMenuTrigger::Clicked;
-    case NATIVE_CONTEXT_MENU_TRIGGER_RIGHT_CLICKED:
-      return nativeapi::ContextMenuTrigger::RightClicked;
-    case NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED:
-      return nativeapi::ContextMenuTrigger::DoubleClicked;
-    default:
-      return nativeapi::ContextMenuTrigger::None;
-  }
-}
-
-inline native_rectangle_t ToCRectangle(const nativeapi::Rectangle& value) {
-  native_rectangle_t result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Rectangle ToCppRectangle(const native_rectangle_t& value) {
-  nativeapi::Rectangle result = {};
-  result.x = value.x;
-  result.y = value.y;
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
 native_tray_icon_t native_tray_icon_create(void) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
@@ -230,7 +180,7 @@ void native_tray_icon_set_context_menu_trigger(native_tray_icon_t tray_icon, nat
     return;
   }
   try {
-    self->SetContextMenuTrigger(ToCppContextMenuTrigger(trigger));
+    self->SetContextMenuTrigger(to_cpp_context_menu_trigger(trigger));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_context_menu_trigger");
@@ -244,7 +194,7 @@ native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(native_t
     return (native_context_menu_trigger_t)NATIVE_CONTEXT_MENU_TRIGGER_NONE;
   }
   try {
-    return ToCContextMenuTrigger(self->GetContextMenuTrigger());
+    return to_c_context_menu_trigger(self->GetContextMenuTrigger());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_context_menu_trigger");
     return (native_context_menu_trigger_t)NATIVE_CONTEXT_MENU_TRIGGER_NONE;
@@ -259,7 +209,7 @@ native_rectangle_t native_tray_icon_get_bounds(native_tray_icon_t tray_icon) {
   }
   try {
     const auto cpp_result = self->GetBounds();
-    return ToCRectangle(cpp_result);
+    return to_c_rectangle(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_bounds");
     native_rectangle_t result = {};
@@ -366,11 +316,11 @@ native_listener_id_t native_tray_icon_add_listener(native_tray_icon_t tray_icon,
     return static_cast<native_listener_id_t>(self->AddListener<nativeapi::TrayIconEvent>(
         [callback, user_data](const nativeapi::TrayIconEvent& event) {
           native_tray_icon_event_t c_event = {};
-          if (!ToCTrayIconEvent(event, &c_event)) {
+          if (!to_c_tray_icon_event(event, &c_event)) {
             return;
           }
           callback(&c_event, user_data);
-          FreeCTrayIconEvent(&c_event);
+          free_c_tray_icon_event(&c_event);
         }));
   } catch (...) {
     return 0;
@@ -389,7 +339,7 @@ bool native_tray_icon_remove_listener(native_tray_icon_t tray_icon, native_liste
   }
 }
 
-bool ToCTrayIconEvent(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out) {
+bool to_c_tray_icon_event(const nativeapi::TrayIconEvent& event, native_tray_icon_event_t* out) {
   if (!out) {
     return false;
   }
@@ -412,7 +362,7 @@ bool ToCTrayIconEvent(const nativeapi::TrayIconEvent& event, native_tray_icon_ev
   return false;
 }
 
-void FreeCTrayIconEvent(native_tray_icon_event_t* value) {
+void free_c_tray_icon_event(native_tray_icon_event_t* value) {
   if (!value) {
     return;
   }

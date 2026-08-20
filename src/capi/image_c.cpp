@@ -17,22 +17,6 @@
 #include "geometry_c.h"
 #include "../image.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_size_t ToCSize(const nativeapi::Size& value) {
-  native_size_t result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
-inline nativeapi::Size ToCppSize(const native_size_t& value) {
-  nativeapi::Size result = {};
-  result.width = value.width;
-  result.height = value.height;
-  return result;
-}
-
 native_image_t native_image_from_file(const char* file_path) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(nativeapi::Image::FromFile(std::string(file_path ? file_path : "")));
@@ -59,7 +43,7 @@ native_size_t native_image_get_size(native_image_t image) {
   }
   try {
     const auto cpp_result = self->GetSize();
-    return ToCSize(cpp_result);
+    return to_c_size(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_image_get_size");
     native_size_t result = {};

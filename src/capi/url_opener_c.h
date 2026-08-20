@@ -49,3 +49,70 @@ native_url_open_result_t native_url_opener_open(const char* url);
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+#include "../url_opener.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_url_open_error_code_t to_c_url_open_error_code(nativeapi::UrlOpenErrorCode value);
+inline nativeapi::UrlOpenErrorCode to_cpp_url_open_error_code(native_url_open_error_code_t value);
+inline native_url_open_result_t to_c_url_open_result(const nativeapi::UrlOpenResult& value);
+inline nativeapi::UrlOpenResult to_cpp_url_open_result(const native_url_open_result_t& value);
+
+inline native_url_open_error_code_t to_c_url_open_error_code(nativeapi::UrlOpenErrorCode value) {
+  switch (value) {
+    case nativeapi::UrlOpenErrorCode::kNone:
+      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME;
+    case nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME;
+    case nativeapi::UrlOpenErrorCode::kUnsupportedPlatform:
+      return NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM;
+    case nativeapi::UrlOpenErrorCode::kInvocationFailed:
+      return NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED;
+    default:
+      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
+  }
+}
+
+inline nativeapi::UrlOpenErrorCode to_cpp_url_open_error_code(native_url_open_error_code_t value) {
+  switch (value) {
+    case NATIVE_URL_OPEN_ERROR_CODE_NONE:
+      return nativeapi::UrlOpenErrorCode::kNone;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME:
+      return nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme;
+    case NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM:
+      return nativeapi::UrlOpenErrorCode::kUnsupportedPlatform;
+    case NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED:
+      return nativeapi::UrlOpenErrorCode::kInvocationFailed;
+    default:
+      return nativeapi::UrlOpenErrorCode::kNone;
+  }
+}
+
+inline native_url_open_result_t to_c_url_open_result(const nativeapi::UrlOpenResult& value) {
+  native_url_open_result_t result = {};
+  result.success = value.success;
+  result.error_code = to_c_url_open_error_code(value.error_code);
+  result.error_message = to_c_str(value.error_message);
+  return result;
+}
+
+inline nativeapi::UrlOpenResult to_cpp_url_open_result(const native_url_open_result_t& value) {
+  nativeapi::UrlOpenResult result = {};
+  result.success = value.success;
+  result.error_code = to_cpp_url_open_error_code(value.error_code);
+  result.error_message = value.error_message ? value.error_message : "";
+  return result;
+}
+
+#endif  // __cplusplus

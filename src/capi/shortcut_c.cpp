@@ -15,53 +15,6 @@
 #include "../foundation/handle_table.h"
 #include "../shortcut.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_shortcut_scope_t ToCShortcutScope(nativeapi::ShortcutScope value) {
-  switch (value) {
-    case nativeapi::ShortcutScope::Global:
-      return NATIVE_SHORTCUT_SCOPE_GLOBAL;
-    case nativeapi::ShortcutScope::Application:
-      return NATIVE_SHORTCUT_SCOPE_APPLICATION;
-    default:
-      return NATIVE_SHORTCUT_SCOPE_GLOBAL;
-  }
-}
-
-inline nativeapi::ShortcutScope ToCppShortcutScope(native_shortcut_scope_t value) {
-  switch (value) {
-    case NATIVE_SHORTCUT_SCOPE_GLOBAL:
-      return nativeapi::ShortcutScope::Global;
-    case NATIVE_SHORTCUT_SCOPE_APPLICATION:
-      return nativeapi::ShortcutScope::Application;
-    default:
-      return nativeapi::ShortcutScope::Global;
-  }
-}
-
-inline native_shortcut_options_t ToCShortcutOptions(const nativeapi::ShortcutOptions& value) {
-  native_shortcut_options_t result = {};
-  result.accelerator = to_c_str(value.accelerator);
-  result.description = to_c_str(value.description);
-  result.scope = ToCShortcutScope(value.scope);
-  result.enabled = value.enabled;
-  return result;
-}
-
-inline nativeapi::ShortcutOptions ToCppShortcutOptions(const native_shortcut_options_t& value) {
-  nativeapi::ShortcutOptions result = {};
-  result.accelerator = value.accelerator ? value.accelerator : "";
-  if (value.callback) {
-    auto callback = value.callback;
-    auto* data = value.callback_user_data;
-    result.callback = [callback, data]() { callback(data); };
-  }
-  result.description = value.description ? value.description : "";
-  result.scope = ToCppShortcutScope(value.scope);
-  result.enabled = value.enabled;
-  return result;
-}
-
 void native_shortcut_options_free(native_shortcut_options_t* value) {
   if (!value) {
     return;
@@ -74,7 +27,7 @@ void native_shortcut_options_free(native_shortcut_options_t* value) {
 
 native_shortcut_t native_shortcut_create_with_id_and_options(native_shortcut_id_t id, native_shortcut_options_t options) {
   try {
-    auto options_cpp = ToCppShortcutOptions(options);
+    auto options_cpp = to_cpp_shortcut_options(options);
     return nativeapi::HandleTable::GetInstance().Insert(
         std::make_shared<nativeapi::Shortcut>(id, options_cpp));
   } catch (...) {
@@ -156,7 +109,7 @@ native_shortcut_scope_t native_shortcut_get_scope(native_shortcut_t shortcut) {
     return (native_shortcut_scope_t)NATIVE_SHORTCUT_SCOPE_GLOBAL;
   }
   try {
-    return ToCShortcutScope(self->GetScope());
+    return to_c_shortcut_scope(self->GetScope());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_shortcut_get_scope");
     return (native_shortcut_scope_t)NATIVE_SHORTCUT_SCOPE_GLOBAL;
@@ -249,7 +202,7 @@ void native_shortcut_list_release(native_shortcut_list_t* list) {
   list->count = 0;
 }
 
-bool ToCShortcutEvent(const nativeapi::ShortcutEvent& event, native_shortcut_event_t* out) {
+bool to_c_shortcut_event(const nativeapi::ShortcutEvent& event, native_shortcut_event_t* out) {
   if (!out) {
     return false;
   }
@@ -279,7 +232,7 @@ bool ToCShortcutEvent(const nativeapi::ShortcutEvent& event, native_shortcut_eve
   return false;
 }
 
-void FreeCShortcutEvent(native_shortcut_event_t* value) {
+void free_c_shortcut_event(native_shortcut_event_t* value) {
   if (!value) {
     return;
   }

@@ -15,62 +15,6 @@
 #include "../foundation/handle_table.h"
 #include "../url_opener.h"
 
-// Conversion helpers between the C ABI types and their C++ originals.
-
-inline native_url_open_error_code_t ToCUrlOpenErrorCode(nativeapi::UrlOpenErrorCode value) {
-  switch (value) {
-    case nativeapi::UrlOpenErrorCode::kNone:
-      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
-    case nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty:
-      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY;
-    case nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme:
-      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME;
-    case nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme:
-      return NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME;
-    case nativeapi::UrlOpenErrorCode::kUnsupportedPlatform:
-      return NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM;
-    case nativeapi::UrlOpenErrorCode::kInvocationFailed:
-      return NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED;
-    default:
-      return NATIVE_URL_OPEN_ERROR_CODE_NONE;
-  }
-}
-
-inline nativeapi::UrlOpenErrorCode ToCppUrlOpenErrorCode(native_url_open_error_code_t value) {
-  switch (value) {
-    case NATIVE_URL_OPEN_ERROR_CODE_NONE:
-      return nativeapi::UrlOpenErrorCode::kNone;
-    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY:
-      return nativeapi::UrlOpenErrorCode::kInvalidUrlEmpty;
-    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_MISSING_SCHEME:
-      return nativeapi::UrlOpenErrorCode::kInvalidUrlMissingScheme;
-    case NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_UNSUPPORTED_SCHEME:
-      return nativeapi::UrlOpenErrorCode::kInvalidUrlUnsupportedScheme;
-    case NATIVE_URL_OPEN_ERROR_CODE_UNSUPPORTED_PLATFORM:
-      return nativeapi::UrlOpenErrorCode::kUnsupportedPlatform;
-    case NATIVE_URL_OPEN_ERROR_CODE_INVOCATION_FAILED:
-      return nativeapi::UrlOpenErrorCode::kInvocationFailed;
-    default:
-      return nativeapi::UrlOpenErrorCode::kNone;
-  }
-}
-
-inline native_url_open_result_t ToCUrlOpenResult(const nativeapi::UrlOpenResult& value) {
-  native_url_open_result_t result = {};
-  result.success = value.success;
-  result.error_code = ToCUrlOpenErrorCode(value.error_code);
-  result.error_message = to_c_str(value.error_message);
-  return result;
-}
-
-inline nativeapi::UrlOpenResult ToCppUrlOpenResult(const native_url_open_result_t& value) {
-  nativeapi::UrlOpenResult result = {};
-  result.success = value.success;
-  result.error_code = ToCppUrlOpenErrorCode(value.error_code);
-  result.error_message = value.error_message ? value.error_message : "";
-  return result;
-}
-
 void native_url_open_result_free(native_url_open_result_t* value) {
   if (!value) {
     return;
@@ -100,7 +44,7 @@ bool native_url_opener_can_open(const char* url) {
 native_url_open_result_t native_url_opener_open(const char* url) {
   try {
     const auto cpp_result = nativeapi::UrlOpener::GetInstance().Open(std::string(url ? url : ""));
-    return ToCUrlOpenResult(cpp_result);
+    return to_c_url_open_result(cpp_result);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_url_opener_open");
     native_url_open_result_t result = {};
