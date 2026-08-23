@@ -11,33 +11,14 @@ class Display::Impl {
   Impl() = default;
   Impl(GdkMonitor* monitor) : gdk_monitor_(monitor) {}
 
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
   GdkMonitor* gdk_monitor_ = nullptr;
 };
-
-Display::Display() : pimpl_(std::make_unique<Impl>()) {}
 
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
   if (display) {
     pimpl_->gdk_monitor_ = (GdkMonitor*)display;
   }
-}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
-
-Display& Display::operator=(const Display& other) {
-  if (this != &other) {
-    *pimpl_ = *other.pimpl_;
-  }
-  return *this;
-}
-
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-
-Display& Display::operator=(Display&& other) noexcept {
-  if (this != &other) {
-    pimpl_ = std::move(other.pimpl_);
-  }
-  return *this;
 }
 
 Display::~Display() = default;
@@ -47,11 +28,8 @@ void* Display::GetNativeObjectInternal() const {
 }
 
 // Getters - directly read from GdkMonitor
-std::string Display::GetId() const {
-  if (!pimpl_->gdk_monitor_)
-    return "";
-  // Use monitor pointer as ID since GDK doesn't provide direct monitor IDs
-  return std::to_string(reinterpret_cast<uintptr_t>(pimpl_->gdk_monitor_));
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {

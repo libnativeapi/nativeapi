@@ -1,45 +1,45 @@
 #include <gtk/gtk.h>
-#include <iostream>
+#include <string>
+#include <vector>
+
 #include "../../display_manager.h"
 
 namespace nativeapi {
 
-static Display CreateDisplayFromGdkMonitor(GdkMonitor* monitor, bool isFirstScreen) {
-  // Simply create Display with GdkMonitor - all properties will be read
-  // directly from the monitor
-  return Display(monitor);
-}
-
 DisplayManager::DisplayManager() {
   gtk_init(nullptr, nullptr);
-  // Constructor implementation
-  std::cout << "DisplayManager initialized" << std::endl;
+  // Prime the instance cache so the first change notification diffs against
+  // the displays present at startup.
+  GetAll();
+  // TODO: Connect to GdkDisplay's "monitor-added" / "monitor-removed" signals
+  // and call HandleDisplaysChanged() from the handlers.
 }
 
 DisplayManager::~DisplayManager() {
   // Destructor implementation
 }
 
-std::vector<Display> DisplayManager::GetAll() {
-  // Empty implementation
-  std::vector<Display> displayList;
-  displayList.push_back(GetPrimary());
-  return displayList;
-}
-
-Display DisplayManager::GetPrimary() {
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  std::vector<NativeDisplayInfo> natives;
   GdkDisplay* display = gdk_display_get_default();
-  GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
-
-  // opt: fallback if there's no primary monitor
-  if (monitor == nullptr) {
-    int monitor_count = gdk_display_get_n_monitors(display);
-    if (monitor_count > 0) {
-      monitor = gdk_display_get_monitor(display, 0);
-    }
+  if (!display) {
+    return natives;
   }
 
-  return CreateDisplayFromGdkMonitor(monitor, true);
+  GdkMonitor* primary = gdk_display_get_primary_monitor(display);
+  int monitor_count = gdk_display_get_n_monitors(display);
+  for (int i = 0; i < monitor_count; ++i) {
+    GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+    if (!monitor) {
+      continue;
+    }
+    // A GdkMonitor object is stable for as long as the monitor stays
+    // connected, so its address serves as the identity key.
+    bool is_primary = (primary != nullptr) ? (monitor == primary) : (i == 0);
+    natives.push_back(
+        {std::to_string(reinterpret_cast<uintptr_t>(monitor)), monitor, is_primary});
+  }
+  return natives;
 }
 
 Point DisplayManager::GetCursorPosition() {
@@ -50,7 +50,6 @@ Point DisplayManager::GetCursorPosition() {
   int x, y;
   gdk_device_get_position(pointer, NULL, &x, &y);
 
-  // Empty implementation
   Point point;
   point.x = x;
   point.y = y;

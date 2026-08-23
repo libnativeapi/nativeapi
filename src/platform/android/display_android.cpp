@@ -9,28 +9,19 @@ namespace nativeapi {
 class Display::Impl {
  public:
   Impl() {}
+
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
 };
 
-Display::Display() : pimpl_(std::make_unique<Impl>()) {}
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {}
 Display::~Display() {}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>()) {}
-Display& Display::operator=(const Display& other) {
-  return *this;
-}
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-Display& Display::operator=(Display&& other) noexcept {
-  pimpl_ = std::move(other.pimpl_);
-  return *this;
-}
 
 void* Display::GetNativeObjectInternal() const {
   return nullptr;
 }
 
-std::string Display::GetId() const {
-  return "android_display_0";
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {

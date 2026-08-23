@@ -33,13 +33,13 @@ int main() {
     DisplayManager& displayManager = DisplayManager::GetInstance();
 
     // Test getting all displays
-    std::vector<Display> displays = displayManager.GetAll();
+    std::vector<std::shared_ptr<Display>> displays = displayManager.GetAll();
 
     if (!displays.empty()) {
       std::cout << "Found " << displays.size() << " display(s):" << std::endl << std::endl;
 
       for (size_t i = 0; i < displays.size(); i++) {
-        const Display& display = displays[i];
+        const Display& display = *displays[i];
 
         std::cout << "Display " << (i + 1) << ":" << std::endl;
 
@@ -88,11 +88,15 @@ int main() {
 
     // Test getting primary display
     std::cout << "=== Primary Display ===" << std::endl;
-    Display primary = displayManager.GetPrimary();
-    std::cout << "Primary display: " << primary.GetName() << std::endl;
+    std::shared_ptr<Display> primary = displayManager.GetPrimary();
+    if (primary) {
+      std::cout << "Primary display: " << primary->GetName() << std::endl;
 
-    Size size = primary.GetSize();
-    std::cout << "Size: " << (int)size.width << " x " << (int)size.height << std::endl;
+      Size size = primary->GetSize();
+      std::cout << "Size: " << (int)size.width << " x " << (int)size.height << std::endl;
+    } else {
+      std::cout << "No primary display available" << std::endl;
+    }
 
     // Test getting cursor position
     std::cout << std::endl << "=== Cursor Position ===" << std::endl;

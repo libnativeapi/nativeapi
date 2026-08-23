@@ -17,36 +17,26 @@
 #include "geometry_c.h"
 #include "../display.h"
 
-native_display_t native_display_create(void) {
+native_display_t native_display_create(void* display) {
   try {
     return nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::Display>());
+        std::make_shared<nativeapi::Display>(display));
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_create");
     return 0;
   }
 }
 
-native_display_t native_display_create_with_display(void* display) {
-  try {
-    return nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::Display>(display));
-  } catch (...) {
-    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_create_with_display");
-    return 0;
-  }
-}
-
-char* native_display_get_id(native_display_t display) {
+native_display_id_t native_display_get_id(native_display_t display) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Display>(display);
   if (!self) {
-    return nullptr;
+    return 0;
   }
   try {
-    return to_c_str(self->GetId());
+    return self->GetId();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_get_id");
-    return nullptr;
+    return 0;
   }
 }
 
@@ -216,8 +206,7 @@ bool to_c_display_event(const nativeapi::DisplayEvent& event, native_display_eve
     return false;
   }
   *out = native_display_event_t{};
-  out->display = nativeapi::HandleTable::GetInstance().Insert(
-      std::make_shared<nativeapi::Display>(event.GetDisplay()));
+  out->display = nativeapi::HandleTable::GetInstance().Insert(event.GetDisplay());
   if (const auto* typed = dynamic_cast<const nativeapi::DisplayAddedEvent*>(&event)) {
     out->type = NATIVE_DISPLAY_EVENT_TYPE_ADDED;
     (void)typed;
@@ -230,10 +219,7 @@ bool to_c_display_event(const nativeapi::DisplayEvent& event, native_display_eve
   }
   if (const auto* typed = dynamic_cast<const nativeapi::DisplayChangedEvent*>(&event)) {
     out->type = NATIVE_DISPLAY_EVENT_TYPE_CHANGED;
-    out->data.changed.old_display = nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::Display>(typed->GetOldDisplay()));
-    out->data.changed.new_display = nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::Display>(typed->GetNewDisplay()));
+    (void)typed;
     return true;
   }
   return false;
@@ -245,11 +231,5 @@ void free_c_display_event(native_display_event_t* value) {
   }
   nativeapi::HandleTable::GetInstance().Release(value->display);
   value->display = 0;
-  if (value->type == NATIVE_DISPLAY_EVENT_TYPE_CHANGED) {
-    nativeapi::HandleTable::GetInstance().Release(value->data.changed.old_display);
-    value->data.changed.old_display = 0;
-    nativeapi::HandleTable::GetInstance().Release(value->data.changed.new_display);
-    value->data.changed.new_display = 0;
-  }
 }
 

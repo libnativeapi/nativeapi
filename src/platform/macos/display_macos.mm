@@ -7,33 +7,41 @@
 
 namespace nativeapi {
 
+static NSScreen* FindScreenByDisplayID(CGDirectDisplayID display_id) {
+  NSArray<NSScreen*>* screens = [NSScreen screens];
+  for (NSScreen* screen in screens) {
+    CGDirectDisplayID screenDisplayID =
+        [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
+    if (screenDisplayID == display_id) {
+      return screen;
+    }
+  }
+  return nil;
+}
+
 // Private implementation class
 class Display::Impl {
  public:
   Impl() = default;
-  Impl(NSScreen* screen) : ns_screen_(screen) {
-    if (screen) {
-      display_id_ = [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
-    }
-  }
-  Impl(CGDirectDisplayID display_id) : display_id_(display_id) {
-    // Find corresponding NSScreen for this display ID
-    NSArray<NSScreen*>* screens = [NSScreen screens];
-    for (NSScreen* screen in screens) {
-      CGDirectDisplayID screenDisplayID =
-          [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
-      if (screenDisplayID == display_id) {
-        ns_screen_ = screen;
-        break;
+
+  // Display instances are long-lived identity objects, but NSScreen objects
+  // are recreated on configuration changes. Resolve the screen by its
+  // CGDirectDisplayID on every access so getters always read live state,
+  // falling back to the wrapped screen for objects not in [NSScreen screens].
+  NSScreen* Screen() const {
+    if (display_id_ != 0) {
+      NSScreen* screen = FindScreenByDisplayID(display_id_);
+      if (screen) {
+        return screen;
       }
     }
+    return ns_screen_;
   }
 
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
   NSScreen* ns_screen_ = nil;
   CGDirectDisplayID display_id_ = 0;
 };
-
-Display::Display() : pimpl_(std::make_unique<Impl>()) {}
 
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
   if (display) {
@@ -48,58 +56,29 @@ Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
       // Try CGDirectDisplayID
       CGDirectDisplayID displayID = *(CGDirectDisplayID*)display;
       pimpl_->display_id_ = displayID;
-      // Find corresponding NSScreen
-      NSArray<NSScreen*>* screens = [NSScreen screens];
-      for (NSScreen* s in screens) {
-        CGDirectDisplayID screenDisplayID =
-            [[[s deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
-        if (screenDisplayID == displayID) {
-          pimpl_->ns_screen_ = s;
-          break;
-        }
-      }
+      pimpl_->ns_screen_ = FindScreenByDisplayID(displayID);
     }
   }
-}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
-
-Display& Display::operator=(const Display& other) {
-  if (this != &other) {
-    *pimpl_ = *other.pimpl_;
-  }
-  return *this;
-}
-
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-
-Display& Display::operator=(Display&& other) noexcept {
-  if (this != &other) {
-    pimpl_ = std::move(other.pimpl_);
-  }
-  return *this;
 }
 
 Display::~Display() = default;
 
 void* Display::GetNativeObjectInternal() const {
-  return (__bridge void*)pimpl_->ns_screen_;
+  return (__bridge void*)pimpl_->Screen();
 }
 
 // Getters - directly read from NSScreen
-std::string Display::GetId() const {
-  if (!pimpl_->ns_screen_)
-    return "";
-  NSString* screenId = [NSString stringWithFormat:@"%@", @(pimpl_->display_id_)];
-  return [screenId UTF8String];
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return "";
   NSString* displayName;
   if (@available(macOS 10.15, *)) {
-    displayName = [pimpl_->ns_screen_ localizedName];
+    displayName = [screen localizedName];
   } else {
     displayName = [NSString stringWithFormat:@"Display %@", @(pimpl_->display_id_)];
   }
@@ -107,9 +86,10 @@ std::string Display::GetName() const {
 }
 
 Point Display::GetPosition() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return {0.0, 0.0};
-  NSRect frame = [pimpl_->ns_screen_ frame];
+  NSRect frame = [screen frame];
 
   // Convert from bottom-left (macOS default) to top-left coordinate system
   CGPoint topLeft = NSRectExt::topLeft(frame);
@@ -118,16 +98,18 @@ Point Display::GetPosition() const {
 }
 
 Size Display::GetSize() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return {0.0, 0.0};
-  NSRect frame = [pimpl_->ns_screen_ frame];
+  NSRect frame = [screen frame];
   return {frame.size.width, frame.size.height};
 }
 
 Rectangle Display::GetWorkArea() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return {0.0, 0.0, 0.0, 0.0};
-  NSRect visibleFrame = [pimpl_->ns_screen_ visibleFrame];
+  NSRect visibleFrame = [screen visibleFrame];
 
   // Convert from bottom-left (macOS default) to top-left coordinate system
   CGPoint topLeft = NSRectExt::topLeft(visibleFrame);
@@ -136,28 +118,31 @@ Rectangle Display::GetWorkArea() const {
 }
 
 double Display::GetScaleFactor() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return 1.0;
-  return [pimpl_->ns_screen_ backingScaleFactor];
+  return [screen backingScaleFactor];
 }
 
 bool Display::IsPrimary() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return false;
   NSArray<NSScreen*>* screens = [NSScreen screens];
-  return screens.count > 0 && screens[0] == pimpl_->ns_screen_;
+  return screens.count > 0 && screens[0] == screen;
 }
 
 DisplayOrientation Display::GetOrientation() const {
-  if (!pimpl_->ns_screen_)
+  NSScreen* screen = pimpl_->Screen();
+  if (!screen)
     return DisplayOrientation::kPortrait;
-  NSRect frame = [pimpl_->ns_screen_ frame];
+  NSRect frame = [screen frame];
   return (frame.size.width > frame.size.height) ? DisplayOrientation::kLandscape
                                                 : DisplayOrientation::kPortrait;
 }
 
 int Display::GetRefreshRate() const {
-  if (!pimpl_->ns_screen_)
+  if (!pimpl_->Screen())
     return 60;
   CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode(pimpl_->display_id_);
   if (displayMode) {

@@ -26,9 +26,8 @@ int main() {
       printf("  Name: %s\n", name ? name : "Unknown");
       free_c_str(name);
 
-      char* id = native_display_get_id(display);
-      printf("  ID: %s\n", id ? id : "Unknown");
-      free_c_str(id);
+      native_display_id_t id = native_display_get_id(display);
+      printf("  ID: %u\n", id);
 
       native_point_t position = native_display_get_position(display);
       printf("  Position: (%.0f, %.0f)\n", position.x, position.y);

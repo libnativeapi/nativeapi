@@ -146,6 +146,14 @@ class Shortcut {
    */
   Shortcut(ShortcutId id, const std::string& accelerator, std::function<void()> callback);
 
+  // Shortcut is an identity object: it is managed
+  // through std::shared_ptr by the ShortcutManager and identified by its
+  // ShortcutId, so it is not copyable. Share the std::shared_ptr instead.
+  Shortcut(const Shortcut&) = delete;
+  Shortcut& operator=(const Shortcut&) = delete;
+  Shortcut(Shortcut&&) = delete;
+  Shortcut& operator=(Shortcut&&) = delete;
+
   /**
    * @brief Virtual destructor for proper cleanup.
    *

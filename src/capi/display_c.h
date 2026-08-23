@@ -19,6 +19,8 @@
 extern "C" {
 #endif
 
+typedef unsigned int native_display_id_t;
+
 typedef enum {
   NATIVE_DISPLAY_ORIENTATION_PORTRAIT = 0,
   NATIVE_DISPLAY_ORIENTATION_LANDSCAPE = 90,
@@ -57,27 +59,16 @@ typedef enum {
 typedef struct {
   native_display_event_type_t type;
   native_display_t display;
-  union {
-    struct {
-      native_display_t old_display;
-      native_display_t new_display;
-    } changed;
-  } data;
 } native_display_event_t;
 
 typedef void (*native_display_event_callback_t)(const native_display_event_t* event, void* user_data);
 
 /// Creates a Display instance; release it with native_display_free().
 FFI_PLUGIN_EXPORT
-native_display_t native_display_create(void);
+native_display_t native_display_create(void* display);
 
-/// Creates a Display instance; release it with native_display_free().
 FFI_PLUGIN_EXPORT
-native_display_t native_display_create_with_display(void* display);
-
-/// Caller owns the returned string; free it with free_c_str().
-FFI_PLUGIN_EXPORT
-char* native_display_get_id(native_display_t display);
+native_display_id_t native_display_get_id(native_display_t display);
 
 /// Caller owns the returned string; free it with free_c_str().
 FFI_PLUGIN_EXPORT

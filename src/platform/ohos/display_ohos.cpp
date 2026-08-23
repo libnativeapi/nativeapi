@@ -21,30 +21,11 @@ class Display::Impl {
   Impl() = default;
   Impl(void* display) : native_display_(display) {}
 
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
   void* native_display_ = nullptr;
 };
 
-Display::Display() : pimpl_(std::make_unique<Impl>()) {}
-
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>(display)) {}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
-
-Display& Display::operator=(const Display& other) {
-  if (this != &other) {
-    *pimpl_ = *other.pimpl_;
-  }
-  return *this;
-}
-
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-
-Display& Display::operator=(Display&& other) noexcept {
-  if (this != &other) {
-    pimpl_ = std::move(other.pimpl_);
-  }
-  return *this;
-}
 
 Display::~Display() = default;
 
@@ -52,8 +33,8 @@ void* Display::GetNativeObjectInternal() const {
   return pimpl_->native_display_;
 }
 
-std::string Display::GetId() const {
-  return "primary";
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {

@@ -9,41 +9,17 @@ namespace nativeapi {
 class Display::Impl {
  public:
   Impl(UIScreen* screen) : ui_screen_(screen) {}
+
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
   UIScreen* ui_screen_;
 };
 
-Display::Display() : pimpl_(std::make_unique<Impl>([UIScreen mainScreen])) {}
-
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>((__bridge UIScreen*)display)) {}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(other.pimpl_->ui_screen_)) {}
-
-Display& Display::operator=(const Display& other) {
-  if (this != &other) {
-    pimpl_->ui_screen_ = other.pimpl_->ui_screen_;
-  }
-  return *this;
-}
-
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-
-Display& Display::operator=(Display&& other) noexcept {
-  if (this != &other) {
-    pimpl_ = std::move(other.pimpl_);
-  }
-  return *this;
-}
 
 Display::~Display() {}
 
-std::string Display::GetId() const {
-  if (!pimpl_->ui_screen_) {
-    return "";
-  }
-
-  // Use the screen's bounds as a unique identifier
-  CGRect bounds = pimpl_->ui_screen_.bounds;
-  return std::to_string((int)bounds.origin.x) + "_" + std::to_string((int)bounds.origin.y);
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {

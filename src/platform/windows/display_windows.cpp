@@ -12,33 +12,14 @@ class Display::Impl {
   Impl() = default;
   Impl(HMONITOR monitor) : h_monitor_(monitor) {}
 
+  const DisplayId id_ = IdAllocator::Allocate<Display>();
   HMONITOR h_monitor_ = nullptr;
 };
-
-Display::Display() : pimpl_(std::make_unique<Impl>()) {}
 
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
   if (display) {
     pimpl_->h_monitor_ = (HMONITOR)display;
   }
-}
-
-Display::Display(const Display& other) : pimpl_(std::make_unique<Impl>(*other.pimpl_)) {}
-
-Display& Display::operator=(const Display& other) {
-  if (this != &other) {
-    *pimpl_ = *other.pimpl_;
-  }
-  return *this;
-}
-
-Display::Display(Display&& other) noexcept : pimpl_(std::move(other.pimpl_)) {}
-
-Display& Display::operator=(Display&& other) noexcept {
-  if (this != &other) {
-    pimpl_ = std::move(other.pimpl_);
-  }
-  return *this;
 }
 
 Display::~Display() = default;
@@ -56,10 +37,8 @@ MONITORINFOEXW GetMonitorInfoEx(HMONITOR hMonitor) {
 }
 
 // Getters - directly read from HMONITOR
-std::string Display::GetId() const {
-  if (!pimpl_->h_monitor_)
-    return "";
-  return std::to_string(reinterpret_cast<uintptr_t>(pimpl_->h_monitor_));
+DisplayId Display::GetId() const {
+  return pimpl_->id_;
 }
 
 std::string Display::GetName() const {

@@ -1,40 +1,38 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#include <string>
+#include <vector>
 #include "../../display_manager.h"
-#include "../../window.h"
 
 namespace nativeapi {
 
 DisplayManager::DisplayManager() {
-  // Constructor initialization
+  // Prime the instance cache so the first change notification diffs against
+  // the displays present at startup.
+  GetAll();
 }
 
 DisplayManager::~DisplayManager() {}
 
-std::vector<Display> DisplayManager::GetAll() {
-  std::vector<Display> displays;
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  std::vector<NativeDisplayInfo> natives;
 
-  // Get all screens
+  UIScreen* mainScreen = [UIScreen mainScreen];
   NSArray<UIScreen*>* screens = [UIScreen screens];
   for (UIScreen* screen in screens) {
-    displays.push_back(Display((__bridge void*)screen));
+    // A UIScreen object is stable for as long as the screen stays connected,
+    // so its address serves as the identity key.
+    natives.push_back({std::to_string(reinterpret_cast<uintptr_t>((__bridge void*)screen)),
+                       (__bridge void*)screen, screen == mainScreen});
   }
 
   // If no screens found, add main screen
-  if (displays.empty()) {
-    UIScreen* mainScreen = [UIScreen mainScreen];
-    if (mainScreen) {
-      displays.push_back(Display((__bridge void*)mainScreen));
-    }
+  if (natives.empty() && mainScreen) {
+    natives.push_back({std::to_string(reinterpret_cast<uintptr_t>((__bridge void*)mainScreen)),
+                       (__bridge void*)mainScreen, true});
   }
 
-  return displays;
-}
-
-Display DisplayManager::GetPrimary() {
-  // Get main screen
-  UIScreen* mainScreen = [UIScreen mainScreen];
-  return Display((__bridge void*)mainScreen);
+  return natives;
 }
 
 Point DisplayManager::GetCursorPosition() {

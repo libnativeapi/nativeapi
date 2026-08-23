@@ -9,12 +9,9 @@ namespace nativeapi {
 DisplayManager::DisplayManager() {}
 DisplayManager::~DisplayManager() {}
 
-std::vector<Display> DisplayManager::GetAll() {
-  return {Display()};
-}
-
-Display DisplayManager::GetPrimary() {
-  return Display();
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  // Stub: a single default display.
+  return {{"android_display_0", nullptr, true}};
 }
 
 Point DisplayManager::GetCursorPosition() {

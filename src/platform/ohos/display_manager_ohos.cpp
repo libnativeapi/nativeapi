@@ -13,14 +13,9 @@ DisplayManager::DisplayManager() {}
 
 DisplayManager::~DisplayManager() {}
 
-Display DisplayManager::GetPrimary() {
-  return Display();
-}
-
-std::vector<Display> DisplayManager::GetAll() {
-  std::vector<Display> displays;
-  displays.push_back(Display());
-  return displays;
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  // Stub: a single default display.
+  return {{"primary", nullptr, true}};
 }
 
 Point DisplayManager::GetCursorPosition() {

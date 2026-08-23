@@ -320,11 +320,11 @@ int main() {
 
   display_manager.AddListener<nativeapi::DisplayAddedEvent>(
       [](const nativeapi::DisplayAddedEvent& event) {
-        std::cout << "Display added: " << event.GetDisplay().GetId() << std::endl;
+        std::cout << "Display added: " << event.GetDisplay()->GetId() << std::endl;
       });
   display_manager.AddListener<nativeapi::DisplayRemovedEvent>(
       [](const nativeapi::DisplayRemovedEvent& event) {
-        std::cout << "Display removed: " << event.GetDisplay().GetId() << std::endl;
+        std::cout << "Display removed: " << event.GetDisplay()->GetId() << std::endl;
       });
 
   auto& app = Application::GetInstance();

@@ -1,68 +1,47 @@
 #include <windows.h>
-#include <set>
 #include <string>
 #include <vector>
 
 #include "../../display.h"
 #include "../../display_manager.h"
 #include "dpi_utils_windows.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
-static Display CreateDisplayFromMonitorInfo(HMONITOR hMonitor,
-                                            MONITORINFOEX* monitorInfo,
-                                            bool isPrimary) {
-  // Simply create Display with HMONITOR - all properties will be read directly
-  // from the monitor
-  return Display(hMonitor);
-}
-
-static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor,
-                                     HDC hdcMonitor,
-                                     LPRECT lprcMonitor,
-                                     LPARAM dwData) {
-  auto* displays = reinterpret_cast<std::vector<Display>*>(dwData);
-
-  MONITORINFOEX monitorInfo;
-  monitorInfo.cbSize = sizeof(MONITORINFOEX);
-
-  if (GetMonitorInfo(hMonitor, &monitorInfo)) {
-    bool isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
-    displays->push_back(CreateDisplayFromMonitorInfo(hMonitor, &monitorInfo, isPrimary));
-  }
-
-  return TRUE;
-}
-
 DisplayManager::DisplayManager() {
-  displays_ = GetAll();
+  // Prime the instance cache so the first change notification diffs against
+  // the displays present at startup.
+  GetAll();
   // TODO: Set up display configuration change monitoring
   // On Windows, you would typically register for WM_DISPLAYCHANGE messages
+  // and call HandleDisplaysChanged() from the handler.
 }
 
 DisplayManager::~DisplayManager() {
   // TODO: Clean up display change monitoring
 }
 
-std::vector<Display> DisplayManager::GetAll() {
-  std::vector<Display> displays;
-  EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&displays));
-  return displays;
-}
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  std::vector<NativeDisplayInfo> natives;
+  auto enumProc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor,
+                     LPARAM dwData) -> BOOL {
+    auto* out = reinterpret_cast<std::vector<NativeDisplayInfo>*>(dwData);
 
-Display DisplayManager::GetPrimary() {
-  std::vector<Display> displays = GetAll();
-  for (const auto& display : displays) {
-    if (display.IsPrimary()) {
-      return display;
+    MONITORINFOEXW monitorInfo;
+    monitorInfo.cbSize = sizeof(MONITORINFOEXW);
+
+    if (GetMonitorInfoW(hMonitor, &monitorInfo)) {
+      bool isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
+      // The device name is stable across configuration changes, unlike the
+      // HMONITOR value, so it serves as the identity key.
+      out->push_back({WCharArrayToString(monitorInfo.szDevice), hMonitor, isPrimary});
     }
-  }
-  // If no primary display found, return the first one
-  if (!displays.empty()) {
-    return displays[0];
-  }
-  // Return empty display if no displays found
-  return Display{};
+
+    return TRUE;
+  };
+  EnumDisplayMonitors(nullptr, nullptr, enumProc, reinterpret_cast<LPARAM>(&natives));
+  return natives;
 }
 
 Point DisplayManager::GetCursorPosition() {

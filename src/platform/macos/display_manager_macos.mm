@@ -1,6 +1,3 @@
-#include <cstring>
-#include <iostream>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -14,45 +11,19 @@
 
 namespace nativeapi {
 
-static Display CreateDisplayFromNSScreen(NSScreen* screen, bool isPrimary) {
-  // Simply create Display with NSScreen - all properties will be read directly from the screen
-  return Display((__bridge void*)screen);
-}
-
 id displayObserver_;
 
 DisplayManager::DisplayManager() {
-  displays_ = GetAll();
+  // Prime the instance cache so the first change notification diffs against
+  // the displays present at startup.
+  GetAll();
   // Set up display configuration change observer
   displayObserver_ = [[NSNotificationCenter defaultCenter]
       addObserverForName:NSApplicationDidChangeScreenParametersNotification
                   object:nil
                    queue:[NSOperationQueue mainQueue]
               usingBlock:^(NSNotification* notification) {
-                auto old_displays = displays_;
-                auto new_displays = GetAll();
-
-                // Find added displays
-                std::set<std::string> old_ids;
-                for (const auto& d : old_displays)
-                  old_ids.insert(d.GetId());
-                for (const auto& d : new_displays) {
-                  if (old_ids.find(d.GetId()) == old_ids.end()) {
-                    Emit<DisplayAddedEvent>(d);
-                  }
-                }
-
-                // Find removed displays
-                std::set<std::string> new_ids;
-                for (const auto& d : new_displays)
-                  new_ids.insert(d.GetId());
-                for (const auto& d : old_displays) {
-                  if (new_ids.find(d.GetId()) == new_ids.end()) {
-                    Emit<DisplayRemovedEvent>(d);
-                  }
-                }
-
-                displays_ = std::move(new_displays);
+                HandleDisplaysChanged();
               }];
 }
 
@@ -62,21 +33,17 @@ DisplayManager::~DisplayManager() {
   }
 }
 
-std::vector<Display> DisplayManager::GetAll() {
-  std::vector<Display> displayList;
+std::vector<DisplayManager::NativeDisplayInfo> DisplayManager::EnumerateNativeDisplays() {
+  std::vector<NativeDisplayInfo> natives;
   NSArray<NSScreen*>* screens = [NSScreen screens];
-  bool isPrimary = true;
+  bool isPrimary = true;  // Only the first NSScreen is the primary display
   for (NSScreen* screen in screens) {
-    displayList.push_back(CreateDisplayFromNSScreen(screen, isPrimary));
-    isPrimary = false;  // Only the first NSScreen is the primary display
+    CGDirectDisplayID displayID =
+        [[[screen deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
+    natives.push_back({std::to_string(displayID), (__bridge void*)screen, isPrimary});
+    isPrimary = false;
   }
-  return displayList;
-}
-
-Display DisplayManager::GetPrimary() {
-  // Get the primary display (first NSScreen)
-  NSArray<NSScreen*>* screens = [NSScreen screens];
-  return CreateDisplayFromNSScreen(screens[0], true);
+  return natives;
 }
 
 Point DisplayManager::GetCursorPosition() {

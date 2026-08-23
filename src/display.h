@@ -3,9 +3,22 @@
 #include <string>
 #include "foundation/event.h"
 #include "foundation/geometry.h"
+#include "foundation/id_allocator.h"
 #include "foundation/native_object_provider.h"
 
 namespace nativeapi {
+
+/**
+ * @typedef DisplayId
+ * @brief Unique identifier for a display instance.
+ *
+ * Allocated from IdAllocator when the Display object is created. Stable for
+ * as long as the display stays connected: DisplayManager hands out the same
+ * Display instance (and therefore the same id) on every enumeration. A
+ * display that is disconnected and reconnected gets a fresh instance with a
+ * fresh id.
+ */
+typedef IdAllocator::IdType DisplayId;
 
 /**
  * Display orientation enumeration
@@ -18,20 +31,41 @@ enum class DisplayOrientation {
 };
 
 /**
- * Representation of a display/monitor
+ * Representation of a display/monitor.
+ *
+ * Display is an identity object: it stands for one
+ * physical display, is managed through std::shared_ptr, and is identified by
+ * an integer DisplayId. Instances are created and cached by DisplayManager —
+ * asking the manager twice for the same physical display returns the same
+ * Display object. Properties are read live from the underlying platform
+ * display, so a held instance always reflects the current configuration.
+ *
+ * Display is not copyable. Share the std::shared_ptr instead.
  */
 class Display : public NativeObjectProvider {
  public:
-  Display();
-  Display(void* display);
-  Display(const Display& other);
-  Display& operator=(const Display& other);
-  Display(Display&& other) noexcept;
-  Display& operator=(Display&& other) noexcept;
+  /**
+   * @brief Constructor that wraps an existing native display object.
+   *
+   * @param display Pointer to the platform-specific display object
+   *                (NSScreen* on macOS, HMONITOR on Windows, GdkMonitor* on
+   *                Linux). The native object stays owned by the platform.
+   *
+   * @note Prefer obtaining displays from DisplayManager, which deduplicates
+   *       instances; construct one directly only to wrap a native object you
+   *       already hold.
+   */
+  explicit Display(void* display);
+
+  Display(const Display&) = delete;
+  Display& operator=(const Display&) = delete;
+  Display(Display&&) = delete;
+  Display& operator=(Display&&) = delete;
+
   virtual ~Display();
 
   // Basic identification
-  std::string GetId() const;
+  DisplayId GetId() const;
   std::string GetName() const;
 
   // Physical properties
@@ -78,7 +112,7 @@ class DisplayEvent : public Event {
    * Constructor for DisplayEvent
    * @param display The display associated with this event
    */
-  explicit DisplayEvent(const Display& display) : display_(display) {}
+  explicit DisplayEvent(std::shared_ptr<Display> display) : display_(std::move(display)) {}
 
   /**
    * Virtual destructor
@@ -87,9 +121,9 @@ class DisplayEvent : public Event {
 
   /**
    * Get the display associated with this event
-   * @return Reference to the display
+   * @return Shared pointer to the display
    */
-  const Display& GetDisplay() const { return display_; }
+  std::shared_ptr<Display> GetDisplay() const { return display_; }
 
   /**
    * Get a string representation of the event type (for debugging)
@@ -98,7 +132,7 @@ class DisplayEvent : public Event {
   std::string GetTypeName() const override { return "DisplayEvent"; }
 
  private:
-  Display display_;
+  std::shared_ptr<Display> display_;
 };
 
 /**
@@ -108,7 +142,8 @@ class DisplayEvent : public Event {
  */
 class DisplayAddedEvent : public DisplayEvent {
  public:
-  explicit DisplayAddedEvent(const Display& display) : DisplayEvent(display) {}
+  explicit DisplayAddedEvent(std::shared_ptr<Display> display)
+      : DisplayEvent(std::move(display)) {}
 
   /**
    * Get a string representation of the event type
@@ -120,10 +155,13 @@ class DisplayAddedEvent : public DisplayEvent {
  * Event class for display removal
  *
  * This event is emitted when a display is disconnected from the system.
+ * The carried Display instance is the last reference to the now-disconnected
+ * display; its id is no longer resolvable through DisplayManager.
  */
 class DisplayRemovedEvent : public DisplayEvent {
  public:
-  explicit DisplayRemovedEvent(const Display& display) : DisplayEvent(display) {}
+  explicit DisplayRemovedEvent(std::shared_ptr<Display> display)
+      : DisplayEvent(std::move(display)) {}
 
   /**
    * Get a string representation of the event type
@@ -134,32 +172,19 @@ class DisplayRemovedEvent : public DisplayEvent {
 /**
  * Event class for display configuration changes
  *
- * This event is emitted when a display's properties change (resolution, orientation, etc.).
+ * This event is emitted when a display's properties change (resolution,
+ * orientation, etc.). Displays are identity objects whose properties are read
+ * live, so the carried instance already reflects the new configuration.
  */
 class DisplayChangedEvent : public DisplayEvent {
  public:
-  DisplayChangedEvent(const Display& old_display, const Display& new_display)
-      : DisplayEvent(new_display), old_display_(old_display) {}
-
-  /**
-   * Get the display information before the change
-   * @return Reference to the old display state
-   */
-  const Display& GetOldDisplay() const { return old_display_; }
-
-  /**
-   * Get the display information after the change
-   * @return Reference to the new display state
-   */
-  const Display& GetNewDisplay() const { return GetDisplay(); }
+  explicit DisplayChangedEvent(std::shared_ptr<Display> display)
+      : DisplayEvent(std::move(display)) {}
 
   /**
    * Get a string representation of the event type
    */
   std::string GetTypeName() const override { return "DisplayChangedEvent"; }
-
- private:
-  Display old_display_;
 };
 
 }  // namespace nativeapi

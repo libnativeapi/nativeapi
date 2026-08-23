@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <functional>
-#include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "display.h"
@@ -21,8 +21,10 @@ namespace nativeapi {
  * - Monitor display changes (addition/removal)
  * - Get cursor position across displays
  *
- * The DisplayManager uses the singleton pattern to ensure there's only one
- * instance managing the display system throughout the application lifecycle.
+ * Display is an identity object: the manager keeps
+ * one live Display instance per connected physical display and returns the
+ * same std::shared_ptr on every query, so a display's DisplayId stays stable
+ * for as long as it remains connected.
  *
  * Thread Safety: This class is not thread-safe. External synchronization
  * is required if accessed from multiple threads.
@@ -30,8 +32,8 @@ namespace nativeapi {
  * Example usage:
  * @code
  * DisplayManager& manager = DisplayManager::GetInstance();
- * std::vector<Display> displays = manager.GetAll();
- * Display primary = manager.GetPrimary();
+ * std::vector<std::shared_ptr<Display>> displays = manager.GetAll();
+ * std::shared_ptr<Display> primary = manager.GetPrimary();
  * @endcode
  */
 class DisplayManager : public EventEmitter<DisplayEvent> {
@@ -51,25 +53,24 @@ class DisplayManager : public EventEmitter<DisplayEvent> {
   virtual ~DisplayManager();
 
   /**
-   * Get all connected displays information
+   * Get all connected displays
    *
-   * @return Vector containing all Display objects representing connected
-   * displays. The vector may be empty if no displays are detected.
-   * @note The returned vector is a snapshot of current displays at the time of
-   * call
+   * @return Vector of shared pointers to all connected displays. The vector
+   * may be empty if no displays are detected. Repeated calls return the same
+   * Display instances for displays that stayed connected.
    */
-  std::vector<Display> GetAll();
+  std::vector<std::shared_ptr<Display>> GetAll();
 
   /**
-   * Get the primary display information
+   * Get the primary display
    *
    * The primary display is typically the main screen where the desktop
    * environment displays its primary interface elements.
    *
-   * @return Display object representing the primary display
-   * @throws std::runtime_error if no primary display is available
+   * @return Shared pointer to the primary display, or nullptr if no display
+   * is available.
    */
-  Display GetPrimary();
+  std::shared_ptr<Display> GetPrimary();
 
   /**
    * Get the current cursor position in screen coordinates
@@ -92,20 +93,60 @@ class DisplayManager : public EventEmitter<DisplayEvent> {
   /**
    * @brief Private constructor to enforce singleton pattern.
    *
-   * Initializes the DisplayManager instance and sets up initial state.
+   * Initializes the DisplayManager instance and sets up platform display
+   * change monitoring.
    */
   DisplayManager();
 
   /**
-   * Cached list of displays
-   * Updated when display configuration changes are detected.
+   * One display as reported by the platform enumeration.
    */
-  std::vector<Display> displays_;
+  struct NativeDisplayInfo {
+    /**
+     * Platform-stable identity key (e.g. CGDirectDisplayID on macOS, device
+     * name on Windows). Used to recognize an already-known display across
+     * enumerations; never exposed publicly.
+     */
+    std::string key;
+
+    /** Platform display object, consumable by Display's constructor. */
+    void* native;
+
+    /** Whether the platform reports this display as primary. */
+    bool is_primary;
+  };
 
   /**
-   * Static instance holder for singleton pattern
+   * Enumerate the platform's current displays. Implemented per platform;
+   * everything else (instance caching, diffing, events) is shared code.
    */
-  static DisplayManager* instance_;
+  std::vector<NativeDisplayInfo> EnumerateNativeDisplays();
+
+  /**
+   * Reconcile the instance cache against a platform enumeration.
+   *
+   * Known displays keep their existing instance; new ones get a fresh
+   * Display; missing ones are dropped from the cache. When @p added /
+   * @p removed are non-null they receive the corresponding instances.
+   *
+   * @return The current displays in enumeration order.
+   */
+  std::vector<std::shared_ptr<Display>> Reconcile(
+      const std::vector<NativeDisplayInfo>& natives,
+      std::vector<std::shared_ptr<Display>>* added,
+      std::vector<std::shared_ptr<Display>>* removed);
+
+  /**
+   * Re-enumerate and emit DisplayAddedEvent / DisplayRemovedEvent for the
+   * differences. Called by the platform display-change observers.
+   */
+  void HandleDisplaysChanged();
+
+  /**
+   * Live Display instances keyed by platform identity key, so repeated
+   * enumeration returns the same objects (stable DisplayId).
+   */
+  std::unordered_map<std::string, std::shared_ptr<Display>> displays_;
 };
 
 }  // namespace nativeapi

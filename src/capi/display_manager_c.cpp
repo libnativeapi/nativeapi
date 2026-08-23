@@ -31,8 +31,7 @@ native_display_list_t native_display_manager_get_all(void) {
       return list;
     }
     for (size_t i = 0; i < items.size(); ++i) {
-      list.displays[i] = nativeapi::HandleTable::GetInstance().Insert(
-          std::make_shared<nativeapi::Display>(items[i]));
+      list.displays[i] = nativeapi::HandleTable::GetInstance().Insert(items[i]);
     }
     list.count = static_cast<long>(items.size());
     return list;
@@ -45,8 +44,7 @@ native_display_list_t native_display_manager_get_all(void) {
 
 native_display_t native_display_manager_get_primary(void) {
   try {
-    return nativeapi::HandleTable::GetInstance().Insert(
-        std::make_shared<nativeapi::Display>(nativeapi::DisplayManager::GetInstance().GetPrimary()));
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::DisplayManager::GetInstance().GetPrimary());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_display_manager_get_primary");
     return 0;
