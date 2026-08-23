@@ -13,7 +13,8 @@ namespace nativeapi {
  * @file handle_table.h
  * @brief Generational handle table backing every C ABI object handle.
  *
- * See docs/handle-ownership.md for the ownership rules this implements.
+ * The ownership rules this implements are specified in the libnativeapi
+ * workspace repo (specs/handle-ownership.md).
  *
  * A handle is an opaque 64-bit integer, never a pointer:
  *
