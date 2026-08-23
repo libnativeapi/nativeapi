@@ -122,6 +122,27 @@ static gboolean on_hide_emission_hook(GSignalInvocationHint* ihint,
   return TRUE;  // Continue emission
 }
 
+// Signal emission hook for delete-event signal
+static gboolean on_delete_event_emission_hook(GSignalInvocationHint* ihint,
+                                              guint n_param_values,
+                                              const GValue* param_values,
+                                              gpointer data) {
+  (void)ihint;
+  (void)n_param_values;
+  (void)data;
+
+  GtkWidget* widget = GTK_WIDGET(g_value_get_object(&param_values[0]));
+  if (widget && GTK_IS_WINDOW(widget)) {
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (gdk_window) {
+      WindowId id = GetOrCreateWindowId(gdk_window);
+      WindowManager::GetInstance().HandleWillClose(id);
+    }
+  }
+
+  return TRUE;  // Continue emission
+}
+
 // GTK signal callbacks to invoke hooks (used as fallback)
 static gboolean OnGtkMapEvent(GtkWidget* widget, GdkEvent* event, gpointer user_data) {
   (void)event;
@@ -181,9 +202,10 @@ static void InstallGlobalSwizzling() {
     return;
   }
 
-  // Get the show and hide signal IDs for GtkWidget
+  // Get the show, hide, and delete-event signal IDs for GtkWidget
   guint show_signal_id = g_signal_lookup("show", GTK_TYPE_WIDGET);
   guint hide_signal_id = g_signal_lookup("hide", GTK_TYPE_WIDGET);
+  guint delete_event_signal_id = g_signal_lookup("delete-event", GTK_TYPE_WIDGET);
 
   if (show_signal_id != 0) {
     // Add emission hook for show signal
@@ -193,6 +215,11 @@ static void InstallGlobalSwizzling() {
   if (hide_signal_id != 0) {
     // Add emission hook for hide signal
     g_signal_add_emission_hook(hide_signal_id, 0, on_hide_emission_hook, nullptr, nullptr);
+  }
+
+  if (delete_event_signal_id != 0) {
+    // Add emission hook for delete-event signal
+    g_signal_add_emission_hook(delete_event_signal_id, 0, on_delete_event_emission_hook, nullptr, nullptr);
   }
 
   g_swizzle_installed = true;
@@ -228,9 +255,10 @@ class WindowManager::Impl {
 
  private:
   WindowManager* manager_;
-  // Optional pre-show/hide hooks
+  // Optional pre-show/hide/close hooks
   std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
   std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+  std::optional<WindowManager::WindowWillCloseHook> will_close_hook_;
 
   friend class WindowManager;
 };
@@ -372,12 +400,24 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   }
 }
 
+void WindowManager::SetWillCloseHook(std::optional<WindowWillCloseHook> hook) {
+  pimpl_->will_close_hook_ = std::move(hook);
+  if (pimpl_->will_close_hook_) {
+    // Ensure global swizzling is installed when hook is set
+    InstallGlobalSwizzling();
+  }
+}
+
 bool WindowManager::HasWillShowHook() const {
   return pimpl_->will_show_hook_.has_value();
 }
 
 bool WindowManager::HasWillHideHook() const {
   return pimpl_->will_hide_hook_.has_value();
+}
+
+bool WindowManager::HasWillCloseHook() const {
+  return pimpl_->will_close_hook_.has_value();
 }
 
 void WindowManager::HandleWillShow(WindowId id) {
@@ -389,6 +429,12 @@ void WindowManager::HandleWillShow(WindowId id) {
 void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
+  }
+}
+
+void WindowManager::HandleWillClose(WindowId id) {
+  if (pimpl_->will_close_hook_) {
+    (*pimpl_->will_close_hook_)(id);
   }
 }
 
@@ -412,6 +458,21 @@ bool WindowManager::CallOriginalHide(WindowId id) {
   // Call the original GDK hide function directly
   gdk_window_hide(gdk_window);
   return true;
+}
+
+bool WindowManager::CallOriginalClose(WindowId id) {
+  GdkWindow* gdk_window = FindGdkWindowById(id);
+  if (!gdk_window) {
+    return false;
+  }
+
+  // On Linux, destroy the underlying GtkWidget to close the window
+  GtkWidget* widget = gtk_widget_get_toplevel(GTK_WIDGET(gdk_window));
+  if (widget && GTK_IS_WINDOW(widget)) {
+    gtk_widget_destroy(widget);
+    return true;
+  }
+  return false;
 }
 
 void WindowManager::StartEventListening() {

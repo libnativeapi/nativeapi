@@ -123,26 +123,31 @@ class WindowManager : public EventEmitter<WindowEvent> {
    */
   using WindowWillShowHook = std::function<void(WindowId)>;
   using WindowWillHideHook = std::function<void(WindowId)>;
+  using WindowWillCloseHook = std::function<void(WindowId)>;
 
   // Set or clear single hooks (pass std::nullopt to clear)
   void SetWillShowHook(std::optional<WindowWillShowHook> hook);
   void SetWillHideHook(std::optional<WindowWillHideHook> hook);
+  void SetWillCloseHook(std::optional<WindowWillCloseHook> hook);
 
   // Check if hooks are set
   bool HasWillShowHook() const;
   bool HasWillHideHook() const;
+  bool HasWillCloseHook() const;
 
-  // Called by platform layer BEFORE the actual show/hide happens
+  // Called by platform layer BEFORE the actual show/hide/close happens
   void HandleWillShow(WindowId id);
   void HandleWillHide(WindowId id);
+  void HandleWillClose(WindowId id);
 
   /**
-   * Call the platform's original show/hide implementations for a window,
+   * Call the platform's original show/hide/close implementations for a window,
    * bypassing swizzled paths. Returns true if successfully invoked.
    * On unsupported platforms, these return false.
    */
   bool CallOriginalShow(WindowId id);
   bool CallOriginalHide(WindowId id);
+  bool CallOriginalClose(WindowId id);
 
  protected:
   /**

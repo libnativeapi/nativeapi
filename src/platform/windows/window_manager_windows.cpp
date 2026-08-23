@@ -358,9 +358,10 @@ class WindowManager::Impl {
 
  private:
   WindowManager* manager_;
-  // Optional pre-show/hide hooks
+  // Optional pre-show/hide/close hooks
   std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
   std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+  std::optional<WindowManager::WindowWillCloseHook> will_close_hook_;
 
   friend class WindowManager;
 };
@@ -458,12 +459,24 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   has_any_hook ? InstallHooks() : UninstallHooks();
 }
 
+void WindowManager::SetWillCloseHook(std::optional<WindowWillCloseHook> hook) {
+  pimpl_->will_close_hook_ = std::move(hook);
+  // ponytail: Windows close-interceptie vereist een WH_CBT hook of window
+  // subclassing op WM_CLOSE — niet geïmplementeerd in deze iteratie.
+  // De hook wordt wel opgeslagen zodat HandleWillClose werkt zodra de
+  // event-monitoring dit signaal oppakt.
+}
+
 bool WindowManager::HasWillShowHook() const {
   return pimpl_->will_show_hook_.has_value();
 }
 
 bool WindowManager::HasWillHideHook() const {
   return pimpl_->will_hide_hook_.has_value();
+}
+
+bool WindowManager::HasWillCloseHook() const {
+  return pimpl_->will_close_hook_.has_value();
 }
 
 void WindowManager::HandleWillShow(WindowId id) {
@@ -475,6 +488,12 @@ void WindowManager::HandleWillShow(WindowId id) {
 void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
+  }
+}
+
+void WindowManager::HandleWillClose(WindowId id) {
+  if (pimpl_->will_close_hook_) {
+    (*pimpl_->will_close_hook_)(id);
   }
 }
 
@@ -510,6 +529,21 @@ bool WindowManager::CallOriginalHide(WindowId id) {
     return g_original_show_window(hwnd, SW_HIDE) != FALSE;
   }
   return false;
+}
+
+bool WindowManager::CallOriginalClose(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  HWND hwnd = static_cast<HWND>(native);
+  // On Windows, send WM_CLOSE to trigger the normal close path
+  PostMessage(hwnd, WM_CLOSE, 0, 0);
+  return true;
 }
 
 void WindowManager::StartEventListening() {

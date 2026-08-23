@@ -86,6 +86,20 @@ void native_window_manager_set_will_hide_hook(native_window_manager_set_will_hid
   }
 }
 
+void native_window_manager_set_will_close_hook(native_window_manager_set_will_close_hook_callback_t hook, void* hook_user_data) {
+  try {
+    std::optional<std::function<void(unsigned int)>> hook_cpp;
+    if (hook) {
+      hook_cpp = [hook, hook_user_data](unsigned int arg0) { hook(arg0, hook_user_data); };
+    }
+    nativeapi::WindowManager::GetInstance().SetWillCloseHook(hook_cpp);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_set_will_close_hook");
+    return;
+  }
+}
+
 bool native_window_manager_has_will_show_hook(void) {
   try {
     return nativeapi::WindowManager::GetInstance().HasWillShowHook();
@@ -100,6 +114,15 @@ bool native_window_manager_has_will_hide_hook(void) {
     return nativeapi::WindowManager::GetInstance().HasWillHideHook();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_has_will_hide_hook");
+    return false;
+  }
+}
+
+bool native_window_manager_has_will_close_hook(void) {
+  try {
+    return nativeapi::WindowManager::GetInstance().HasWillCloseHook();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_has_will_close_hook");
     return false;
   }
 }
@@ -124,6 +147,16 @@ void native_window_manager_handle_will_hide(native_window_id_t id) {
   }
 }
 
+void native_window_manager_handle_will_close(native_window_id_t id) {
+  try {
+    nativeapi::WindowManager::GetInstance().HandleWillClose(id);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_handle_will_close");
+    return;
+  }
+}
+
 bool native_window_manager_call_original_show(native_window_id_t id) {
   try {
     return nativeapi::WindowManager::GetInstance().CallOriginalShow(id);
@@ -138,6 +171,15 @@ bool native_window_manager_call_original_hide(native_window_id_t id) {
     return nativeapi::WindowManager::GetInstance().CallOriginalHide(id);
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_call_original_hide");
+    return false;
+  }
+}
+
+bool native_window_manager_call_original_close(native_window_id_t id) {
+  try {
+    return nativeapi::WindowManager::GetInstance().CallOriginalClose(id);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_call_original_close");
     return false;
   }
 }

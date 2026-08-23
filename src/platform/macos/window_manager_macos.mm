@@ -29,9 +29,10 @@ class WindowManager::Impl {
   WindowManager* manager_;
   NativeAPIWindowManagerDelegate* delegate_;
 
-  // Optional pre-show/hide hooks
+  // Optional pre-show/hide/close hooks
   std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
   std::optional<WindowManager::WindowWillHideHook> will_hide_hook_;
+  std::optional<WindowManager::WindowWillCloseHook> will_close_hook_;
 
   friend class WindowManager;
 };
@@ -44,6 +45,7 @@ class WindowManager::Impl {
 @interface NSWindow (NativeAPISwizzle)
 - (void)na_swizzled_makeKeyAndOrderFront:(id)sender;
 - (void)na_swizzled_orderOut:(id)sender;
+- (void)na_swizzled_performClose:(id)sender;
 @end
 
 @implementation NSWindow (NativeAPISwizzle)
@@ -79,6 +81,22 @@ class WindowManager::Impl {
   [self na_swizzled_orderOut:sender];
 }
 
+- (void)na_swizzled_performClose:(id)sender {
+  // Resolve window id and handle hook if present
+  if (nativeapi::WindowManager::GetInstance().HasWillCloseHook()) {
+    auto windows = nativeapi::WindowManager::GetInstance().GetAll();
+    for (const auto& window : windows) {
+      if (window->GetNativeObject() == (__bridge void*)self) {
+        nativeapi::WindowManager::GetInstance().HandleWillClose(window->GetId());
+        // Hook handles all logic; never call original here
+        return;
+      }
+    }
+  }
+  // No window found in registry, call original implementation (swapped)
+  [self na_swizzled_performClose:sender];
+}
+
 @end
 
 static void NativeAPIInstallNSWindowWillShowSwizzleOnce() {
@@ -101,6 +119,20 @@ static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
     Class cls = [NSWindow class];
     SEL originalSel = @selector(orderOut:);
     SEL swizzledSel = @selector(na_swizzled_orderOut:);
+    Method original = class_getInstanceMethod(cls, originalSel);
+    Method swizzled = class_getInstanceMethod(cls, swizzledSel);
+    if (original && swizzled) {
+      method_exchangeImplementations(original, swizzled);
+    }
+  });
+}
+
+static void NativeAPIInstallNSWindowWillCloseSwizzleOnce() {
+  static dispatch_once_t onceTokenClose;
+  dispatch_once(&onceTokenClose, ^{
+    Class cls = [NSWindow class];
+    SEL originalSel = @selector(performClose:);
+    SEL swizzledSel = @selector(na_swizzled_performClose:);
     Method original = class_getInstanceMethod(cls, originalSel);
     Method swizzled = class_getInstanceMethod(cls, swizzledSel);
     if (original && swizzled) {
@@ -341,12 +373,23 @@ void WindowManager::SetWillHideHook(std::optional<WindowWillHideHook> hook) {
   }
 }
 
+void WindowManager::SetWillCloseHook(std::optional<WindowWillCloseHook> hook) {
+  pimpl_->will_close_hook_ = std::move(hook);
+  if (pimpl_->will_close_hook_) {
+    NativeAPIInstallNSWindowWillCloseSwizzleOnce();
+  }
+}
+
 bool WindowManager::HasWillShowHook() const {
   return pimpl_->will_show_hook_.has_value();
 }
 
 bool WindowManager::HasWillHideHook() const {
   return pimpl_->will_hide_hook_.has_value();
+}
+
+bool WindowManager::HasWillCloseHook() const {
+  return pimpl_->will_close_hook_.has_value();
 }
 
 void WindowManager::HandleWillShow(WindowId id) {
@@ -358,6 +401,12 @@ void WindowManager::HandleWillShow(WindowId id) {
 void WindowManager::HandleWillHide(WindowId id) {
   if (pimpl_->will_hide_hook_) {
     (*pimpl_->will_hide_hook_)(id);
+  }
+}
+
+void WindowManager::HandleWillClose(WindowId id) {
+  if (pimpl_->will_close_hook_) {
+    (*pimpl_->will_close_hook_)(id);
   }
 }
 
@@ -386,6 +435,20 @@ bool WindowManager::CallOriginalHide(WindowId id) {
   }
   NSWindow* ns_window = (__bridge NSWindow*)native;
   [ns_window na_swizzled_orderOut:nil];
+  return true;
+}
+
+bool WindowManager::CallOriginalClose(WindowId id) {
+  auto window = Get(id);
+  if (!window) {
+    return false;
+  }
+  void* native = window->GetNativeObject();
+  if (!native) {
+    return false;
+  }
+  NSWindow* ns_window = (__bridge NSWindow*)native;
+  [ns_window na_swizzled_performClose:nil];
   return true;
 }
 
