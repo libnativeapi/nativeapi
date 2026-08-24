@@ -8,6 +8,8 @@ include(CTest)
 add_subdirectory(src)
 
 # Add example programs subdirectory
+add_subdirectory(examples/app_info_example)
+add_subdirectory(examples/device_info_example)
 add_subdirectory(examples/application_example)
 add_subdirectory(examples/application_c_example)
 add_subdirectory(examples/launch_at_login_example)

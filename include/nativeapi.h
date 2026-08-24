@@ -6,7 +6,9 @@
 #ifdef __cplusplus
 // C++ API
 #include "../src/accessibility_manager.h"
+#include "../src/app_info.h"
 #include "../src/application.h"
+#include "../src/device_info.h"
 #include "../src/dialog.h"
 #include "../src/display.h"
 #include "../src/display_manager.h"
@@ -33,9 +35,11 @@
 
 // C API (usable from both C and C++)
 #include "../src/capi/accessibility_manager_c.h"
+#include "../src/capi/app_info_c.h"
 #include "../src/capi/application_c.h"
 #include "../src/capi/color_c.h"
 #include "../src/capi/common_c.h"
+#include "../src/capi/device_info_c.h"
 #include "../src/capi/dialog_c.h"
 #include "../src/capi/display_c.h"
 #include "../src/capi/display_manager_c.h"
