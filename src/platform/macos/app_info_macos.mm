@@ -1,17 +1,10 @@
 #import <Foundation/Foundation.h>
 
 #include "../../app_info.h"
+#include "string_utils_macos.h"
 
 namespace nativeapi {
 namespace {
-
-std::string ToStdString(NSString* value) {
-  if (!value) {
-    return "";
-  }
-  const char* utf8 = [value UTF8String];
-  return utf8 ? utf8 : "";
-}
 
 NSString* InfoPlistString(NSString* key) {
   id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:key];

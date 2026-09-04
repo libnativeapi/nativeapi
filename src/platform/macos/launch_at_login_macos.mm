@@ -10,22 +10,11 @@
 #include <unistd.h>
 
 #include "../../launch_at_login.h"
+#include "string_utils_macos.h"
 
 namespace nativeapi {
 
 namespace {
-
-// Convert std::string <-> NSString helpers
-static inline NSString* ToNSString(const std::string& s) {
-  return [NSString stringWithUTF8String:s.c_str()];
-}
-
-static inline std::string ToStdString(NSString* s) {
-  if (!s)
-    return std::string();
-  const char* cstr = [s UTF8String];
-  return cstr ? std::string(cstr) : std::string();
-}
 
 // Best-effort default identifier: CFBundleIdentifier or
 // "com.nativeapi.launch_at_login.<process-name>"
