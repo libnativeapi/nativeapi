@@ -68,3 +68,7 @@ against the relevant program in `examples/`.
 When this repo is the `core/` submodule of the libnativeapi workspace, a change to any
 public header ripples into the generated bindings — run `./codegen sync` from the
 workspace root rather than hand-editing generated files.
+
+## Commits
+
+- Do not add Co-Authored-By trailers to commits.
