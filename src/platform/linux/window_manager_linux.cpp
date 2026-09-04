@@ -29,6 +29,17 @@ static std::mutex g_hook_mutex;
 // Flag to indicate if global swizzling has been installed
 static bool g_swizzle_installed = false;
 
+// Emission hook ids for the toplevel focus signals, so they can be removed again
+static gulong g_focus_in_hook_id = 0;
+static gulong g_focus_out_hook_id = 0;
+
+// The emission hooks are free functions and cannot name the private
+// WindowManager::Impl, so they dispatch through this trampoline, installed by
+// Impl::StartEventListening().
+using WindowFocusChangedFn = void (*)(void* impl, WindowId id, bool focused);
+static WindowFocusChangedFn g_focus_changed_fn = nullptr;
+static void* g_focus_changed_context = nullptr;
+
 // Helper function to manage mapping between GdkWindow pointers and WindowIds
 static WindowId GetOrCreateWindowId(GdkWindow* gdk_window) {
   if (!gdk_window) {
@@ -79,6 +90,76 @@ static GdkWindow* FindGdkWindowById(WindowId id) {
 // Forward declarations for swizzling functions
 static void InstallShowHideHooks(GtkWidget* widget);
 static void InstallGlobalSwizzling();
+
+// GDK delivers focus-in/focus-out to the toplevel GdkWindow, so a GtkWindow
+// receives these signals exactly when the window manager gives or takes
+// keyboard focus. GTK also emits them for child widgets when the focus moves
+// inside a window, hence the toplevel filter.
+static gboolean HandleFocusEmission(const GValue* param_values, bool focused) {
+  GtkWidget* widget = GTK_WIDGET(g_value_get_object(&param_values[0]));
+  if (!widget || !GTK_IS_WINDOW(widget) || !gtk_widget_is_toplevel(widget)) {
+    return TRUE;  // Continue emission
+  }
+
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (!gdk_window || !g_focus_changed_fn || !g_focus_changed_context) {
+    return TRUE;
+  }
+
+  WindowId id = GetOrCreateWindowId(gdk_window);
+  if (id != IdAllocator::kInvalidId) {
+    g_focus_changed_fn(g_focus_changed_context, id, focused);
+  }
+  return TRUE;  // Continue emission
+}
+
+static gboolean on_focus_in_emission_hook(GSignalInvocationHint* ihint,
+                                          guint n_param_values,
+                                          const GValue* param_values,
+                                          gpointer data) {
+  (void)ihint;
+  (void)n_param_values;
+  (void)data;
+  return HandleFocusEmission(param_values, true);
+}
+
+static gboolean on_focus_out_emission_hook(GSignalInvocationHint* ihint,
+                                           guint n_param_values,
+                                           const GValue* param_values,
+                                           gpointer data) {
+  (void)ihint;
+  (void)n_param_values;
+  (void)data;
+  return HandleFocusEmission(param_values, false);
+}
+
+static void InstallFocusHooks() {
+  guint focus_in_signal_id = g_signal_lookup("focus-in-event", GTK_TYPE_WIDGET);
+  guint focus_out_signal_id = g_signal_lookup("focus-out-event", GTK_TYPE_WIDGET);
+
+  if (focus_in_signal_id != 0 && g_focus_in_hook_id == 0) {
+    g_focus_in_hook_id = g_signal_add_emission_hook(focus_in_signal_id, 0,
+                                                    on_focus_in_emission_hook, nullptr, nullptr);
+  }
+  if (focus_out_signal_id != 0 && g_focus_out_hook_id == 0) {
+    g_focus_out_hook_id = g_signal_add_emission_hook(focus_out_signal_id, 0,
+                                                     on_focus_out_emission_hook, nullptr, nullptr);
+  }
+}
+
+static void RemoveFocusHooks() {
+  guint focus_in_signal_id = g_signal_lookup("focus-in-event", GTK_TYPE_WIDGET);
+  guint focus_out_signal_id = g_signal_lookup("focus-out-event", GTK_TYPE_WIDGET);
+
+  if (g_focus_in_hook_id != 0 && focus_in_signal_id != 0) {
+    g_signal_remove_emission_hook(focus_in_signal_id, g_focus_in_hook_id);
+  }
+  if (g_focus_out_hook_id != 0 && focus_out_signal_id != 0) {
+    g_signal_remove_emission_hook(focus_out_signal_id, g_focus_out_hook_id);
+  }
+  g_focus_in_hook_id = 0;
+  g_focus_out_hook_id = 0;
+}
 
 // Signal emission hook for show signal
 static gboolean on_show_emission_hook(GSignalInvocationHint* ihint,
@@ -208,6 +289,13 @@ class WindowManager::Impl {
     // Install global swizzling for show/hide interception
     InstallGlobalSwizzling();
 
+    // Install the toplevel focus hooks that drive focused/blurred events
+    g_focus_changed_context = this;
+    g_focus_changed_fn = [](void* impl, WindowId id, bool focused) {
+      static_cast<Impl*>(impl)->OnWindowFocusChanged(id, focused);
+    };
+    InstallFocusHooks();
+
     // Monitor all existing windows
     GdkDisplay* display = gdk_display_get_default();
     if (display) {
@@ -221,9 +309,23 @@ class WindowManager::Impl {
   }
 
   void StopEventListening() {
+    RemoveFocusHooks();
+    g_focus_changed_fn = nullptr;
+    g_focus_changed_context = nullptr;
+
     // Clear hooked widgets set
     std::lock_guard<std::mutex> lock(g_hook_mutex);
     g_hooked_widgets.clear();
+  }
+
+  void OnWindowFocusChanged(WindowId window_id, bool focused) {
+    if (focused) {
+      WindowFocusedEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else {
+      WindowBlurredEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    }
   }
 
  private:

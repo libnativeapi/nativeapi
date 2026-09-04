@@ -47,6 +47,50 @@ static WindowId GetWindowIdFromHwnd(HWND hwnd) {
 
 namespace {
 
+// Foreground-change tracking for WindowFocusedEvent / WindowBlurredEvent.
+// The hook is system-wide because a window of this process loses focus exactly
+// when some *other* process's window becomes foreground; a process-scoped hook
+// would never report that transition. Foreign windows are filtered out below,
+// so no window ids are ever allocated for them.
+static HWINEVENTHOOK g_foreground_hook = nullptr;
+static HWND g_focused_hwnd = nullptr;
+
+// The WinEvent callback is a free function and cannot name the private
+// WindowManager::Impl, so it dispatches through this trampoline, installed by
+// Impl::StartEventListening().
+using ForegroundChangedFn = void (*)(void* impl, HWND hwnd);
+static ForegroundChangedFn g_foreground_changed_fn = nullptr;
+static void* g_foreground_changed_context = nullptr;
+
+static bool IsOwnProcessWindow(HWND hwnd) {
+  if (!hwnd) {
+    return false;
+  }
+  DWORD process_id = 0;
+  GetWindowThreadProcessId(hwnd, &process_id);
+  return process_id == GetCurrentProcessId();
+}
+
+static void CALLBACK ForegroundEventProc(HWINEVENTHOOK hook,
+                                         DWORD event,
+                                         HWND hwnd,
+                                         LONG id_object,
+                                         LONG id_child,
+                                         DWORD event_thread,
+                                         DWORD event_time) {
+  (void)hook;
+  (void)event_thread;
+  (void)event_time;
+
+  if (event != EVENT_SYSTEM_FOREGROUND || id_object != OBJID_WINDOW ||
+      id_child != CHILDID_SELF || !hwnd) {
+    return;
+  }
+  if (g_foreground_changed_fn && g_foreground_changed_context) {
+    g_foreground_changed_fn(g_foreground_changed_context, hwnd);
+  }
+}
+
 using PFN_ShowWindow = BOOL(WINAPI*)(HWND, int);
 using PFN_ShowWindowAsync = BOOL(WINAPI*)(HWND, int);
 
@@ -308,15 +352,53 @@ class WindowManager::Impl {
   Impl(WindowManager* manager) : manager_(manager) {}
   ~Impl() {}
 
+  // WINEVENT_OUTOFCONTEXT callbacks are delivered through the message queue of
+  // the thread that installs the hook, so WindowManager must first be touched
+  // from the UI thread; UnhookWinEvent has to run on that same thread.
   void StartEventListening() {
-    // Windows event monitoring would typically be done through:
-    // - SetWinEventHook for system-wide window events
-    // - Window subclassing for specific window events
-    // This is a placeholder implementation
+    g_foreground_changed_context = this;
+    g_foreground_changed_fn = [](void* impl, HWND hwnd) {
+      static_cast<Impl*>(impl)->OnForegroundChanged(hwnd);
+    };
+
+    if (!g_foreground_hook) {
+      g_foreground_hook =
+          SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr,
+                          ForegroundEventProc, 0, 0, WINEVENT_OUTOFCONTEXT);
+    }
+
+    // Seed the tracked window so the first blur names the right window.
+    HWND foreground = GetForegroundWindow();
+    g_focused_hwnd = IsOwnProcessWindow(foreground) ? foreground : nullptr;
   }
 
   void StopEventListening() {
-    // Clean up any event hooks or monitoring
+    if (g_foreground_hook) {
+      UnhookWinEvent(g_foreground_hook);
+      g_foreground_hook = nullptr;
+    }
+    g_focused_hwnd = nullptr;
+    g_foreground_changed_fn = nullptr;
+    g_foreground_changed_context = nullptr;
+  }
+
+  // Translate a foreground change into blurred/focused events. Only windows of
+  // this process are reported: focus moving to another application blurs the
+  // window we were tracking and focuses nothing.
+  void OnForegroundChanged(HWND hwnd) {
+    if (hwnd == g_focused_hwnd) {
+      return;
+    }
+
+    HWND previous = g_focused_hwnd;
+    g_focused_hwnd = IsOwnProcessWindow(hwnd) ? hwnd : nullptr;
+
+    if (previous && IsWindow(previous)) {
+      OnWindowEvent(previous, "blurred");
+    }
+    if (g_focused_hwnd) {
+      OnWindowEvent(g_focused_hwnd, "focused");
+    }
   }
 
   void OnWindowEvent(HWND hwnd, const std::string& event_type) {

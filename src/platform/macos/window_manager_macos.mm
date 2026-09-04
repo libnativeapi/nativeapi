@@ -36,6 +36,12 @@ class WindowManager::Impl {
   friend class WindowManager;
 };
 
+// The Objective-C notification delegate lives outside the class and cannot name
+// the private WindowManager::Impl, so it dispatches through this trampoline.
+// Impl::StartEventListening() installs it alongside the delegate.
+using WindowEventTrampoline = void (*)(void* impl, NSWindow* window, const char* event_type);
+static WindowEventTrampoline g_window_event_trampoline = nullptr;
+
 }  // namespace nativeapi
 
 // MARK: - NSWindow Swizzling
@@ -125,16 +131,16 @@ static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "focused");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "focused");
   }
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "blurred");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "blurred");
   }
 }
 
@@ -177,6 +183,31 @@ static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
 
 namespace nativeapi {
 
+// Resolve the WindowId of an NSWindow the same way Window's constructor does:
+// reuse the id stored as an associated object, otherwise wrap the NSWindow so
+// an id is allocated and attached. Newly seen windows are added to the registry
+// so listeners can call WindowManager::Get() straight from the callback.
+static WindowId ResolveWindowId(NSWindow* ns_window) {
+  if (ns_window == nil) {
+    return IdAllocator::kInvalidId;
+  }
+
+  NSNumber* existing_id = objc_getAssociatedObject(ns_window, kWindowIdKey);
+  if (existing_id) {
+    WindowId window_id = [existing_id unsignedLongLongValue];
+    if (WindowRegistry::GetInstance().Get(window_id)) {
+      return window_id;
+    }
+  }
+
+  auto window = std::make_shared<Window>((__bridge void*)ns_window);
+  WindowId window_id = window->GetId();
+  if (window_id != IdAllocator::kInvalidId && !WindowRegistry::GetInstance().Get(window_id)) {
+    WindowRegistry::GetInstance().Add(window_id, window);
+  }
+  return window_id;
+}
+
 WindowManager::Impl::Impl(WindowManager* manager) : manager_(manager), delegate_(nullptr) {}
 
 WindowManager::Impl::~Impl() {
@@ -185,6 +216,9 @@ WindowManager::Impl::~Impl() {
 
 void WindowManager::Impl::StartEventListening() {
   if (!delegate_) {
+    g_window_event_trampoline = [](void* impl, NSWindow* window, const char* event_type) {
+      static_cast<Impl*>(impl)->OnWindowEvent(window, event_type);
+    };
     delegate_ = [[NativeAPIWindowManagerDelegate alloc] initWithImpl:this];
 
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
@@ -228,7 +262,10 @@ void WindowManager::Impl::StopEventListening() {
 }
 
 void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
-  WindowId window_id = [window windowNumber];
+  WindowId window_id = ResolveWindowId(window);
+  if (window_id == IdAllocator::kInvalidId) {
+    return;
+  }
 
   if (event_type == "focused") {
     WindowFocusedEvent event(window_id);

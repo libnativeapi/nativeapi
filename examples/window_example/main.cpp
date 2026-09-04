@@ -21,6 +21,8 @@ using nativeapi::TrayIconDoubleClickedEvent;
 using nativeapi::TrayIconRightClickedEvent;
 using nativeapi::TrayManager;
 using nativeapi::Window;
+using nativeapi::WindowBlurredEvent;
+using nativeapi::WindowFocusedEvent;
 using nativeapi::WindowManager;
 
 int main() {
@@ -317,6 +319,13 @@ int main() {
   } else {
     std::cerr << "Failed to create tray." << std::endl;
   }
+
+  window_manager.AddListener<WindowFocusedEvent>([](const WindowFocusedEvent& event) {
+    std::cout << "Window focused: " << event.GetWindowId() << std::endl;
+  });
+  window_manager.AddListener<WindowBlurredEvent>([](const WindowBlurredEvent& event) {
+    std::cout << "Window blurred: " << event.GetWindowId() << std::endl;
+  });
 
   display_manager.AddListener<nativeapi::DisplayAddedEvent>(
       [](const nativeapi::DisplayAddedEvent& event) {
