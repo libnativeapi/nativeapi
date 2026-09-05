@@ -280,6 +280,14 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetNonActivating(bool is_non_activating) {
+  ALOGW("SetNonActivating not supported on Android");
+}
+
+bool Window::IsNonActivating() const {
+  return false;
+}
+
 void Window::SetPosition(Point point) {
   ALOGW("SetPosition not supported on Android");
 }

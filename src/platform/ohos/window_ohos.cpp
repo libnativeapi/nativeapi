@@ -262,6 +262,14 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetNonActivating(bool is_non_activating) {
+  // SetNonActivating not supported on OpenHarmony
+}
+
+bool Window::IsNonActivating() const {
+  return false;
+}
+
 void Window::SetPosition(Point point) {
   // SetPosition not supported on OpenHarmony
 }

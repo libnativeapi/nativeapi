@@ -280,6 +280,14 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetNonActivating(bool is_non_activating) {
+  // Not applicable to iOS (single foreground app)
+}
+
+bool Window::IsNonActivating() const {
+  return false;
+}
+
 void Window::SetPosition(Point point) {
   if (pimpl_->ui_window_) {
     CGRect frame = pimpl_->ui_window_.frame;

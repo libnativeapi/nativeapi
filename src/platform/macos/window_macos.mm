@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -11,6 +12,93 @@
 
 // Key for associated objects (used by both window_macos.mm and window_manager_macos.mm)
 const void* kWindowIdKey = &kWindowIdKey;
+
+// Window::SetFocusable() and Window::SetNonActivating() state lives on the NSWindow itself
+// (associated objects + the object's runtime class) rather than in Window::Impl: the registry
+// may hand out a fresh Window wrapper for the same NSWindow, and the class overrides below
+// need to read the focusable flag without access to the Impl.
+static const void* kWindowFocusableKey = &kWindowFocusableKey;
+static const void* kWindowOriginalClassKey = &kWindowOriginalClassKey;
+
+static BOOL NativeApiWindowIsFocusable(NSWindow* window) {
+  NSNumber* value = objc_getAssociatedObject(window, kWindowFocusableKey);
+  return value ? [value boolValue] : YES;
+}
+
+// NSPanel subclass that an existing NSWindow is switched to by Window::SetNonActivating(true).
+// NSWindow and NSPanel share the same instance layout, so object_setClass() is safe here.
+// The panel can become key (receive keyboard input) but never main, and paired with
+// NSWindowStyleMaskNonactivatingPanel it does not activate the application when shown.
+@interface NativeApiNonActivatingPanel : NSPanel
+@end
+
+@implementation NativeApiNonActivatingPanel
+- (BOOL)canBecomeKeyWindow {
+  return NativeApiWindowIsFocusable(self);
+}
+- (BOOL)canBecomeMainWindow {
+  return NO;
+}
+@end
+
+static BOOL NativeApiWindowIsNonActivating(NSWindow* window) {
+  return object_getClass(window) == [NativeApiNonActivatingPanel class];
+}
+
+// The class the NSWindow had before nativeapi first swapped it. Recorded lazily so windows
+// that are never touched keep their class untouched.
+static Class NativeApiWindowOriginalClass(NSWindow* window) {
+  Class original = objc_getAssociatedObject(window, kWindowOriginalClassKey);
+  if (!original) {
+    original = object_getClass(window);
+    objc_setAssociatedObject(window, kWindowOriginalClassKey, original,
+                             OBJC_ASSOCIATION_ASSIGN);
+  }
+  return original;
+}
+
+// Returns (creating on first use) a runtime subclass of |base| whose -canBecomeKeyWindow honors
+// the focusable flag. Used by Window::SetFocusable() for windows that are not panels, so the
+// window keeps every behavior of its original class (e.g. a Flutter or storyboard subclass).
+static Class NativeApiFocusableSubclassOf(Class base) {
+  std::string name = std::string(class_getName(base)) + "_NativeApiFocusable";
+  if (Class existing = objc_getClass(name.c_str())) {
+    return existing;
+  }
+  Class subclass = objc_allocateClassPair(base, name.c_str(), 0);
+  Method method = class_getInstanceMethod([NativeApiNonActivatingPanel class],
+                                          @selector(canBecomeKeyWindow));
+  class_addMethod(subclass, @selector(canBecomeKeyWindow), method_getImplementation(method),
+                  method_getTypeEncoding(method));
+  objc_registerClassPair(subclass);
+  return subclass;
+}
+
+// Picks the runtime class for |window| from the non-activating and focusable state:
+//   non-activating            -> NativeApiNonActivatingPanel (handles both flags)
+//   activating, focusable     -> the original class
+//   activating, not focusable -> runtime subclass of the original class
+static void NativeApiUpdateWindowClass(NSWindow* window, bool non_activating) {
+  Class original = NativeApiWindowOriginalClass(window);
+  if (non_activating) {
+    if (object_getClass(window) != [NativeApiNonActivatingPanel class]) {
+      object_setClass(window, [NativeApiNonActivatingPanel class]);
+    }
+    window.styleMask |= NSWindowStyleMaskNonactivatingPanel;
+    NSPanel* panel = (NSPanel*)window;
+    // NSPanel defaults to hiding when the app deactivates, which would pull a pinned
+    // helper window away as soon as the user clicks into another app.
+    panel.hidesOnDeactivate = NO;
+    panel.becomesKeyOnlyIfNeeded = NO;
+    return;
+  }
+  window.styleMask &= ~NSWindowStyleMaskNonactivatingPanel;
+  Class target =
+      NativeApiWindowIsFocusable(window) ? original : NativeApiFocusableSubclassOf(original);
+  if (object_getClass(window) != target) {
+    object_setClass(window, target);
+  }
+}
 
 namespace nativeapi {
 
@@ -337,6 +425,14 @@ bool Window::IsAlwaysOnTop() const {
   return [pimpl_->ns_window_ level] == NSFloatingWindowLevel;
 }
 
+void Window::SetNonActivating(bool is_non_activating) {
+  NativeApiUpdateWindowClass(pimpl_->ns_window_, is_non_activating);
+}
+
+bool Window::IsNonActivating() const {
+  return NativeApiWindowIsNonActivating(pimpl_->ns_window_);
+}
+
 void Window::SetPosition(Point point) {
   // Convert from topLeft coordinate system to bottom-left (macOS default)
   // We need the window height to correctly convert the top-left position
@@ -517,7 +613,10 @@ bool Window::IsIgnoreMouseEvents() const {
 }
 
 void Window::SetFocusable(bool is_focusable) {
-  // TODO: Implement this
+  NSWindow* window = pimpl_->ns_window_;
+  objc_setAssociatedObject(window, kWindowFocusableKey, @(is_focusable),
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  NativeApiUpdateWindowClass(window, NativeApiWindowIsNonActivating(window));
 }
 
 bool Window::IsFocusable() const {

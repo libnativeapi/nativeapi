@@ -55,6 +55,8 @@ class Window::Impl {
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
   Color background_color_;
+  // Recorded only: keyboard focus is per window on Linux, see Window::SetNonActivating().
+  bool non_activating_ = false;
 };
 
 Window::Window() {
@@ -411,6 +413,16 @@ bool Window::IsAlwaysOnTop() const {
     return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_ABOVE;
+}
+
+void Window::SetNonActivating(bool is_non_activating) {
+  // Keyboard focus is per window on Linux, so a non-activating window has no
+  // observable difference here. Record the flag so IsNonActivating() round-trips.
+  pimpl_->non_activating_ = is_non_activating;
+}
+
+bool Window::IsNonActivating() const {
+  return pimpl_->non_activating_;
 }
 
 void Window::SetPosition(Point point) {

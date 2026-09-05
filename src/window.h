@@ -514,6 +514,47 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    */
   bool IsAlwaysOnTop() const;
 
+  /**
+   * @brief Sets whether showing or focusing the window activates the application.
+   *
+   * @param is_non_activating true to make the window non-activating, false for
+   *        normal behavior
+   *
+   * A non-activating window can be shown, ordered to the front and receive
+   * keyboard input without making its application the active one. The
+   * previously active application keeps its activation state, and hiding the
+   * window does not bring the application's other windows forward. Use this
+   * for floating helper windows (quick-input palettes, pop-up translators,
+   * pickers) that should sit above a foreign app while the user keeps working
+   * in it.
+   *
+   * The window level is not changed by this call; combine it with
+   * SetAlwaysOnTop() to keep the window above other applications' windows.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - The window becomes a non-activating NSPanel
+   *   that can become key but never main. This is the only platform where
+   *   keyboard focus is tied to application activation, so it is the only one
+   *   with observable behavior.
+   * - Windows: ⚠️ Recorded only - Keyboard focus is per window, so the flag
+   *   is stored and reported back by IsNonActivating() but changes nothing.
+   * - Linux: ⚠️ Recorded only - Same as Windows.
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetNonActivating(bool is_non_activating);
+
+  /**
+   * @brief Checks if the window is non-activating.
+   *
+   * @return true if showing or focusing the window does not activate the
+   *         application, false otherwise
+   *
+   * @see SetNonActivating() for platform availability.
+   */
+  bool IsNonActivating() const;
+
   // === Position and Title ===
 
   /**
@@ -691,6 +732,12 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    *
    * When disabled, the window cannot receive keyboard focus and will not
    * respond to keyboard input. Useful for utility or informational windows.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Overrides the window's ability to become key
+   * - Windows: ❌ Not implemented
+   * - Linux: ❌ Not implemented
+   * - Android / iOS / OpenHarmony: ❌ Not applicable - Focus is managed by the system
    */
   void SetFocusable(bool is_focusable);
 

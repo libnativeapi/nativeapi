@@ -35,6 +35,8 @@ class Window::Impl {
   Size min_size_{0, 0};
   Size max_size_{0, 0};
   int min_max_handler_id_ = 0;
+  // Recorded only: keyboard focus is per window on Windows, see Window::SetNonActivating().
+  bool non_activating_ = false;
 };
 
 // Custom window procedure to handle window messages
@@ -697,6 +699,16 @@ bool Window::IsAlwaysOnTop() const {
     return false;
   LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
   return (exStyle & WS_EX_TOPMOST) != 0;
+}
+
+void Window::SetNonActivating(bool is_non_activating) {
+  // Windows keeps keyboard focus per window, so a non-activating window has no
+  // observable difference here. Record the flag so IsNonActivating() round-trips.
+  pimpl_->non_activating_ = is_non_activating;
+}
+
+bool Window::IsNonActivating() const {
+  return pimpl_->non_activating_;
 }
 
 void Window::SetPosition(Point point) {

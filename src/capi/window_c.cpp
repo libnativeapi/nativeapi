@@ -659,6 +659,33 @@ bool native_window_is_always_on_top(native_window_t window) {
   }
 }
 
+void native_window_set_non_activating(native_window_t window, bool is_non_activating) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetNonActivating(is_non_activating);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_non_activating");
+    return;
+  }
+}
+
+bool native_window_is_non_activating(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsNonActivating();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_is_non_activating");
+    return false;
+  }
+}
+
 void native_window_set_position(native_window_t window, native_point_t point) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {

@@ -222,6 +222,12 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_always_on_top(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+void native_window_set_non_activating(native_window_t window, bool is_non_activating);
+
+FFI_PLUGIN_EXPORT
+bool native_window_is_non_activating(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_position(native_window_t window, native_point_t point);
 
 FFI_PLUGIN_EXPORT
