@@ -77,6 +77,21 @@ class ApplicationQuitRequestedEvent : public ApplicationEvent {
 };
 
 /**
+ * @brief Light or dark appearance for the application's user interface.
+ *
+ * Passed to Application::SetBrightness() to override the appearance the
+ * operating system would otherwise apply to this application's windows.
+ */
+enum class Brightness {
+  /** Follow the operating system's current appearance setting. */
+  System,
+  /** Always use the light appearance. */
+  Light,
+  /** Always use the dark appearance. */
+  Dark
+};
+
+/**
  * @brief Application is a singleton class that manages the application lifecycle
  *
  * The Application class provides centralized management of application-wide state,
@@ -209,6 +224,72 @@ class Application : public EventEmitter<ApplicationEvent> {
    * @return true if the operation succeeded, false otherwise
    */
   bool SetDockIconVisible(bool visible);
+
+  /**
+   * @brief Show a progress bar on the application's dock or taskbar icon.
+   *
+   * @param progress Fraction complete in the range 0.0 to 1.0. A negative
+   *        value removes the progress bar; a value above 1.0 shows an
+   *        indeterminate (busy) indicator where the platform supports one.
+   * @return true if the progress bar was updated, false otherwise
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Drawn on the Dock tile.
+   * - Windows: ✅ Fully supported - Shown on the taskbar button of the primary
+   *   window (or the first window when no primary window is set). Values above
+   *   1.0 show the marquee style.
+   * - Linux: ⚠️ Partial - Sent as a com.canonical.Unity.LauncherEntry signal
+   *   keyed on the desktop file named after the program name; honored by
+   *   Unity, KDE Plasma, elementary and GNOME's Dash to Dock. Indeterminate is
+   *   shown as full.
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
+   */
+  bool SetProgressBar(double progress);
+
+  /**
+   * @brief Show a short text badge on the application's dock or taskbar icon.
+   *
+   * @param label Text to display, typically a count such as "3" or "99+".
+   *        An empty string removes the badge. Keep it to a few characters.
+   * @return true if the badge was updated, false otherwise
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - The Dock tile badge; any text is allowed.
+   * - Windows: ✅ Fully supported - Rendered as a taskbar overlay icon on the
+   *   primary window (or the first window when no primary window is set);
+   *   only the first three characters fit.
+   * - Linux: ⚠️ Partial - Sent as a LauncherEntry count, so the label must be
+   *   an integer; other text returns false. See SetProgressBar() for which
+   *   desktops honor it.
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
+   */
+  bool SetBadgeLabel(const std::string& label);
+
+  /**
+   * @brief Force the light or dark appearance for the whole application.
+   *
+   * @param brightness The appearance to use; Brightness::System restores the
+   *        operating system's setting
+   * @return true if the appearance was applied, false otherwise
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Sets the NSApplication appearance, which all
+   *   windows and menus inherit.
+   * - Windows: ⚠️ Partial - Toggles the dark title bar and frame on every
+   *   window that exists at the time of the call; windows created later are
+   *   not updated. Application content is unaffected.
+   * - Linux: ✅ Fully supported - Sets the GTK prefer-dark-theme setting; when
+   *   switching to light while a "-dark" theme variant is active, the light
+   *   variant of that theme is selected. Brightness::System restores both.
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
+   */
+  bool SetBrightness(Brightness brightness);
 
   /**
    * @brief Set the application menu bar

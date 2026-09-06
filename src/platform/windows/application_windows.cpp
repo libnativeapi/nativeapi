@@ -1,7 +1,10 @@
 // clang-format off
 #include <windows.h>
 #include <shellapi.h>
+#include <shobjidl.h>
+#include <dwmapi.h>
 // clang-format on
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -9,13 +12,113 @@
 #include "../../application.h"
 #include "../../menu.h"
 #include "../../window_manager.h"
+#include "string_utils_windows.h"
+
+#pragma comment(lib, "dwmapi.lib")
+
+// DWMWA_USE_IMMERSIVE_DARK_MODE was 19 before Windows 10 20H1 and is 20 since.
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
 
 namespace nativeapi {
+
+// Renders a small red circle with white text, suitable for
+// ITaskbarList3::SetOverlayIcon. The caller owns the returned HICON.
+static HICON CreateBadgeIcon(const std::wstring& text) {
+  const int size = GetSystemMetrics(SM_CXSMICON) > 0 ? GetSystemMetrics(SM_CXSMICON) : 16;
+
+  HDC screen_dc = GetDC(nullptr);
+  HDC dc = CreateCompatibleDC(screen_dc);
+
+  BITMAPINFO bmi = {};
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.bmiHeader.biWidth = size;
+  bmi.bmiHeader.biHeight = -size;  // top-down
+  bmi.bmiHeader.biPlanes = 1;
+  bmi.bmiHeader.biBitCount = 32;
+  bmi.bmiHeader.biCompression = BI_RGB;
+  void* bits = nullptr;
+  HBITMAP color = CreateDIBSection(dc, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
+  if (!color || !bits) {
+    if (color)
+      DeleteObject(color);
+    DeleteDC(dc);
+    ReleaseDC(nullptr, screen_dc);
+    return nullptr;
+  }
+  HGDIOBJ old_bitmap = SelectObject(dc, color);
+
+  // Background: the DIB starts zeroed, i.e. transparent black.
+  HBRUSH brush = CreateSolidBrush(RGB(0xE5, 0x39, 0x35));
+  HPEN pen = static_cast<HPEN>(GetStockObject(NULL_PEN));
+  HGDIOBJ old_brush = SelectObject(dc, brush);
+  HGDIOBJ old_pen = SelectObject(dc, pen);
+  Ellipse(dc, 0, 0, size + 1, size + 1);
+
+  const int glyphs = static_cast<int>(text.size());
+  const int font_height = -(size * (glyphs > 2 ? 5 : 7) / 10);
+  HFONT font = CreateFontW(font_height, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                           OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                           DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+  HGDIOBJ old_font = SelectObject(dc, font);
+  SetBkMode(dc, TRANSPARENT);
+  SetTextColor(dc, RGB(0xFF, 0xFF, 0xFF));
+  RECT text_rect = {0, 0, size, size};
+  DrawTextW(dc, text.c_str(), -1, &text_rect,
+            DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
+
+  // GDI leaves the alpha channel at zero; anything that was painted is opaque.
+  uint32_t* pixels = static_cast<uint32_t*>(bits);
+  for (int i = 0; i < size * size; ++i) {
+    if (pixels[i] & 0x00FFFFFF) {
+      pixels[i] |= 0xFF000000;
+    }
+  }
+
+  SelectObject(dc, old_font);
+  SelectObject(dc, old_pen);
+  SelectObject(dc, old_brush);
+  SelectObject(dc, old_bitmap);
+  DeleteObject(font);
+  DeleteObject(brush);
+
+  HBITMAP mask = CreateBitmap(size, size, 1, 1, nullptr);
+  ICONINFO icon_info = {};
+  icon_info.fIcon = TRUE;
+  icon_info.hbmMask = mask;
+  icon_info.hbmColor = color;
+  HICON icon = CreateIconIndirect(&icon_info);
+
+  DeleteObject(mask);
+  DeleteObject(color);
+  DeleteDC(dc);
+  ReleaseDC(nullptr, screen_dc);
+  return icon;
+}
+
+// Reads the user's system-wide light/dark preference.
+static bool SystemPrefersDark() {
+  DWORD light = 1;
+  DWORD size = sizeof(light);
+  LSTATUS status = RegGetValueW(
+      HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+      L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &light, &size);
+  return status == ERROR_SUCCESS && light == 0;
+}
 
 class Application::Impl {
  public:
   Impl(Application* app) : app_(app), hinstance_(GetModuleHandle(nullptr)) {}
-  ~Impl() = default;
+  ~Impl() {
+    if (badge_icon_) {
+      DestroyIcon(badge_icon_);
+    }
+    if (taskbar_) {
+      taskbar_->Release();
+    }
+  }
 
   bool Initialize() {
     // Initialize COM
@@ -120,6 +223,84 @@ class Application::Impl {
     return true;
   }
 
+  bool SetProgressBar(double progress) {
+    HWND hwnd = TaskbarTargetWindow();
+    ITaskbarList3* taskbar = Taskbar();
+    if (!hwnd || !taskbar) {
+      return false;
+    }
+    HRESULT hr;
+    if (progress < 0) {
+      hr = taskbar->SetProgressState(hwnd, TBPF_NOPROGRESS);
+    } else if (progress > 1) {
+      hr = taskbar->SetProgressState(hwnd, TBPF_INDETERMINATE);
+    } else {
+      hr = taskbar->SetProgressState(hwnd, TBPF_NORMAL);
+      if (SUCCEEDED(hr)) {
+        hr = taskbar->SetProgressValue(hwnd, static_cast<ULONGLONG>(progress * 100), 100);
+      }
+    }
+    return SUCCEEDED(hr);
+  }
+
+  bool SetBadgeLabel(const std::string& label) {
+    HWND hwnd = TaskbarTargetWindow();
+    ITaskbarList3* taskbar = Taskbar();
+    if (!hwnd || !taskbar) {
+      return false;
+    }
+
+    HICON icon = nullptr;
+    std::wstring description;
+    if (!label.empty()) {
+      description = StringToWString(label);
+      icon = CreateBadgeIcon(description.substr(0, 3));
+      if (!icon) {
+        return false;
+      }
+    }
+
+    HRESULT hr = taskbar->SetOverlayIcon(hwnd, icon, icon ? description.c_str() : nullptr);
+
+    // The taskbar copies the icon, so the previous one can go now.
+    if (badge_icon_) {
+      DestroyIcon(badge_icon_);
+    }
+    badge_icon_ = icon;
+    return SUCCEEDED(hr);
+  }
+
+  bool SetBrightness(Brightness brightness) {
+    BOOL dark;
+    switch (brightness) {
+      case Brightness::Light:
+        dark = FALSE;
+        break;
+      case Brightness::Dark:
+        dark = TRUE;
+        break;
+      case Brightness::System:
+      default:
+        dark = SystemPrefersDark() ? TRUE : FALSE;
+        break;
+    }
+
+    bool ok = true;
+    for (const auto& window : WindowManager::GetInstance().GetAll()) {
+      HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+      if (!hwnd || !IsWindow(hwnd)) {
+        continue;
+      }
+      HRESULT hr = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+      if (FAILED(hr)) {
+        hr = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &dark,
+                                   sizeof(dark));
+      }
+      ok = ok && SUCCEEDED(hr);
+    }
+    return ok;
+  }
+
   bool SetMenuBar(std::shared_ptr<Menu> menu) {
     if (!menu) {
       return false;
@@ -163,6 +344,42 @@ class Application::Impl {
   Application* app_;
   HINSTANCE hinstance_;
   HANDLE mutex_ = nullptr;
+  ITaskbarList3* taskbar_ = nullptr;
+  HICON badge_icon_ = nullptr;
+
+  // Taskbar progress and overlays are per window; use the primary window, or
+  // the first known window when none has been designated.
+  HWND TaskbarTargetWindow() {
+    auto window = app_->GetPrimaryWindow();
+    if (!window) {
+      auto all = WindowManager::GetInstance().GetAll();
+      if (!all.empty()) {
+        window = all.front();
+      }
+    }
+    if (!window) {
+      return nullptr;
+    }
+    HWND hwnd = static_cast<HWND>(window->GetNativeObject());
+    return (hwnd && IsWindow(hwnd)) ? hwnd : nullptr;
+  }
+
+  ITaskbarList3* Taskbar() {
+    if (taskbar_) {
+      return taskbar_;
+    }
+    HRESULT hr = CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER,
+                                  IID_PPV_ARGS(&taskbar_));
+    if (FAILED(hr) || !taskbar_) {
+      taskbar_ = nullptr;
+      return nullptr;
+    }
+    if (FAILED(taskbar_->HrInit())) {
+      taskbar_->Release();
+      taskbar_ = nullptr;
+    }
+    return taskbar_;
+  }
 };
 
 Application::Application()
@@ -235,6 +452,18 @@ bool Application::SetIcon(const std::string& icon_path) {
 
 bool Application::SetDockIconVisible(bool visible) {
   return pimpl_->SetDockIconVisible(visible);
+}
+
+bool Application::SetProgressBar(double progress) {
+  return pimpl_->SetProgressBar(progress);
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  return pimpl_->SetBadgeLabel(label);
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  return pimpl_->SetBrightness(brightness);
 }
 
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {

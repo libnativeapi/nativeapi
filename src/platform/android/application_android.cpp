@@ -47,6 +47,21 @@ bool Application::SetDockIconVisible(bool visible) {
   return false;
 }
 
+bool Application::SetProgressBar(double progress) {
+  ALOGW("Application::SetProgressBar not applicable on Android");
+  return false;
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  ALOGW("Application::SetBadgeLabel not applicable on Android");
+  return false;
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  ALOGW("Application::SetBrightness not applicable on Android");
+  return false;
+}
+
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {
   ALOGW("Application::SetMenuBar not implemented on Android");
   return false;

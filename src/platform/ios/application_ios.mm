@@ -49,6 +49,21 @@ bool Application::SetDockIconVisible(bool visible) {
   return false;
 }
 
+bool Application::SetProgressBar(double progress) {
+  // Not applicable to iOS
+  return false;
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  // Not applicable to iOS
+  return false;
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  // Not applicable to iOS
+  return false;
+}
+
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {
   // iOS doesn't have a menu bar
   return false;

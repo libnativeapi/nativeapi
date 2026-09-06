@@ -84,6 +84,33 @@ bool native_application_set_dock_icon_visible(bool visible) {
   }
 }
 
+bool native_application_set_progress_bar(double progress) {
+  try {
+    return nativeapi::Application::GetInstance().SetProgressBar(progress);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_application_set_progress_bar");
+    return false;
+  }
+}
+
+bool native_application_set_badge_label(const char* label) {
+  try {
+    return nativeapi::Application::GetInstance().SetBadgeLabel(std::string(label ? label : ""));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_application_set_badge_label");
+    return false;
+  }
+}
+
+bool native_application_set_brightness(native_brightness_t brightness) {
+  try {
+    return nativeapi::Application::GetInstance().SetBrightness(to_cpp_brightness(brightness));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_application_set_brightness");
+    return false;
+  }
+}
+
 bool native_application_set_menu_bar(native_menu_t menu) {
   try {
     auto menu_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);

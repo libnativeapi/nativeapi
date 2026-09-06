@@ -50,6 +50,21 @@ bool Application::SetDockIconVisible(bool visible) {
   return false;
 }
 
+bool Application::SetProgressBar(double progress) {
+  HILOG_WARN("Application::SetProgressBar not applicable on OpenHarmony");
+  return false;
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  HILOG_WARN("Application::SetBadgeLabel not applicable on OpenHarmony");
+  return false;
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  HILOG_WARN("Application::SetBrightness not applicable on OpenHarmony");
+  return false;
+}
+
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {
   HILOG_WARN("Application::SetMenuBar not implemented on OpenHarmony");
   return false;

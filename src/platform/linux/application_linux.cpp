@@ -1,8 +1,11 @@
 #include <fcntl.h>
+#include <gio/gio.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -91,6 +94,66 @@ class Application::Impl {
     return true;
   }
 
+  bool SetProgressBar(double progress) {
+    launcher_progress_visible_ = progress >= 0;
+    // LauncherEntry has no indeterminate state; show "busy" as full.
+    launcher_progress_ = progress > 1 ? 1.0 : (progress < 0 ? 0.0 : progress);
+    return EmitLauncherEntryUpdate();
+  }
+
+  bool SetBadgeLabel(const std::string& label) {
+    if (label.empty()) {
+      launcher_count_visible_ = false;
+      launcher_count_ = 0;
+      return EmitLauncherEntryUpdate();
+    }
+    char* end = nullptr;
+    long long count = std::strtoll(label.c_str(), &end, 10);
+    if (end == label.c_str() || *end != '\0') {
+      return false;  // LauncherEntry badges are numeric only.
+    }
+    launcher_count_visible_ = true;
+    launcher_count_ = count;
+    return EmitLauncherEntryUpdate();
+  }
+
+  bool SetBrightness(Brightness brightness) {
+    GtkSettings* settings = gtk_settings_get_default();
+    if (!settings) {
+      return false;
+    }
+
+    if (brightness == Brightness::System) {
+      gtk_settings_reset_property(settings, "gtk-application-prefer-dark-theme");
+      if (!original_theme_name_.empty()) {
+        g_object_set(settings, "gtk-theme-name", original_theme_name_.c_str(), nullptr);
+        original_theme_name_.clear();
+      }
+      return true;
+    }
+
+    const gboolean dark = brightness == Brightness::Dark;
+    g_object_set(settings, "gtk-application-prefer-dark-theme", dark, nullptr);
+
+    if (!dark) {
+      // prefer-dark-theme=false is not enough when the active theme is itself a
+      // dark variant such as "Yaru-dark"; switch to the light variant and
+      // remember the original so Brightness::System can put it back.
+      gchar* theme_name = nullptr;
+      g_object_get(settings, "gtk-theme-name", &theme_name, nullptr);
+      if (theme_name && g_str_has_suffix(theme_name, "-dark")) {
+        if (original_theme_name_.empty()) {
+          original_theme_name_ = theme_name;
+        }
+        gchar* light_theme_name = g_strndup(theme_name, strlen(theme_name) - 5);
+        g_object_set(settings, "gtk-theme-name", light_theme_name, nullptr);
+        g_free(light_theme_name);
+      }
+      g_free(theme_name);
+    }
+    return true;
+  }
+
   bool SetMenuBar(std::shared_ptr<Menu> menu) {
     if (!menu) {
       return false;
@@ -128,6 +191,42 @@ class Application::Impl {
   Application* app_;
   GtkApplication* gtk_app_;
   int lock_file_handle_;
+  double launcher_progress_ = 0.0;
+  bool launcher_progress_visible_ = false;
+  long long launcher_count_ = 0;
+  bool launcher_count_visible_ = false;
+  std::string original_theme_name_;
+
+  // Broadcasts the com.canonical.Unity.LauncherEntry "Update" signal that
+  // Unity, Plasma, elementary and Dash to Dock listen for. The entry is keyed
+  // on the desktop file, which is assumed to be named after the program.
+  bool EmitLauncherEntryUpdate() {
+    const gchar* program_name = g_get_prgname();
+    if (!program_name) {
+      return false;
+    }
+    GDBusConnection* bus = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
+    if (!bus) {
+      return false;
+    }
+
+    gchar* app_uri = g_strdup_printf("application://%s.desktop", program_name);
+    GVariantBuilder builder;
+    g_variant_builder_init(&builder, G_VARIANT_TYPE("a{sv}"));
+    g_variant_builder_add(&builder, "{sv}", "progress", g_variant_new_double(launcher_progress_));
+    g_variant_builder_add(&builder, "{sv}", "progress-visible",
+                          g_variant_new_boolean(launcher_progress_visible_));
+    g_variant_builder_add(&builder, "{sv}", "count", g_variant_new_int64(launcher_count_));
+    g_variant_builder_add(&builder, "{sv}", "count-visible",
+                          g_variant_new_boolean(launcher_count_visible_));
+    GVariant* parameters = g_variant_new("(sa{sv})", app_uri, &builder);
+
+    gboolean ok = g_dbus_connection_emit_signal(bus, nullptr, "/", "com.canonical.Unity.LauncherEntry",
+                                                "Update", parameters, nullptr);
+    g_free(app_uri);
+    g_object_unref(bus);
+    return ok;
+  }
 
   static void OnStartup(GApplication* app, gpointer user_data) {
     Impl* impl = static_cast<Impl*>(user_data);
@@ -224,6 +323,18 @@ bool Application::SetIcon(const std::string& icon_path) {
 
 bool Application::SetDockIconVisible(bool visible) {
   return pimpl_->SetDockIconVisible(visible);
+}
+
+bool Application::SetProgressBar(double progress) {
+  return pimpl_->SetProgressBar(progress);
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  return pimpl_->SetBadgeLabel(label);
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  return pimpl_->SetBrightness(brightness);
 }
 
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {

@@ -20,6 +20,12 @@
 extern "C" {
 #endif
 
+typedef enum {
+  NATIVE_BRIGHTNESS_SYSTEM = 0,
+  NATIVE_BRIGHTNESS_LIGHT = 1,
+  NATIVE_BRIGHTNESS_DARK = 2,
+} native_brightness_t;
+
 /// Which concrete ApplicationEvent arrived.
 typedef enum {
   NATIVE_APPLICATION_EVENT_TYPE_STARTED = 0,
@@ -66,6 +72,15 @@ FFI_PLUGIN_EXPORT
 bool native_application_set_dock_icon_visible(bool visible);
 
 FFI_PLUGIN_EXPORT
+bool native_application_set_progress_bar(double progress);
+
+FFI_PLUGIN_EXPORT
+bool native_application_set_badge_label(const char* label);
+
+FFI_PLUGIN_EXPORT
+bool native_application_set_brightness(native_brightness_t brightness);
+
+FFI_PLUGIN_EXPORT
 bool native_application_set_menu_bar(native_menu_t menu);
 
 /// Caller owns the returned handle; release it with native_window_free().
@@ -103,3 +118,40 @@ bool to_c_application_event(const nativeapi::ApplicationEvent& event, native_app
 void free_c_application_event(native_application_event_t* value);
 
 #endif
+
+#ifdef __cplusplus
+#include "../application.h"
+#include "string_utils_c.h"
+
+// Conversion helpers between these C types and their C++ originals.
+
+inline native_brightness_t to_c_brightness(nativeapi::Brightness value);
+inline nativeapi::Brightness to_cpp_brightness(native_brightness_t value);
+
+inline native_brightness_t to_c_brightness(nativeapi::Brightness value) {
+  switch (value) {
+    case nativeapi::Brightness::System:
+      return NATIVE_BRIGHTNESS_SYSTEM;
+    case nativeapi::Brightness::Light:
+      return NATIVE_BRIGHTNESS_LIGHT;
+    case nativeapi::Brightness::Dark:
+      return NATIVE_BRIGHTNESS_DARK;
+    default:
+      return NATIVE_BRIGHTNESS_SYSTEM;
+  }
+}
+
+inline nativeapi::Brightness to_cpp_brightness(native_brightness_t value) {
+  switch (value) {
+    case NATIVE_BRIGHTNESS_SYSTEM:
+      return nativeapi::Brightness::System;
+    case NATIVE_BRIGHTNESS_LIGHT:
+      return nativeapi::Brightness::Light;
+    case NATIVE_BRIGHTNESS_DARK:
+      return nativeapi::Brightness::Dark;
+    default:
+      return nativeapi::Brightness::System;
+  }
+}
+
+#endif  // __cplusplus

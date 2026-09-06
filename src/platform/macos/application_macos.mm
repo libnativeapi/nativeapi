@@ -133,6 +133,73 @@ class Application::Impl {
     return true;
   }
 
+  bool SetProgressBar(double progress) {
+    NSDockTile* dock_tile = [NSApp dockTile];
+
+    if (progress < 0) {
+      // Hand the tile back to AppKit so it shows the plain application icon.
+      dock_tile.contentView = nil;
+      dock_icon_view_ = nil;
+      dock_progress_ = nil;
+      [dock_tile display];
+      return true;
+    }
+
+    if (!dock_progress_) {
+      dock_icon_view_ = [[NSImageView alloc] init];
+      dock_tile.contentView = dock_icon_view_;
+
+      NSRect frame = NSMakeRect(0, 0, dock_tile.size.width, 15.0);
+      dock_progress_ = [[NSProgressIndicator alloc] initWithFrame:frame];
+      dock_progress_.style = NSProgressIndicatorStyleBar;
+      dock_progress_.minValue = 0;
+      dock_progress_.maxValue = 1;
+      [dock_icon_view_ addSubview:dock_progress_];
+    }
+    // Re-read the icon every time so a later SetIcon() shows through.
+    dock_icon_view_.image = [NSApp applicationIconImage];
+
+    if (progress > 1) {
+      dock_progress_.indeterminate = YES;
+      dock_progress_.doubleValue = 1;
+      [dock_progress_ startAnimation:nil];
+    } else {
+      [dock_progress_ stopAnimation:nil];
+      dock_progress_.indeterminate = NO;
+      dock_progress_.doubleValue = progress;
+    }
+    [dock_tile display];
+    return true;
+  }
+
+  bool SetBadgeLabel(const std::string& label) {
+    NSDockTile* dock_tile = [NSApp dockTile];
+    dock_tile.badgeLabel = label.empty() ? nil : [NSString stringWithUTF8String:label.c_str()];
+    return true;
+  }
+
+  bool SetBrightness(Brightness brightness) {
+    if (@available(macOS 10.14, *)) {
+      NSAppearance* appearance = nil;
+      switch (brightness) {
+        case Brightness::Light:
+          appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+          break;
+        case Brightness::Dark:
+          appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+          break;
+        case Brightness::System:
+        default:
+          break;  // nil = inherit from the system
+      }
+      NSApp.appearance = appearance;
+      return true;
+    }
+    // Dark mode does not exist before 10.14, so only "light" and "system" are
+    // satisfiable and they are already in effect.
+    return brightness != Brightness::Dark;
+  }
+
   bool SetMenuBar(std::shared_ptr<Menu> menu) {
     if (!menu) {
       return false;
@@ -167,6 +234,8 @@ class Application::Impl {
   Application* app_;
   NativeApplicationDelegate* delegate_;
   int lock_file_handle_ = -1;
+  NSImageView* dock_icon_view_ = nil;
+  NSProgressIndicator* dock_progress_ = nil;
 };
 
 Application::Application()
@@ -239,6 +308,18 @@ bool Application::SetIcon(const std::string& icon_path) {
 
 bool Application::SetDockIconVisible(bool visible) {
   return pimpl_->SetDockIconVisible(visible);
+}
+
+bool Application::SetProgressBar(double progress) {
+  return pimpl_->SetProgressBar(progress);
+}
+
+bool Application::SetBadgeLabel(const std::string& label) {
+  return pimpl_->SetBadgeLabel(label);
+}
+
+bool Application::SetBrightness(Brightness brightness) {
+  return pimpl_->SetBrightness(brightness);
 }
 
 bool Application::SetMenuBar(std::shared_ptr<Menu> menu) {
