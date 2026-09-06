@@ -280,6 +280,22 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  ALOGW("SetAlwaysOnBottom not supported on Android");
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  return false;
+}
+
+void Window::SetAspectRatio(double aspect_ratio) {
+  ALOGW("SetAspectRatio not supported on Android");
+}
+
+double Window::GetAspectRatio() const {
+  return 0.0;
+}
+
 void Window::SetNonActivating(bool is_non_activating) {
   ALOGW("SetNonActivating not supported on Android");
 }
@@ -379,7 +395,7 @@ void Window::StartDragging() {
   ALOGW("StartDragging not supported on Android");
 }
 
-void Window::StartResizing() {
+void Window::StartResizing(ResizeEdge edge) {
   ALOGW("StartResizing not supported on Android");
 }
 

@@ -55,6 +55,7 @@ class Window::Impl {
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
   Color background_color_;
+  double aspect_ratio_ = 0.0;
   // Recorded only: keyboard focus is per window on Linux, see Window::SetNonActivating().
   bool non_activating_ = false;
 };
@@ -335,6 +336,30 @@ void Window::SetMaximumSize(Size size) {
   // constraints
 }
 
+void Window::SetAspectRatio(double aspect_ratio) {
+  pimpl_->aspect_ratio_ = aspect_ratio > 0.0 ? aspect_ratio : 0.0;
+
+  GdkGeometry geometry = {};
+  GdkWindowHints hints = static_cast<GdkWindowHints>(0);
+  if (pimpl_->aspect_ratio_ > 0.0) {
+    geometry.min_aspect = pimpl_->aspect_ratio_;
+    geometry.max_aspect = pimpl_->aspect_ratio_;
+    hints = GDK_HINT_ASPECT;
+  }
+
+  // Prefer the GTK-level hints when we own a GtkWindow: GTK merges them with the
+  // hints it computes itself instead of overwriting them on the next allocation.
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    gtk_window_set_geometry_hints(GTK_WINDOW(pimpl_->widget_), nullptr, &geometry, hints);
+  } else if (pimpl_->gdk_window_) {
+    gdk_window_set_geometry_hints(pimpl_->gdk_window_, &geometry, hints);
+  }
+}
+
+double Window::GetAspectRatio() const {
+  return pimpl_->aspect_ratio_;
+}
+
 Size Window::GetMaximumSize() const {
   return Size{-1, -1};  // -1 indicates no maximum
 }
@@ -413,6 +438,21 @@ bool Window::IsAlwaysOnTop() const {
     return false;
   GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
   return state & GDK_WINDOW_STATE_ABOVE;
+}
+
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  // GDK clears _NET_WM_STATE_ABOVE when setting BELOW and vice versa, so the two
+  // settings are naturally exclusive here.
+  if (pimpl_->gdk_window_) {
+    gdk_window_set_keep_below(pimpl_->gdk_window_, is_always_on_bottom);
+  }
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  if (!pimpl_->gdk_window_)
+    return false;
+  GdkWindowState state = gdk_window_get_state(pimpl_->gdk_window_);
+  return state & GDK_WINDOW_STATE_BELOW;
 }
 
 void Window::SetNonActivating(bool is_non_activating) {
@@ -646,9 +686,54 @@ void Window::StartDragging() {
   // Provide stub implementation
 }
 
-void Window::StartResizing() {
-  // Window resizing would typically involve listening to mouse events at edges
-  // Provide stub implementation
+void Window::StartResizing(ResizeEdge edge) {
+  if (!pimpl_->gdk_window_) {
+    return;
+  }
+
+  GdkWindowEdge gdk_edge;
+  switch (edge) {
+    case ResizeEdge::Top:
+      gdk_edge = GDK_WINDOW_EDGE_NORTH;
+      break;
+    case ResizeEdge::Left:
+      gdk_edge = GDK_WINDOW_EDGE_WEST;
+      break;
+    case ResizeEdge::Right:
+      gdk_edge = GDK_WINDOW_EDGE_EAST;
+      break;
+    case ResizeEdge::Bottom:
+      gdk_edge = GDK_WINDOW_EDGE_SOUTH;
+      break;
+    case ResizeEdge::TopLeft:
+      gdk_edge = GDK_WINDOW_EDGE_NORTH_WEST;
+      break;
+    case ResizeEdge::TopRight:
+      gdk_edge = GDK_WINDOW_EDGE_NORTH_EAST;
+      break;
+    case ResizeEdge::BottomLeft:
+      gdk_edge = GDK_WINDOW_EDGE_SOUTH_WEST;
+      break;
+    case ResizeEdge::BottomRight:
+    default:
+      gdk_edge = GDK_WINDOW_EDGE_SOUTH_EAST;
+      break;
+  }
+
+  GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
+  GdkSeat* seat = display ? gdk_display_get_default_seat(display) : nullptr;
+  GdkDevice* pointer = seat ? gdk_seat_get_pointer(seat) : nullptr;
+  if (!pointer) {
+    return;
+  }
+
+  gint root_x = 0, root_y = 0;
+  gdk_device_get_position(pointer, nullptr, &root_x, &root_y);
+  // gtk_get_current_event_time() yields the timestamp of the mouse-down we are
+  // called from, which window managers require to accept the drag request.
+  gdk_window_begin_resize_drag_for_device(pimpl_->gdk_window_, gdk_edge, pointer,
+                                          GDK_BUTTON_PRIMARY, root_x, root_y,
+                                          gtk_get_current_event_time());
 }
 
 void* Window::GetNativeObjectInternal() const {

@@ -77,6 +77,32 @@ enum class VisualEffect {
 };
 
 /**
+ * @brief Window edges and corners that a user-driven resize can start from.
+ *
+ * Passed to Window::StartResizing() to select which edge or corner follows
+ * the mouse. Edges are named from the user's point of view, so Top is the
+ * edge nearest the title bar on every platform.
+ */
+enum class ResizeEdge {
+  /** The top edge; dragging changes the height while the bottom edge stays. */
+  Top,
+  /** The left edge; dragging changes the width while the right edge stays. */
+  Left,
+  /** The right edge; dragging changes the width while the left edge stays. */
+  Right,
+  /** The bottom edge; dragging changes the height while the top edge stays. */
+  Bottom,
+  /** The top-left corner; both width and height change. */
+  TopLeft,
+  /** The top-right corner; both width and height change. */
+  TopRight,
+  /** The bottom-left corner; both width and height change. */
+  BottomLeft,
+  /** The bottom-right corner; both width and height change. */
+  BottomRight
+};
+
+/**
  * @class Window
  * @brief Cross-platform window abstraction class.
  *
@@ -359,6 +385,34 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return Size The maximum size the window can be resized to
    */
   Size GetMaximumSize() const;
+
+  /**
+   * @brief Constrains user-driven resizing to a fixed width/height ratio.
+   *
+   * @param aspect_ratio Desired width divided by height, e.g. 16.0 / 9.0.
+   *        Values of 0 or less remove the constraint.
+   *
+   * The constraint applies while the user drags a window edge; it does not
+   * change the current size and is not enforced by SetSize() or SetBounds().
+   * Minimum and maximum sizes still apply on top of the ratio.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - The ratio is applied to the content area.
+   * - Windows: ✅ Fully supported - The ratio is applied to the outer frame.
+   * - Linux: ✅ Fully supported - Applied via GDK aspect geometry hints; the
+   *   window manager decides how strictly they are honored.
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetAspectRatio(double aspect_ratio);
+
+  /**
+   * @brief Gets the aspect ratio constraint set by SetAspectRatio().
+   *
+   * @return Width divided by height, or 0 when no constraint is set
+   */
+  double GetAspectRatio() const;
   // === Window Behavior Properties ===
 
   /**
@@ -513,6 +567,37 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return true if window stays on top, false otherwise
    */
   bool IsAlwaysOnTop() const;
+
+  /**
+   * @brief Sets whether the window stays beneath all other normal windows.
+   *
+   * @param is_always_on_bottom true to keep the window at the bottom of the
+   *        stacking order, false for normal behavior
+   *
+   * When enabled the window stays behind every other application window,
+   * even while it has focus, but remains above the desktop. Use this for
+   * desktop widgets or wallpaper-like windows. Enabling this clears any
+   * SetAlwaysOnTop() setting and vice versa.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - The window level is lowered below the normal
+   *   window level.
+   * - Windows: ✅ Fully supported - The window is pinned to the bottom of the
+   *   Z order and stays there when activated.
+   * - Linux: ✅ Fully supported - Uses the _NET_WM_STATE_BELOW hint; honored by
+   *   most window managers.
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetAlwaysOnBottom(bool is_always_on_bottom);
+
+  /**
+   * @brief Checks if the window is set to always stay at the bottom.
+   *
+   * @return true if the window stays beneath other windows, false otherwise
+   */
+  bool IsAlwaysOnBottom() const;
 
   /**
    * @brief Sets whether showing or focusing the window activates the application.
@@ -760,13 +845,25 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
   void StartDragging();
 
   /**
-   * @brief Initiates a user resize operation for the window.
+   * @brief Initiates a user resize operation from the given edge or corner.
    *
-   * Allows the user to resize the window by dragging from the current
-   * mouse position. The resize behavior depends on the current cursor
-   * position relative to the window edges.
+   * @param edge The window edge or corner that follows the mouse
+   *
+   * Call this from a mouse-down handler in a custom resize grip: the window
+   * then resizes as if the user had grabbed the native frame at the given
+   * edge, and the operation ends when the mouse button is released. Minimum
+   * and maximum sizes and any aspect ratio constraint are respected. This is
+   * intended for frameless windows or custom chrome.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Tracks the mouse until the button is released.
+   * - Windows: ✅ Fully supported - Hands the drag to the system frame.
+   * - Linux: ✅ Fully supported - Starts a window-manager resize drag.
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
    */
-  void StartResizing();
+  void StartResizing(ResizeEdge edge);
 
  protected:
   /**

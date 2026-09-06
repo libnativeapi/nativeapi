@@ -280,6 +280,22 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  // Not applicable to iOS
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  return false;
+}
+
+void Window::SetAspectRatio(double aspect_ratio) {
+  // Not applicable to iOS
+}
+
+double Window::GetAspectRatio() const {
+  return 0.0;
+}
+
 void Window::SetNonActivating(bool is_non_activating) {
   // Not applicable to iOS (single foreground app)
 }
@@ -422,7 +438,7 @@ void Window::StartDragging() {
   // Not applicable to iOS
 }
 
-void Window::StartResizing() {
+void Window::StartResizing(ResizeEdge edge) {
   // Not applicable to iOS
 }
 

@@ -116,6 +116,7 @@ class Window::Impl {
   TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
   NSVisualEffectView* visual_effect_view_;
+  double aspect_ratio_ = 0.0;
 };
 
 Window::Window() : Window(nullptr) {}
@@ -316,6 +317,27 @@ void Window::SetMaximumSize(Size size) {
   [pimpl_->ns_window_ setMaxSize:NSMakeSize(size.width, size.height)];
 }
 
+void Window::SetAspectRatio(double aspect_ratio) {
+  pimpl_->aspect_ratio_ = aspect_ratio > 0.0 ? aspect_ratio : 0.0;
+  NSWindow* window = pimpl_->ns_window_;
+  if (pimpl_->aspect_ratio_ > 0.0) {
+    NSSize ratio = NSMakeSize(pimpl_->aspect_ratio_, 1.0);
+    if (window.styleMask & NSWindowStyleMaskFullSizeContentView) {
+      window.aspectRatio = ratio;
+    } else {
+      window.contentAspectRatio = ratio;
+    }
+  } else {
+    // aspectRatio and resizeIncrements are mutually exclusive; setting the
+    // increments back to 1x1 is how AppKit clears an aspect ratio constraint.
+    window.resizeIncrements = NSMakeSize(1.0, 1.0);
+  }
+}
+
+double Window::GetAspectRatio() const {
+  return pimpl_->aspect_ratio_;
+}
+
 Size Window::GetMaximumSize() const {
   NSSize size = [pimpl_->ns_window_ maxSize];
   return Size{static_cast<double>(size.width), static_cast<double>(size.height)};
@@ -423,6 +445,18 @@ void Window::SetAlwaysOnTop(bool is_always_on_top) {
 
 bool Window::IsAlwaysOnTop() const {
   return [pimpl_->ns_window_ level] == NSFloatingWindowLevel;
+}
+
+// One level below NSNormalWindowLevel: beneath every ordinary window, above the desktop.
+static const NSInteger kAlwaysOnBottomWindowLevel = NSNormalWindowLevel - 1;
+
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  [pimpl_->ns_window_
+      setLevel:is_always_on_bottom ? kAlwaysOnBottomWindowLevel : NSNormalWindowLevel];
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  return [pimpl_->ns_window_ level] == kAlwaysOnBottomWindowLevel;
 }
 
 void Window::SetNonActivating(bool is_non_activating) {
@@ -630,7 +664,87 @@ void Window::StartDragging() {
   }
 }
 
-void Window::StartResizing() {}
+void Window::StartResizing(ResizeEdge edge) {
+  NSWindow* window = pimpl_->ns_window_;
+  if (!window) {
+    return;
+  }
+
+  const bool moves_left = edge == ResizeEdge::Left || edge == ResizeEdge::TopLeft ||
+                          edge == ResizeEdge::BottomLeft;
+  const bool moves_right = edge == ResizeEdge::Right || edge == ResizeEdge::TopRight ||
+                           edge == ResizeEdge::BottomRight;
+  const bool moves_top = edge == ResizeEdge::Top || edge == ResizeEdge::TopLeft ||
+                         edge == ResizeEdge::TopRight;
+  const bool moves_bottom = edge == ResizeEdge::Bottom || edge == ResizeEdge::BottomLeft ||
+                            edge == ResizeEdge::BottomRight;
+  // Pure vertical edges derive width from height; everything else derives height from width.
+  const bool height_driven = edge == ResizeEdge::Top || edge == ResizeEdge::Bottom;
+
+  // AppKit has no API to hand a resize to the system frame, so track the mouse
+  // ourselves until the button is released. Screen coordinates have a bottom-left
+  // origin, so a positive dy means the mouse moved up.
+  const NSPoint start_mouse = [NSEvent mouseLocation];
+  const NSRect start_frame = [window frame];
+  const NSSize min_size = [window minSize];
+  const NSSize max_size = [window maxSize];
+  const double aspect_ratio = pimpl_->aspect_ratio_;
+
+  const NSEventMask mask = NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp;
+  while (true) {
+    NSEvent* event = [NSApp nextEventMatchingMask:mask
+                                        untilDate:[NSDate distantFuture]
+                                           inMode:NSEventTrackingRunLoopMode
+                                          dequeue:YES];
+    if (!event || event.type == NSEventTypeLeftMouseUp) {
+      break;
+    }
+
+    const NSPoint mouse = [NSEvent mouseLocation];
+    const CGFloat dx = mouse.x - start_mouse.x;
+    const CGFloat dy = mouse.y - start_mouse.y;
+
+    CGFloat width = start_frame.size.width;
+    CGFloat height = start_frame.size.height;
+    if (moves_right) {
+      width += dx;
+    } else if (moves_left) {
+      width -= dx;
+    }
+    if (moves_top) {
+      height += dy;
+    } else if (moves_bottom) {
+      height -= dy;
+    }
+
+    if (aspect_ratio > 0.0) {
+      // The ratio applies to the content area; convert through the frame insets.
+      NSRect content = [window contentRectForFrameRect:NSMakeRect(0, 0, width, height)];
+      if (height_driven) {
+        content.size.width = content.size.height * aspect_ratio;
+      } else {
+        content.size.height = content.size.width / aspect_ratio;
+      }
+      NSRect frame = [window frameRectForContentRect:content];
+      width = frame.size.width;
+      height = frame.size.height;
+    }
+
+    width = MAX(min_size.width, MIN(max_size.width, width));
+    height = MAX(min_size.height, MIN(max_size.height, height));
+
+    NSRect frame = start_frame;
+    frame.size = NSMakeSize(width, height);
+    // Anchor the edge opposite to the one being dragged.
+    if (moves_left) {
+      frame.origin.x = NSMaxX(start_frame) - width;
+    }
+    if (moves_bottom) {
+      frame.origin.y = NSMaxY(start_frame) - height;
+    }
+    [window setFrame:frame display:YES];
+  }
+}
 
 WindowId Window::GetId() const {
   return pimpl_->id_;

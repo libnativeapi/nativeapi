@@ -443,6 +443,33 @@ native_size_t native_window_get_maximum_size(native_window_t window) {
   }
 }
 
+void native_window_set_aspect_ratio(native_window_t window, double aspect_ratio) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetAspectRatio(aspect_ratio);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_aspect_ratio");
+    return;
+  }
+}
+
+double native_window_get_aspect_ratio(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return self->GetAspectRatio();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_aspect_ratio");
+    return 0;
+  }
+}
+
 void native_window_set_resizable(native_window_t window, bool is_resizable) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {
@@ -655,6 +682,33 @@ bool native_window_is_always_on_top(native_window_t window) {
     return self->IsAlwaysOnTop();
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_is_always_on_top");
+    return false;
+  }
+}
+
+void native_window_set_always_on_bottom(native_window_t window, bool is_always_on_bottom) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetAlwaysOnBottom(is_always_on_bottom);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_always_on_bottom");
+    return;
+  }
+}
+
+bool native_window_is_always_on_bottom(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsAlwaysOnBottom();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_is_always_on_bottom");
     return false;
   }
 }
@@ -992,13 +1046,13 @@ void native_window_start_dragging(native_window_t window) {
   }
 }
 
-void native_window_start_resizing(native_window_t window) {
+void native_window_start_resizing(native_window_t window, native_resize_edge_t edge) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {
     return;
   }
   try {
-    self->StartResizing();
+    self->StartResizing(to_cpp_resize_edge(edge));
     return;
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_start_resizing");

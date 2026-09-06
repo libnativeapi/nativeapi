@@ -35,6 +35,10 @@ class Window::Impl {
   Size min_size_{0, 0};
   Size max_size_{0, 0};
   int min_max_handler_id_ = 0;
+  double aspect_ratio_ = 0.0;
+  int aspect_ratio_handler_id_ = 0;
+  bool always_on_bottom_ = false;
+  int always_on_bottom_handler_id_ = 0;
   // Recorded only: keyboard focus is per window on Windows, see Window::SetNonActivating().
   bool non_activating_ = false;
 };
@@ -196,6 +200,14 @@ Window::~Window() {
     if (pimpl_->min_max_handler_id_ != 0 && pimpl_->hwnd_) {
       WindowMessageDispatcher::GetInstance().UnregisterHandler(
           pimpl_->min_max_handler_id_);
+    }
+    if (pimpl_->aspect_ratio_handler_id_ != 0 && pimpl_->hwnd_) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(
+          pimpl_->aspect_ratio_handler_id_);
+    }
+    if (pimpl_->always_on_bottom_handler_id_ != 0 && pimpl_->hwnd_) {
+      WindowMessageDispatcher::GetInstance().UnregisterHandler(
+          pimpl_->always_on_bottom_handler_id_);
     }
 
     // Remove window from registry on destruction
@@ -495,6 +507,109 @@ Rectangle Window::GetContentBounds() const {
   return bounds;
 }
 
+// Helper function: resolves the nativeapi Window that owns an HWND via the
+// WindowId property stored on it. Returns nullptr for foreign windows.
+static std::shared_ptr<Window> WindowFromHwnd(HWND hwnd) {
+  HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
+  if (!prop_handle) {
+    return nullptr;
+  }
+  WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
+  if (window_id == IdAllocator::kInvalidId) {
+    return nullptr;
+  }
+  return WindowRegistry::GetInstance().Get(window_id);
+}
+
+// Helper function: registers a WM_SIZING handler that keeps user-driven
+// resizing at the window's aspect ratio. Returns the handler ID.
+static int RegisterAspectRatioHandler(HWND hwnd, int existing_handler_id) {
+  if (existing_handler_id != 0) {
+    return existing_handler_id;
+  }
+  if (!hwnd || !IsWindow(hwnd)) {
+    return 0;
+  }
+  auto& dispatcher = WindowMessageDispatcher::GetInstance();
+  return dispatcher.RegisterHandler(
+      hwnd,
+      [](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> std::optional<LRESULT> {
+        if (msg != WM_SIZING) {
+          return std::nullopt;
+        }
+        auto window = WindowFromHwnd(hwnd);
+        if (!window) {
+          return std::nullopt;
+        }
+        const double aspect_ratio = window->GetAspectRatio();
+        RECT* rect = reinterpret_cast<RECT*>(lparam);
+        if (aspect_ratio <= 0.0 || !rect) {
+          return std::nullopt;
+        }
+
+        LONG width = rect->right - rect->left;
+        LONG height = rect->bottom - rect->top;
+        // Pure vertical edges derive width from height; everything else derives
+        // height from width.
+        if (wparam == WMSZ_TOP || wparam == WMSZ_BOTTOM) {
+          width = static_cast<LONG>(std::lround(height * aspect_ratio));
+        } else {
+          height = static_cast<LONG>(std::lround(width / aspect_ratio));
+        }
+
+        // Grow away from the edge being dragged so the opposite edge stays put.
+        switch (wparam) {
+          case WMSZ_LEFT:
+          case WMSZ_BOTTOMLEFT:
+            rect->left = rect->right - width;
+            rect->bottom = rect->top + height;
+            break;
+          case WMSZ_TOPLEFT:
+            rect->left = rect->right - width;
+            rect->top = rect->bottom - height;
+            break;
+          case WMSZ_TOP:
+          case WMSZ_TOPRIGHT:
+            rect->right = rect->left + width;
+            rect->top = rect->bottom - height;
+            break;
+          default:  // WMSZ_RIGHT, WMSZ_BOTTOM, WMSZ_BOTTOMRIGHT
+            rect->right = rect->left + width;
+            rect->bottom = rect->top + height;
+            break;
+        }
+        return std::make_optional<LRESULT>(TRUE);
+      });
+}
+
+// Helper function: registers a WM_WINDOWPOSCHANGING handler that pins the
+// window to the bottom of the Z order for as long as IsAlwaysOnBottom() holds.
+// Returns the handler ID.
+static int RegisterAlwaysOnBottomHandler(HWND hwnd, int existing_handler_id) {
+  if (existing_handler_id != 0) {
+    return existing_handler_id;
+  }
+  if (!hwnd || !IsWindow(hwnd)) {
+    return 0;
+  }
+  auto& dispatcher = WindowMessageDispatcher::GetInstance();
+  return dispatcher.RegisterHandler(
+      hwnd,
+      [](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> std::optional<LRESULT> {
+        if (msg != WM_WINDOWPOSCHANGING) {
+          return std::nullopt;
+        }
+        auto window = WindowFromHwnd(hwnd);
+        WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lparam);
+        if (window && pos && window->IsAlwaysOnBottom()) {
+          pos->hwndInsertAfter = HWND_BOTTOM;
+          pos->flags &= ~SWP_NOZORDER;
+        }
+        // Let the original procedure see the (possibly adjusted) message.
+        return std::nullopt;
+      });
+}
+
 // Helper function: registers a WM_GETMINMAXINFO handler for the given HWND
 // via WindowMessageDispatcher if not already registered. Returns the handler ID.
 static int RegisterMinMaxInfoHandler(HWND hwnd, int existing_handler_id) {
@@ -568,6 +683,18 @@ void Window::SetMaximumSize(Size size) {
     SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
                  SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
   }
+}
+
+void Window::SetAspectRatio(double aspect_ratio) {
+  pimpl_->aspect_ratio_ = aspect_ratio > 0.0 ? aspect_ratio : 0.0;
+  if (pimpl_->hwnd_ && pimpl_->aspect_ratio_ > 0.0) {
+    pimpl_->aspect_ratio_handler_id_ =
+        RegisterAspectRatioHandler(pimpl_->hwnd_, pimpl_->aspect_ratio_handler_id_);
+  }
+}
+
+double Window::GetAspectRatio() const {
+  return pimpl_->aspect_ratio_;
 }
 
 Size Window::GetMaximumSize() const {
@@ -688,6 +815,9 @@ bool Window::IsWindowControlButtonsVisible() const {
 }
 
 void Window::SetAlwaysOnTop(bool is_always_on_top) {
+  if (is_always_on_top) {
+    pimpl_->always_on_bottom_ = false;
+  }
   if (pimpl_->hwnd_) {
     SetWindowPos(pimpl_->hwnd_, is_always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE);
@@ -699,6 +829,25 @@ bool Window::IsAlwaysOnTop() const {
     return false;
   LONG exStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
   return (exStyle & WS_EX_TOPMOST) != 0;
+}
+
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  pimpl_->always_on_bottom_ = is_always_on_bottom;
+  if (!pimpl_->hwnd_) {
+    return;
+  }
+  if (is_always_on_bottom) {
+    pimpl_->always_on_bottom_handler_id_ =
+        RegisterAlwaysOnBottomHandler(pimpl_->hwnd_, pimpl_->always_on_bottom_handler_id_);
+  }
+  // HWND_NOTOPMOST also clears WS_EX_TOPMOST, so this doubles as the "vice versa"
+  // half of the always-on-top exclusivity.
+  SetWindowPos(pimpl_->hwnd_, is_always_on_bottom ? HWND_BOTTOM : HWND_NOTOPMOST, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  return pimpl_->always_on_bottom_;
 }
 
 void Window::SetNonActivating(bool is_non_activating) {
@@ -976,9 +1125,44 @@ void Window::StartDragging() {
   }
 }
 
-void Window::StartResizing() {
-  // Windows doesn't have a direct API to start resizing programmatically
-  // This would require more complex implementation
+void Window::StartResizing(ResizeEdge edge) {
+  if (!pimpl_->hwnd_) {
+    return;
+  }
+  WPARAM hit_test;
+  switch (edge) {
+    case ResizeEdge::Top:
+      hit_test = HTTOP;
+      break;
+    case ResizeEdge::Left:
+      hit_test = HTLEFT;
+      break;
+    case ResizeEdge::Right:
+      hit_test = HTRIGHT;
+      break;
+    case ResizeEdge::Bottom:
+      hit_test = HTBOTTOM;
+      break;
+    case ResizeEdge::TopLeft:
+      hit_test = HTTOPLEFT;
+      break;
+    case ResizeEdge::TopRight:
+      hit_test = HTTOPRIGHT;
+      break;
+    case ResizeEdge::BottomLeft:
+      hit_test = HTBOTTOMLEFT;
+      break;
+    case ResizeEdge::BottomRight:
+    default:
+      hit_test = HTBOTTOMRIGHT;
+      break;
+  }
+  // The caller is inside a mouse-down handler, which typically holds capture;
+  // release it so the system frame can take over the drag.
+  ReleaseCapture();
+  POINT cursor;
+  GetCursorPos(&cursor);
+  PostMessage(pimpl_->hwnd_, WM_NCLBUTTONDOWN, hit_test, MAKELPARAM(cursor.x, cursor.y));
 }
 
 WindowId Window::GetId() const {

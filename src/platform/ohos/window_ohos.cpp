@@ -262,6 +262,22 @@ bool Window::IsAlwaysOnTop() const {
   return false;
 }
 
+void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
+  // not supported on OpenHarmony
+}
+
+bool Window::IsAlwaysOnBottom() const {
+  return false;
+}
+
+void Window::SetAspectRatio(double aspect_ratio) {
+  // not supported on OpenHarmony
+}
+
+double Window::GetAspectRatio() const {
+  return 0.0;
+}
+
 void Window::SetNonActivating(bool is_non_activating) {
   // SetNonActivating not supported on OpenHarmony
 }
@@ -363,7 +379,7 @@ void Window::StartDragging() {
   // StartDragging not supported on OpenHarmony
 }
 
-void Window::StartResizing() {
+void Window::StartResizing(ResizeEdge edge) {
   // StartResizing not supported on OpenHarmony
 }
 

@@ -34,6 +34,17 @@ typedef enum {
   NATIVE_VISUAL_EFFECT_MICA = 3,
 } native_visual_effect_t;
 
+typedef enum {
+  NATIVE_RESIZE_EDGE_TOP = 0,
+  NATIVE_RESIZE_EDGE_LEFT = 1,
+  NATIVE_RESIZE_EDGE_RIGHT = 2,
+  NATIVE_RESIZE_EDGE_BOTTOM = 3,
+  NATIVE_RESIZE_EDGE_TOP_LEFT = 4,
+  NATIVE_RESIZE_EDGE_TOP_RIGHT = 5,
+  NATIVE_RESIZE_EDGE_BOTTOM_LEFT = 6,
+  NATIVE_RESIZE_EDGE_BOTTOM_RIGHT = 7,
+} native_resize_edge_t;
+
 /// Opaque Window handle.
 ///
 /// A generational index into the library's handle table, NOT a pointer:
@@ -174,6 +185,12 @@ FFI_PLUGIN_EXPORT
 native_size_t native_window_get_maximum_size(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+void native_window_set_aspect_ratio(native_window_t window, double aspect_ratio);
+
+FFI_PLUGIN_EXPORT
+double native_window_get_aspect_ratio(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_resizable(native_window_t window, bool is_resizable);
 
 FFI_PLUGIN_EXPORT
@@ -220,6 +237,12 @@ void native_window_set_always_on_top(native_window_t window, bool is_always_on_t
 
 FFI_PLUGIN_EXPORT
 bool native_window_is_always_on_top(native_window_t window);
+
+FFI_PLUGIN_EXPORT
+void native_window_set_always_on_bottom(native_window_t window, bool is_always_on_bottom);
+
+FFI_PLUGIN_EXPORT
+bool native_window_is_always_on_bottom(native_window_t window);
 
 FFI_PLUGIN_EXPORT
 void native_window_set_non_activating(native_window_t window, bool is_non_activating);
@@ -295,7 +318,7 @@ FFI_PLUGIN_EXPORT
 void native_window_start_dragging(native_window_t window);
 
 FFI_PLUGIN_EXPORT
-void native_window_start_resizing(native_window_t window);
+void native_window_start_resizing(native_window_t window, native_resize_edge_t edge);
 
 /// Platform-specific native object (NSScreen*, HMONITOR, ...).
 FFI_PLUGIN_EXPORT
@@ -341,6 +364,8 @@ inline native_title_bar_style_t to_c_title_bar_style(nativeapi::TitleBarStyle va
 inline nativeapi::TitleBarStyle to_cpp_title_bar_style(native_title_bar_style_t value);
 inline native_visual_effect_t to_c_visual_effect(nativeapi::VisualEffect value);
 inline nativeapi::VisualEffect to_cpp_visual_effect(native_visual_effect_t value);
+inline native_resize_edge_t to_c_resize_edge(nativeapi::ResizeEdge value);
+inline nativeapi::ResizeEdge to_cpp_resize_edge(native_resize_edge_t value);
 
 inline native_title_bar_style_t to_c_title_bar_style(nativeapi::TitleBarStyle value) {
   switch (value) {
@@ -391,6 +416,52 @@ inline nativeapi::VisualEffect to_cpp_visual_effect(native_visual_effect_t value
       return nativeapi::VisualEffect::Mica;
     default:
       return nativeapi::VisualEffect::None;
+  }
+}
+
+inline native_resize_edge_t to_c_resize_edge(nativeapi::ResizeEdge value) {
+  switch (value) {
+    case nativeapi::ResizeEdge::Top:
+      return NATIVE_RESIZE_EDGE_TOP;
+    case nativeapi::ResizeEdge::Left:
+      return NATIVE_RESIZE_EDGE_LEFT;
+    case nativeapi::ResizeEdge::Right:
+      return NATIVE_RESIZE_EDGE_RIGHT;
+    case nativeapi::ResizeEdge::Bottom:
+      return NATIVE_RESIZE_EDGE_BOTTOM;
+    case nativeapi::ResizeEdge::TopLeft:
+      return NATIVE_RESIZE_EDGE_TOP_LEFT;
+    case nativeapi::ResizeEdge::TopRight:
+      return NATIVE_RESIZE_EDGE_TOP_RIGHT;
+    case nativeapi::ResizeEdge::BottomLeft:
+      return NATIVE_RESIZE_EDGE_BOTTOM_LEFT;
+    case nativeapi::ResizeEdge::BottomRight:
+      return NATIVE_RESIZE_EDGE_BOTTOM_RIGHT;
+    default:
+      return NATIVE_RESIZE_EDGE_TOP;
+  }
+}
+
+inline nativeapi::ResizeEdge to_cpp_resize_edge(native_resize_edge_t value) {
+  switch (value) {
+    case NATIVE_RESIZE_EDGE_TOP:
+      return nativeapi::ResizeEdge::Top;
+    case NATIVE_RESIZE_EDGE_LEFT:
+      return nativeapi::ResizeEdge::Left;
+    case NATIVE_RESIZE_EDGE_RIGHT:
+      return nativeapi::ResizeEdge::Right;
+    case NATIVE_RESIZE_EDGE_BOTTOM:
+      return nativeapi::ResizeEdge::Bottom;
+    case NATIVE_RESIZE_EDGE_TOP_LEFT:
+      return nativeapi::ResizeEdge::TopLeft;
+    case NATIVE_RESIZE_EDGE_TOP_RIGHT:
+      return nativeapi::ResizeEdge::TopRight;
+    case NATIVE_RESIZE_EDGE_BOTTOM_LEFT:
+      return nativeapi::ResizeEdge::BottomLeft;
+    case NATIVE_RESIZE_EDGE_BOTTOM_RIGHT:
+      return nativeapi::ResizeEdge::BottomRight;
+    default:
+      return nativeapi::ResizeEdge::Top;
   }
 }
 
