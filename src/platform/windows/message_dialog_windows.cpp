@@ -1,3 +1,4 @@
+#include "../message_dialog_state.h"
 // clang-format off
 #include <windows.h>
 #include <windowsx.h>
@@ -20,6 +21,8 @@ namespace nativeapi {
 // Private implementation class for MessageDialog using Win32 MessageBox
 class MessageDialog::Impl {
  public:
+  MessageDialogState state_;
+  void RefreshExtended() {}
   Impl(const std::string& title, const std::string& message) : title_(title), message_(message) {}
 
   ~Impl() = default;
@@ -100,5 +103,8 @@ bool MessageDialog::Open() {
 bool MessageDialog::Close() {
   return pimpl_->Close();
 }
+
+bool MessageDialog::IsExtendedSupported() { return false; }
+#include "../message_dialog_extensions.inc"
 
 }  // namespace nativeapi

@@ -1,10 +1,11 @@
 # Optional WinUI 3 backend on Windows
 
 `NATIVEAPI_ENABLE_WINUI3=ON` selects WinUI 3 for new Windows menus and
-message dialogs. Menus use `Microsoft.UI.Xaml.Controls.MenuFlyout`; message
+message dialogs, plus Windows App SDK title-bar and notification integration. Menus use `Microsoft.UI.Xaml.Controls.MenuFlyout`; message
 dialogs use `Microsoft.UI.Xaml.Controls.ContentDialog`. Both share a lazy XAML
 runtime and use private XAML Islands, including in tray-only applications.
 Future WinUI components should use this same option and runtime.
+File dialogs use the Windows system picker; they are not XAML controls.
 
 With the option OFF (the default), menus and dialogs retain their Win32
 implementations. Public C++ and C interfaces stay platform independent.
@@ -95,8 +96,8 @@ No runtime switch or new API is required.
   message loop (normally `Application::Run()`). `Close()` dismisses it.
 - `Application` pumps messages until dismissal and temporarily disables the
   application's currently visible, enabled top-level windows.
-- `Window` disables the calling thread's active visible window. The public API
-  has no explicit parent parameter yet; if no active window exists, the dialog
+- `Window` disables the window supplied by `SetParentWindow()`, or the calling
+  thread's active visible window if no parent was supplied. Without either, it
   opens without an owner. It never blocks other applications.
 - `SetTitle` and `SetMessage` update displayed content. Long messages scroll.
   The OK button, title-bar close, and `Close()` dismiss the dialog. Previously
@@ -156,3 +157,99 @@ destruction while open, and sharing the runtime with a menu:
 ```powershell
 ./build/menu-modern/tests/Debug/winui3_dialog_test.exe
 ```
+
+## Extended desktop features
+
+Build `desktop_features_example` and run it with one of these arguments:
+
+| Argument | Example |
+|---|---|
+| `dialog` (default) | Save/Discard/Cancel buttons, editable input, checkbox, progress |
+| `window` | Existing HWND with AppWindow title-bar colors and DWM Mica |
+| `open` / `multiple` | Select one or several files |
+| `save` | Select a save destination |
+| `folder` | Select a folder |
+| `notify` | Deliver a system notification; clicking it prints activation arguments and exits |
+
+```powershell
+cmake --build build/menu-modern --config Debug --target desktop_features_example desktop_features_test
+./build/menu-modern/examples/desktop_features_example/Debug/desktop_features_example.exe dialog
+```
+
+`MessageDialog::IsExtendedSupported()` reports whether the extended controls are
+compiled in. Configure buttons, default button and parent before opening. Input,
+checkbox and progress can be updated while open. `SetProgress(-2)` hides progress,
+`-1` is indeterminate, and values from 0 to 1 are determinate. Invalid values are
+rejected. After dismissal, read `GetResult()`, `GetInputText()` and
+`IsCheckboxChecked()`. Escape, close button and programmatic close return `Close`;
+`None` means no result yet. On a modeless dialog, wait until `IsOpen()` is false.
+Use all operations, including destruction, on the UI thread.
+
+`Window::SetTitleBarColors()` and `ResetTitleBarColors()` operate on the existing
+HWND through AppWindow; they do not replace an embedding framework's content.
+Title-bar visibility uses OverlappedPresenter. Mica/Acrylic continue to use DWM,
+so availability depends on the Windows version. Opaque content painted by a host
+framework can cover the backdrop. The native HWND lifetime now controls removal
+from WindowRegistry; destroying a temporary wrapper does not unregister the HWND.
+
+`FileDialog` supports `OpenFile`, `OpenFiles`, `SaveFile`, and `SelectFolder`.
+`Open()` blocks with message dispatch and returns true for acceptance **or user
+cancellation**; distinguish them with `GetResult()`. `GetPaths()` returns UTF-8
+filesystem paths. Failures return false with `GetLastError()`. Configure an explicit
+parent with `SetParentWindow()` when one exists. Without a visible parent, a small
+reusable owner is hosted on the calling STA. Keep the FileDialog alive until Open
+returns. Only Window modality is supported; other modality values fail explicitly.
+
+With WinUI3 enabled, the implementation uses the OS
+[Windows.Storage.Pickers APIs with HWND interop](https://learn.microsoft.com/en-us/windows/apps/develop/ui/display-ui-objects),
+which work with the pinned App SDK 1.6. It does **not** use the newer
+Microsoft.Windows.Storage.Pickers namespace introduced in App SDK 1.8. WinRT file
+pickers inherit the OS restrictions (including elevated-process restrictions).
+The Win32 build uses IFileDialog, including native multiselect and folder picking.
+SaveFile initially filters `.txt`; supply extensions explicitly for other formats.
+Clearing the extension list uses `.txt` in the WinRT backend and all files in Win32. The WinRT save picker can create an empty file
+when the selection is confirmed; callers should then write its contents.
+
+`NotificationManager` uses Microsoft.Windows.AppNotifications, with optional
+notification buttons and `NotificationActivatedEvent`. Subscribe before
+`Initialize()` at every app startup, including notification-triggered launches.
+Pump the normal application UI loop for activation callbacks. Initialize, Show,
+Remove and Shutdown belong on the main STA. Call Shutdown before stopping the loop;
+it unregisters this process but preserves the OS registration needed to relaunch
+it from delivered notifications. Registration is owned by this manager: applications
+already managing AppNotificationManager themselves should not initialize a second
+registration through this library. Tags must be 1–16 ASCII letters/digits/`_`/`-`.
+Show replaces notifications with the same tag in the library's `nativeapi` group.
+Success means the OS accepted the notification, not that a banner was visible:
+Windows notification settings and Do Not Disturb may suppress it. Both the runtime
+framework and its notification/Singleton components must be installed.
+
+### Platform support
+
+| Feature | Windows, WinUI3 ON | Windows, OFF | Other platforms |
+|---|---|---|---|
+| Extended MessageDialog | Supported | Setters return false; basic dialog retained | Setters return false; existing basic implementation retained |
+| Title-bar colors | AppWindow | Returns false | Returns false |
+| FileDialog | System WinRT picker | IFileDialog | IsSupported returns false |
+| NotificationManager | App SDK notifications | IsSupported returns false | IsSupported returns false |
+
+All six platform directories define the new module entry points. C ABI files are
+generated; the generator's header catalog in the sibling workspace now includes
+`file_dialog.h` and `notification_manager.h`. This checkout is outside workspace/core,
+so generation is driven through the workspace codegen wrapper with CORE pointing
+at this checkout; downstream submodules are uninitialized and are not synced here.
+
+### Additional verification
+
+The default `desktop_features_test` checks option validation and C handle lifetime
+without displaying UI. Explicit desktop integration modes are:
+
+```powershell
+./build/menu-modern/tests/Debug/desktop_features_test.exe --ui
+./build/menu-modern/tests/Debug/desktop_features_test.exe --pickers
+./build/menu-modern/tests/Debug/desktop_features_test.exe --notify
+```
+
+These exercise extended dialog state and live updates, HWND registration lifetime,
+AppWindow title-bar changes, Mica, cancellation of all four picker modes, and
+notification submission/removal. `--notify` briefly sends a test notification.

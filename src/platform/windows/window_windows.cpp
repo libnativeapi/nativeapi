@@ -1,5 +1,9 @@
+#ifdef NATIVEAPI_ENABLE_WINUI3
+#include "window_winui3_windows.h"
+#endif
 #include <dwmapi.h>
 #include <windows.h>
+#include <commctrl.h>
 #include <cmath>
 #include <iostream>
 #include "../../foundation/id_allocator.h"
@@ -16,6 +20,22 @@ namespace nativeapi {
 
 // Property name for storing window ID in HWND
 static const wchar_t* kWindowIdProperty = L"NativeAPIWindowId";
+
+// Registry entries follow the HWND lifetime, not any one C++ wrapper.
+static LRESULT CALLBACK WindowLifetimeProc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp,
+                                           UINT_PTR subclass_id, DWORD_PTR reference) {
+  if (message == WM_NCDESTROY) {
+    RemoveWindowSubclass(hwnd, WindowLifetimeProc, subclass_id);
+    RemovePropW(hwnd, kWindowIdProperty);
+    const auto result = DefSubclassProc(hwnd, message, wp, lp);
+    WindowRegistry::GetInstance().Remove(static_cast<WindowId>(reference));
+    return result;
+  }
+  return DefSubclassProc(hwnd, message, wp, lp);
+}
+static void TrackWindowLifetime(HWND hwnd, WindowId id) {
+  SetWindowSubclass(hwnd, WindowLifetimeProc, reinterpret_cast<UINT_PTR>(&WindowLifetimeProc), id);
+}
 
 // Forward declaration
 static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -46,6 +66,9 @@ class Window::Impl {
 // Custom window procedure to handle window messages
 static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
+    case WM_ERASEBKGND:
+      if (GetPropW(hwnd, L"NativeAPIBackdropEnabled")) return 1;
+      return DefWindowProcW(hwnd, uMsg, wParam, lParam);
     case WM_WINDOWPOSCHANGING: {
       // Intercept visibility changes BEFORE they happen (pre-show/hide "swizzle")
       WINDOWPOS* pos = reinterpret_cast<WINDOWPOS*>(lParam);
@@ -78,10 +101,10 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
           }
         }
       }
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+      return DefWindowProcW(hwnd, uMsg, wParam, lParam);
     }
     case WM_SHOWWINDOW:
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+      return DefWindowProcW(hwnd, uMsg, wParam, lParam);
     case WM_CLOSE:
       DestroyWindow(hwnd);
       return 0;
@@ -89,7 +112,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
       PostQuitMessage(0);
       return 0;
     default:
-      return DefWindowProc(hwnd, uMsg, wParam, lParam);
+      return DefWindowProcW(hwnd, uMsg, wParam, lParam);
   }
 }
 
@@ -153,6 +176,7 @@ Window::Window() {
 
   // Create the instance with allocated ID
   pimpl_ = std::make_unique<Impl>(hwnd, id);
+  TrackWindowLifetime(hwnd, id);
 
   // Note: Window registration in WindowRegistry is now handled by WindowManager::GetAll()
   // which uses EnumWindows to discover and register all windows dynamically
@@ -189,6 +213,7 @@ Window::Window(void* native_window) {
   }
 
   pimpl_ = std::make_unique<Impl>(hwnd, id);
+  TrackWindowLifetime(hwnd, id);
 
   // Note: Window registration in WindowRegistry is now handled by WindowManager::GetAll()
   // which uses EnumWindows to discover and register all windows dynamically
@@ -210,13 +235,7 @@ Window::~Window() {
           pimpl_->always_on_bottom_handler_id_);
     }
 
-    // Remove window from registry on destruction
-    WindowRegistry::GetInstance().Remove(pimpl_->window_id_);
 
-    // Remove the custom property from HWND if window is still valid
-    if (pimpl_->hwnd_) {
-      RemovePropW(pimpl_->hwnd_, kWindowIdProperty);
-    }
   }
 }
 
@@ -936,6 +955,14 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
   if (!pimpl_->hwnd_)
     return;
 
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  if (!SetWinUI3TitleBarStyle(pimpl_->hwnd_, style)) return;
+#else
+  LONG_PTR flags = GetWindowLongPtrW(pimpl_->hwnd_, GWL_STYLE);
+  if (style == TitleBarStyle::Hidden) flags &= ~WS_CAPTION;
+  else flags |= WS_CAPTION;
+  SetWindowLongPtrW(pimpl_->hwnd_, GWL_STYLE, flags);
+#endif
   pimpl_->title_bar_style_ = style;
 
   // Get current window rect
@@ -943,7 +970,8 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
   GetWindowRect(pimpl_->hwnd_, &rect);
 
   // Apply DWM frame extension based on style
-  MARGINS margins = {0, 0, 0, 0};
+  const int extent = pimpl_->visual_effect_ == VisualEffect::None ? 0 : -1;
+  MARGINS margins = {extent, extent, extent, extent};
   DwmExtendFrameIntoClientArea(pimpl_->hwnd_, &margins);
 
   // Trigger frame change to apply the new style
@@ -997,7 +1025,6 @@ void Window::SetVisualEffect(VisualEffect effect) {
   if (!pimpl_->hwnd_ || pimpl_->visual_effect_ == effect)
     return;
 
-  pimpl_->visual_effect_ = effect;
 
   // DWM_SYSTEMBACKDROP_TYPE is available in Windows 11 Build 22621+
   // DWMWA_SYSTEMBACKDROP_TYPE = 38
@@ -1016,7 +1043,15 @@ void Window::SetVisualEffect(VisualEffect effect) {
       break;
   }
 
-  DwmSetWindowAttribute(pimpl_->hwnd_, 38, &backdrop_type, sizeof(backdrop_type));
+  if (SUCCEEDED(DwmSetWindowAttribute(pimpl_->hwnd_, 38, &backdrop_type, sizeof(backdrop_type)))) {
+    pimpl_->visual_effect_ = effect;
+    const int extent = effect == VisualEffect::None ? 0 : -1;
+    MARGINS margins{extent, extent, extent, extent};
+    DwmExtendFrameIntoClientArea(pimpl_->hwnd_, &margins);
+    if (effect == VisualEffect::None) RemovePropW(pimpl_->hwnd_, L"NativeAPIBackdropEnabled");
+    else SetPropW(pimpl_->hwnd_, L"NativeAPIBackdropEnabled", reinterpret_cast<HANDLE>(1));
+    InvalidateRect(pimpl_->hwnd_, nullptr, TRUE);
+  }
 }
 
 VisualEffect Window::GetVisualEffect() const {
@@ -1177,3 +1212,20 @@ void* Window::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
+
+namespace nativeapi {
+bool Window::SetTitleBarColors(const Color& background, const Color& foreground) {
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  return SetWinUI3TitleBarColors(pimpl_->hwnd_, background, foreground);
+#else
+  return false;
+#endif
+}
+bool Window::ResetTitleBarColors() {
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  return ResetWinUI3TitleBarColors(pimpl_->hwnd_);
+#else
+  return false;
+#endif
+}
+}

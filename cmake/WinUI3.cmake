@@ -44,7 +44,8 @@ add_custom_target(nativeapi_winui3_projection DEPENDS "${_projection}/projection
 add_dependencies(nativeapi nativeapi_winui3_projection)
 target_sources(nativeapi PRIVATE platform/windows/menu_winui3_windows.cpp
   platform/windows/message_dialog_winui3_windows.cpp
-  platform/windows/winui3_runtime_windows.cpp)
+  platform/windows/winui3_runtime_windows.cpp
+  platform/windows/window_winui3_windows.cpp)
 target_include_directories(nativeapi PRIVATE "${_projection}" "${NATIVEAPI_WINAPPSDK_DIR}/include")
 target_compile_definitions(nativeapi PRIVATE NATIVEAPI_ENABLE_WINUI3 NOMINMAX)
 target_link_libraries(nativeapi PRIVATE windowsapp)

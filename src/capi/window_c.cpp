@@ -812,6 +812,34 @@ char* native_window_get_title(native_window_t window) {
   }
 }
 
+bool native_window_set_title_bar_colors(native_window_t window, native_color_t background, native_color_t foreground) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    auto background_cpp = to_cpp_color(background);
+    auto foreground_cpp = to_cpp_color(foreground);
+    return self->SetTitleBarColors(background_cpp, foreground_cpp);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_title_bar_colors");
+    return false;
+  }
+}
+
+bool native_window_reset_title_bar_colors(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->ResetTitleBarColors();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_reset_title_bar_colors");
+    return false;
+  }
+}
+
 void native_window_set_title_bar_style(native_window_t window, native_title_bar_style_t style) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {

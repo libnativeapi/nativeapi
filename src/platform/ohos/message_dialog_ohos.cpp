@@ -1,3 +1,4 @@
+#include "../message_dialog_state.h"
 #include "../../dialog.h"
 #include "../../message_dialog.h"
 
@@ -6,6 +7,8 @@ namespace nativeapi {
 // Private implementation class for MessageDialog (OHOS stub)
 class MessageDialog::Impl {
  public:
+  MessageDialogState state_;
+  void RefreshExtended() {}
   Impl(const std::string& title, const std::string& message) : title_(title), message_(message) {
     // TODO: Implement HarmonyOS dialog using ArkUI
     // Should use OHOS::Ace::DialogProperties or similar API
@@ -81,5 +84,8 @@ bool MessageDialog::Open() {
 bool MessageDialog::Close() {
   return pimpl_->Close();
 }
+
+bool MessageDialog::IsExtendedSupported() { return false; }
+#include "../message_dialog_extensions.inc"
 
 }  // namespace nativeapi

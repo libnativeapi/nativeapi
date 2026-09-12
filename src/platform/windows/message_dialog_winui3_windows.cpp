@@ -1,3 +1,4 @@
+#include "../message_dialog_state.h"
 #include <windows.h>
 #undef GetMessage
 #undef GetCurrentTime
@@ -7,9 +8,11 @@
 #include <winrt/Microsoft.UI.Content.h>
 #include <winrt/Microsoft.UI.Interop.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
+#include <winrt/Microsoft.UI.Xaml.Controls.Primitives.h>
 #include <winrt/Microsoft.UI.Xaml.Hosting.h>
 #include <winrt/Microsoft.UI.Xaml.Markup.h>
 #include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
 #include <iostream>
 #include <vector>
 
@@ -20,6 +23,7 @@ namespace H = X::Hosting;
 
 class MessageDialog::Impl {
  public:
+  MessageDialogState state_;
   Impl(const std::string& title, const std::string& message) : title_(title), message_(message) {}
   ~Impl() { Reset(); }
 
@@ -40,10 +44,12 @@ class MessageDialog::Impl {
     if (modality != DialogModality::None && modality != DialogModality::Application &&
         modality != DialogModality::Window) return false;
     Reset();
+    state_.result = MessageDialogResult::None;
     thread_ = GetCurrentThreadId();
     try {
       InitializeWinUI3();
-      HWND owner = GetActiveWindow();
+      HWND owner = state_.parent ? static_cast<HWND>(state_.parent->GetNativeObject()) : GetActiveWindow();
+      if (state_.parent && (!owner || !IsWindow(owner))) return false;
       if (owner && !IsWindowVisible(owner)) owner = nullptr;
       WNDCLASSW wc{};
       wc.lpfnWndProc = WindowProc;
@@ -63,7 +69,7 @@ class MessageDialog::Impl {
           info.rcWork.left, info.rcWork.top, 560, 360, owner, nullptr, wc.hInstance, this);
       if (!host_) winrt::throw_last_error();
       const UINT dpi = GetDpiForWindow(host_);
-      RECT bounds{0, 0, MulDiv(560, dpi, 96), MulDiv(360, dpi, 96)};
+      RECT bounds{0, 0, MulDiv(560, dpi, 96), MulDiv(480, dpi, 96)};
       AdjustWindowRectExForDpi(&bounds, GetWindowLongW(host_, GWL_STYLE), FALSE,
                               GetWindowLongW(host_, GWL_EXSTYLE), dpi);
       const int width = bounds.right - bounds.left;
@@ -83,15 +89,40 @@ class MessageDialog::Impl {
       text_.TextWrapping(X::TextWrapping::Wrap);
       text_.IsTextSelectionEnabled(true);
       C::ScrollViewer scroll;
-      scroll.Content(text_);
+      C::StackPanel content;
+      content.Spacing(12);
+      content.Children().Append(text_);
+      input_ = C::TextBox();
+      input_.TextChanged([this](auto&&, auto&&) { state_.input = winrt::to_string(input_.Text()); });
+      checkbox_ = C::CheckBox();
+      checkbox_.Checked([this](auto&&, auto&&) { state_.checked = true; });
+      checkbox_.Unchecked([this](auto&&, auto&&) { state_.checked = false; });
+      progress_ = C::ProgressBar();
+      progress_.Minimum(0);
+      progress_.Maximum(1);
+      content.Children().Append(input_);
+      content.Children().Append(checkbox_);
+      content.Children().Append(progress_);
+      RefreshExtended();
+      scroll.Content(content);
       scroll.VerticalScrollBarVisibility(C::ScrollBarVisibility::Auto);
       dialog_ = C::ContentDialog();
       dialog_.Title(winrt::box_value(winrt::to_hstring(title_)));
       dialog_.Content(scroll);
-      dialog_.CloseButtonText(L"OK");
-      dialog_.DefaultButton(C::ContentDialogButton::Close);
+      dialog_.PrimaryButtonText(winrt::to_hstring(state_.primary));
+      dialog_.SecondaryButtonText(winrt::to_hstring(state_.secondary));
+      dialog_.CloseButtonText(winrt::to_hstring(state_.close));
+      auto default_button = C::ContentDialogButton::None;
+      if (state_.default_button == MessageDialogResult::Primary && !state_.primary.empty()) default_button = C::ContentDialogButton::Primary;
+      if (state_.default_button == MessageDialogResult::Secondary && !state_.secondary.empty()) default_button = C::ContentDialogButton::Secondary;
+      if (state_.default_button == MessageDialogResult::Close && !state_.close.empty()) default_button = C::ContentDialogButton::Close;
+      dialog_.DefaultButton(default_button);
       opened_ = dialog_.Opened(winrt::auto_revoke, [this](auto&&, auto&&) { presented_ = true; });
-      closed_ = dialog_.Closed(winrt::auto_revoke, [this](auto&&, auto&&) { Finish(); });
+      closed_ = dialog_.Closed(winrt::auto_revoke, [this](auto&&, const C::ContentDialogClosedEventArgs& args) {
+        state_.result = args.Result() == C::ContentDialogResult::Primary ? MessageDialogResult::Primary :
+            args.Result() == C::ContentDialogResult::Secondary ? MessageDialogResult::Secondary : MessageDialogResult::Close;
+        Finish();
+      });
       loaded_ = root_.Loaded(winrt::auto_revoke, [this](auto&&, auto&&) {
         if (!running_ || operation_) return;
         try {
@@ -104,6 +135,7 @@ class MessageDialog::Impl {
         }
       });
       running_ = true;
+      state_.open = true;
       if (modality == DialogModality::Application) {
         EnumWindows([](HWND window, LPARAM data) -> BOOL {
           auto self = reinterpret_cast<Impl*>(data);
@@ -158,6 +190,17 @@ class MessageDialog::Impl {
     }
   }
 
+  void RefreshExtended() {
+    if (!input_ || thread_ != GetCurrentThreadId()) return;
+    input_.Visibility(state_.input_enabled ? X::Visibility::Visible : X::Visibility::Collapsed);
+    if (winrt::to_string(input_.Text()) != state_.input) input_.Text(winrt::to_hstring(state_.input));
+    checkbox_.Visibility(state_.checkbox.empty() ? X::Visibility::Collapsed : X::Visibility::Visible);
+    checkbox_.Content(winrt::box_value(winrt::to_hstring(state_.checkbox)));
+    checkbox_.IsChecked(state_.checked);
+    progress_.Visibility(state_.progress == -2 ? X::Visibility::Collapsed : X::Visibility::Visible);
+    progress_.IsIndeterminate(state_.progress == -1);
+    if (state_.progress >= 0) progress_.Value(state_.progress);
+  }
   std::string title_;
   std::string message_;
 
@@ -196,6 +239,7 @@ class MessageDialog::Impl {
   }
   void Finish() {
     running_ = false;
+    state_.open = false;
     for (HWND window : disabled_) if (IsWindow(window)) EnableWindow(window, TRUE);
     disabled_.clear();
     if (host_) ShowWindow(host_, SW_HIDE);
@@ -209,6 +253,9 @@ class MessageDialog::Impl {
     operation_ = nullptr;
     dialog_ = nullptr;
     text_ = nullptr;
+    input_ = nullptr;
+    checkbox_ = nullptr;
+    progress_ = nullptr;
     root_ = nullptr;
     try { if (source_) source_.Close(); } catch (...) {}
     source_ = nullptr;
@@ -226,6 +273,9 @@ class MessageDialog::Impl {
   H::DesktopWindowXamlSource source_{nullptr};
   C::Grid root_{nullptr};
   C::TextBlock text_{nullptr};
+  C::TextBox input_{nullptr};
+  C::CheckBox checkbox_{nullptr};
+  C::ProgressBar progress_{nullptr};
   C::ContentDialog dialog_{nullptr};
   winrt::Windows::Foundation::IAsyncOperation<C::ContentDialogResult> operation_{nullptr};
   X::FrameworkElement::Loaded_revoker loaded_;
@@ -244,4 +294,7 @@ DialogModality MessageDialog::GetModality() const { return modality_; }
 void MessageDialog::SetModality(DialogModality modality) { modality_ = modality; }
 bool MessageDialog::Open() { return pimpl_->Open(modality_); }
 bool MessageDialog::Close() { return pimpl_->Close(); }
+bool MessageDialog::IsExtendedSupported() { return true; }
+#include "../message_dialog_extensions.inc"
+
 }  // namespace nativeapi

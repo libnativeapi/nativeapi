@@ -447,3 +447,8 @@ void* Window::GetNativeObjectInternal() const {
 }
 
 }  // namespace nativeapi
+
+namespace nativeapi {
+bool Window::SetTitleBarColors(const Color&, const Color&) { return false; }
+bool Window::ResetTitleBarColors() { return false; }
+}

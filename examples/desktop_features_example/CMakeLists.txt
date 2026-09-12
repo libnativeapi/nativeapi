@@ -1,0 +1,6 @@
+add_executable(desktop_features_example main.cpp)
+target_link_libraries(desktop_features_example PRIVATE nativeapi)
+if(NATIVEAPI_ENABLE_WINUI3)
+  target_sources(desktop_features_example PRIVATE ../../cmake/winui3-example.manifest)
+  nativeapi_deploy_winui3(desktop_features_example)
+endif()

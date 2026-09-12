@@ -693,6 +693,13 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @note When using Hidden style, you may want to implement custom window
    *       controls and dragging behavior using StartDragging().
    */
+  /** Customize caption and caption-button colors. Windows WinUI3 backend only.
+   * Operates on the existing window; does not replace the host's content.
+   * Returns false when unsupported or the native window has been destroyed.
+   */
+  bool SetTitleBarColors(const Color& background, const Color& foreground);
+  bool ResetTitleBarColors();
+
   void SetTitleBarStyle(TitleBarStyle style);
 
   /**

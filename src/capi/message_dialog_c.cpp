@@ -15,6 +15,8 @@
 #include "../foundation/handle_table.h"
 #include "../dialog.h"
 #include "dialog_c.h"
+#include "../window.h"
+#include "window_c.h"
 #include "../message_dialog.h"
 
 native_message_dialog_t native_message_dialog_create(const char* title, const char* message) {
@@ -24,6 +26,159 @@ native_message_dialog_t native_message_dialog_create(const char* title, const ch
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_create");
     return 0;
+  }
+}
+
+bool native_message_dialog_is_extended_supported(void) {
+  try {
+    return nativeapi::MessageDialog::IsExtendedSupported();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_is_extended_supported");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_buttons(native_message_dialog_t message_dialog, const char* primary, const char* secondary, const char* close) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetButtons(std::string(primary ? primary : ""), std::string(secondary ? secondary : ""), std::string(close ? close : ""));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_buttons");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_default_button(native_message_dialog_t message_dialog, native_message_dialog_result_t button) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetDefaultButton(to_cpp_message_dialog_result(button));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_default_button");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_parent_window(native_message_dialog_t message_dialog, native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    auto window_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+    return self->SetParentWindow(window_cpp);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_parent_window");
+    return false;
+  }
+}
+
+native_message_dialog_result_t native_message_dialog_get_result(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return (native_message_dialog_result_t)NATIVE_MESSAGE_DIALOG_RESULT_NONE;
+  }
+  try {
+    return to_c_message_dialog_result(self->GetResult());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_result");
+    return (native_message_dialog_result_t)NATIVE_MESSAGE_DIALOG_RESULT_NONE;
+  }
+}
+
+bool native_message_dialog_is_open(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsOpen();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_is_open");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_input_enabled(native_message_dialog_t message_dialog, bool enabled) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetInputEnabled(enabled);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_input_enabled");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_input_text(native_message_dialog_t message_dialog, const char* text) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetInputText(std::string(text ? text : ""));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_input_text");
+    return false;
+  }
+}
+
+char* native_message_dialog_get_input_text(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return nullptr;
+  }
+  try {
+    return to_c_str(self->GetInputText());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_get_input_text");
+    return nullptr;
+  }
+}
+
+bool native_message_dialog_set_checkbox(native_message_dialog_t message_dialog, const char* label, bool checked) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetCheckbox(std::string(label ? label : ""), checked);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_checkbox");
+    return false;
+  }
+}
+
+bool native_message_dialog_is_checkbox_checked(native_message_dialog_t message_dialog) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsCheckboxChecked();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_is_checkbox_checked");
+    return false;
+  }
+}
+
+bool native_message_dialog_set_progress(native_message_dialog_t message_dialog, double value) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::MessageDialog>(message_dialog);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetProgress(value);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_message_dialog_set_progress");
+    return false;
   }
 }
 

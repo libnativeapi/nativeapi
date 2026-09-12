@@ -267,6 +267,12 @@ FFI_PLUGIN_EXPORT
 char* native_window_get_title(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+bool native_window_set_title_bar_colors(native_window_t window, native_color_t background, native_color_t foreground);
+
+FFI_PLUGIN_EXPORT
+bool native_window_reset_title_bar_colors(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_title_bar_style(native_window_t window, native_title_bar_style_t style);
 
 FFI_PLUGIN_EXPORT

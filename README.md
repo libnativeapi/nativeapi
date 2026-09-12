@@ -84,4 +84,6 @@ These bindings provide native system API access while preserving the library's c
 ## Optional Windows UI backend
 
 Build with `NATIVEAPI_ENABLE_WINUI3=ON` to use WinUI 3 menus and message dialogs
-automatically. With the option OFF, Windows uses the existing Win32 backend. See [build and usage instructions](docs/winui3.md).
+automatically, enable AppWindow title-bar customization and system notifications,
+and select the WinRT file/folder picker backend. With the option OFF, Windows uses
+the Win32 menu/dialog and IFileDialog picker backends. See [build and usage instructions](docs/winui3.md).
