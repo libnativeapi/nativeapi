@@ -11,7 +11,7 @@ HWND parent = nullptr;
 bool callback_ok = false;
 void CALLBACK CloseDialog(HWND, UINT, UINT_PTR timer, DWORD) {
   KillTimer(nullptr, timer);
-  callback_ok = active->IsOpen() && !IsWindowEnabled(parent) &&
+  callback_ok = active->IsOpen() && IsWindowEnabled(parent) &&
       !active->SetButtons("changed", "", "") && active->SetProgress(0.8) &&
       active->SetInputText("Updated input") && active->SetCheckbox("Checked", true) && active->Close();
 }

@@ -1,5 +1,6 @@
 #include "../message_dialog_state.h"
 #include <windows.h>
+#include <commctrl.h>
 #undef GetMessage
 #undef GetCurrentTime
 
@@ -31,7 +32,7 @@ class MessageDialog::Impl {
     title_ = title;
     if (dialog_ && thread_ == GetCurrentThreadId()) {
       dialog_.Title(winrt::box_value(winrt::to_hstring(title)));
-      SetWindowTextW(host_, winrt::to_hstring(title).c_str());
+      if (host_) SetWindowTextW(host_, winrt::to_hstring(title).c_str());
     }
   }
   void SetMessage(const std::string& message) {
@@ -43,47 +44,63 @@ class MessageDialog::Impl {
     if (running_ || (thread_ && thread_ != GetCurrentThreadId())) return false;
     if (modality != DialogModality::None && modality != DialogModality::Application &&
         modality != DialogModality::Window) return false;
+    // Closing a previous island can change activation. Resolve the caller's
+    // current parent before teardown, rather than accidentally adopting it.
+    HWND owner = state_.parent ? static_cast<HWND>(state_.parent->GetNativeObject()) : GetActiveWindow();
     Reset();
     state_.result = MessageDialogResult::None;
     thread_ = GetCurrentThreadId();
     try {
       InitializeWinUI3();
-      HWND owner = state_.parent ? static_cast<HWND>(state_.parent->GetNativeObject()) : GetActiveWindow();
       if (state_.parent && (!owner || !IsWindow(owner))) return false;
       if (owner && !IsWindowVisible(owner)) owner = nullptr;
-      WNDCLASSW wc{};
-      wc.lpfnWndProc = WindowProc;
-      wc.hInstance = GetModuleHandleW(nullptr);
-      wc.lpszClassName = L"nativeapi.WinUI3.MessageDialog";
-      wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-      if (!RegisterClassW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
-        winrt::throw_last_error();
-      POINT cursor{};
-      GetCursorPos(&cursor);
-      HMONITOR monitor = owner ? MonitorFromWindow(owner, MONITOR_DEFAULTTONEAREST)
-                              : MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
-      MONITORINFO info{sizeof(info)};
-      GetMonitorInfoW(monitor, &info);
-      host_ = CreateWindowExW(WS_EX_DLGMODALFRAME | WS_EX_NOREDIRECTIONBITMAP,
-          wc.lpszClassName, winrt::to_hstring(title_).c_str(), WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-          info.rcWork.left, info.rcWork.top, 560, 360, owner, nullptr, wc.hInstance, this);
-      if (!host_) winrt::throw_last_error();
-      const UINT dpi = GetDpiForWindow(host_);
-      RECT bounds{0, 0, MulDiv(560, dpi, 96), MulDiv(480, dpi, 96)};
-      AdjustWindowRectExForDpi(&bounds, GetWindowLongW(host_, GWL_STYLE), FALSE,
-                              GetWindowLongW(host_, GWL_EXSTYLE), dpi);
-      const int width = bounds.right - bounds.left;
-      const int height = bounds.bottom - bounds.top;
-      SetWindowPos(host_, nullptr, info.rcWork.left + (info.rcWork.right - info.rcWork.left - width) / 2,
-          info.rcWork.top + (info.rcWork.bottom - info.rcWork.top - height) / 2,
-          width, height, SWP_NOZORDER | SWP_NOACTIVATE);
+      if (owner) {
+        // XAML Islands and window subclassing must stay on the owner's UI thread.
+        if (GetWindowThreadProcessId(owner, nullptr) != thread_ ||
+            !IsWindowEnabled(owner) || GetPropW(owner, kDialogProperty)) return false;
+        owner_ = owner;
+        if (!SetPropW(owner_, kDialogProperty, this)) winrt::throw_last_error();
+        if (!SetWindowSubclass(owner_, OwnerProc, reinterpret_cast<UINT_PTR>(this),
+                               reinterpret_cast<DWORD_PTR>(this))) winrt::throw_last_error();
+      }
+      focus_ = GetFocus();
+      // A parentless/tray-only dialog still needs a standalone XAML host.
+      if (!owner_) {
+        WNDCLASSW wc{};
+        wc.lpfnWndProc = WindowProc;
+        wc.hInstance = GetModuleHandleW(nullptr);
+        wc.lpszClassName = L"nativeapi.WinUI3.MessageDialog";
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        if (!RegisterClassW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+          winrt::throw_last_error();
+        POINT cursor{};
+        GetCursorPos(&cursor);
+        HMONITOR monitor = owner ? MonitorFromWindow(owner, MONITOR_DEFAULTTONEAREST)
+                                : MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO info{sizeof(info)};
+        GetMonitorInfoW(monitor, &info);
+        host_ = CreateWindowExW(WS_EX_DLGMODALFRAME | WS_EX_NOREDIRECTIONBITMAP,
+            wc.lpszClassName, winrt::to_hstring(title_).c_str(), WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+            info.rcWork.left, info.rcWork.top, 560, 360, owner, nullptr, wc.hInstance, this);
+        if (!host_) winrt::throw_last_error();
+        const UINT dpi = GetDpiForWindow(host_);
+        RECT bounds{0, 0, MulDiv(560, dpi, 96), MulDiv(480, dpi, 96)};
+        AdjustWindowRectExForDpi(&bounds, GetWindowLongW(host_, GWL_STYLE), FALSE,
+                                GetWindowLongW(host_, GWL_EXSTYLE), dpi);
+        const int width = bounds.right - bounds.left;
+        const int height = bounds.bottom - bounds.top;
+        SetWindowPos(host_, nullptr, info.rcWork.left + (info.rcWork.right - info.rcWork.left - width) / 2,
+            info.rcWork.top + (info.rcWork.bottom - info.rcWork.top - height) / 2,
+            width, height, SWP_NOZORDER | SWP_NOACTIVATE);
+      }
       source_ = H::DesktopWindowXamlSource();
-      source_.Initialize(winrt::Microsoft::UI::GetWindowIdFromWindow(host_));
+      source_.Initialize(winrt::Microsoft::UI::GetWindowIdFromWindow(owner_ ? owner_ : host_));
+      island_ = winrt::Microsoft::UI::GetWindowFromWindowId(source_.SiteBridge().WindowId());
       source_.SiteBridge().ResizePolicy(winrt::Microsoft::UI::Content::ContentSizePolicy::ResizeContentToParentWindow);
       Resize();
       source_.SiteBridge().Show();
       root_ = X::Markup::XamlReader::Load(
-          LR"(<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>)").as<C::Grid>();
+          LR"(<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Background="Transparent"/>)").as<C::Grid>();
       text_ = C::TextBlock();
       text_.Text(winrt::to_hstring(message_));
       text_.TextWrapping(X::TextWrapping::Wrap);
@@ -117,7 +134,10 @@ class MessageDialog::Impl {
       if (state_.default_button == MessageDialogResult::Secondary && !state_.secondary.empty()) default_button = C::ContentDialogButton::Secondary;
       if (state_.default_button == MessageDialogResult::Close && !state_.close.empty()) default_button = C::ContentDialogButton::Close;
       dialog_.DefaultButton(default_button);
-      opened_ = dialog_.Opened(winrt::auto_revoke, [this](auto&&, auto&&) { presented_ = true; });
+      opened_ = dialog_.Opened(winrt::auto_revoke, [this](auto&&, auto&&) {
+        presented_ = true;
+        source_.NavigateFocus(H::XamlSourceFocusNavigationRequest(H::XamlSourceFocusNavigationReason::First));
+      });
       closed_ = dialog_.Closed(winrt::auto_revoke, [this](auto&&, const C::ContentDialogClosedEventArgs& args) {
         state_.result = args.Result() == C::ContentDialogResult::Primary ? MessageDialogResult::Primary :
             args.Result() == C::ContentDialogResult::Secondary ? MessageDialogResult::Secondary : MessageDialogResult::Close;
@@ -136,22 +156,31 @@ class MessageDialog::Impl {
       });
       running_ = true;
       state_.open = true;
+      if (owner_) {
+        // Keep the top-level HWND enabled: disabling it would disable the island
+        // too. Cover its client area and disable only the pre-existing controls.
+        for (HWND child = GetWindow(owner_, GW_CHILD); child; child = GetWindow(child, GW_HWNDNEXT)) {
+          if (child != island_) Disable(child);
+        }
+      }
       if (modality == DialogModality::Application) {
         EnumWindows([](HWND window, LPARAM data) -> BOOL {
           auto self = reinterpret_cast<Impl*>(data);
           DWORD process = 0;
           GetWindowThreadProcessId(window, &process);
-          if (process == GetCurrentProcessId() && window != self->host_ && IsWindowVisible(window))
+          if (process == GetCurrentProcessId() && window != self->host_ &&
+              window != self->owner_ && IsWindowVisible(window))
             self->Disable(window);
           return TRUE;
         }, reinterpret_cast<LPARAM>(this));
-      } else if (modality == DialogModality::Window && owner) {
-        Disable(owner);
       }
       source_.Content(root_);
-      SetWindowPos(host_, nullptr, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-      SetForegroundWindow(host_);
+      if (host_) {
+        SetWindowPos(host_, nullptr, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
+      }
+      source_.SiteBridge().MoveInZOrderAtTop();
+      SetForegroundWindow(owner_ ? owner_ : host_);
       // Wait for actual presentation so initialization/layout errors reach Open.
       // A modeless call then returns; the caller's UI loop continues dispatching.
       while (running_ && (modality != DialogModality::None || !presented_)) {
@@ -205,6 +234,29 @@ class MessageDialog::Impl {
   std::string message_;
 
  private:
+  static constexpr const wchar_t* kDialogProperty = L"nativeapi.WinUI3.ActiveMessageDialog";
+  static LRESULT CALLBACK OwnerProc(HWND window, UINT message, WPARAM wp, LPARAM lp,
+                                    UINT_PTR id, DWORD_PTR data) {
+    auto self = reinterpret_cast<Impl*>(data);
+    if (message == WM_DESTROY) {
+      // Tear down XAML before Windows destroys the borrowed parent/its children.
+      self->focus_ = nullptr;
+      self->Reset();
+      return DefSubclassProc(window, message, wp, lp);
+    }
+    if (self->running_) {
+      if (message == WM_COMMAND || message == WM_NOTIFY ||
+          (message == WM_SYSCOMMAND && (wp & 0xfff0) == SC_KEYMENU)) return 0;
+      if (message == WM_SETFOCUS) {
+        if (self->island_) SetFocus(self->island_);
+        return 0;
+      }
+    }
+    const LRESULT result = DefSubclassProc(window, message, wp, lp);
+    // Let the embedding framework finish laying out its own child HWND first.
+    if ((message == WM_SIZE || message == WM_DPICHANGED) && self->running_) self->Resize();
+    return result;
+  }
   static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp) {
     auto self = reinterpret_cast<Impl*>(GetWindowLongPtrW(window, GWLP_USERDATA));
     if (message == WM_NCCREATE) {
@@ -227,8 +279,9 @@ class MessageDialog::Impl {
     try {
       if (!source_) return;
       RECT rect{};
-      GetClientRect(host_, &rect);
+      GetClientRect(owner_ ? owner_ : host_, &rect);
       source_.SiteBridge().MoveAndResize({0, 0, rect.right, rect.bottom});
+      source_.SiteBridge().MoveInZOrderAtTop();
     } catch (...) {}
   }
   void Disable(HWND window) {
@@ -238,13 +291,21 @@ class MessageDialog::Impl {
     }
   }
   void Finish() {
+    const bool restore_focus = running_;
     running_ = false;
     state_.open = false;
+    try { if (source_) source_.SiteBridge().Hide(); } catch (...) {}
     for (HWND window : disabled_) if (IsWindow(window)) EnableWindow(window, TRUE);
     disabled_.clear();
     if (host_) ShowWindow(host_, SW_HIDE);
+    if (owner_ && GetPropW(owner_, kDialogProperty) == this) RemovePropW(owner_, kDialogProperty);
+    if (restore_focus && focus_ && IsWindow(focus_) && IsWindowEnabled(focus_)) SetFocus(focus_);
+    focus_ = nullptr;
   }
   void Reset() noexcept {
+    if (resetting_) return;
+    resetting_ = true;
+    if (owner_) RemoveWindowSubclass(owner_, OwnerProc, reinterpret_cast<UINT_PTR>(this));
     loaded_.revoke();
     opened_.revoke();
     closed_.revoke();
@@ -259,17 +320,24 @@ class MessageDialog::Impl {
     root_ = nullptr;
     try { if (source_) source_.Close(); } catch (...) {}
     source_ = nullptr;
+    island_ = nullptr;
+    owner_ = nullptr;
     if (host_) DestroyWindow(host_);
     host_ = nullptr;
     presented_ = false;
     failed_ = false;
+    resetting_ = false;
   }
   DWORD thread_ = 0;
   HWND host_ = nullptr;
+  HWND owner_ = nullptr;  // Borrowed, never hidden, disabled or destroyed by us.
+  HWND island_ = nullptr; // Owned by DesktopWindowXamlSource.
+  HWND focus_ = nullptr;
   std::vector<HWND> disabled_;
   bool running_ = false;
   bool presented_ = false;
   bool failed_ = false;
+  bool resetting_ = false;
   H::DesktopWindowXamlSource source_{nullptr};
   C::Grid root_{nullptr};
   C::TextBlock text_{nullptr};

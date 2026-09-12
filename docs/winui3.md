@@ -92,15 +92,25 @@ and logs a diagnostic. Submenus use their root's backend.
 Run `./build/menu-modern/examples/message_dialog_example/Debug/message_dialog_example.exe`.
 No runtime switch or new API is required.
 
-- `None` returns after presentation. Keep the dialog alive and dispatch the UI
-  message loop (normally `Application::Run()`). `Close()` dismisses it.
-- `Application` pumps messages until dismissal and temporarily disables the
-  application's currently visible, enabled top-level windows.
-- `Window` disables the window supplied by `SetParentWindow()`, or the calling
-  thread's active visible window if no parent was supplied. Without either, it
-  opens without an owner. It never blocks other applications.
+- With a visible parent supplied by `SetParentWindow()`, or the calling thread's
+  active visible window, the dialog is hosted in a transparent XAML Island over
+  that window's client area. It has no additional top-level window or caption.
+  The existing content remains visible through the dimming layer. The island
+  follows the parent's size/DPI and leaves its title and window styles intact.
+- The parent HWND stays enabled so the island can receive input. Its underlying
+  child controls are temporarily disabled; focus and their previous enabled states
+  are restored on dismissal. Native parent destruction tears down the island first.
+  Only one active dialog per parent is allowed; cross-thread parents are rejected.
+- `None` returns after presentation; it still blocks interaction with the covered
+  content. Keep the dialog alive and dispatch the UI message loop (normally
+  `Application::Run()`). Use timers to test live updates and `Close()`.
+- `Window` pumps messages until dismissal and blocks only the covered content.
+- `Application` additionally disables other visible, enabled top-level windows
+  in this process until dismissal. It never blocks other applications.
+- Without a visible parent, tray-only callers retain the standalone host window.
 - `SetTitle` and `SetMessage` update displayed content. Long messages scroll.
-  The OK button, title-bar close, and `Close()` dismiss the dialog. Previously
+  The dialog buttons and `Close()` dismiss it; the standalone fallback also has
+  its own title-bar close button. Previously
   enabled windows are restored on dismissal, initialization failure, or destruction.
 - Create, mutate, open, close, and destroy on the same STA UI thread. Reopening
   an already open instance is rejected. WinUI runtime errors return false from
