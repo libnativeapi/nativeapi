@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(nativeapi VERSION 0.0.1 LANGUAGES CXX)
 
+option(NATIVEAPI_ENABLE_WINUI3 "Use WinUI 3 for Windows UI components (MSVC only)" OFF)
+
 # Enable Objective-C++
 if(APPLE)
     enable_language(OBJCXX)
@@ -39,6 +41,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
     file(GLOB PLATFORM_SOURCES "platform/ohos/*.cpp")
 elseif(WIN32)
     file(GLOB PLATFORM_SOURCES "platform/windows/*.cpp")
+    list(FILTER PLATFORM_SOURCES EXCLUDE REGEX "(menu_winui3|message_dialog_winui3|winui3_runtime)_windows\\.cpp$")
+    if(NATIVEAPI_ENABLE_WINUI3)
+      list(FILTER PLATFORM_SOURCES EXCLUDE REGEX "message_dialog_windows\\.cpp$")
+    endif()
 else()
     set(PLATFORM_SOURCES "")
 endif()
@@ -49,6 +55,10 @@ add_library(nativeapi STATIC
   ${PLATFORM_SOURCES}
   ${CAPI_SOURCES}
 )
+
+if(NATIVEAPI_ENABLE_WINUI3)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/WinUI3.cmake")
+endif()
 
 # Set library properties
 # Propagate the language requirement to anything that links nativeapi.

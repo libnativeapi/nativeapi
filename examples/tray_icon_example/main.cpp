@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <thread>
 
 #include "../../src/application.h"
@@ -15,7 +16,9 @@ using nativeapi::MenuItem;
 using nativeapi::MenuItemClickedEvent;
 using nativeapi::MenuItemType;
 
-int main() {
+int main(int argc, char** argv) {
+  const bool use_winui3 = Menu::IsBackendSupported(MenuBackend::WinUI3) ||
+      (argc > 1 && std::string(argv[1]) == "--winui3");
   std::cout << "Starting TrayIcon Example..." << std::endl;
 
   // Get the Application instance - this handles platform initialization
@@ -36,8 +39,19 @@ int main() {
   }
 
   // Set up the tray icon
-  trayIcon->SetTitle("Test App");
-  trayIcon->SetTooltip("This is a test tray icon");
+  trayIcon->SetTitle(use_winui3 ? "nativeapi WinUI3 Tray Test" : "Test App");
+  trayIcon->SetTooltip(use_winui3 ? "nativeapi WinUI3 Tray Test - right-click" : "This is a test tray icon");
+  // Embedded blue four-pane icon keeps the example independent of asset paths.
+  if (use_winui3) {
+    auto icon = Image::FromBase64(
+        "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAOElEQVR4nO3RwQkAMAgEQcu205ST1CB5"
+        "nI9ZuKcwYJVW1eeO9nsHAAAAALAPoPgLAAAAAADiAAV6s6MvzK1rffgAAAAASUVORK5CYII=");
+    if (!icon) {
+      std::cerr << "Failed to load the tray test icon." << std::endl;
+      return 1;
+    }
+    trayIcon->SetIcon(icon);
+  }
 
   // Set up event listeners
   trayIcon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent& event) {
@@ -61,6 +75,18 @@ int main() {
 
   // Create context menu
   auto context_menu = std::make_shared<Menu>();
+  if (use_winui3 && !context_menu->SetBackend(MenuBackend::WinUI3)) {
+    std::cerr << "WinUI3 menu support was not compiled in. Enable NATIVEAPI_ENABLE_WINUI3."
+              << std::endl;
+    return 1;
+  }
+  std::cout << "Menu backend: " << (use_winui3 ? "WinUI3" : "Native") << std::endl;
+  context_menu->AddListener<MenuOpenedEvent>([](const auto&) {
+    std::cout << "Tray menu opened" << std::endl;
+  });
+  context_menu->AddListener<MenuClosedEvent>([](const auto&) {
+    std::cout << "Tray menu closed" << std::endl;
+  });
 
   // Add menu items
   auto status_item = std::make_shared<MenuItem>("Status: Running", MenuItemType::Normal);

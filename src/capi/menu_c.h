@@ -27,6 +27,11 @@ typedef unsigned int native_menu_id_t;
 typedef unsigned int native_menu_item_id_t;
 
 typedef enum {
+  NATIVE_MENU_BACKEND_NATIVE = 0,
+  NATIVE_MENU_BACKEND_WIN_UI3 = 1,
+} native_menu_backend_t;
+
+typedef enum {
   NATIVE_MENU_ITEM_TYPE_NORMAL = 0,
   NATIVE_MENU_ITEM_TYPE_CHECKBOX = 1,
   NATIVE_MENU_ITEM_TYPE_RADIO = 2,
@@ -208,6 +213,15 @@ FFI_PLUGIN_EXPORT
 native_menu_id_t native_menu_get_id(native_menu_t menu);
 
 FFI_PLUGIN_EXPORT
+bool native_menu_set_backend(native_menu_t menu, native_menu_backend_t backend);
+
+FFI_PLUGIN_EXPORT
+native_menu_backend_t native_menu_get_backend(native_menu_t menu);
+
+FFI_PLUGIN_EXPORT
+bool native_menu_is_backend_supported(native_menu_backend_t backend);
+
+FFI_PLUGIN_EXPORT
 void native_menu_add_item(native_menu_t menu, native_menu_item_t item);
 
 FFI_PLUGIN_EXPORT
@@ -292,10 +306,34 @@ void free_c_menu_event(native_menu_event_t* value);
 
 // Conversion helpers between these C types and their C++ originals.
 
+inline native_menu_backend_t to_c_menu_backend(nativeapi::MenuBackend value);
+inline nativeapi::MenuBackend to_cpp_menu_backend(native_menu_backend_t value);
 inline native_menu_item_type_t to_c_menu_item_type(nativeapi::MenuItemType value);
 inline nativeapi::MenuItemType to_cpp_menu_item_type(native_menu_item_type_t value);
 inline native_menu_item_state_t to_c_menu_item_state(nativeapi::MenuItemState value);
 inline nativeapi::MenuItemState to_cpp_menu_item_state(native_menu_item_state_t value);
+
+inline native_menu_backend_t to_c_menu_backend(nativeapi::MenuBackend value) {
+  switch (value) {
+    case nativeapi::MenuBackend::Native:
+      return NATIVE_MENU_BACKEND_NATIVE;
+    case nativeapi::MenuBackend::WinUI3:
+      return NATIVE_MENU_BACKEND_WIN_UI3;
+    default:
+      return NATIVE_MENU_BACKEND_NATIVE;
+  }
+}
+
+inline nativeapi::MenuBackend to_cpp_menu_backend(native_menu_backend_t value) {
+  switch (value) {
+    case NATIVE_MENU_BACKEND_NATIVE:
+      return nativeapi::MenuBackend::Native;
+    case NATIVE_MENU_BACKEND_WIN_UI3:
+      return nativeapi::MenuBackend::WinUI3;
+    default:
+      return nativeapi::MenuBackend::Native;
+  }
+}
 
 inline native_menu_item_type_t to_c_menu_item_type(nativeapi::MenuItemType value) {
   switch (value) {

@@ -21,6 +21,12 @@ class Image;
 typedef IdAllocator::IdType MenuId;
 typedef IdAllocator::IdType MenuItemId;
 
+/** Presentation backend. WinUI3 is the Windows default when enabled at build time. */
+enum class MenuBackend {
+  Native,
+  WinUI3,
+};
+
 /**
  * @brief Enumeration of different menu item types.
  *
@@ -471,6 +477,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
 
  private:
   friend class Menu;
+  friend class WinUI3MenuSession;
 
   /**
    * @brief Private implementation class using the PIMPL idiom.
@@ -531,6 +538,7 @@ class MenuItem : public EventEmitter<MenuEvent>, public NativeObjectProvider {
  * ```
  */
 class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
+  friend class WinUI3MenuSession;
  public:
   /**
    * @brief Constructor to create a new menu.
@@ -566,6 +574,20 @@ class Menu : public EventEmitter<MenuEvent>, public NativeObjectProvider {
    * @return The unique identifier for this menu
    */
   MenuId GetId() const;
+
+  /**
+   * Select the presentation backend. Returns false without changing the selection
+   * if unavailable, wrapping an existing native menu, or currently open.
+   * WinUI3 requires the optional Windows build feature and an STA UI thread.
+   * Runtime initialization errors are reported by Open() returning false.
+   * The root menu's backend controls all of its submenus.
+   */
+  bool SetBackend(MenuBackend backend);
+
+  MenuBackend GetBackend() const;
+
+  /** Reports build support, not whether the optional runtime is installed. */
+  static bool IsBackendSupported(MenuBackend backend);
 
   /**
    * @brief Add a menu item to the end of the menu.

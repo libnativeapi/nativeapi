@@ -11,6 +11,10 @@ add_executable(menu_example main.cpp)
 
 # Link against the nativeapi library
 target_link_libraries(menu_example nativeapi)
+if(NATIVEAPI_ENABLE_WINUI3)
+    target_sources(menu_example PRIVATE "../../cmake/winui3-example.manifest")
+    nativeapi_deploy_winui3(menu_example)
+endif()
 
 # Platform-specific settings
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")

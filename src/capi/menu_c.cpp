@@ -407,6 +407,41 @@ native_menu_id_t native_menu_get_id(native_menu_t menu) {
   }
 }
 
+bool native_menu_set_backend(native_menu_t menu, native_menu_backend_t backend) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->SetBackend(to_cpp_menu_backend(backend));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_set_backend");
+    return false;
+  }
+}
+
+native_menu_backend_t native_menu_get_backend(native_menu_t menu) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
+  if (!self) {
+    return (native_menu_backend_t)NATIVE_MENU_BACKEND_NATIVE;
+  }
+  try {
+    return to_c_menu_backend(self->GetBackend());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_get_backend");
+    return (native_menu_backend_t)NATIVE_MENU_BACKEND_NATIVE;
+  }
+}
+
+bool native_menu_is_backend_supported(native_menu_backend_t backend) {
+  try {
+    return nativeapi::Menu::IsBackendSupported(to_cpp_menu_backend(backend));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_menu_is_backend_supported");
+    return false;
+  }
+}
+
 void native_menu_add_item(native_menu_t menu, native_menu_item_t item) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Menu>(menu);
   if (!self) {

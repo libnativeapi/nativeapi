@@ -6,7 +6,7 @@
 
 using namespace nativeapi;
 
-int main() {
+int main(int argc, char** argv) {
   std::cout << "=== Menu Event System Example ===" << std::endl;
 
   // Get the Application instance to initialize platform
@@ -15,6 +15,11 @@ int main() {
   try {
     // Create a menu
     auto menu = std::make_shared<Menu>();
+    if (argc > 1 && std::string(argv[1]) == "--winui3" &&
+        !menu->SetBackend(MenuBackend::WinUI3)) {
+      std::cerr << "WinUI3 menu support was not compiled in." << std::endl;
+      return 1;
+    }
     std::cout << "Created menu with ID: " << menu->GetId() << std::endl;
 
     // Create menu items with different types
@@ -139,6 +144,12 @@ int main() {
     std::cout << "The menu will open shortly." << std::endl;
     std::cout << "Click the Exit menu item to quit the application." << std::endl;
     std::cout << "========================================" << std::endl;
+
+    // The modern backend pumps its UI queue until dismissal. It can also be used
+    // by tray-only applications without entering Application::Run first.
+    if (menu->GetBackend() == MenuBackend::WinUI3) {
+      return menu->Open(PositioningStrategy::Absolute({100, 100})) ? 0 : 1;
+    }
 
     // Set up application started listener to open menu after event loop starts
     app.AddListener<ApplicationStartedEvent>([menu](const ApplicationStartedEvent& event) {

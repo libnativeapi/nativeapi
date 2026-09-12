@@ -27,3 +27,8 @@ if(APPLE)
   )
 endif()
 
+
+if(NATIVEAPI_ENABLE_WINUI3)
+  target_sources(message_dialog_example PRIVATE "../../cmake/winui3-example.manifest")
+  nativeapi_deploy_winui3(message_dialog_example)
+endif()

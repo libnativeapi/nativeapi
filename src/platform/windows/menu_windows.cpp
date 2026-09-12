@@ -13,6 +13,9 @@
 #include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
 #include "window_message_dispatcher.h"
+#ifdef NATIVEAPI_ENABLE_WINUI3
+#include "menu_winui3_windows.h"
+#endif
 
 namespace nativeapi {
 
@@ -241,6 +244,9 @@ void MenuItem::SetLabel(const std::optional<std::string>& label) {
     mii.dwTypeData = const_cast<LPWSTR>(w_label_str.c_str());
     SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
   }
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 std::optional<std::string> MenuItem::GetLabel() const {
@@ -317,6 +323,9 @@ void MenuItem::SetIcon(std::shared_ptr<Image> image) {
       ReleaseDC(nullptr, hdc);
     }
   }
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 std::shared_ptr<Image> MenuItem::GetIcon() const {
@@ -327,6 +336,9 @@ void MenuItem::SetTooltip(const std::optional<std::string>& tooltip) {
   pimpl_->tooltip_ = tooltip;
   // Windows doesn't have built-in tooltip support for menu items
   // This would require custom implementation
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 std::optional<std::string> MenuItem::GetTooltip() const {
@@ -343,6 +355,9 @@ void MenuItem::SetAccelerator(const std::optional<KeyboardAccelerator>& accelera
   }
   // Windows accelerators would be handled through accelerator tables
   // This is a placeholder implementation
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 KeyboardAccelerator MenuItem::GetAccelerator() const {
@@ -357,6 +372,9 @@ void MenuItem::SetEnabled(bool enabled) {
   if (pimpl_->parent_menu_) {
     EnableMenuItem(pimpl_->parent_menu_, pimpl_->id_, enabled ? MF_ENABLED : MF_GRAYED);
   }
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 bool MenuItem::IsEnabled() const {
@@ -384,6 +402,9 @@ void MenuItem::SetState(MenuItemState state) {
       // For now, this functionality is disabled.
     }
   }
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 MenuItemState MenuItem::GetState() const {
@@ -392,6 +413,9 @@ MenuItemState MenuItem::GetState() const {
 
 void MenuItem::SetRadioGroup(int group_id) {
   pimpl_->radio_group_ = group_id;
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  WinUI3MenuSession::Refresh(*this);
+#endif
 }
 
 int MenuItem::GetRadioGroup() const {
@@ -447,6 +471,16 @@ void* MenuItem::GetNativeObjectInternal() const {
 // Menu::Impl implementation
 class Menu::Impl {
  public:
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  MenuBackend backend_ = MenuBackend::WinUI3;
+#else
+  MenuBackend backend_ = MenuBackend::Native;
+#endif
+  bool wraps_native_ = false;
+  bool opening_ = false;
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  std::shared_ptr<WinUI3MenuSession> modern_session_;
+#endif
   MenuId id_;
   HMENU hmenu_;
   std::vector<std::shared_ptr<MenuItem>> items_;
@@ -523,6 +557,8 @@ class Menu::Impl {
 Menu::Menu(void* native_menu)
     : pimpl_(
           std::make_unique<Impl>(IdAllocator::Allocate<Menu>(), static_cast<HMENU>(native_menu))) {
+  pimpl_->wraps_native_ = true;
+  pimpl_->backend_ = MenuBackend::Native;
   // Set callbacks to emit events
   pimpl_->opened_callback_ = [this](MenuId id) { Emit<MenuOpenedEvent>(id); };
   pimpl_->closed_callback_ = [this](MenuId id) { Emit<MenuClosedEvent>(id); };
@@ -713,6 +749,7 @@ std::vector<std::shared_ptr<MenuItem>> Menu::GetAllItems() const {
 }
 
 bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
+  if (pimpl_->opening_) return false;
   POINT pt = {0, 0};
 
   // Determine position based on strategy type
@@ -752,6 +789,18 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   if (!host_window) {
     return false;
   }
+
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  if (pimpl_->backend_ == MenuBackend::WinUI3) {
+    auto session = std::make_shared<WinUI3MenuSession>();
+    pimpl_->modern_session_ = session;
+    pimpl_->opening_ = true;
+    const bool result = session->Open(*this, host_window, pt, placement);
+    pimpl_->opening_ = false;
+    pimpl_->modern_session_.reset();
+    return result;
+  }
+#endif
 
   // Set the host window as foreground to ensure menu can be displayed
   SetForegroundWindow(host_window);
@@ -804,12 +853,17 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   // - WM_INITMENUPOPUP is sent when the menu opens (triggers MenuOpenedEvent)
   // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers
   // MenuClosedEvent)
-  TrackPopupMenu(pimpl_->hmenu_, uFlags, pt.x, pt.y, 0, host_window, nullptr);
+  pimpl_->opening_ = true;
+  const BOOL result = TrackPopupMenu(pimpl_->hmenu_, uFlags, pt.x, pt.y, 0, host_window, nullptr);
+  pimpl_->opening_ = false;
 
-  return true;
+  return result != FALSE;
 }
 
 bool Menu::Close() {
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  if (pimpl_->modern_session_) return pimpl_->modern_session_->Close();
+#endif
   // Send WM_CANCELMODE to close any open menus
   HWND host_window = WindowMessageDispatcher::GetInstance().GetHostWindow();
   if (host_window) {
@@ -822,6 +876,26 @@ bool Menu::Close() {
 
 void* Menu::GetNativeObjectInternal() const {
   return pimpl_->hmenu_;
+}
+
+bool Menu::SetBackend(MenuBackend backend) {
+  if (!IsBackendSupported(backend) || pimpl_->opening_ ||
+      (pimpl_->wraps_native_ && backend != MenuBackend::Native)) return false;
+  pimpl_->backend_ = backend;
+  return true;
+}
+
+MenuBackend Menu::GetBackend() const {
+  return pimpl_->backend_;
+}
+
+bool Menu::IsBackendSupported(MenuBackend backend) {
+  if (backend == MenuBackend::Native) return true;
+#ifdef NATIVEAPI_ENABLE_WINUI3
+  return backend == MenuBackend::WinUI3;
+#else
+  return false;
+#endif
 }
 
 }  // namespace nativeapi

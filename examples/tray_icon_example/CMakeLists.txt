@@ -13,6 +13,10 @@ add_executable(tray_icon_example
 
 # Link main library
 target_link_libraries(tray_icon_example PRIVATE nativeapi)
+if(NATIVEAPI_ENABLE_WINUI3)
+    target_sources(tray_icon_example PRIVATE "../../cmake/winui3-example.manifest")
+    nativeapi_deploy_winui3(tray_icon_example)
+endif()
 
 # Set example program properties
 set_target_properties(tray_icon_example PROPERTIES
