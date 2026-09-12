@@ -142,13 +142,16 @@ The implementation follows Microsoft's [ContentDialog hosting requirements](http
   update the modern presentation. Do not destroy this borrowed handle.
 - Positioning uses the existing screen/DIP conversion followed by WinUI placement
   and edge avoidance. Themes and accessibility come from WinUI. Appearance can
-  differ from File Explorer's shell menu.
+  differ from File Explorer's shell menu. The temporary menu island is topmost
+  while open so tray menus appear above the notification overflow panel; closing
+  destroys that host without changing the application's topmost state.
 
 ## Verification
 
 `ctest --test-dir build/menu-modern -C Debug -R menu_backend_test --output-on-failure`
 checks backend selection without requiring the runtime. The explicit interactive
-smoke test opens and closes the menu twice and checks lifecycle/reentry:
+smoke test checks lifecycle/reentry and presentation above a topmost panel,
+including host cleanup and preservation of the application's window level:
 
 ```powershell
 ./build/menu-modern/tests/Debug/menu_backend_test.exe --winui3

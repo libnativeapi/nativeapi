@@ -5,6 +5,17 @@
 using namespace nativeapi;
 namespace {
 Menu* active_menu = nullptr;
+HWND occluding_panel = nullptr;
+bool above_panel = false;
+void CALLBACK CheckMenuAbovePanel(HWND, UINT, UINT_PTR timer, DWORD) {
+  KillTimer(nullptr, timer);
+  // The anchor is (300, 300); this point lies inside the first menu item.
+  const HWND hit = GetAncestor(WindowFromPoint({320, 320}), GA_ROOT);
+  DWORD process = 0;
+  GetWindowThreadProcessId(hit, &process);
+  above_panel = hit && hit != occluding_panel && process == GetCurrentProcessId();
+  active_menu->Close();
+}
 void CALLBACK CloseMenu(HWND, UINT, UINT_PTR timer, DWORD) {
   KillTimer(nullptr, timer);
   if (active_menu) {
@@ -71,12 +82,31 @@ int main(int argc, char**) {
     KillTimer(nullptr, timer);
     if (!Check(result, "WinUI3 Open failed")) return 1;
   }
+  // Model the notification overflow panel: visible, topmost, and still open
+  // when a menu is requested by a tray callback.
+  HWND menu_owner = CreateWindowW(L"STATIC", L"Non-topmost menu owner", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+      100, 100, 700, 600, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+  SetActiveWindow(menu_owner);
+  occluding_panel = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+      L"STATIC", L"Tray overflow test panel", WS_POPUP,
+      280, 280, 500, 500, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+  ShowWindow(occluding_panel, SW_SHOWNOACTIVATE);
+  auto z_timer = SetTimer(nullptr, 0, 1500, CheckMenuAbovePanel);
+  const bool z_opened = z_timer && menu.Open(PositioningStrategy::Absolute({300, 300}));
+  if (z_timer) KillTimer(nullptr, z_timer);
+  DestroyWindow(occluding_panel);
+  const bool owner_unchanged = !(GetWindowLongPtrW(menu_owner, GWL_EXSTYLE) & WS_EX_TOPMOST);
+  DestroyWindow(menu_owner);
+  if (!Check(z_opened && above_panel, "Menu remained underneath a topmost panel") ||
+      !Check(owner_unchanged, "Menu made its owner permanently topmost") ||
+      !Check(FindWindowW(L"STATIC", L"nativeapi WinUI menu") == nullptr,
+             "Temporary menu host leaked")) return 1;
   active_menu = nullptr;
   if (preview) DestroyWindow(preview);
-  if (!Check(opened == 2 && closed == 2 && rejected_reentry, "Lifecycle mismatch")) return 1;
+  if (!Check(opened == 3 && closed == 3 && rejected_reentry, "Lifecycle mismatch")) return 1;
   menu.AddListener<MenuOpenedEvent>([&](const auto&) { menu.Close(); });
   if (!Check(menu.Open(PositioningStrategy::Absolute({300, 300})), "Opening cancellation failed") ||
-      !Check(opened == 3 && closed == 3, "Opening cancellation lifecycle mismatch")) return 1;
+      !Check(opened == 4 && closed == 4, "Opening cancellation lifecycle mismatch")) return 1;
   std::cout << "WinUI3 smoke test passed\n";
   return 0;
 }

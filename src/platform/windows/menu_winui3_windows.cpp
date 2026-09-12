@@ -217,7 +217,12 @@ bool WinUI3MenuSession::Open(Menu& menu, HWND owner, POINT anchor, Placement pla
     impl.root.Width(1);
     impl.root.Height(1);
     impl.source.Content(impl.root);
-    SetWindowPos(impl.host, HWND_TOP, 0, 0, 0, 0,
+    // The tray overflow panel can remain topmost while dispatching a click to
+    // our process. HWND_TOP/foreground activation alone cannot put a normal
+    // island above it. Elevate only this short-lived popup host (and its owned
+    // XAML popups), never the application's window. DestroyWindow below ends
+    // the topmost lifetime when the menu closes.
+    SetWindowPos(impl.host, HWND_TOPMOST, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
     SetForegroundWindow(impl.host);
     impl.flyout = C::MenuFlyout();
