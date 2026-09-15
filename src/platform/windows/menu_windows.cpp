@@ -853,11 +853,46 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   // - WM_INITMENUPOPUP is sent when the menu opens (triggers MenuOpenedEvent)
   // - WM_UNINITMENUPOPUP is sent when the menu closes (triggers
   // MenuClosedEvent)
+  // TPM_RETURNCMD: return the chosen item's id instead of posting WM_COMMAND.
+  // A posted WM_COMMAND is dispatched after Open() has returned, from the
+  // host's message loop, where no caller is on the stack; bindings whose
+  // listeners must run synchronously inside a call (Dart's
+  // NativeCallable.isolateLocal) then abort with "Cannot invoke native
+  // callback outside an isolate". Emitting the click here, before Open()
+  // returns, keeps every menu event inside the Open() call.
   pimpl_->opening_ = true;
-  const BOOL result = TrackPopupMenu(pimpl_->hmenu_, uFlags, pt.x, pt.y, 0, host_window, nullptr);
+  SetLastError(ERROR_SUCCESS);
+  const UINT cmd = static_cast<UINT>(TrackPopupMenu(
+      pimpl_->hmenu_, uFlags | TPM_RETURNCMD, pt.x, pt.y, 0, host_window, nullptr));
+  // With TPM_RETURNCMD, 0 means "dismissed" or "failed"; only the error code
+  // tells them apart.
+  const bool failed = cmd == 0 && GetLastError() != ERROR_SUCCESS;
   pimpl_->opening_ = false;
+  if (failed) {
+    return false;
+  }
 
-  return result != FALSE;
+  if (cmd != 0) {
+    // Find the item (searching submenus) and fire its click.
+    std::function<bool(const Menu&)> dispatch = [&](const Menu& menu) -> bool {
+      for (const auto& item : menu.pimpl_->items_) {
+        if (item->GetId() == cmd) {
+          if (item->pimpl_->clicked_callback_) {
+            item->pimpl_->clicked_callback_(item->pimpl_->id_);
+          }
+          return true;
+        }
+        if (auto submenu = item->GetSubmenu(); submenu && dispatch(*submenu)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    dispatch(*this);
+  }
+
+  // Shown (and possibly dismissed without a pick): success, as before.
+  return true;
 }
 
 bool Menu::Close() {
