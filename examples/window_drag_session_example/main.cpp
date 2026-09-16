@@ -38,6 +38,9 @@ int main() {
   bool over_dock = false;
   // Hiding the panel on drop hands focus to the dock; that is not a press.
   bool dropping = false;
+  // Focus changes are not always presses (and arrive late on some platforms),
+  // so a tear-off only happens once the cursor moves with the button down.
+  bool tear_off_pending = false;
 
   auto contains = [](const nativeapi::Rectangle& r, const Point& p) {
     return p.x >= r.x && p.y >= r.y && p.x < r.x + r.width && p.y < r.y + r.height;
@@ -55,7 +58,16 @@ int main() {
       session->Start(panel, {cursor.x - position.x, cursor.y - position.y});
     } else if (event.GetWindowId() == dock->GetId() && docked &&
                contains(dock->GetContentBounds(), cursor)) {
+      // Follow the pointer; the panel only comes out once it moves.
+      tear_off_pending = session->Start(nullptr, {0, 0});
+    }
+  });
+
+  session->AddListener<WindowDragMovedEvent>([&](const WindowDragMovedEvent& event) {
+    if (tear_off_pending) {
       // Tear off: bring the panel back under the cursor, grabbed by its title bar.
+      tear_off_pending = false;
+      Point cursor = event.GetCursorPosition();
       Point anchor{130, 12};
       panel->SetPosition({cursor.x - anchor.x, cursor.y - anchor.y});
       panel->Show();
@@ -63,10 +75,8 @@ int main() {
       session->Start(panel, anchor);
       dock->SetTitle("Dock - drop the panel here");
       std::cout << "Panel torn off" << std::endl;
+      return;
     }
-  });
-
-  session->AddListener<WindowDragMovedEvent>([&](const WindowDragMovedEvent& event) {
     auto target = window_manager.GetWindowAtPoint(event.GetCursorPosition(), panel->GetId());
     bool now_over_dock = target && target->GetId() == dock->GetId();
     if (now_over_dock != over_dock) {
@@ -77,6 +87,10 @@ int main() {
   });
 
   session->AddListener<WindowDragEndedEvent>([&](const WindowDragEndedEvent& event) {
+    if (tear_off_pending) {
+      tear_off_pending = false;  // Released without moving: just a click.
+      return;
+    }
     Point cursor = event.GetCursorPosition();
     std::cout << "Drag ended at (" << cursor.x << ", " << cursor.y << ")" << std::endl;
     panel->SetOpacity(1.0f);
@@ -91,8 +105,10 @@ int main() {
     }
   });
 
-  session->AddListener<WindowDragCancelledEvent>(
-      [&](const WindowDragCancelledEvent&) { std::cout << "Drag cancelled" << std::endl; });
+  session->AddListener<WindowDragCancelledEvent>([&](const WindowDragCancelledEvent&) {
+    tear_off_pending = false;
+    std::cout << "Drag cancelled" << std::endl;
+  });
 
   std::cout << "Press inside the Panel window and drag it onto the Dock window to dock it."
             << std::endl;

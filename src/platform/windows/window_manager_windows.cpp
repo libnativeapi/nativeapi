@@ -26,11 +26,16 @@ static WindowId GetWindowIdFromHwnd(HWND hwnd) {
     return IdAllocator::kInvalidId;
   }
 
-  // First, try to get window ID from HWND's custom property
+  // First, try to get window ID from HWND's custom property. A window can carry
+  // an ID without being registered (created by Window(), or wrapped by a
+  // binding), so make sure WindowManager::Get() can find it either way.
   HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
   if (prop_handle) {
     WindowId window_id = static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle));
     if (window_id != IdAllocator::kInvalidId && window_id != 0) {
+      if (!WindowRegistry::GetInstance().Get(window_id)) {
+        WindowRegistry::GetInstance().Add(window_id, std::make_shared<Window>(hwnd));
+      }
       return window_id;
     }
   }
@@ -459,6 +464,29 @@ WindowManager::~WindowManager() {
   StopEventListening();
 }
 
+namespace {
+
+struct WindowIdSearch {
+  WindowId id;
+  HWND found;
+};
+
+// Finds this process's top-level window carrying an ID, visible or not.
+BOOL CALLBACK FindWindowWithId(HWND hwnd, LPARAM data) {
+  auto* search = reinterpret_cast<WindowIdSearch*>(data);
+  if (!IsOwnProcessWindow(hwnd)) {
+    return TRUE;
+  }
+  HANDLE prop_handle = GetPropW(hwnd, kWindowIdProperty);
+  if (prop_handle && static_cast<WindowId>(reinterpret_cast<uintptr_t>(prop_handle)) == search->id) {
+    search->found = hwnd;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+}  // namespace
+
 std::shared_ptr<Window> WindowManager::Get(WindowId id) {
   // First try to get from registry
   auto window = WindowRegistry::GetInstance().Get(id);
@@ -466,11 +494,13 @@ std::shared_ptr<Window> WindowManager::Get(WindowId id) {
     return window;
   }
 
-  // If not in registry, enumerate all windows to find it
-  // This will create and register the window if it exists
-  GetAll();
-
-  // Try again after enumeration
+  // Not registered yet: the window may still exist, hidden or untitled (which
+  // GetAll() skips), so look for the ID on this process's windows directly.
+  WindowIdSearch search = {id, nullptr};
+  EnumWindows(FindWindowWithId, reinterpret_cast<LPARAM>(&search));
+  if (search.found) {
+    GetWindowIdFromHwnd(search.found);
+  }
   return WindowRegistry::GetInstance().Get(id);
 }
 
@@ -573,41 +603,38 @@ POINT LogicalToPhysicalScreenPoint(Point point) {
           static_cast<LONG>(std::lround(point.y * scale))};
 }
 
-struct HitTestSearch {
-  POINT point;
-  HWND excluded;
-  HWND found;
-};
-
-// EnumWindows visits top-level windows in z-order, topmost first, so the first
-// window that is actually painted at the point is the one the user sees there.
-BOOL CALLBACK HitTestTopLevelWindow(HWND hwnd, LPARAM data) {
-  auto* search = reinterpret_cast<HitTestSearch*>(data);
-  if (hwnd == search->excluded || !IsWindowVisible(hwnd) || IsIconic(hwnd)) {
-    return TRUE;
+// Whether `hwnd`, a top-level window, visibly covers `point`. Used below the
+// window excluded from a hit test, where the system's own hit test cannot look.
+bool CoversPoint(HWND hwnd, POINT point) {
+  if (!IsWindowVisible(hwnd) || IsIconic(hwnd)) {
+    return false;
   }
   LONG ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
-  if ((ex_style & WS_EX_LAYERED) && (ex_style & WS_EX_TRANSPARENT)) {
-    return TRUE;  // Click-through overlay.
+  if (ex_style & WS_EX_LAYERED) {
+    if (ex_style & WS_EX_TRANSPARENT) {
+      return false;  // Click-through overlay.
+    }
+    BYTE alpha = 255;
+    DWORD flags = 0;
+    if (GetLayeredWindowAttributes(hwnd, nullptr, &alpha, &flags) && (flags & LWA_ALPHA) &&
+        alpha == 0) {
+      return false;  // Fully transparent.
+    }
   }
   BOOL cloaked = FALSE;
   if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) &&
       cloaked) {
-    return TRUE;  // On another virtual desktop, or a suspended UWP frame.
+    return false;  // On another virtual desktop, or a suspended UWP frame.
   }
   // The extended frame excludes the invisible resize borders that
   // GetWindowRect() includes on Windows 10 and later.
   RECT rect;
   if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(rect)))) {
     if (!GetWindowRect(hwnd, &rect)) {
-      return TRUE;
+      return false;
     }
   }
-  if (!PtInRect(&rect, search->point)) {
-    return TRUE;
-  }
-  search->found = hwnd;
-  return FALSE;
+  return PtInRect(&rect, point) != FALSE;
 }
 
 }  // namespace
@@ -619,13 +646,32 @@ std::shared_ptr<Window> WindowManager::GetWindowAtPoint(Point point, WindowId ex
       excluded = static_cast<HWND>(window->GetNativeObject());
     }
   }
+  const POINT physical = LogicalToPhysicalScreenPoint(point);
 
-  HitTestSearch search = {LogicalToPhysicalScreenPoint(point), excluded, nullptr};
-  EnumWindows(HitTestTopLevelWindow, reinterpret_cast<LPARAM>(&search));
-  if (!search.found || !IsOwnProcessWindow(search.found)) {
+  // Ask the system first: WindowFromPoint() is the window a click would reach,
+  // so it looks through click-through overlays (layered windows with
+  // transparent pixels, like game or capture overlays) that cover the screen.
+  HWND found = WindowFromPoint(physical);
+  if (found) {
+    found = GetAncestor(found, GA_ROOT);
+  }
+  if (found && found == excluded) {
+    // The excluded window, typically the one being dragged, is right under the
+    // point. Walk down the stack beneath it instead.
+    found = nullptr;
+    for (HWND below = GetWindow(excluded, GW_HWNDNEXT); below;
+         below = GetWindow(below, GW_HWNDNEXT)) {
+      if (CoversPoint(below, physical)) {
+        found = below;
+        break;
+      }
+    }
+  }
+  // Another application's window on top means the point is covered.
+  if (!found || !IsOwnProcessWindow(found)) {
     return nullptr;
   }
-  WindowId window_id = GetWindowIdFromHwnd(search.found);
+  WindowId window_id = GetWindowIdFromHwnd(found);
   if (window_id == IdAllocator::kInvalidId) {
     return nullptr;
   }

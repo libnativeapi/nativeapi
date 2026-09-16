@@ -17,9 +17,11 @@ bool WindowDragSession::Start(std::shared_ptr<Window> window, Point anchor) {
   anchor_ = anchor;
   last_cursor_position_ = cursor_position;
   active_ = true;
-  ++generation_;
 
-  if (window_) {
+  // A gesture can be recognized after the button was already released; the
+  // first tick reports the end then, and the window must not jump to wherever
+  // the cursor has gone meanwhile.
+  if (window_ && primary_button_down) {
     MoveWindow(*window_, cursor_position);
   }
   StartTicking();
@@ -67,6 +69,13 @@ void WindowDragSession::HandleTick() {
     return;
   }
 
+  // Released: the drag is over where the cursor was last followed. Moving now
+  // would carry the window to wherever the cursor went after the release.
+  if (!primary_button_down) {
+    Finish(false, cursor_position);
+    return;
+  }
+
   const bool moved = std::fabs(cursor_position.x - last_cursor_position_.x) >= 0.5 ||
                      std::fabs(cursor_position.y - last_cursor_position_.y) >= 0.5;
   if (moved) {
@@ -74,17 +83,7 @@ void WindowDragSession::HandleTick() {
     if (window_) {
       MoveWindow(*window_, cursor_position);
     }
-    const unsigned long generation = generation_;
     Emit<WindowDragMovedEvent>(window_id_, cursor_position);
-    // A listener restarted or stopped the session; the release below, if any,
-    // belongs to whatever state it left behind and is picked up next tick.
-    if (generation != generation_ || !active_) {
-      return;
-    }
-  }
-
-  if (!primary_button_down) {
-    Finish(false, cursor_position);
   }
 }
 
@@ -93,7 +92,6 @@ void WindowDragSession::Finish(bool cancelled, Point cursor_position) {
     return;
   }
   active_ = false;
-  ++generation_;
   StopTicking();
 
   const WindowId window_id = window_id_;

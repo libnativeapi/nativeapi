@@ -127,8 +127,9 @@ class WindowDragSession : public EventEmitter<WindowDragEvent> {
    *        point inside the content.
    * @return false if the platform cannot track the cursor globally.
    *
-   * If the primary button is not held down when the session first samples the
-   * pointer, the session ends right away with a WindowDragEndedEvent.
+   * If the primary button is not held down when the session starts, the window
+   * is left where it is and the session ends right away with a
+   * WindowDragEndedEvent.
    *
    * Calling Start() on an active session retargets it: the previous target is
    * released without a WindowDragEndedEvent or WindowDragCancelledEvent, so the
@@ -182,9 +183,6 @@ class WindowDragSession : public EventEmitter<WindowDragEvent> {
   Point anchor_{0, 0};
   Point last_cursor_position_{0, 0};
   bool active_ = false;
-  // Incremented by every Start()/Finish() so a tick can tell whether a
-  // listener it called restarted or stopped the session.
-  unsigned long generation_ = 0;
 };
 
 }  // namespace nativeapi
