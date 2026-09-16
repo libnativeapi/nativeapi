@@ -111,15 +111,47 @@ Window::Window(void* native_window) {
 
   // Heuristic: if this looks like a GtkWidget*, use it; otherwise treat as GdkWindow*
   // In our codebase, native Linux window handles should be GtkWidget* (GtkWindow)
-  widget = static_cast<GtkWidget*>(native_window);
-  if (widget && GTK_IS_WIDGET(widget)) {
+  if (native_window && GTK_IS_WIDGET(native_window)) {
+    widget = static_cast<GtkWidget*>(native_window);
     if (!gtk_widget_get_realized(widget)) {
       gtk_widget_realize(widget);
     }
     gdk_window = gtk_widget_get_window(widget);
-  } else {
-    // Fallback: assume GdkWindow*
+  } else if (native_window && GDK_IS_WINDOW(native_window)) {
+    // A GdkWindow*: recover the GtkWidget that owns it, so GetNativeObject()
+    // reports the same GtkWindow* whichever handle the wrapper was built from.
     gdk_window = static_cast<GdkWindow*>(native_window);
+    gpointer user_data = nullptr;
+    gdk_window_get_user_data(gdk_window, &user_data);
+    if (user_data && GTK_IS_WIDGET(user_data)) {
+      widget = static_cast<GtkWidget*>(user_data);
+    }
+  }
+
+  // Like the other platforms, a wrapped window gets an ID on first sight, stored
+  // on the native objects so every later wrapper and WindowManager agree on it.
+  gpointer existing_id = nullptr;
+  if (gdk_window) {
+    existing_id = g_object_get_data(G_OBJECT(gdk_window), kWindowIdKey);
+  }
+  if (!existing_id && widget) {
+    existing_id = g_object_get_data(G_OBJECT(widget), kWindowIdKey);
+  }
+  if (existing_id) {
+    if (gdk_window) {
+      g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey, existing_id);
+    }
+  } else if (gdk_window || widget) {
+    WindowId id = IdAllocator::Allocate<Window>();
+    if (id != IdAllocator::kInvalidId) {
+      gpointer data = reinterpret_cast<gpointer>(static_cast<uintptr_t>(id));
+      if (gdk_window) {
+        g_object_set_data(G_OBJECT(gdk_window), kWindowIdKey, data);
+      }
+      if (widget) {
+        g_object_set_data(G_OBJECT(widget), kWindowIdKey, data);
+      }
+    }
   }
 
   pimpl_ = std::make_unique<Impl>(widget, gdk_window);

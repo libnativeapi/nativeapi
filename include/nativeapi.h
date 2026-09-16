@@ -32,6 +32,7 @@
 #include "../src/tray_manager.h"
 #include "../src/url_opener.h"
 #include "../src/window.h"
+#include "../src/window_drag_session.h"
 #include "../src/window_manager.h"
 #endif
 
@@ -65,4 +66,5 @@
 #include "../src/capi/tray_manager_c.h"
 #include "../src/capi/url_opener_c.h"
 #include "../src/capi/window_c.h"
+#include "../src/capi/window_drag_session_c.h"
 #include "../src/capi/window_manager_c.h"

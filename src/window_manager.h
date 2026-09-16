@@ -118,6 +118,36 @@ class WindowManager : public EventEmitter<WindowEvent> {
   std::shared_ptr<Window> GetCurrent();
 
   /**
+   * @brief Get this application's topmost window at a screen point
+   *
+   * Hit-tests the window stack from front to back and returns the first
+   * visible window that contains @p point. If the frontmost window there
+   * belongs to another application, the point is considered covered and
+   * nullptr is returned. This is the query a drag-and-drop or tear-off
+   * gesture needs to find the window under the cursor, typically with the
+   * window being dragged excluded.
+   *
+   * @param point Screen coordinates, as returned by Window::GetPosition().
+   * @param excluded_window_id A window to look through, such as the window
+   *        being dragged; pass 0 to exclude nothing.
+   * @return The window, or nullptr if no window of this application is
+   *         frontmost at @p point.
+   *
+   * @note On Wayland other applications' windows are not visible to the
+   *       process, and the stacking order of this application's own windows
+   *       is approximated with the focused window first.
+   *
+   * @code
+   * auto session_window = session.GetWindowId();
+   * auto target = WindowManager::GetInstance().GetWindowAtPoint(cursor, session_window);
+   * if (target && target->GetId() == main_window_id) {
+   *     // highlight the drop zone
+   * }
+   * @endcode
+   */
+  std::shared_ptr<Window> GetWindowAtPoint(Point point, WindowId excluded_window_id);
+
+  /**
    * Hooks invoked before native window show/hide operations (e.g., via swizzling).
    * These are declarations only; platform implementations can register and invoke them.
    */

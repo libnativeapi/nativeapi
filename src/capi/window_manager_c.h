@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "common_c.h"
+#include "geometry_c.h"
 #include "window_c.h"
 
 #if _WIN32
@@ -33,6 +34,10 @@ native_window_list_t native_window_manager_get_all(void);
 /// Caller owns the returned handle; release it with native_window_free().
 FFI_PLUGIN_EXPORT
 native_window_t native_window_manager_get_current(void);
+
+/// Caller owns the returned handle; release it with native_window_free().
+FFI_PLUGIN_EXPORT
+native_window_t native_window_manager_get_window_at_point(native_point_t point, native_window_id_t excluded_window_id);
 
 FFI_PLUGIN_EXPORT
 void native_window_manager_set_will_show_hook(native_window_manager_set_will_show_hook_callback_t hook, void* hook_user_data);

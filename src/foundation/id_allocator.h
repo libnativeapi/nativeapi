@@ -45,6 +45,7 @@ class Shortcut;
 class TrayIcon;
 class Window;
 class FileDialog;
+class WindowDragSession;
 
 // ---------------------------------------------------------------------------
 // Type tag registry — append only.
@@ -108,6 +109,10 @@ struct IdTypeTag<KeyboardMonitor> {
 template <>
 struct IdTypeTag<FileDialog> {
   static constexpr uint32_t value = 14;
+};
+template <>
+struct IdTypeTag<WindowDragSession> {
+  static constexpr uint32_t value = 15;
 };
 
 /**

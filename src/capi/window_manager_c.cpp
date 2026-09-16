@@ -13,6 +13,8 @@
 
 #include "string_utils_c.h"
 #include "../foundation/handle_table.h"
+#include "../foundation/geometry.h"
+#include "geometry_c.h"
 #include "../window.h"
 #include "window_c.h"
 #include "../window_manager.h"
@@ -54,6 +56,16 @@ native_window_t native_window_manager_get_current(void) {
     return nativeapi::HandleTable::GetInstance().Insert(nativeapi::WindowManager::GetInstance().GetCurrent());
   } catch (...) {
     fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_get_current");
+    return 0;
+  }
+}
+
+native_window_t native_window_manager_get_window_at_point(native_point_t point, native_window_id_t excluded_window_id) {
+  try {
+    auto point_cpp = to_cpp_point(point);
+    return nativeapi::HandleTable::GetInstance().Insert(nativeapi::WindowManager::GetInstance().GetWindowAtPoint(point_cpp, excluded_window_id));
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_manager_get_window_at_point");
     return 0;
   }
 }

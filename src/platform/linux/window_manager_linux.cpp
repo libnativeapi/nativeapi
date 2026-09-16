@@ -421,6 +421,93 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   return WindowRegistry::GetInstance().GetAll();
 }
 
+namespace {
+
+bool GdkWindowContainsPoint(GdkWindow* gdk_window, gint x, gint y) {
+  GdkRectangle frame;
+  gdk_window_get_frame_extents(gdk_window, &frame);
+  return x >= frame.x && y >= frame.y && x < frame.x + frame.width && y < frame.y + frame.height;
+}
+
+bool GdkWindowIsShown(GdkWindow* gdk_window) {
+  GdkWindowState state = gdk_window_get_state(gdk_window);
+  return (state & (GDK_WINDOW_STATE_WITHDRAWN | GDK_WINDOW_STATE_ICONIFIED)) == 0;
+}
+
+// The GtkWindow that owns a toplevel GdkWindow, or nullptr for another
+// application's window (foreign GdkWindows carry no user data).
+GtkWindow* OwningGtkWindow(GdkWindow* gdk_window) {
+  gpointer user_data = nullptr;
+  gdk_window_get_user_data(gdk_window, &user_data);
+  return user_data && GTK_IS_WINDOW(user_data) ? GTK_WINDOW(user_data) : nullptr;
+}
+
+}  // namespace
+
+std::shared_ptr<Window> WindowManager::GetWindowAtPoint(Point point, WindowId excluded_window_id) {
+  GdkScreen* screen = gdk_screen_get_default();
+  if (!screen) {
+    return nullptr;
+  }
+
+  GdkWindow* excluded = nullptr;
+  if (excluded_window_id != 0) {
+    if (auto window = Get(excluded_window_id)) {
+      auto* widget = static_cast<GtkWidget*>(window->GetNativeObject());
+      excluded = widget ? gtk_widget_get_window(widget) : nullptr;
+    }
+  }
+
+  const gint x = static_cast<gint>(point.x);
+  const gint y = static_cast<gint>(point.y);
+  GdkWindow* found = nullptr;
+
+  // X11 publishes the stacking order of every application's windows,
+  // bottom-most first.
+  GList* stack = gdk_screen_get_window_stack(screen);
+  if (stack) {
+    for (GList* l = g_list_last(stack); l != nullptr; l = l->prev) {
+      GdkWindow* candidate = GDK_WINDOW(l->data);
+      if (candidate == excluded || !GdkWindowIsShown(candidate) ||
+          !GdkWindowContainsPoint(candidate, x, y)) {
+        continue;
+      }
+      // Only this application's windows are returned; anything else covers
+      // the point.
+      found = OwningGtkWindow(candidate) ? candidate : nullptr;
+      break;
+    }
+    g_list_free_full(stack, g_object_unref);
+  } else {
+    // Wayland: no global stacking order. Prefer the focused window, then
+    // whichever toplevel comes first.
+    GList* toplevels = gtk_window_list_toplevels();
+    for (GList* l = toplevels; l != nullptr; l = l->next) {
+      GtkWindow* gtk_window = GTK_WINDOW(l->data);
+      GdkWindow* candidate = gtk_widget_get_window(GTK_WIDGET(gtk_window));
+      if (!candidate || candidate == excluded ||
+          gtk_window_get_window_type(gtk_window) != GTK_WINDOW_TOPLEVEL ||
+          !gtk_widget_get_visible(GTK_WIDGET(gtk_window)) || !GdkWindowIsShown(candidate) ||
+          !GdkWindowContainsPoint(candidate, x, y)) {
+        continue;
+      }
+      if (!found || gtk_window_is_active(gtk_window)) {
+        found = candidate;
+      }
+    }
+    g_list_free(toplevels);
+  }
+
+  if (!found) {
+    return nullptr;
+  }
+  WindowId window_id = GetOrCreateWindowId(found);
+  if (window_id == IdAllocator::kInvalidId) {
+    return nullptr;
+  }
+  return Get(window_id);
+}
+
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   GdkDisplay* display = gdk_display_get_default();
   if (!display) {

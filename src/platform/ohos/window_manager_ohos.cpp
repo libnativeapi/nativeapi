@@ -96,6 +96,22 @@ std::vector<std::shared_ptr<Window>> WindowManager::GetAll() {
   return WindowRegistry::GetInstance().GetAll();
 }
 
+// Windows here do not overlap other applications' windows on a shared
+// screen, so a bounds check over this application's windows is enough.
+std::shared_ptr<Window> WindowManager::GetWindowAtPoint(Point point, WindowId excluded_window_id) {
+  for (const auto& window : GetAll()) {
+    if (!window || window->GetId() == excluded_window_id || !window->IsVisible()) {
+      continue;
+    }
+    Rectangle bounds = window->GetBounds();
+    if (point.x >= bounds.x && point.y >= bounds.y && point.x < bounds.x + bounds.width &&
+        point.y < bounds.y + bounds.height) {
+      return window;
+    }
+  }
+  return nullptr;
+}
+
 std::shared_ptr<Window> WindowManager::GetCurrent() {
   // On OpenHarmony, the current window is typically the Ability's window
   auto all = WindowRegistry::GetInstance().GetAll();

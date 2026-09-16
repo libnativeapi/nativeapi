@@ -2,13 +2,17 @@
 #include <iostream>
 #include <string>
 
+#include <dwmapi.h>
 #include <psapi.h>
+#include <cmath>
 #include "../../window.h"
 #include "../../window_manager.h"
 #include "../../window_registry.h"
+#include "dpi_utils_windows.h"
 #include "string_utils_windows.h"
 
 #pragma comment(lib, "psapi.lib")
+#pragma comment(lib, "dwmapi.lib")
 
 namespace nativeapi {
 
@@ -524,6 +528,108 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     }
   }
   return nullptr;
+}
+
+namespace {
+
+// Library positions are physical pixels divided by the scale factor of the
+// monitor they fall on, so a logical point maps back to whichever monitor
+// contains it once scaled by that monitor's own factor.
+struct LogicalPointSearch {
+  Point logical;
+  POINT physical;
+  bool found;
+};
+
+BOOL CALLBACK FindMonitorForLogicalPoint(HMONITOR monitor, HDC, LPRECT rect, LPARAM data) {
+  auto* search = reinterpret_cast<LogicalPointSearch*>(data);
+  double scale = GetScaleFactorForMonitor(monitor);
+  if (scale <= 0.0) {
+    scale = 1.0;
+  }
+  POINT candidate = {static_cast<LONG>(std::lround(search->logical.x * scale)),
+                     static_cast<LONG>(std::lround(search->logical.y * scale))};
+  if (PtInRect(rect, candidate)) {
+    search->physical = candidate;
+    search->found = true;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+POINT LogicalToPhysicalScreenPoint(Point point) {
+  LogicalPointSearch search = {point, {0, 0}, false};
+  EnumDisplayMonitors(nullptr, nullptr, FindMonitorForLogicalPoint,
+                      reinterpret_cast<LPARAM>(&search));
+  if (search.found) {
+    return search.physical;
+  }
+  POINT origin = {0, 0};
+  double scale = GetScaleFactorForMonitor(MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY));
+  if (scale <= 0.0) {
+    scale = 1.0;
+  }
+  return {static_cast<LONG>(std::lround(point.x * scale)),
+          static_cast<LONG>(std::lround(point.y * scale))};
+}
+
+struct HitTestSearch {
+  POINT point;
+  HWND excluded;
+  HWND found;
+};
+
+// EnumWindows visits top-level windows in z-order, topmost first, so the first
+// window that is actually painted at the point is the one the user sees there.
+BOOL CALLBACK HitTestTopLevelWindow(HWND hwnd, LPARAM data) {
+  auto* search = reinterpret_cast<HitTestSearch*>(data);
+  if (hwnd == search->excluded || !IsWindowVisible(hwnd) || IsIconic(hwnd)) {
+    return TRUE;
+  }
+  LONG ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+  if ((ex_style & WS_EX_LAYERED) && (ex_style & WS_EX_TRANSPARENT)) {
+    return TRUE;  // Click-through overlay.
+  }
+  BOOL cloaked = FALSE;
+  if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) &&
+      cloaked) {
+    return TRUE;  // On another virtual desktop, or a suspended UWP frame.
+  }
+  // The extended frame excludes the invisible resize borders that
+  // GetWindowRect() includes on Windows 10 and later.
+  RECT rect;
+  if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(rect)))) {
+    if (!GetWindowRect(hwnd, &rect)) {
+      return TRUE;
+    }
+  }
+  if (!PtInRect(&rect, search->point)) {
+    return TRUE;
+  }
+  search->found = hwnd;
+  return FALSE;
+}
+
+}  // namespace
+
+std::shared_ptr<Window> WindowManager::GetWindowAtPoint(Point point, WindowId excluded_window_id) {
+  HWND excluded = nullptr;
+  if (excluded_window_id != 0) {
+    if (auto window = Get(excluded_window_id)) {
+      excluded = static_cast<HWND>(window->GetNativeObject());
+    }
+  }
+
+  HitTestSearch search = {LogicalToPhysicalScreenPoint(point), excluded, nullptr};
+  EnumWindows(HitTestTopLevelWindow, reinterpret_cast<LPARAM>(&search));
+  if (!search.found || !IsOwnProcessWindow(search.found)) {
+    return nullptr;
+  }
+  WindowId window_id = GetWindowIdFromHwnd(search.found);
+  if (window_id == IdAllocator::kInvalidId) {
+    return nullptr;
+  }
+  return Get(window_id);
 }
 
 void WindowManager::SetWillShowHook(std::optional<WindowWillShowHook> hook) {

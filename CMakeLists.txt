@@ -31,6 +31,7 @@ add_subdirectory(examples/tray_icon_c_example)
 add_subdirectory(examples/url_opener_c_example)
 add_subdirectory(examples/window_c_example)
 add_subdirectory(examples/window_example)
+add_subdirectory(examples/window_drag_session_example)
 add_subdirectory(examples/desktop_features_example)
 
 if(BUILD_TESTING)

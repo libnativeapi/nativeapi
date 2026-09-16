@@ -7,6 +7,7 @@
 #include "../../window.h"
 #include "../../window_manager.h"
 #include "../../window_registry.h"
+#include "coordinate_utils_macos.h"
 
 // Forward declaration for the delegate
 @class NativeAPIWindowManagerDelegate;
@@ -360,6 +361,38 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     // Add to registry (temporary solution)
     WindowRegistry::GetInstance().Add(window_id, window);
     return window;
+  }
+  return nullptr;
+}
+
+std::shared_ptr<Window> WindowManager::GetWindowAtPoint(Point point, WindowId excluded_window_id) {
+  if ([NSScreen screens].count == 0) {
+    return nullptr;
+  }
+  NSPoint location = NSPointExt::bottomLeft(CGPointMake(point.x, point.y));
+  NSApplication* app = [NSApplication sharedApplication];
+
+  // Walk the window server's stack downwards from the top. The walk only
+  // continues past windows of this application that are excluded or
+  // transparent to the query; anything else ends it.
+  NSInteger below = 0;
+  for (NSUInteger guard = 0; guard <= app.windows.count; ++guard) {
+    NSInteger number = [NSWindow windowNumberAtPoint:location belowWindowWithWindowNumber:below];
+    if (number <= 0) {
+      return nullptr;
+    }
+    NSWindow* ns_window = [app windowWithWindowNumber:number];
+    if (ns_window == nil) {
+      // Another application's window is on top here.
+      return nullptr;
+    }
+    WindowId window_id = ResolveWindowId(ns_window);
+    bool skip = window_id == excluded_window_id || !ns_window.isVisible ||
+                ns_window.ignoresMouseEvents || ns_window.alphaValue <= 0.0;
+    if (!skip) {
+      return Get(window_id);
+    }
+    below = number;
   }
   return nullptr;
 }
