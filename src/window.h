@@ -40,6 +40,16 @@ enum class TitleBarStyle {
   /**
    * Hidden title bar with no visible decorations.
    * The window appears without a title bar, useful for custom chrome.
+   *
+   * The content owns the area where the title bar was: dragging there does
+   * not move the window. Move it from custom chrome with
+   * Window::StartDragging() (or a WindowDragSession).
+   * - macOS: the content extends under a transparent title bar; the
+   *   window buttons stay. The system is kept from moving the window, even
+   *   while IsMovable() is true.
+   *
+   * Switching between styles keeps the window's frame (position and outer
+   * size); the content area grows or shrinks by the title bar instead.
    */
   Hidden
 };
@@ -439,6 +449,10 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    *
    * When disabled, the user cannot move the window by dragging its title bar.
    * Programmatic positioning via SetPosition() is still possible.
+   *
+   * With TitleBarStyle::Hidden the system does not move the window on its
+   * own regardless; this setting is kept and applies again once the title
+   * bar is shown.
    */
   void SetMovable(bool is_movable);
 

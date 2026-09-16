@@ -19,6 +19,32 @@ const void* kWindowIdKey = &kWindowIdKey;
 // need to read the focusable flag without access to the Impl.
 static const void* kWindowFocusableKey = &kWindowFocusableKey;
 static const void* kWindowOriginalClassKey = &kWindowOriginalClassKey;
+// Window::SetTitleBarStyle() / SetMovable() state, kept on the NSWindow for the same reason.
+static const void* kWindowTitleBarHiddenKey = &kWindowTitleBarHiddenKey;
+static const void* kWindowMovableKey = &kWindowMovableKey;
+
+static BOOL NativeApiWindowIsTitleBarHidden(NSWindow* window) {
+  return [objc_getAssociatedObject(window, kWindowTitleBarHiddenKey) boolValue];
+}
+
+// Whether the user may move the window, as requested through Window::SetMovable().
+static BOOL NativeApiWindowIsMovable(NSWindow* window) {
+  NSNumber* value = objc_getAssociatedObject(window, kWindowMovableKey);
+  return value ? [value boolValue] : [window isMovable];
+}
+
+// With the title bar hidden, the content extends under the title bar band, but AppKit still
+// moves the window for drags that start in that band, even over opaque content views that handle
+// the mouse themselves (the window server decides from its own drag region, not from
+// -mouseDownCanMoveWindow). The content owns the band then, so the system is kept from moving
+// the window; Window::StartDragging() (-performWindowDragWithEvent:) and SetPosition() still
+// work, and are how apps with a custom title bar move it.
+static void NativeApiUpdateWindowMovable(NSWindow* window) {
+  BOOL requested = NativeApiWindowIsMovable(window);
+  objc_setAssociatedObject(window, kWindowMovableKey, @(requested),
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [window setMovable:requested && !NativeApiWindowIsTitleBarHidden(window)];
+}
 
 static BOOL NativeApiWindowIsFocusable(NSWindow* window) {
   NSNumber* value = objc_getAssociatedObject(window, kWindowFocusableKey);
@@ -108,12 +134,10 @@ class Window::Impl {
   Impl(WindowId id, NSWindow* window)
       : id_(id),
         ns_window_(window),
-        title_bar_style_(TitleBarStyle::Normal),
         visual_effect_(VisualEffect::None),
         visual_effect_view_(nil) {}
   WindowId id_;
   NSWindow* ns_window_;
-  TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
   NSVisualEffectView* visual_effect_view_;
   double aspect_ratio_ = 0.0;
@@ -358,11 +382,18 @@ bool Window::IsResizable() const {
 }
 
 void Window::SetMovable(bool is_movable) {
-  [pimpl_->ns_window_ setMovable:is_movable];
+  NSWindow* window = pimpl_->ns_window_;
+  if (!window) {
+    return;
+  }
+  objc_setAssociatedObject(window, kWindowMovableKey, @(is_movable),
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  NativeApiUpdateWindowMovable(window);
 }
 
 bool Window::IsMovable() const {
-  return [pimpl_->ns_window_ isMovable];
+  NSWindow* window = pimpl_->ns_window_;
+  return window && NativeApiWindowIsMovable(window);
 }
 
 void Window::SetMinimizable(bool is_minimizable) {
@@ -499,7 +530,20 @@ std::string Window::GetTitle() const {
 }
 
 void Window::SetTitleBarStyle(TitleBarStyle style) {
-  pimpl_->title_bar_style_ = style;
+  if (!pimpl_->ns_window_) {
+    return;
+  }
+  // Record the movable preference before the hidden flag starts to affect -isMovable.
+  NativeApiUpdateWindowMovable(pimpl_->ns_window_);
+  objc_setAssociatedObject(pimpl_->ns_window_, kWindowTitleBarHiddenKey,
+                           @(style == TitleBarStyle::Hidden), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  NativeApiUpdateWindowMovable(pimpl_->ns_window_);
+
+  // Changing NSWindowStyleMaskFullSizeContentView keeps the content size and the bottom-left
+  // origin, so the window would grow or shrink by the title bar height and its top edge would
+  // jump. Keep the frame instead, as on Windows: the content takes over, or gives back, the title
+  // bar area.
+  const NSRect frame = pimpl_->ns_window_.frame;
 
   if (style == TitleBarStyle::Hidden) {
     // Hide title bar - make it transparent and full size content view
@@ -511,6 +555,9 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
     pimpl_->ns_window_.titleVisibility = NSWindowTitleVisible;
     pimpl_->ns_window_.titlebarAppearsTransparent = NO;
     pimpl_->ns_window_.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+  }
+  if (!NSEqualRects(pimpl_->ns_window_.frame, frame)) {
+    [pimpl_->ns_window_ setFrame:frame display:YES];
   }
 
   // Ensure window remains opaque and has shadow
@@ -530,7 +577,8 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
 }
 
 TitleBarStyle Window::GetTitleBarStyle() const {
-  return pimpl_->title_bar_style_;
+  return NativeApiWindowIsTitleBarHidden(pimpl_->ns_window_) ? TitleBarStyle::Hidden
+                                                             : TitleBarStyle::Normal;
 }
 
 void Window::SetHasShadow(bool has_shadow) {
