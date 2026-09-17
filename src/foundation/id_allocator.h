@@ -14,8 +14,8 @@ namespace nativeapi {
  * T is a compile error rather than a silent runtime surprise.
  *
  * These values are stable identifiers, not arbitrary numbers. They appear in
- * the high bits of every ID handed out, and the handle-table work described in
- * DESIGN_REVIEW §P0-4 will use them to reject type-confused handles crossing
+ * the high bits of every ID handed out, and the handle table
+ * (foundation/handle_table.h) uses them to reject type-confused handles crossing
  * the C ABI. Therefore:
  *
  *   - NEVER renumber an existing entry.

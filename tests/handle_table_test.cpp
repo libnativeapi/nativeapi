@@ -1,6 +1,6 @@
 // Tests for the generational handle table.
 //
-// Maps to DESIGN_REVIEW.md P0-3 / P0-4 and docs/handle-ownership.md. The
+// The rules are in the workspace repo, specs/handle-ownership.md. The
 // behaviours asserted here are exactly the ones raw-pointer handles could not
 // provide: stale handles failing safely instead of dereferencing freed memory,
 // double-release being a no-op, and handle confusion being rejected rather than

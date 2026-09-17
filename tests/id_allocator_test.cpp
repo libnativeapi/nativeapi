@@ -1,6 +1,6 @@
 // Tests for IdAllocator's ID encoding and type tagging.
 //
-// Maps to DESIGN_REVIEW.md P1-5: type tags used to be handed out by a runtime
+// Regression background: type tags used to be handed out by a runtime
 // counter on a first-call-wins basis, so a given C++ type could receive a
 // different tag depending on call order or from one run to the next. That made
 // the type bits useless for the handle validation they are meant to support.

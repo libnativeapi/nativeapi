@@ -26,14 +26,15 @@ submodule. Read them before adding or reshaping public API:
 | --- | --- |
 | `../specs/architecture.md` | Layering, the six-platform matrix, naming, build |
 | `../specs/object-model.md` | Identity objects vs value objects |
+| `../specs/api-style.md` | Method vocabulary, parameter/return types, failure reporting, doc comments |
 | `../specs/platform-seam.md` | PIMPL, narrow seams, `NativeObjectProvider` |
 | `../specs/event-system.md` | `Event` / `EventEmitter`, threading, lazy listening |
 | `../specs/managers.md` | Singletons, registries, the handle table |
 | `../specs/c-abi.md` | What codegen produces and how types cross the boundary |
 | `../specs/handle-ownership.md` | C ABI handle ownership and invalidation |
 
-`../DESIGN_REVIEW.md` tracks the *unresolved* inconsistencies; the specs describe what is
-already settled.
+Each spec also records the open questions and known legacy gaps of its own area inline;
+there is no separate issue list.
 
 ## Non-negotiables
 
@@ -51,6 +52,37 @@ already settled.
 7. **New handle types need an `IdTypeTag<T>`** entry in
    [src/foundation/id_allocator.h](src/foundation/id_allocator.h) — append only, never
    renumber.
+
+## Public API style
+
+The full rules and the review checklist are in `../specs/api-style.md`. Everything public in
+`src/*.h` is exported verbatim to C, Dart, Rust and C#, so the short version is:
+
+- **Properties** are `SetX(v)` + `GetX() const`, booleans `SetX(bool is_x)` + `IsX() const`,
+  declared as an adjacent pair. Getters are always `const` — codegen only turns `const`
+  no-arg `Get`/`Is`/`Has` methods into binding properties.
+- **Actions** are bare imperative verbs with a fixed opposite (`Show`/`Hide`, `Open`/`Close`,
+  `Maximize`/`Unmaximize`, `Enable`/`Disable`) and an `IsXxx() const` state query.
+- **No new overloads** — they surface as `native_x_verb_with_<params>`. Different meaning,
+  different name (`RemoveItemById`, `RemoveItemAt`).
+- **Types**: strings in as `const std::string&`, out by value; geometry and enums by value;
+  identity objects only as `std::shared_ptr<T>` (`nullptr` = none), never `const T&` / `T*`;
+  `std::optional` wraps strings only; floating point is `double`; IDs use the `XxxId` alias.
+- **Enums**: `enum class`, PascalCase values, no `k` prefix, sequential from 0, first value
+  is the neutral default, append only.
+- **Failure**: never throw across the public API. `void` when it cannot fail, `bool` when a
+  platform may not support it (document what `false` means), `nullptr` for lookups and
+  factories. Do not invent another error channel.
+- **Platform differences live in the doc comment**, not the signature: every API exists on
+  all six platforms, and one that behaves differently carries the six-line
+  `@note Platform availability:` block (✅ / ⚠️ / ❌).
+- **"Intercept before X" is a cancellable event on the object**, not another
+  `SetWillXxxHook`; internal entry points stay out of the `public:` section.
+- After editing a header, run `./codegen` from the workspace root and make sure no
+  `skipped` warning names the new API.
+
+Where existing headers disagree, the spec says which side is the rule — do not copy the
+nearest neighbour.
 
 ## Naming
 

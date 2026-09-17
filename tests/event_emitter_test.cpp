@@ -1,6 +1,6 @@
 // Regression tests for EventEmitter locking and dispatch behaviour.
 //
-// Every case here maps to a defect described in DESIGN_REVIEW.md:
+// Every case here maps to a defect that was found and fixed:
 //   P0-1  EmitAsync self-deadlock (recursive lock on queue_mutex_)
 //   P0-2  Emit invoking listener callbacks while holding listeners_mutex_
 //

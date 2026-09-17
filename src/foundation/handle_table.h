@@ -51,8 +51,8 @@ class HandleTable {
    * @brief Process-wide table.
    *
    * A singleton for now, matching how the C ABI is structured. It is a Meyer's
-   * singleton like the rest of the library; the explicit-lifetime work in
-   * DESIGN_REVIEW §4.2 will fold this into the same Context as the others.
+   * singleton like the rest of the library; if the singletons are ever folded
+   * into an explicit-lifetime Context, this one goes with them.
    */
   static HandleTable& GetInstance();
 
