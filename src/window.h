@@ -26,7 +26,7 @@ typedef IdAllocator::IdType WindowId;
  * title text and window control buttons (minimize, maximize, close).
  *
  * @note Platform behavior may vary:
- * - Windows: Hidden style removes the title bar but may retain window borders
+ * - Windows: Hidden style removes the title bar; the resize border stays on the sides and bottom
  * - macOS: Hidden style creates a borderless window with transparent title bar
  * - Linux: Hidden style removes window decorations entirely
  */
@@ -47,6 +47,11 @@ enum class TitleBarStyle {
    * - macOS: the content extends under a transparent title bar; the
    *   window buttons stay. The system is kept from moving the window, even
    *   while IsMovable() is true.
+   * - Windows: the content reaches the top edge of the window; the resize
+   *   border stays on the other sides. A band as thick as that border along
+   *   the top of the content still resizes the window, also over child
+   *   windows of the same thread (such as a Flutter view), so content there
+   *   does not receive the mouse.
    *
    * Switching between styles keeps the window's frame (position and outer
    * size); the content area grows or shrinks by the title bar instead.

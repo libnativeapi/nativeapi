@@ -6,6 +6,7 @@
 #include <commctrl.h>
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -20,6 +21,94 @@ namespace nativeapi {
 
 // Property name for storing window ID in HWND
 static const wchar_t* kWindowIdProperty = L"NativeAPIWindowId";
+// Set while the title bar is hidden. Kept on the HWND, like the style itself, so every
+// wrapper of the window agrees and the frame handling below outlives any one wrapper.
+static const wchar_t* kTitleBarHiddenProperty = L"NativeAPITitleBarHidden";
+
+#ifndef NATIVEAPI_ENABLE_WINUI3
+// A window with WS_THICKFRAME but no WS_CAPTION keeps its sizing frame on all sides.
+// The left, right and bottom parts are invisible, but the top part is painted as a
+// band above the content. That band is given to the client area (WM_NCCALCSIZE), and
+// the top edge stays resizable through hit testing: the window answers HTTOP there,
+// and child windows covering the content let the hit test through to it.
+
+// The resize hit code for a screen point in the top band of `root`, or 0.
+static LRESULT TopResizeHit(HWND root, LPARAM point) {
+  if (!GetPropW(root, kTitleBarHiddenProperty) || IsZoomed(root) ||
+      !(GetWindowLongPtrW(root, GWL_STYLE) & WS_THICKFRAME))
+    return 0;
+  RECT window;
+  GetWindowRect(root, &window);
+  // The sizing frame is as thick at the top as on the left, where it is still in place.
+  POINT client_origin = {0, 0};
+  ClientToScreen(root, &client_origin);
+  const int frame = client_origin.x - window.left;
+  // GET_X_LPARAM / GET_Y_LPARAM, without <windowsx.h>: its IsMaximized() and
+  // IsMinimized() macros would rename Window's methods of the same name.
+  const int x = static_cast<short>(LOWORD(point));
+  const int y = static_cast<short>(HIWORD(point));
+  if (y < window.top || y >= window.top + frame || x < window.left || x >= window.right)
+    return 0;
+  if (x < window.left + frame) return HTTOPLEFT;
+  if (x >= window.right - frame) return HTTOPRIGHT;
+  return HTTOP;
+}
+
+// Subclass of the child windows of a window with a hidden title bar. A child that
+// covers the content (a Flutter view, for one) is hit-tested before its parent;
+// in the top resize band it steps aside so the parent can answer HTTOP.
+static LRESULT CALLBACK TopEdgeChildProc(HWND child, UINT message, WPARAM wp, LPARAM lp,
+                                         UINT_PTR subclass_id, DWORD_PTR) {
+  if (message == WM_NCHITTEST) {
+    // HTTRANSPARENT passes the hit test on to windows of the same thread only.
+    HWND root = GetAncestor(child, GA_ROOT);
+    if (root && TopResizeHit(root, lp) != 0 &&
+        GetWindowThreadProcessId(root, nullptr) == GetCurrentThreadId())
+      return HTTRANSPARENT;
+  } else if (message == WM_NCDESTROY) {
+    RemoveWindowSubclass(child, TopEdgeChildProc, subclass_id);
+  }
+  return DefSubclassProc(child, message, wp, lp);
+}
+
+static BOOL CALLBACK AttachTopEdgeChild(HWND child, LPARAM) {
+  // Fails for windows of other threads, which cannot be subclassed; that is fine.
+  SetWindowSubclass(child, TopEdgeChildProc, 1, 0);
+  return TRUE;
+}
+
+static std::optional<LRESULT> HandleHiddenTitleBarFrame(HWND hwnd, UINT message, WPARAM wp,
+                                                        LPARAM lp) {
+  if (message == WM_PARENTNOTIFY && LOWORD(wp) == WM_CREATE) {
+    if (GetPropW(hwnd, kTitleBarHiddenProperty)) AttachTopEdgeChild(reinterpret_cast<HWND>(lp), 0);
+    return std::nullopt;
+  }
+  if (!GetPropW(hwnd, kTitleBarHiddenProperty)) return std::nullopt;
+  if (message == WM_NCCALCSIZE && wp) {
+    auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lp);
+    const LONG top = params->rgrc[0].top;
+    const LRESULT result = DefSubclassProc(hwnd, message, wp, lp);
+    if (!IsZoomed(hwnd)) {
+      params->rgrc[0].top = top;
+      return result;
+    }
+    // Without a caption, maximizing sizes the whole window to the monitor, so the
+    // content would run under the taskbar and stop short on the right. Fit it to
+    // the work area instead.
+    MONITORINFO monitor = {sizeof(monitor)};
+    if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitor))
+      params->rgrc[0] = monitor.rcWork;
+    return result;
+  }
+  if (message == WM_NCHITTEST) {
+    const LRESULT hit = DefSubclassProc(hwnd, message, wp, lp);
+    if (hit != HTCLIENT) return hit;
+    const LRESULT top = TopResizeHit(hwnd, lp);
+    return top != 0 ? top : hit;
+  }
+  return std::nullopt;
+}
+#endif
 
 // Registry entries follow the HWND lifetime, not any one C++ wrapper.
 static LRESULT CALLBACK WindowLifetimeProc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp,
@@ -27,10 +116,16 @@ static LRESULT CALLBACK WindowLifetimeProc(HWND hwnd, UINT message, WPARAM wp, L
   if (message == WM_NCDESTROY) {
     RemoveWindowSubclass(hwnd, WindowLifetimeProc, subclass_id);
     RemovePropW(hwnd, kWindowIdProperty);
+    RemovePropW(hwnd, kTitleBarHiddenProperty);
     const auto result = DefSubclassProc(hwnd, message, wp, lp);
     WindowRegistry::GetInstance().Remove(static_cast<WindowId>(reference));
     return result;
   }
+#ifndef NATIVEAPI_ENABLE_WINUI3
+  if (message == WM_NCCALCSIZE || message == WM_NCHITTEST || message == WM_PARENTNOTIFY) {
+    if (auto handled = HandleHiddenTitleBarFrame(hwnd, message, wp, lp)) return *handled;
+  }
+#endif
   return DefSubclassProc(hwnd, message, wp, lp);
 }
 static void TrackWindowLifetime(HWND hwnd, WindowId id) {
@@ -44,13 +139,9 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 class Window::Impl {
  public:
   Impl(HWND hwnd, WindowId id)
-      : hwnd_(hwnd),
-        window_id_(id),
-        title_bar_style_(TitleBarStyle::Normal),
-        visual_effect_(VisualEffect::None) {}
+      : hwnd_(hwnd), window_id_(id), visual_effect_(VisualEffect::None) {}
   HWND hwnd_;
   WindowId window_id_;
-  TitleBarStyle title_bar_style_;
   VisualEffect visual_effect_;
   Size min_size_{0, 0};
   Size max_size_{0, 0};
@@ -963,7 +1054,16 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
   else flags |= WS_CAPTION;
   SetWindowLongPtrW(pimpl_->hwnd_, GWL_STYLE, flags);
 #endif
-  pimpl_->title_bar_style_ = style;
+  // Read by WM_NCCALCSIZE during the frame change below.
+  if (style == TitleBarStyle::Hidden) {
+    SetPropW(pimpl_->hwnd_, kTitleBarHiddenProperty, reinterpret_cast<HANDLE>(1));
+#ifndef NATIVEAPI_ENABLE_WINUI3
+    // Existing children; later ones are attached as they are created (WM_PARENTNOTIFY).
+    EnumChildWindows(pimpl_->hwnd_, AttachTopEdgeChild, 0);
+#endif
+  } else {
+    RemovePropW(pimpl_->hwnd_, kTitleBarHiddenProperty);
+  }
 
   // Get current window rect
   RECT rect;
@@ -980,7 +1080,9 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
 }
 
 TitleBarStyle Window::GetTitleBarStyle() const {
-  return pimpl_->title_bar_style_;
+  if (pimpl_->hwnd_ && GetPropW(pimpl_->hwnd_, kTitleBarHiddenProperty))
+    return TitleBarStyle::Hidden;
+  return TitleBarStyle::Normal;
 }
 
 void Window::SetHasShadow(bool has_shadow) {
