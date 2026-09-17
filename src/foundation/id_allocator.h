@@ -46,6 +46,8 @@ class TrayIcon;
 class Window;
 class FileDialog;
 class WindowDragSession;
+class DropTarget;
+class DragSource;
 
 // ---------------------------------------------------------------------------
 // Type tag registry — append only.
@@ -113,6 +115,14 @@ struct IdTypeTag<FileDialog> {
 template <>
 struct IdTypeTag<WindowDragSession> {
   static constexpr uint32_t value = 15;
+};
+template <>
+struct IdTypeTag<DropTarget> {
+  static constexpr uint32_t value = 16;
+};
+template <>
+struct IdTypeTag<DragSource> {
+  static constexpr uint32_t value = 17;
 };
 
 /**
