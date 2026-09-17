@@ -433,15 +433,39 @@ void MenuItem::SetSubmenu(std::shared_ptr<Menu> submenu) {
     pimpl_->submenu_closed_listener_id_ = 0;
   }
 
+  std::shared_ptr<Menu> old = pimpl_->submenu_;
   pimpl_->submenu_ = submenu;
 
-  // Update platform menu if parent_menu_ is set
-  if (pimpl_->parent_menu_ && submenu) {
-    MENUITEMINFOW mii = {};
-    mii.cbSize = sizeof(MENUITEMINFOW);
-    mii.fMask = MIIM_SUBMENU;
-    mii.hSubMenu = static_cast<HMENU>(submenu->GetNativeObject());
-    SetMenuItemInfoW(pimpl_->parent_menu_, pimpl_->id_, FALSE, &mii);
+  // Update platform menu if parent_menu_ is set; a null submenu detaches the old one.
+  if (pimpl_->parent_menu_) {
+    // An item added with a submenu was appended with MF_POPUP and has no command ID of its
+    // own, so a lookup by ID misses it: find it by position (its ID or its old submenu).
+    HMENU old_submenu = old ? static_cast<HMENU>(old->GetNativeObject()) : nullptr;
+    int count = GetMenuItemCount(pimpl_->parent_menu_);
+    for (int i = 0; i < count; ++i) {
+      MENUITEMINFOW info = {};
+      info.cbSize = sizeof(MENUITEMINFOW);
+      info.fMask = MIIM_ID | MIIM_SUBMENU;
+      if (!GetMenuItemInfoW(pimpl_->parent_menu_, i, TRUE, &info)) continue;
+      if (info.wID != pimpl_->id_ && !(old_submenu && info.hSubMenu == old_submenu)) continue;
+      // Replacing hSubMenu through SetMenuItemInfo destroys the old submenu, which the Menu
+      // object still owns (and may attach again). RemoveMenu keeps it alive: remove the item
+      // and insert it again at the same position.
+      RemoveMenu(pimpl_->parent_menu_, i, MF_BYPOSITION);
+      std::wstring label = StringToWString(pimpl_->label_.value_or(""));
+      MENUITEMINFOW mii = {};
+      mii.cbSize = sizeof(MENUITEMINFOW);
+      mii.fMask = MIIM_ID | MIIM_SUBMENU | MIIM_STRING | MIIM_STATE | MIIM_FTYPE | MIIM_BITMAP;
+      mii.fType = MFT_STRING;
+      mii.fState = (pimpl_->state_ == MenuItemState::Checked ? MFS_CHECKED : MFS_UNCHECKED) |
+                   (pimpl_->enabled_ ? MFS_ENABLED : MFS_GRAYED);
+      mii.wID = static_cast<UINT>(pimpl_->id_);
+      mii.hSubMenu = submenu ? static_cast<HMENU>(submenu->GetNativeObject()) : nullptr;
+      mii.dwTypeData = const_cast<LPWSTR>(label.c_str());
+      mii.hbmpItem = pimpl_->menu_bitmap_;
+      InsertMenuItemW(pimpl_->parent_menu_, i, TRUE, &mii);
+      break;
+    }
   }
 
   // Add event listeners to forward submenu events (independent of parent_menu_)

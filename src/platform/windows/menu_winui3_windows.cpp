@@ -235,8 +235,9 @@ bool WinUI3MenuSession::Open(Menu& menu, HWND owner, POINT anchor, Placement pla
     if (!impl.done) {
       impl.Build(menu, impl.flyout.Items());
       if (!impl.flyout.Items().Size()) winrt::throw_hresult(E_INVALIDARG);
+      // Place against the 1x1 root at the anchor, not a Position point: with a point the
+      // flyout ignores the edge alignment (TopEdgeAlignedRight opened left-aligned).
       P::FlyoutShowOptions options;
-      options.Position(winrt::Windows::Foundation::Point{0, 0});
       options.Placement(ConvertPlacement(placement));
       // ShowAt before the island's first layout can silently fail to present.
       impl.loaded_event = impl.root.Loaded(winrt::auto_revoke, [&impl, options](auto&&, auto&&) {
