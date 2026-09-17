@@ -1,89 +1,68 @@
 # nativeapi
 
-A modern cross-platform C++ library providing seamless, unified access to native system APIs across multiple platforms.
+A cross-platform C++ library providing unified access to native system APIs — windows, tray icons, menus, displays, keyboard, dialogs, storage and more. It also exposes a C ABI that the language bindings are generated from.
 
-🚧 Work in Progress: This package is currently under active development.
+| Linux | macOS | Windows |
+|:-----:|:-----:|:-------:|
+| ✅ | ✅ | ✅ |
 
-## Requirements
+🚧 **Work in Progress**: this library is under active development.
 
-### Build Requirements
+Language bindings: [Flutter](https://github.com/libnativeapi/nativeapi-flutter) · [Rust](https://github.com/libnativeapi/nativeapi-rust) · [C#](https://github.com/libnativeapi/nativeapi-csharp)
 
-- CMake 3.10 or later
-- C++17 compatible compiler:
-  - Windows: Visual Studio 2017 or later / MinGW-w64
-  - macOS: Xcode 9.0 or later (Clang)
-  - Linux: GCC 7.0+ or Clang 5.0+
+## Installation
 
-### Platform-specific Dependencies
+Requires CMake 3.10+ and a C++17 compiler. On Linux, install the GTK 3 headers (`sudo apt install libgtk-3-dev`).
 
-#### Linux
+Add the repository to your project and link the `nativeapi` target:
 
-- GTK 3.0 development headers
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install libgtk-3-dev
-
-# CentOS/RHEL/Fedora
-sudo yum install gtk3-devel
-# or
-sudo dnf install gtk3-devel
+```cmake
+add_subdirectory(nativeapi)
+target_link_libraries(your_app PRIVATE nativeapi)
 ```
 
-#### macOS
+On Windows, configure with `-DNATIVEAPI_ENABLE_WINUI3=ON` to use the WinUI 3 backends for menus, dialogs, title bars and notifications — see [docs/winui3.md](docs/winui3.md).
 
-- Cocoa framework (included with Xcode)
+## Quick Start
 
-#### Windows
+```cpp
+#include <iostream>
+#include "nativeapi.h"
 
-- Windows SDK
+using namespace nativeapi;
 
-## Building from Source
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/libnativeapi/nativeapi.git
-cd nativeapi
+int main() {
+  for (const auto& display : DisplayManager::GetInstance().GetAll()) {
+    auto size = display->GetSize();
+    std::cout << display->GetName() << ": " << size.width << "x" << size.height << "\n";
+  }
+}
 ```
 
-```bash
-# Create build directory
-mkdir build
-cd build
+## Examples
 
-# Configure and build
-cmake ..
-cmake --build . --config Release
-```
-
-## Development
-
-### Code Formatting
-
-Format the codebase using clang-format:
+See [`examples/`](examples). Each directory is a standalone program for one module (C++ and C variants), built together with the library:
 
 ```bash
-clang-format -i **/*.cpp **/*.h **/*.mm
+cmake -S . -B build
+cmake --build build
+./build/examples/display_example/display_example
 ```
 
-## Language Bindings
+## Contributing
 
-Currently available language bindings for nativeapi:
+This repository is developed from the [workspace](https://github.com/libnativeapi/workspace), which checks out the core library, every binding and the code generator together:
 
-- [nativeapi-flutter](https://github.com/libnativeapi/nativeapi-flutter) - Flutter bindings
-- [nativeapi-swift](https://github.com/leanflutter/nativeapi-swift) - Swift bindings
+```bash
+git clone --recursive https://github.com/libnativeapi/workspace.git
+```
 
-These bindings provide native system API access while preserving the library's core functionality.
+Files marked `AUTO-GENERATED. DO NOT EDIT.` are generated from the C++ headers in [nativeapi](https://github.com/libnativeapi/nativeapi). To change the API, send a pull request there; maintainers regenerate the bindings.
+
+- API requests and native behavior bugs → [nativeapi issues](https://github.com/libnativeapi/nativeapi/issues)
+- Bugs specific to one binding → that binding's repository
+- Not sure → [nativeapi issues](https://github.com/libnativeapi/nativeapi/issues)
 
 ## License
 
 [MIT](./LICENSE)
-
-## Optional Windows UI backend
-
-Build with `NATIVEAPI_ENABLE_WINUI3=ON` to use WinUI 3 menus and message dialogs
-automatically, enable AppWindow title-bar customization and system notifications,
-and select the WinRT file/folder picker backend. With the option OFF, Windows uses
-the Win32 menu/dialog and IFileDialog picker backends. See [build and usage instructions](docs/winui3.md).
