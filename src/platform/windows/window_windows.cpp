@@ -1153,10 +1153,27 @@ bool Window::IsFocusable() const {
   return (style & WS_DISABLED) == 0;
 }
 
+// Hands the mouse gesture in progress to the system frame, as if the press had landed on the
+// given non-client area (HTCAPTION moves, HTLEFT... resize).
+static void StartSystemFrameDrag(HWND hwnd, WPARAM hit_test) {
+  // Gesture recognizers can report a drag start after the button is already up (a plain
+  // click); the modal loop entered then would glue the window to the cursor until the next
+  // click.
+  const int primary = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
+  if ((GetAsyncKeyState(primary) & 0x8000) == 0) {
+    return;
+  }
+  // The caller is inside a mouse-down handler, which typically holds capture (Flutter's view
+  // does); release it, or the system frame never gets the drag.
+  ReleaseCapture();
+  POINT cursor;
+  GetCursorPos(&cursor);
+  PostMessage(hwnd, WM_NCLBUTTONDOWN, hit_test, MAKELPARAM(cursor.x, cursor.y));
+}
+
 void Window::StartDragging() {
   if (pimpl_->hwnd_) {
-    // Simulate dragging by sending WM_NCLBUTTONDOWN with HTCAPTION
-    PostMessage(pimpl_->hwnd_, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+    StartSystemFrameDrag(pimpl_->hwnd_, HTCAPTION);
   }
 }
 
@@ -1192,12 +1209,7 @@ void Window::StartResizing(ResizeEdge edge) {
       hit_test = HTBOTTOMRIGHT;
       break;
   }
-  // The caller is inside a mouse-down handler, which typically holds capture;
-  // release it so the system frame can take over the drag.
-  ReleaseCapture();
-  POINT cursor;
-  GetCursorPos(&cursor);
-  PostMessage(pimpl_->hwnd_, WM_NCLBUTTONDOWN, hit_test, MAKELPARAM(cursor.x, cursor.y));
+  StartSystemFrameDrag(pimpl_->hwnd_, hit_test);
 }
 
 WindowId Window::GetId() const {

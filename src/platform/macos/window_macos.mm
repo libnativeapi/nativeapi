@@ -705,10 +705,34 @@ bool Window::IsFocusable() const {
   return [pimpl_->ns_window_ canBecomeKeyWindow];
 }
 
+// Ends the mouse gesture of the view that received the mouse-down. The native drag and resize
+// loops below take the rest of the gesture, including the mouse-up; a view that never sees it
+// keeps its button state down (Flutter then reports the next press as a move, and that whole
+// gesture is lost).
+static void NativeApiSendMouseUp(NSWindow* window, NSEvent* mouse_up) {
+  if (!mouse_up) {
+    mouse_up = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp
+                                  location:[window mouseLocationOutsideOfEventStream]
+                             modifierFlags:0
+                                 timestamp:[NSProcessInfo processInfo].systemUptime
+                              windowNumber:window.windowNumber
+                                   context:nil
+                               eventNumber:0
+                                clickCount:1
+                                  pressure:0];
+  }
+  [window sendEvent:mouse_up];
+}
+
 void Window::StartDragging() {
   NSWindow* window = pimpl_->ns_window_;
-  if (window.currentEvent) {
-    [window performWindowDragWithEvent:window.currentEvent];
+  NSEvent* event = window.currentEvent;
+  if (!event) {
+    return;
+  }
+  [window performWindowDragWithEvent:event];
+  if (event.type == NSEventTypeLeftMouseDown || event.type == NSEventTypeLeftMouseDragged) {
+    NativeApiSendMouseUp(window, nil);
   }
 }
 
@@ -745,6 +769,7 @@ void Window::StartResizing(ResizeEdge edge) {
                                            inMode:NSEventTrackingRunLoopMode
                                           dequeue:YES];
     if (!event || event.type == NSEventTypeLeftMouseUp) {
+      NativeApiSendMouseUp(window, event);
       break;
     }
 
