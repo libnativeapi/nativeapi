@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iostream>
 #include <optional>
+#include <unordered_map>
 #include "../../foundation/id_allocator.h"
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -30,6 +31,24 @@ static const wchar_t* kTitleBarHiddenProperty = L"NativeAPITitleBarHidden";
 // HWND for the same reason.
 static const wchar_t* kNoShadowProperty = L"NativeAPINoShadow";
 static const wchar_t* kHiddenFromTaskbarProperty = L"NativeAPIHiddenFromTaskbar";
+
+// What a window looked like before it was made full screen, so that leaving full screen
+// restores exactly that. Windows has no full-screen window state of its own — a full
+// screen window is an ordinary window without a frame, sized to the monitor — so the
+// library has to remember which of its windows are in that state. Reading it back from
+// the geometry instead would make anything that moves or resizes the window look like
+// leaving full screen, and the frame would then never be restored.
+struct FullScreenState {
+  WINDOWPLACEMENT placement;
+  LONG_PTR style;
+  LONG_PTR ex_style;
+};
+static std::unordered_map<HWND, FullScreenState> g_full_screen_windows;
+
+// The frame bits taken away while a window is full screen, and put back afterwards.
+static constexpr LONG_PTR kFullScreenRemovedStyle = WS_CAPTION | WS_THICKFRAME;
+static constexpr LONG_PTR kFullScreenRemovedExStyle =
+    WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE;
 
 // Adds or removes the window's taskbar button. The shell owns that button, so this is
 // the only way to change it on a window that is already on screen; the window style
@@ -148,6 +167,7 @@ static LRESULT CALLBACK WindowLifetimeProc(HWND hwnd, UINT message, WPARAM wp, L
     RemovePropW(hwnd, kTitleBarHiddenProperty);
     RemovePropW(hwnd, kNoShadowProperty);
     RemovePropW(hwnd, kHiddenFromTaskbarProperty);
+    g_full_screen_windows.erase(hwnd);
     const auto result = DefSubclassProc(hwnd, message, wp, lp);
     WindowRegistry::GetInstance().Remove(static_cast<WindowId>(reference));
     return result;
@@ -456,57 +476,53 @@ void Window::SetFullScreen(bool is_full_screen) {
   if (!pimpl_->hwnd_)
     return;
 
-  static WINDOWPLACEMENT g_wpPrev = {sizeof(g_wpPrev)};
-  static DWORD g_dwStyle = 0;
-  static DWORD g_dwExStyle = 0;
+  HWND hwnd = pimpl_->hwnd_;
+  const auto saved = g_full_screen_windows.find(hwnd);
 
   if (is_full_screen) {
-    if (!IsFullScreen()) {
-      // Save current window placement and style
-      GetWindowPlacement(pimpl_->hwnd_, &g_wpPrev);
-      g_dwStyle = GetWindowLong(pimpl_->hwnd_, GWL_STYLE);
-      g_dwExStyle = GetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE);
+    if (saved != g_full_screen_windows.end())
+      return;
 
-      // Remove window decorations
-      SetWindowLong(pimpl_->hwnd_, GWL_STYLE, g_dwStyle & ~(WS_CAPTION | WS_THICKFRAME));
-      SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE,
-                    g_dwExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE |
-                                    WS_EX_STATICEDGE));
+    MONITORINFO monitor = {sizeof(monitor)};
+    if (!GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitor))
+      return;
 
-      // Get monitor info
-      MONITORINFO mi = {sizeof(mi)};
-      GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
+    FullScreenState state = {};
+    state.placement.length = sizeof(state.placement);
+    GetWindowPlacement(hwnd, &state.placement);
+    state.style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    state.ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    g_full_screen_windows[hwnd] = state;
 
-      // Set window to cover entire monitor
-      SetWindowPos(pimpl_->hwnd_, nullptr, mi.rcMonitor.left, mi.rcMonitor.top,
-                   mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
-                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    }
-  } else {
-    if (IsFullScreen()) {
-      // Restore window style and placement
-      SetWindowLong(pimpl_->hwnd_, GWL_STYLE, g_dwStyle);
-      SetWindowLong(pimpl_->hwnd_, GWL_EXSTYLE, g_dwExStyle);
-      SetWindowPlacement(pimpl_->hwnd_, &g_wpPrev);
-      SetWindowPos(pimpl_->hwnd_, nullptr, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-    }
+    SetWindowLongPtrW(hwnd, GWL_STYLE, state.style & ~kFullScreenRemovedStyle);
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, state.ex_style & ~kFullScreenRemovedExStyle);
+    SetWindowPos(hwnd, nullptr, monitor.rcMonitor.left, monitor.rcMonitor.top,
+                 monitor.rcMonitor.right - monitor.rcMonitor.left,
+                 monitor.rcMonitor.bottom - monitor.rcMonitor.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    return;
   }
+
+  if (saved == g_full_screen_windows.end())
+    return;
+
+  const FullScreenState state = saved->second;
+  g_full_screen_windows.erase(saved);
+  // Put back the bits that were taken away, rather than the whole style word: the
+  // window may have been reshaped while it was full screen (the title bar hidden, say)
+  // and that is not this method's to undo.
+  SetWindowLongPtrW(hwnd, GWL_STYLE,
+                    GetWindowLongPtrW(hwnd, GWL_STYLE) | (state.style & kFullScreenRemovedStyle));
+  SetWindowLongPtrW(
+      hwnd, GWL_EXSTYLE,
+      GetWindowLongPtrW(hwnd, GWL_EXSTYLE) | (state.ex_style & kFullScreenRemovedExStyle));
+  SetWindowPlacement(hwnd, &state.placement);
+  SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 }
 
 bool Window::IsFullScreen() const {
-  if (!pimpl_->hwnd_)
-    return false;
-
-  RECT windowRect, monitorRect;
-  GetWindowRect(pimpl_->hwnd_, &windowRect);
-
-  MONITORINFO mi = {sizeof(mi)};
-  GetMonitorInfo(MonitorFromWindow(pimpl_->hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
-  monitorRect = mi.rcMonitor;
-
-  return (windowRect.left == monitorRect.left && windowRect.top == monitorRect.top &&
-          windowRect.right == monitorRect.right && windowRect.bottom == monitorRect.bottom);
+  return pimpl_->hwnd_ && g_full_screen_windows.count(pimpl_->hwnd_) != 0;
 }
 
 void Window::SetBounds(Rectangle bounds) {
@@ -1038,6 +1054,11 @@ Point Window::GetPosition() const {
 
 void Window::Center() {
   if (!pimpl_->hwnd_)
+    return;
+
+  // A full screen window already fills the monitor. Centering it in the work area
+  // would push it off the screen by half the taskbar's height.
+  if (IsFullScreen())
     return;
 
   // Get the current window size
