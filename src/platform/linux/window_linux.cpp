@@ -723,8 +723,25 @@ bool Window::IsFocusable() const {
 }
 
 void Window::StartDragging() {
-  // Window dragging would typically involve listening to mouse events
-  // Provide stub implementation
+  if (!pimpl_->gdk_window_) {
+    return;
+  }
+
+  GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
+  GdkSeat* seat = display ? gdk_display_get_default_seat(display) : nullptr;
+  GdkDevice* pointer = seat ? gdk_seat_get_pointer(seat) : nullptr;
+  if (!pointer) {
+    return;
+  }
+
+  gint root_x = 0, root_y = 0;
+  gdk_device_get_position(pointer, nullptr, &root_x, &root_y);
+  // The window manager moves the window from here on, so this works on Wayland too,
+  // where the position above is meaningless and ignored — what matters is the
+  // timestamp of the mouse-down we are called from, which is what the compositor
+  // matches against the press it delivered.
+  gdk_window_begin_move_drag_for_device(pimpl_->gdk_window_, pointer, GDK_BUTTON_PRIMARY,
+                                        root_x, root_y, gtk_get_current_event_time());
 }
 
 void Window::StartResizing(ResizeEdge edge) {
