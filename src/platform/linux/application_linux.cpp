@@ -32,8 +32,9 @@ class Application::Impl {
       return false;
     }
 
-    // Set default application name
-    g_object_set(gtk_app_, "application-name", "NativeAPI Application", nullptr);
+    // Set default application name. GtkApplication has no "application-name"
+    // property; the name is a process-wide GLib setting.
+    g_set_application_name("NativeAPI Application");
 
     // Connect to GTK application signals
     g_signal_connect(gtk_app_, "startup", G_CALLBACK(OnStartup), this);
@@ -44,6 +45,13 @@ class Application::Impl {
   }
 
   int Run() {
+    // A GApplication exits its main loop as soon as nothing keeps it alive, and
+    // a windowless application has nothing. Hold it until Quit().
+    if (!Register()) {
+      return -1;
+    }
+    g_application_hold(G_APPLICATION(gtk_app_));
+
     // Run the GTK main loop
     int status = g_application_run(G_APPLICATION(gtk_app_), 0, nullptr);
 
@@ -58,6 +66,20 @@ class Application::Impl {
     // Set the window as primary window
     app_->SetPrimaryWindow(window);
 
+    // Windows are created as plain GtkWindows, so the GApplication does not know
+    // about them and would return from its main loop immediately. Hand it the
+    // window — only possible once the application is registered.
+    if (!Register()) {
+      return -1;
+    }
+    GtkWidget* widget = static_cast<GtkWidget*>(window->GetNativeObject());
+    if (widget && GTK_IS_WINDOW(widget)) {
+      gtk_application_add_window(GTK_APPLICATION(gtk_app_), GTK_WINDOW(widget));
+    } else {
+      // No window to keep it alive: fall back to an explicit hold.
+      g_application_hold(G_APPLICATION(gtk_app_));
+    }
+
     // Show the window
     window->Show();
     window->Focus();
@@ -69,6 +91,19 @@ class Application::Impl {
   }
 
   void Quit(int exit_code) { g_application_quit(G_APPLICATION(gtk_app_)); }
+
+  // gtk_application_add_window() and g_application_hold() only take effect on a
+  // registered application, and g_application_run() registers too late for that.
+  bool Register() {
+    GError* error = nullptr;
+    if (g_application_register(G_APPLICATION(gtk_app_), nullptr, &error)) {
+      return true;
+    }
+    std::cerr << "Failed to register application: " << (error ? error->message : "unknown error")
+              << std::endl;
+    g_clear_error(&error);
+    return false;
+  }
 
   bool SetIcon(const std::string& icon_path) {
     if (icon_path.empty()) {
