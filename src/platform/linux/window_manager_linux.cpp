@@ -1,3 +1,5 @@
+#include <fcntl.h>
+#include <unistd.h>
 #include <cstring>
 #include <iostream>
 #include <mutex>
@@ -342,16 +344,25 @@ WindowManager::WindowManager() : pimpl_(std::make_unique<Impl>(this)) {
   // In headless environments, this may fail, which is acceptable
   if (!gdk_display_get_default()) {
     // Temporarily redirect stderr to suppress GTK warnings in headless
-    // environments
-    FILE* original_stderr = stderr;
-    freopen("/dev/null", "w", stderr);
+    // environments. This swaps the file descriptor rather than reopening the
+    // stderr stream: freopen() would leave the caller without a usable stderr
+    // whenever the process has no controlling terminal to restore from.
+    fflush(stderr);
+    int saved_stderr = dup(STDERR_FILENO);
+    int devnull = open("/dev/null", O_WRONLY | O_CLOEXEC);
+    if (devnull != -1) {
+      dup2(devnull, STDERR_FILENO);
+      close(devnull);
+    }
 
-    gboolean gtk_result = gtk_init_check(nullptr, nullptr);
+    gtk_init_check(nullptr, nullptr);
 
     // Restore stderr
     fflush(stderr);
-    freopen("/dev/tty", "w", stderr);
-    stderr = original_stderr;
+    if (saved_stderr != -1) {
+      dup2(saved_stderr, STDERR_FILENO);
+      close(saved_stderr);
+    }
 
     // gtk_init_check returns FALSE if initialization failed (e.g., no display)
     // This is acceptable for headless environments
@@ -514,33 +525,35 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
     return nullptr;
   }
 
-  // Try to get the focused window
-  GdkSeat* seat = gdk_display_get_default_seat(display);
-  if (seat) {
-    GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
-    if (keyboard) {
-      GdkWindow* focused_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
-      if (focused_window) {
-        WindowId window_id = GetOrCreateWindowId(focused_window);
-        return Get(window_id);
-      }
-    }
-  }
-
-  // Fallback: get the first visible window
+  // The focused window, falling back to the first visible one. Asking the seat's
+  // keyboard for the window at its position is not an option: that call is about
+  // pointer position and GDK rejects keyboard devices outright, so on every
+  // backend it only logs an assertion failure.
+  GdkWindow* first_visible = nullptr;
   GList* toplevels = gtk_window_list_toplevels();
   for (GList* l = toplevels; l != nullptr; l = l->next) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
-    if (gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
-      GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
-      if (gdk_window) {
-        WindowId window_id = GetOrCreateWindowId(gdk_window);
-        g_list_free(toplevels);
-        return Get(window_id);
-      }
+    if (!gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
+      continue;
+    }
+    GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
+    if (!gdk_window) {
+      continue;
+    }
+    if (gtk_window_is_active(gtk_window)) {
+      WindowId window_id = GetOrCreateWindowId(gdk_window);
+      g_list_free(toplevels);
+      return Get(window_id);
+    }
+    if (!first_visible) {
+      first_visible = gdk_window;
     }
   }
   g_list_free(toplevels);
+
+  if (first_visible) {
+    return Get(GetOrCreateWindowId(first_visible));
+  }
 
   return nullptr;
 }
