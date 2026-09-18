@@ -90,7 +90,19 @@ class MenuItem::Impl {
         radio_group_(-1),
         accelerator_("", ModifierKey::None),
         activate_handler_id_(0),
-        toggled_handler_id_(0) {}
+        toggled_handler_id_(0) {
+    // The parent GtkMenu owns the item and may destroy it before this object is
+    // destroyed; let GTK clear the pointer instead of leaving it dangling.
+    if (gtk_menu_item_) {
+      g_object_add_weak_pointer(G_OBJECT(gtk_menu_item_), (gpointer*)&gtk_menu_item_);
+    }
+  }
+
+  ~Impl() {
+    if (gtk_menu_item_) {
+      g_object_remove_weak_pointer(G_OBJECT(gtk_menu_item_), (gpointer*)&gtk_menu_item_);
+    }
+  }
 
   void ApplyRadioGroup() {
     if (!gtk_menu_item_ || type_ != MenuItemType::Radio || radio_group_ < 0) {
@@ -227,7 +239,8 @@ MenuItem::~MenuItem() {
     }
 
     // Note: We don't destroy the gtk_menu_item_ here because it's owned by the parent Menu
-    // and will be destroyed when the Menu container is destroyed
+    // and will be destroyed when the Menu container is destroyed. When that already
+    // happened, the weak pointer left gtk_menu_item_ null and this block is skipped.
   }
 }
 
@@ -464,7 +477,19 @@ void* MenuItem::GetNativeObjectInternal() const {
 class Menu::Impl {
  public:
   Impl(MenuId id, GtkWidget* menu)
-      : id_(id), gtk_menu_(menu), map_handler_id_(0), unmap_handler_id_(0) {}
+      : id_(id), gtk_menu_(menu), map_handler_id_(0), unmap_handler_id_(0) {
+    // A submenu is owned by the item it hangs off, so it too can be destroyed
+    // from underneath this object.
+    if (gtk_menu_) {
+      g_object_add_weak_pointer(G_OBJECT(gtk_menu_), (gpointer*)&gtk_menu_);
+    }
+  }
+
+  ~Impl() {
+    if (gtk_menu_) {
+      g_object_remove_weak_pointer(G_OBJECT(gtk_menu_), (gpointer*)&gtk_menu_);
+    }
+  }
 
   MenuId id_;
   GtkWidget* gtk_menu_;
