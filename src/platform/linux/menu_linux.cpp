@@ -693,11 +693,15 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
 
   // Get GdkWindow from relative window if available, otherwise use root window
   GdkWindow* gdk_window = nullptr;
+  GtkWindow* relative_gtk_window = nullptr;
   const Window* relative_window = strategy.GetRelativeWindow();
   if (relative_window) {
-    void* native_obj = relative_window->GetNativeObject();
-    if (native_obj) {
-      gdk_window = static_cast<GdkWindow*>(native_obj);
+    // Window::GetNativeObject() hands out the toplevel GtkWidget*, not its GdkWindow:
+    // passing it straight to a gdk_window_* call crashes.
+    GtkWidget* widget = static_cast<GtkWidget*>(relative_window->GetNativeObject());
+    if (widget && GTK_IS_WINDOW(widget)) {
+      relative_gtk_window = GTK_WINDOW(widget);
+      gdk_window = gtk_widget_get_window(widget);  // null until the window is realized
     }
   }
   if (!gdk_window) {
@@ -756,22 +760,11 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
       Point position = Point{rect.x + offset.x, rect.y + offset.y};
 
       // If we have a relative window, adjust for frame extents and title bar
-      if (relative_window && relative_window->GetNativeObject()) {
+      if (relative_gtk_window && gdk_window) {
         GdkRectangle frame_rectangle;
         gdk_window_get_frame_extents(gdk_window, &frame_rectangle);
 
-        // Get GtkWindow for window position and title bar
-        GtkWindow* gtk_window = nullptr;
-        GList* toplevels = gtk_window_list_toplevels();
-        for (GList* l = toplevels; l != nullptr; l = l->next) {
-          GtkWindow* candidate = GTK_WINDOW(l->data);
-          GdkWindow* candidate_gdk = gtk_widget_get_window(GTK_WIDGET(candidate));
-          if (candidate_gdk == gdk_window) {
-            gtk_window = candidate;
-            break;
-          }
-        }
-        g_list_free(toplevels);
+        GtkWindow* gtk_window = relative_gtk_window;
 
         // Get window position using gtk_window_get_position (works better on Wayland)
         gint window_x = 0, window_y = 0;
