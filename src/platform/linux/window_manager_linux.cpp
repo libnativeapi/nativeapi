@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <mutex>
 #include <set>
 #include <string>
@@ -281,6 +282,140 @@ static void InstallGlobalSwizzling() {
   g_swizzle_installed = true;
 }
 
+// Show-state and geometry tracking for WindowMinimizedEvent, WindowMaximizedEvent,
+// WindowRestoredEvent, WindowMovedEvent and WindowResizedEvent. The windows are
+// usually created by someone else (Flutter's runner, the host application), so
+// the two toplevel signals are watched with emission hooks, like the focus pair.
+static gulong g_window_state_hook_id = 0;
+static gulong g_configure_hook_id = 0;
+
+using WindowSignalFn = void (*)(void* impl, WindowId id, const char* event_type);
+static WindowSignalFn g_window_signal_fn = nullptr;
+static void* g_window_signal_context = nullptr;
+
+// Last content rectangle seen per toplevel. configure-event reports moves and
+// resizes alike (and repeats itself), so this tells the two apart.
+static std::map<GtkWidget*, GdkRectangle> g_window_geometry;
+
+static void OnTrackedWidgetDestroyed(gpointer data, GObject* where_the_object_was) {
+  (void)data;
+  g_window_geometry.erase(reinterpret_cast<GtkWidget*>(where_the_object_was));
+}
+
+// Returns the id of the toplevel a window signal was emitted for, or kInvalidId
+// for anything that is not a realized toplevel GtkWindow.
+static WindowId ToplevelIdFromEmission(const GValue* param_values, GtkWidget** widget_out) {
+  GtkWidget* widget = GTK_WIDGET(g_value_get_object(&param_values[0]));
+  if (!widget || !GTK_IS_WINDOW(widget) || !gtk_widget_is_toplevel(widget) ||
+      gtk_window_get_window_type(GTK_WINDOW(widget)) != GTK_WINDOW_TOPLEVEL) {
+    return IdAllocator::kInvalidId;  // menus and tooltips are GTK_WINDOW_POPUP
+  }
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (!gdk_window || !g_window_signal_fn || !g_window_signal_context) {
+    return IdAllocator::kInvalidId;
+  }
+  *widget_out = widget;
+  return GetOrCreateWindowId(gdk_window);
+}
+
+static gboolean on_window_state_emission_hook(GSignalInvocationHint* ihint,
+                                              guint n_param_values,
+                                              const GValue* param_values,
+                                              gpointer data) {
+  (void)ihint;
+  (void)data;
+  if (n_param_values < 2) {
+    return TRUE;
+  }
+  GtkWidget* widget = nullptr;
+  WindowId id = ToplevelIdFromEmission(param_values, &widget);
+  GdkEvent* event = static_cast<GdkEvent*>(g_value_get_boxed(&param_values[1]));
+  if (id == IdAllocator::kInvalidId || !event || event->type != GDK_WINDOW_STATE) {
+    return TRUE;
+  }
+
+  const GdkWindowState changed = event->window_state.changed_mask;
+  const GdkWindowState state = event->window_state.new_window_state;
+  if (changed & GDK_WINDOW_STATE_ICONIFIED) {
+    g_window_signal_fn(g_window_signal_context, id,
+                       (state & GDK_WINDOW_STATE_ICONIFIED) ? "minimized" : "restored");
+  }
+  // Minimizing a maximized window keeps the maximized bit, so it only changes
+  // when the user really maximizes or unmaximizes.
+  if (changed & GDK_WINDOW_STATE_MAXIMIZED) {
+    g_window_signal_fn(g_window_signal_context, id,
+                       (state & GDK_WINDOW_STATE_MAXIMIZED) ? "maximized" : "restored");
+  }
+  return TRUE;  // Continue emission
+}
+
+static gboolean on_configure_emission_hook(GSignalInvocationHint* ihint,
+                                           guint n_param_values,
+                                           const GValue* param_values,
+                                           gpointer data) {
+  (void)ihint;
+  (void)data;
+  if (n_param_values < 2) {
+    return TRUE;
+  }
+  GtkWidget* widget = nullptr;
+  WindowId id = ToplevelIdFromEmission(param_values, &widget);
+  GdkEvent* event = static_cast<GdkEvent*>(g_value_get_boxed(&param_values[1]));
+  if (id == IdAllocator::kInvalidId || !event || event->type != GDK_CONFIGURE) {
+    return TRUE;
+  }
+
+  const GdkRectangle current = {event->configure.x, event->configure.y, event->configure.width,
+                                event->configure.height};
+  auto it = g_window_geometry.find(widget);
+  if (it == g_window_geometry.end()) {
+    // First sight: nothing to compare with yet
+    g_window_geometry[widget] = current;
+    g_object_weak_ref(G_OBJECT(widget), OnTrackedWidgetDestroyed, nullptr);
+    return TRUE;
+  }
+
+  const GdkRectangle previous = it->second;
+  it->second = current;
+  // Wayland never tells a client where its window is: x and y stay 0 there and
+  // no WindowMovedEvent is ever emitted.
+  if (current.x != previous.x || current.y != previous.y) {
+    g_window_signal_fn(g_window_signal_context, id, "moved");
+  }
+  if (current.width != previous.width || current.height != previous.height) {
+    g_window_signal_fn(g_window_signal_context, id, "resized");
+  }
+  return TRUE;  // Continue emission
+}
+
+static void InstallWindowSignalHooks() {
+  guint window_state_signal_id = g_signal_lookup("window-state-event", GTK_TYPE_WIDGET);
+  guint configure_signal_id = g_signal_lookup("configure-event", GTK_TYPE_WIDGET);
+
+  if (window_state_signal_id != 0 && g_window_state_hook_id == 0) {
+    g_window_state_hook_id = g_signal_add_emission_hook(
+        window_state_signal_id, 0, on_window_state_emission_hook, nullptr, nullptr);
+  }
+  if (configure_signal_id != 0 && g_configure_hook_id == 0) {
+    g_configure_hook_id = g_signal_add_emission_hook(configure_signal_id, 0,
+                                                     on_configure_emission_hook, nullptr, nullptr);
+  }
+}
+
+static void RemoveWindowSignalHooks() {
+  guint window_state_signal_id = g_signal_lookup("window-state-event", GTK_TYPE_WIDGET);
+  guint configure_signal_id = g_signal_lookup("configure-event", GTK_TYPE_WIDGET);
+
+  if (g_window_state_hook_id != 0 && window_state_signal_id != 0) {
+    g_signal_remove_emission_hook(window_state_signal_id, g_window_state_hook_id);
+  }
+  if (g_configure_hook_id != 0 && configure_signal_id != 0) {
+    g_signal_remove_emission_hook(configure_signal_id, g_configure_hook_id);
+  }
+  g_window_state_hook_id = 0;
+  g_configure_hook_id = 0;
+}
+
 // Private implementation for Linux
 class WindowManager::Impl {
  public:
@@ -298,6 +433,13 @@ class WindowManager::Impl {
     };
     InstallFocusHooks();
 
+    // ... and the state/geometry hooks behind the other five window events
+    g_window_signal_context = this;
+    g_window_signal_fn = [](void* impl, WindowId id, const char* event_type) {
+      static_cast<Impl*>(impl)->OnWindowSignal(id, event_type);
+    };
+    InstallWindowSignalHooks();
+
     // Monitor all existing windows
     GdkDisplay* display = gdk_display_get_default();
     if (display) {
@@ -305,6 +447,7 @@ class WindowManager::Impl {
       for (GList* l = toplevels; l != nullptr; l = l->next) {
         GtkWindow* gtk_window = GTK_WINDOW(l->data);
         InstallShowHideHooks(GTK_WIDGET(gtk_window));
+        SeedWindowGeometry(GTK_WIDGET(gtk_window));
       }
       g_list_free(toplevels);
     }
@@ -315,9 +458,60 @@ class WindowManager::Impl {
     g_focus_changed_fn = nullptr;
     g_focus_changed_context = nullptr;
 
+    RemoveWindowSignalHooks();
+    g_window_signal_fn = nullptr;
+    g_window_signal_context = nullptr;
+    for (const auto& entry : g_window_geometry) {
+      g_object_weak_unref(G_OBJECT(entry.first), OnTrackedWidgetDestroyed, nullptr);
+    }
+    g_window_geometry.clear();
+
     // Clear hooked widgets set
     std::lock_guard<std::mutex> lock(g_hook_mutex);
     g_hooked_widgets.clear();
+  }
+
+  // Windows that exist already have a geometry to compare the first
+  // configure-event with; in the units that event uses.
+  static void SeedWindowGeometry(GtkWidget* widget) {
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (!gdk_window || gtk_window_get_window_type(GTK_WINDOW(widget)) != GTK_WINDOW_TOPLEVEL ||
+        g_window_geometry.count(widget)) {
+      return;
+    }
+    GdkRectangle geometry = {0, 0, 0, 0};
+    gdk_window_get_position(gdk_window, &geometry.x, &geometry.y);
+    geometry.width = gdk_window_get_width(gdk_window);
+    geometry.height = gdk_window_get_height(gdk_window);
+    g_window_geometry[widget] = geometry;
+    g_object_weak_ref(G_OBJECT(widget), OnTrackedWidgetDestroyed, nullptr);
+  }
+
+  void OnWindowSignal(WindowId window_id, const std::string& event_type) {
+    if (event_type == "minimized") {
+      WindowMinimizedEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "maximized") {
+      WindowMaximizedEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "restored") {
+      WindowRestoredEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "moved" || event_type == "resized") {
+      // Report what the getters return (the frame, decorations included), not
+      // the content rectangle configure-event talks about.
+      auto window = manager_->Get(window_id);
+      if (!window) {
+        return;
+      }
+      if (event_type == "moved") {
+        WindowMovedEvent event(window_id, window->GetPosition());
+        manager_->DispatchWindowEvent(event);
+      } else {
+        WindowResizedEvent event(window_id, window->GetSize());
+        manager_->DispatchWindowEvent(event);
+      }
+    }
   }
 
   void OnWindowFocusChanged(WindowId window_id, bool focused) {
@@ -529,15 +723,25 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   // keyboard for the window at its position is not an option: that call is about
   // pointer position and GDK rejects keyboard devices outright, so on every
   // backend it only logs an assertion failure.
+  //
+  // A window that is realized but not shown yet still counts, after the visible
+  // ones: a Flutter runner shows its window on the first frame, which is after the
+  // Dart code that asks for the current window in order to set it up has run.
   GdkWindow* first_visible = nullptr;
+  GdkWindow* first_hidden = nullptr;
   GList* toplevels = gtk_window_list_toplevels();
   for (GList* l = toplevels; l != nullptr; l = l->next) {
     GtkWindow* gtk_window = GTK_WINDOW(l->data);
-    if (!gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
-      continue;
-    }
     GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(gtk_window));
     if (!gdk_window) {
+      continue;
+    }
+    if (!gtk_widget_get_visible(GTK_WIDGET(gtk_window))) {
+      // Popups (menus, tooltips) are toplevels to GTK too, and are hidden most of
+      // the time.
+      if (!first_hidden && gtk_window_get_window_type(gtk_window) == GTK_WINDOW_TOPLEVEL) {
+        first_hidden = gdk_window;
+      }
       continue;
     }
     if (gtk_window_is_active(gtk_window)) {
@@ -551,8 +755,9 @@ std::shared_ptr<Window> WindowManager::GetCurrent() {
   }
   g_list_free(toplevels);
 
-  if (first_visible) {
-    return Get(GetOrCreateWindowId(first_visible));
+  GdkWindow* fallback = first_visible ? first_visible : first_hidden;
+  if (fallback) {
+    return Get(GetOrCreateWindowId(fallback));
   }
 
   return nullptr;

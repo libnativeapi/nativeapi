@@ -466,10 +466,9 @@ void Window::Restore() {
 bool Window::IsMinimized() const {
   if (!pimpl_->hwnd_)
     return false;
-  WINDOWPLACEMENT wp = {};
-  wp.length = sizeof(WINDOWPLACEMENT);
-  GetWindowPlacement(pimpl_->hwnd_, &wp);
-  return wp.showCmd == SW_MINIMIZE;
+  // GetWindowPlacement() reports a minimized window as SW_SHOWMINIMIZED, never
+  // as SW_MINIMIZE, so ask the window itself.
+  return IsIconic(pimpl_->hwnd_) != FALSE;
 }
 
 void Window::SetFullScreen(bool is_full_screen) {

@@ -967,6 +967,10 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
  *
  * This class provides common functionality for window events,
  * including access to the window ID that triggered the event.
+ *
+ * WindowManager emits them for every window of the process — also for windows
+ * the library did not create, such as the ones of the embedding framework — and
+ * no matter what caused the change: the user, the system or a call to Window.
  */
 class WindowEvent : public Event {
  public:
@@ -1039,6 +1043,14 @@ class WindowBlurredEvent : public WindowEvent {
  * Event class for window minimized
  *
  * This event is emitted when a window is minimized to the taskbar or dock.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ⚠️ X11 only - A Wayland compositor does not tell a client that it was minimized.
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
  */
 class WindowMinimizedEvent : public WindowEvent {
  public:
@@ -1058,6 +1070,16 @@ class WindowMinimizedEvent : public WindowEvent {
  * Event class for window maximized
  *
  * This event is emitted when a window is maximized to fill the entire screen.
+ * Entering full screen is not maximizing and does not emit it.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported - A zoom counts as maximizing; emitted while the zoom animation
+ *   is still settling.
+ * - Windows: ✅ Fully supported
+ * - Linux: ✅ Fully supported
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
  */
 class WindowMaximizedEvent : public WindowEvent {
  public:
@@ -1076,8 +1098,16 @@ class WindowMaximizedEvent : public WindowEvent {
 /**
  * Event class for window restored
  *
- * This event is emitted when a window is restored from minimized or maximized state
- * to its normal windowed state.
+ * This event is emitted when a window leaves the minimized or the maximized state. A
+ * maximized window that was minimized and comes back is restored (to maximized) once.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ⚠️ Leaving the maximized state everywhere; leaving the minimized state on X11 only.
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
  */
 class WindowRestoredEvent : public WindowEvent {
  public:
@@ -1096,7 +1126,17 @@ class WindowRestoredEvent : public WindowEvent {
 /**
  * Event class for window moved
  *
- * This event is emitted when a window is moved to a new position on the screen.
+ * This event is emitted when a window is moved to a new position on the screen,
+ * repeatedly while the user drags it. A resize from the top or left edge moves the
+ * window as well and emits both events.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ⚠️ X11 only - A Wayland client never learns where its window is.
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
  */
 class WindowMovedEvent : public WindowEvent {
  public:
@@ -1105,7 +1145,7 @@ class WindowMovedEvent : public WindowEvent {
 
   /**
    * Get the new position of the window
-   * @return The new position as a Point
+   * @return The position Window::GetPosition() reported when the event was emitted
    */
   Point GetNewPosition() const { return new_position_; }
 
@@ -1125,7 +1165,17 @@ class WindowMovedEvent : public WindowEvent {
 /**
  * Event class for window resized
  *
- * This event is emitted when a window is resized to a new size.
+ * This event is emitted when a window is resized to a new size, repeatedly while the
+ * user drags an edge and for every step of an animated resize. Maximizing and
+ * restoring resize the window too.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ✅ Fully supported
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
  */
 class WindowResizedEvent : public WindowEvent {
  public:
@@ -1134,7 +1184,7 @@ class WindowResizedEvent : public WindowEvent {
 
   /**
    * Get the new size of the window
-   * @return The new size as a Size object
+   * @return The size Window::GetSize() reported when the event was emitted
    */
   Size GetNewSize() const { return new_size_; }
 

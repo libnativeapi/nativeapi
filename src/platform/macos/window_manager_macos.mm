@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -29,6 +30,11 @@ class WindowManager::Impl {
  private:
   WindowManager* manager_;
   NativeAPIWindowManagerDelegate* delegate_;
+
+  // Last zoom state reported per window, to turn resizes into maximized/restored
+  std::unordered_map<WindowId, bool> maximized_;
+  // Last top-left corner seen per window, to notice moves that come as resizes
+  std::unordered_map<WindowId, Point> positions_;
 
   // Optional pre-show/hide hooks
   std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
@@ -146,37 +152,37 @@ static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "minimized");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "minimized");
   }
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "restored");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "restored");
   }
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "resized");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "resized");
   }
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "moved");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "moved");
   }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
-  // NSWindow* window = [notification object];
-  if (_impl) {
-    //    static_cast<nativeapi::WindowManager::Impl*>(_impl)->OnWindowEvent(window, "closing");
+  NSWindow* window = [notification object];
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "closing");
   }
 }
 
@@ -263,9 +269,33 @@ void WindowManager::Impl::StopEventListening() {
 }
 
 void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
+  if (event_type == "closing") {
+    // No event is emitted for it, and a closing window must not be wrapped and
+    // registered just to be told apart: only drop the state kept for it.
+    NSNumber* existing_id = objc_getAssociatedObject(window, kWindowIdKey);
+    if (existing_id) {
+      maximized_.erase([existing_id unsignedLongLongValue]);
+      positions_.erase([existing_id unsignedLongLongValue]);
+    }
+    return;
+  }
+
+  // The notifications are observed process-wide and AppKit posts them for its
+  // own helper windows too (NSMenuBarReplicantWindow resizes on every launch).
+  // Report only what WindowManager::GetAll() would return.
+  if (![[[NSApplication sharedApplication] windows] containsObject:window]) {
+    return;
+  }
+
   WindowId window_id = ResolveWindowId(window);
   if (window_id == IdAllocator::kInvalidId) {
     return;
+  }
+
+  if (event_type != "resized" && event_type != "moved") {
+    // Seed the corner while the frame is still the old one; see "resized".
+    CGPoint top_left = NSRectExt::topLeft([window frame]);
+    positions_.try_emplace(window_id, Point{top_left.x, top_left.y});
   }
 
   if (event_type == "focused") {
@@ -281,17 +311,47 @@ void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& eve
     WindowRestoredEvent event(window_id);
     manager_->DispatchWindowEvent(event);
   } else if (event_type == "resized") {
+    // The frame size, which is what Window::GetSize() returns
     NSRect frame = [window frame];
     Size new_size = {frame.size.width, frame.size.height};
     WindowResizedEvent event(window_id, new_size);
     manager_->DispatchWindowEvent(event);
+
+    // NSWindowDidMoveNotification is not posted when a frame change that
+    // resizes also moves the top-left corner (zooming, resizing from the top or
+    // left edge), so the move is derived here.
+    CGPoint top_left = NSRectExt::topLeft(frame);
+    auto position = positions_.find(window_id);
+    if (position != positions_.end() &&
+        (position->second.x != top_left.x || position->second.y != top_left.y)) {
+      WindowMovedEvent moved_event(window_id, {top_left.x, top_left.y});
+      manager_->DispatchWindowEvent(moved_event);
+    }
+    positions_[window_id] = {top_left.x, top_left.y};
+
+    // AppKit has no zoom notification: a zoom is a resize that ends zoomed.
+    // Windows being miniaturized or in full screen are not "maximized".
+    bool maximized = [window isZoomed] && ![window isMiniaturized] &&
+                     !([window styleMask] & NSWindowStyleMaskFullScreen);
+    auto it = maximized_.find(window_id);
+    bool was_maximized = it != maximized_.end() && it->second;
+    if (maximized != was_maximized) {
+      maximized_[window_id] = maximized;
+      if (maximized) {
+        WindowMaximizedEvent maximized_event(window_id);
+        manager_->DispatchWindowEvent(maximized_event);
+      } else {
+        WindowRestoredEvent restored_event(window_id);
+        manager_->DispatchWindowEvent(restored_event);
+      }
+    }
   } else if (event_type == "moved") {
-    NSRect frame = [window frame];
-    Point new_position = {frame.origin.x, frame.origin.y};
+    // Same top-left origin as Window::GetPosition()
+    CGPoint top_left = NSRectExt::topLeft([window frame]);
+    Point new_position = {top_left.x, top_left.y};
+    positions_[window_id] = new_position;
     WindowMovedEvent event(window_id, new_position);
     manager_->DispatchWindowEvent(event);
-  } else if (event_type == "closing") {
-    // Window closing event - no longer emitted
   }
 }
 

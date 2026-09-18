@@ -326,6 +326,28 @@ int main() {
   window_manager.AddListener<WindowBlurredEvent>([](const WindowBlurredEvent& event) {
     std::cout << "Window blurred: " << event.GetWindowId() << std::endl;
   });
+  window_manager.AddListener<nativeapi::WindowMinimizedEvent>(
+      [](const nativeapi::WindowMinimizedEvent& event) {
+        std::cout << "Window minimized: " << event.GetWindowId() << std::endl;
+      });
+  window_manager.AddListener<nativeapi::WindowMaximizedEvent>(
+      [](const nativeapi::WindowMaximizedEvent& event) {
+        std::cout << "Window maximized: " << event.GetWindowId() << std::endl;
+      });
+  window_manager.AddListener<nativeapi::WindowRestoredEvent>(
+      [](const nativeapi::WindowRestoredEvent& event) {
+        std::cout << "Window restored: " << event.GetWindowId() << std::endl;
+      });
+  window_manager.AddListener<nativeapi::WindowMovedEvent>(
+      [](const nativeapi::WindowMovedEvent& event) {
+        std::cout << "Window moved: " << event.GetWindowId() << " -> "
+                  << event.GetNewPosition().x << "," << event.GetNewPosition().y << std::endl;
+      });
+  window_manager.AddListener<nativeapi::WindowResizedEvent>(
+      [](const nativeapi::WindowResizedEvent& event) {
+        std::cout << "Window resized: " << event.GetWindowId() << " -> "
+                  << event.GetNewSize().width << "x" << event.GetNewSize().height << std::endl;
+      });
 
   display_manager.AddListener<nativeapi::DisplayAddedEvent>(
       [](const nativeapi::DisplayAddedEvent& event) {

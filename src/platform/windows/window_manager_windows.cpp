@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 #include <dwmapi.h>
 #include <psapi.h>
@@ -97,6 +98,66 @@ static void CALLBACK ForegroundEventProc(HWINEVENTHOOK hook,
   }
   if (g_foreground_changed_fn && g_foreground_changed_context) {
     g_foreground_changed_fn(g_foreground_changed_context, hwnd);
+  }
+}
+
+// Geometry and show-state tracking for WindowMinimizedEvent, WindowMaximizedEvent,
+// WindowRestoredEvent, WindowMovedEvent and WindowResizedEvent. The windows are
+// usually owned by someone else (Flutter's runner, the host application), so
+// there is no window procedure to read WM_SIZE / WM_MOVE from. A WinEvent hook
+// scoped to this process reports every change of a window's rectangle instead,
+// minimizing and maximizing included, and the snapshot kept per window tells
+// which of the five events a change amounts to.
+struct WindowSnapshot {
+  bool minimized;
+  bool maximized;
+  RECT rect;
+};
+static HWINEVENTHOOK g_location_hook = nullptr;
+static HWINEVENTHOOK g_lifetime_hook = nullptr;
+static std::unordered_map<HWND, WindowSnapshot> g_window_snapshots;
+
+using WindowChangedFn = void (*)(void* impl, DWORD event, HWND hwnd);
+static WindowChangedFn g_window_changed_fn = nullptr;
+static void* g_window_changed_context = nullptr;
+
+// Top-level windows that a listener can make sense of: anything already known
+// to the library, otherwise what the user sees as a window. Tooltips, menus and
+// other helper windows move and resize as well and must not get an id for it.
+static bool IsReportableWindow(HWND hwnd) {
+  if (!IsWindow(hwnd) || GetAncestor(hwnd, GA_ROOT) != hwnd) {
+    return false;
+  }
+  if (GetWindowLongPtr(hwnd, GWL_STYLE) & WS_CHILD) {
+    return false;
+  }
+  if (GetPropW(hwnd, kWindowIdProperty)) {
+    return true;
+  }
+  if (!IsWindowVisible(hwnd)) {
+    return false;
+  }
+  return !(GetWindowLongPtr(hwnd, GWL_EXSTYLE) & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE));
+}
+
+static void CALLBACK WindowChangedEventProc(HWINEVENTHOOK hook,
+                                            DWORD event,
+                                            HWND hwnd,
+                                            LONG id_object,
+                                            LONG id_child,
+                                            DWORD event_thread,
+                                            DWORD event_time) {
+  (void)hook;
+  (void)event_thread;
+  (void)event_time;
+
+  // OBJID_WINDOW leaves out the caret and the cursor, which report location
+  // changes through the same event.
+  if (id_object != OBJID_WINDOW || id_child != CHILDID_SELF || !hwnd) {
+    return;
+  }
+  if (g_window_changed_fn && g_window_changed_context) {
+    g_window_changed_fn(g_window_changed_context, event, hwnd);
   }
 }
 
@@ -379,6 +440,36 @@ class WindowManager::Impl {
     // Seed the tracked window so the first blur names the right window.
     HWND foreground = GetForegroundWindow();
     g_focused_hwnd = IsOwnProcessWindow(foreground) ? foreground : nullptr;
+
+    g_window_changed_context = this;
+    g_window_changed_fn = [](void* impl, DWORD event, HWND hwnd) {
+      static_cast<Impl*>(impl)->OnWindowChanged(event, hwnd);
+    };
+
+    // Unlike the foreground hook these only concern our own windows, so they
+    // are scoped to this process and cost nothing while other applications work.
+    const DWORD process_id = GetCurrentProcessId();
+    if (!g_location_hook) {
+      g_location_hook =
+          SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE, nullptr,
+                          WindowChangedEventProc, process_id, 0, WINEVENT_OUTOFCONTEXT);
+    }
+    if (!g_lifetime_hook) {
+      // EVENT_OBJECT_DESTROY and EVENT_OBJECT_SHOW are adjacent
+      g_lifetime_hook = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_SHOW, nullptr,
+                                        WindowChangedEventProc, process_id, 0,
+                                        WINEVENT_OUTOFCONTEXT);
+    }
+
+    // Windows that exist already have a state to compare the first change with
+    EnumWindows(
+        [](HWND hwnd, LPARAM) -> BOOL {
+          if (IsOwnProcessWindow(hwnd) && IsReportableWindow(hwnd)) {
+            g_window_snapshots[hwnd] = TakeSnapshot(hwnd);
+          }
+          return TRUE;
+        },
+        0);
   }
 
   void StopEventListening() {
@@ -386,9 +477,77 @@ class WindowManager::Impl {
       UnhookWinEvent(g_foreground_hook);
       g_foreground_hook = nullptr;
     }
+    if (g_location_hook) {
+      UnhookWinEvent(g_location_hook);
+      g_location_hook = nullptr;
+    }
+    if (g_lifetime_hook) {
+      UnhookWinEvent(g_lifetime_hook);
+      g_lifetime_hook = nullptr;
+    }
     g_focused_hwnd = nullptr;
     g_foreground_changed_fn = nullptr;
     g_foreground_changed_context = nullptr;
+    g_window_changed_fn = nullptr;
+    g_window_changed_context = nullptr;
+    g_window_snapshots.clear();
+  }
+
+  static WindowSnapshot TakeSnapshot(HWND hwnd) {
+    WindowSnapshot snapshot = {};
+    snapshot.minimized = IsIconic(hwnd) != FALSE;
+    snapshot.maximized = IsZoomed(hwnd) != FALSE;
+    GetWindowRect(hwnd, &snapshot.rect);
+    return snapshot;
+  }
+
+  // Compare a window with its last snapshot and emit what changed.
+  void OnWindowChanged(DWORD event, HWND hwnd) {
+    if (event == EVENT_OBJECT_DESTROY) {
+      g_window_snapshots.erase(hwnd);
+      return;
+    }
+    if (!IsReportableWindow(hwnd)) {
+      return;
+    }
+
+    const WindowSnapshot current = TakeSnapshot(hwnd);
+    auto it = g_window_snapshots.find(hwnd);
+    if (it == g_window_snapshots.end()) {
+      // First sight (a window being shown): nothing to compare with yet
+      g_window_snapshots[hwnd] = current;
+      return;
+    }
+    if (event != EVENT_OBJECT_LOCATIONCHANGE) {
+      return;
+    }
+
+    const WindowSnapshot previous = it->second;
+    if (current.minimized) {
+      // A minimized window is parked off screen (-32000) and no longer reports
+      // as maximized. Keep the rest of the snapshot, so that restoring it to
+      // where it was is neither a move, a resize nor a second "maximized".
+      it->second.minimized = true;
+      if (!previous.minimized) {
+        OnWindowEvent(hwnd, "minimized");
+      }
+      return;
+    }
+    it->second = current;
+
+    if (previous.minimized) {
+      OnWindowEvent(hwnd, "restored");
+    }
+    if (current.maximized != previous.maximized) {
+      OnWindowEvent(hwnd, current.maximized ? "maximized" : "restored");
+    }
+    if (current.rect.left != previous.rect.left || current.rect.top != previous.rect.top) {
+      OnWindowEvent(hwnd, "moved");
+    }
+    if (current.rect.right - current.rect.left != previous.rect.right - previous.rect.left ||
+        current.rect.bottom - current.rect.top != previous.rect.bottom - previous.rect.top) {
+      OnWindowEvent(hwnd, "resized");
+    }
   }
 
   // Translate a foreground change into blurred/focused events. Only windows of
@@ -429,19 +588,22 @@ class WindowManager::Impl {
     } else if (event_type == "restored") {
       WindowRestoredEvent event(window_id);
       manager_->DispatchWindowEvent(event);
-    } else if (event_type == "resized") {
-      RECT rect;
-      GetWindowRect(hwnd, &rect);
-      Size new_size = {static_cast<double>(rect.right - rect.left),
-                       static_cast<double>(rect.bottom - rect.top)};
-      WindowResizedEvent event(window_id, new_size);
+    } else if (event_type == "maximized") {
+      WindowMaximizedEvent event(window_id);
       manager_->DispatchWindowEvent(event);
-    } else if (event_type == "moved") {
-      RECT rect;
-      GetWindowRect(hwnd, &rect);
-      Point new_position = {static_cast<double>(rect.left), static_cast<double>(rect.top)};
-      WindowMovedEvent event(window_id, new_position);
-      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "resized" || event_type == "moved") {
+      // Report what the getters return (logical pixels), not the raw rectangle
+      auto window = WindowRegistry::GetInstance().Get(window_id);
+      if (!window) {
+        return;
+      }
+      if (event_type == "resized") {
+        WindowResizedEvent event(window_id, window->GetSize());
+        manager_->DispatchWindowEvent(event);
+      } else {
+        WindowMovedEvent event(window_id, window->GetPosition());
+        manager_->DispatchWindowEvent(event);
+      }
     } else if (event_type == "closing") {
       // Window closing event - no longer emitted
     }
