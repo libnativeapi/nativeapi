@@ -191,19 +191,16 @@ void Window::Blur() {
 }
 
 bool Window::IsFocused() const {
+  // Asking the seat's keyboard for the window at its position is not an option: that
+  // call is about pointer position and GDK rejects keyboard devices outright, so it
+  // only logs an assertion failure and never finds a window. The toplevel's own
+  // state works on both X11 and Wayland.
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    return gtk_window_is_active(GTK_WINDOW(pimpl_->widget_));
+  }
   if (!pimpl_->gdk_window_)
     return false;
-  // Check if this window is the focus window of its display
-  GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
-  GdkSeat* seat = gdk_display_get_default_seat(display);
-  if (seat) {
-    GdkDevice* keyboard = gdk_seat_get_keyboard(seat);
-    if (keyboard) {
-      GdkWindow* focus_window = gdk_device_get_window_at_position(keyboard, nullptr, nullptr);
-      return focus_window == pimpl_->gdk_window_;
-    }
-  }
-  return false;
+  return gdk_window_get_state(pimpl_->gdk_window_) & GDK_WINDOW_STATE_FOCUSED;
 }
 
 void Window::Show() {
