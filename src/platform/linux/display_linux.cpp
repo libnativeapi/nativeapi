@@ -9,16 +9,32 @@ namespace nativeapi {
 class Display::Impl {
  public:
   Impl() = default;
-  Impl(GdkMonitor* monitor) : gdk_monitor_(monitor) {}
+  Impl(GdkMonitor* monitor) { SetMonitor(monitor); }
+
+  ~Impl() {
+    if (gdk_monitor_) {
+      g_object_remove_weak_pointer(G_OBJECT(gdk_monitor_), (gpointer*)&gdk_monitor_);
+    }
+  }
+
+  // A GdkMonitor is owned by its GdkDisplay, which drops and recreates monitors
+  // on hotplug and whenever the compositor turns the outputs off and on again.
+  // Let GDK clear the pointer so the getters below report defaults instead of
+  // reading freed memory.
+  void SetMonitor(GdkMonitor* monitor) {
+    if (!monitor) {
+      return;
+    }
+    gdk_monitor_ = monitor;
+    g_object_add_weak_pointer(G_OBJECT(gdk_monitor_), (gpointer*)&gdk_monitor_);
+  }
 
   const DisplayId id_ = IdAllocator::Allocate<Display>();
   GdkMonitor* gdk_monitor_ = nullptr;
 };
 
 Display::Display(void* display) : pimpl_(std::make_unique<Impl>()) {
-  if (display) {
-    pimpl_->gdk_monitor_ = (GdkMonitor*)display;
-  }
+  pimpl_->SetMonitor((GdkMonitor*)display);
 }
 
 Display::~Display() = default;
@@ -75,6 +91,11 @@ bool Display::IsPrimary() const {
     return false;
   GdkDisplay* display = gdk_monitor_get_display(pimpl_->gdk_monitor_);
   GdkMonitor* primary = gdk_display_get_primary_monitor(display);
+  if (!primary) {
+    // Wayland has no notion of a primary monitor; match the first-monitor
+    // convention DisplayManager::EnumerateNativeDisplays() uses.
+    primary = gdk_display_get_monitor(display, 0);
+  }
   return primary == pimpl_->gdk_monitor_;
 }
 
