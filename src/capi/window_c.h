@@ -309,6 +309,12 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_visible_on_all_workspaces(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+void native_window_set_visible_in_taskbar(native_window_t window, bool is_visible_in_taskbar);
+
+FFI_PLUGIN_EXPORT
+bool native_window_is_visible_in_taskbar(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_ignore_mouse_events(native_window_t window, bool is_ignore_mouse_events);
 
 FFI_PLUGIN_EXPORT

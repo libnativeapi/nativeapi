@@ -4,6 +4,7 @@
 #include <dwmapi.h>
 #include <windows.h>
 #include <commctrl.h>
+#include <shobjidl.h>
 #include <cmath>
 #include <iostream>
 #include <optional>
@@ -16,6 +17,7 @@
 #include "window_message_dispatcher.h"
 
 #pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "ole32.lib")
 
 namespace nativeapi {
 
@@ -24,6 +26,33 @@ static const wchar_t* kWindowIdProperty = L"NativeAPIWindowId";
 // Set while the title bar is hidden. Kept on the HWND, like the style itself, so every
 // wrapper of the window agrees and the frame handling below outlives any one wrapper.
 static const wchar_t* kTitleBarHiddenProperty = L"NativeAPITitleBarHidden";
+// The other two window flags the system cannot be asked about afterwards, kept on the
+// HWND for the same reason.
+static const wchar_t* kNoShadowProperty = L"NativeAPINoShadow";
+static const wchar_t* kHiddenFromTaskbarProperty = L"NativeAPIHiddenFromTaskbar";
+
+// Adds or removes the window's taskbar button. The shell owns that button, so this is
+// the only way to change it on a window that is already on screen; the window style
+// alternative (WS_EX_TOOLWINDOW) only takes effect while the window is hidden and also
+// drops it from Alt+Tab.
+static void ApplyTaskbarVisibility(HWND hwnd, bool is_visible) {
+  const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+  ITaskbarList* taskbar = nullptr;
+  if (SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER,
+                                 IID_PPV_ARGS(&taskbar)))) {
+    if (SUCCEEDED(taskbar->HrInit())) {
+      if (is_visible)
+        taskbar->AddTab(hwnd);
+      else
+        taskbar->DeleteTab(hwnd);
+    }
+    taskbar->Release();
+  }
+  // RPC_E_CHANGED_MODE says the thread already belongs to another apartment, which is
+  // then not ours to leave.
+  if (SUCCEEDED(com))
+    CoUninitialize();
+}
 
 #ifndef NATIVEAPI_ENABLE_WINUI3
 // A window with WS_THICKFRAME but no WS_CAPTION keeps its sizing frame on all sides.
@@ -117,8 +146,19 @@ static LRESULT CALLBACK WindowLifetimeProc(HWND hwnd, UINT message, WPARAM wp, L
     RemoveWindowSubclass(hwnd, WindowLifetimeProc, subclass_id);
     RemovePropW(hwnd, kWindowIdProperty);
     RemovePropW(hwnd, kTitleBarHiddenProperty);
+    RemovePropW(hwnd, kNoShadowProperty);
+    RemovePropW(hwnd, kHiddenFromTaskbarProperty);
     const auto result = DefSubclassProc(hwnd, message, wp, lp);
     WindowRegistry::GetInstance().Remove(static_cast<WindowId>(reference));
+    return result;
+  }
+  if (message == WM_WINDOWPOSCHANGED) {
+    const auto* pos = reinterpret_cast<const WINDOWPOS*>(lp);
+    const LRESULT result = DefSubclassProc(hwnd, message, wp, lp);
+    // The shell gives a window a fresh taskbar button every time it is shown, so a
+    // window that is meant to stay out of the taskbar has to leave it again.
+    if (pos && (pos->flags & SWP_SHOWWINDOW) && GetPropW(hwnd, kHiddenFromTaskbarProperty))
+      ApplyTaskbarVisibility(hwnd, false);
     return result;
   }
 #ifndef NATIVEAPI_ENABLE_WINUI3
@@ -1086,12 +1126,25 @@ TitleBarStyle Window::GetTitleBarStyle() const {
 }
 
 void Window::SetHasShadow(bool has_shadow) {
-  // Windows shadow is typically handled automatically
-  // Custom shadow implementation would be complex
+  if (!pimpl_->hwnd_)
+    return;
+
+  // The shadow is part of the frame the desktop compositor draws around the window, so
+  // it goes away with the rest of that frame. On a window that still has a title bar
+  // the caption is drawn there too and the compositor keeps both.
+  DWMNCRENDERINGPOLICY policy = has_shadow ? DWMNCRP_USEWINDOWSTYLE : DWMNCRP_DISABLED;
+  if (FAILED(DwmSetWindowAttribute(pimpl_->hwnd_, DWMWA_NCRENDERING_POLICY, &policy,
+                                   sizeof(policy))))
+    return;
+
+  if (has_shadow)
+    RemovePropW(pimpl_->hwnd_, kNoShadowProperty);
+  else
+    SetPropW(pimpl_->hwnd_, kNoShadowProperty, reinterpret_cast<HANDLE>(1));
 }
 
 bool Window::HasShadow() const {
-  return true;  // Windows typically have shadows by default
+  return pimpl_->hwnd_ && !GetPropW(pimpl_->hwnd_, kNoShadowProperty);
 }
 
 void Window::SetOpacity(float opacity) {
@@ -1222,6 +1275,21 @@ void Window::SetVisibleOnAllWorkspaces(bool is_visible_on_all_workspaces) {
 
 bool Window::IsVisibleOnAllWorkspaces() const {
   return false;  // Not supported on Windows by default
+}
+
+void Window::SetVisibleInTaskbar(bool is_visible_in_taskbar) {
+  if (!pimpl_->hwnd_)
+    return;
+
+  if (is_visible_in_taskbar)
+    RemovePropW(pimpl_->hwnd_, kHiddenFromTaskbarProperty);
+  else
+    SetPropW(pimpl_->hwnd_, kHiddenFromTaskbarProperty, reinterpret_cast<HANDLE>(1));
+  ApplyTaskbarVisibility(pimpl_->hwnd_, is_visible_in_taskbar);
+}
+
+bool Window::IsVisibleInTaskbar() const {
+  return pimpl_->hwnd_ && !GetPropW(pimpl_->hwnd_, kHiddenFromTaskbarProperty);
 }
 
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {

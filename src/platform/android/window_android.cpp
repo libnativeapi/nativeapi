@@ -375,6 +375,14 @@ bool Window::IsVisibleOnAllWorkspaces() const {
   return false;
 }
 
+void Window::SetVisibleInTaskbar(bool is_visible_in_taskbar) {
+  ALOGW("SetVisibleInTaskbar not supported on Android");
+}
+
+bool Window::IsVisibleInTaskbar() const {
+  return false;
+}
+
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
   ALOGW("SetIgnoreMouseEvents not supported on Android");
 }

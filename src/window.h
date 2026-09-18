@@ -736,6 +736,16 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    *
    * Controls the drop shadow effect around the window. On some platforms,
    * this may affect window compositing and visual effects.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Drops the shadow of any window
+   * - Windows: ⚠️ Frameless windows only - The desktop compositor always draws the
+   *   shadow of a window that has a title bar; with TitleBarStyle::Hidden the shadow
+   *   follows this flag
+   * - Linux: ⚠️ Recorded only - The window manager owns the shadow
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
    */
   void SetHasShadow(bool has_shadow);
 
@@ -743,6 +753,8 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @brief Checks if the window currently displays a shadow.
    *
    * @return true if shadow is enabled, false otherwise
+   *
+   * @see SetHasShadow() for platform availability.
    */
   bool HasShadow() const;
 
@@ -818,6 +830,37 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * @return true if visible on all workspaces, false if only on current workspace
    */
   bool IsVisibleOnAllWorkspaces() const;
+
+  /**
+   * @brief Sets whether the window is listed in the taskbar.
+   *
+   * @param is_visible_in_taskbar true to list the window, false to hide it from the
+   *        taskbar
+   *
+   * A window hidden from the taskbar keeps its own appearance and behavior; only the
+   * shell's list of open windows drops it. Useful for overlays, tool palettes and
+   * windows an app shows from its tray icon. The window stays reachable through
+   * Alt+Tab on the platforms noted below.
+   *
+   * @note Platform availability:
+   * - macOS: ⚠️ Window menu only - The Dock lists applications, not windows, so the
+   *   window is only dropped from the application's Window menu
+   * - Windows: ✅ Fully supported - Adds or removes the window's taskbar button
+   * - Linux: ✅ Fully supported - Sets the window manager's skip-taskbar hint
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetVisibleInTaskbar(bool is_visible_in_taskbar);
+
+  /**
+   * @brief Checks if the window is listed in the taskbar.
+   *
+   * @return true if the window has a taskbar entry, false if it is hidden from it
+   *
+   * @see SetVisibleInTaskbar() for platform availability.
+   */
+  bool IsVisibleInTaskbar() const;
 
   /**
    * @brief Sets whether the window ignores mouse input events.

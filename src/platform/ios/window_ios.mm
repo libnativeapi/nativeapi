@@ -418,6 +418,14 @@ bool Window::IsVisibleOnAllWorkspaces() const {
   return false;
 }
 
+void Window::SetVisibleInTaskbar(bool is_visible_in_taskbar) {
+  // Not applicable to iOS
+}
+
+bool Window::IsVisibleInTaskbar() const {
+  return false;
+}
+
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
   // Not applicable to iOS
 }

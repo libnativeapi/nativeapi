@@ -695,6 +695,18 @@ bool Window::IsVisibleOnAllWorkspaces() const {
   return state & GDK_WINDOW_STATE_STICKY;
 }
 
+void Window::SetVisibleInTaskbar(bool is_visible_in_taskbar) {
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    gtk_window_set_skip_taskbar_hint(GTK_WINDOW(pimpl_->widget_), !is_visible_in_taskbar);
+  }
+}
+
+bool Window::IsVisibleInTaskbar() const {
+  if (!pimpl_->widget_ || !GTK_IS_WINDOW(pimpl_->widget_))
+    return true;
+  return !gtk_window_get_skip_taskbar_hint(GTK_WINDOW(pimpl_->widget_));
+}
+
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
   // This would involve setting input shapes or event masks
   // Provide stub implementation

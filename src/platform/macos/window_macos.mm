@@ -686,6 +686,16 @@ bool Window::IsVisibleOnAllWorkspaces() const {
   return [pimpl_->ns_window_ collectionBehavior] & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
+void Window::SetVisibleInTaskbar(bool is_visible_in_taskbar) {
+  // The Dock lists applications, not windows; the closest per-window list is the
+  // application's Window menu.
+  [pimpl_->ns_window_ setExcludedFromWindowsMenu:!is_visible_in_taskbar];
+}
+
+bool Window::IsVisibleInTaskbar() const {
+  return ![pimpl_->ns_window_ isExcludedFromWindowsMenu];
+}
+
 void Window::SetIgnoreMouseEvents(bool is_ignore_mouse_events) {
   [pimpl_->ns_window_ setIgnoresMouseEvents:is_ignore_mouse_events];
 }

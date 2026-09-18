@@ -1006,6 +1006,33 @@ bool native_window_is_visible_on_all_workspaces(native_window_t window) {
   }
 }
 
+void native_window_set_visible_in_taskbar(native_window_t window, bool is_visible_in_taskbar) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetVisibleInTaskbar(is_visible_in_taskbar);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_visible_in_taskbar");
+    return;
+  }
+}
+
+bool native_window_is_visible_in_taskbar(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsVisibleInTaskbar();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_is_visible_in_taskbar");
+    return false;
+  }
+}
+
 void native_window_set_ignore_mouse_events(native_window_t window, bool is_ignore_mouse_events) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {
