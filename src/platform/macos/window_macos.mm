@@ -22,6 +22,38 @@ static const void* kWindowOriginalClassKey = &kWindowOriginalClassKey;
 // Window::SetTitleBarStyle() / SetMovable() state, kept on the NSWindow for the same reason.
 static const void* kWindowTitleBarHiddenKey = &kWindowTitleBarHiddenKey;
 static const void* kWindowMovableKey = &kWindowMovableKey;
+// The parent a hidden window is waiting for. AppKit orders a window in when it
+// becomes the child of a visible one, so a hidden child is only attached once
+// it is shown; see Window::SetParentWindow().
+static const void* kWindowPendingParentKey = &kWindowPendingParentKey;
+
+// Also called by window_manager_macos.mm, for windows someone else shows.
+void NativeApiAttachPendingParentWindow(NSWindow* window) {
+  NSWindow* parent = objc_getAssociatedObject(window, kWindowPendingParentKey);
+  if (!parent || ![window isVisible]) {
+    return;
+  }
+  objc_setAssociatedObject(window, kWindowPendingParentKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  if ([window parentWindow] != parent) {
+    [parent addChildWindow:window ordered:NSWindowAbove];
+  }
+}
+
+// The other way round, before a child is ordered out: a child that stays
+// attached is ordered back in with its parent.
+static void NativeApiDetachFromParentWindow(NSWindow* window, bool keep_pending) {
+  NSWindow* parent = [window parentWindow];
+  if (parent) {
+    [parent removeChildWindow:window];
+  }
+  if (!keep_pending) {
+    parent = nil;
+  } else if (!parent) {
+    return;  // still waiting for whichever parent it had
+  }
+  objc_setAssociatedObject(window, kWindowPendingParentKey, parent,
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
 
 static BOOL NativeApiWindowIsTitleBarHidden(NSWindow* window) {
   return [objc_getAssociatedObject(window, kWindowTitleBarHiddenKey) boolValue];
@@ -198,14 +230,17 @@ void Window::Show() {
     [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
   }
   [pimpl_->ns_window_ makeKeyAndOrderFront:nil];
+  NativeApiAttachPendingParentWindow(pimpl_->ns_window_);
 }
 
 void Window::ShowInactive() {
   [pimpl_->ns_window_ setIsVisible:YES];
   [pimpl_->ns_window_ orderFrontRegardless];
+  NativeApiAttachPendingParentWindow(pimpl_->ns_window_);
 }
 
 void Window::Hide() {
+  NativeApiDetachFromParentWindow(pimpl_->ns_window_, true);
   [pimpl_->ns_window_ setIsVisible:NO];
   [pimpl_->ns_window_ orderOut:nil];
 }
@@ -488,6 +523,48 @@ void Window::SetAlwaysOnBottom(bool is_always_on_bottom) {
 
 bool Window::IsAlwaysOnBottom() const {
   return [pimpl_->ns_window_ level] == kAlwaysOnBottomWindowLevel;
+}
+
+bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
+  NSWindow* window = pimpl_->ns_window_;
+  if (!window) {
+    return false;
+  }
+  if (!parent) {
+    NativeApiDetachFromParentWindow(window, false);
+    return true;
+  }
+  NSWindow* parent_window = (__bridge NSWindow*)parent->GetNativeObject();
+  if (!parent_window) {
+    return false;
+  }
+  // Neither itself nor one of its own descendants
+  for (NSWindow* ancestor = parent_window; ancestor; ancestor = [ancestor parentWindow]) {
+    if (ancestor == window) {
+      return false;
+    }
+  }
+  NativeApiDetachFromParentWindow(window, false);
+  objc_setAssociatedObject(window, kWindowPendingParentKey, parent_window,
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  NativeApiAttachPendingParentWindow(window);
+  return true;
+}
+
+std::shared_ptr<Window> Window::GetParentWindow() const {
+  NSWindow* window = pimpl_->ns_window_;
+  NSWindow* parent_window = [window parentWindow];
+  if (!parent_window) {
+    parent_window = objc_getAssociatedObject(window, kWindowPendingParentKey);
+  }
+  if (!parent_window) {
+    return nullptr;
+  }
+  // The wrapper takes the ID the native window already carries, which is how
+  // the registered Window for it, if there is one, is found.
+  auto wrapper = std::make_shared<Window>((__bridge void*)parent_window);
+  auto registered = WindowManager::GetInstance().Get(wrapper->GetId());
+  return registered ? registered : wrapper;
 }
 
 void Window::SetNonActivating(bool is_non_activating) {

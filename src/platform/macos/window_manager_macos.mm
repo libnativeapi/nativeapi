@@ -16,6 +16,8 @@
 
 // External declaration of kWindowIdKey (defined in window_macos.mm)
 extern const void* kWindowIdKey;
+// Attaches a window that became visible to its pending parent (window_macos.mm)
+void NativeApiAttachPendingParentWindow(NSWindow* window);
 
 namespace nativeapi {
 
@@ -324,6 +326,10 @@ void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& eve
   if (window_id == IdAllocator::kInvalidId) {
     return;
   }
+
+  // A child window that someone else shows (the embedding framework) still has
+  // to be attached to the parent it was given while hidden.
+  NativeApiAttachPendingParentWindow(window);
 
   // Whichever notification arrives first for a window on screen announces it.
   if ([window isVisible] && shown_.insert(window_id).second) {

@@ -1015,6 +1015,52 @@ bool Window::IsAlwaysOnBottom() const {
   return pimpl_->always_on_bottom_;
 }
 
+bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
+  HWND hwnd = pimpl_->hwnd_;
+  if (!hwnd || !IsWindow(hwnd)) {
+    return false;
+  }
+  HWND parent_hwnd = nullptr;
+  if (parent) {
+    parent_hwnd = static_cast<HWND>(parent->GetNativeObject());
+    if (!parent_hwnd || !IsWindow(parent_hwnd)) {
+      return false;
+    }
+    // Neither itself nor one of its own descendants
+    for (HWND ancestor = parent_hwnd; ancestor; ancestor = GetWindow(ancestor, GW_OWNER)) {
+      if (ancestor == hwnd) {
+        return false;
+      }
+    }
+  }
+  // For a top-level window GWLP_HWNDPARENT is the owner, not a parent in the
+  // WS_CHILD sense. The previous value may legitimately be 0, so the error has
+  // to be read from the thread.
+  SetLastError(0);
+  if (SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(parent_hwnd)) == 0 &&
+      GetLastError() != 0) {
+    return false;
+  }
+  if (parent_hwnd && IsWindowVisible(hwnd)) {
+    // The owner only takes effect in the Z order the next time it is computed
+    SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+  }
+  return true;
+}
+
+std::shared_ptr<Window> Window::GetParentWindow() const {
+  HWND hwnd = pimpl_->hwnd_;
+  HWND owner = (hwnd && IsWindow(hwnd)) ? GetWindow(hwnd, GW_OWNER) : nullptr;
+  if (!owner) {
+    return nullptr;
+  }
+  // The wrapper takes the ID the native window already carries, which is how
+  // the registered Window for it, if there is one, is found.
+  auto wrapper = std::make_shared<Window>(static_cast<void*>(owner));
+  auto registered = WindowManager::GetInstance().Get(wrapper->GetId());
+  return registered ? registered : wrapper;
+}
+
 void Window::SetNonActivating(bool is_non_activating) {
   // Windows keeps keyboard focus per window, so a non-activating window has no
   // observable difference here. Record the flag so IsNonActivating() round-trips.

@@ -713,6 +713,33 @@ bool native_window_is_always_on_bottom(native_window_t window) {
   }
 }
 
+bool native_window_set_parent_window(native_window_t window, native_window_t parent) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return false;
+  }
+  try {
+    auto parent_cpp = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(parent);
+    return self->SetParentWindow(parent_cpp);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_set_parent_window");
+    return false;
+  }
+}
+
+native_window_t native_window_get_parent_window(native_window_t window) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
+  if (!self) {
+    return 0;
+  }
+  try {
+    return nativeapi::HandleTable::GetInstance().Insert(self->GetParentWindow());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_window_get_parent_window");
+    return 0;
+  }
+}
+
 void native_window_set_non_activating(native_window_t window, bool is_non_activating) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::Window>(window);
   if (!self) {

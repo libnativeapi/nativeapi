@@ -633,6 +633,46 @@ bool Window::IsAlwaysOnBottom() const {
   return state & GDK_WINDOW_STATE_BELOW;
 }
 
+bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
+  GtkWidget* widget = static_cast<GtkWidget*>(GetNativeObject());
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return false;
+  }
+  GtkWindow* parent_window = nullptr;
+  if (parent) {
+    GtkWidget* parent_widget = static_cast<GtkWidget*>(parent->GetNativeObject());
+    if (!parent_widget || !GTK_IS_WINDOW(parent_widget)) {
+      return false;
+    }
+    parent_window = GTK_WINDOW(parent_widget);
+    // Neither itself nor one of its own descendants
+    for (GtkWindow* ancestor = parent_window; ancestor;
+         ancestor = gtk_window_get_transient_for(ancestor)) {
+      if (ancestor == GTK_WINDOW(widget)) {
+        return false;
+      }
+    }
+  }
+  gtk_window_set_transient_for(GTK_WINDOW(widget), parent_window);
+  return true;
+}
+
+std::shared_ptr<Window> Window::GetParentWindow() const {
+  GtkWidget* widget = static_cast<GtkWidget*>(GetNativeObject());
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return nullptr;
+  }
+  GtkWindow* parent_window = gtk_window_get_transient_for(GTK_WINDOW(widget));
+  if (!parent_window) {
+    return nullptr;
+  }
+  // The wrapper takes the ID the native window already carries, which is how
+  // the registered Window for it, if there is one, is found.
+  auto wrapper = std::make_shared<Window>(static_cast<void*>(parent_window));
+  auto registered = WindowManager::GetInstance().Get(wrapper->GetId());
+  return registered ? registered : wrapper;
+}
+
 void Window::SetNonActivating(bool is_non_activating) {
   // Keyboard focus is per window on Linux, so a non-activating window has no
   // observable difference here. Record the flag so IsNonActivating() round-trips.

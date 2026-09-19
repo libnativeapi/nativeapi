@@ -288,6 +288,15 @@ bool Window::IsAlwaysOnBottom() const {
   return false;
 }
 
+bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
+  (void)parent;
+  return false;  // no child windows on this platform
+}
+
+std::shared_ptr<Window> Window::GetParentWindow() const {
+  return nullptr;
+}
+
 void Window::SetAspectRatio(double aspect_ratio) {
   // Not applicable to iOS
 }

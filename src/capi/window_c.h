@@ -247,6 +247,13 @@ FFI_PLUGIN_EXPORT
 bool native_window_is_always_on_bottom(native_window_t window);
 
 FFI_PLUGIN_EXPORT
+bool native_window_set_parent_window(native_window_t window, native_window_t parent);
+
+/// Caller owns the returned handle; release it with native_window_free().
+FFI_PLUGIN_EXPORT
+native_window_t native_window_get_parent_window(native_window_t window);
+
+FFI_PLUGIN_EXPORT
 void native_window_set_non_activating(native_window_t window, bool is_non_activating);
 
 FFI_PLUGIN_EXPORT

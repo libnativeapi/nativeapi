@@ -619,6 +619,51 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
   bool IsAlwaysOnBottom() const;
 
   /**
+   * @brief Sets the window this window belongs to, making it a child window.
+   *
+   * A child window always stays above its parent and is hidden while the parent
+   * is minimized. Tool palettes, floating toolbars and inspectors are child
+   * windows. The relationship does not keep either window alive, and a window
+   * has at most one parent.
+   *
+   * What else follows from the relationship is decided by the platform, see
+   * below. For behaviour that must be the same everywhere — a child that
+   * follows its parent — listen to the parent's WindowMovedEvent and
+   * WindowResizedEvent; closing the children before their parent avoids the
+   * difference in what closing the parent does to them.
+   *
+   * @param parent The new parent window, or nullptr to make this window
+   *        independent again
+   * @return false if the relationship was not established: parent is this
+   *         window or one of its descendants, either native window is gone, or
+   *         the platform has no child windows
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - The child also moves with its parent. A hidden
+   *   child is attached when it is shown, because AppKit shows a window that is
+   *   attached to a visible parent.
+   * - Windows: ⚠️ Owned window - Stays above its parent and is hidden with it,
+   *   but does not move with it, and is destroyed when its parent is.
+   * - Linux: ⚠️ Transient window - Stays above its parent; does not move with
+   *   it, and minimizing with the parent is up to the window manager.
+   * - Android: ❌ Not applicable - Always ignored, returns false
+   * - iOS: ❌ Not applicable - Always ignored, returns false
+   * - OpenHarmony: ❌ Not applicable - Always ignored, returns false
+   */
+  bool SetParentWindow(std::shared_ptr<Window> parent);
+
+  /**
+   * @brief Gets the window this window belongs to.
+   *
+   * Read from the native window, so it also reports a parent the embedding
+   * framework has set.
+   *
+   * @return The parent window, or nullptr if this window has none
+   * @see SetParentWindow() for platform availability.
+   */
+  std::shared_ptr<Window> GetParentWindow() const;
+
+  /**
    * @brief Sets whether showing or focusing the window activates the application.
    *
    * @param is_non_activating true to make the window non-activating, false for
