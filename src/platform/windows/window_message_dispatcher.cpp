@@ -1,5 +1,6 @@
 #include "window_message_dispatcher.h"
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 namespace nativeapi {
@@ -21,8 +22,10 @@ WindowMessageDispatcher::~WindowMessageDispatcher() {
     host_window_ = nullptr;
   }
 
-  // Uninstall all hooks before destruction
-  for (const auto& [hwnd, _] : original_procs_) {
+  // Uninstall all hooks before destruction. Over a copy: UninstallHook() erases
+  // from original_procs_.
+  const auto hooked = original_procs_;
+  for (const auto& [hwnd, _] : hooked) {
     UninstallHook(hwnd);
   }
   original_procs_.clear();
@@ -96,9 +99,15 @@ LRESULT CALLBACK WindowMessageDispatcher::DispatchWindowProc(HWND hwnd,
                                                              LPARAM lparam) {
   auto& dispatcher = GetInstance();
 
-  // Get original window procedure and copy handlers while holding lock
+  // Take the original window procedure and the handler IDs while holding the
+  // lock. Only the IDs: a handler may destroy the object another handler
+  // belongs to -- a Menu freed from a MenuOpenedEvent listener, say, while this
+  // very message is being dispatched -- so each handler is read back under the
+  // lock immediately before it is called. Calling a copy taken up front would
+  // reach into freed memory from inside a window procedure, which Windows turns
+  // into an immediate process kill (STATUS_FATAL_USER_CALLBACK_EXCEPTION).
   WNDPROC original_proc = nullptr;
-  std::vector<std::pair<int, HandlerEntry>> handlers_vector;
+  std::vector<int> ids;
 
   {
     std::lock_guard<std::mutex> lock(dispatcher.mutex_);
@@ -111,22 +120,39 @@ LRESULT CALLBACK WindowMessageDispatcher::DispatchWindowProc(HWND hwnd,
 
     original_proc = proc_it->second;
 
-    // Copy handlers while holding lock (to avoid deadlock when handlers call
-    // back)
-    handlers_vector.assign(dispatcher.handlers_.begin(), dispatcher.handlers_.end());
+    ids.reserve(dispatcher.handlers_.size());
+    for (const auto& [id, entry] : dispatcher.handlers_) {
+      if (entry.target_hwnd == HWND(0) || entry.target_hwnd == hwnd) {
+        ids.push_back(id);
+      }
+    }
   }
 
-  // Try handlers in reverse order (most recently registered first)
-  // Process handlers without holding the mutex to avoid deadlock
-  for (auto it = handlers_vector.rbegin(); it != handlers_vector.rend(); ++it) {
-    const auto& [id, entry] = *it;
+  // Most recently registered first: IDs grow with each registration, and
+  // handlers_ is unordered.
+  std::sort(ids.begin(), ids.end(), std::greater<int>());
 
-    // Check if this handler applies to this window
-    if (entry.target_hwnd == HWND(0) || entry.target_hwnd == hwnd) {
-      auto result = entry.handler(hwnd, msg, wparam, lparam);
-      if (result.has_value()) {
-        return result.value();
+  // Call the handlers without holding the mutex, so they may register, remove
+  // or emit freely. A handler unregistered since the snapshot is skipped.
+  // (A handler removed from another thread between the lookup and the call can
+  // still be reached; handlers are expected to live on the UI thread.)
+  for (const int id : ids) {
+    WindowMessageHandler handler;
+    {
+      std::lock_guard<std::mutex> lock(dispatcher.mutex_);
+      auto entry = dispatcher.handlers_.find(id);
+      if (entry == dispatcher.handlers_.end()) {
+        continue;
       }
+      if (entry->second.target_hwnd != HWND(0) && entry->second.target_hwnd != hwnd) {
+        continue;
+      }
+      handler = entry->second.handler;
+    }
+
+    auto result = handler(hwnd, msg, wparam, lparam);
+    if (result.has_value()) {
+      return result.value();
     }
   }
 
@@ -165,13 +191,17 @@ void WindowMessageDispatcher::UninstallHook(HWND hwnd) {
     return;
   }
 
-  WNDPROC original_proc = it->second;
-
-  // Don't restore window procedure for host window - it should keep DispatchWindowProc
-  if (hwnd != host_window_) {
-    // Restore original window procedure
-    SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(original_proc));
+  // The host window keeps DispatchWindowProc for its whole life, so it also
+  // keeps its entry here. Dropping it would make the window deaf for good:
+  // DispatchWindowProc bails out early on a window it cannot find, and
+  // InstallHook() would not add it back, since the procedure it sees installed
+  // is already ours. That is what happened once every menu had been destroyed.
+  if (hwnd == host_window_) {
+    return;
   }
+
+  // Restore original window procedure
+  SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(it->second));
 
   // Remove from our tracking
   original_procs_.erase(it);

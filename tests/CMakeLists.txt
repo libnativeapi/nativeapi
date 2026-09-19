@@ -24,6 +24,14 @@ add_executable(shortcut_accelerator_test shortcut_accelerator_test.cpp)
 target_link_libraries(shortcut_accelerator_test PRIVATE nativeapi)
 add_test(NAME shortcut_accelerator_test COMMAND shortcut_accelerator_test)
 
+# Interactive: with any argument it opens real menus and closes them from a timer
+# (no input needed, but it does need a desktop session). A no-op without arguments.
+if(WIN32)
+  add_executable(menu_lifetime_test menu_lifetime_test.cpp)
+  target_link_libraries(menu_lifetime_test PRIVATE nativeapi)
+  add_test(NAME menu_lifetime_test COMMAND menu_lifetime_test)
+endif()
+
 # Interactive: with a round name it opens a real menu and waits for
 # tools/gui/core_menu_backend_test.ps1 to work it with the mouse. Without arguments
 # it is a no-op, so CTest can run it.
