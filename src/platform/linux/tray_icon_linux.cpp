@@ -186,6 +186,9 @@ class TrayIcon::Impl {
   TrayIconId id_;
 
   std::shared_ptr<Image> image_;
+  bool icon_template_ = false;
+  Size icon_size_ = Size{18, 18};
+  TrayIconPosition icon_position_ = TrayIconPosition::Left;
   std::optional<std::string> title_;
   std::optional<std::string> tooltip_;
   std::shared_ptr<Menu> context_menu_;
@@ -223,7 +226,24 @@ class TrayIcon::Impl {
   // well-known service name.  Returns false on error (icon will be invisible).
   bool Init() {
     GError* error = nullptr;
-    connection_ = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+    // One private connection per icon, not the shared one from g_bus_get_sync().
+    // A watcher that is given a bus name looks for the item at the fixed path
+    // /StatusNotifierItem, and a connection can export only one object there: on
+    // the shared connection every icon after the first failed to register. With
+    // its own connection each icon also has its own unique name, which vanishes
+    // when the icon is destroyed — that is what makes the shell drop the icon.
+    gchar* address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+    if (address) {
+      connection_ = g_dbus_connection_new_for_address_sync(
+          address,
+          static_cast<GDBusConnectionFlags>(G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
+                                            G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION),
+          nullptr, nullptr, &error);
+      g_free(address);
+    }
+    if (connection_) {
+      g_dbus_connection_set_exit_on_close(connection_, FALSE);
+    }
     if (!connection_) {
       if (error) {
         std::cerr << "[nativeapi] SNI: D-Bus session connection failed: " << error->message
@@ -330,6 +350,10 @@ class TrayIcon::Impl {
       menu_registration_id_ = 0;
     }
     if (connection_) {
+      // The connection is ours alone: closing it releases the names right away
+      // instead of whenever the last reference happens to go.
+      g_dbus_connection_flush_sync(connection_, nullptr, nullptr);
+      g_dbus_connection_close_sync(connection_, nullptr, nullptr);
       g_object_unref(connection_);
       connection_ = nullptr;
     }
@@ -827,6 +851,33 @@ void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
 
 std::shared_ptr<Image> TrayIcon::GetIcon() const {
   return pimpl_->image_;
+}
+
+void TrayIcon::SetIconTemplate(bool is_icon_template) {
+  // Recorded only: the panel always draws the icon's own colours.
+  pimpl_->icon_template_ = is_icon_template;
+}
+
+bool TrayIcon::IsIconTemplate() const {
+  return pimpl_->icon_template_;
+}
+
+void TrayIcon::SetIconSize(Size size) {
+  // Recorded only: the panel dictates the icon size.
+  pimpl_->icon_size_ = size;
+}
+
+Size TrayIcon::GetIconSize() const {
+  return pimpl_->icon_size_;
+}
+
+void TrayIcon::SetIconPosition(TrayIconPosition position) {
+  // Recorded only: the panel decides the layout.
+  pimpl_->icon_position_ = position;
+}
+
+TrayIconPosition TrayIcon::GetIconPosition() const {
+  return pimpl_->icon_position_;
 }
 
 void TrayIcon::SetTitle(std::optional<std::string> title) {
