@@ -31,6 +31,56 @@ static const wchar_t* kTitleBarHiddenProperty = L"NativeAPITitleBarHidden";
 // HWND for the same reason.
 static const wchar_t* kNoShadowProperty = L"NativeAPINoShadow";
 static const wchar_t* kHiddenFromTaskbarProperty = L"NativeAPIHiddenFromTaskbar";
+// The translucent background color of the window, as 0x1AARRGGBB (the leading 1 tells
+// a transparent black from "no property"). Set while the window is see-through.
+static const wchar_t* kTranslucentBackgroundProperty = L"NativeAPITranslucentBackground";
+
+// SetWindowCompositionAttribute is how the shell itself makes windows see-through. It is
+// exported by user32 but not declared in the SDK.
+namespace {
+
+enum AccentState {
+  kAccentDisabled = 0,
+  kAccentEnableGradient = 1,
+  kAccentEnableTransparentGradient = 2,
+};
+
+struct AccentPolicy {
+  int accent_state;
+  int accent_flags;
+  DWORD gradient_color;  // 0xAABBGGRR
+  int animation_id;
+};
+
+struct WindowCompositionAttributeData {
+  int attribute;
+  PVOID data;
+  SIZE_T size;
+};
+
+constexpr int kWcaAccentPolicy = 19;
+
+bool SetAccentPolicy(HWND hwnd, AccentState state, DWORD gradient_color) {
+  using SetWindowCompositionAttributeFn = BOOL(WINAPI*)(HWND, WindowCompositionAttributeData*);
+  static const auto set_attribute = reinterpret_cast<SetWindowCompositionAttributeFn>(
+      GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute"));
+  if (!set_attribute) {
+    return false;
+  }
+  AccentPolicy policy = {state, 2, gradient_color, 0};
+  WindowCompositionAttributeData data = {kWcaAccentPolicy, &policy, sizeof(policy)};
+  return set_attribute(hwnd, &data) != FALSE;
+}
+
+// -1 on every side turns the whole client area into the compositor's frame, which is
+// what a backdrop and a see-through background are drawn on.
+void UpdateFrameExtent(HWND hwnd, bool backdrop) {
+  const int extent = (backdrop || GetPropW(hwnd, kTranslucentBackgroundProperty)) ? -1 : 0;
+  MARGINS margins = {extent, extent, extent, extent};
+  DwmExtendFrameIntoClientArea(hwnd, &margins);
+}
+
+}  // namespace
 
 // What a window looked like before it was made full screen, so that leaving full screen
 // restores exactly that. Windows has no full-screen window state of its own — a full
@@ -1176,9 +1226,7 @@ void Window::SetTitleBarStyle(TitleBarStyle style) {
   GetWindowRect(pimpl_->hwnd_, &rect);
 
   // Apply DWM frame extension based on style
-  const int extent = pimpl_->visual_effect_ == VisualEffect::None ? 0 : -1;
-  MARGINS margins = {extent, extent, extent, extent};
-  DwmExtendFrameIntoClientArea(pimpl_->hwnd_, &margins);
+  UpdateFrameExtent(pimpl_->hwnd_, pimpl_->visual_effect_ != VisualEffect::None);
 
   // Trigger frame change to apply the new style
   SetWindowPos(pimpl_->hwnd_, nullptr, rect.left, rect.top, 0, 0,
@@ -1266,9 +1314,7 @@ void Window::SetVisualEffect(VisualEffect effect) {
 
   if (SUCCEEDED(DwmSetWindowAttribute(pimpl_->hwnd_, 38, &backdrop_type, sizeof(backdrop_type)))) {
     pimpl_->visual_effect_ = effect;
-    const int extent = effect == VisualEffect::None ? 0 : -1;
-    MARGINS margins{extent, extent, extent, extent};
-    DwmExtendFrameIntoClientArea(pimpl_->hwnd_, &margins);
+    UpdateFrameExtent(pimpl_->hwnd_, effect != VisualEffect::None);
     if (effect == VisualEffect::None) RemovePropW(pimpl_->hwnd_, L"NativeAPIBackdropEnabled");
     else SetPropW(pimpl_->hwnd_, L"NativeAPIBackdropEnabled", reinterpret_cast<HANDLE>(1));
     InvalidateRect(pimpl_->hwnd_, nullptr, TRUE);
@@ -1282,7 +1328,29 @@ VisualEffect Window::GetVisualEffect() const {
 void Window::SetBackgroundColor(const Color& color) {
   if (!pimpl_->hwnd_)
     return;
-  
+
+  if (color.a < 255) {
+    // A brush cannot be translucent. The compositor draws the color instead, behind
+    // whatever the window and its children leave transparent - a Flutter view clears
+    // to transparent, so this is all it takes to see the desktop through it.
+    const DWORD gradient = (static_cast<DWORD>(color.a) << 24) |
+                           (static_cast<DWORD>(color.b) << 16) |
+                           (static_cast<DWORD>(color.g) << 8) | color.r;
+    const uintptr_t stored = (uintptr_t{1} << 32) | (static_cast<uintptr_t>(color.a) << 24) |
+                             (static_cast<uintptr_t>(color.r) << 16) |
+                             (static_cast<uintptr_t>(color.g) << 8) | color.b;
+    SetPropW(pimpl_->hwnd_, kTranslucentBackgroundProperty, reinterpret_cast<HANDLE>(stored));
+    UpdateFrameExtent(pimpl_->hwnd_, pimpl_->visual_effect_ != VisualEffect::None);
+    SetAccentPolicy(pimpl_->hwnd_, kAccentEnableTransparentGradient, gradient);
+    InvalidateRect(pimpl_->hwnd_, nullptr, TRUE);
+    return;
+  }
+  if (GetPropW(pimpl_->hwnd_, kTranslucentBackgroundProperty)) {
+    RemovePropW(pimpl_->hwnd_, kTranslucentBackgroundProperty);
+    SetAccentPolicy(pimpl_->hwnd_, kAccentDisabled, 0);
+    UpdateFrameExtent(pimpl_->hwnd_, pimpl_->visual_effect_ != VisualEffect::None);
+  }
+
   // Create new brush with the specified color
   COLORREF colorRef = RGB(color.r, color.g, color.b);
   HBRUSH brush = CreateSolidBrush(colorRef);
@@ -1309,7 +1377,15 @@ void Window::SetBackgroundColor(const Color& color) {
 Color Window::GetBackgroundColor() const {
   if (!pimpl_->hwnd_)
     return Color::White;
-  
+
+  if (HANDLE translucent = GetPropW(pimpl_->hwnd_, kTranslucentBackgroundProperty)) {
+    const uintptr_t stored = reinterpret_cast<uintptr_t>(translucent);
+    return Color::FromRGBA(static_cast<unsigned char>((stored >> 16) & 0xFF),
+                           static_cast<unsigned char>((stored >> 8) & 0xFF),
+                           static_cast<unsigned char>(stored & 0xFF),
+                           static_cast<unsigned char>((stored >> 24) & 0xFF));
+  }
+
   // Get the background brush from the window class
   HBRUSH brush = reinterpret_cast<HBRUSH>(
     GetClassLongPtr(pimpl_->hwnd_, GCLP_HBRBACKGROUND));
