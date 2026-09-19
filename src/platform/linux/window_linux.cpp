@@ -135,9 +135,19 @@ static GtkWidget* FindHeaderBar(GtkWidget* widget) {
   if (GTK_IS_HEADER_BAR(widget))
     return widget;
 
-  // If it's a container, search children
+  // If it's a container, search children. gtk_container_forall(), not
+  // gtk_container_get_children(): the title bar GTK gives a window with client-side
+  // decorations - every toplevel on Wayland, Flutter's windows among them - is an
+  // internal child, which the latter leaves out.
   if (GTK_IS_CONTAINER(widget)) {
-    GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+    GList* children = nullptr;
+    gtk_container_forall(
+        GTK_CONTAINER(widget),
+        [](GtkWidget* child, gpointer data) {
+          GList** list = static_cast<GList**>(data);
+          *list = g_list_append(*list, child);
+        },
+        &children);
     for (GList* l = children; l != nullptr; l = l->next) {
       GtkWidget* child = GTK_WIDGET(l->data);
       GtkWidget* result = FindHeaderBar(child);
