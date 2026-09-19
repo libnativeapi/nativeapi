@@ -49,7 +49,7 @@ class WindowManager : public EventEmitter<WindowEvent> {
    * @code
    * // Usage example:
    * auto& manager = WindowManager::GetInstance();
-   * auto window = manager.Create(options);
+   * auto window = manager.GetCurrent();
    * @endcode
    */
   static WindowManager& GetInstance();

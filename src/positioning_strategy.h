@@ -111,7 +111,7 @@ class PositioningStrategy {
    *
    * @example
    * ```cpp
-   * auto window = WindowManager::GetInstance().Create(options);
+   * auto window = std::make_shared<Window>();
    * // Position menu at bottom of window (no offset)
    * auto strategy = PositioningStrategy::Relative(*window, {0, 0});
    * menu->Open(strategy);

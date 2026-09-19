@@ -168,7 +168,7 @@ class Application : public EventEmitter<ApplicationEvent> {
    *
    * @code
    * auto& app = Application::GetInstance();
-   * auto window = WindowManager::GetInstance().Create(options);
+   * auto window = std::make_shared<Window>();
    * int exit_code = app.Run(window);
    * @endcode
    */
@@ -381,7 +381,7 @@ class Application : public EventEmitter<ApplicationEvent> {
  * @return Exit code of the application (0 for success)
  *
  * @code
- * auto window = WindowManager::GetInstance().Create(options);
+ * auto window = std::make_shared<Window>();
  * int exit_code = RunApp(window);
  * @endcode
  */
