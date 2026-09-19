@@ -31,6 +31,30 @@ std::shared_ptr<Image> TrayIcon::GetIcon() const {
   return nullptr;
 }
 
+void TrayIcon::SetIconTemplate(bool is_icon_template) {
+  // Not applicable to Android
+}
+
+bool TrayIcon::IsIconTemplate() const {
+  return false;
+}
+
+void TrayIcon::SetIconSize(Size size) {
+  // Not applicable to Android
+}
+
+Size TrayIcon::GetIconSize() const {
+  return Size{18, 18};
+}
+
+void TrayIcon::SetIconPosition(TrayIconPosition position) {
+  // Not applicable to Android
+}
+
+TrayIconPosition TrayIcon::GetIconPosition() const {
+  return TrayIconPosition::Left;
+}
+
 void TrayIcon::SetTitle(std::optional<std::string> title) {
   ALOGW("TrayIcon::SetTitle uses Android notification title");
 }

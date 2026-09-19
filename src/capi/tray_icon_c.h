@@ -30,6 +30,11 @@ typedef enum {
   NATIVE_CONTEXT_MENU_TRIGGER_DOUBLE_CLICKED = 3,
 } native_context_menu_trigger_t;
 
+typedef enum {
+  NATIVE_TRAY_ICON_POSITION_LEFT = 0,
+  NATIVE_TRAY_ICON_POSITION_RIGHT = 1,
+} native_tray_icon_position_t;
+
 /// Opaque TrayIcon handle.
 ///
 /// A generational index into the library's handle table, NOT a pointer:
@@ -92,6 +97,24 @@ void native_tray_icon_set_icon(native_tray_icon_t tray_icon, native_image_t imag
 /// Caller owns the returned handle; release it with native_image_free().
 FFI_PLUGIN_EXPORT
 native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon);
+
+FFI_PLUGIN_EXPORT
+void native_tray_icon_set_icon_template(native_tray_icon_t tray_icon, bool is_icon_template);
+
+FFI_PLUGIN_EXPORT
+bool native_tray_icon_is_icon_template(native_tray_icon_t tray_icon);
+
+FFI_PLUGIN_EXPORT
+void native_tray_icon_set_icon_size(native_tray_icon_t tray_icon, native_size_t size);
+
+FFI_PLUGIN_EXPORT
+native_size_t native_tray_icon_get_icon_size(native_tray_icon_t tray_icon);
+
+FFI_PLUGIN_EXPORT
+void native_tray_icon_set_icon_position(native_tray_icon_t tray_icon, native_tray_icon_position_t position);
+
+FFI_PLUGIN_EXPORT
+native_tray_icon_position_t native_tray_icon_get_icon_position(native_tray_icon_t tray_icon);
 
 FFI_PLUGIN_EXPORT
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title);
@@ -186,6 +209,8 @@ void free_c_tray_icon_event(native_tray_icon_event_t* value);
 
 inline native_context_menu_trigger_t to_c_context_menu_trigger(nativeapi::ContextMenuTrigger value);
 inline nativeapi::ContextMenuTrigger to_cpp_context_menu_trigger(native_context_menu_trigger_t value);
+inline native_tray_icon_position_t to_c_tray_icon_position(nativeapi::TrayIconPosition value);
+inline nativeapi::TrayIconPosition to_cpp_tray_icon_position(native_tray_icon_position_t value);
 
 inline native_context_menu_trigger_t to_c_context_menu_trigger(nativeapi::ContextMenuTrigger value) {
   switch (value) {
@@ -214,6 +239,28 @@ inline nativeapi::ContextMenuTrigger to_cpp_context_menu_trigger(native_context_
       return nativeapi::ContextMenuTrigger::DoubleClicked;
     default:
       return nativeapi::ContextMenuTrigger::None;
+  }
+}
+
+inline native_tray_icon_position_t to_c_tray_icon_position(nativeapi::TrayIconPosition value) {
+  switch (value) {
+    case nativeapi::TrayIconPosition::Left:
+      return NATIVE_TRAY_ICON_POSITION_LEFT;
+    case nativeapi::TrayIconPosition::Right:
+      return NATIVE_TRAY_ICON_POSITION_RIGHT;
+    default:
+      return NATIVE_TRAY_ICON_POSITION_LEFT;
+  }
+}
+
+inline nativeapi::TrayIconPosition to_cpp_tray_icon_position(native_tray_icon_position_t value) {
+  switch (value) {
+    case NATIVE_TRAY_ICON_POSITION_LEFT:
+      return nativeapi::TrayIconPosition::Left;
+    case NATIVE_TRAY_ICON_POSITION_RIGHT:
+      return nativeapi::TrayIconPosition::Right;
+    default:
+      return nativeapi::TrayIconPosition::Left;
   }
 }
 

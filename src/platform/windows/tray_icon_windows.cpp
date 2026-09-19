@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "../../foundation/geometry.h"
 #include "../../foundation/id_allocator.h"
@@ -23,10 +24,86 @@ namespace nativeapi {
 // image_windows.cpp
 HICON ImageToHICON(const Image* image, int width, int height);
 
+namespace {
+
+// Tells tray icons when the taskbar has been created again. Explorer forgets
+// every notification icon when it restarts and announces the new taskbar by
+// broadcasting the registered "TaskbarCreated" message. The shared host window
+// cannot hear it: it is message-only, and broadcasts skip message-only windows.
+// So this keeps a hidden top-level window of its own, on the thread that
+// created the first tray icon.
+class TaskbarRestartWatcher {
+ public:
+  static TaskbarRestartWatcher& GetInstance() {
+    static TaskbarRestartWatcher instance;
+    return instance;
+  }
+
+  int Add(std::function<void()> on_taskbar_created) {
+    EnsureWindow();
+    int id = next_id_++;
+    callbacks_[id] = std::move(on_taskbar_created);
+    return id;
+  }
+
+  void Remove(int id) { callbacks_.erase(id); }
+
+ private:
+  TaskbarRestartWatcher() = default;
+
+  void EnsureWindow() {
+    if (hwnd_) {
+      return;
+    }
+    taskbar_created_message_ = RegisterWindowMessageW(L"TaskbarCreated");
+
+    HINSTANCE instance = GetModuleHandleW(nullptr);
+    const wchar_t* class_name = L"NativeAPITaskbarRestartWatcher";
+    WNDCLASSW wc = {};
+    wc.lpfnWndProc = WndProc;
+    wc.hInstance = instance;
+    wc.lpszClassName = class_name;
+    RegisterClassW(&wc);  // Fails harmlessly when the class already exists
+
+    hwnd_ = CreateWindowExW(WS_EX_TOOLWINDOW, class_name, L"", WS_POPUP, 0, 0, 0, 0, nullptr,
+                            nullptr, instance, nullptr);
+    if (hwnd_ && taskbar_created_message_ != 0) {
+      // An elevated process does not get broadcasts from the (unelevated) shell
+      // unless it opts in.
+      ChangeWindowMessageFilterEx(hwnd_, taskbar_created_message_, MSGFLT_ALLOW, nullptr);
+    }
+  }
+
+  static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+    TaskbarRestartWatcher& self = GetInstance();
+    if (self.taskbar_created_message_ != 0 && message == self.taskbar_created_message_) {
+      // Copy: a callback may add or remove tray icons.
+      auto callbacks = self.callbacks_;
+      for (auto& entry : callbacks) {
+        if (self.callbacks_.count(entry.first)) {
+          entry.second();
+        }
+      }
+      return 0;
+    }
+    return DefWindowProcW(hwnd, message, wparam, lparam);
+  }
+
+  HWND hwnd_ = nullptr;
+  UINT taskbar_created_message_ = 0;
+  int next_id_ = 1;
+  std::unordered_map<int, std::function<void()>> callbacks_;
+};
+
+}  // namespace
+
 // Private implementation class
 class TrayIcon::Impl {
  public:
   std::shared_ptr<Image> image_;
+  bool icon_template_ = false;
+  Size icon_size_ = Size{18, 18};
+  TrayIconPosition icon_position_ = TrayIconPosition::Left;
 
   // Callback function types
   using ClickedCallback = std::function<void(TrayIconId)>;
@@ -63,11 +140,18 @@ class TrayIcon::Impl {
     nid_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid_.uCallbackMessage = WM_USER + 1;  // Custom message for tray icon events
 
+    taskbar_watch_id_ =
+        TaskbarRestartWatcher::GetInstance().Add([this]() { RestoreAfterTaskbarRestart(); });
+
     // Event monitoring will be set up when first listener is added
     // via StartEventListening() override
   }
 
   ~Impl() {
+    if (taskbar_watch_id_ != 0) {
+      TaskbarRestartWatcher::GetInstance().Remove(taskbar_watch_id_);
+    }
+
     // Clean up event monitoring if it was set up
     if (event_monitoring_setup_) {
       CleanupEventMonitoring();
@@ -79,6 +163,14 @@ class TrayIcon::Impl {
     }
     if (icon_handle_) {
       DestroyIcon(icon_handle_);
+    }
+  }
+
+  // The new taskbar knows nothing about this icon. nid_ still carries the icon,
+  // tooltip and callback message, so adding it again restores everything.
+  void RestoreAfterTaskbarRestart() {
+    if (hwnd_ && visible_) {
+      Shell_NotifyIconW(NIM_ADD, &nid_);
     }
   }
 
@@ -151,6 +243,10 @@ class TrayIcon::Impl {
   TrayIconId tray_icon_id_;
   bool event_monitoring_setup_;
   ContextMenuTrigger context_menu_trigger_;
+  // What SetVisible() last asked for; the shell's own answer is lost when
+  // Explorer restarts.
+  bool visible_ = false;
+  int taskbar_watch_id_ = 0;
 
   // Callback functions for event emission
   ClickedCallback clicked_callback_;
@@ -277,6 +373,33 @@ std::shared_ptr<Image> TrayIcon::GetIcon() const {
   return pimpl_->image_;
 }
 
+void TrayIcon::SetIconTemplate(bool is_icon_template) {
+  // Recorded only: the notification area always draws the icon's own colours.
+  pimpl_->icon_template_ = is_icon_template;
+}
+
+bool TrayIcon::IsIconTemplate() const {
+  return pimpl_->icon_template_;
+}
+
+void TrayIcon::SetIconSize(Size size) {
+  // Recorded only: the notification area dictates the icon size.
+  pimpl_->icon_size_ = size;
+}
+
+Size TrayIcon::GetIconSize() const {
+  return pimpl_->icon_size_;
+}
+
+void TrayIcon::SetIconPosition(TrayIconPosition position) {
+  // Recorded only: Windows tray icons have no title.
+  pimpl_->icon_position_ = position;
+}
+
+TrayIconPosition TrayIcon::GetIconPosition() const {
+  return pimpl_->icon_position_;
+}
+
 void TrayIcon::SetTitle(std::optional<std::string> title) {
   (void)title;  // Unused on Windows
   // Windows tray icons don't support title
@@ -341,6 +464,10 @@ bool TrayIcon::SetVisible(bool visible) {
   if (!pimpl_->hwnd_) {
     return false;
   }
+
+  // Recorded even when the call below fails (no taskbar at the moment), so the
+  // icon comes back once a taskbar exists.
+  pimpl_->visible_ = visible;
 
   bool currently_visible = IsVisible();
 

@@ -34,6 +34,9 @@ namespace nativeapi {
 class TrayIcon::Impl {
  public:
   std::shared_ptr<Image> image_;
+  bool icon_template_ = false;
+  Size icon_size_ = Size{18, 18};
+  TrayIconPosition icon_position_ = TrayIconPosition::Left;
 
   Impl(NSStatusItem* status_item)
       : ns_status_item_(status_item),
@@ -85,6 +88,30 @@ class TrayIcon::Impl {
     if (context_menu_) {
       context_menu_.reset();  // Explicitly reset shared_ptr
     }
+  }
+
+  // Puts image_ on the button the way the icon properties ask for. Works on a
+  // copy: the NSImage belongs to the caller's Image, which may be in use
+  // elsewhere (a menu item, another tray icon) at another size.
+  void ApplyIcon() {
+    if (!ns_status_item_ || !ns_status_item_.button) {
+      return;
+    }
+    NSStatusBarButton* button = ns_status_item_.button;
+    button.imagePosition = icon_position_ == TrayIconPosition::Right ? NSImageRight : NSImageLeft;
+
+    NSImage* source = image_ ? (__bridge NSImage*)image_->GetNativeObject() : nil;
+    if (!source) {
+      [button setImage:nil];
+      return;
+    }
+
+    NSImage* ns_image = [source copy];
+    if (icon_size_.width > 0 && icon_size_.height > 0) {
+      [ns_image setSize:NSMakeSize(icon_size_.width, icon_size_.height)];
+    }
+    [ns_image setTemplate:icon_template_ ? YES : NO];
+    [button setImage:ns_image];
   }
 
   void SetupEventHandlers() {
@@ -207,36 +234,39 @@ TrayIconId TrayIcon::GetId() {
 }
 
 void TrayIcon::SetIcon(std::shared_ptr<Image> image) {
-  if (!pimpl_->ns_status_item_ || !pimpl_->ns_status_item_.button) {
-    return;
-  }
-
-  // Store the image reference
   pimpl_->image_ = image;
-
-  NSImage* ns_image = nil;
-
-  if (image) {
-    // Get NSImage directly from Image object using GetNativeObject
-    ns_image = (__bridge NSImage*)image->GetNativeObject();
-  }
-
-  if (ns_image) {
-    // Set appropriate size for status bar
-    [ns_image setSize:NSMakeSize(18, 18)];
-    // Make it template image for proper appearance in dark mode
-    [ns_image setTemplate:YES];
-
-    // Set the image to the button
-    [pimpl_->ns_status_item_.button setImage:ns_image];
-  } else {
-    // Clear the image if no valid icon is provided
-    [pimpl_->ns_status_item_.button setImage:nil];
-  }
+  pimpl_->ApplyIcon();
 }
 
 std::shared_ptr<Image> TrayIcon::GetIcon() const {
   return pimpl_->image_;
+}
+
+void TrayIcon::SetIconTemplate(bool is_icon_template) {
+  pimpl_->icon_template_ = is_icon_template;
+  pimpl_->ApplyIcon();
+}
+
+bool TrayIcon::IsIconTemplate() const {
+  return pimpl_->icon_template_;
+}
+
+void TrayIcon::SetIconSize(Size size) {
+  pimpl_->icon_size_ = size;
+  pimpl_->ApplyIcon();
+}
+
+Size TrayIcon::GetIconSize() const {
+  return pimpl_->icon_size_;
+}
+
+void TrayIcon::SetIconPosition(TrayIconPosition position) {
+  pimpl_->icon_position_ = position;
+  pimpl_->ApplyIcon();
+}
+
+TrayIconPosition TrayIcon::GetIconPosition() const {
+  return pimpl_->icon_position_;
 }
 
 void TrayIcon::SetTitle(std::optional<std::string> title) {

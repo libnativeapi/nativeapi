@@ -82,6 +82,91 @@ native_image_t native_tray_icon_get_icon(native_tray_icon_t tray_icon) {
   }
 }
 
+void native_tray_icon_set_icon_template(native_tray_icon_t tray_icon, bool is_icon_template) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetIconTemplate(is_icon_template);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_icon_template");
+    return;
+  }
+}
+
+bool native_tray_icon_is_icon_template(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return false;
+  }
+  try {
+    return self->IsIconTemplate();
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_is_icon_template");
+    return false;
+  }
+}
+
+void native_tray_icon_set_icon_size(native_tray_icon_t tray_icon, native_size_t size) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return;
+  }
+  try {
+    auto size_cpp = to_cpp_size(size);
+    self->SetIconSize(size_cpp);
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_icon_size");
+    return;
+  }
+}
+
+native_size_t native_tray_icon_get_icon_size(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    native_size_t result = {};
+    return result;
+  }
+  try {
+    const auto cpp_result = self->GetIconSize();
+    return to_c_size(cpp_result);
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_icon_size");
+    native_size_t result = {};
+    return result;
+  }
+}
+
+void native_tray_icon_set_icon_position(native_tray_icon_t tray_icon, native_tray_icon_position_t position) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return;
+  }
+  try {
+    self->SetIconPosition(to_cpp_tray_icon_position(position));
+    return;
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_set_icon_position");
+    return;
+  }
+}
+
+native_tray_icon_position_t native_tray_icon_get_icon_position(native_tray_icon_t tray_icon) {
+  auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
+  if (!self) {
+    return (native_tray_icon_position_t)NATIVE_TRAY_ICON_POSITION_LEFT;
+  }
+  try {
+    return to_c_tray_icon_position(self->GetIconPosition());
+  } catch (...) {
+    fprintf(stderr, "[nativeapi] %s: unexpected exception\n", "native_tray_icon_get_icon_position");
+    return (native_tray_icon_position_t)NATIVE_TRAY_ICON_POSITION_LEFT;
+  }
+}
+
 void native_tray_icon_set_title(native_tray_icon_t tray_icon, const char* title) {
   auto self = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::TrayIcon>(tray_icon);
   if (!self) {

@@ -26,6 +26,30 @@ std::shared_ptr<Image> TrayIcon::GetIcon() const {
   return nullptr;
 }
 
+void TrayIcon::SetIconTemplate(bool is_icon_template) {
+  // Not applicable to iOS
+}
+
+bool TrayIcon::IsIconTemplate() const {
+  return false;
+}
+
+void TrayIcon::SetIconSize(Size size) {
+  // Not applicable to iOS
+}
+
+Size TrayIcon::GetIconSize() const {
+  return Size{18, 18};
+}
+
+void TrayIcon::SetIconPosition(TrayIconPosition position) {
+  // Not applicable to iOS
+}
+
+TrayIconPosition TrayIcon::GetIconPosition() const {
+  return TrayIconPosition::Left;
+}
+
 void TrayIcon::SetTitle(std::optional<std::string> title) {
   // Not applicable to iOS
 }

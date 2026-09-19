@@ -56,6 +56,24 @@ enum class ContextMenuTrigger {
   DoubleClicked
 };
 
+/**
+ * @brief Where a tray icon's image sits relative to its title.
+ *
+ * Only meaningful where a tray icon can show an image and a title side by
+ * side, which today is the macOS menu bar.
+ */
+enum class TrayIconPosition {
+  /**
+   * @brief The image is drawn before (to the left of) the title. The default.
+   */
+  Left,
+
+  /**
+   * @brief The image is drawn after (to the right of) the title.
+   */
+  Right
+};
+
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
@@ -244,6 +262,93 @@ class TrayIcon : public EventEmitter<TrayIconEvent>, public NativeObjectProvider
    * @return A shared pointer to the current Image object, or nullptr if no icon is set
    */
   std::shared_ptr<Image> GetIcon() const;
+
+  /**
+   * @brief Sets whether the icon is drawn as a template image.
+   *
+   * A template image contributes only its alpha channel; the system paints it
+   * in whatever colour suits the menu bar (dark on a light bar, light on a dark
+   * one, highlighted while the menu is open). Turn it on for monochrome glyphs,
+   * leave it off for icons that carry their own colours. Off by default.
+   *
+   * Takes effect immediately, also for an icon that is already set. The Image
+   * passed to SetIcon() is never modified.
+   *
+   * @param is_icon_template true to draw the icon as a template image
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Maps to NSImage.template
+   * - Windows: ⚠️ Recorded only - The icon is always drawn with its own colours
+   * - Linux: ⚠️ Recorded only - The icon is always drawn with its own colours
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetIconTemplate(bool is_icon_template);
+
+  /**
+   * @brief Checks if the icon is drawn as a template image.
+   *
+   * @return true if the icon is drawn as a template image
+   *
+   * @see SetIconTemplate() for platform availability.
+   */
+  bool IsIconTemplate() const;
+
+  /**
+   * @brief Sets the size the icon is drawn at.
+   *
+   * The default is 18 x 18 points, the conventional size of a menu bar icon.
+   * A size with a zero or negative dimension draws the icon at the image's own
+   * size, which is how a wide icon keeps its aspect ratio.
+   *
+   * Takes effect immediately, also for an icon that is already set. The Image
+   * passed to SetIcon() is never modified.
+   *
+   * @param size Icon size in points
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported
+   * - Windows: ⚠️ Recorded only - The notification area dictates the icon size
+   * - Linux: ⚠️ Recorded only - The panel dictates the icon size
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetIconSize(Size size);
+
+  /**
+   * @brief Gets the size the icon is drawn at.
+   *
+   * @return The size passed to SetIconSize(), or 18 x 18 if it was never called
+   *
+   * @see SetIconSize() for platform availability.
+   */
+  Size GetIconSize() const;
+
+  /**
+   * @brief Sets where the icon sits relative to the title.
+   *
+   * @param position Side of the title the icon is drawn on
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Maps to NSButton.imagePosition
+   * - Windows: ⚠️ Recorded only - Tray icons have no title
+   * - Linux: ⚠️ Recorded only - The panel decides the layout
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
+   */
+  void SetIconPosition(TrayIconPosition position);
+
+  /**
+   * @brief Gets where the icon sits relative to the title.
+   *
+   * @return The position passed to SetIconPosition(), TrayIconPosition::Left by default
+   *
+   * @see SetIconPosition() for platform availability.
+   */
+  TrayIconPosition GetIconPosition() const;
 
   /**
    * @brief Set the title text for the tray icon.
