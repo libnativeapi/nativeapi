@@ -645,7 +645,9 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * - Windows: ⚠️ Owned window - Stays above its parent and is hidden with it,
    *   but does not move with it, and is destroyed when its parent is.
    * - Linux: ⚠️ Transient window - Stays above its parent; does not move with
-   *   it, and minimizing with the parent is up to the window manager.
+   *   it, and minimizing with the parent is up to the window manager. On Wayland
+   *   nothing an application does can make it follow: a client neither places
+   *   its toplevels nor learns where they are.
    * - Android: ❌ Not applicable - Always ignored, returns false
    * - iOS: ❌ Not applicable - Always ignored, returns false
    * - OpenHarmony: ❌ Not applicable - Always ignored, returns false
@@ -854,7 +856,10 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    *   makes the window non-opaque, so that it really is see-through, and is
    *   handed to a content view controller that paints a backing of its own
    *   (a Flutter view is opaque black otherwise).
-   * - Linux: Sets the window background color via GTK/X11
+   * - Linux: Sets the window background color via GTK CSS, and hands the color
+   *   to a Flutter view in the window, which paints an opaque black backing of
+   *   its own otherwise. A color with alpha is see-through where the desktop
+   *   composites windows (always on Wayland).
    */
   void SetBackgroundColor(const Color& color);
 

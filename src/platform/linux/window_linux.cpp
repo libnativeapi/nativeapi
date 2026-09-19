@@ -8,6 +8,8 @@
 
 // Import GTK headers
 #include <gdk/gdk.h>
+#include <dlfcn.h>
+#include <functional>
 #include <gtk/gtk.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -643,6 +645,25 @@ bool Window::IsAlwaysOnBottom() const {
   return state & GDK_WINDOW_STATE_BELOW;
 }
 
+// GDK tells a Wayland compositor about the parent when the child is mapped or the
+// relationship changes - and only if the parent has a surface by then. A child that
+// is mapped before its parent (an embedding framework decides the order) would stay
+// without one for good, so the relationship is announced again once the parent is up.
+static gboolean OnParentMappedAnnounceChild(GtkWidget* parent, GdkEvent* event, gpointer data) {
+  (void)event;
+  GtkWidget* child = GTK_WIDGET(data);
+  if (GTK_IS_WINDOW(child) && gtk_window_get_transient_for(GTK_WINDOW(child)) == GTK_WINDOW(parent)) {
+    gtk_window_set_transient_for(GTK_WINDOW(child), nullptr);
+    gtk_window_set_transient_for(GTK_WINDOW(child), GTK_WINDOW(parent));
+  }
+  g_signal_handlers_disconnect_matched(parent, static_cast<GSignalMatchType>(
+                                                   G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA),
+                                       0, 0, nullptr,
+                                       reinterpret_cast<gpointer>(OnParentMappedAnnounceChild),
+                                       child);
+  return FALSE;
+}
+
 bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
   GtkWidget* widget = static_cast<GtkWidget*>(GetNativeObject());
   if (!widget || !GTK_IS_WINDOW(widget)) {
@@ -664,6 +685,11 @@ bool Window::SetParentWindow(std::shared_ptr<Window> parent) {
     }
   }
   gtk_window_set_transient_for(GTK_WINDOW(widget), parent_window);
+  if (parent_window && !gtk_widget_get_mapped(GTK_WIDGET(parent_window))) {
+    // Disconnected with the child, should that go away first
+    g_signal_connect_object(parent_window, "map-event",
+                            G_CALLBACK(OnParentMappedAnnounceChild), widget, G_CONNECT_AFTER);
+  }
   return true;
 }
 
@@ -874,6 +900,31 @@ void Window::SetBackgroundColor(const Color& color) {
                                  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
   
   g_object_unref(provider);
+
+  // The content may paint a backing of its own over the window's background. A Flutter
+  // view does - opaque black - and has a setter for it, which is looked up at run time:
+  // core does not link against Flutter.
+  using SetViewBackgroundFn = void (*)(gpointer view, const GdkRGBA* color);
+  static const auto set_view_background =
+      reinterpret_cast<SetViewBackgroundFn>(dlsym(RTLD_DEFAULT, "fl_view_set_background_color"));
+  if (set_view_background) {
+    const GdkRGBA rgba = {color.r / 255.0, color.g / 255.0, color.b / 255.0, color.a / 255.0};
+    std::function<void(GtkWidget*)> visit = [&](GtkWidget* widget) {
+      if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "FlView") == 0) {
+        set_view_background(widget, &rgba);
+        return;
+      }
+      if (GTK_IS_CONTAINER(widget)) {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+        for (GList* l = children; l != nullptr; l = l->next) {
+          visit(GTK_WIDGET(l->data));
+        }
+        g_list_free(children);
+      }
+    };
+    visit(pimpl_->widget_);
+  }
+  gtk_widget_queue_draw(pimpl_->widget_);
 }
 
 Color Window::GetBackgroundColor() const {
