@@ -49,6 +49,8 @@ struct Layout {
 // GTK's own window API already speaks in content sizes and shadowless positions
 // (gtk_window_resize, gtk_window_move); this makes the measured side agree with it,
 // from where GTK allocated the window's child and its title bar.
+static GtkWidget* FindHeaderBar(GtkWidget* widget);
+
 static Layout GetLayout(GtkWidget* widget, GdkWindow* gdk_window) {
   Layout layout;
   // An unmapped window has no frame yet, and GDK answers with an estimate that is not
@@ -70,7 +72,41 @@ static Layout GetLayout(GtkWidget* widget, GdkWindow* gdk_window) {
   GtkAllocation child_allocation = {};
   gint child_x = 0;
   gint child_y = 0;
-  if (!child || !gtk_widget_get_mapped(child) ||
+  if (!child) {
+    // A window nobody put content into - one this library created - has no child to
+    // measure. GTK's own idea of the window's size leaves client-side decorations out,
+    // which tells the content's size; where it sits inside the surface is not public,
+    // so the shadow is taken to be as wide above as below.
+    gint width = 0;
+    gint height = 0;
+    gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
+    if (width <= 1 || height <= 1 ||
+        (width >= layout.content.width && height >= layout.content.height)) {
+      return layout;
+    }
+    gint title_height = 0;
+    GtkWidget* header_bar = FindHeaderBar(widget);
+    if (header_bar && gtk_widget_get_mapped(header_bar)) {
+      title_height = gtk_widget_get_allocated_height(header_bar);
+    }
+    const gint side = (layout.content.width - width) / 2;
+    const gint shadow_top = (layout.content.height - height - title_height) / 2;
+    if (side < 0 || shadow_top < 0) {
+      return layout;
+    }
+    layout.frame = {origin_x + side, origin_y + shadow_top, width, height + title_height};
+    layout.content = {origin_x + side, origin_y + shadow_top + title_height, width, height};
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY(gdk_window_get_display(gdk_window))) {
+      layout.content.x -= layout.frame.x;
+      layout.content.y -= layout.frame.y;
+      layout.frame.x = 0;
+      layout.frame.y = 0;
+    }
+#endif
+    return layout;
+  }
+  if (!gtk_widget_get_mapped(child) ||
       !gtk_widget_translate_coordinates(child, widget, 0, 0, &child_x, &child_y)) {
     return layout;
   }
@@ -845,13 +881,106 @@ TitleBarStyle Window::GetTitleBarStyle() const {
   return pimpl_->title_bar_style_;
 }
 
+// The shadow of a window with client-side decorations - every toplevel on Wayland, and
+// windows with a header bar on X11 - is drawn by GTK itself, from the CSS of the window's
+// "decoration" node. That node cannot be styled through the window's own style context,
+// so the window gets a style class, and one rule for the whole screen takes the shadow
+// (and the hairline border that is part of it) away from windows carrying it. The state
+// lives on the widget, so every wrapper of the window agrees. A window the window
+// manager decorates has no such node: its shadow is not the application's to remove.
+static const char* kNoShadowStyleClass = "nativeapi-no-shadow";
+static const char* kPendingNoShadowKey = "nativeapi-pending-no-shadow";
+
+static void EnsureNoShadowRule(GtkWidget* widget) {
+  static bool installed = false;
+  if (installed) {
+    return;
+  }
+  installed = true;
+  GtkCssProvider* provider = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(provider,
+                                  "window.nativeapi-no-shadow decoration,"
+                                  "window.nativeapi-no-shadow decoration:backdrop {"
+                                  "  box-shadow: none; border: none; }",
+                                  -1, nullptr);
+  gtk_style_context_add_provider_for_screen(gtk_widget_get_screen(widget),
+                                            GTK_STYLE_PROVIDER(provider),
+                                            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  g_object_unref(provider);
+}
+
+// Only ever on a mapped window. The shadow is also a margin of the surface, and GTK
+// does not survive that margin changing between realizing a window and mapping it: it
+// asks for a size with the new margin and allocates with the old one, which leaves the
+// content too small for good. On a mapped window the change is taken in - the content
+// size is asked for again, so that it is the surface that shrinks or grows.
+// GTK marks the windows it decorates itself with the "csd" style class.
+static bool DrawsOwnShadow(GtkWidget* widget) {
+  return gtk_style_context_has_class(gtk_widget_get_style_context(widget), "csd");
+}
+
+static void ApplyShadowClass(GtkWidget* widget, bool has_shadow) {
+  GtkStyleContext* context = gtk_widget_get_style_context(widget);
+  if (!has_shadow && !DrawsOwnShadow(widget)) {
+    return;  // the window manager's shadow: HasShadow() goes on saying true
+  }
+  if (has_shadow == !gtk_style_context_has_class(context, kNoShadowStyleClass)) {
+    return;
+  }
+  if (has_shadow) {
+    gtk_style_context_remove_class(context, kNoShadowStyleClass);
+  } else {
+    EnsureNoShadowRule(widget);
+    gtk_style_context_add_class(context, kNoShadowStyleClass);
+  }
+}
+
+// What SetHasShadow() asked for while the window was not mapped: 1 for no shadow, 2 for
+// a shadow. Also covers a window that is hidden at the moment, which is in the same
+// state as one that was never shown.
+static gboolean OnMappedApplyShadow(GtkWidget* widget, GdkEvent* event, gpointer data) {
+  (void)event;
+  (void)data;
+  const gint pending = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), kPendingNoShadowKey));
+  g_object_set_data(G_OBJECT(widget), kPendingNoShadowKey, nullptr);
+  if (pending != 0) {
+    ApplyShadowClass(widget, pending == 2);
+  }
+  g_signal_handlers_disconnect_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, nullptr,
+                                       reinterpret_cast<gpointer>(OnMappedApplyShadow), nullptr);
+  return FALSE;
+}
+
 void Window::SetHasShadow(bool has_shadow) {
-  // Window shadows are typically managed by the window manager
-  // Provide stub implementation
+  GtkWidget* widget = pimpl_->widget_;
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return;
+  }
+  GObject* object = G_OBJECT(widget);
+  if (gtk_widget_get_mapped(widget)) {
+    g_object_set_data(object, kPendingNoShadowKey, nullptr);
+    ApplyShadowClass(widget, has_shadow);
+    return;
+  }
+  if (!has_shadow && gtk_widget_get_realized(widget) && !DrawsOwnShadow(widget)) {
+    return;  // see ApplyShadowClass()
+  }
+  if (!g_object_get_data(object, kPendingNoShadowKey)) {
+    g_signal_connect(widget, "map-event", G_CALLBACK(OnMappedApplyShadow), nullptr);
+  }
+  g_object_set_data(object, kPendingNoShadowKey, GINT_TO_POINTER(has_shadow ? 2 : 1));
 }
 
 bool Window::HasShadow() const {
-  return true;  // Default assumption
+  GtkWidget* widget = pimpl_->widget_;
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return true;
+  }
+  const gint pending = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), kPendingNoShadowKey));
+  if (pending != 0) {
+    return pending == 2;
+  }
+  return !gtk_style_context_has_class(gtk_widget_get_style_context(widget), kNoShadowStyleClass);
 }
 
 void Window::SetOpacity(float opacity) {

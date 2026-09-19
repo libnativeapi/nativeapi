@@ -789,7 +789,10 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * - Windows: ⚠️ Frameless windows only - The desktop compositor always draws the
    *   shadow of a window that has a title bar; with TitleBarStyle::Hidden the shadow
    *   follows this flag
-   * - Linux: ⚠️ Recorded only - The window manager owns the shadow
+   * - Linux: ⚠️ Client-side decorations only - Removed from the windows GTK decorates
+   *   itself: every window on Wayland, windows with a header bar on X11. On a window
+   *   that is not shown yet it takes effect when the window is shown. A window the
+   *   window manager decorates keeps its shadow, and HasShadow() keeps saying so.
    * - Android: ❌ Not applicable - Always ignored
    * - iOS: ❌ Not applicable - Always ignored
    * - OpenHarmony: ❌ Not applicable - Always ignored
