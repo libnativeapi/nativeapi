@@ -71,6 +71,8 @@ typedef enum {
   NATIVE_WINDOW_EVENT_TYPE_RESTORED = 4,
   NATIVE_WINDOW_EVENT_TYPE_MOVED = 5,
   NATIVE_WINDOW_EVENT_TYPE_RESIZED = 6,
+  NATIVE_WINDOW_EVENT_TYPE_CREATED = 7,
+  NATIVE_WINDOW_EVENT_TYPE_CLOSED = 8,
 } native_window_event_type_t;
 
 /// One WindowEvent, tagged by its concrete type.

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "../../window.h"
 #include "../../window_manager.h"
@@ -35,6 +36,9 @@ class WindowManager::Impl {
   std::unordered_map<WindowId, bool> maximized_;
   // Last top-left corner seen per window, to notice moves that come as resizes
   std::unordered_map<WindowId, Point> positions_;
+  // Windows seen on screen, which is what WindowCreatedEvent and
+  // WindowClosedEvent are about
+  std::unordered_set<WindowId> shown_;
 
   // Optional pre-show/hide hooks
   std::optional<WindowManager::WindowWillShowHook> will_show_hook_;
@@ -179,6 +183,15 @@ static void NativeAPIInstallNSWindowWillHideSwizzleOnce() {
   }
 }
 
+- (void)windowDidChangeOcclusionState:(NSNotification*)notification {
+  // Posted when a window comes on screen, for which AppKit has no notification
+  // of its own
+  NSWindow* window = notification.object;
+  if (_impl && window && nativeapi::g_window_event_trampoline) {
+    nativeapi::g_window_event_trampoline(_impl, window, "occlusion");
+  }
+}
+
 - (void)windowWillClose:(NSNotification*)notification {
   NSWindow* window = [notification object];
   if (_impl && window && nativeapi::g_window_event_trampoline) {
@@ -254,9 +267,24 @@ void WindowManager::Impl::StartEventListening() {
                    name:NSWindowDidMoveNotification
                  object:nil];
     [center addObserver:delegate_
+               selector:@selector(windowDidChangeOcclusionState:)
+                   name:NSWindowDidChangeOcclusionStateNotification
+                 object:nil];
+    [center addObserver:delegate_
                selector:@selector(windowWillClose:)
                    name:NSWindowWillCloseNotification
                  object:nil];
+
+    // Windows already on screen were not created under our eyes: they emit no
+    // WindowCreatedEvent, only the WindowClosedEvent.
+    for (NSWindow* window in [[NSApplication sharedApplication] windows]) {
+      if ([window isVisible]) {
+        WindowId window_id = ResolveWindowId(window);
+        if (window_id != IdAllocator::kInvalidId) {
+          shown_.insert(window_id);
+        }
+      }
+    }
   }
 }
 
@@ -270,12 +298,17 @@ void WindowManager::Impl::StopEventListening() {
 
 void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& event_type) {
   if (event_type == "closing") {
-    // No event is emitted for it, and a closing window must not be wrapped and
-    // registered just to be told apart: only drop the state kept for it.
+    // A closing window must not be wrapped and registered just to be told
+    // apart: a window that was shown already has its ID.
     NSNumber* existing_id = objc_getAssociatedObject(window, kWindowIdKey);
     if (existing_id) {
-      maximized_.erase([existing_id unsignedLongLongValue]);
-      positions_.erase([existing_id unsignedLongLongValue]);
+      WindowId closing_id = [existing_id unsignedLongLongValue];
+      maximized_.erase(closing_id);
+      positions_.erase(closing_id);
+      if (shown_.erase(closing_id) > 0) {
+        WindowClosedEvent event(closing_id);
+        manager_->DispatchWindowEvent(event);
+      }
     }
     return;
   }
@@ -290,6 +323,12 @@ void WindowManager::Impl::OnWindowEvent(NSWindow* window, const std::string& eve
   WindowId window_id = ResolveWindowId(window);
   if (window_id == IdAllocator::kInvalidId) {
     return;
+  }
+
+  // Whichever notification arrives first for a window on screen announces it.
+  if ([window isVisible] && shown_.insert(window_id).second) {
+    WindowCreatedEvent created_event(window_id);
+    manager_->DispatchWindowEvent(created_event);
   }
 
   if (event_type != "resized" && event_type != "moved") {

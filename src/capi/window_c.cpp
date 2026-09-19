@@ -1191,6 +1191,16 @@ bool to_c_window_event(const nativeapi::WindowEvent& event, native_window_event_
     out->data.resized.new_size = to_c_size(typed->GetNewSize());
     return true;
   }
+  if (const auto* typed = dynamic_cast<const nativeapi::WindowCreatedEvent*>(&event)) {
+    out->type = NATIVE_WINDOW_EVENT_TYPE_CREATED;
+    (void)typed;
+    return true;
+  }
+  if (const auto* typed = dynamic_cast<const nativeapi::WindowClosedEvent*>(&event)) {
+    out->type = NATIVE_WINDOW_EVENT_TYPE_CLOSED;
+    (void)typed;
+    return true;
+  }
   return false;
 }
 

@@ -116,6 +116,10 @@ struct WindowSnapshot {
 static HWINEVENTHOOK g_location_hook = nullptr;
 static HWINEVENTHOOK g_lifetime_hook = nullptr;
 static std::unordered_map<HWND, WindowSnapshot> g_window_snapshots;
+// Windows seen on screen, which is what WindowCreatedEvent and WindowClosedEvent
+// are about. The ID is kept because the destroy event is delivered after the
+// HWND, and the property holding its ID, are gone.
+static std::unordered_map<HWND, WindowId> g_shown_windows;
 
 using WindowChangedFn = void (*)(void* impl, DWORD event, HWND hwnd);
 static WindowChangedFn g_window_changed_fn = nullptr;
@@ -466,6 +470,14 @@ class WindowManager::Impl {
         [](HWND hwnd, LPARAM) -> BOOL {
           if (IsOwnProcessWindow(hwnd) && IsReportableWindow(hwnd)) {
             g_window_snapshots[hwnd] = TakeSnapshot(hwnd);
+            // Already on screen, so not created under our eyes: no
+            // WindowCreatedEvent for it, only the WindowClosedEvent.
+            if (IsWindowVisible(hwnd)) {
+              WindowId window_id = GetWindowIdFromHwnd(hwnd);
+              if (window_id != IdAllocator::kInvalidId) {
+                g_shown_windows[hwnd] = window_id;
+              }
+            }
           }
           return TRUE;
         },
@@ -491,6 +503,7 @@ class WindowManager::Impl {
     g_window_changed_fn = nullptr;
     g_window_changed_context = nullptr;
     g_window_snapshots.clear();
+    g_shown_windows.clear();
   }
 
   static WindowSnapshot TakeSnapshot(HWND hwnd) {
@@ -505,10 +518,26 @@ class WindowManager::Impl {
   void OnWindowChanged(DWORD event, HWND hwnd) {
     if (event == EVENT_OBJECT_DESTROY) {
       g_window_snapshots.erase(hwnd);
+      auto shown = g_shown_windows.find(hwnd);
+      if (shown != g_shown_windows.end()) {
+        const WindowId window_id = shown->second;
+        g_shown_windows.erase(shown);
+        WindowClosedEvent closed_event(window_id);
+        manager_->DispatchWindowEvent(closed_event);
+      }
       return;
     }
     if (!IsReportableWindow(hwnd)) {
       return;
+    }
+
+    if (IsWindowVisible(hwnd) && g_shown_windows.find(hwnd) == g_shown_windows.end()) {
+      WindowId window_id = GetWindowIdFromHwnd(hwnd);
+      if (window_id != IdAllocator::kInvalidId) {
+        g_shown_windows[hwnd] = window_id;
+        WindowCreatedEvent created_event(window_id);
+        manager_->DispatchWindowEvent(created_event);
+      }
     }
 
     const WindowSnapshot current = TakeSnapshot(hwnd);

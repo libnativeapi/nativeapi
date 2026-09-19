@@ -1201,4 +1201,63 @@ class WindowResizedEvent : public WindowEvent {
   Size new_size_;
 };
 
+/**
+ * Event class for a window appearing
+ *
+ * This event is emitted the first time a window is shown — not when the native
+ * window object is allocated, which no platform reports for windows the library
+ * did not create. A window that is created and never shown emits nothing; hiding
+ * and showing it again does not emit a second event.
+ *
+ * Windows that were already on screen when the first listener was added emit no
+ * WindowCreatedEvent, but still emit WindowClosedEvent.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ✅ Fully supported
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
+ */
+class WindowCreatedEvent : public WindowEvent {
+ public:
+  explicit WindowCreatedEvent(WindowId window_id) : WindowEvent(window_id) {}
+
+  /**
+   * Get a string representation of the event type
+   */
+  std::string GetTypeName() const override { return "WindowCreatedEvent"; }
+};
+
+/**
+ * Event class for a window going away for good
+ *
+ * This event is emitted when a window is closed and its native window is being
+ * torn down, whoever closed it. Hiding a window does not emit it, and neither
+ * does closing a window that was never shown. By the time
+ * the event arrives WindowManager::Get() may no longer return the window: use
+ * the ID to drop whatever was kept for it. Events the close itself causes, such
+ * as WindowBlurredEvent, may still follow it.
+ *
+ * It cannot veto the close; that is what a close-requested event is for.
+ *
+ * @note Platform availability:
+ * - macOS: ✅ Fully supported
+ * - Windows: ✅ Fully supported
+ * - Linux: ✅ Fully supported
+ * - Android: ❌ Not applicable - Never emitted
+ * - iOS: ❌ Not applicable - Never emitted
+ * - OpenHarmony: ❌ Not applicable - Never emitted
+ */
+class WindowClosedEvent : public WindowEvent {
+ public:
+  explicit WindowClosedEvent(WindowId window_id) : WindowEvent(window_id) {}
+
+  /**
+   * Get a string representation of the event type
+   */
+  std::string GetTypeName() const override { return "WindowClosedEvent"; }
+};
+
 }  // namespace nativeapi

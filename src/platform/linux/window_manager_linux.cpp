@@ -288,6 +288,7 @@ static void InstallGlobalSwizzling() {
 // the two toplevel signals are watched with emission hooks, like the focus pair.
 static gulong g_window_state_hook_id = 0;
 static gulong g_configure_hook_id = 0;
+static gulong g_map_hook_id = 0;
 
 using WindowSignalFn = void (*)(void* impl, WindowId id, const char* event_type);
 static WindowSignalFn g_window_signal_fn = nullptr;
@@ -388,7 +389,53 @@ static gboolean on_configure_emission_hook(GSignalInvocationHint* ihint,
   return TRUE;  // Continue emission
 }
 
+// Toplevels seen on screen, which is what WindowCreatedEvent and
+// WindowClosedEvent are about. The ID is kept because the GdkWindow it hangs on
+// is gone by the time the widget is disposed of.
+static std::map<GtkWidget*, WindowId> g_shown_windows;
+
+static void OnShownWidgetDestroyed(gpointer data, GObject* where_the_object_was) {
+  (void)data;
+  auto it = g_shown_windows.find(reinterpret_cast<GtkWidget*>(where_the_object_was));
+  if (it == g_shown_windows.end()) {
+    return;
+  }
+  const WindowId id = it->second;
+  g_shown_windows.erase(it);
+  if (g_window_signal_fn && g_window_signal_context) {
+    g_window_signal_fn(g_window_signal_context, id, "closed");
+  }
+}
+
+// map-event rather than "show": the toplevel is realized by then, so it has the
+// GdkWindow its ID hangs on.
+static gboolean on_map_emission_hook(GSignalInvocationHint* ihint,
+                                     guint n_param_values,
+                                     const GValue* param_values,
+                                     gpointer data) {
+  (void)ihint;
+  (void)data;
+  if (n_param_values < 1) {
+    return TRUE;
+  }
+  GtkWidget* widget = nullptr;
+  WindowId id = ToplevelIdFromEmission(param_values, &widget);
+  if (id == IdAllocator::kInvalidId || g_shown_windows.count(widget)) {
+    return TRUE;
+  }
+  g_shown_windows[widget] = id;
+  g_object_weak_ref(G_OBJECT(widget), OnShownWidgetDestroyed, nullptr);
+  g_window_signal_fn(g_window_signal_context, id, "created");
+  return TRUE;  // Continue emission
+}
+
 static void InstallWindowSignalHooks() {
+  guint map_signal_id = g_signal_lookup("map-event", GTK_TYPE_WIDGET);
+  if (map_signal_id != 0 && g_map_hook_id == 0) {
+    g_map_hook_id =
+        g_signal_add_emission_hook(map_signal_id, 0, on_map_emission_hook, nullptr, nullptr);
+  }
+
   guint window_state_signal_id = g_signal_lookup("window-state-event", GTK_TYPE_WIDGET);
   guint configure_signal_id = g_signal_lookup("configure-event", GTK_TYPE_WIDGET);
 
@@ -403,6 +450,12 @@ static void InstallWindowSignalHooks() {
 }
 
 static void RemoveWindowSignalHooks() {
+  guint map_signal_id = g_signal_lookup("map-event", GTK_TYPE_WIDGET);
+  if (g_map_hook_id != 0 && map_signal_id != 0) {
+    g_signal_remove_emission_hook(map_signal_id, g_map_hook_id);
+  }
+  g_map_hook_id = 0;
+
   guint window_state_signal_id = g_signal_lookup("window-state-event", GTK_TYPE_WIDGET);
   guint configure_signal_id = g_signal_lookup("configure-event", GTK_TYPE_WIDGET);
 
@@ -448,6 +501,7 @@ class WindowManager::Impl {
         GtkWindow* gtk_window = GTK_WINDOW(l->data);
         InstallShowHideHooks(GTK_WIDGET(gtk_window));
         SeedWindowGeometry(GTK_WIDGET(gtk_window));
+        SeedShownWindow(GTK_WIDGET(gtk_window));
       }
       g_list_free(toplevels);
     }
@@ -465,6 +519,10 @@ class WindowManager::Impl {
       g_object_weak_unref(G_OBJECT(entry.first), OnTrackedWidgetDestroyed, nullptr);
     }
     g_window_geometry.clear();
+    for (const auto& entry : g_shown_windows) {
+      g_object_weak_unref(G_OBJECT(entry.first), OnShownWidgetDestroyed, nullptr);
+    }
+    g_shown_windows.clear();
 
     // Clear hooked widgets set
     std::lock_guard<std::mutex> lock(g_hook_mutex);
@@ -487,8 +545,30 @@ class WindowManager::Impl {
     g_object_weak_ref(G_OBJECT(widget), OnTrackedWidgetDestroyed, nullptr);
   }
 
+  // Windows already on screen were not created under our eyes: they emit no
+  // WindowCreatedEvent, only the WindowClosedEvent.
+  static void SeedShownWindow(GtkWidget* widget) {
+    GdkWindow* gdk_window = gtk_widget_get_window(widget);
+    if (!gdk_window || gtk_window_get_window_type(GTK_WINDOW(widget)) != GTK_WINDOW_TOPLEVEL ||
+        !gtk_widget_get_mapped(widget) || g_shown_windows.count(widget)) {
+      return;
+    }
+    WindowId id = GetOrCreateWindowId(gdk_window);
+    if (id == IdAllocator::kInvalidId) {
+      return;
+    }
+    g_shown_windows[widget] = id;
+    g_object_weak_ref(G_OBJECT(widget), OnShownWidgetDestroyed, nullptr);
+  }
+
   void OnWindowSignal(WindowId window_id, const std::string& event_type) {
-    if (event_type == "minimized") {
+    if (event_type == "created") {
+      WindowCreatedEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "closed") {
+      WindowClosedEvent event(window_id);
+      manager_->DispatchWindowEvent(event);
+    } else if (event_type == "minimized") {
       WindowMinimizedEvent event(window_id);
       manager_->DispatchWindowEvent(event);
     } else if (event_type == "maximized") {
