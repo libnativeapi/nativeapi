@@ -910,6 +910,17 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    * Allows the user to drag the window by clicking and dragging anywhere
    * within the window's content area, not just the title bar. This is
    * commonly used for frameless windows or custom title bars.
+   *
+   * Call it from a mouse-down handler: the window then moves as if the user had
+   * grabbed its title bar, and the move ends when the button is released.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Hands the drag to the window server.
+   * - Windows: ✅ Fully supported - Hands the drag to the system frame.
+   * - Linux: ✅ Fully supported - Starts a window-manager move drag (X11 and Wayland).
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
    */
   void StartDragging();
 

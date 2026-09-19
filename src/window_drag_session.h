@@ -134,6 +134,17 @@ class WindowDragSession : public EventEmitter<WindowDragEvent> {
    * Calling Start() on an active session retargets it: the previous target is
    * released without a WindowDragEndedEvent or WindowDragCancelledEvent, so the
    * same gesture can continue with a different window.
+   *
+   * @note Platform availability:
+   * - macOS: ✅ Fully supported - Global cursor and button state
+   * - Windows: ✅ Fully supported - Global cursor and button state
+   * - Linux: ⚠️ X11 only - Returns false on a Wayland session, where a client can
+   *   neither read the global pointer nor place its own windows; run under Xwayland
+   *   (GDK_BACKEND=x11), or move a window with Window::StartDragging(), which the
+   *   compositor carries out
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
    */
   bool Start(std::shared_ptr<Window> window, Point anchor);
 

@@ -10,10 +10,121 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 namespace nativeapi {
 
 // Key to store/retrieve WindowId on GObjects
 static const char* kWindowIdKey = "NativeAPIWindowId";
+
+// The window manager draws a title bar and border around the client area, and the
+// public geometry is the frame (window.h): positions are the frame's top-left corner
+// in root coordinates and sizes include the decorations. GDK measures both, but only
+// the GtkWindow API positions a toplevel: gdk_window_move() bypasses GTK's own
+// bookkeeping, so the position is lost when the window is mapped and the window
+// manager places the window wherever it likes instead.
+struct Decorations {
+  gint left = 0;
+  gint top = 0;
+  gint right = 0;
+  gint bottom = 0;
+};
+
+// Where the frame and the content of a toplevel are, in root coordinates.
+struct Layout {
+  GdkRectangle frame = {};    // what the user sees as the window: title bar and content
+  GdkRectangle content = {};  // the client area the application draws into
+};
+
+// A window the window manager decorates is simple: its GdkWindow is the content and
+// gdk_window_get_frame_extents() is the frame. A window with client-side decorations is
+// not — a header bar set as the titlebar (Flutter's runner does that on GNOME), and
+// every GTK toplevel on Wayland. Its GdkWindow also holds the title bar and an
+// invisible margin for the shadow, the window manager adds nothing, and both GDK
+// answers describe that whole surface: 52 x 99 more than the content on GNOME 46.
+// GTK's own window API already speaks in content sizes and shadowless positions
+// (gtk_window_resize, gtk_window_move); this makes the measured side agree with it,
+// from where GTK allocated the window's child and its title bar.
+static Layout GetLayout(GtkWidget* widget, GdkWindow* gdk_window) {
+  Layout layout;
+  // An unmapped window has no frame yet, and GDK answers with an estimate that is not
+  // one: taking it for decorations would misplace everything measured against it.
+  if (!gdk_window || !gdk_window_is_viewable(gdk_window)) {
+    return layout;
+  }
+  gint origin_x = 0;
+  gint origin_y = 0;
+  gdk_window_get_origin(gdk_window, &origin_x, &origin_y);
+  layout.content = {origin_x, origin_y, gdk_window_get_width(gdk_window),
+                    gdk_window_get_height(gdk_window)};
+  gdk_window_get_frame_extents(gdk_window, &layout.frame);
+
+  if (!widget || !GTK_IS_WINDOW(widget)) {
+    return layout;
+  }
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(widget));
+  GtkAllocation child_allocation = {};
+  gint child_x = 0;
+  gint child_y = 0;
+  if (!child || !gtk_widget_get_mapped(child) ||
+      !gtk_widget_translate_coordinates(child, widget, 0, 0, &child_x, &child_y)) {
+    return layout;
+  }
+  gtk_widget_get_allocation(child, &child_allocation);
+  const bool client_side = child_x > 0 || child_y > 0 ||
+                           child_allocation.width < layout.content.width ||
+                           child_allocation.height < layout.content.height;
+  if (!client_side || child_allocation.width <= 1 || child_allocation.height <= 1) {
+    return layout;
+  }
+
+  layout.content = {origin_x + child_x, origin_y + child_y, child_allocation.width,
+                    child_allocation.height};
+  // The frame is the content plus the title bar above it; the shadow is not part of it.
+  gint frame_top = child_y;
+  GtkWidget* titlebar = gtk_window_get_titlebar(GTK_WINDOW(widget));
+  gint titlebar_x = 0;
+  gint titlebar_y = 0;
+  if (titlebar && gtk_widget_get_mapped(titlebar) &&
+      gtk_widget_translate_coordinates(titlebar, widget, 0, 0, &titlebar_x, &titlebar_y) &&
+      titlebar_y < frame_top) {
+    frame_top = titlebar_y;
+  }
+  layout.frame = {origin_x + child_x, origin_y + frame_top, child_allocation.width,
+                  child_allocation.height + (child_y - frame_top)};
+#ifdef GDK_WINDOWING_WAYLAND
+  // A Wayland client is not told where it is: its "origin" is the corner of its own
+  // surface, shadow included. Report the frame at 0,0 as before, not at the shadow's
+  // width — a position that looks real and is not.
+  if (GDK_IS_WAYLAND_DISPLAY(gdk_window_get_display(gdk_window))) {
+    layout.content.x -= layout.frame.x;
+    layout.content.y -= layout.frame.y;
+    layout.frame.x = 0;
+    layout.frame.y = 0;
+  }
+#endif
+  return layout;
+}
+
+// Zero until the window is mapped, and whatever is known on Wayland, where a client
+// is not told where it is but still knows its own title bar.
+static Decorations GetDecorations(GtkWidget* widget, GdkWindow* gdk_window) {
+  const Layout layout = GetLayout(widget, gdk_window);
+  Decorations decorations;
+  decorations.left = layout.content.x - layout.frame.x;
+  decorations.top = layout.content.y - layout.frame.y;
+  decorations.right = layout.frame.width - layout.content.width - decorations.left;
+  decorations.bottom = layout.frame.height - layout.content.height - decorations.top;
+  // Before the window is mapped the answers do not agree yet; nothing is known about
+  // the decorations then, rather than a negative thickness.
+  if (decorations.left < 0 || decorations.top < 0 || decorations.right < 0 ||
+      decorations.bottom < 0) {
+    return Decorations{};
+  }
+  return decorations;
+}
 
 // Helper function to find header bar in widget hierarchy
 static GtkWidget* FindHeaderBar(GtkWidget* widget) {
@@ -56,6 +167,10 @@ class Window::Impl {
   VisualEffect visual_effect_;
   Color background_color_;
   double aspect_ratio_ = 0.0;
+  // What SetContentSize() asked for while the window was not mapped yet. GDK only
+  // learns the new size when the window manager confirms it, which is after anything
+  // the caller does next — centring the window, say.
+  Size requested_content_size_ = {0, 0};
   // Recorded only: keyboard focus is per window on Linux, see Window::SetNonActivating().
   bool non_activating_ = false;
 };
@@ -293,60 +408,94 @@ bool Window::IsFullScreen() const {
 }
 
 void Window::SetBounds(Rectangle bounds) {
-  if (pimpl_->gdk_window_) {
-    gdk_window_move_resize(pimpl_->gdk_window_, (gint)bounds.x, (gint)bounds.y, (gint)bounds.width,
-                           (gint)bounds.height);
-  }
+  const Decorations decorations = GetDecorations(pimpl_->widget_, pimpl_->gdk_window_);
+  SetContentBounds({bounds.x + decorations.left, bounds.y + decorations.top,
+                    bounds.width - decorations.left - decorations.right,
+                    bounds.height - decorations.top - decorations.bottom});
 }
 
 Rectangle Window::GetBounds() const {
-  Rectangle bounds = {0, 0, 0, 0};
-  if (pimpl_->gdk_window_) {
-    gint x, y, width, height;
-    gdk_window_get_geometry(pimpl_->gdk_window_, &x, &y, &width, &height);
-    bounds.x = x;
-    bounds.y = y;
-    bounds.width = width;
-    bounds.height = height;
-  }
-  return bounds;
+  const Point position = GetPosition();
+  const Size size = GetSize();
+  return {position.x, position.y, size.width, size.height};
 }
 
 void Window::SetSize(Size size, bool animate) {
-  if (pimpl_->gdk_window_) {
+  const Decorations decorations = GetDecorations(pimpl_->widget_, pimpl_->gdk_window_);
+  SetContentSize({size.width - decorations.left - decorations.right,
+                  size.height - decorations.top - decorations.bottom});
+}
+
+Size Window::GetSize() const {
+  const Decorations decorations = GetDecorations(pimpl_->widget_, pimpl_->gdk_window_);
+  const Size content = GetContentSize();
+  return {content.width + decorations.left + decorations.right,
+          content.height + decorations.top + decorations.bottom};
+}
+
+void Window::SetContentSize(Size size) {
+  if (pimpl_->widget_ && !gtk_widget_get_mapped(pimpl_->widget_)) {
+    pimpl_->requested_content_size_ = size;
+  }
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    GtkWindow* gtk_window = GTK_WINDOW(pimpl_->widget_);
+    if (!gtk_widget_get_mapped(pimpl_->widget_)) {
+      // Windows are realized as soon as they are created, and GTK then maps them at
+      // whatever size the GdkWindow already has: a resize requested in between is
+      // forgotten. Set all three, so the size holds whenever it is asked for.
+      gtk_window_set_default_size(gtk_window, (gint)size.width, (gint)size.height);
+      if (pimpl_->gdk_window_) {
+        gdk_window_resize(pimpl_->gdk_window_, (gint)size.width, (gint)size.height);
+      }
+    }
+    gtk_window_resize(gtk_window, (gint)size.width, (gint)size.height);
+  } else if (pimpl_->gdk_window_) {
     gdk_window_resize(pimpl_->gdk_window_, (gint)size.width, (gint)size.height);
   }
 }
 
-Size Window::GetSize() const {
-  Size size = {0, 0};
-  if (pimpl_->gdk_window_) {
-    gint width, height;
-    gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &width, &height);
-    size.width = width;
-    size.height = height;
-  }
-  return size;
-}
-
-void Window::SetContentSize(Size size) {
-  // For GDK windows, content size is the same as window size
-  SetSize(size, false);
-}
-
 Size Window::GetContentSize() const {
-  // For GDK windows, content size is the same as window size
-  return GetSize();
+  if (pimpl_->widget_ && !gtk_widget_get_mapped(pimpl_->widget_) &&
+      pimpl_->requested_content_size_.width > 0) {
+    return pimpl_->requested_content_size_;
+  }
+  if (!pimpl_->gdk_window_) {
+    return {0, 0};
+  }
+  if (!gdk_window_is_viewable(pimpl_->gdk_window_)) {
+    return {static_cast<double>(gdk_window_get_width(pimpl_->gdk_window_)),
+            static_cast<double>(gdk_window_get_height(pimpl_->gdk_window_))};
+  }
+  // Not the GdkWindow's size: with client-side decorations that includes the title bar
+  // and the shadow, and would not be what SetContentSize() was given.
+  const Layout layout = GetLayout(pimpl_->widget_, pimpl_->gdk_window_);
+  return {static_cast<double>(layout.content.width),
+          static_cast<double>(layout.content.height)};
 }
 
 void Window::SetContentBounds(Rectangle bounds) {
-  // For GDK windows, content bounds is the same as window bounds
-  SetBounds(bounds);
+  const Decorations decorations = GetDecorations(pimpl_->widget_, pimpl_->gdk_window_);
+  // gtk_window_move() takes the frame's corner, so the content lands where asked.
+  SetPosition({bounds.x - decorations.left, bounds.y - decorations.top});
+  SetContentSize({bounds.width, bounds.height});
 }
 
 Rectangle Window::GetContentBounds() const {
-  // For GDK windows, content bounds is the same as window bounds
-  return GetBounds();
+  if (!pimpl_->gdk_window_) {
+    return {0, 0, 0, 0};
+  }
+  if (!gdk_window_is_viewable(pimpl_->gdk_window_)) {
+    gint origin_x = 0;
+    gint origin_y = 0;
+    gdk_window_get_origin(pimpl_->gdk_window_, &origin_x, &origin_y);
+    const Size size = GetContentSize();
+    return {static_cast<double>(origin_x), static_cast<double>(origin_y), size.width,
+            size.height};
+  }
+  const Layout layout = GetLayout(pimpl_->widget_, pimpl_->gdk_window_);
+  return {static_cast<double>(layout.content.x), static_cast<double>(layout.content.y),
+          static_cast<double>(layout.content.width),
+          static_cast<double>(layout.content.height)};
 }
 
 void Window::SetMinimumSize(Size size) {
@@ -495,29 +644,36 @@ bool Window::IsNonActivating() const {
 }
 
 void Window::SetPosition(Point point) {
-  if (pimpl_->gdk_window_) {
+  if (pimpl_->widget_ && GTK_IS_WINDOW(pimpl_->widget_)) {
+    // gtk_window_move() positions the frame, and remembers the position for a window
+    // that is not mapped yet — which gdk_window_move() does not.
+    gtk_window_move(GTK_WINDOW(pimpl_->widget_), (gint)point.x, (gint)point.y);
+  } else if (pimpl_->gdk_window_) {
     gdk_window_move(pimpl_->gdk_window_, (gint)point.x, (gint)point.y);
   }
 }
 
 Point Window::GetPosition() const {
-  Point point = {0, 0};
-  if (pimpl_->gdk_window_) {
-    gint x, y;
-    gdk_window_get_position(pimpl_->gdk_window_, &x, &y);
-    point.x = x;
-    point.y = y;
+  if (!pimpl_->gdk_window_) {
+    return {0, 0};
   }
-  return point;
+  if (!gdk_window_is_viewable(pimpl_->gdk_window_)) {
+    GdkRectangle frame = {};
+    gdk_window_get_frame_extents(pimpl_->gdk_window_, &frame);
+    return {static_cast<double>(frame.x), static_cast<double>(frame.y)};
+  }
+  const Layout layout = GetLayout(pimpl_->widget_, pimpl_->gdk_window_);
+  return {static_cast<double>(layout.frame.x), static_cast<double>(layout.frame.y)};
 }
 
 void Window::Center() {
   if (!pimpl_->gdk_window_)
     return;
 
-  // Get the window size
-  gint window_width, window_height;
-  gdk_window_get_geometry(pimpl_->gdk_window_, nullptr, nullptr, &window_width, &window_height);
+  // The size to centre, decorations included: they are part of the window.
+  const Size size = GetSize();
+  const gint window_width = (gint)size.width;
+  const gint window_height = (gint)size.height;
 
   // Get the screen size
   GdkDisplay* display = gdk_window_get_display(pimpl_->gdk_window_);
@@ -536,7 +692,7 @@ void Window::Center() {
     gint center_y = geometry.y + (geometry.height - window_height) / 2;
 
     // Move the window to center
-    gdk_window_move(pimpl_->gdk_window_, center_x, center_y);
+    SetPosition({static_cast<double>(center_x), static_cast<double>(center_y)});
   }
 }
 
