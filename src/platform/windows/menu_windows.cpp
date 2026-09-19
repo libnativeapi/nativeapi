@@ -502,6 +502,8 @@ class Menu::Impl {
 #endif
   bool wraps_native_ = false;
   bool opening_ = false;
+  // Set from WM_INITMENUPOPUP: the popup really appeared on screen.
+  bool shown_ = false;
 #ifdef NATIVEAPI_ENABLE_WINUI3
   std::shared_ptr<WinUI3MenuSession> modern_session_;
 #endif
@@ -535,6 +537,7 @@ class Menu::Impl {
 
       if (popup_menu == hmenu_) {
         // This is our menu being opened
+        shown_ = true;
         // Emit menu opened event via callback
         if (opened_callback_) {
           opened_callback_(id_);
@@ -885,14 +888,15 @@ bool Menu::Open(const PositioningStrategy& strategy, Placement placement) {
   // callback outside an isolate". Emitting the click here, before Open()
   // returns, keeps every menu event inside the Open() call.
   pimpl_->opening_ = true;
-  SetLastError(ERROR_SUCCESS);
+  pimpl_->shown_ = false;
   const UINT cmd = static_cast<UINT>(TrackPopupMenu(
       pimpl_->hmenu_, uFlags | TPM_RETURNCMD, pt.x, pt.y, 0, host_window, nullptr));
-  // With TPM_RETURNCMD, 0 means "dismissed" or "failed"; only the error code
-  // tells them apart.
-  const bool failed = cmd == 0 && GetLastError() != ERROR_SUCCESS;
   pimpl_->opening_ = false;
-  if (failed) {
+  // With TPM_RETURNCMD, 0 means "dismissed without a pick" or "failed".
+  // WM_INITMENUPOPUP tells them apart: a menu that never appeared is a failure.
+  // (The last error code cannot: TrackPopupMenu runs a whole modal loop, whose
+  // internal calls leave one set on success too.)
+  if (cmd == 0 && !pimpl_->shown_) {
     return false;
   }
 

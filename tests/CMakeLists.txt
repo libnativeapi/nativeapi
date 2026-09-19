@@ -24,6 +24,15 @@ add_executable(shortcut_accelerator_test shortcut_accelerator_test.cpp)
 target_link_libraries(shortcut_accelerator_test PRIVATE nativeapi)
 add_test(NAME shortcut_accelerator_test COMMAND shortcut_accelerator_test)
 
+# Interactive: with a round name it opens a real menu and waits for
+# tools/gui/core_menu_backend_test.ps1 to work it with the mouse. Without arguments
+# it is a no-op, so CTest can run it.
+if(WIN32)
+  add_executable(menu_click_test menu_click_test.cpp)
+  target_link_libraries(menu_click_test PRIVATE nativeapi)
+  add_test(NAME menu_click_test COMMAND menu_click_test)
+endif()
+
 if(WIN32)
   add_executable(menu_backend_test menu_backend_test.cpp)
   target_link_libraries(menu_backend_test PRIVATE nativeapi)

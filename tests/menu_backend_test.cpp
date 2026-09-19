@@ -45,34 +45,6 @@ int main(int argc, char**) {
   Menu wrapped(CreatePopupMenu());
   if (!Check(!wrapped.SetBackend(MenuBackend::WinUI3), "Wrapped HMENU accepted modern backend")) return 1;
   if (argc <= 1) return 0;
-  {
-    // Native backend: the click must be emitted before Open() returns. A
-    // posted WM_COMMAND would arrive later from the message loop, where
-    // bindings with call-scoped callbacks (Dart NativeCallable.isolateLocal)
-    // cannot receive it.
-    Menu native_menu;
-    if (!Check(native_menu.SetBackend(MenuBackend::Native), "Native backend rejected")) return 1;
-    auto pick = std::make_shared<MenuItem>("Pick me");
-    native_menu.AddItem(pick);
-    bool clicked = false;
-    pick->AddListener<MenuItemClickedEvent>([&](const auto&) { clicked = true; });
-    auto pick_timer = SetTimer(nullptr, 0, 700, [](HWND, UINT, UINT_PTR t, DWORD) {
-      KillTimer(nullptr, t);
-      INPUT keys[4] = {};
-      for (auto& k : keys) k.type = INPUT_KEYBOARD;
-      keys[0].ki.wVk = VK_DOWN;
-      keys[1].ki.wVk = VK_DOWN;
-      keys[1].ki.dwFlags = KEYEVENTF_KEYUP;
-      keys[2].ki.wVk = VK_RETURN;
-      keys[3].ki.wVk = VK_RETURN;
-      keys[3].ki.dwFlags = KEYEVENTF_KEYUP;
-      SendInput(4, keys, sizeof(INPUT));
-    });
-    const bool native_opened =
-        pick_timer && native_menu.Open(PositioningStrategy::Absolute({300, 300}));
-    if (!Check(native_opened, "Native Open failed") ||
-        !Check(clicked, "Native click was not emitted before Open() returned")) return 1;
-  }
   if (!supported) return 1;
   HWND preview = nullptr;
   if (argc > 2) {
