@@ -730,6 +730,17 @@ void Window::SetBackgroundColor(const Color& color) {
                                       blue:color.b / 255.0
                                      alpha:color.a / 255.0];
   [pimpl_->ns_window_ setBackgroundColor:nsColor];
+  // A translucent background only shows through a window that says it is not
+  // opaque; without this AppKit composites it over black.
+  [pimpl_->ns_window_ setOpaque:color.a == 255];
+
+  // The content may paint a backing of its own over the window's background. A
+  // view controller that has a background colour takes the same one: that is
+  // what makes a FlutterViewController, opaque black by default, see-through.
+  NSViewController* content = [pimpl_->ns_window_ contentViewController];
+  if ([content respondsToSelector:@selector(setBackgroundColor:)]) {
+    [content performSelector:@selector(setBackgroundColor:) withObject:nsColor];
+  }
 }
 
 Color Window::GetBackgroundColor() const {

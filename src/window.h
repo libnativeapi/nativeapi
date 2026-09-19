@@ -847,7 +847,10 @@ class Window : public NativeObjectProvider, public std::enable_shared_from_this<
    *
    * @note Platform behavior may vary:
    * - Windows: Sets the window background brush color
-   * - macOS: Sets the window backgroundColor property
+   * - macOS: Sets the window backgroundColor property. A color with alpha also
+   *   makes the window non-opaque, so that it really is see-through, and is
+   *   handed to a content view controller that paints a backing of its own
+   *   (a Flutter view is opaque black otherwise).
    * - Linux: Sets the window background color via GTK/X11
    */
   void SetBackgroundColor(const Color& color);
