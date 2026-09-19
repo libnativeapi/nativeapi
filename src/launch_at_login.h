@@ -14,7 +14,10 @@ namespace nativeapi {
  * but this class abstracts away those differences.
  *
  * Platform implementations:
- * - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run registry key
+ * - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run registry key, and the
+ *   matching Explorer\StartupApproved\Run flag so that an entry the user switched off in
+ *   Task Manager reads as disabled. An app running from an MSIX package sees a virtualized
+ *   registry instead, so there it is a shortcut in the user's Startup folder.
  * - macOS: ServiceManagement SMAppService for the main app or bundled login item helpers
  * - Linux (XDG): ~/.config/autostart/[app_id].desktop
  * - Android/iOS/OHOS: Not supported (returns false from IsSupported/operations)
@@ -25,8 +28,8 @@ namespace nativeapi {
  * - You can let the implementation determine the current executable path, or call
  *   SetProgram() to customize the target binary and arguments recorded in the OS where the
  *   platform supports arbitrary launch commands. On macOS, SMAppService can only register
- *   the main app or a bundled helper, so custom executable paths and arguments are not
- *   supported.
+ *   the main app or a bundled helper, so a custom executable path is not supported and
+ *   arguments are never delivered.
  * - Some platforms may require application-specific permissions or entitlements
  *   (e.g., sandbox restrictions on macOS). In such cases, operations may fail.
  *
@@ -122,6 +125,16 @@ class LaunchAtLogin {
    * @param executable_path Absolute path to the executable to run on login.
    * @param arguments       Optional arguments; order is preserved.
    * @return true if stored locally; does not change OS registration until Enable().
+   *
+   * @note Platform availability:
+   * - macOS: ⚠️ Recorded only - SMAppService starts the app bundle; naming the running
+   *   application registers it whatever the identifier says, any other path makes Enable()
+   *   fail, and arguments are never delivered
+   * - Windows: ✅ Fully supported - written as a quoted command line
+   * - Linux: ✅ Fully supported - written to the .desktop Exec line
+   * - Android: ❌ Not applicable - Always ignored
+   * - iOS: ❌ Not applicable - Always ignored
+   * - OpenHarmony: ❌ Not applicable - Always ignored
    */
   bool SetProgram(const std::string& executable_path,
                   const std::vector<std::string>& arguments = {});
@@ -152,6 +165,15 @@ class LaunchAtLogin {
    * to resolve the current executable path and use that as the program to start.
    *
    * @return true on success; false on error or when unsupported.
+   *
+   * @note Platform availability:
+   * - macOS: ⚠️ Recorded only - fails when the user has denied the app in System Settings,
+   *   or when SetProgram() named an executable that is not this application
+   * - Windows: ✅ Fully supported - also clears the Task Manager "disabled" flag
+   * - Linux: ✅ Fully supported
+   * - Android: ❌ Not applicable - Always returns false
+   * - iOS: ❌ Not applicable - Always returns false
+   * - OpenHarmony: ❌ Not applicable - Always returns false
    */
   bool Enable();
 
@@ -165,10 +187,14 @@ class LaunchAtLogin {
   /**
    * @brief Query whether launch-at-login is currently enabled for this manager's identifier.
    *
-   * This checks the platform-specific mechanism to determine whether the app (program path
-   * and arguments currently configured) is registered to start at user login.
+   * This checks the platform-specific mechanism for an entry under this manager's
+   * identifier. It does not compare the registered command against the program and
+   * arguments currently configured: an entry written by an older version of the app, from
+   * a different path, still reads as enabled.
    *
    * @return true if currently enabled; false otherwise.
+   *
+   * @see Enable() for platform availability.
    */
   bool IsEnabled() const;
 

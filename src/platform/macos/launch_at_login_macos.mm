@@ -82,20 +82,41 @@ static std::string DetectDefaultProgramPath() {
   }
 }
 
+// The path of the running executable as the loader knows it, which is what a caller
+// asking "is this me?" has most likely been handed (Dart's Platform.resolvedExecutable,
+// for one). It can differ from arg0, so both are compared.
+static std::string LoaderExecutablePath() {
+  uint32_t size = 0;
+  _NSGetExecutablePath(nullptr, &size);
+  if (size == 0) {
+    return std::string();
+  }
+  std::string buffer(size + 1, '\0');
+  if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
+    return std::string();
+  }
+  return std::string(buffer.c_str());
+}
+
 static bool IsCurrentProgram(const std::string& executable_path) {
   if (executable_path.empty()) {
     return true;
   }
 
-  std::string current = DetectDefaultProgramPath();
-  if (current.empty()) {
-    return false;
-  }
-
   @autoreleasepool {
-    NSString* requested = [ToNSString(executable_path) stringByStandardizingPath];
-    NSString* detected = [ToNSString(current) stringByStandardizingPath];
-    return [requested isEqualToString:detected];
+    NSString* requested =
+        [[ToNSString(executable_path) stringByStandardizingPath] stringByResolvingSymlinksInPath];
+    for (const std::string& candidate : {DetectDefaultProgramPath(), LoaderExecutablePath()}) {
+      if (candidate.empty()) {
+        continue;
+      }
+      NSString* detected =
+          [[ToNSString(candidate) stringByStandardizingPath] stringByResolvingSymlinksInPath];
+      if ([requested isEqualToString:detected]) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -147,6 +168,7 @@ class LaunchAtLogin::Impl {
   bool SetProgram(const std::string& executable_path, const std::vector<std::string>& arguments) {
     program_path_ = executable_path;
     arguments_ = arguments;
+    program_was_set_ = true;
     return true;
   }
 
@@ -226,7 +248,7 @@ class LaunchAtLogin::Impl {
 #if NATIVEAPI_HAS_SM_APP_SERVICE
   SMAppService* Service() const API_AVAILABLE(macos(13.0)) {
     @autoreleasepool {
-      if (id_.empty() || id_ == default_id_) {
+      if (UsesMainApp()) {
         return [SMAppService mainAppService];
       }
 
@@ -239,12 +261,25 @@ class LaunchAtLogin::Impl {
   }
 #endif
 
+  // Whether this manager registers the application itself rather than a bundled login
+  // item helper. An identifier that is not the bundle identifier names a helper — unless
+  // SetProgram() named the running application, which says plainly which app to start.
+  bool UsesMainApp() const {
+    if (id_.empty() || id_ == default_id_) {
+      return true;
+    }
+    return program_was_set_ && IsCurrentProgram(program_path_);
+  }
+
   bool CanUseConfiguredProgram() const {
     // SMAppService registers the main app or bundled helpers. It cannot register
-    // an arbitrary executable path or ProgramArguments like a legacy LaunchAgent.
+    // an arbitrary executable path like a legacy LaunchAgent, and it starts the app
+    // bundle without arguments — those are recorded but never delivered.
+    if (UsesMainApp()) {
+      return program_path_.empty() || IsCurrentProgram(program_path_);
+    }
     return arguments_.empty() &&
-           (program_path_.empty() || program_path_ == default_program_path_ ||
-            IsCurrentProgram(program_path_));
+           (program_path_.empty() || program_path_ == default_program_path_);
   }
 
  private:
@@ -254,6 +289,7 @@ class LaunchAtLogin::Impl {
   std::vector<std::string> arguments_;
   std::string default_id_;
   std::string default_program_path_;
+  bool program_was_set_ = false;
 };
 
 // LaunchAtLogin public API implementations

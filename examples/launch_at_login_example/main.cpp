@@ -18,13 +18,10 @@ int main() {
 
   std::cout << "LaunchAtLogin is supported on this platform.\n\n";
 
-  // On macOS, the default constructor registers the main app with SMAppService.
-  // Custom identifiers are for bundled login item helpers.
-#if defined(__APPLE__)
-  LaunchAtLogin launch_at_login;
-#else
+  // An identifier of your own names the registry value on Windows and the .desktop file
+  // on Linux. On macOS it would name a bundled login item helper, but SetProgram() below
+  // names this application, so the application itself is what gets registered.
   LaunchAtLogin launch_at_login("com.example.myapp", "My Example App");
-#endif
 
   // Display current configuration
   std::cout << "LaunchAtLogin configuration:\n";
@@ -32,12 +29,10 @@ int main() {
   std::cout << "  Display name: " << launch_at_login.GetDisplayName() << "\n";
   std::cout << "  Executable:   " << launch_at_login.GetExecutablePath() << "\n\n";
 
-// macOS SMAppService main-app login items do not support arbitrary arguments.
-#if !defined(__APPLE__)
-  // Set a custom program path and arguments
+  // Set a custom program path and arguments. macOS records the arguments but never
+  // delivers them: SMAppService starts the app bundle, nothing else.
   launch_at_login.SetProgram(launch_at_login.GetExecutablePath(),
                              {"--minimized", "--launch_at_login"});
-#endif
 
   std::cout << "After SetProgram:\n";
   std::cout << "  Executable: " << launch_at_login.GetExecutablePath() << "\n";

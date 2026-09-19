@@ -24,6 +24,15 @@ add_executable(shortcut_accelerator_test shortcut_accelerator_test.cpp)
 target_link_libraries(shortcut_accelerator_test PRIVATE nativeapi)
 add_test(NAME shortcut_accelerator_test COMMAND shortcut_accelerator_test)
 
+# The registry side of launch-at-login: the Run value, the StartupApproved flag that
+# Task Manager toggles, and a non-ASCII identifier. Writes only under HKCU, under a
+# test-only identifier, and removes what it writes.
+if(WIN32)
+  add_executable(launch_at_login_test launch_at_login_test.cpp)
+  target_link_libraries(launch_at_login_test PRIVATE nativeapi)
+  add_test(NAME launch_at_login_test COMMAND launch_at_login_test)
+endif()
+
 # Interactive: with any argument it opens real menus and closes them from a timer
 # (no input needed, but it does need a desktop session). A no-op without arguments.
 if(WIN32)

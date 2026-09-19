@@ -1,28 +1,51 @@
+#include <shlobj.h>
+#include <shobjidl.h>
 #include <windows.h>
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "../../launch_at_login.h"
+#include "string_utils_windows.h"
 
 namespace nativeapi {
 
 namespace {
 
-// Get the absolute path to the current executable (ANSI).
-static std::string DetectDefaultProgramPath() {
-  char path[MAX_PATH] = {0};
-  DWORD len = GetModuleFileNameA(nullptr, path, static_cast<DWORD>(sizeof(path)));
-  if (len == 0 || len >= sizeof(path)) {
-    return std::string();
+constexpr wchar_t kRunKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr wchar_t kStartupApprovedKey[] =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
+
+// The 12 bytes Explorer keeps under StartupApproved\Run: the first one says whether the
+// entry is approved (even) or the user switched it off in Task Manager (odd); the rest is
+// a timestamp Explorer writes itself.
+constexpr DWORD kStartupApprovedValueSize = 12;
+constexpr BYTE kStartupApproved = 2;
+
+// Get the absolute path to the current executable.
+std::wstring DetectDefaultProgramPathW() {
+  std::vector<wchar_t> buffer(MAX_PATH);
+  for (;;) {
+    DWORD len = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (len == 0) {
+      return std::wstring();
+    }
+    if (len < buffer.size() - 1) {
+      return std::wstring(buffer.data(), len);
+    }
+    buffer.resize(buffer.size() * 2);
   }
-  return std::string(path, len);
 }
 
-static std::string Basename(const std::string& path) {
+std::string DetectDefaultProgramPath() {
+  return WStringToString(DetectDefaultProgramPathW());
+}
+
+std::string Basename(const std::string& path) {
   if (path.empty())
     return std::string();
   size_t pos = path.find_last_of("\\/");
@@ -33,7 +56,7 @@ static std::string Basename(const std::string& path) {
   return path.substr(pos + 1);
 }
 
-static std::string StripExtension(const std::string& name) {
+std::string StripExtension(const std::string& name) {
   size_t pos = name.find_last_of('.');
   if (pos == std::string::npos)
     return name;
@@ -41,28 +64,26 @@ static std::string StripExtension(const std::string& name) {
 }
 
 // Default identifier for Windows; consistent with other platforms' pattern.
-static std::string DetectDefaultId() {
-  std::string prog = DetectDefaultProgramPath();
-  std::string name = StripExtension(Basename(prog));
+std::string DetectDefaultId() {
+  std::string name = StripExtension(Basename(DetectDefaultProgramPath()));
   if (name.empty())
     name = "app";
   return "com.nativeapi.launch_at_login." + name;
 }
 
-static std::string DetectDefaultDisplayName() {
-  std::string prog = DetectDefaultProgramPath();
-  std::string name = StripExtension(Basename(prog));
+std::string DetectDefaultDisplayName() {
+  std::string name = StripExtension(Basename(DetectDefaultProgramPath()));
   if (name.empty())
     name = "Application";
   return name;
 }
 
 // Determine if a Windows command argument needs quoting.
-static bool NeedsQuoting(const std::string& s) {
+bool NeedsQuoting(const std::wstring& s) {
   if (s.empty())
     return true;
-  for (char c : s) {
-    if (std::isspace(static_cast<unsigned char>(c)) || c == '"' || c == '\t') {
+  for (wchar_t c : s) {
+    if (c == L' ' || c == L'\t' || c == L'\n' || c == L'\v' || c == L'"') {
       return true;
     }
   }
@@ -71,70 +92,251 @@ static bool NeedsQuoting(const std::string& s) {
 
 // Quote a single argument for Windows command-line per CRT parsing rules.
 // Reference: https://learn.microsoft.com/en-us/cpp/cpp/parsing-c-command-line-arguments
-static std::string QuoteArgWindows(const std::string& arg) {
+std::wstring QuoteArgWindows(const std::wstring& arg) {
   if (!NeedsQuoting(arg)) {
     return arg;
   }
 
-  std::string result;
-  result.push_back('"');
+  std::wstring result;
+  result.push_back(L'"');
 
   size_t i = 0;
   while (i < arg.size()) {
     // Count number of backslashes before next character
     size_t backslash_count = 0;
-    while (i < arg.size() && arg[i] == '\\') {
+    while (i < arg.size() && arg[i] == L'\\') {
       ++backslash_count;
       ++i;
     }
 
     if (i == arg.size()) {
       // Escape all backslashes at the end
-      result.append(backslash_count * 2, '\\');
+      result.append(backslash_count * 2, L'\\');
       break;
     }
 
-    if (arg[i] == '"') {
+    if (arg[i] == L'"') {
       // Escape all backslashes (double them), then escape the quote
-      result.append(backslash_count * 2 + 1, '\\');
-      result.push_back('"');
+      result.append(backslash_count * 2 + 1, L'\\');
+      result.push_back(L'"');
     } else {
       // Just copy the backslashes
-      result.append(backslash_count, '\\');
+      result.append(backslash_count, L'\\');
       result.push_back(arg[i]);
     }
     ++i;
   }
 
-  result.push_back('"');
+  result.push_back(L'"');
   return result;
 }
 
 // Build full command line: "C:\Path To\app.exe" "arg1" "arg 2"
-static std::string BuildCommandLine(const std::string& program,
-                                    const std::vector<std::string>& args) {
-  std::ostringstream oss;
+std::wstring BuildCommandLine(const std::wstring& program, const std::vector<std::string>& args) {
+  std::wostringstream oss;
   oss << QuoteArgWindows(program);
   for (const auto& a : args) {
-    oss << ' ' << QuoteArgWindows(a);
+    oss << L' ' << QuoteArgWindows(StringToWString(a));
   }
   return oss.str();
 }
 
-// Open (or create) HKCU\Software\Microsoft\Windows\CurrentVersion\Run key for write.
-static bool OpenRunKeyWrite(HKEY& hkey) {
-  const char* kRunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  DWORD disposition = 0;
-  LONG res = RegCreateKeyExA(HKEY_CURRENT_USER, kRunKey, 0, NULL, REG_OPTION_NON_VOLATILE,
-                             KEY_SET_VALUE | KEY_WRITE, NULL, &hkey, &disposition);
-  return res == ERROR_SUCCESS;
+// Join arguments the way IShellLink wants them: one string, without the program.
+std::wstring BuildArgumentString(const std::vector<std::string>& args) {
+  std::wostringstream oss;
+  bool first = true;
+  for (const auto& a : args) {
+    if (!first) {
+      oss << L' ';
+    }
+    first = false;
+    oss << QuoteArgWindows(StringToWString(a));
+  }
+  return oss.str();
 }
 
-// Open HKCU\Software\Microsoft\Windows\CurrentVersion\Run for read.
-static bool OpenRunKeyRead(HKEY& hkey) {
-  const char* kRunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  LONG res = RegOpenKeyExA(HKEY_CURRENT_USER, kRunKey, 0, KEY_READ, &hkey);
-  return res == ERROR_SUCCESS;
+// Whether this process runs from an MSIX/AppX package. A packaged app cannot use the Run
+// key: the registry it sees is virtualized, so Explorer never reads what is written there.
+bool IsPackagedApp() {
+  using GetCurrentPackageFullNameFn = LONG(WINAPI*)(UINT32*, PWSTR);
+  HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+  if (!kernel32) {
+    return false;
+  }
+  auto get_current_package_full_name = reinterpret_cast<GetCurrentPackageFullNameFn>(
+      GetProcAddress(kernel32, "GetCurrentPackageFullName"));
+  if (!get_current_package_full_name) {
+    return false;  // Before Windows 8 there are no packaged apps.
+  }
+  UINT32 length = 0;
+  LONG result = get_current_package_full_name(&length, nullptr);
+  return result == ERROR_INSUFFICIENT_BUFFER;
+}
+
+// Replace the characters a file name cannot hold.
+std::wstring SanitizeForFileName(const std::wstring& name) {
+  std::wstring out = name;
+  for (wchar_t& c : out) {
+    if (c == L'\\' || c == L'/' || c == L':' || c == L'*' || c == L'?' || c == L'"' || c == L'<' ||
+        c == L'>' || c == L'|' || c == L'\t' || c == L'\n' || c == L'\r') {
+      c = L'_';
+    }
+  }
+  return out;
+}
+
+// <user profile>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\<id>.lnk
+std::wstring ShortcutPath(const std::string& id) {
+  PWSTR folder = nullptr;
+  if (FAILED(SHGetKnownFolderPath(FOLDERID_Startup, KF_FLAG_CREATE, nullptr, &folder))) {
+    return std::wstring();
+  }
+  std::wstring path(folder);
+  CoTaskMemFree(folder);
+  if (path.empty()) {
+    return std::wstring();
+  }
+  return path + L"\\" + SanitizeForFileName(StringToWString(id)) + L".lnk";
+}
+
+bool FileExists(const std::wstring& path) {
+  if (path.empty()) {
+    return false;
+  }
+  DWORD attributes = GetFileAttributesW(path.c_str());
+  return attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+// Initializes COM for this call only when the thread has none, and leaves the thread as it
+// was found.
+class ScopedCom {
+ public:
+  ScopedCom() {
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    initialized_ = SUCCEEDED(hr);
+    ok_ = initialized_ || hr == RPC_E_CHANGED_MODE;
+  }
+
+  ~ScopedCom() {
+    if (initialized_) {
+      CoUninitialize();
+    }
+  }
+
+  bool ok() const { return ok_; }
+
+  ScopedCom(const ScopedCom&) = delete;
+  ScopedCom& operator=(const ScopedCom&) = delete;
+
+ private:
+  bool initialized_ = false;
+  bool ok_ = false;
+};
+
+bool WriteShortcut(const std::wstring& path,
+                   const std::wstring& target,
+                   const std::wstring& arguments,
+                   const std::wstring& description) {
+  ScopedCom com;
+  if (!com.ok()) {
+    return false;
+  }
+
+  IShellLinkW* link = nullptr;
+  if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW,
+                              reinterpret_cast<void**>(&link)))) {
+    return false;
+  }
+
+  bool ok = SUCCEEDED(link->SetPath(target.c_str()));
+  if (ok && !arguments.empty()) {
+    ok = SUCCEEDED(link->SetArguments(arguments.c_str()));
+  }
+  if (ok && !description.empty()) {
+    // The Description is what Task Manager and the Startup folder show.
+    ok = SUCCEEDED(link->SetDescription(description.c_str()));
+  }
+  if (ok) {
+    size_t separator = target.find_last_of(L'\\');
+    if (separator != std::wstring::npos) {
+      link->SetWorkingDirectory(target.substr(0, separator).c_str());
+    }
+  }
+
+  if (ok) {
+    IPersistFile* file = nullptr;
+    ok = SUCCEEDED(link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&file)));
+    if (ok) {
+      ok = SUCCEEDED(file->Save(path.c_str(), TRUE));
+      file->Release();
+    }
+  }
+
+  link->Release();
+  return ok;
+}
+
+bool DeleteShortcut(const std::wstring& path) {
+  if (path.empty()) {
+    return false;
+  }
+  if (!FileExists(path)) {
+    return true;
+  }
+  return DeleteFileW(path.c_str()) != 0;
+}
+
+bool OpenKey(const wchar_t* subkey, REGSAM access, bool create, HKEY& out) {
+  if (create) {
+    DWORD disposition = 0;
+    return RegCreateKeyExW(HKEY_CURRENT_USER, subkey, 0, nullptr, REG_OPTION_NON_VOLATILE, access,
+                           nullptr, &out, &disposition) == ERROR_SUCCESS;
+  }
+  return RegOpenKeyExW(HKEY_CURRENT_USER, subkey, 0, access, &out) == ERROR_SUCCESS;
+}
+
+bool DeleteValue(const wchar_t* subkey, const std::wstring& name) {
+  HKEY key = nullptr;
+  LONG open_result = RegOpenKeyExW(HKEY_CURRENT_USER, subkey, 0, KEY_SET_VALUE, &key);
+  if (open_result != ERROR_SUCCESS) {
+    // A key that is not there holds no value to delete.
+    return open_result == ERROR_FILE_NOT_FOUND;
+  }
+  LONG result = RegDeleteValueW(key, name.c_str());
+  RegCloseKey(key);
+  return result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND;
+}
+
+// Whether Explorer still approves this entry: absent or empty means it was never switched
+// off, an even first byte means approved, an odd one means the user disabled it in
+// Task Manager.
+bool IsStartupApproved(const std::wstring& name) {
+  HKEY key = nullptr;
+  if (!OpenKey(kStartupApprovedKey, KEY_READ, false, key)) {
+    return true;
+  }
+  BYTE value[kStartupApprovedValueSize] = {0};
+  DWORD size = sizeof(value);
+  DWORD type = 0;
+  LONG result = RegQueryValueExW(key, name.c_str(), nullptr, &type, value, &size);
+  RegCloseKey(key);
+  if (result != ERROR_SUCCESS || size == 0) {
+    return true;
+  }
+  return (value[0] % 2) == 0;
+}
+
+// Clears the "disabled in Task Manager" flag, so that enabling really enables.
+bool SetStartupApproved(const std::wstring& name) {
+  HKEY key = nullptr;
+  if (!OpenKey(kStartupApprovedKey, KEY_SET_VALUE | KEY_WRITE, true, key)) {
+    return false;
+  }
+  BYTE value[kStartupApprovedValueSize] = {0};
+  value[0] = kStartupApproved;
+  LONG result = RegSetValueExW(key, name.c_str(), 0, REG_BINARY, value, sizeof(value));
+  RegCloseKey(key);
+  return result == ERROR_SUCCESS;
 }
 
 }  // namespace
@@ -184,45 +386,57 @@ class LaunchAtLogin::Impl {
         return false;
       }
     }
+    const std::wstring program = StringToWString(program_path_);
 
-    const std::string cmd = BuildCommandLine(program_path_, arguments_);
-
-    HKEY hkey = nullptr;
-    if (!OpenRunKeyWrite(hkey)) {
-      return false;
+    if (IsPackagedApp()) {
+      return WriteShortcut(ShortcutPath(id_), program, BuildArgumentString(arguments_),
+                           StringToWString(display_name_));
     }
 
-    LONG res =
-        RegSetValueExA(hkey, id_.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE*>(cmd.c_str()),
-                       static_cast<DWORD>(cmd.size() + 1));
-    RegCloseKey(hkey);
-    return res == ERROR_SUCCESS;
+    HKEY key = nullptr;
+    if (!OpenKey(kRunKey, KEY_SET_VALUE | KEY_WRITE, true, key)) {
+      return false;
+    }
+    const std::wstring command = BuildCommandLine(program, arguments_);
+    const std::wstring name = StringToWString(id_);
+    LONG result = RegSetValueExW(key, name.c_str(), 0, REG_SZ,
+                                 reinterpret_cast<const BYTE*>(command.c_str()),
+                                 static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+    RegCloseKey(key);
+    if (result != ERROR_SUCCESS) {
+      return false;
+    }
+    // An entry the user switched off in Task Manager stays off until this is cleared.
+    SetStartupApproved(name);
+    return true;
   }
 
   bool Disable() {
-    HKEY hkey = nullptr;
-    // Use KEY_SET_VALUE to delete the value
-    const char* kRunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-    LONG open_res = RegOpenKeyExA(HKEY_CURRENT_USER, kRunKey, 0, KEY_SET_VALUE, &hkey);
-    if (open_res != ERROR_SUCCESS) {
-      // Consider it disabled if the key doesn't exist
-      return open_res == ERROR_FILE_NOT_FOUND;
+    if (IsPackagedApp()) {
+      return DeleteShortcut(ShortcutPath(id_));
     }
-
-    LONG del_res = RegDeleteValueA(hkey, id_.c_str());
-    RegCloseKey(hkey);
-    return (del_res == ERROR_SUCCESS) || (del_res == ERROR_FILE_NOT_FOUND);
+    const std::wstring name = StringToWString(id_);
+    bool removed = DeleteValue(kRunKey, name);
+    DeleteValue(kStartupApprovedKey, name);
+    return removed;
   }
 
   bool IsEnabled() const {
-    HKEY hkey = nullptr;
-    if (!OpenRunKeyRead(hkey)) {
+    if (IsPackagedApp()) {
+      return FileExists(ShortcutPath(id_));
+    }
+
+    HKEY key = nullptr;
+    if (!OpenKey(kRunKey, KEY_READ, false, key)) {
       return false;
     }
-    // Check if a value with name id_ exists
-    LONG res = RegQueryValueExA(hkey, id_.c_str(), NULL, NULL, NULL, NULL);
-    RegCloseKey(hkey);
-    return res == ERROR_SUCCESS;
+    const std::wstring name = StringToWString(id_);
+    LONG result = RegQueryValueExW(key, name.c_str(), nullptr, nullptr, nullptr, nullptr);
+    RegCloseKey(key);
+    if (result != ERROR_SUCCESS) {
+      return false;
+    }
+    return IsStartupApproved(name);
   }
 
  private:
