@@ -4821,7 +4821,9 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_MOVED(5),
   NATIVE_WINDOW_EVENT_TYPE_RESIZED(6),
   NATIVE_WINDOW_EVENT_TYPE_CREATED(7),
-  NATIVE_WINDOW_EVENT_TYPE_CLOSED(8);
+  NATIVE_WINDOW_EVENT_TYPE_CLOSED(8),
+  NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN(9),
+  NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -4836,6 +4838,8 @@ enum native_window_event_type_t {
     6 => NATIVE_WINDOW_EVENT_TYPE_RESIZED,
     7 => NATIVE_WINDOW_EVENT_TYPE_CREATED,
     8 => NATIVE_WINDOW_EVENT_TYPE_CLOSED,
+    9 => NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN,
+    10 => NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),

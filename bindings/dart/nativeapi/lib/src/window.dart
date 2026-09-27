@@ -140,6 +140,20 @@ sealed class WindowEvent {
         c.native_window_event_type_t.NATIVE_WINDOW_EVENT_TYPE_CLOSED.value) {
       return WindowClosedEvent(windowId: raw.window_id);
     }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN
+            .value) {
+      return WindowEnteredFullScreenEvent(windowId: raw.window_id);
+    }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN
+            .value) {
+      return WindowExitedFullScreenEvent(windowId: raw.window_id);
+    }
     return null;
   }
 }
@@ -204,6 +218,20 @@ final class WindowCreatedEvent extends WindowEvent {
 
 final class WindowClosedEvent extends WindowEvent {
   const WindowClosedEvent({required this.windowId});
+
+  @override
+  final WindowId windowId;
+}
+
+final class WindowEnteredFullScreenEvent extends WindowEvent {
+  const WindowEnteredFullScreenEvent({required this.windowId});
+
+  @override
+  final WindowId windowId;
+}
+
+final class WindowExitedFullScreenEvent extends WindowEvent {
+  const WindowExitedFullScreenEvent({required this.windowId});
 
   @override
   final WindowId windowId;

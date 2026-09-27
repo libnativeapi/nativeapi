@@ -49,7 +49,9 @@ export type WindowEvent =
   | { type: "moved"; windowId: WindowId; newPosition: Point }
   | { type: "resized"; windowId: WindowId; newSize: Size }
   | { type: "created"; windowId: WindowId }
-  | { type: "closed"; windowId: WindowId };
+  | { type: "closed"; windowId: WindowId }
+  | { type: "enteredFullScreen"; windowId: WindowId }
+  | { type: "exitedFullScreen"; windowId: WindowId };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {

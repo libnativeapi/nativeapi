@@ -169,6 +169,14 @@ class _WindowManagerPageState extends State<WindowManagerPage>
           _addLog('Window #${event.windowId} restored');
           _updateWindows();
         }
+        if (event is WindowEnteredFullScreenEvent) {
+          _addLog('Window #${event.windowId} entered full screen');
+          _updateWindows();
+        }
+        if (event is WindowExitedFullScreenEvent) {
+          _addLog('Window #${event.windowId} exited full screen');
+          _updateWindows();
+        }
         if (event is WindowCreatedEvent) {
           _addLog('Window #${event.windowId} created (first shown)');
           _updateWindows();

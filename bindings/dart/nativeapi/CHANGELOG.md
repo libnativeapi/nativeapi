@@ -15,6 +15,12 @@
   torn down, which crashed at exit.
 * `Application.quit()` from a host-run loop now emits `ApplicationExitingEvent`
   on Windows and Linux as well, and ends the process on Linux, as documented.
+  On Windows it destroys the windows before the loop ends, so a Flutter app's
+  engine shuts down cleanly instead of crashing in its teardown.
+* `WindowEnteredFullScreenEvent` and `WindowExitedFullScreenEvent`, on macOS
+  and Linux whoever changes the state, on Windows for `Window.isFullScreen`.
+* Windows: setting `Window.titleBarStyle` on a full-screen window no longer
+  puts a title bar on it; leaving full screen shows the title bar asked for.
 
 ## 0.4.0
 

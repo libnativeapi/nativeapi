@@ -53,6 +53,8 @@ public abstract record WindowEvent
     public sealed record Resized(uint WindowId, Size NewSize) : WindowEvent;
     public sealed record Created(uint WindowId) : WindowEvent;
     public sealed record Closed(uint WindowId) : WindowEvent;
+    public sealed record EnteredFullScreen(uint WindowId) : WindowEvent;
+    public sealed record ExitedFullScreen(uint WindowId) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -67,6 +69,8 @@ public abstract record WindowEvent
             case 6: return new Resized(raw.window_id, Size.FromRaw(in raw.data.resized.new_size));
             case 7: return new Created(raw.window_id);
             case 8: return new Closed(raw.window_id);
+            case 9: return new EnteredFullScreen(raw.window_id);
+            case 10: return new ExitedFullScreen(raw.window_id);
             default: return null;
         }
     }

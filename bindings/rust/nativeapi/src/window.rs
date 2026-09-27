@@ -113,6 +113,8 @@ pub enum WindowEvent {
     Resized { window_id: WindowId, new_size: Size },
     Created { window_id: WindowId },
     Closed { window_id: WindowId },
+    EnteredFullScreen { window_id: WindowId },
+    ExitedFullScreen { window_id: WindowId },
 }
 
 impl WindowEvent {
@@ -127,6 +129,8 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_RESIZED => Self::Resized { window_id: raw.window_id, new_size: Size::from_raw(&raw.data.resized.new_size) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CREATED => Self::Created { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSED => Self::Closed { window_id: raw.window_id },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN => Self::EnteredFullScreen { window_id: raw.window_id },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN => Self::ExitedFullScreen { window_id: raw.window_id },
             _ => return None,
         })
     }

@@ -77,6 +77,10 @@ class WindowEvent:
             return WindowCreatedEvent(raw.window_id)
         if raw.type == 8:
             return WindowClosedEvent(raw.window_id)
+        if raw.type == 9:
+            return WindowEnteredFullScreenEvent(raw.window_id)
+        if raw.type == 10:
+            return WindowExitedFullScreenEvent(raw.window_id)
         return None
 
 
@@ -122,6 +126,16 @@ class WindowCreatedEvent(WindowEvent):
 
 @dataclass(frozen=True)
 class WindowClosedEvent(WindowEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class WindowEnteredFullScreenEvent(WindowEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class WindowExitedFullScreenEvent(WindowEvent):
     pass
 
 

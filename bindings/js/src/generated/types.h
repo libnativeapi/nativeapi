@@ -461,6 +461,12 @@ inline Value ToValue(const native_window_event_t& event) {
     case NATIVE_WINDOW_EVENT_TYPE_CLOSED:
       result.Set("type", Value::String("closed"));
       break;
+    case NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN:
+      result.Set("type", Value::String("enteredFullScreen"));
+      break;
+    case NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN:
+      result.Set("type", Value::String("exitedFullScreen"));
+      break;
     default:
       return Value::Null();
   }
