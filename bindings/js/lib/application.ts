@@ -45,6 +45,18 @@ export class Application {
     return native.native_application_is_single_instance();
   }
 
+  static show(): boolean {
+    return native.native_application_show();
+  }
+
+  static hide(): boolean {
+    return native.native_application_hide();
+  }
+
+  static isVisible(): boolean {
+    return native.native_application_is_visible();
+  }
+
   static setIcon(iconPath: string): boolean {
     return native.native_application_set_icon(iconPath);
   }

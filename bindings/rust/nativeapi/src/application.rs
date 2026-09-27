@@ -91,6 +91,24 @@ impl Application {
         }
     }
 
+    pub fn show() -> bool {
+        unsafe {
+            cnativeapi::native_application_show()
+        }
+    }
+
+    pub fn hide() -> bool {
+        unsafe {
+            cnativeapi::native_application_hide()
+        }
+    }
+
+    pub fn is_visible() -> bool {
+        unsafe {
+            cnativeapi::native_application_is_visible()
+        }
+    }
+
     pub fn set_icon(icon_path: &str) -> bool {
         let icon_path_native = CString::new(icon_path).expect("string argument contains interior nul byte");
         unsafe {

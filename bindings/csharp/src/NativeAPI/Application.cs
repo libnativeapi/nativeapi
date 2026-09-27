@@ -77,6 +77,24 @@ public sealed partial class Application
         return rawResult;
     }
 
+    public bool Show()
+    {
+        var rawResult = Interop.native_application_show();
+        return rawResult;
+    }
+
+    public bool Hide()
+    {
+        var rawResult = Interop.native_application_hide();
+        return rawResult;
+    }
+
+    public bool IsVisible()
+    {
+        var rawResult = Interop.native_application_is_visible();
+        return rawResult;
+    }
+
     public bool SetIcon(string iconPath)
     {
         var rawResult = Interop.native_application_set_icon(iconPath);

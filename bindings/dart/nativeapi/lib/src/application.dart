@@ -127,6 +127,18 @@ class Application {
     return c.native_application_is_single_instance();
   }
 
+  bool show() {
+    return c.native_application_show();
+  }
+
+  bool hide() {
+    return c.native_application_hide();
+  }
+
+  bool isVisible() {
+    return c.native_application_is_visible();
+  }
+
   bool setIcon(String iconPath) {
     final iconPathNative = iconPath.toNativeUtf8().cast<ffi.Char>();
     final result = c.native_application_set_icon(iconPathNative);

@@ -107,6 +107,21 @@ class Application:
         return raw
 
     @staticmethod
+    def show() -> bool:
+        raw = _C.native_application_show()
+        return raw
+
+    @staticmethod
+    def hide() -> bool:
+        raw = _C.native_application_hide()
+        return raw
+
+    @staticmethod
+    def is_visible() -> bool:
+        raw = _C.native_application_is_visible()
+        return raw
+
+    @staticmethod
     def set_icon(icon_path: str) -> bool:
         raw = _C.native_application_set_icon(_rt.encode(icon_path))
         return raw

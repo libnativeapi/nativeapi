@@ -17,6 +17,10 @@
   on Windows and Linux as well, and ends the process on Linux, as documented.
   On Windows it destroys the windows before the loop ends, so a Flutter app's
   engine shuts down cleanly instead of crashing in its teardown.
+* `Application.show()`, `Application.hide()` and `Application.isVisible()`:
+  application-level hiding on macOS (`-[NSApplication hide:]`), which the Dock
+  understands, unlike hiding every window. They return false on other
+  platforms.
 * `WindowEnteredFullScreenEvent` and `WindowExitedFullScreenEvent`, on macOS
   and Linux whoever changes the state, on Windows for `Window.isFullScreen`.
 * Windows: setting `Window.titleBarStyle` on a full-screen window no longer

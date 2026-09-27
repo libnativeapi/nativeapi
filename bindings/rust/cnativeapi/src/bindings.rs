@@ -1639,6 +1639,15 @@ unsafe extern "C" {
     pub fn native_application_is_single_instance() -> bool;
 }
 unsafe extern "C" {
+    pub fn native_application_show() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_application_hide() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_application_is_visible() -> bool;
+}
+unsafe extern "C" {
     pub fn native_application_set_icon(icon_path: *const ::std::os::raw::c_char) -> bool;
 }
 unsafe extern "C" {

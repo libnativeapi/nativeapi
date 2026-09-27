@@ -69,6 +69,39 @@ napi_value Js_native_application_is_single_instance(napi_env env, napi_callback_
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_application_show(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_application_show(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_application_hide(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_application_hide(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_application_is_visible(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_application_is_visible(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_application_set_icon(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -242,6 +275,9 @@ void RegisterApplication(napi_env env, napi_value exports) {
   Export(env, exports, "native_application_quit", Js_native_application_quit);
   Export(env, exports, "native_application_is_running", Js_native_application_is_running);
   Export(env, exports, "native_application_is_single_instance", Js_native_application_is_single_instance);
+  Export(env, exports, "native_application_show", Js_native_application_show);
+  Export(env, exports, "native_application_hide", Js_native_application_hide);
+  Export(env, exports, "native_application_is_visible", Js_native_application_is_visible);
   Export(env, exports, "native_application_set_icon", Js_native_application_set_icon);
   Export(env, exports, "native_application_set_dock_icon_visible", Js_native_application_set_dock_icon_visible);
   Export(env, exports, "native_application_set_progress_bar", Js_native_application_set_progress_bar);

@@ -88,10 +88,16 @@ external native_window_list_t native_application_get_all_windows();
 external int native_application_get_primary_window();
 
 @ffi.Native<ffi.Bool Function()>()
+external bool native_application_hide();
+
+@ffi.Native<ffi.Bool Function()>()
 external bool native_application_is_running();
 
 @ffi.Native<ffi.Bool Function()>()
 external bool native_application_is_single_instance();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_application_is_visible();
 
 @ffi.Native<ffi.Void Function(ffi.Int)>()
 external void native_application_quit(int exit_code);
@@ -132,6 +138,9 @@ external void native_application_set_primary_window(int window);
 
 @ffi.Native<ffi.Bool Function(ffi.Double)>()
 external bool native_application_set_progress_bar(double progress);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_application_show();
 
 /// Creates a Button instance; release it with native_button_free().
 @ffi.Native<native_button_t Function(ffi.Pointer<ffi.Char>)>()

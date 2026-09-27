@@ -3635,6 +3635,9 @@ native_application_is_single_instance = function(
     [
     ],
 )
+native_application_show = function("native_application_show", c_bool, [])
+native_application_hide = function("native_application_hide", c_bool, [])
+native_application_is_visible = function("native_application_is_visible", c_bool, [])
 native_application_set_icon = function(
     "native_application_set_icon",
     c_bool,
