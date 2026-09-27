@@ -17,6 +17,13 @@
   on Windows and Linux as well, and ends the process on Linux, as documented.
   On Windows it destroys the windows before the loop ends, so a Flutter app's
   engine shuts down cleanly instead of crashing in its teardown.
+* Windows: screen coordinates are one logical space across monitors with
+  different scale factors, laid out side by side as Chromium does. A window's
+  position and bounds survive being saved and restored on any monitor, and
+  moving a window onto a monitor with another factor keeps the size asked for.
+  Display positions change where monitors have different factors (they
+  overlapped before); `TrayIcon.bounds` and menu positions are logical now,
+  like everything else, instead of physical pixels.
 * `Application.show()`, `Application.hide()` and `Application.isVisible()`:
   application-level hiding on macOS (`-[NSApplication hide:]`), which the Dock
   understands, unlike hiding every window. They return false on other
