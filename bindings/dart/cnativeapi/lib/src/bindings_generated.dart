@@ -1883,6 +1883,10 @@ external void native_tray_icon_free(int tray_icon);
 @ffi.Native<native_rectangle_t Function(native_tray_icon_t)>()
 external native_rectangle_t native_tray_icon_get_bounds(int tray_icon);
 
+/// Caller owns the returned handle; release it with native_view_free().
+@ffi.Native<native_view_t Function(native_tray_icon_t)>()
+external int native_tray_icon_get_content_view(int tray_icon);
+
 /// Caller owns the returned handle; release it with native_menu_free().
 @ffi.Native<native_menu_t$1 Function(native_tray_icon_t)>()
 external int native_tray_icon_get_context_menu(int tray_icon);
@@ -1961,6 +1965,9 @@ external bool native_tray_icon_open_context_menu(int tray_icon);
 /// Unregisters a listener. Returns false if unknown.
 @ffi.Native<ffi.Bool Function(native_tray_icon_t, native_listener_id_t)>()
 external bool native_tray_icon_remove_listener(int tray_icon, int listener_id);
+
+@ffi.Native<ffi.Void Function(native_tray_icon_t, native_view_t)>()
+external void native_tray_icon_set_content_view(int tray_icon, int view);
 
 @ffi.Native<ffi.Void Function(native_tray_icon_t, native_menu_t$1)>()
 external void native_tray_icon_set_context_menu(int tray_icon, int menu);
@@ -2050,7 +2057,7 @@ external native_url_open_result_t native_url_opener_open(
 /// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
 @ffi.Native<
   native_listener_id_t Function(
-    native_view_t,
+    native_view_t$1,
     native_view_event_callback_t,
     ffi.Pointer<ffi.Void>,
     native_release_user_data_t,
@@ -2063,52 +2070,52 @@ external int native_view_add_listener(
   native_release_user_data_t release_user_data,
 );
 
-@ffi.Native<ffi.Void Function(native_view_t, native_view_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, native_view_t$1)>()
 external void native_view_add_subview(int view, int subview);
 
-@ffi.Native<ffi.Void Function(native_view_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_blur(int view);
 
-@ffi.Native<ffi.Void Function(native_view_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_clear_subviews(int view);
 
 /// Creates a View instance; release it with native_view_free().
-@ffi.Native<native_view_t Function()>()
+@ffi.Native<native_view_t$1 Function()>()
 external int native_view_create();
 
 /// Creates a View instance; release it with native_view_free().
-@ffi.Native<native_view_t Function(ffi.Pointer<ffi.Void>)>()
+@ffi.Native<native_view_t$1 Function(ffi.Pointer<ffi.Void>)>()
 external int native_view_create_with_native_view(
   ffi.Pointer<ffi.Void> native_view,
 );
 
-@ffi.Native<ffi.Void Function(native_view_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_focus(int view);
 
 /// Releases the caller's reference. Safe to call with an invalid or
 /// already-released handle.
-@ffi.Native<ffi.Void Function(native_view_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_free(int view);
 
-@ffi.Native<ffi.UnsignedInt Function(native_view_t)>(
+@ffi.Native<ffi.UnsignedInt Function(native_view_t$1)>(
   symbol: 'native_view_get_alignment',
 )
 external int _native_view_get_alignment(int view);
 
-native_view_alignment_t native_view_get_alignment(Dartnative_view_t view) {
+native_view_alignment_t native_view_get_alignment(Dartnative_view_t$1 view) {
   return native_view_alignment_t.fromValue(_native_view_get_alignment(view));
 }
 
-@ffi.Native<ffi.UnsignedInt Function(native_view_t)>(
+@ffi.Native<ffi.UnsignedInt Function(native_view_t$1)>(
   symbol: 'native_view_get_backend',
 )
 external int _native_view_get_backend(int view);
 
-native_view_backend_t native_view_get_backend(Dartnative_view_t view) {
+native_view_backend_t native_view_get_backend(Dartnative_view_t$1 view) {
   return native_view_backend_t.fromValue(_native_view_get_backend(view));
 }
 
-@ffi.Native<native_color_t Function(native_view_t)>()
+@ffi.Native<native_color_t Function(native_view_t$1)>()
 external native_color_t native_view_get_background_color(int view);
 
 @ffi.Native<ffi.UnsignedInt Function()>(
@@ -2120,63 +2127,65 @@ native_view_backend_t native_view_get_default_backend() {
   return native_view_backend_t.fromValue(_native_view_get_default_backend());
 }
 
-@ffi.Native<ffi.Double Function(native_view_t)>()
+@ffi.Native<ffi.Double Function(native_view_t$1)>()
 external double native_view_get_flex(int view);
 
-@ffi.Native<native_rectangle_t Function(native_view_t)>()
+@ffi.Native<native_rectangle_t Function(native_view_t$1)>()
 external native_rectangle_t native_view_get_frame(int view);
 
-@ffi.Native<native_view_id_t Function(native_view_t)>()
+@ffi.Native<native_view_id_t Function(native_view_t$1)>()
 external int native_view_get_id(int view);
 
-@ffi.Native<native_size_t Function(native_view_t)>()
+@ffi.Native<native_size_t Function(native_view_t$1)>()
 external native_size_t native_view_get_intrinsic_size(int view);
 
-@ffi.Native<ffi.UnsignedInt Function(native_view_t)>(
+@ffi.Native<ffi.UnsignedInt Function(native_view_t$1)>(
   symbol: 'native_view_get_layout',
 )
 external int _native_view_get_layout(int view);
 
-native_view_layout_t native_view_get_layout(Dartnative_view_t view) {
+native_view_layout_t native_view_get_layout(Dartnative_view_t$1 view) {
   return native_view_layout_t.fromValue(_native_view_get_layout(view));
 }
 
 /// Platform-specific native object (NSScreen*, HMONITOR, ...).
-@ffi.Native<ffi.Pointer<ffi.Void> Function(native_view_t)>()
+@ffi.Native<ffi.Pointer<ffi.Void> Function(native_view_t$1)>()
 external ffi.Pointer<ffi.Void> native_view_get_native_object(int view);
 
-@ffi.Native<native_edge_insets_t Function(native_view_t)>()
+@ffi.Native<native_edge_insets_t Function(native_view_t$1)>()
 external native_edge_insets_t native_view_get_padding(int view);
 
 /// Caller owns the returned handle; release it with native_view_free().
-@ffi.Native<native_view_t Function(native_view_t)>()
+@ffi.Native<native_view_t$1 Function(native_view_t$1)>()
 external int native_view_get_parent(int view);
 
-@ffi.Native<native_size_t Function(native_view_t)>()
+@ffi.Native<native_size_t Function(native_view_t$1)>()
 external native_size_t native_view_get_preferred_size(int view);
 
-@ffi.Native<ffi.Double Function(native_view_t)>()
+@ffi.Native<ffi.Double Function(native_view_t$1)>()
 external double native_view_get_spacing(int view);
 
 /// Caller owns the returned handle; release it with native_view_free().
-@ffi.Native<native_view_t Function(native_view_t, ffi.UnsignedLong)>()
+@ffi.Native<native_view_t$1 Function(native_view_t$1, ffi.UnsignedLong)>()
 external int native_view_get_subview_at(int view, int index);
 
-@ffi.Native<ffi.UnsignedLong Function(native_view_t)>()
+@ffi.Native<ffi.UnsignedLong Function(native_view_t$1)>()
 external int native_view_get_subview_count(int view);
 
-@ffi.Native<native_view_list_t Function(native_view_t)>()
+@ffi.Native<native_view_list_t Function(native_view_t$1)>()
 external native_view_list_t native_view_get_subviews(int view);
 
 /// Caller owns the returned string; free it with free_c_str().
-@ffi.Native<ffi.Pointer<ffi.Char> Function(native_view_t)>()
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_view_t$1)>()
 external ffi.Pointer<ffi.Char> native_view_get_tooltip(int view);
 
 /// Caller owns the returned handle; release it with native_window_free().
-@ffi.Native<native_window_t Function(native_view_t)>()
+@ffi.Native<native_window_t Function(native_view_t$1)>()
 external int native_view_get_window(int view);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.UnsignedLong, native_view_t)>()
+@ffi.Native<
+  ffi.Void Function(native_view_t$1, ffi.UnsignedLong, native_view_t$1)
+>()
 external void native_view_insert_subview(int view, int index, int subview);
 
 @ffi.Native<ffi.Bool Function(ffi.UnsignedInt)>(
@@ -2188,16 +2197,16 @@ bool native_view_is_backend_supported(native_view_backend_t backend) {
   return _native_view_is_backend_supported(backend.value);
 }
 
-@ffi.Native<ffi.Bool Function(native_view_t)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1)>()
 external bool native_view_is_enabled(int view);
 
-@ffi.Native<ffi.Bool Function(native_view_t)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1)>()
 external bool native_view_is_focused(int view);
 
 @ffi.Native<ffi.Bool Function()>()
 external bool native_view_is_supported();
 
-@ffi.Native<ffi.Bool Function(native_view_t)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1)>()
 external bool native_view_is_visible(int view);
 
 /// Frees the array and releases every handle it contains.
@@ -2209,28 +2218,28 @@ external void native_view_list_free(ffi.Pointer<native_view_list_t> list);
 external void native_view_list_release(ffi.Pointer<native_view_list_t> list);
 
 /// Unregisters a listener. Returns false if unknown.
-@ffi.Native<ffi.Bool Function(native_view_t, native_listener_id_t)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1, native_listener_id_t)>()
 external bool native_view_remove_listener(int view, int listener_id);
 
-@ffi.Native<ffi.Bool Function(native_view_t, native_view_t)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1, native_view_t$1)>()
 external bool native_view_remove_subview(int view, int subview);
 
-@ffi.Native<ffi.Bool Function(native_view_t, ffi.UnsignedLong)>()
+@ffi.Native<ffi.Bool Function(native_view_t$1, ffi.UnsignedLong)>()
 external bool native_view_remove_subview_at(int view, int index);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.UnsignedInt)>(
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.UnsignedInt)>(
   symbol: 'native_view_set_alignment',
 )
 external void _native_view_set_alignment(int view, int alignment);
 
 void native_view_set_alignment(
-  Dartnative_view_t view,
+  Dartnative_view_t$1 view,
   native_view_alignment_t alignment,
 ) {
   return _native_view_set_alignment(view, alignment.value);
 }
 
-@ffi.Native<ffi.Void Function(native_view_t, native_color_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, native_color_t)>()
 external void native_view_set_background_color(int view, native_color_t color);
 
 @ffi.Native<ffi.Bool Function(ffi.UnsignedInt)>(
@@ -2242,40 +2251,40 @@ bool native_view_set_default_backend(native_view_backend_t backend) {
   return _native_view_set_default_backend(backend.value);
 }
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.Bool)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Bool)>()
 external void native_view_set_enabled(int view, bool is_enabled);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.Double)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Double)>()
 external void native_view_set_flex(int view, double flex);
 
-@ffi.Native<ffi.Void Function(native_view_t, native_rectangle_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, native_rectangle_t)>()
 external void native_view_set_frame(int view, native_rectangle_t frame);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.UnsignedInt)>(
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.UnsignedInt)>(
   symbol: 'native_view_set_layout',
 )
 external void _native_view_set_layout(int view, int layout);
 
 void native_view_set_layout(
-  Dartnative_view_t view,
+  Dartnative_view_t$1 view,
   native_view_layout_t layout,
 ) {
   return _native_view_set_layout(view, layout.value);
 }
 
-@ffi.Native<ffi.Void Function(native_view_t, native_edge_insets_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, native_edge_insets_t)>()
 external void native_view_set_padding(int view, native_edge_insets_t padding);
 
-@ffi.Native<ffi.Void Function(native_view_t, native_size_t)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, native_size_t)>()
 external void native_view_set_preferred_size(int view, native_size_t size);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.Double)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Double)>()
 external void native_view_set_spacing(int view, double spacing);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.Pointer<ffi.Char>)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Pointer<ffi.Char>)>()
 external void native_view_set_tooltip(int view, ffi.Pointer<ffi.Char> tooltip);
 
-@ffi.Native<ffi.Void Function(native_view_t, ffi.Bool)>()
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Bool)>()
 external void native_view_set_visible(int view, bool is_visible);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
@@ -2380,7 +2389,7 @@ external native_rectangle_t native_window_get_content_bounds(int window);
 external native_size_t native_window_get_content_size(int window);
 
 /// Caller owns the returned handle; release it with native_view_free().
-@ffi.Native<native_view_t Function(native_window_t)>()
+@ffi.Native<native_view_t$1 Function(native_window_t)>()
 external int native_window_get_content_view(int window);
 
 /// Caller owns the returned handle; release it with native_window_shadow_free().
@@ -4681,19 +4690,22 @@ enum native_view_layout_t {
 
 /// Owning list of View handles.
 final class native_view_list_t extends ffi.Struct {
-  external ffi.Pointer<native_view_t> views;
+  external ffi.Pointer<native_view_t$1> views;
 
   @ffi.Long()
   external int count;
 
   static ffi.Pointer<native_view_list_t> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<native_view_t> views,
+    required ffi.Pointer<native_view_t$1> views,
     required int count,
   }) => $allocator<native_view_list_t>()
     ..ref.views = views
     ..ref.count = count;
 }
+
+typedef native_view_t = ffi.Uint64;
+typedef Dartnative_view_t = int;
 
 /// Opaque View handle.
 ///
@@ -4701,8 +4713,8 @@ final class native_view_list_t extends ffi.Struct {
 /// never dereference it, and compare it against NATIVE_INVALID_VIEW rather than NULL.
 /// Releasing a handle invalidates it; later calls fail safely instead of
 /// touching freed memory.
-typedef native_view_t = ffi.Uint64;
-typedef Dartnative_view_t = int;
+typedef native_view_t$1 = ffi.Uint64;
+typedef Dartnative_view_t$1 = int;
 
 enum native_visual_effect_t {
   NATIVE_VISUAL_EFFECT_NONE(0),

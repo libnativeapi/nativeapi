@@ -3249,6 +3249,21 @@ native_tray_icon_get_tooltip = function(
         c_uint64,
     ],
 )
+native_tray_icon_set_content_view = function(
+    "native_tray_icon_set_content_view",
+    None,
+    [
+        c_uint64,
+        c_uint64,
+    ],
+)
+native_tray_icon_get_content_view = function(
+    "native_tray_icon_get_content_view",
+    c_uint64,
+    [
+        c_uint64,
+    ],
+)
 native_tray_icon_set_context_menu = function(
     "native_tray_icon_set_context_menu",
     None,

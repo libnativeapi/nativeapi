@@ -5,6 +5,7 @@ import { native, NativeObject, wrapHandle } from "./runtime.ts";
 import { type Rectangle, type Size } from "./geometry.ts";
 import { Image } from "./image.ts";
 import { Menu } from "./menu.ts";
+import { View } from "./view.ts";
 
 export type TrayIconId = number;
 
@@ -94,6 +95,14 @@ export class TrayIcon extends NativeObject {
 
   getTooltip(): string | null {
     return native.native_tray_icon_get_tooltip(this.nativeHandle);
+  }
+
+  setContentView(view: View | null): void {
+    native.native_tray_icon_set_content_view(this.nativeHandle, view?.nativeHandle ?? 0n);
+  }
+
+  get contentView(): View | null {
+    return wrapHandle(View, native.native_tray_icon_get_content_view(this.nativeHandle));
   }
 
   setContextMenu(menu: Menu | null): void {

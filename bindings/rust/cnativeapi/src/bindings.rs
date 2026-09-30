@@ -3083,6 +3083,13 @@ unsafe extern "C" {
     ) -> *mut ::std::os::raw::c_char;
 }
 unsafe extern "C" {
+    pub fn native_tray_icon_set_content_view(tray_icon: native_tray_icon_t, view: native_view_t);
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned handle; release it with native_view_free()."]
+    pub fn native_tray_icon_get_content_view(tray_icon: native_tray_icon_t) -> native_view_t;
+}
+unsafe extern "C" {
     pub fn native_tray_icon_set_context_menu(tray_icon: native_tray_icon_t, menu: native_menu_t);
 }
 unsafe extern "C" {

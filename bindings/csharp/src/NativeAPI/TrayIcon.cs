@@ -172,6 +172,20 @@ public sealed partial class TrayIcon : IDisposable
         return Interop.ConsumeString(rawResult);
     }
 
+    public void SetContentView(View? view)
+    {
+        Interop.native_tray_icon_set_content_view(NativeHandle, view?.NativeHandle ?? 0);
+    }
+
+    public View? ContentView
+    {
+        get
+        {
+            var rawResult = Interop.native_tray_icon_get_content_view(NativeHandle);
+            return rawResult == 0 ? null : new View(rawResult);
+        }
+    }
+
     public void SetContextMenu(Menu? menu)
     {
         Interop.native_tray_icon_set_context_menu(NativeHandle, menu?.NativeHandle ?? 0);

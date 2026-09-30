@@ -9,6 +9,7 @@ use std::ffi::{CStr, CString};
 use crate::geometry::{Rectangle, Size};
 use crate::image::Image;
 use crate::menu::Menu;
+use crate::view::View;
 
 /// Identifies one registered event listener.
 pub type ListenerId = cnativeapi::native_listener_id_t;
@@ -215,6 +216,18 @@ impl TrayIcon {
             let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
             cnativeapi::free_c_str(ptr);
             Some(value)
+        }
+    }
+
+    pub fn set_content_view(&self, view: Option<&View>) {
+        unsafe {
+            cnativeapi::native_tray_icon_set_content_view(self.handle, view.map_or(0, |value| value.as_raw()));
+        }
+    }
+
+    pub fn content_view(&self) -> Option<View> {
+        unsafe {
+            View::from_raw(cnativeapi::native_tray_icon_get_content_view(self.handle))
         }
     }
 

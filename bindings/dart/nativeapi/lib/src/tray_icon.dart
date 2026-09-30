@@ -11,6 +11,7 @@ import 'package:ffi/ffi.dart' as pkg_ffi;
 import 'foundation/geometry.dart';
 import 'image.dart';
 import 'menu.dart';
+import 'view.dart';
 
 import 'support.dart';
 
@@ -219,6 +220,16 @@ class TrayIcon {
     final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
     c.free_c_str(resultPointer);
     return result;
+  }
+
+  set contentView(View? value) {
+    c.native_tray_icon_set_content_view(nativeHandle, value?.nativeHandle ?? 0);
+  }
+
+  View? get contentView {
+    final handle = c.native_tray_icon_get_content_view(nativeHandle);
+    if (handle == 0) return null;
+    return View.fromHandle(handle);
   }
 
   void setContextMenu(Menu? menu) {

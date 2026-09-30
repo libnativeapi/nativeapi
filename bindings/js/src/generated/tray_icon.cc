@@ -286,6 +286,40 @@ napi_value Js_native_tray_icon_get_tooltip(napi_env env, napi_callback_info info
   return value.ToJs(env);
 }
 
+napi_value Js_native_tray_icon_set_content_view(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_view_t p0 = {};
+  if (!GetHandle(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_tray_icon_set_content_view(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_tray_icon_get_content_view(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_tray_icon_get_content_view(self); });
+  return Value::BigInt(result).ToJs(env);
+}
+
 napi_value Js_native_tray_icon_set_context_menu(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -492,6 +526,8 @@ void RegisterTrayIcon(napi_env env, napi_value exports) {
   Export(env, exports, "native_tray_icon_get_title", Js_native_tray_icon_get_title);
   Export(env, exports, "native_tray_icon_set_tooltip", Js_native_tray_icon_set_tooltip);
   Export(env, exports, "native_tray_icon_get_tooltip", Js_native_tray_icon_get_tooltip);
+  Export(env, exports, "native_tray_icon_set_content_view", Js_native_tray_icon_set_content_view);
+  Export(env, exports, "native_tray_icon_get_content_view", Js_native_tray_icon_get_content_view);
   Export(env, exports, "native_tray_icon_set_context_menu", Js_native_tray_icon_set_context_menu);
   Export(env, exports, "native_tray_icon_get_context_menu", Js_native_tray_icon_get_context_menu);
   Export(env, exports, "native_tray_icon_set_context_menu_trigger", Js_native_tray_icon_set_context_menu_trigger);

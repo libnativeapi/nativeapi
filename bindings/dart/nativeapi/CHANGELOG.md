@@ -1,5 +1,10 @@
 ## Unreleased
 
+* `TrayIcon.contentView`: any `View` in place of the icon and title, on macOS.
+  The menu bar item is as wide as the view (its `preferredSize`, or what a Row
+  or Column needs) and follows it as it changes; clicks outside buttons and
+  text fields still reach the tray icon's events. Recorded only on Windows and
+  Linux.
 * `runNativeApp()`: windows and native views from a plain Dart program, no
   Flutter needed. The app runs in an isolate of its own on the platform's UI
   thread, with Dart's timers, futures and streams working in between; on

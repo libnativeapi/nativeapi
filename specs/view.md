@@ -24,6 +24,7 @@ Rust / C# 直接调库、想要「一个按钮、一个输入框、一个回调�
 | 布局 | 绝对坐标 + 由 core 共享代码计算的 Row / Column 栈式布局 | 平台只做「建控件、摆位置、读固有尺寸」，布局算法只有一份（[platform-seam.md](platform-seam.md) §3） |
 | 坐标 | 逻辑点，原点在**父 View 左上角**，y 向下 | 与 `Window::SetBounds` 一致；macOS 由平台层翻转 |
 | 挂到窗口 | `Window::GetContentView()` 返回根 View，往里 `AddSubview` | 不新增「把 View 塞进窗口」的第二条路径 |
+| 挂到托盘 | `TrayIcon::SetContentView(view)` 把一棵游离的树整棵交给托盘项，托盘项跟着根的首选 / 固有尺寸变宽；传 `nullptr` 回到图标和标题 | 托盘项没有可包装的既有内容区，尺寸由内容决定而不是反过来，所以是 set 而不是 `GetContentView()` 懒创建。宿主经 `View::Impl::host_layout` 在每次布局前给根定尺寸 |
 | 线程 | 只在主线程调用；事件同步 `Emit` | 与 `Window` 相同 |
 | 失败表达 | 纯状态 setter 返回 `void`；只有 `IsSupported()` 和 `RemoveSubview*` 返回 `bool` | [api-style.md](api-style.md) §4 |
 | 移动端 | Android / iOS / OHOS `IsSupported()` 返回 false，所有方法为 no-op | 桌面优先；接口层保持六平台都有符号 |

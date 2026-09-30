@@ -111,6 +111,9 @@ public static partial class Interop
     public static extern ulong native_tray_icon_create_with_tray(IntPtr tray);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_tray_icon_get_content_view(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_tray_icon_get_context_menu(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -121,6 +124,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_tray_icon_list_release(ref native_tray_icon_list_t list);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_tray_icon_set_content_view(ulong self, ulong view);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_tray_icon_set_context_menu(ulong self, ulong menu);

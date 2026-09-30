@@ -13,6 +13,7 @@ from . import _runtime as _rt
 from . import geometry as _geometry
 from . import image as _image
 from . import menu as _menu
+from . import view as _view
 
 TrayIconId = int
 
@@ -132,6 +133,14 @@ class TrayIcon(_rt.NativeObject):
         raw = _C.native_tray_icon_get_tooltip(self._handle)
         return _rt.take_optional_str(raw)
 
+    def set_content_view(self, view: _view.View | None) -> None:
+        _C.native_tray_icon_set_content_view(self._handle, _rt.handle_of(view))
+
+    @property
+    def content_view(self) -> _view.View | None:
+        raw = _C.native_tray_icon_get_content_view(self._handle)
+        return _view.View._owned(raw)
+
     def set_context_menu(self, menu: _menu.Menu | None) -> None:
         _C.native_tray_icon_set_context_menu(self._handle, _rt.handle_of(menu))
 
@@ -182,6 +191,10 @@ class TrayIcon(_rt.NativeObject):
     @icon_position.setter
     def icon_position(self, value: TrayIconPosition) -> None:
         self.set_icon_position(value)
+
+    @content_view.setter
+    def content_view(self, value: _view.View | None) -> None:
+        self.set_content_view(value)
 
     def add_listener(self, callback: Callable[[TrayIconEvent], None]) -> int:
         """Calls `callback` with every TrayIconEvent this TrayIcon emits.
