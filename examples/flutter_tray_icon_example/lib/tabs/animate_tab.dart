@@ -1,12 +1,11 @@
 import 'dart:io';
 
+import 'package:dazzui/dazzui.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/widgets.dart';
 
 import '../icon_animations.dart';
 import '../tray_controller.dart';
 import '../widgets/option_chip.dart';
-import '../widgets/palette.dart';
 
 /// The gallery: every tile is alive, one click plays it in the tray.
 class AnimateTab extends StatefulWidget {
@@ -63,27 +62,24 @@ class _AnimateTabState extends State<AnimateTab>
     final entry = controller.selected;
     if (entry == null) return const SizedBox.shrink();
     final animator = entry.animator;
-    final palette = Palette.of(context);
+    final vars = context.vars;
 
     return ListenableBuilder(
       listenable: animator,
       builder: (context, _) => ListView(
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: palette.border)),
-            ),
+          Padding(
+            padding: EdgeInsets.all(vars.spacing25),
             // Plain rows rather than a GridView: a UI probe reads box offsets,
             // and sliver grids keep their children's elsewhere.
             child: Column(
               children: [
                 for (var row = 0; row < 2; row++) ...[
-                  if (row > 0) const SizedBox(height: 6),
+                  if (row > 0) SizedBox(height: vars.spacing15),
                   Row(
                     children: [
                       for (var column = 0; column < 4; column++) ...[
-                        if (column > 0) const SizedBox(width: 6),
+                        if (column > 0) SizedBox(width: vars.spacing15),
                         Expanded(
                           child: _tile(
                             IconAnimation.values[row * 4 + column],
@@ -97,6 +93,7 @@ class _AnimateTabState extends State<AnimateTab>
               ],
             ),
           ),
+          const Divider(),
           OptionRow(
             label: 'Still icon',
             children: [
@@ -167,7 +164,7 @@ class _AnimateTabState extends State<AnimateTab>
                 selected: entry.scene == Scene.syncing,
                 onTap: () => controller.playScene(Scene.syncing),
               ),
-              OptionChip(
+              ActionChip(
                 label: 'Three icons',
                 onTap: controller.playThreeAtOnce,
               ),
@@ -179,7 +176,10 @@ class _AnimateTabState extends State<AnimateTab>
   }
 }
 
-class _Tile extends StatefulWidget {
+/// One gallery tile: an [OptionCard] whose title is the live drawing over
+/// the animation's name, so a chosen tile is drawn the way the system draws
+/// any chosen card.
+class _Tile extends StatelessWidget {
   const _Tile({
     required this.animation,
     required this.time,
@@ -193,63 +193,38 @@ class _Tile extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_Tile> createState() => _TileState();
-}
-
-class _TileState extends State<_Tile> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
-    final selected = widget.selected;
-    final color = selected ? palette.accent : palette.text;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: selected
-                ? palette.accentSurface
-                : _hovered
-                ? palette.hover
-                : null,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected ? palette.accent : palette.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              widget.animation == IconAnimation.widget
-                  ? CounterBadge(time: widget.time, color: color, size: 28)
-                  : RepaintBoundary(
-                      child: CustomPaint(
-                        size: const Size.square(28),
-                        painter: IconAnimationPainter(
-                          widget.animation,
-                          widget.time,
-                          color,
+    final vars = context.vars;
+    return OptionCard(
+      title: animation.label,
+      selected: selected,
+      onPressed: onTap,
+      padding: EdgeInsets.symmetric(
+        vertical: vars.spacing1,
+        horizontal: vars.spacing2,
+      ),
+      titleContent: Builder(
+        builder: (context) {
+          // The card's own label colour, for the drawing too.
+          final color = DefaultTextStyle.of(context).style.color!;
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                animation == IconAnimation.widget
+                    ? CounterBadge(time: time, color: color, size: 28)
+                    : RepaintBoundary(
+                        child: CustomPaint(
+                          size: const Size.square(28),
+                          painter: IconAnimationPainter(animation, time, color),
                         ),
                       ),
-                    ),
-              const SizedBox(height: 5),
-              Text(
-                widget.animation.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: selected ? palette.accent : palette.muted,
-                ),
-              ),
-            ],
-          ),
-        ),
+                SizedBox(height: vars.spacing1),
+                Text(animation.label),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

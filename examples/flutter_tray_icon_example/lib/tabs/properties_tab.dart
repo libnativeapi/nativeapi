@@ -1,9 +1,9 @@
-import 'package:flutter/widgets.dart';
+import 'package:dazzui/dazzui.dart' hide ContextMenu, Menu, MenuItem;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
 import '../tray_controller.dart';
 import '../widgets/option_chip.dart';
-import '../widgets/palette.dart';
+import '../widgets/styles.dart';
 
 /// Asks the shell to show its text editor.
 typedef EditText = void Function(
@@ -70,7 +70,7 @@ class PropertiesTab extends StatelessWidget {
                 onTap: () => controller.setTitle(value),
               ),
             if (TrayController.titleSupported)
-              OptionChip(
+              ActionChip(
                 label: 'Title…',
                 onTap: () => onEdit('Title', title ?? '', controller.setTitle),
               )
@@ -87,7 +87,7 @@ class PropertiesTab extends StatelessWidget {
                 selected: (tooltip ?? '') == (value ?? ''),
                 onTap: () => controller.setTooltip(value),
               ),
-            OptionChip(
+            ActionChip(
               label: 'Tooltip…',
               onTap: () =>
                   onEdit('Tooltip', tooltip ?? '', controller.setTooltip),
@@ -124,8 +124,8 @@ class PropertiesTab extends StatelessWidget {
           label: 'Menu',
           children: [
             if (TrayController.openMenuSupported) ...[
-              OptionChip(label: 'Open menu', onTap: controller.openMenu),
-              OptionChip(
+              ActionChip(label: 'Open menu', onTap: controller.openMenu),
+              ActionChip(
                 label: 'Open, close in 2 s',
                 onTap: () =>
                     controller.openMenu(closeAfter: const Duration(seconds: 2)),
@@ -162,76 +162,80 @@ class _StateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
+    final vars = context.vars;
     final icon = entry.trayIcon;
     final bounds = icon.getBounds().toRect();
-    final value = palette.mono.copyWith(color: palette.text);
+    final value = vars.mono.copyWith(color: vars.colorContent);
     String quote(String? s) =>
         s == null ? 'null' : '"${s.replaceAll('\n', r'\n')}"';
 
     Widget line(String text) =>
         Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: value);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: palette.border)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    Widget counter(String label, int count) => Badge(
+      size: WidgetSize.small,
+      variant: count > 0 ? BadgeVariant.tinted : BadgeVariant.outlined,
+      tint: count > 0 ? BadgeTint.primary : BadgeTint.neutral,
+      child: Text('$label $count'),
+    );
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            vars.spacing25,
+            vars.spacing2,
+            vars.spacing25,
+            vars.spacing2,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text('Read back from getters', style: palette.mono),
+              Row(
+                children: [
+                  const Expanded(child: SectionLabel('Read back from getters')),
+                  ActionChip(
+                    label: 'Window to icon',
+                    onTap: TrayController.boundsSupported
+                        ? controller.moveWindowToIcon
+                        : null,
+                  ),
+                  SizedBox(width: vars.spacing1),
+                  ActionChip(label: 'Refresh', onTap: controller.refresh),
+                ],
               ),
-              OptionChip(
-                label: 'Window to icon',
-                onTap: TrayController.boundsSupported
-                    ? controller.moveWindowToIcon
-                    : null,
+              SizedBox(height: vars.spacing05),
+              line(
+                'id ${icon.getId()} · visible ${icon.isVisible()} · '
+                'trigger ${icon.getContextMenuTrigger().name}',
               ),
-              const SizedBox(width: 5),
-              OptionChip(label: 'Refresh', onTap: controller.refresh),
+              line('title ${quote(icon.getTitle())}'),
+              line('tooltip ${quote(icon.getTooltip())}'),
+              line(
+                'bounds ${bounds.left.round()},${bounds.top.round()} '
+                '${bounds.width.round()}×${bounds.height.round()} · '
+                'supported ${controller.supported} · '
+                'getAll ${controller.managerCount}',
+              ),
+              SizedBox(height: vars.spacing15),
+              Wrap(
+                spacing: vars.spacing1,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  counter('Left', entry.clicks),
+                  counter('Right', entry.rightClicks),
+                  counter('Double', entry.doubleClicks),
+                  ActionChip(
+                    label: 'Reset counts',
+                    onTap: controller.resetCounters,
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 2),
-          line(
-            'id ${icon.getId()} · visible ${icon.isVisible()} · '
-            'trigger ${icon.getContextMenuTrigger().name}',
-          ),
-          line('title ${quote(icon.getTitle())}'),
-          line('tooltip ${quote(icon.getTooltip())}'),
-          line(
-            'bounds ${bounds.left.round()},${bounds.top.round()} '
-            '${bounds.width.round()}×${bounds.height.round()} · '
-            'supported ${controller.supported} · '
-            'getAll ${controller.managerCount}',
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 5,
-            children: [
-              OptionChip(
-                label: 'Left ${entry.clicks}',
-                selected: entry.clicks > 0,
-              ),
-              OptionChip(
-                label: 'Right ${entry.rightClicks}',
-                selected: entry.rightClicks > 0,
-              ),
-              OptionChip(
-                label: 'Double ${entry.doubleClicks}',
-                selected: entry.doubleClicks > 0,
-              ),
-              OptionChip(
-                label: 'Reset counts',
-                onTap: controller.resetCounters,
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        const Divider(),
+      ],
     );
   }
 }

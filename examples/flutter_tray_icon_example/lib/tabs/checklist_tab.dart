@@ -1,9 +1,9 @@
+import 'package:dazzui/dazzui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 import '../checklist.dart';
 import '../widgets/option_chip.dart';
-import '../widgets/palette.dart';
+import '../widgets/styles.dart';
 
 /// Acceptance in one screen: what ticked itself, what still needs a look.
 class ChecklistTab extends StatelessWidget {
@@ -13,13 +13,18 @@ class ChecklistTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
+    final vars = context.vars;
     final auto = checklist.items.where((i) => !i.manual);
     final manual = checklist.items.where((i) => i.manual);
 
     Widget header(String text) => Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 3),
-      child: Text(text, style: TextStyle(fontSize: 11, color: palette.muted)),
+      padding: EdgeInsets.fromLTRB(
+        vars.spacing25,
+        vars.spacing2,
+        vars.spacing25,
+        vars.spacing1,
+      ),
+      child: SectionLabel(text),
     );
 
     return Column(
@@ -29,32 +34,32 @@ class ChecklistTab extends StatelessWidget {
             children: [
               header('Auto · ticks itself from events and return values'),
               for (final item in auto) _Row(item: item, checklist: checklist),
-              Container(
-                margin: const EdgeInsets.only(top: 6),
-                height: 1,
-                color: palette.border,
+              Padding(
+                padding: EdgeInsets.only(top: vars.spacing15),
+                child: const Divider(),
               ),
               header('Manual · look at the tray, then mark it'),
               for (final item in manual) _Row(item: item, checklist: checklist),
-              const SizedBox(height: 6),
+              SizedBox(height: vars.spacing15),
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: palette.border)),
+        const Divider(),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: vars.spacing25,
+            vertical: vars.spacing15,
           ),
           child: Row(
             children: [
-              Expanded(child: Text(checklist.summary, style: palette.mono)),
-              OptionChip(
+              Expanded(child: Text(checklist.summary, style: vars.mono)),
+              ActionChip(
                 label: 'Copy report',
                 onTap: () =>
                     Clipboard.setData(ClipboardData(text: checklist.report())),
               ),
-              const SizedBox(width: 5),
-              OptionChip(label: 'Reset checklist', onTap: checklist.reset),
+              SizedBox(width: vars.spacing1),
+              ActionChip(label: 'Reset checklist', onTap: checklist.reset),
             ],
           ),
         ),
@@ -71,50 +76,66 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
+    final vars = context.vars;
     final detail = [
       if (item.note != null) item.note!,
       if (item.detail.isNotEmpty) item.detail,
     ].join(' · ');
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      padding: EdgeInsets.symmetric(
+        horizontal: vars.spacing25,
+        vertical: vars.spacing05 + 1,
+      ),
       child: Row(
         children: [
-          CustomPaint(
-            size: const Size.square(14),
-            painter: _StatusMark(item.status, palette),
+          SizedBox(
+            width: 44,
+            child: Badge(
+              size: WidgetSize.small,
+              tint: switch (item.status) {
+                CheckStatus.pass => BadgeTint.success,
+                CheckStatus.fail => BadgeTint.danger,
+                CheckStatus.open => BadgeTint.neutral,
+              },
+              variant: item.status == CheckStatus.open
+                  ? BadgeVariant.outlined
+                  : BadgeVariant.tinted,
+              child: Text(item.status.name),
+            ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: vars.spacing15),
           Expanded(
             child: Text(
               item.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12),
+              style: vars.bodySmall,
             ),
           ),
           if (detail.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 6),
+              padding: EdgeInsets.only(left: vars.spacing15),
               child: Text(
                 detail,
-                style: palette.mono.copyWith(
+                style: vars.mono.copyWith(
                   color: item.status == CheckStatus.fail
-                      ? palette.danger
-                      : palette.muted,
+                      ? vars.colorDanger.shade600
+                      : vars.colorContentMuted,
                 ),
               ),
             ),
           if (item.manual) ...[
-            const SizedBox(width: 6),
+            SizedBox(width: vars.spacing15),
             OptionChip(
               label: 'Pass',
+              tint: ToggleTint.success,
               selected: item.status == CheckStatus.pass,
               onTap: () => checklist.mark(item.id, CheckStatus.pass),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: vars.spacing1),
             OptionChip(
               label: 'Fail',
+              tint: ToggleTint.danger,
               selected: item.status == CheckStatus.fail,
               onTap: () => checklist.mark(item.id, CheckStatus.fail),
             ),
@@ -123,66 +144,4 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Open ring, green tick or red cross.
-class _StatusMark extends CustomPainter {
-  _StatusMark(this.status, this.palette);
-
-  final CheckStatus status;
-  final Palette palette;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2;
-    if (status == CheckStatus.open) {
-      canvas.drawCircle(
-        center,
-        radius - 0.75,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
-          ..color = palette.border,
-      );
-      return;
-    }
-    final pass = status == CheckStatus.pass;
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()..color = pass ? palette.success : palette.danger,
-    );
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = palette.background;
-    final s = size.shortestSide;
-    if (pass) {
-      canvas.drawPath(
-        Path()
-          ..moveTo(s * 0.27, s * 0.52)
-          ..lineTo(s * 0.44, s * 0.68)
-          ..lineTo(s * 0.74, s * 0.34),
-        stroke,
-      );
-    } else {
-      canvas.drawLine(
-        Offset(s * 0.32, s * 0.32),
-        Offset(s * 0.68, s * 0.68),
-        stroke,
-      );
-      canvas.drawLine(
-        Offset(s * 0.68, s * 0.32),
-        Offset(s * 0.32, s * 0.68),
-        stroke,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_StatusMark oldDelegate) =>
-      oldDelegate.status != status || oldDelegate.palette != palette;
 }

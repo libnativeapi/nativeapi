@@ -1,47 +1,36 @@
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
+import 'package:dazzui/dazzui.dart';
 
 import '../icon_animations.dart';
 import '../icon_animator.dart';
 import '../tray_controller.dart';
 import 'option_chip.dart';
-import 'palette.dart';
+import 'styles.dart';
 
 /// Magnified view of the selected tray icon.
 ///
 /// It paints [IconAnimator.lastFrame] — the very image that was just handed to
 /// the tray — so the window and the tray can be compared frame by frame.
-class LivePreview extends StatefulWidget {
+class LivePreview extends StatelessWidget {
   const LivePreview({super.key, required this.controller});
 
   final TrayController controller;
 
   @override
-  State<LivePreview> createState() => _LivePreviewState();
-}
-
-class _LivePreviewState extends State<LivePreview> {
-  bool? _darkBar;
-
-  @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
-    final entry = widget.controller.selected;
-    final darkBar = _darkBar ?? palette.isDark;
+    final vars = context.vars;
+    final entry = controller.selected;
 
     return Container(
       height: 112,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        border: Border(bottom: BorderSide(color: palette.border)),
-      ),
+      padding: EdgeInsets.all(vars.spacing25),
+      color: vars.colorSurfaceSunken,
       child: entry == null
           ? Center(
               child: Text(
                 'No tray icon. Add one to start.',
-                style: TextStyle(color: palette.muted),
+                style: vars.bodyMedium.copyWith(color: vars.colorContentSubtle),
               ),
             )
           : ListenableBuilder(
@@ -53,7 +42,7 @@ class _LivePreviewState extends State<LivePreview> {
                       // Live widgets being screenshotted for "Any widget".
                       // They have to be painted, so they sit under the
                       // (opaque) preview box instead of being Offstage.
-                      for (final other in widget.controller.entries)
+                      for (final other in controller.entries)
                         if (other.animator.animation == IconAnimation.widget)
                           Positioned(
                             left: 30,
@@ -67,51 +56,49 @@ class _LivePreviewState extends State<LivePreview> {
                               ),
                             ),
                           ),
-                      _frameBox(entry.animator, darkBar, palette),
+                      _frameBox(entry.animator, vars),
                     ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(child: _details(entry, darkBar, palette)),
+                  SizedBox(width: vars.spacing25),
+                  Expanded(child: _details(entry, vars)),
                 ],
               ),
             ),
     );
   }
 
-  Widget _frameBox(IconAnimator animator, bool darkBar, Palette palette) {
+  Widget _frameBox(IconAnimator animator, ThemeVariables vars) {
     final frame = animator.lastFrame;
     // macOS uses the image as a template: only alpha counts and the menu bar
-    // picks the tint. Other platforms show the pixels as they are.
-    final tint = Platform.isMacOS
-        ? (darkBar ? const Color(0xFFFFFFFF) : const Color(0xFF000000))
-        : null;
-    return Container(
+    // picks the tint, so here the ink does. Other platforms show the pixels
+    // as they are.
+    final tint = Platform.isMacOS ? vars.colorContent : null;
+    return SizedBox(
       width: 84,
       height: 84,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: darkBar ? const Color(0xFF2A2A2C) : const Color(0xFFECECEE),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: palette.border),
+      child: Card(
+        variant: CardVariant.sunken,
+        size: WidgetSize.small,
+        child: Center(
+          child: frame == null
+              ? null
+              : RawImage(
+                  image: frame,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.contain,
+                  // Show the real pixels; smoothing would hide the resolution.
+                  filterQuality: FilterQuality.none,
+                  color: tint,
+                  colorBlendMode: tint == null ? null : BlendMode.srcIn,
+                ),
+        ),
       ),
-      child: frame == null
-          ? null
-          : RawImage(
-              image: frame,
-              width: 60,
-              height: 60,
-              fit: BoxFit.contain,
-              // Show the real pixels; smoothing would hide the resolution.
-              filterQuality: FilterQuality.none,
-              color: tint,
-              colorBlendMode: tint == null ? null : BlendMode.srcIn,
-            ),
     );
   }
 
-  Widget _details(TrayEntry entry, bool darkBar, Palette palette) {
+  Widget _details(TrayEntry entry, ThemeVariables vars) {
     final animator = entry.animator;
-    final controller = widget.controller;
     final name = animator.animation?.label ?? '${_stillLabel(entry)} icon';
     final state = !animator.isPlaying
         ? 'still'
@@ -122,41 +109,38 @@ class _LivePreviewState extends State<LivePreview> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$name · $state',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
+        Text('$name · $state', style: vars.titleSmall),
         if (animator.isPlaying) ...[
           Text(
             'frame ${animator.frames} · '
             '${animator.measuredFps.toStringAsFixed(1)} fps',
-            style: palette.mono,
+            style: vars.mono,
           ),
           Text(
             'render ${animator.renderMs.toStringAsFixed(1)} ms · $px×$px px',
-            style: palette.mono,
+            style: vars.mono,
           ),
           Text(
             'dropped ${animator.dropped} · same frame as tray',
-            style: palette.mono,
+            style: vars.mono,
           ),
         ] else ...[
-          Text('$px×$px px · same image as tray', style: palette.mono),
-          Text('pick an animation below to play it', style: palette.mono),
+          Text('$px×$px px · same image as tray', style: vars.mono),
+          Text('pick an animation below to play it', style: vars.mono),
         ],
         const Spacer(),
         Wrap(
-          spacing: 5,
+          spacing: vars.spacing1,
           children: [
-            OptionChip(
+            ActionChip(
               label: animator.paused ? 'Resume' : 'Pause',
               onTap: animator.isPlaying ? animator.togglePaused : null,
             ),
-            OptionChip(
+            ActionChip(
               label: 'Step',
               onTap: animator.isPlaying ? animator.step : null,
             ),
-            OptionChip(
+            ActionChip(
               label: 'Stop',
               // Back to the asset icon; a scene also gives back the title
               // and tooltip it took.
@@ -165,10 +149,6 @@ class _LivePreviewState extends State<LivePreview> {
                   : entry.scene != null
                   ? controller.resetScene
                   : () => controller.setStill(StillIcon.asset),
-            ),
-            OptionChip(
-              label: darkBar ? 'Dark bar' : 'Light bar',
-              onTap: () => setState(() => _darkBar = !darkBar),
             ),
           ],
         ),

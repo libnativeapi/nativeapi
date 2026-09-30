@@ -1,8 +1,8 @@
-import 'package:flutter/widgets.dart';
+import 'package:dazzui/dazzui.dart';
 
 import '../tray_controller.dart';
 import 'option_chip.dart';
-import 'palette.dart';
+import 'styles.dart';
 
 /// The last event in large type (readable in a video) over a short log.
 class EventFooter extends StatelessWidget {
@@ -12,14 +12,16 @@ class EventFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
+    final vars = context.vars;
     return Container(
       height: 92,
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 6),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        border: Border(top: BorderSide(color: palette.border)),
+      padding: EdgeInsets.fromLTRB(
+        vars.spacing25,
+        vars.spacing15,
+        vars.spacing25,
+        vars.spacing15,
       ),
+      color: vars.colorSurfaceSunken,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -30,22 +32,19 @@ class EventFooter extends StatelessWidget {
                   controller.lastEvent,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: vars.titleMedium,
                 ),
               ),
-              OptionChip(label: 'Clear log', onTap: controller.clearLog),
+              ActionChip(label: 'Clear log', onTap: controller.clearLog),
             ],
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: vars.spacing05),
           for (final line in controller.log.take(3))
             Text(
               line,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: palette.mono,
+              style: vars.mono,
             ),
         ],
       ),

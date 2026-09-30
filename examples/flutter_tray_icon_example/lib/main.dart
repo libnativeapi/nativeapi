@@ -1,7 +1,9 @@
-import 'package:flutter/widgets.dart';
+import 'package:dazzui/dazzui.dart';
+import 'package:flutter/cupertino.dart' show DefaultCupertinoLocalizations;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart'
     show SizeToNative, WindowManager;
 
+import 'omarchy_theme.dart';
 import 'tabs/animate_tab.dart';
 import 'tabs/checklist_tab.dart';
 import 'tabs/properties_tab.dart';
@@ -9,39 +11,68 @@ import 'tray_controller.dart';
 import 'widgets/event_footer.dart';
 import 'widgets/live_preview.dart';
 import 'widgets/option_chip.dart';
-import 'widgets/palette.dart';
 
-// The example is built on package:flutter/widgets.dart alone — no component
-// library — so everything on screen is a few dozen lines you can read here.
+// The example is drawn with DazzUI (package:dazzui) over WidgetsApp — no
+// material — so everything on screen is a few dozen lines you can read here.
 //
 //   tray_controller.dart   every TrayIcon / TrayManager call, scenes, events
 //   icon_animator.dart     canvas or widget → PNG → TrayIcon.icon, per frame
 //   icon_animations.dart   what the frames look like
 //   context_menu.dart      the tray menu
 //   checklist.dart         the acceptance checklist
+//   omarchy_theme.dart     on Omarchy, the desktop's palette as the theme
 
 void main() {
   runApp(const TrayIconExampleApp());
 }
 
-class TrayIconExampleApp extends StatelessWidget {
+class TrayIconExampleApp extends StatefulWidget {
   const TrayIconExampleApp({super.key});
+
+  @override
+  State<TrayIconExampleApp> createState() => _TrayIconExampleAppState();
+}
+
+class _TrayIconExampleAppState extends State<TrayIconExampleApp> {
+  // On Omarchy the window wears the desktop's theme and follows a switch;
+  // elsewhere it is the design system's own, by platform brightness.
+  final OmarchyTheme? _omarchy = OmarchyTheme.start();
+
+  @override
+  void dispose() {
+    _omarchy?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return WidgetsApp(
       title: 'Tray icon example',
-      color: Palette.light.accent,
+      color: themeVariables.colorCanvas,
       debugShowCheckedModeBanner: false,
-      builder: (context, _) {
-        final palette = Palette.of(context);
-        return DefaultTextStyle(
-          style: TextStyle(fontSize: 12, height: 1.3, color: palette.text),
-          child: Overlay(
-            initialEntries: [OverlayEntry(builder: (_) => const Shell())],
+      // The kit's text field is a cupertino one underneath and asks these for
+      // the word on its clear button.
+      localizationsDelegates: const [DefaultCupertinoLocalizations.delegate],
+      pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) =>
+          PageRouteBuilder<T>(
+            settings: settings,
+            pageBuilder: (context, _, _) => builder(context),
           ),
+      // The theme sits above the navigator so a dialog is drawn in it too.
+      builder: (context, child) {
+        final system =
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark
+            ? ThemeData.studioDark()
+            : ThemeData.studioLight();
+        final omarchy = _omarchy;
+        if (omarchy == null) return Theme(data: system, child: child!);
+        return ListenableBuilder(
+          listenable: omarchy,
+          builder: (context, _) =>
+              Theme(data: omarchy.data ?? system, child: child!),
         );
       },
+      home: const Shell(),
     );
   }
 }
@@ -59,7 +90,6 @@ class Shell extends StatefulWidget {
 class _ShellState extends State<Shell> {
   final TrayController _controller = TrayController();
   _Tab _tab = _Tab.animate;
-  _TextEdit? _edit;
 
   @override
   void initState() {
@@ -82,77 +112,68 @@ class _ShellState extends State<Shell> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
+    final vars = context.vars;
     return ListenableBuilder(
       listenable: Listenable.merge([_controller, _controller.checklist]),
       builder: (context, _) => ColoredBox(
-        color: palette.background,
-        child: Stack(
+        color: vars.colorCanvas,
+        child: Column(
           children: [
-            Column(
-              children: [
-                _iconsStrip(palette),
-                LivePreview(controller: _controller),
-                _tabBar(palette),
-                Expanded(
-                  child: switch (_tab) {
-                    _Tab.animate => AnimateTab(controller: _controller),
-                    _Tab.properties => PropertiesTab(
-                      controller: _controller,
-                      onEdit: (title, initial, onSubmit) => setState(
-                        () => _edit = _TextEdit(title, initial, onSubmit),
-                      ),
-                    ),
-                    _Tab.checklist => ChecklistTab(
-                      checklist: _controller.checklist,
-                    ),
-                  },
+            _iconsStrip(vars),
+            const Divider(),
+            LivePreview(controller: _controller),
+            const Divider(),
+            _tabBar(vars),
+            const Divider(),
+            Expanded(
+              child: switch (_tab) {
+                _Tab.animate => AnimateTab(controller: _controller),
+                _Tab.properties => PropertiesTab(
+                  controller: _controller,
+                  onEdit: (title, initial, onSubmit) =>
+                      _editText(context, title, initial, onSubmit),
                 ),
-                EventFooter(controller: _controller),
-              ],
+                _Tab.checklist => ChecklistTab(
+                  checklist: _controller.checklist,
+                ),
+              },
             ),
-            if (_edit != null)
-              _TextEditor(
-                edit: _edit!,
-                onDone: () => setState(() => _edit = null),
-              ),
+            const Divider(),
+            EventFooter(controller: _controller),
           ],
         ),
       ),
     );
   }
 
-  Widget _iconsStrip(Palette palette) {
+  Widget _iconsStrip(ThemeVariables vars) {
     final selected = _controller.selected;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: palette.border)),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: vars.spacing25,
+        vertical: vars.spacing15,
       ),
       child: Row(
         children: [
           Expanded(
             child: Wrap(
-              spacing: 5,
-              runSpacing: 5,
+              spacing: vars.spacing1,
+              runSpacing: vars.spacing1,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(
-                  'Tray icons',
-                  style: TextStyle(fontSize: 11, color: palette.muted),
-                ),
-                const SizedBox(width: 3),
+                const SectionLabel('Tray icons'),
+                SizedBox(width: vars.spacing05),
                 for (final entry in _controller.entries)
                   OptionChip(
                     label: '#${entry.number}',
                     selected: entry == selected,
                     onTap: () => _controller.select(entry),
                   ),
-                OptionChip(label: 'Add icon', onTap: _controller.addIcon),
+                ActionChip(label: 'Add icon', onTap: _controller.addIcon),
               ],
             ),
           ),
-          OptionChip(
+          ActionChip(
             label: selected == null ? 'Remove' : 'Remove #${selected.number}',
             onTap: selected == null
                 ? null
@@ -163,90 +184,63 @@ class _ShellState extends State<Shell> {
     );
   }
 
-  Widget _tabBar(Palette palette) {
+  Widget _tabBar(ThemeVariables vars) {
     final checklist = _controller.checklist;
-    final labels = {
-      _Tab.animate: 'Animate',
-      _Tab.properties: 'Properties',
-      _Tab.checklist: 'Checklist ${checklist.passed}/${checklist.items.length}',
-    };
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: palette.border)),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: vars.spacing25,
+        vertical: vars.spacing15,
       ),
-      child: Row(
-        children: [
-          for (final MapEntry(:key, :value) in labels.entries)
-            Expanded(
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => setState(() => _tab = key),
-                  child: Container(
-                    height: 32,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          width: 2,
-                          color: key == _tab
-                              ? palette.accent
-                              : const Color(0x00000000),
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: key == _tab
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: key == _tab
-                            ? (checklist.failed > 0 && key == _Tab.checklist
-                                  ? palette.danger
-                                  : palette.text)
-                            : (checklist.failed > 0 && key == _Tab.checklist
-                                  ? palette.danger
-                                  : palette.muted),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+      child: SegmentedControl<_Tab>(
+        stretch: true,
+        // A failed item turns the whole bar: the tab is where to look next.
+        tint: checklist.failed > 0
+            ? SegmentedTint.danger
+            : SegmentedTint.primary,
+        items: [
+          const SegmentedItem(value: _Tab.animate, label: 'Animate'),
+          const SegmentedItem(value: _Tab.properties, label: 'Properties'),
+          SegmentedItem(
+            value: _Tab.checklist,
+            label: 'Checklist ${checklist.passed}/${checklist.items.length}',
+          ),
         ],
+        value: _tab,
+        onChanged: (tab) => setState(() => _tab = tab),
       ),
     );
   }
+
+  /// A one-field dialog, for values the preset chips don't cover. Scripts
+  /// never need it: every preset is a click.
+  Future<void> _editText(
+    BuildContext context,
+    String title,
+    String initial,
+    ValueChanged<String> onSubmit,
+  ) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => _TextEditDialog(title: title, initial: initial),
+    );
+    if (value != null) onSubmit(value);
+  }
 }
 
-class _TextEdit {
-  _TextEdit(this.title, this.initial, this.onSubmit);
+class _TextEditDialog extends StatefulWidget {
+  const _TextEditDialog({required this.title, required this.initial});
 
   final String title;
   final String initial;
-  final ValueChanged<String> onSubmit;
-}
-
-/// A one-field editor over the window, for values the preset chips don't
-/// cover. Scripts never need it: every preset is a click.
-class _TextEditor extends StatefulWidget {
-  const _TextEditor({required this.edit, required this.onDone});
-
-  final _TextEdit edit;
-  final VoidCallback onDone;
 
   @override
-  State<_TextEditor> createState() => _TextEditorState();
+  State<_TextEditDialog> createState() => _TextEditDialogState();
 }
 
-class _TextEditorState extends State<_TextEditor> {
+class _TextEditDialogState extends State<_TextEditDialog> {
   late final TextEditingController _text = TextEditingController(
-    text: widget.edit.initial,
+    text: widget.initial,
   );
-  final FocusNode _focus = FocusNode();
 
   @override
   void initState() {
@@ -255,94 +249,46 @@ class _TextEditorState extends State<_TextEditor> {
       baseOffset: 0,
       extentOffset: _text.text.length,
     );
-    _focus.requestFocus();
   }
 
   @override
   void dispose() {
     _text.dispose();
-    _focus.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    widget.edit.onSubmit(_text.text);
-    widget.onDone();
-  }
+  void _apply() => Navigator.of(context).pop(_text.text);
 
   @override
   Widget build(BuildContext context) {
-    final palette = Palette.of(context);
-    return Positioned.fill(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onDone,
-        child: ColoredBox(
-          color: const Color(0x66000000),
-          child: Center(
-            child: GestureDetector(
-              onTap: _focus.requestFocus,
-              child: Container(
-                width: 320,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: palette.background,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: palette.border),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.edit.title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.surface,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: palette.accent),
-                      ),
-                      child: EditableText(
-                        controller: _text,
-                        focusNode: _focus,
-                        autofocus: true,
-                        style: TextStyle(fontSize: 13, color: palette.text),
-                        cursorColor: palette.accent,
-                        backgroundCursorColor: palette.muted,
-                        selectionColor: palette.accentSurface,
-                        onSubmitted: (_) => _submit(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OptionChip(label: 'Cancel', onTap: widget.onDone),
-                        const SizedBox(width: 6),
-                        OptionChip(
-                          label: 'Apply',
-                          selected: true,
-                          onTap: _submit,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+    return Dialog(
+      children: [
+        DialogHeader(title: widget.title),
+        DialogBody(
+          children: [
+            TextField(
+              controller: _text,
+              autofocus: true,
+              onSubmitted: (_) => _apply(),
             ),
-          ),
+          ],
         ),
-      ),
+        DialogFooter(
+          children: [
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            Button(
+              variant: ButtonVariant.filled,
+              onPressed: _apply,
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

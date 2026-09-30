@@ -32,6 +32,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # The DazzUI design system: every control on screen is one of its widgets.
+  dazzui: ^0.1.0
 
   # Native API package for tray icon functionality
   nativeapi_flutter:
