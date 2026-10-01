@@ -83,12 +83,18 @@ def assert_idle(ms=1500):
 def flutter_executable(project_dir, name=None, mode='Debug'):
     """The executable inside a Flutter project's built macOS bundle.
 
-    `name` is the product name; it defaults to the project directory's name.
+    `name` is the product name; it defaults to the one app the build produced, or else
+    the project directory's name.
     """
     project_dir = os.path.abspath(project_dir)
-    name = name or os.path.basename(project_dir)
-    return os.path.join(project_dir, 'build', 'macos', 'Build', 'Products', mode, f'{name}.app',
-                        'Contents', 'MacOS', name)
+    products = os.path.join(project_dir, 'build', 'macos', 'Build', 'Products', mode)
+    if name is None:
+        # The product is named by the runner, not the directory (a directory may carry a
+        # prefix, e.g. examples/flutter_x builds x.app): take the one app that was built.
+        apps = sorted(f for f in os.listdir(products) if f.endswith('.app')) \
+            if os.path.isdir(products) else []
+        name = apps[0][:-4] if len(apps) == 1 else os.path.basename(project_dir)
+    return os.path.join(products, f'{name}.app', 'Contents', 'MacOS', name)
 
 
 def build_flutter(project_dir):

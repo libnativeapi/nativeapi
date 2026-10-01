@@ -60,10 +60,22 @@ def assert_idle(ms=1500):
 
 
 def flutter_executable(project_dir, name=None, mode='debug'):
-    """The executable inside a Flutter project's built Linux bundle."""
+    """The executable inside a Flutter project's built Linux bundle.
+
+    `name` is the binary name; it defaults to the one executable in the bundle, or else
+    the project directory's name.
+    """
     project_dir = os.path.abspath(project_dir)
-    name = name or os.path.basename(project_dir)
-    return os.path.join(project_dir, 'build', 'linux', 'x64', mode, 'bundle', name)
+    bundle = os.path.join(project_dir, 'build', 'linux', 'x64', mode, 'bundle')
+    if name is None:
+        # The binary is named by the runner's BINARY_NAME, not the directory (a directory
+        # may carry a prefix, e.g. examples/flutter_x builds x): take the one executable.
+        exes = sorted(f for f in os.listdir(bundle)
+                      if os.path.isfile(os.path.join(bundle, f))
+                      and os.access(os.path.join(bundle, f), os.X_OK)) \
+            if os.path.isdir(bundle) else []
+        name = exes[0] if len(exes) == 1 else os.path.basename(project_dir)
+    return os.path.join(bundle, name)
 
 
 def build_flutter(project_dir):

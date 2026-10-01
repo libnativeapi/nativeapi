@@ -44,7 +44,7 @@ try:
         return result
 
     enum_class = next(c['id'] for c in classes if c['name'] == 'DemoShape')
-    enums = call('getInstances', isolateId=iso, objectId=enum_class, limit=10)['instances']
+    enums = call('getInstances', isolateId=iso, objectId=enum_class, limit=100)['instances']
     shapes = {}
     for instance in enums:
         fields = call('getObject', isolateId=iso, objectId=instance['id'])['fields']

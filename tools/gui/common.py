@@ -25,8 +25,10 @@ from guiapp import GuiApp, build_flutter, flutter_executable  # noqa: E402
 
 
 def example(name, args=()):
-    """A GuiApp for the Flutter example examples/flutter_<name>."""
-    return GuiApp(flutter_executable(os.path.join(EXAMPLES, 'flutter_' + name)), args=args)
+    """A GuiApp for the Flutter example examples/flutter_<name>, whose macOS product is
+    <name>.app (the directory carries the binding prefix, the product does not)."""
+    return GuiApp(flutter_executable(os.path.join(EXAMPLES, 'flutter_' + name), name=name),
+                  args=args)
 
 
 def build_example(name):
