@@ -1,10 +1,10 @@
 // ignore_for_file: invalid_use_of_internal_member, implementation_imports
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
 import 'package:flutter/src/widgets/_window.dart' hide WindowManager;
 import 'package:nativeapi/nativeapi.dart' as na;
-import 'package:nativeapi_flutter/nativeapi_flutter.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' hide Button;
 
 void main() {
   // The stable channel does not offer `flutter config --enable-windowing`,
@@ -33,6 +33,7 @@ void main() {
     WindowManager.instance.callOriginalShow(windowId);
   });
   WindowManager.instance.setWillHideHook((windowId) {
+    // ignore: avoid_print
     print('[Dart] will hide hook $windowId');
   });
   runWidget(
@@ -129,36 +130,38 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
   Widget build(BuildContext context) {
     return RegularWindow(
       controller: _windowController,
-      child: MaterialApp(
+      child: Host(
         title: 'Primary Window',
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Primary Window')),
-          body: Center(
-            child: Column(
-              children: [
-                FilledButton(
-                  onPressed: () {
-                    Window? primaryWindow;
-                    final windows = WindowManager.instance.getAll();
-                    for (var window in windows) {
-                      if (window.title == 'Primary Window') {
-                        primaryWindow = window;
-                        break;
-                      }
-                    }
-                    if (primaryWindow != null) {
-                      primaryWindow.setSize(
-                        const Size(1000, 1000).toNative(),
-                        false,
-                      );
-                      primaryWindow.show();
-                    }
-                  },
-                  child: const Text('A Window'),
-                ),
-              ],
+        home: WindowPanel(
+          title: 'Primary Window',
+          placement: 'Top row',
+          description:
+              'The will-show hook gave this window the top half of a block '
+              '60% of the work area wide and tall, centred on the primary '
+              'display.',
+          actions: [
+            Button(
+              variant: ButtonVariant.filled,
+              onPressed: () {
+                Window? primaryWindow;
+                final windows = WindowManager.instance.getAll();
+                for (var window in windows) {
+                  if (window.title == 'Primary Window') {
+                    primaryWindow = window;
+                    break;
+                  }
+                }
+                if (primaryWindow != null) {
+                  primaryWindow.setSize(
+                    const Size(1000, 1000).toNative(),
+                    false,
+                  );
+                  primaryWindow.show();
+                }
+              },
+              child: const Text('Resize to 1000 × 1000'),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -182,11 +185,13 @@ class _SecondaryWindowState extends State<SecondaryWindow> {
   Widget build(BuildContext context) {
     return RegularWindow(
       controller: _windowController,
-      child: MaterialApp(
+      child: const Host(
         title: 'Secondary Window',
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Secondary Window')),
-          body: const Center(child: Text('Secondary Window')),
+        home: WindowPanel(
+          title: 'Secondary Window',
+          placement: 'Bottom left',
+          description:
+              'The left half of the bottom row, under the primary window.',
         ),
       ),
     );
@@ -210,13 +215,145 @@ class _TertiaryWindowState extends State<TertiaryWindow> {
   Widget build(BuildContext context) {
     return RegularWindow(
       controller: _windowController,
-      child: MaterialApp(
+      child: const Host(
         title: 'Tertiary Window',
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Tertiary Window')),
-          body: const Center(child: Text('Tertiary Window')),
+        home: WindowPanel(
+          title: 'Tertiary Window',
+          placement: 'Bottom right',
+          description:
+              'The right half of the bottom row, under the primary window.',
         ),
       ),
+    );
+  }
+}
+
+/// What every window shows: its title and slot, where the hook put it, and
+/// the frame nativeapi reads back for it.
+class WindowPanel extends StatefulWidget {
+  const WindowPanel({
+    super.key,
+    required this.title,
+    required this.placement,
+    required this.description,
+    this.actions = const [],
+  });
+
+  /// The window's title, which is also how the hook and the frame read-out
+  /// find its native window.
+  final String title;
+
+  /// The slot of the layout the hook put the window in.
+  final String placement;
+
+  final String description;
+  final List<Widget> actions;
+
+  @override
+  State<WindowPanel> createState() => _WindowPanelState();
+}
+
+class _WindowPanelState extends State<WindowPanel> {
+  Window? _nativeWindow() {
+    for (final window in WindowManager.instance.getAll()) {
+      if (window.title == widget.title) return window;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vars = context.vars;
+    // Rebuilt whenever the view is resized, so the read-out follows the
+    // window.
+    MediaQuery.sizeOf(context);
+    final window = _nativeWindow();
+    final frame = window?.bounds.toRect();
+    final value = vars.mono.copyWith(color: vars.colorContent);
+    String rect(Rect r) =>
+        '${r.left.round()}, ${r.top.round()}  '
+        '${r.width.round()} × ${r.height.round()}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: vars.spacing4,
+            vertical: vars.spacing25,
+          ),
+          child: Row(
+            spacing: vars.spacing2,
+            children: [
+              Text(widget.title, style: vars.titleMedium),
+              Badge(
+                size: WidgetSize.small,
+                variant: BadgeVariant.tinted,
+                tint: BadgeTint.primary,
+                child: Text(widget.placement),
+              ),
+              const Spacer(),
+              ...widget.actions,
+              Button(
+                variant: ButtonVariant.normal,
+                tint: ButtonTint.neutral,
+                onPressed: () => setState(() {}),
+                child: const Text('Read frame'),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(vars.spacing4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: vars.spacing3,
+              children: [
+                Text(
+                  widget.description,
+                  style: vars.bodyMedium.copyWith(
+                    color: vars.colorContentMuted,
+                  ),
+                ),
+                Card(
+                  variant: CardVariant.sunken,
+                  size: WidgetSize.small,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: vars.spacing1,
+                    children: [
+                      if (window == null || frame == null)
+                        Text('No native window yet', style: vars.muted)
+                      else ...[
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 72,
+                              child: Text('Frame', style: vars.muted),
+                            ),
+                            Text(rect(frame), style: value),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 72,
+                              child: Text('Window id', style: vars.muted),
+                            ),
+                            Text('${window.id}', style: value),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,8 +3,8 @@
 import 'dart:async';
 import 'dart:ui' show AppExitType;
 
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
-import 'package:flutter/widgets.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
@@ -13,9 +13,6 @@ import 'package:nativeapi_flutter/nativeapi_flutter.dart' as na;
 import 'package:nativeapi_flutter/windowing.dart';
 
 import 'shape_geometry.dart';
-import 'widgets/option_chip.dart';
-import 'widgets/palette.dart';
-import 'widgets/value_slider.dart';
 import 'widgets/shape_art.dart';
 
 void main() {
@@ -430,141 +427,6 @@ class _ShapeDemoState extends State<ShapeDemo>
     _shadowY = 6;
   });
 
-  Widget _shadowSlider(
-    String label,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged, {
-    bool percent = false,
-  }) {
-    final display = percent
-        ? '${(value * 100).round()}%'
-        : '${value.round()} px';
-    return Builder(
-      builder: (context) {
-        final p = Palette.of(context);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: p.border)),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 76,
-                child: Text(
-                  label,
-                  style: TextStyle(fontSize: 11, color: p.muted),
-                ),
-              ),
-              Expanded(
-                child: ValueSlider(
-                  label: label,
-                  value: value,
-                  min: min,
-                  max: max,
-                  step: percent ? 0.01 : 1,
-                  display: display,
-                  formatValue: (v) =>
-                      percent ? '${(v * 100).round()}%' : '${v.round()} px',
-                  onChanged: (next) => _changeShadow(() => onChanged(next)),
-                ),
-              ),
-              SizedBox(
-                width: 52,
-                child: Text(display, textAlign: TextAlign.end, style: p.mono),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _shadowControls() {
-    const colors = <String, Color>{
-      'Black': Color(0xFF000000),
-      'Purple': Color(0xFF6558F5),
-      'Blue': Color(0xFF1976D2),
-      'Rose': Color(0xFFE74779),
-      'Green': Color(0xFF00897B),
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OptionRow(
-          label: 'Shadow',
-          children: [
-            OptionChip(
-              label: 'On',
-              selected: _shadowEnabled,
-              onTap: _shadowEnabled ? null : toggleShadow,
-            ),
-            OptionChip(
-              label: 'Off',
-              selected: !_shadowEnabled,
-              onTap: _shadowEnabled ? toggleShadow : null,
-            ),
-            const Hint('Contour shadow'),
-          ],
-        ),
-        OptionRow(
-          label: 'Color',
-          children: [
-            for (final entry in colors.entries)
-              OptionChip(
-                label: entry.key,
-                selected: _shadowColor == entry.value,
-                onTap: () => _changeShadow(() => _shadowColor = entry.value),
-              ),
-          ],
-        ),
-        _shadowSlider(
-          'Opacity',
-          _shadowOpacity,
-          0,
-          1,
-          (v) => _shadowOpacity = v,
-          percent: true,
-        ),
-        _shadowSlider(
-          'Blur radius',
-          _shadowBlur,
-          0,
-          64,
-          (v) => _shadowBlur = v,
-        ),
-        _shadowSlider('Horizontal', _shadowX, -64, 64, (v) => _shadowX = v),
-        _shadowSlider('Vertical', _shadowY, -64, 64, (v) => _shadowY = v),
-        OptionRow(
-          label: 'Defaults',
-          children: [
-            OptionChip(
-              label: 'Reset shadow parameters',
-              onTap: _resetShadowParameters,
-            ),
-          ],
-        ),
-        if (!_shadowEnabled)
-          const Padding(
-            padding: EdgeInsets.all(10),
-            child: Hint('Shadow hidden. Changes appear when enabled.'),
-          ),
-        if (_shadowError != null)
-          Builder(
-            builder: (context) => Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                _shadowError!,
-                style: TextStyle(color: Palette.of(context).danger),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
   void toggleShadow() {
     _stopShadowAnimation();
     setState(() => _shadowEnabled = !_shadowEnabled);
@@ -599,9 +461,6 @@ class _ShapeDemoState extends State<ShapeDemo>
       ServicesBinding.instance.exitApplication(AppExitType.required);
     });
   }
-
-  Object? _controlsConfiguration;
-  Widget? _controlsWindow;
 
   static const _shadowPresets = <String, (double, double, double, Color)>{
     'Soft': (.30, 18, 6, Color(0xFF000000)),
@@ -662,280 +521,87 @@ class _ShapeDemoState extends State<ShapeDemo>
     return 'Custom';
   }
 
-  Widget _buildControlsWindow() {
-    // Keep the control view unchanged while the independent preview animates.
-    final configuration = (
-      _shape,
-      _editingShadow,
-      _count,
-      _toSize,
-      _status,
-      _rectangleRestored,
-      _shadowEnabled,
-      _shadowColor,
-      _shadowOpacity,
-      _shadowBlur,
-      _shadowX,
-      _shadowY,
-      _shadowError,
+  // -- the preview window --------------------------------------------------
+
+  // The preview cannot sit in a [Host]: its surface has to stay transparent
+  // outside the silhouette (Linux clips it in Flutter), and it has no pages,
+  // toasts or text fields. It keeps a bare WidgetsApp with the host's theme.
+  Widget _buildPreviewWindow() {
+    return fw.RegularWindow(
+      controller: _demo,
+      child: WidgetsApp(
+        debugShowCheckedModeBanner: false,
+        color: const Color(0x00000000),
+        builder: (context, _) =>
+            HostTheme(child: Builder(builder: _previewContent)),
+      ),
     );
-    if (_controlsConfiguration != configuration) {
-      _controlsConfiguration = configuration;
-      _controlsWindow = fw.RegularWindow(
-        controller: _main,
-        child: WidgetsApp(
-          color: Palette.light.accent,
-          debugShowCheckedModeBanner: false,
-          builder: (context, _) {
-            final p = Palette.of(context);
-            return DefaultTextStyle(
-              style: TextStyle(fontSize: 12, height: 1.3, color: p.text),
-              child: ColoredBox(
-                color: p.background,
+  }
+
+  /// The subject of the demo: the silhouette, drawn by the example. Only its
+  /// counter is a DazzUI control; the art and the drag handle are the shape.
+  Widget _previewContent(BuildContext context) {
+    final vars = context.vars;
+    return DefaultTextStyle.merge(
+      style: const TextStyle(color: ShapeLook.ink),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: _size,
+          height: _size,
+          child: ClipPath(
+            clipper: _usesInputShape && !_rectangleRestored
+                ? PolygonClipper(_points)
+                : null,
+            child: ShapeArt(
+              look: _look,
+              child: Center(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      height: 48,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [const Color(0xFF201C45), _look.colors.first],
+                    MouseRegion(
+                      cursor: SystemMouseCursors.move,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (_) => _nativePreview?.startDragging(),
+                        child: Padding(
+                          padding: EdgeInsets.all(vars.spacing25),
+                          child: Text(
+                            '⠿  DRAG ME',
+                            style: vars.captionSmall.copyWith(
+                              letterSpacing: 2,
+                              color: ShapeLook.ink.withValues(alpha: .87),
+                            ),
+                          ),
                         ),
                       ),
-                      child: const Row(
-                        children: [
-                          Text(
-                            'Outside the box.',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFFFFFFFF),
-                            ),
-                          ),
-                          Spacer(),
-                          Text(
-                            'SHAPE PLAYGROUND',
-                            style: TextStyle(
-                              fontSize: 9,
-                              letterSpacing: 1.3,
-                              color: Color(0xFFDDD5FF),
-                            ),
-                          ),
-                        ],
+                    ),
+                    Text(
+                      _rectangleRestored ? 'rectangle' : _shape.name,
+                      style: vars.headlineLarge.copyWith(
+                        color: ShapeLook.ink,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -1,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                      child: Row(
-                        children: [
-                          Text(
-                            _editingShadow
-                                ? 'CUSTOM SHADOW'
-                                : 'SHAPE COLLECTION',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              letterSpacing: 1.4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (_editingShadow)
-                            OptionChip(
-                              label: 'Done',
-                              selected: true,
-                              onTap: () =>
-                                  setState(() => _editingShadow = false),
-                            )
-                          else
-                            Text(
-                              '${DemoShape.values.length} silhouettes',
-                              style: p.mono,
-                            ),
-                        ],
-                      ),
+                    SizedBox(height: vars.spacing25),
+                    Button(
+                      variant: ButtonVariant.normal,
+                      tint: ButtonTint.neutral,
+                      onPressed: () => setState(() => _count++),
+                      child: Text('Tap · $_count'),
                     ),
-                    Expanded(
-                      child: _editingShadow
-                          ? Center(child: _shadowControls())
-                          : Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Column(
-                                children: [
-                                  for (var row = 0; row < 3; row++)
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            for (
-                                              var col = 0;
-                                              col < 4;
-                                              col++
-                                            ) ...[
-                                              if (col > 0)
-                                                const SizedBox(width: 8),
-                                              Expanded(
-                                                child: _shapeCard(
-                                                  DemoShape.values[row * 4 +
-                                                      col],
-                                                  p,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                    ),
-                    if (!_editingShadow)
-                      OptionRow(
-                        label: 'Window',
-                        children: [
-                          OptionChip(
-                            label: 'Apply shape',
-                            onTap: () => selectShape(_shape),
-                          ),
-                          OptionChip(
-                            label: 'Restore rectangle',
-                            onTap: restoreRectangle,
-                          ),
-                        ],
-                      ),
-                    if (!_editingShadow)
-                      OptionRow(
-                        label: 'Size',
-                        children: [
-                          OptionChip(
-                            label: 'Toggle size',
-                            onTap: resizePreview,
-                          ),
-                          Text(
-                            '${_toSize.toInt()} × ${_toSize.toInt()} · 450 ms',
-                            style: p.mono,
-                          ),
-                        ],
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'SHADOW',
-                            style: TextStyle(
-                              fontSize: 10,
-                              letterSpacing: 1.4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(_selectedShadowPreset, style: p.mono),
-                          const Spacer(),
-                          OptionChip(
-                            label: _editingShadow
-                                ? 'Back to shapes'
-                                : 'Adjust…',
-                            selected: _editingShadow,
-                            onTap: () => setState(
-                              () => _editingShadow = !_editingShadow,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      child: Row(
-                        children: [
-                          for (final name in ['None', ..._shadowPresets.keys])
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                ),
-                                child: OptionChip(
-                                  label: name,
-                                  selected: _selectedShadowPreset == name,
-                                  onTap: () => _selectShadowPreset(name),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: p.surface,
-                        border: Border(top: BorderSide(color: p.border)),
-                      ),
-                      child: Text(
-                        _shadowError ?? _status,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: _shadowError == null
-                            ? p.mono
-                            : p.mono.copyWith(color: p.danger),
+                    SizedBox(height: vars.spacing25),
+                    Text(
+                      _look.name.toUpperCase(),
+                      style: vars.captionSmall.copyWith(
+                        letterSpacing: 3,
+                        color: ShapeLook.ink.withValues(alpha: .8),
                       ),
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      );
-    }
-    return _controlsWindow!;
-  }
-
-  Widget _shapeCard(DemoShape shape, Palette p) {
-    final selected = !_rectangleRestored && shape == _shape;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: shape.name,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () => selectShape(shape),
-          child: Container(
-            decoration: BoxDecoration(
-              color: selected ? p.accentSurface : p.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: selected ? p.accent : p.border),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipPath(
-                  clipper: ShapeClipper(shape, 46),
-                  child: SizedBox(
-                    width: 46,
-                    height: 46,
-                    child: ShapeArt(look: ShapeLook.forShape(shape)),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  shape.name,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: selected ? p.accent : p.text,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
             ),
           ),
         ),
@@ -943,112 +609,440 @@ class _ShapeDemoState extends State<ShapeDemo>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_closing) return const ViewCollection(views: []);
-    return ViewCollection(
-      views: [
-        _buildControlsWindow(),
-        fw.RegularWindow(
-          controller: _demo,
-          child: WidgetsApp(
-            debugShowCheckedModeBanner: false,
-            color: const Color(0x00000000),
-            builder: (context, _) => DefaultTextStyle(
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.3,
-                color: const Color(0xFFFFFFFF),
-              ),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: _size,
-                  height: _size,
-                  child: ClipPath(
-                    clipper: _usesInputShape && !_rectangleRestored
-                        ? PolygonClipper(_points)
-                        : null,
-                    child: ShapeArt(
-                      look: _look,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            MouseRegion(
-                              cursor: SystemMouseCursors.move,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onPanStart: (_) =>
-                                    _nativePreview?.startDragging(),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Text(
-                                    '⠿  DRAG ME',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      letterSpacing: 2,
-                                      color: Color(0xDDFFFFFF),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Text(
-                              _rectangleRestored ? 'rectangle' : _shape.name,
-                              style: const TextStyle(
-                                fontSize: 29,
-                                letterSpacing: -1,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            GestureDetector(
-                              onTap: () => setState(() => _count++),
-                              child: MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0x30FFFFFF),
-                                    borderRadius: BorderRadius.circular(30),
-                                    border: Border.all(
-                                      color: const Color(0x70FFFFFF),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Tap · $_count',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _look.name.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 9,
-                                letterSpacing: 3,
-                                color: Color(0xCCFFFFFF),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+  // -- the control window --------------------------------------------------
+
+  /// What the control window shows. The window itself is built once, so the
+  /// preview's animation frames do not rebuild it; its page depends on
+  /// [_ControlsScope] and rebuilds only when this changes.
+  Object _controlsConfiguration() => (
+    _shape,
+    _editingShadow,
+    _count,
+    _toSize,
+    _status,
+    _rectangleRestored,
+    _shadowEnabled,
+    _shadowColor,
+    _shadowOpacity,
+    _shadowBlur,
+    _shadowX,
+    _shadowY,
+    _shadowError,
+  );
+
+  late final Widget _controlsWindow = fw.RegularWindow(
+    controller: _main,
+    child: Host(
+      title: 'Window shapes',
+      home: Builder(
+        builder: (context) {
+          _ControlsScope.watch(context);
+          return _controlsPage(context);
+        },
+      ),
+    ),
+  );
+
+  Widget _controlsPage(BuildContext context) {
+    final vars = context.vars;
+    // The page is paper rather than the host's canvas: the gallery's cards
+    // are the muted surface on it, and the Linux demo script finds this
+    // window by the plain band under the header.
+    return ColoredBox(
+      color: vars.colorSurface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _banner(vars),
+          _collectionHeading(vars),
+          Expanded(child: _editingShadow ? _shadowControls() : _gallery(vars)),
+          if (!_editingShadow) ...[
+            const Divider(),
+            OptionRow(
+              label: 'Window',
+              children: [
+                ActionChip(
+                  label: 'Apply shape',
+                  onTap: () => selectShape(_shape),
                 ),
-              ),
+                ActionChip(label: 'Restore rectangle', onTap: restoreRectangle),
+              ],
             ),
+            OptionRow(
+              label: 'Size',
+              children: [
+                ActionChip(label: 'Toggle size', onTap: resizePreview),
+                Text(
+                  '${_toSize.toInt()} × ${_toSize.toInt()} · 450 ms',
+                  style: vars.mono,
+                ),
+              ],
+            ),
+          ],
+          _shadowHeading(vars),
+          _presetBar(vars),
+          _statusBar(vars),
+        ],
+      ),
+    );
+  }
+
+  /// The playground's banner, in the selected shape's first colour. It is
+  /// part of the art rather than chrome, and its height and dark start are
+  /// what `tools/gui/flutter_window_shape_demo_linux.py` finds the window by.
+  Widget _banner(ThemeVariables vars) => Container(
+    height: 48,
+    padding: EdgeInsets.symmetric(horizontal: vars.spacing4),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: [ShapeLook.night, _look.colors.first]),
+    ),
+    child: Row(
+      children: [
+        Text(
+          'Outside the box.',
+          style: vars.headlineSmall.copyWith(
+            color: ShapeLook.ink,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'SHAPE PLAYGROUND',
+          style: vars.captionSmall.copyWith(
+            letterSpacing: 1.3,
+            color: ShapeLook.ink.withValues(alpha: .85),
           ),
         ),
       ],
+    ),
+  );
+
+  Widget _collectionHeading(ThemeVariables vars) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      vars.spacing35,
+      vars.spacing3,
+      vars.spacing35,
+      vars.spacing2,
+    ),
+    child: SizedBox(
+      height: vars.controlTinySize,
+      child: Row(
+        children: [
+          SectionLabel(_editingShadow ? 'CUSTOM SHADOW' : 'SHAPE COLLECTION'),
+          const Spacer(),
+          if (_editingShadow)
+            ActionChip(
+              label: 'Done',
+              primary: true,
+              onTap: () => setState(() => _editingShadow = false),
+            )
+          else
+            Text('${DemoShape.values.length} silhouettes', style: vars.mono),
+        ],
+      ),
+    ),
+  );
+
+  /// Four columns by three rows, never scrolling: the demo scripts aim at the
+  /// cards by this grid.
+  Widget _gallery(ThemeVariables vars) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: vars.spacing3),
+    child: Column(
+      children: [
+        for (var row = 0; row < 3; row++)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: vars.spacing2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var col = 0; col < 4; col++) ...[
+                    if (col > 0) SizedBox(width: vars.spacing2),
+                    Expanded(
+                      child: _shapeCard(DemoShape.values[row * 4 + col], vars),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  Widget _shapeCard(DemoShape shape, ThemeVariables vars) {
+    final selected = !_rectangleRestored && shape == _shape;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The card draws its picture edge to edge; its border sits inside the
+        // box, so leave room for the chosen card's thicker one.
+        final inset = 2 * vars.strokeControl;
+        return OptionCard(
+          title: shape.name,
+          selected: selected,
+          onPressed: () => selectShape(shape),
+          padding: EdgeInsets.zero,
+          titleContent: SizedBox(
+            width: (constraints.maxWidth - inset).clamp(0, double.infinity),
+            height: (constraints.maxHeight - inset).clamp(0, double.infinity),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ClipPath(
+                  clipper: ShapeClipper(shape, 46),
+                  child: SizedBox.square(
+                    dimension: 46,
+                    child: ShapeArt(look: ShapeLook.forShape(shape)),
+                  ),
+                ),
+                SizedBox(height: vars.spacing15),
+                Text(shape.name),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
+
+  Widget _shadowHeading(ThemeVariables vars) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      vars.spacing35,
+      vars.spacing25,
+      vars.spacing35,
+      vars.spacing15,
+    ),
+    child: Row(
+      children: [
+        const SectionLabel('SHADOW'),
+        SizedBox(width: vars.spacing2),
+        // The preset's name: the demo scripts read it back above the presets.
+        Text(_selectedShadowPreset, style: vars.mono),
+        const Spacer(),
+        OptionChip(
+          label: _editingShadow ? 'Back to shapes' : 'Adjust…',
+          selected: _editingShadow,
+          onTap: () => setState(() => _editingShadow = !_editingShadow),
+        ),
+      ],
+    ),
+  );
+
+  Widget _presetBar(ThemeVariables vars) {
+    final preset = _selectedShadowPreset;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        vars.spacing3,
+        0,
+        vars.spacing3,
+        vars.spacing3,
+      ),
+      child: SegmentedControl<String>(
+        stretch: true,
+        items: [
+          for (final name in ['None', ..._shadowPresets.keys])
+            SegmentedItem(value: name, label: name),
+        ],
+        // A slider-made shadow is none of them.
+        value: preset == 'Custom' ? null : preset,
+        onChanged: _selectShadowPreset,
+      ),
+    );
+  }
+
+  Widget _statusBar(ThemeVariables vars) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const Divider(),
+      Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: vars.spacing3,
+          vertical: vars.spacing2,
+        ),
+        color: vars.colorSurfaceSunken,
+        child: Text(
+          _shadowError ?? _status,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: _shadowError == null
+              ? vars.mono
+              : vars.mono.copyWith(color: vars.colorDanger.shade600),
+        ),
+      ),
+    ],
+  );
+
+  Widget _shadowSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged, {
+    bool percent = false,
+  }) {
+    final display = percent
+        ? '${(value * 100).round()}%'
+        : '${value.round()} px';
+    return Builder(
+      builder: (context) {
+        final vars = context.vars;
+        // The same row as an [OptionRow], with a slider for its chips.
+        return Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: vars.spacing25,
+                vertical: vars.spacing05,
+              ),
+              child: Row(
+                children: [
+                  SizedBox(width: 66, child: Text(label, style: vars.muted)),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: vars.spacing2),
+                      child: Slider(
+                        values: [value],
+                        min: min,
+                        max: max,
+                        step: percent ? 0.01 : 1,
+                        largeStep: percent ? 0.1 : 8,
+                        size: WidgetSize.small,
+                        valueLabel: display,
+                        semanticsLabel: label,
+                        onChanged: (values) =>
+                            _changeShadow(() => onChanged(values.first)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _shadowControls() {
+    const colors = <String, Color>{
+      'Black': Color(0xFF000000),
+      'Purple': Color(0xFF6558F5),
+      'Blue': Color(0xFF1976D2),
+      'Rose': Color(0xFFE74779),
+      'Green': Color(0xFF00897B),
+    };
+    return Builder(
+      builder: (context) {
+        final vars = context.vars;
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Divider(),
+              OptionRow(
+                label: 'Shadow',
+                children: [
+                  Switch(
+                    value: _shadowEnabled,
+                    size: WidgetSize.small,
+                    onChanged: (_) => toggleShadow(),
+                  ),
+                  const Hint('Contour shadow'),
+                ],
+              ),
+              OptionRow(
+                label: 'Color',
+                children: [
+                  for (final entry in colors.entries)
+                    OptionChip(
+                      label: entry.key,
+                      selected: _shadowColor == entry.value,
+                      onTap: () =>
+                          _changeShadow(() => _shadowColor = entry.value),
+                    ),
+                ],
+              ),
+              _shadowSlider(
+                'Opacity',
+                _shadowOpacity,
+                0,
+                1,
+                (v) => _shadowOpacity = v,
+                percent: true,
+              ),
+              _shadowSlider(
+                'Blur radius',
+                _shadowBlur,
+                0,
+                64,
+                (v) => _shadowBlur = v,
+              ),
+              _shadowSlider(
+                'Horizontal',
+                _shadowX,
+                -64,
+                64,
+                (v) => _shadowX = v,
+              ),
+              _shadowSlider('Vertical', _shadowY, -64, 64, (v) => _shadowY = v),
+              OptionRow(
+                label: 'Defaults',
+                children: [
+                  ActionChip(
+                    label: 'Reset shadow parameters',
+                    onTap: _resetShadowParameters,
+                  ),
+                ],
+              ),
+              if (!_shadowEnabled)
+                Padding(
+                  padding: EdgeInsets.all(vars.spacing25),
+                  child: const Callout(
+                    tint: CalloutTint.info,
+                    size: WidgetSize.small,
+                    message: Text(
+                      'Shadow hidden. Changes appear when enabled.',
+                    ),
+                  ),
+                ),
+              if (_shadowError != null)
+                Padding(
+                  padding: EdgeInsets.all(vars.spacing25),
+                  child: Callout(
+                    tint: CalloutTint.danger,
+                    size: WidgetSize.small,
+                    message: Text(_shadowError!),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_closing) return const ViewCollection(views: []);
+    return _ControlsScope(
+      configuration: _controlsConfiguration(),
+      child: ViewCollection(views: [_controlsWindow, _buildPreviewWindow()]),
+    );
+  }
+}
+
+/// Carries what the control window shows, so its page rebuilds when that
+/// changes and not on every frame of the preview's animation.
+class _ControlsScope extends InheritedWidget {
+  const _ControlsScope({required this.configuration, required super.child});
+
+  final Object configuration;
+
+  static void watch(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_ControlsScope>();
+
+  @override
+  bool updateShouldNotify(_ControlsScope oldWidget) =>
+      oldWidget.configuration != configuration;
 }

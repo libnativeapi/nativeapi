@@ -2,10 +2,21 @@ import 'package:flutter/widgets.dart';
 
 import '../shape_geometry.dart';
 
+/// The art of each silhouette: a fixed gradient per shape, shared by its
+/// gallery thumbnail, the live window and the control window's banner. These
+/// are the picture being shaped, not theme colours, so they stay the same in
+/// light, dark and Omarchy themes.
 class ShapeLook {
   const ShapeLook(this.name, this.colors);
   final String name;
   final List<Color> colors;
+
+  /// The ink on every gradient: all of them are dark enough for white.
+  static const ink = Color(0xFFFFFFFF);
+
+  /// Where the control window's banner starts before the shape's own colour.
+  static const night = Color(0xFF201C45);
+
   static ShapeLook forShape(DemoShape shape) => switch (shape) {
     DemoShape.circle => const ShapeLook('Aurora', [
       Color(0xFF6546F5),

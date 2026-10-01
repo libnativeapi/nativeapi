@@ -1,12 +1,10 @@
 import 'dart:io';
 
-import 'package:dazzui/dazzui.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 
 import '../icon_animations.dart';
 import '../icon_animator.dart';
 import '../tray_controller.dart';
-import 'option_chip.dart';
-import 'styles.dart';
 
 /// Magnified view of the selected tray icon.
 ///

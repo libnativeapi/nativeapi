@@ -8,3 +8,7 @@ This example shows how to:
 - Create and configure a launch-at-login entry (display name, program, arguments).
 - Enable and disable launch-at-login for your application.
 - Read back the current launch-at-login state and configuration.
+
+The UI is a [DazzUI](../flutter_dazzui_host) settings panel: a switch for the login
+item, the entry as the API reads it back, fields for the display name and the
+program, and a log of what each call answered.

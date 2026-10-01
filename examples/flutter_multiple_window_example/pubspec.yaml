@@ -10,7 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
+  # DazzUI plus the host every example shares (the WidgetsApp, the theme, the chips).
+  dazzui_host:
+    path: ../flutter_dazzui_host
   nativeapi_flutter:
     path: ../../bindings/dart/nativeapi_flutter
   nativeapi:
@@ -22,4 +24,4 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
-  uses-material-design: true
+  uses-material-design: false

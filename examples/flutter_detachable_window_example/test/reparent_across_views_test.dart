@@ -2,13 +2,13 @@
 
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
 import 'package:flutter_test/flutter_test.dart';
 
 // The example keeps a panel's state across windows by building it under the
 // same GlobalKey in whichever window it is in. This checks that premise with
-// the same shape of tree, without native windows: one MaterialApp per view,
+// the same shape of tree, without native windows: one Host per view,
 // the panel moving between them.
 
 class _FakeView extends TestFlutterView {
@@ -69,21 +69,19 @@ class _PanelState extends State<_Panel> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Column(
-        children: [
-          TextField(controller: text),
-          Text('count $counter'),
-          Expanded(
-            child: ListView.builder(
-              controller: scroll,
-              itemCount: 100,
-              itemExtent: 40,
-              itemBuilder: (context, i) => Text('row $i'),
-            ),
+    return Column(
+      children: [
+        TextField(controller: text),
+        Text('count $counter'),
+        Expanded(
+          child: ListView.builder(
+            controller: scroll,
+            itemCount: 100,
+            itemExtent: 40,
+            itemBuilder: (context, i) => Text('row $i'),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -107,7 +105,8 @@ void main() {
         views: [
           View(
             view: mainView,
-            child: MaterialApp(
+            child: Host(
+              title: 'Main',
               home: Row(
                 children: [
                   const Expanded(child: Placeholder()),
@@ -122,7 +121,7 @@ void main() {
           if (floating)
             View(
               view: floatingView,
-              child: MaterialApp(home: panel),
+              child: Host(title: 'Floating', home: panel),
             ),
         ],
       );

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../detachable/detachable.dart';
@@ -25,63 +25,85 @@ class PanelFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = DetachScope.of(context);
     final floating = controller.isFloating(itemId);
-    final colors = Theme.of(context).colorScheme;
+    final vars = context.vars;
 
-    return Material(
-      color: colors.surfaceContainerLow,
+    return ColoredBox(
+      color: vars.colorSurface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The header is the grip the example is about, so it is drawn
+          // here; a floating panel's header takes the info wash.
           DetachHandle(
             itemId: itemId,
             child: Container(
               height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              color: floating
-                  ? colors.tertiaryContainer
-                  : colors.primaryContainer,
+              padding: EdgeInsets.only(
+                left: vars.spacing25,
+                right: vars.spacing15,
+              ),
+              decoration: BoxDecoration(
+                color: floating
+                    ? vars.colorInfo[500]!.withValues(alpha: vars.washEdge)
+                    : vars.colorSurfaceChrome,
+                border: Border(
+                  bottom: BorderSide(
+                    color: vars.colorBorder,
+                    width: vars.strokeHairline,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   Icon(
-                    Icons.drag_indicator,
-                    size: 18,
-                    color: colors.onPrimaryContainer,
+                    FluentIcons.re_order_dots_vertical_20_regular,
+                    size: vars.iconMedium,
+                    color: vars.colorContentFaint,
                   ),
-                  const SizedBox(width: 6),
-                  Icon(icon, size: 18, color: colors.onPrimaryContainer),
-                  const SizedBox(width: 8),
+                  SizedBox(width: vars.spacing1),
+                  Icon(icon, size: vars.iconMedium, color: vars.colorContent),
+                  SizedBox(width: vars.spacing2),
                   Expanded(
                     child: Text(
                       title,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: vars.titleSmall,
                     ),
                   ),
                   if (floating)
-                    IconButton(
-                      tooltip: 'Dock back',
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.login, size: 18),
-                      onPressed: () => controller.dockAnywhere(itemId),
+                    Tooltip(
+                      label: 'Dock back',
+                      child: IconButton(
+                        semanticsLabel: 'Dock back',
+                        size: WidgetSize.small,
+                        icon: const Icon(FluentIcons.arrow_enter_20_regular),
+                        onPressed: () => controller.dockAnywhere(itemId),
+                      ),
                     )
                   else
-                    IconButton(
-                      tooltip: 'Open in a window',
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      onPressed: () => controller.float(itemId),
+                    Tooltip(
+                      label: 'Open in a window',
+                      child: IconButton(
+                        semanticsLabel: 'Open in a window',
+                        size: WidgetSize.small,
+                        icon: const Icon(FluentIcons.open_20_regular),
+                        onPressed: () => controller.float(itemId),
+                      ),
                     ),
                 ],
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Text(
-              stateLabel,
-              style: Theme.of(context).textTheme.labelSmall
-                  ?.copyWith(color: colors.outline),
+            padding: EdgeInsets.fromLTRB(
+              vars.spacing25,
+              vars.spacing15,
+              vars.spacing25,
+              0,
             ),
+            // Wraps rather than truncates: the move count at the end is the
+            // point of the line.
+            child: Text(stateLabel, style: vars.mono),
           ),
           Expanded(child: child),
         ],
@@ -146,48 +168,54 @@ class _InspectorPanelState extends State<InspectorPanel>
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
+    final vars = context.vars;
     final controls = <Widget>[
-      TextField(
-        controller: _name,
-        decoration: const InputDecoration(
-          labelText: 'Layer name',
-          isDense: true,
-        ),
+      FormField(
+        label: 'Layer name',
+        child: TextField(controller: _name, size: WidgetSize.small),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: vars.spacing3),
       Row(
         children: [
-          Text('Clicks: $_counter', style: text.titleMedium),
+          Text('Clicks: $_counter', style: vars.titleSmall),
           const Spacer(),
-          FilledButton.tonal(
+          Button(
+            variant: ButtonVariant.tinted,
             onPressed: () => setState(() => _counter++),
             child: const Text('+1'),
           ),
         ],
       ),
-      SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Visible'),
-        value: _visible,
-        onChanged: (v) => setState(() => _visible = v),
+      PreferenceRow(
+        title: 'Visible',
+        trailing: Switch(
+          size: WidgetSize.small,
+          value: _visible,
+          onChanged: (v) => setState(() => _visible = v),
+        ),
       ),
-      Text('Opacity ${(_opacity * 100).round()}%'),
-      Slider(value: _opacity, onChanged: (v) => setState(() => _opacity = v)),
+      SizedBox(height: vars.spacing1),
+      Text('Opacity ${(_opacity * 100).round()}%', style: vars.labelSmall),
+      Slider(
+        size: WidgetSize.small,
+        values: [_opacity * 100],
+        semanticsLabel: 'Opacity',
+        onChanged: (values) => setState(() => _opacity = values.first / 100),
+      ),
     ];
-    final layers = Card.outlined(
+    final layers = Card(
       key: _layersKey,
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
+      variant: CardVariant.sunken,
+      size: WidgetSize.small,
       child: ListView.builder(
         controller: _scroll,
         itemCount: 40,
-        itemBuilder: (context, i) => ListTile(
-          dense: true,
-          selected: i == _selected,
-          leading: const Icon(Icons.layers_outlined, size: 18),
-          title: Text('Layer ${i + 1}'),
-          onTap: () => setState(() => _selected = i),
+        itemBuilder: (context, i) => NavItem(
+          size: WidgetSize.small,
+          label: 'Layer ${i + 1}',
+          icon: FluentIcons.layer_20_regular,
+          current: i == _selected,
+          onPressed: () => setState(() => _selected = i),
         ),
       ),
     );
@@ -195,7 +223,7 @@ class _InspectorPanelState extends State<InspectorPanel>
     return PanelFrame(
       itemId: widget.itemId,
       title: 'Inspector',
-      icon: Icons.tune,
+      icon: FluentIcons.options_20_regular,
       stateLabel: stateLabel,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -207,13 +235,18 @@ class _InspectorPanelState extends State<InspectorPanel>
                 SizedBox(
                   width: 280,
                   child: ListView(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(vars.spacing25),
                     children: controls,
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      vars.spacing25,
+                      vars.spacing25,
+                      vars.spacing25,
+                    ),
                     child: layers,
                   ),
                 ),
@@ -221,15 +254,12 @@ class _InspectorPanelState extends State<InspectorPanel>
             );
           }
           return ListView(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(vars.spacing25),
             children: [
               ...controls,
-              const SizedBox(height: 4),
-              Text(
-                'Layers (scroll position is kept too)',
-                style: text.labelLarge,
-              ),
-              const SizedBox(height: 4),
+              SizedBox(height: vars.spacing2),
+              const SectionLabel('Layers (scroll position is kept too)'),
+              SizedBox(height: vars.spacing1),
               SizedBox(height: 220, child: layers),
             ],
           );
@@ -287,7 +317,7 @@ class _StopwatchPanelState extends State<StopwatchPanel>
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
+    final vars = context.vars;
     final clock = FittedBox(
       fit: BoxFit.scaleDown,
       child: Column(
@@ -295,28 +325,32 @@ class _StopwatchPanelState extends State<StopwatchPanel>
         children: [
           Text(
             _format(_stopwatch.elapsed),
-            style: text.displaySmall?.copyWith(
+            style: vars.headlineLarge.copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
-          const SizedBox(height: 4),
-          Text('Keeps running while the panel moves', style: text.bodySmall),
-          const SizedBox(height: 12),
+          SizedBox(height: vars.spacing05),
+          Text('Keeps running while the panel moves', style: vars.muted),
+          SizedBox(height: vars.spacing3),
           Row(
             mainAxisSize: MainAxisSize.min,
+            spacing: vars.spacing2,
             children: [
-              FilledButton(
+              Button(
+                variant: ButtonVariant.filled,
                 onPressed: _toggle,
                 child: Text(_stopwatch.isRunning ? 'Pause' : 'Start'),
               ),
-              const SizedBox(width: 8),
-              OutlinedButton(
+              Button(
+                variant: ButtonVariant.normal,
+                tint: ButtonTint.neutral,
                 onPressed: () =>
                     setState(() => _laps.insert(0, _stopwatch.elapsed)),
                 child: const Text('Lap'),
               ),
-              const SizedBox(width: 8),
-              TextButton(
+              Button(
+                variant: ButtonVariant.plain,
+                tint: ButtonTint.neutral,
                 onPressed: () => setState(() {
                   _stopwatch.reset();
                   _laps.clear();
@@ -329,20 +363,44 @@ class _StopwatchPanelState extends State<StopwatchPanel>
       ),
     );
     final laps = _laps.isEmpty
-        ? Center(child: Text('No laps yet', style: text.bodySmall))
-        : ListView.builder(
-            itemCount: _laps.length,
-            itemBuilder: (context, i) => ListTile(
-              dense: true,
-              leading: Text('#${_laps.length - i}'),
-              title: Text(_format(_laps[i])),
-            ),
+        ? Center(child: Text('No laps yet', style: vars.muted))
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const TableHead(
+                children: [
+                  TableCell(head: true, width: 56, child: Text('#')),
+                  TableCell(head: true, child: Text('Time')),
+                ],
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _laps.length,
+                  itemBuilder: (context, i) => TableRow(
+                    children: [
+                      TableCell(
+                        width: 56,
+                        child: Text('#${_laps.length - i}', style: vars.mono),
+                      ),
+                      TableCell(
+                        child: Text(
+                          _format(_laps[i]),
+                          style: vars.bodySmall.copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
 
     return PanelFrame(
       itemId: widget.itemId,
       title: 'Stopwatch',
-      icon: Icons.timer_outlined,
+      icon: FluentIcons.timer_20_regular,
       stateLabel: stateLabel,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -354,11 +412,11 @@ class _StopwatchPanelState extends State<StopwatchPanel>
                 Expanded(
                   flex: 3,
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(vars.spacing25),
                     child: Center(child: clock),
                   ),
                 ),
-                const VerticalDivider(width: 1),
+                const VerticalDivider(),
                 Expanded(flex: 2, child: laps),
               ],
             );
@@ -367,10 +425,15 @@ class _StopwatchPanelState extends State<StopwatchPanel>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                padding: EdgeInsets.fromLTRB(
+                  vars.spacing25,
+                  vars.spacing4,
+                  vars.spacing25,
+                  vars.spacing3,
+                ),
                 child: clock,
               ),
-              const Divider(height: 24),
+              const Divider(),
               Expanded(child: laps),
             ],
           );

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:nativeapi/nativeapi.dart' as na;
 
 /// A generator for creating animated icons for MenuItem.
@@ -37,10 +37,13 @@ class AnimatedIconGenerator {
 
   AnimatedIconGenerator({
     this.size = 32, // Higher default size for better quality
-    this.foregroundColor = Colors.blue,
-    this.backgroundColor = Colors.transparent,
+    this.foregroundColor = const Color(0xFF2196F3),
+    this.backgroundColor = const Color(0x00000000),
     double? devicePixelRatio,
-  }) : devicePixelRatio = devicePixelRatio ?? ui.window.devicePixelRatio;
+  }) : devicePixelRatio =
+           devicePixelRatio ??
+           ui.PlatformDispatcher.instance.implicitView?.devicePixelRatio ??
+           1.0;
 
   /// Start a spinning loader animation.
   ///
@@ -166,9 +169,9 @@ class AnimatedIconGenerator {
 
     final angle = (_currentFrame * 30) % 360;
     final rotationMatrix = Matrix4.identity()
-      ..translate(center.dx, center.dy)
+      ..translateByDouble(center.dx, center.dy, 0, 1)
       ..rotateZ(angle * math.pi / 180)
-      ..translate(-center.dx, -center.dy);
+      ..translateByDouble(-center.dx, -center.dy, 0, 1);
 
     canvas.save();
     canvas.transform(rotationMatrix.storage);
@@ -196,8 +199,8 @@ class AnimatedIconGenerator {
     final scale = 0.35 + (progress * 0.65); // Slightly larger minimum size
 
     final paint = Paint()
-      ..color = foregroundColor.withOpacity(
-        0.9,
+      ..color = foregroundColor.withValues(
+        alpha: 0.9,
       ); // More opaque for better visibility
 
     final center = Offset(size / 2, size / 2);
@@ -295,9 +298,9 @@ class AnimatedIconGenerator {
     final angle = (_currentFrame * 10) % 360;
 
     final rotationMatrix = Matrix4.identity()
-      ..translate(center.dx, center.dy)
+      ..translateByDouble(center.dx, center.dy, 0, 1)
       ..rotateZ(angle * math.pi / 180)
-      ..translate(-center.dx, -center.dy);
+      ..translateByDouble(-center.dx, -center.dy, 0, 1);
 
     canvas.save();
     canvas.transform(rotationMatrix.storage);

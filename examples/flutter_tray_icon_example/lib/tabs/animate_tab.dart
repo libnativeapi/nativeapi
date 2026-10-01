@@ -1,11 +1,10 @@
 import 'dart:io';
 
-import 'package:dazzui/dazzui.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../icon_animations.dart';
 import '../tray_controller.dart';
-import '../widgets/option_chip.dart';
 
 /// The gallery: every tile is alive, one click plays it in the tray.
 class AnimateTab extends StatefulWidget {

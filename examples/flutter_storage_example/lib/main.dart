@@ -1,25 +1,87 @@
-import 'package:flutter/material.dart';
-import 'package:nativeapi_flutter/nativeapi_flutter.dart';
+import 'package:dazzui_host/dazzui_host.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' as na;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show SizeToNative, WindowManager;
+
+// Four stores side by side — Preferences and SecureStorage, each unscoped and
+// scoped — in one desktop tool: pick a store in the sidebar, read and edit
+// its entries in the table, run the test cases against it, and watch the
+// calls in the log at the bottom.
 
 void main() {
-  runApp(const MyApp());
+  runApp(const StorageExampleApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class StorageExampleApp extends StatelessWidget {
+  const StorageExampleApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Storage Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
-      home: const StorageExamplePage(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const Host(title: 'Storage Example', home: StorageExamplePage());
 }
+
+/// The one surface the page needs from a store. [na.Preferences] and
+/// [na.SecureStorage] have the same methods but no common type.
+class _Store {
+  _Store.preferences(na.Preferences this._prefs) : _secure = null;
+  _Store.secure(na.SecureStorage this._secure) : _prefs = null;
+
+  final na.Preferences? _prefs;
+  final na.SecureStorage? _secure;
+
+  bool get isSecure => _secure != null;
+
+  bool set(String key, String value) =>
+      _prefs != null ? _prefs.set(key, value) : _secure!.set(key, value);
+
+  String? get(String key, String defaultValue) => _prefs != null
+      ? _prefs.get(key, defaultValue)
+      : _secure!.get(key, defaultValue);
+
+  bool remove(String key) =>
+      _prefs != null ? _prefs.remove(key) : _secure!.remove(key);
+
+  bool contains(String key) =>
+      _prefs != null ? _prefs.contains(key) : _secure!.contains(key);
+
+  bool clear() => _prefs != null ? _prefs.clear() : _secure!.clear();
+
+  List<String> get keys => _prefs != null ? _prefs.keys : _secure!.keys;
+
+  int get size => _prefs != null ? _prefs.size : _secure!.size;
+
+  Map<String, String> get all => _prefs != null ? _prefs.all : _secure!.all;
+}
+
+/// A store as the sidebar lists it. [id] is the name the log uses.
+typedef _StoreInfo = ({String id, String group, String label, IconData icon});
+
+const List<_StoreInfo> _storeInfos = [
+  (
+    id: 'preferences',
+    group: 'Preferences',
+    label: 'Default',
+    icon: FluentIcons.settings_20_regular,
+  ),
+  (
+    id: 'scoped_preferences',
+    group: 'Preferences',
+    label: 'user_settings',
+    icon: FluentIcons.folder_20_regular,
+  ),
+  (
+    id: 'secure_storage',
+    group: 'SecureStorage',
+    label: 'Default',
+    icon: FluentIcons.lock_closed_20_regular,
+  ),
+  (
+    id: 'scoped_secure_storage',
+    group: 'SecureStorage',
+    label: 'api_credentials',
+    icon: FluentIcons.key_20_regular,
+  ),
+];
 
 class StorageExamplePage extends StatefulWidget {
   const StorageExamplePage({super.key});
@@ -30,36 +92,47 @@ class StorageExamplePage extends StatefulWidget {
 
 class _StorageExamplePageState extends State<StorageExamplePage> {
   // Storage instances (nullable in case initialization fails)
-  Preferences? _preferences;
-  Preferences? _scopedPreferences;
-  SecureStorage? _secureStorage;
-  SecureStorage? _scopedSecureStorage;
+  na.Preferences? _preferences;
+  na.Preferences? _scopedPreferences;
+  na.SecureStorage? _secureStorage;
+  na.SecureStorage? _scopedSecureStorage;
 
-  // Event history
+  // Event history, newest first
   final List<String> _eventHistory = [];
+  String _lastEvent = 'No events yet';
 
   // UI state
   final TextEditingController _keyController = TextEditingController();
-  final TextEditingController _valueController = TextEditingController();
-  final TextEditingController _scopeController = TextEditingController();
 
   String _selectedStorage = 'preferences';
   Map<String, String> _currentData = {};
   int _currentSize = 0;
+  Map<String, int> _sizes = {};
   bool _isInitialized = false;
+  bool _secureAvailable = false;
 
   @override
   void initState() {
     super.initState();
     _initializeStorage();
+    // A desktop tool's size, whatever the runner's default is.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WindowManager.instance.getCurrent()?.contentSize = const Size(
+        940,
+        660,
+      ).toNative();
+    });
   }
 
   void _initializeStorage() {
     try {
-      _preferences = Preferences.create()!;
-      _scopedPreferences = Preferences.createWithScope('user_settings')!;
-      _secureStorage = SecureStorage.create()!;
-      _scopedSecureStorage = SecureStorage.createWithScope('api_credentials')!;
+      _preferences = na.Preferences.create()!;
+      _scopedPreferences = na.Preferences.createWithScope('user_settings')!;
+      _secureStorage = na.SecureStorage.create()!;
+      _scopedSecureStorage = na.SecureStorage.createWithScope(
+        'api_credentials',
+      )!;
+      _secureAvailable = na.SecureStorage.isAvailable();
 
       _isInitialized = true;
       _addToHistory('Storage instances initialized successfully');
@@ -70,26 +143,25 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     }
   }
 
-  dynamic _getCurrentStorage() {
+  _Store? _storeFor(String id) {
     if (!_isInitialized) return null;
-
-    switch (_selectedStorage) {
-      case 'preferences':
-        return _preferences;
-      case 'scoped_preferences':
-        return _scopedPreferences;
-      case 'secure_storage':
-        return _secureStorage;
-      case 'scoped_secure_storage':
-        return _scopedSecureStorage;
-      default:
-        return _preferences;
-    }
+    return switch (id) {
+      'scoped_preferences' => _Store.preferences(_scopedPreferences!),
+      'secure_storage' => _Store.secure(_secureStorage!),
+      'scoped_secure_storage' => _Store.secure(_scopedSecureStorage!),
+      _ => _Store.preferences(_preferences!),
+    };
   }
+
+  _Store? _getCurrentStorage() => _storeFor(_selectedStorage);
+
+  _StoreInfo get _currentInfo =>
+      _storeInfos.firstWhere((info) => info.id == _selectedStorage);
 
   void _addToHistory(String message) {
     setState(() {
       final timestamp = DateTime.now().toString().substring(11, 19);
+      _lastEvent = message;
       _eventHistory.insert(0, '[$timestamp] $message');
       if (_eventHistory.length > 100) {
         _eventHistory.removeLast();
@@ -104,32 +176,56 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     _addToHistory('Event history cleared');
   }
 
+  void _toast(String title, {ToastTint tint = ToastTint.success}) {
+    Toaster.of(context).add(
+      ToastOptions(
+        title: title,
+        tint: tint,
+        // Errors are feedback here, not something to acknowledge.
+        timeout: tint == ToastTint.danger ? const Duration(seconds: 5) : null,
+      ),
+    );
+  }
+
   void _refreshCurrentData() {
     setState(() {
       final storage = _getCurrentStorage();
       if (storage == null) {
         _currentData = {};
         _currentSize = 0;
+        _sizes = {};
         return;
       }
       _currentData = storage.all;
       _currentSize = storage.size;
+      _sizes = {
+        for (final info in _storeInfos) info.id: _storeFor(info.id)!.size,
+      };
     });
   }
 
-  void _setKeyValue() {
-    final key = _keyController.text.trim();
-    final value = _valueController.text;
+  void _selectStorage(String value) {
+    if (value == _selectedStorage) return;
+    setState(() {
+      _selectedStorage = value;
+    });
+    _addToHistory('Switched to: $value');
+    _refreshCurrentData();
+  }
 
+  // Key-value operations
+
+  bool _setKeyValue(String key, String value) {
+    key = key.trim();
     if (key.isEmpty) {
       _addToHistory('Error: Key cannot be empty');
-      return;
+      return false;
     }
 
     final storage = _getCurrentStorage();
     if (storage == null) {
       _addToHistory('Error: Storage not initialized');
-      return;
+      return false;
     }
 
     final success = storage.set(key, value);
@@ -137,11 +233,12 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     if (success) {
       _addToHistory('Set [$_selectedStorage]: "$key" = "$value"');
       _refreshCurrentData();
-      _keyController.clear();
-      _valueController.clear();
+      _toast('Saved "$key"');
     } else {
       _addToHistory('Error: Failed to set "$key"');
+      _toast('Failed to set "$key"', tint: ToastTint.danger);
     }
+    return success;
   }
 
   void _getValue() {
@@ -149,6 +246,7 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
 
     if (key.isEmpty) {
       _addToHistory('Error: Key cannot be empty');
+      _toast('Type a key first', tint: ToastTint.warning);
       return;
     }
 
@@ -161,13 +259,14 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     final value = storage.get(key, '(not found)');
 
     _addToHistory('Get [$_selectedStorage]: "$key" = "$value"');
+    _toast('"$key" = "$value"', tint: ToastTint.info);
   }
 
-  void _removeKey() {
-    final key = _keyController.text.trim();
-
+  void _removeKey(String key, {bool fromLookup = false}) {
+    key = key.trim();
     if (key.isEmpty) {
       _addToHistory('Error: Key cannot be empty');
+      _toast('Type a key first', tint: ToastTint.warning);
       return;
     }
 
@@ -177,14 +276,30 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
       return;
     }
 
+    final previous = _currentData[key];
     final success = storage.remove(key);
 
     if (success) {
       _addToHistory('Remove [$_selectedStorage]: "$key" removed successfully');
       _refreshCurrentData();
-      _keyController.clear();
+      if (fromLookup) _keyController.clear();
+      Toaster.of(context).add(
+        ToastOptions(
+          title: 'Removed "$key"',
+          tint: ToastTint.success,
+          action: previous == null
+              ? null
+              : ToastAction(
+                  label: 'Undo',
+                  onPressed: () {
+                    if (mounted) _setKeyValue(key, previous);
+                  },
+                ),
+        ),
+      );
     } else {
       _addToHistory('Error: Failed to remove "$key" (may not exist)');
+      _toast('Failed to remove "$key"', tint: ToastTint.danger);
     }
   }
 
@@ -193,6 +308,7 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
 
     if (key.isEmpty) {
       _addToHistory('Error: Key cannot be empty');
+      _toast('Type a key first', tint: ToastTint.warning);
       return;
     }
 
@@ -205,7 +321,10 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     final exists = storage.contains(key);
 
     _addToHistory('Contains [$_selectedStorage]: "$key" = $exists');
+    _toast('Contains "$key": $exists', tint: ToastTint.info);
   }
+
+  // Storage operations
 
   void _clearStorage() {
     final storage = _getCurrentStorage();
@@ -219,8 +338,10 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     if (success) {
       _addToHistory('Clear [$_selectedStorage]: All data cleared');
       _refreshCurrentData();
+      _toast('Cleared $_selectedStorage');
     } else {
       _addToHistory('Error: Failed to clear storage');
+      _toast('Failed to clear storage', tint: ToastTint.danger);
     }
   }
 
@@ -266,6 +387,7 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
   }
 
   // Test case methods
+
   void _testBasicOperations() {
     _addToHistory('--- Starting Basic Operations Test ---');
 
@@ -419,7 +541,7 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
       final key = 'large_data_$size';
 
       final setSuccess = storage.set(key, largeValue);
-      final retrieved = storage.get(key, '');
+      final retrieved = storage.get(key, '') ?? '';
       final match = retrieved.length == size;
 
       _addToHistory(
@@ -444,7 +566,7 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
 
     // Test empty string value
     storage.set('empty_value', '');
-    final retrieved = storage.get('empty_value', 'default');
+    final retrieved = storage.get('empty_value', 'default') ?? '';
     _addToHistory(
       '✓ Empty value retrieved: "$retrieved" (length: ${retrieved.length})',
     );
@@ -524,388 +646,266 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     _refreshCurrentData();
   }
 
+  // Dialogs
+
+  Future<void> _editEntry({String? key, String? value}) async {
+    final result = await showDialog<(String, String)>(
+      context: context,
+      builder: (_) => _EntryDialog(
+        storeName: '${_currentInfo.group} · ${_currentInfo.label}',
+        initialKey: key,
+        initialValue: value ?? '',
+      ),
+    );
+    if (result == null || !mounted) return;
+    _setKeyValue(result.$1, result.$2);
+  }
+
+  Future<void> _confirmClear() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        tone: DialogTone.danger,
+        children: [
+          DialogHeader(
+            title: 'Clear $_selectedStorage?',
+            subtitle: 'Removes all $_currentSize entries from this store.',
+          ),
+          DialogFooter(
+            children: [
+              const Spacer(),
+              Button(
+                variant: ButtonVariant.normal,
+                tint: ButtonTint.neutral,
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              Button(
+                variant: ButtonVariant.filled,
+                tint: ButtonTint.danger,
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Clear All'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) _clearStorage();
+  }
+
+  // Layout
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Storage Example - Comprehensive Test'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: _clearHistory,
-            tooltip: 'Clear Event History',
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          // Left side - Test controls
-          Expanded(
-            flex: 3,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sidebar(context.vars),
+        Expanded(
+          child: Column(
+            children: [
+              _toolbar(context.vars),
+              const Divider(),
+              OptionRow(
+                label: 'Lookup',
                 children: [
-                  // Storage Selection
-                  _buildSectionCard('Storage Selection', [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildInfoRow('Type', _selectedStorage),
-                        ),
-                        Expanded(
-                          child: _buildInfoRow('Size', '$_currentSize items'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButton<String>(
-                      value: _selectedStorage,
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'preferences',
-                          child: Text('Preferences (Default)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'scoped_preferences',
-                          child: Text('Preferences (Scoped: user_settings)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'secure_storage',
-                          child: Text('SecureStorage (Default)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'scoped_secure_storage',
-                          child: Text(
-                            'SecureStorage (Scoped: api_credentials)',
-                          ),
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedStorage = value;
-                          });
-                          _addToHistory('Switched to: $value');
-                          _refreshCurrentData();
-                        }
-                      },
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Key-Value Operations
-                  _buildSectionCard('Key-Value Operations', [
-                    TextField(
+                  SizedBox(
+                    width: 220,
+                    child: TextField(
                       controller: _keyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Key',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
+                      size: WidgetSize.small,
+                      mono: true,
+                      placeholder: 'Key',
+                      onSubmitted: (_) => _getValue(),
                     ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _valueController,
-                      decoration: const InputDecoration(
-                        labelText: 'Value',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(Icons.save, 'Set', _setKeyValue),
-                        _buildCompactButton(Icons.search, 'Get', _getValue),
-                        _buildCompactButton(Icons.delete, 'Remove', _removeKey),
-                        _buildCompactButton(
-                          Icons.check,
-                          'Contains',
-                          _containsKey,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Storage Operations
-                  _buildSectionCard('Storage Operations', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.list,
-                          'List Keys',
-                          _listAllKeys,
-                        ),
-                        _buildCompactButton(Icons.info, 'Get Size', _getSize),
-                        _buildCompactButton(
-                          Icons.view_list,
-                          'Get All',
-                          _getAllData,
-                        ),
-                        _buildCompactButton(
-                          Icons.delete_forever,
-                          'Clear All',
-                          _clearStorage,
-                        ),
-                        _buildCompactButton(
-                          Icons.refresh,
-                          'Refresh View',
-                          _refreshCurrentData,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Test Cases
-                  _buildSectionCard('Test Cases', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.play_arrow,
-                          'Basic Operations',
-                          _testBasicOperations,
-                        ),
-                        _buildCompactButton(
-                          Icons.format_list_numbered,
-                          'Bulk Operations',
-                          _testBulkOperations,
-                        ),
-                        _buildCompactButton(
-                          Icons.language,
-                          'Special Chars',
-                          _testSpecialCharacters,
-                        ),
-                        _buildCompactButton(
-                          Icons.settings,
-                          'Default Values',
-                          _testDefaultValues,
-                        ),
-                        _buildCompactButton(
-                          Icons.edit,
-                          'Overwrite',
-                          _testOverwriteValues,
-                        ),
-                        _buildCompactButton(
-                          Icons.data_usage,
-                          'Large Data',
-                          _testLargeData,
-                        ),
-                        _buildCompactButton(
-                          Icons.rectangle,
-                          'Empty Values',
-                          _testEmptyValues,
-                        ),
-                        _buildCompactButton(
-                          Icons.folder,
-                          'Scoped Storage',
-                          _testScopedStorage,
-                        ),
-                        _buildCompactButton(
-                          Icons.compare,
-                          'Compare Types',
-                          _compareStorageTypes,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Current Data View
-                  _buildSectionCard('Current Data ($_currentSize items)', [
-                    if (_currentData.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: Text(
-                            'No data in storage',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 300),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _currentData.length,
-                          itemBuilder: (context, index) {
-                            final entry = _currentData.entries.elementAt(index);
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 4),
-                              child: ListTile(
-                                dense: true,
-                                leading: CircleAvatar(
-                                  radius: 16,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                ),
-                                title: Text(
-                                  entry.key,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  entry.value.length > 50
-                                      ? '${entry.value.substring(0, 50)}...'
-                                      : entry.value,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, size: 18),
-                                  onPressed: () {
-                                    final storage = _getCurrentStorage();
-                                    if (storage != null) {
-                                      storage.remove(entry.key);
-                                      _addToHistory(
-                                        'Removed "${entry.key}" from view',
-                                      );
-                                      _refreshCurrentData();
-                                    }
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                  ]),
+                  ),
+                  ActionChip(label: 'Get', onTap: _getValue),
+                  ActionChip(label: 'Contains', onTap: _containsKey),
+                  ActionChip(
+                    label: 'Remove',
+                    onTap: () =>
+                        _removeKey(_keyController.text, fromLookup: true),
+                  ),
                 ],
               ),
-            ),
-          ),
-
-          // Right side - Event history
-          Expanded(
-            flex: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(left: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Column(
+              OptionRow(
+                label: 'Inspect',
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.history, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Event History (${_eventHistory.length})',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                  ActionChip(label: 'List Keys', onTap: _listAllKeys),
+                  ActionChip(label: 'Get Size', onTap: _getSize),
+                  ActionChip(label: 'Get All', onTap: _getAllData),
+                ],
+              ),
+              OptionRow(
+                label: 'Tests',
+                children: [
+                  ActionChip(
+                    label: 'Basic Operations',
+                    onTap: _testBasicOperations,
                   ),
-                  Expanded(
-                    child: _eventHistory.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No events yet\nPerform storage operations to see events',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _eventHistory.length,
-                            padding: const EdgeInsets.all(8),
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 4),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: Text(
-                                  _eventHistory[index],
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                  ActionChip(
+                    label: 'Bulk Operations',
+                    onTap: _testBulkOperations,
+                  ),
+                  ActionChip(
+                    label: 'Special Chars',
+                    onTap: _testSpecialCharacters,
+                  ),
+                  ActionChip(
+                    label: 'Default Values',
+                    onTap: _testDefaultValues,
+                  ),
+                  ActionChip(label: 'Overwrite', onTap: _testOverwriteValues),
+                  ActionChip(label: 'Large Data', onTap: _testLargeData),
+                  ActionChip(label: 'Empty Values', onTap: _testEmptyValues),
+                  ActionChip(
+                    label: 'Scoped Storage',
+                    onTap: _testScopedStorage,
+                  ),
+                  ActionChip(
+                    label: 'Compare Types',
+                    onTap: _compareStorageTypes,
                   ),
                 ],
               ),
-            ),
+              Expanded(child: _entries(context.vars)),
+              EventFooter(
+                headline: _lastEvent,
+                lines: _eventHistory,
+                onClear: _clearHistory,
+                visibleLines: 5,
+                height: 132,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSectionCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _sidebar(ThemeVariables vars) {
+    NavItem item(_StoreInfo info) {
+      final current = info.id == _selectedStorage;
+      final count = _sizes[info.id];
+      return NavItem(
+        label: info.label,
+        icon: info.icon,
+        current: current,
+        trailing: count == null
+            ? null
+            : Text(
+                '$count',
+                style: vars.labelSmall.copyWith(
+                  color: current ? vars.colorOnAccent : vars.colorContentMuted,
+                ),
+              ),
+        onPressed: () => _selectStorage(info.id),
+      );
+    }
+
+    return Sidebar(
+      width: 200,
+      header: Row(
+        spacing: vars.spacing2,
+        children: [
+          Icon(
+            FluentIcons.database_20_regular,
+            size: vars.iconLarge,
+            color: vars.colorContentSecondary,
+          ),
+          Text('Storage', style: vars.titleSmall),
+        ],
+      ),
+      children: [
+        for (final group in ['Preferences', 'SecureStorage']) ...[
+          if (group != 'Preferences') SizedBox(height: vars.spacing2),
+          SidebarGroup(
+            label: group,
+            children: [
+              for (final info in _storeInfos)
+                if (info.group == group) item(info),
+            ],
+          ),
+        ],
+        SizedBox(height: vars.spacing2),
+        SidebarCard(
+          label: 'SecureStorage',
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            Badge(
+              size: WidgetSize.small,
+              variant: BadgeVariant.tinted,
+              tint: _secureAvailable ? BadgeTint.success : BadgeTint.warning,
+              child: Text(_secureAvailable ? 'Available' : 'Unavailable'),
             ),
-            const Divider(height: 16),
-            ...children,
+            Text(
+              'Keychain on macOS, Credential Manager on Windows, '
+              'libsecret on Linux.',
+              style: vars.captionSmall.copyWith(color: vars.colorContentMuted),
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _toolbar(ThemeVariables vars) {
+    final info = _currentInfo;
+    final secure = _getCurrentStorage()?.isSecure ?? false;
+    final scoped = info.id.startsWith('scoped_');
+    return Container(
+      height: vars.frameTitlebarSize,
+      padding: EdgeInsets.symmetric(horizontal: vars.spacing4),
+      child: Row(
+        spacing: vars.spacing2,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
+          Flexible(
+            child: Text(
+              info.group,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: vars.titleMedium,
+            ),
+          ),
+          Badge(
+            size: WidgetSize.small,
+            variant: BadgeVariant.outlined,
+            tint: BadgeTint.neutral,
+            child: Text(scoped ? 'scope: ${info.label}' : 'no scope'),
+          ),
+          if (secure)
+            Badge(
+              size: WidgetSize.small,
+              variant: BadgeVariant.tinted,
+              tint: BadgeTint.success,
+              child: const Text('encrypted'),
+            ),
+          Text('$_currentSize items', style: vars.muted),
+          const Spacer(),
+          Tooltip(
+            label: 'Refresh View',
+            child: IconButton(
+              icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
+              semanticsLabel: 'Refresh View',
+              onPressed: _refreshCurrentData,
+            ),
+          ),
+          Button(
+            variant: ButtonVariant.outlined,
+            tint: ButtonTint.danger,
+            onPressed: _currentSize == 0 ? null : _confirmClear,
+            child: const Text('Clear All'),
+          ),
+          Button(
+            variant: ButtonVariant.filled,
+            onPressed: _isInitialized ? () => _editEntry() : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: vars.spacing1,
+              children: const [
+                Icon(FluentIcons.add_20_regular),
+                Text('Add entry'),
+              ],
             ),
           ),
         ],
@@ -913,30 +913,141 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     );
   }
 
-  Widget _buildCompactButton(
-    IconData icon,
-    String label,
-    VoidCallback onPressed,
-  ) {
-    return SizedBox(
-      height: 36,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 16),
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: const Size(0, 36),
+  Widget _entries(ThemeVariables vars) {
+    if (!_isInitialized) {
+      return Padding(
+        padding: EdgeInsets.all(vars.spacing4),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Callout(
+            tint: CalloutTint.danger,
+            icon: const Icon(FluentIcons.error_circle_20_regular),
+            title: const Text('Storage not initialized'),
+            message: Text(_lastEvent),
+          ),
         ),
-      ),
+      );
+    }
+
+    if (_currentData.isEmpty) {
+      return Center(
+        child: EmptyState(
+          title: 'No data in storage',
+          actions: [
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: () => _editEntry(),
+              child: const Text('Add entry'),
+            ),
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: _testBulkOperations,
+              child: const Text('Add 10 samples'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final entries = _currentData.entries.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TableHead(
+          children: [
+            const TableCell(head: true, width: 36, child: Text('#')),
+            const TableCell(head: true, flex: 2, child: Text('Key')),
+            const TableCell(head: true, flex: 3, child: Text('Value')),
+            const TableCell(
+              head: true,
+              width: 72,
+              align: TableCellAlign.end,
+              child: Text('Actions'),
+            ),
+          ],
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Table(
+              children: [
+                for (final (index, entry) in entries.indexed)
+                  TableRow(
+                    onPressed: () =>
+                        _editEntry(key: entry.key, value: entry.value),
+                    children: [
+                      TableCell(
+                        width: 36,
+                        child: Text('${index + 1}', style: vars.mono),
+                      ),
+                      TableCell(
+                        flex: 2,
+                        child: Text(
+                          entry.key,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: vars.labelLarge.copyWith(
+                            color: vars.colorContent,
+                          ),
+                        ),
+                      ),
+                      TableCell(
+                        flex: 3,
+                        child: Text(
+                          entry.value.isEmpty ? '(empty)' : entry.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: vars.mono.copyWith(
+                            color: entry.value.isEmpty
+                                ? vars.colorContentFaint
+                                : vars.colorContentSecondary,
+                          ),
+                        ),
+                      ),
+                      TableCell(
+                        width: 72,
+                        align: TableCellAlign.end,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: vars.spacing05,
+                          children: [
+                            Tooltip(
+                              label: 'Edit',
+                              child: IconButton(
+                                icon: const Icon(FluentIcons.edit_20_regular),
+                                semanticsLabel: 'Edit ${entry.key}',
+                                onPressed: () => _editEntry(
+                                  key: entry.key,
+                                  value: entry.value,
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              label: 'Remove',
+                              child: IconButton(
+                                icon: const Icon(FluentIcons.delete_20_regular),
+                                tint: IconButtonTint.danger,
+                                semanticsLabel: 'Remove ${entry.key}',
+                                onPressed: () => _removeKey(entry.key),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   @override
   void dispose() {
     _keyController.dispose();
-    _valueController.dispose();
-    _scopeController.dispose();
 
     _preferences?.dispose();
     _scopedPreferences?.dispose();
@@ -944,5 +1055,107 @@ class _StorageExamplePageState extends State<StorageExamplePage> {
     _scopedSecureStorage?.dispose();
 
     super.dispose();
+  }
+}
+
+/// Add or edit one entry. Pops with the key and the value; the key is fixed
+/// when an existing entry is edited.
+class _EntryDialog extends StatefulWidget {
+  const _EntryDialog({
+    required this.storeName,
+    this.initialKey,
+    required this.initialValue,
+  });
+
+  final String storeName;
+  final String? initialKey;
+  final String initialValue;
+
+  @override
+  State<_EntryDialog> createState() => _EntryDialogState();
+}
+
+class _EntryDialogState extends State<_EntryDialog> {
+  late final TextEditingController _key = TextEditingController(
+    text: widget.initialKey ?? '',
+  );
+  late final TextEditingController _value = TextEditingController(
+    text: widget.initialValue,
+  );
+  bool _keyMissing = false;
+
+  bool get _editing => widget.initialKey != null;
+
+  @override
+  void dispose() {
+    _key.dispose();
+    _value.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_key.text.trim().isEmpty) {
+      setState(() => _keyMissing = true);
+      return;
+    }
+    Navigator.of(context).pop((_key.text, _value.text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      children: [
+        DialogHeader(
+          title: _editing ? 'Edit entry' : 'Add entry',
+          subtitle: widget.storeName,
+        ),
+        DialogBody(
+          children: [
+            FormField(
+              label: 'Key',
+              invalid: _keyMissing,
+              hint: _keyMissing ? 'Key cannot be empty' : null,
+              child: TextField(
+                controller: _key,
+                mono: true,
+                enabled: !_editing,
+                autofocus: !_editing,
+                placeholder: 'e.g. theme',
+                onChanged: (_) {
+                  if (_keyMissing) setState(() => _keyMissing = false);
+                },
+              ),
+            ),
+            FormField(
+              label: 'Value',
+              child: TextField(
+                controller: _value,
+                mono: true,
+                autofocus: _editing,
+                minLines: 3,
+                maxLines: 6,
+                placeholder: 'Any string',
+              ),
+            ),
+          ],
+        ),
+        DialogFooter(
+          children: [
+            const Spacer(),
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            Button(
+              variant: ButtonVariant.filled,
+              onPressed: _save,
+              child: const Text('Set'),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

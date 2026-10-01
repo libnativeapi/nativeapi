@@ -1,8 +1,23 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:nativeapi/nativeapi.dart' as na;
-import 'package:nativeapi_flutter/nativeapi_flutter.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show
+        DisplayManager,
+        NativeSizeToSize,
+        PointToOffset,
+        RectangleToRect,
+        SizeToNative,
+        Window,
+        WindowFocusedEvent,
+        WindowManager,
+        WindowMovedEvent,
+        WindowResizedEvent;
+
+// Every display DisplayManager reports, laid out the way the system arranges
+// them — with this window and the cursor drawn on top, live — then the same
+// displays as a table, and the selected one's read-outs on the right.
 
 void main() {
   runApp(const MyApp());
@@ -12,17 +27,8 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Display Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        cardTheme: const CardThemeData(elevation: 2, margin: EdgeInsets.all(8)),
-      ),
-      home: const DisplayManagerPage(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const Host(title: 'Display Example', home: DisplayManagerPage());
 }
 
 class DisplayManagerPage extends StatefulWidget {
@@ -40,13 +46,20 @@ class _DisplayManagerPageState extends State<DisplayManagerPage> {
   Window? _currentWindow;
   Offset _cursorPosition = Offset.zero;
   Timer? _updateTimer;
-  List<int> _windowListenerIds = [];
+  final List<int> _windowListenerIds = [];
 
   @override
   void initState() {
     super.initState();
     _loadDisplays();
     _startTracking();
+    // A desktop tool's size, whatever the runner's default is.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WindowManager.instance.getCurrent()?.contentSize = const Size(
+        980,
+        660,
+      ).toNative();
+    });
   }
 
   @override
@@ -106,7 +119,7 @@ class _DisplayManagerPageState extends State<DisplayManagerPage> {
     }
   }
 
-  Future<void> _loadDisplays() async {
+  Future<void> _loadDisplays({bool announce = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -118,14 +131,29 @@ class _DisplayManagerPageState extends State<DisplayManagerPage> {
       setState(() {
         _displays = displays;
         _isLoading = false;
-        // Auto-select primary display if available
-        if (_selectedDisplay == null && displays.isNotEmpty) {
+        // Keep the selection across a refresh when that display is still
+        // there; otherwise auto-select the primary display.
+        final selectedId = _selectedDisplay?.id;
+        _selectedDisplay = null;
+        if (displays.isNotEmpty) {
           _selectedDisplay = displays.firstWhere(
-            (d) => d.isPrimary,
-            orElse: () => displays.first,
+            (d) => d.id == selectedId,
+            orElse: () => displays.firstWhere(
+              (d) => d.isPrimary,
+              orElse: () => displays.first,
+            ),
           );
         }
       });
+      if (announce && mounted) {
+        Toaster.of(context).add(
+          ToastOptions(
+            title:
+                'Found ${displays.length} display${displays.length != 1 ? 's' : ''}',
+            tint: ToastTint.success,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -142,165 +170,256 @@ class _DisplayManagerPageState extends State<DisplayManagerPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.monitor),
-            const SizedBox(width: 8),
-            const Text('Display Example'),
-            if (_displays.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_displays.length} display${_displays.length != 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDisplays,
-            tooltip: 'Refresh Displays',
-          ),
-        ],
-      ),
-      body: _buildBody(),
+    final vars = context.vars;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _toolbar(vars),
+        const Divider(),
+        Expanded(child: _buildBody(vars)),
+        _statusBar(vars),
+      ],
     );
   }
 
-  Widget _buildBody() {
+  Widget _toolbar(ThemeVariables vars) {
+    return Container(
+      height: vars.frameTitlebarSize,
+      padding: EdgeInsets.symmetric(horizontal: vars.spacing4),
+      child: Row(
+        spacing: vars.spacing2,
+        children: [
+          Icon(
+            FluentIcons.desktop_20_regular,
+            size: vars.iconLarge,
+            color: vars.colorContentSecondary,
+          ),
+          Text('Display Example', style: vars.titleMedium),
+          if (_displays.isNotEmpty)
+            Badge(
+              size: WidgetSize.small,
+              variant: BadgeVariant.tinted,
+              tint: BadgeTint.primary,
+              child: Text(
+                '${_displays.length} display${_displays.length != 1 ? 's' : ''}',
+              ),
+            ),
+          const Spacer(),
+          Tooltip(
+            label: 'Refresh Displays',
+            child: Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: () => _loadDisplays(announce: true),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: vars.spacing1,
+                children: const [
+                  Icon(FluentIcons.arrow_clockwise_20_regular),
+                  Text('Refresh'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(ThemeVariables vars) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          spacing: vars.spacing3,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading displays...'),
+            const Spinner(),
+            Text('Loading displays...', style: vars.muted),
           ],
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error, color: Colors.red, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadDisplays,
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+      return Padding(
+        padding: EdgeInsets.all(vars.spacing4),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Callout(
+            tint: CalloutTint.danger,
+            icon: const Icon(FluentIcons.error_circle_20_regular),
+            title: const Text('Could not read the displays'),
+            message: Text(_errorMessage!),
+            actions: [
+              Button(
+                variant: ButtonVariant.normal,
+                tint: ButtonTint.neutral,
+                onPressed: _loadDisplays,
+                child: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );
     }
 
     if (_displays.isEmpty) {
-      return const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.monitor_outlined, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'No displays found',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Please check your system configuration',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+      return Center(
+        child: EmptyState(
+          title: 'No displays found\nPlease check your system configuration',
+          actions: [
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: _loadDisplays,
+              child: const Text('Retry'),
             ),
-          ),
+          ],
         ),
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth > 800;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(vars.spacing4),
+                  child: Card(
+                    variant: CardVariant.sunken,
+                    size: WidgetSize.small,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: DisplayCanvas(
+                            displays: _displays,
+                            selectedDisplay: _selectedDisplay,
+                            onDisplayTap: _selectDisplay,
+                            currentWindow: _currentWindow,
+                            cursorPosition: _cursorPosition,
+                          ),
+                        ),
+                        SizedBox(height: vars.spacing2),
+                        const _Legend(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              DisplayTable(
+                displays: _displays,
+                selectedDisplay: _selectedDisplay,
+                onDisplayTap: _selectDisplay,
+              ),
+            ],
+          ),
+        ),
+        const VerticalDivider(),
+        if (_selectedDisplay != null)
+          SizedBox(
+            width: 312,
+            child: DisplayDetails(display: _selectedDisplay!),
+          ),
+      ],
+    );
+  }
 
-        if (isWideScreen) {
-          return Row(
+  /// The two live read-outs the canvas draws, as numbers.
+  Widget _statusBar(ThemeVariables vars) {
+    final cursor =
+        '(${_cursorPosition.dx.toInt()}, ${_cursorPosition.dy.toInt()})';
+    String window = 'none';
+    final current = _currentWindow;
+    if (current != null) {
+      try {
+        final b = current.bounds.toRect();
+        window =
+            '(${b.left.toInt()}, ${b.top.toInt()}) '
+            '${b.width.toInt()} × ${b.height.toInt()}';
+      } catch (_) {
+        // Window might have been destroyed.
+      }
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Divider(),
+        Container(
+          color: vars.colorSurfaceSunken,
+          padding: EdgeInsets.symmetric(
+            horizontal: vars.spacing4,
+            vertical: vars.spacing2,
+          ),
+          child: Row(
+            spacing: vars.spacing2,
             children: [
+              Icon(
+                FluentIcons.cursor_20_regular,
+                size: vars.iconMedium,
+                color: vars.colorContentMuted,
+              ),
+              Text('Cursor $cursor', style: vars.mono),
+              SizedBox(width: vars.spacing4),
+              Icon(
+                FluentIcons.window_20_regular,
+                size: vars.iconMedium,
+                color: vars.colorContentMuted,
+              ),
               Expanded(
-                flex: 2,
-                child: DisplayCanvas(
-                  displays: _displays,
-                  selectedDisplay: _selectedDisplay,
-                  onDisplayTap: _selectDisplay,
-                  currentWindow: _currentWindow,
-                  cursorPosition: _cursorPosition,
+                child: Text(
+                  'This window $window',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: vars.mono,
                 ),
               ),
-              if (_selectedDisplay != null)
-                Expanded(
-                  flex: 1,
-                  child: DisplayDetails(display: _selectedDisplay!),
-                ),
+              Text('updates every 100 ms', style: vars.muted),
             ],
-          );
-        } else {
-          return Column(
-            children: [
-              Expanded(
-                flex: 2,
-                child: DisplayCanvas(
-                  displays: _displays,
-                  selectedDisplay: _selectedDisplay,
-                  onDisplayTap: _selectDisplay,
-                  currentWindow: _currentWindow,
-                  cursorPosition: _cursorPosition,
-                ),
-              ),
-              if (_selectedDisplay != null)
-                Expanded(
-                  flex: 1,
-                  child: DisplayDetails(display: _selectedDisplay!),
-                ),
-            ],
-          );
-        }
-      },
+          ),
+        ),
+      ],
     );
   }
 }
 
+/// The colours the arrangement is drawn in, from the theme.
+class _CanvasColors {
+  _CanvasColors(ThemeVariables vars)
+    : // Ink over the card, so the reserved strips read in light and dark.
+      bezel = Color.alphaBlend(
+        vars.colorContent.withValues(alpha: 0.14),
+        vars.colorSurfaceMuted,
+      ),
+      bezelEdge = vars.colorBorderStrong,
+      work = vars.colorSurfaceRaised,
+      selected = vars.colorPrimary[600]!,
+      window = vars.colorWarning[600]!,
+      windowInk = vars.colorWarning[700]!,
+      cursor = vars.colorDanger[600]!,
+      cursorRing = vars.colorSurfaceRaised;
+
+  final Color bezel;
+  final Color bezelEdge;
+  final Color work;
+  final Color selected;
+  final Color window;
+  final Color windowInk;
+  final Color cursor;
+  final Color cursorRing;
+}
+
+/// The subject of the example: the displays in desktop coordinates, each
+/// with its work area, plus this window and the cursor. Drawn here rather
+/// than with a kit component — it is a diagram, not a control.
 class DisplayCanvas extends StatelessWidget {
   final List<na.Display> displays;
   final na.Display? selectedDisplay;
-  final Function(na.Display) onDisplayTap;
+  final void Function(na.Display) onDisplayTap;
   final Window? currentWindow;
   final Offset cursorPosition;
 
@@ -315,51 +434,42 @@ class DisplayCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vars = context.vars;
     if (displays.isEmpty) {
-      return const Center(child: Text('No displays available'));
+      return Center(child: Text('No displays available', style: vars.muted));
     }
 
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.grey[50]!, Colors.grey[100]!],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: LayoutBuilder(
-          builder: (context, constraints) => _buildDisplayLayout(constraints),
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _buildDisplayLayout(constraints, vars, _CanvasColors(vars)),
     );
   }
 
-  Widget _buildDisplayLayout(BoxConstraints constraints) {
+  Widget _buildDisplayLayout(
+    BoxConstraints constraints,
+    ThemeVariables vars,
+    _CanvasColors colors,
+  ) {
     // Calculate the bounding box of all displays
     final bounds = _calculateDisplayBounds();
 
     // Calculate scale to fit all displays in the canvas
     final scaleX = constraints.maxWidth / bounds.width;
     final scaleY = constraints.maxHeight / bounds.height;
-    final scale = (scaleX < scaleY ? scaleX : scaleY) * 0.85;
+    final scale = (scaleX < scaleY ? scaleX : scaleY) * 0.9;
 
     return Center(
       child: SizedBox(
         width: bounds.width * scale,
         height: bounds.height * scale,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            ...displays
-                .map((display) => _buildDisplay(display, bounds, scale))
-                .toList(),
+            for (final display in displays)
+              _buildDisplay(display, bounds, scale, vars, colors),
             if (currentWindow != null)
-              _buildWindow(currentWindow!, bounds, scale),
-            _buildCursor(bounds, scale),
+              _buildWindow(currentWindow!, bounds, scale, vars, colors),
+            _buildCursor(bounds, scale, colors),
           ],
         ),
       ),
@@ -388,90 +498,79 @@ class DisplayCanvas extends StatelessWidget {
     return Rect.fromLTWH(minX, minY, maxX - minX, maxY - minY);
   }
 
-  Widget _buildDisplay(na.Display display, Rect bounds, double scale) {
+  Widget _buildDisplay(
+    na.Display display,
+    Rect bounds,
+    double scale,
+    ThemeVariables vars,
+    _CanvasColors colors,
+  ) {
     final workArea = display.workArea.toRect();
     final position = display.position.toOffset();
     final size = display.size;
     final isSelected = selectedDisplay?.id == display.id;
-    final isPrimary = display.isPrimary;
 
-    // Calculate display position and size relative to the bounding box
-    final displayLeft = (position.dx - bounds.left) * scale;
-    final displayTop = (position.dy - bounds.top) * scale;
-    final displayWidth = size.width * scale;
-    final displayHeight = size.height * scale;
+    // Calculate display position and size relative to the bounding box.
+    // A hair of inset keeps neighbouring displays' edges apart.
+    const gap = 1.5;
+    final displayLeft = (position.dx - bounds.left) * scale + gap;
+    final displayTop = (position.dy - bounds.top) * scale + gap;
+    final displayWidth = size.width * scale - gap * 2;
+    final displayHeight = size.height * scale - gap * 2;
 
     // Calculate work area position relative to the display
     final workAreaLeft = (workArea.left - position.dx) * scale;
     final workAreaTop = (workArea.top - position.dy) * scale;
-    final workAreaWidth = workArea.width * scale;
-    final workAreaHeight = workArea.height * scale;
+    final workAreaWidth = workArea.width * scale - gap * 2;
+    final workAreaHeight = workArea.height * scale - gap * 2;
 
+    final radius = BorderRadius.circular(vars.radiusSmall);
     return Positioned(
       left: displayLeft,
       top: displayTop,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+      width: displayWidth,
+      height: displayHeight,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
           onTap: () => onDisplayTap(display),
-
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: displayWidth,
-            height: displayHeight,
+            duration: vars.motionDuration,
+            curve: vars.motionEasing,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: _getDisplayBackgroundColor(isSelected, isPrimary),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isSelected ? 0.3 : 0.1),
-                  blurRadius: isSelected ? 8 : 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              // The bezel shows where the work area is not: menu bar,
+              // dock, taskbar.
+              color: colors.bezel,
+              borderRadius: radius,
+              border: Border.all(
+                color: isSelected ? colors.selected : colors.bezelEdge,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: isSelected ? vars.shadowSm : null,
             ),
             child: Stack(
               children: [
-                // Display bezel
-                Container(
-                  width: displayWidth,
-                  height: displayHeight,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.grey[800]!, Colors.grey[900]!],
-                    ),
-                  ),
-                ),
-                // Screen area (work area)
                 Positioned(
                   left: workAreaLeft,
                   top: workAreaTop,
-                  child: Container(
-                    width: workAreaWidth,
-                    height: workAreaHeight,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: _getWorkAreaGradient(isSelected, isPrimary),
-                      ),
-                    ),
+                  width: workAreaWidth.clamp(0.0, double.infinity),
+                  height: workAreaHeight.clamp(0.0, double.infinity),
+                  child: ColoredBox(
+                    color: isSelected
+                        ? Color.alphaBlend(
+                            colors.selected.withValues(alpha: 0.10),
+                            colors.work,
+                          )
+                        : colors.work,
                     child: _buildDisplayContent(
                       display,
-                      workAreaWidth,
                       workAreaHeight,
                       isSelected,
+                      vars,
                     ),
                   ),
                 ),
-                // Selection overlay
-                if (isSelected)
-                  Container(
-                    width: displayWidth,
-                    height: displayHeight,
-                    color: Colors.blue.withOpacity(0.1),
-                  ),
               ],
             ),
           ),
@@ -482,79 +581,63 @@ class DisplayCanvas extends StatelessWidget {
 
   Widget _buildDisplayContent(
     na.Display display,
-    double width,
     double height,
     bool isSelected,
+    ThemeVariables vars,
   ) {
-    final iconSize = (height * 0.25).clamp(16.0, 32.0);
-    final nameSize = (height * 0.08).clamp(10.0, 14.0);
-    final infoSize = (height * 0.06).clamp(8.0, 12.0);
+    final iconSize = (height * 0.2).clamp(14.0, 28.0);
+    final ink = isSelected ? vars.colorPrimary[700]! : vars.colorContent;
 
-    return Container(
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            display.isPrimary ? Icons.desktop_mac : Icons.monitor,
-            size: iconSize,
-            color: isSelected ? Colors.white : Colors.grey[700],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            display.name ?? '',
-            style: TextStyle(
-              fontSize: nameSize,
-              fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : Colors.grey[800],
+    return Padding(
+      padding: EdgeInsets.all(vars.spacing2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: vars.spacing05,
+          children: [
+            Icon(
+              display.isPrimary
+                  ? FluentIcons.desktop_mac_20_regular
+                  : FluentIcons.desktop_20_regular,
+              size: iconSize,
+              color: isSelected ? ink : vars.colorContentMuted,
             ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-          Text(
-            '${display.size.width.toInt()}×${display.size.height.toInt()}',
-            style: TextStyle(
-              fontSize: infoSize,
-              color: isSelected ? Colors.white70 : Colors.grey[600],
+            Text(
+              display.name ?? '',
+              style: vars.labelLarge.copyWith(color: ink, height: 1.3),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
-          ),
-          if (display.isPrimary && height > 50)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: Colors.green),
-              child: Text(
-                'PRIMARY',
-                style: TextStyle(
-                  fontSize: (infoSize * 0.8).clamp(6.0, 10.0),
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+            Text(
+              '${display.size.width.toInt()}×${display.size.height.toInt()} '
+              '@${_trim(display.scaleFactor)}x',
+              style: vars.mono,
+            ),
+            if (display.isPrimary && height > 50)
+              Padding(
+                padding: EdgeInsets.only(top: vars.spacing05),
+                child: Badge(
+                  size: WidgetSize.small,
+                  variant: BadgeVariant.tinted,
+                  tint: BadgeTint.success,
+                  child: const Text('Primary'),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Color _getDisplayBackgroundColor(bool isSelected, bool isPrimary) {
-    if (isSelected) return Colors.blue[100]!;
-    if (isPrimary) return Colors.green[50]!;
-    return Colors.grey[200]!;
-  }
-
-  List<Color> _getWorkAreaGradient(bool isSelected, bool isPrimary) {
-    if (isSelected) {
-      return [Colors.blue[400]!, Colors.blue[600]!];
-    }
-    if (isPrimary) {
-      return [Colors.green[300]!, Colors.green[500]!];
-    }
-    return [Colors.grey[300]!, Colors.grey[400]!];
-  }
-
-  Widget _buildWindow(Window window, Rect bounds, double scale) {
+  Widget _buildWindow(
+    Window window,
+    Rect bounds,
+    double scale,
+    ThemeVariables vars,
+    _CanvasColors colors,
+  ) {
     try {
       final windowBounds = window.bounds.toRect();
       final windowLeft = (windowBounds.left - bounds.left) * scale;
@@ -570,63 +653,52 @@ class DisplayCanvas extends StatelessWidget {
         return const SizedBox.shrink();
       }
 
+      final title = (window.title?.isNotEmpty ?? false)
+          ? window.title!
+          : 'Window';
       return Positioned(
         left: windowLeft,
         top: windowTop,
-        child: Container(
-          width: windowWidth,
-          height: windowHeight,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.orange, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Window background (semi-transparent)
-              Container(color: Colors.orange.withOpacity(0.1)),
-              // Window title bar indicator
-              Container(
-                height: (20 * scale).clamp(8.0, 20.0),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.3),
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.orange, width: 1),
-                  ),
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: (8 * scale).clamp(4.0, 8.0),
-                ),
+        width: windowWidth,
+        height: windowHeight,
+        child: IgnorePointer(
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: colors.window.withValues(alpha: vars.washSurface * 2),
+              border: Border.all(color: colors.window, width: 1.5),
+              borderRadius: BorderRadius.circular(vars.radiusTiny),
+            ),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Container(
+                height: (20 * scale).clamp(10.0, 18.0),
+                width: double.infinity,
+                color: colors.window.withValues(alpha: vars.washEdge),
+                padding: EdgeInsets.symmetric(horizontal: vars.spacing1),
                 child: Row(
+                  spacing: vars.spacing05,
                   children: [
                     Icon(
-                      Icons.window,
-                      size: (12 * scale).clamp(8.0, 12.0),
-                      color: Colors.orange[900],
+                      FluentIcons.window_20_regular,
+                      size: vars.iconSmall,
+                      color: colors.windowInk,
                     ),
-                    SizedBox(width: (4 * scale).clamp(2.0, 4.0)),
                     Expanded(
                       child: Text(
-                        (window.title?.isNotEmpty ?? false)
-                            ? window.title!
-                            : 'Window',
-                        style: TextStyle(
-                          fontSize: (10 * scale).clamp(6.0, 10.0),
-                          color: Colors.orange[900],
-                          fontWeight: FontWeight.bold,
-                          overflow: TextOverflow.ellipsis,
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: vars.labelSmall.copyWith(
+                          color: colors.windowInk,
+                          fontSize: (10 * scale).clamp(8.0, 11.0),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       );
@@ -636,7 +708,7 @@ class DisplayCanvas extends StatelessWidget {
     }
   }
 
-  Widget _buildCursor(Rect bounds, double scale) {
+  Widget _buildCursor(Rect bounds, double scale, _CanvasColors colors) {
     final cursorLeft = (cursorPosition.dx - bounds.left) * scale;
     final cursorTop = (cursorPosition.dy - bounds.top) * scale;
 
@@ -649,31 +721,164 @@ class DisplayCanvas extends StatelessWidget {
     }
 
     return Positioned(
-      left: cursorLeft - 8,
-      top: cursorTop - 8,
-      child: Container(
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.8),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.red.withOpacity(0.5),
-              blurRadius: 4,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Icon(Icons.mouse, size: 8, color: Colors.white),
+      left: cursorLeft - 6,
+      top: cursorTop - 6,
+      child: IgnorePointer(
+        child: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: colors.cursor,
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.cursorRing, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: colors.cursor.withValues(alpha: 0.4),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// What the marks on the canvas mean.
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  @override
+  Widget build(BuildContext context) {
+    final vars = context.vars;
+    final colors = _CanvasColors(vars);
+
+    Widget swatch(Color fill, Color edge, String label, {bool round = false}) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: vars.spacing1,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: fill,
+              shape: round ? BoxShape.circle : BoxShape.rectangle,
+              borderRadius: round
+                  ? null
+                  : BorderRadius.circular(vars.radiusTiny / 2),
+              border: Border.all(color: edge),
+            ),
+          ),
+          Text(label, style: vars.muted),
+        ],
+      );
+    }
+
+    return Wrap(
+      spacing: vars.spacing4,
+      runSpacing: vars.spacing1,
+      alignment: WrapAlignment.center,
+      children: [
+        swatch(colors.work, colors.bezelEdge, 'Work area'),
+        swatch(colors.bezel, colors.bezelEdge, 'Menu bar, dock, taskbar'),
+        swatch(
+          colors.window.withValues(alpha: vars.washEdge),
+          colors.window,
+          'This window',
+        ),
+        swatch(colors.cursor, colors.cursorRing, 'Cursor', round: true),
+        Text('Click a display to inspect it', style: vars.muted),
+      ],
+    );
+  }
+}
+
+/// The displays side by side, one row each.
+class DisplayTable extends StatelessWidget {
+  final List<na.Display> displays;
+  final na.Display? selectedDisplay;
+  final void Function(na.Display) onDisplayTap;
+
+  const DisplayTable({
+    super.key,
+    required this.displays,
+    required this.selectedDisplay,
+    required this.onDisplayTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final vars = context.vars;
+    TableCell head(String label, {int flex = 1}) =>
+        TableCell(head: true, flex: flex, child: Text(label));
+    TableCell mono(String value, {int flex = 1}) => TableCell(
+      flex: flex,
+      child: Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: vars.mono.copyWith(color: vars.colorContentSecondary),
+      ),
+    );
+
+    return Table(
+      children: [
+        TableHead(
+          children: [
+            head('Display', flex: 3),
+            head('Resolution', flex: 2),
+            head('Position', flex: 2),
+            head('Scale'),
+            head('Refresh'),
+          ],
+        ),
+        for (final display in displays)
+          TableRow(
+            active: selectedDisplay?.id == display.id,
+            onPressed: () => onDisplayTap(display),
+            children: [
+              TableCell(
+                flex: 3,
+                child: Row(
+                  spacing: vars.spacing2,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        display.name ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (display.isPrimary)
+                      Badge(
+                        size: WidgetSize.small,
+                        variant: BadgeVariant.tinted,
+                        tint: BadgeTint.success,
+                        child: const Text('Primary'),
+                      ),
+                  ],
+                ),
+              ),
+              mono(
+                '${display.size.width.toInt()} × ${display.size.height.toInt()}',
+                flex: 2,
+              ),
+              mono(
+                '(${display.position.x.toInt()}, ${display.position.y.toInt()})',
+                flex: 2,
+              ),
+              mono('${_trim(display.scaleFactor)}×'),
+              mono('${display.refreshRate} Hz'),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// The selected display's read-outs.
 class DisplayDetails extends StatelessWidget {
   final na.Display display;
 
@@ -681,166 +886,133 @@ class DisplayDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.grey[50]!],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 20),
-              ..._buildDetailSections(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: display.isPrimary
-              ? [Colors.green[100]!, Colors.green[200]!]
-              : [Colors.blue[100]!, Colors.blue[200]!],
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+    final vars = context.vars;
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(vars.spacing4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: vars.spacing2,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              display.isPrimary ? Icons.desktop_mac : Icons.monitor,
-              size: 28,
-              color: display.isPrimary ? Colors.green[700] : Colors.blue[700],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  display.name ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (display.isPrimary) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'PRIMARY',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${display.size.width.toInt()}×${display.size.height.toInt()}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildHeader(vars),
+          SizedBox(height: vars.spacing1),
+          ..._buildDetailSections(vars),
         ],
       ),
     );
   }
 
-  List<Widget> _buildDetailSections() {
+  Widget _buildHeader(ThemeVariables vars) {
+    return Row(
+      spacing: vars.spacing3,
+      children: [
+        Icon(
+          display.isPrimary
+              ? FluentIcons.desktop_mac_20_regular
+              : FluentIcons.desktop_20_regular,
+          size: 28,
+          color: vars.colorContentSecondary,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: vars.spacing1,
+            children: [
+              Text(
+                display.name ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: vars.titleMedium,
+              ),
+              Wrap(
+                spacing: vars.spacing1,
+                runSpacing: vars.spacing1,
+                children: [
+                  if (display.isPrimary)
+                    Badge(
+                      size: WidgetSize.small,
+                      variant: BadgeVariant.tinted,
+                      tint: BadgeTint.success,
+                      child: const Text('Primary'),
+                    ),
+                  Badge(
+                    size: WidgetSize.small,
+                    variant: BadgeVariant.outlined,
+                    tint: BadgeTint.neutral,
+                    child: Text(
+                      '${display.size.width.toInt()}×${display.size.height.toInt()}',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildDetailSections(ThemeVariables vars) {
     return [
-      _buildSection('Basic Information', [
-        _DetailItem(Icons.badge, 'ID', display.id.toString()),
-        _DetailItem(Icons.label, 'Name', display.name ?? ''),
-        _DetailItem(Icons.star, 'Primary', display.isPrimary ? 'Yes' : 'No'),
+      _buildSection(vars, 'Basic Information', [
+        _DetailItem(
+          FluentIcons.number_symbol_20_regular,
+          'ID',
+          display.id.toString(),
+        ),
+        _DetailItem(FluentIcons.tag_20_regular, 'Name', display.name ?? ''),
+        _DetailItem(
+          FluentIcons.star_20_regular,
+          'Primary',
+          display.isPrimary ? 'Yes' : 'No',
+        ),
       ]),
 
-      _buildSection('Hardware', [
+      _buildSection(vars, 'Hardware', [
         _DetailItem(
-          Icons.aspect_ratio,
+          FluentIcons.zoom_in_20_regular,
           'Scale Factor',
           '${display.scaleFactor}×',
         ),
-        _DetailItem(Icons.refresh, 'Refresh Rate', '${display.refreshRate} Hz'),
-        _DetailItem(Icons.palette, 'Bit Depth', '${display.bitDepth} bit'),
         _DetailItem(
-          Icons.screen_rotation,
+          FluentIcons.top_speed_20_regular,
+          'Refresh Rate',
+          '${display.refreshRate} Hz',
+        ),
+        _DetailItem(
+          FluentIcons.color_20_regular,
+          'Bit Depth',
+          '${display.bitDepth} bit',
+        ),
+        _DetailItem(
+          FluentIcons.arrow_rotate_clockwise_20_regular,
           'Orientation',
           _getOrientationName(),
         ),
       ]),
 
-      _buildSection('Geometry', [
-        _DetailItem(Icons.place, 'Position', _formatPosition()),
+      _buildSection(vars, 'Geometry', [
         _DetailItem(
-          Icons.fullscreen,
+          FluentIcons.location_20_regular,
+          'Position',
+          _formatPosition(),
+        ),
+        _DetailItem(
+          FluentIcons.full_screen_maximize_20_regular,
           'Full Size',
           _formatSize(display.size.toSize()),
         ),
         _DetailItem(
-          Icons.crop_free,
+          FluentIcons.crop_20_regular,
           'Work Area Size',
           _formatSize(Size(display.workArea.width, display.workArea.height)),
         ),
         _DetailItem(
-          Icons.crop,
+          FluentIcons.ruler_20_regular,
           'Work Area Position',
           _formatWorkAreaPosition(),
         ),
         _DetailItem(
-          Icons.border_outer,
+          FluentIcons.border_outside_20_regular,
           'System Margins',
           _calculateSystemMargins(),
         ),
@@ -848,81 +1020,51 @@ class DisplayDetails extends StatelessWidget {
     ];
   }
 
-  Widget _buildSection(String title, List<_DetailItem> items) {
+  Widget _buildSection(
+    ThemeVariables vars,
+    String title,
+    List<_DetailItem> items,
+  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: vars.spacing15,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          padding: EdgeInsets.only(top: vars.spacing2),
+          child: SectionLabel(title),
         ),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
+        Card(
+          variant: CardVariant.raised,
+          size: WidgetSize.small,
           child: Column(
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return Column(
-                children: [
-                  _buildDetailRow(item),
-                  if (index < items.length - 1) const Divider(height: 16),
-                ],
-              );
-            }).toList(),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: vars.spacing2,
+            children: [for (final item in items) _buildDetailRow(vars, item)],
           ),
         ),
-        const SizedBox(height: 20),
       ],
     );
   }
 
-  Widget _buildDetailRow(_DetailItem item) {
+  Widget _buildDetailRow(ThemeVariables vars, _DetailItem item) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: vars.spacing2,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Icon(item.icon, size: 16, color: Colors.grey[600]),
-        ),
-        const SizedBox(width: 12),
+        Icon(item.icon, size: vars.iconMedium, color: vars.colorContentMuted),
         SizedBox(
-          width: 120,
+          width: 116,
           child: Text(
             item.label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
+            style: vars.bodySmall.copyWith(color: vars.colorContentSecondary),
           ),
         ),
-        const SizedBox(width: 8),
         Expanded(
-          child: SelectableText(
+          child: Text(
             item.value,
-            style: TextStyle(color: Colors.grey[700], fontFamily: 'monospace'),
+            style: vars.bodySmall
+                .inFace(vars.fontCode)
+                .copyWith(color: vars.colorContent),
           ),
         ),
       ],
@@ -946,14 +1088,17 @@ class DisplayDetails extends StatelessWidget {
     return '(${workArea.left.toInt()}, ${workArea.top.toInt()})';
   }
 
+  /// How far the work area stays off each edge, relative to the display
+  /// (the work area is in desktop coordinates, like the display's position).
   String _calculateSystemMargins() {
+    final position = display.position.toOffset();
     final size = display.size;
     final workArea = display.workArea.toRect();
 
-    final topMargin = workArea.top;
-    final bottomMargin = size.height - workArea.bottom;
-    final leftMargin = workArea.left;
-    final rightMargin = size.width - workArea.right;
+    final topMargin = workArea.top - position.dy;
+    final bottomMargin = position.dy + size.height - workArea.bottom;
+    final leftMargin = workArea.left - position.dx;
+    final rightMargin = position.dx + size.width - workArea.right;
 
     List<String> margins = [];
     if (topMargin > 0) margins.add('T:${topMargin.toInt()}');
@@ -972,3 +1117,8 @@ class _DetailItem {
 
   const _DetailItem(this.icon, this.label, this.value);
 }
+
+/// 2.0 → "2", 1.25 → "1.25".
+String _trim(double value) => value == value.roundToDouble()
+    ? value.toInt().toString()
+    : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');

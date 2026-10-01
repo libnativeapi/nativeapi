@@ -1,7 +1,7 @@
 // ignore_for_file: invalid_use_of_internal_member, implementation_imports
 
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/src/widgets/_window.dart' as fw;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart' as na;
 
@@ -12,12 +12,15 @@ import 'tab_layout.dart';
 /// One tab. Its page is always built under [pageKey], so the page keeps its
 /// state in whichever window the tab ends up.
 class BrowserTab {
-  BrowserTab({required this.id, required this.title, required this.color})
+  BrowserTab({required this.id, required this.title, required this.hue})
     : pageKey = GlobalKey(debugLabel: 'BrowserTab($id)');
 
   final int id;
   final String title;
-  final Color color;
+
+  /// Which of the theme's colour ramps marks this tab (see `tabColor`), so
+  /// the marker follows the theme instead of carrying a colour of its own.
+  final int hue;
   final GlobalKey pageKey;
 }
 
@@ -104,27 +107,12 @@ class TabsController extends ChangeNotifier {
   static const Size defaultWindowSize = Size(760, 520);
   static const double popOutDistance = 8;
 
-  static const List<Color> _palette = [
-    Colors.indigo,
-    Colors.teal,
-    Colors.deepOrange,
-    Colors.pink,
-    Colors.green,
-    Colors.purple,
-    Colors.blueGrey,
-    Colors.amber,
-  ];
-
   // ---------------------------------------------------------------------------
   // Tabs and windows
 
   BrowserTab createTab() {
     final id = _nextTabId++;
-    return BrowserTab(
-      id: id,
-      title: 'Tab $id',
-      color: _palette[(id - 1) % _palette.length],
-    );
+    return BrowserTab(id: id, title: 'Tab $id', hue: id - 1);
   }
 
   BrowserWindow openWindow(List<BrowserTab> tabs, {Size? size}) {

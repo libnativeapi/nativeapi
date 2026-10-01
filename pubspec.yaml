@@ -7,6 +7,7 @@ workspace:
   - examples/dart_view_example
   - examples/flutter_browser_tabs_example
   - examples/flutter_cocoapods_example
+  - examples/flutter_dazzui_host
   - examples/flutter_detachable_window_example
   - examples/flutter_drag_drop_example
   - examples/flutter_shaped_window_example

@@ -1,18 +1,12 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:flutter/widgets.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
 void main() {
   runApp(const VisualEffectApp());
 }
-
-const Color _ink = Color(0xFF1B1B1F);
-const Color _accent = Color(0xFF3F51B5);
-
-/// What the window paints while no effect stands in for its background.
-const Color _surface = Color(0xFFF2F2F6);
 
 /// macOS draws its title bar over the content, so a material would stop at the
 /// bar; letting the content take the bar in makes it transparent and keeps the
@@ -21,26 +15,17 @@ const Color _surface = Color(0xFFF2F2F6);
 /// material across its caption by itself.
 final bool _contentUnderTitleBar = Window.isContentUnderTitleBarSupported();
 
-/// The window's background is the visual effect, so nothing here paints one:
-/// no MaterialApp, no Scaffold. Whatever the app leaves unpainted is the
+/// The shared host, transparent: whatever the page leaves unpainted is the
 /// material, and what it paints sits on top of it.
 class VisualEffectApp extends StatelessWidget {
   const VisualEffectApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return WidgetsApp(
-      debugShowCheckedModeBanner: false,
-      color: _accent,
-      textStyle: const TextStyle(color: _ink, fontSize: 14),
-      pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) =>
-          PageRouteBuilder<T>(
-            settings: settings,
-            pageBuilder: (context, _, _) => builder(context),
-          ),
-      home: const VisualEffectPage(),
-    );
-  }
+  Widget build(BuildContext context) => const Host(
+    title: 'Visual effect',
+    transparent: true,
+    home: VisualEffectPage(),
+  );
 }
 
 class VisualEffectPage extends StatefulWidget {
@@ -124,6 +109,8 @@ class _VisualEffectPageState extends State<VisualEffectPage> {
     if (backdrop == null) return;
     final frame = window.bounds;
     backdrop.title = 'Backdrop';
+    // The backdrop is a test pattern, not part of the design: plain red makes
+    // any see-through obvious, on screen and to the GUI test that samples it.
     backdrop.backgroundColor = const Color(0xFFFF0000).toNative();
     backdrop.bounds = frame.toRect().inflate(80).toNative();
     backdrop.show();
@@ -135,113 +122,88 @@ class _VisualEffectPageState extends State<VisualEffectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final vars = context.vars;
     final current = _window?.visualEffect ?? VisualEffect.none;
     final hasEffect = current != VisualEffect.none;
+    final refused = _note.startsWith('Refused');
     // A material stands in for the window's background, so it shows only where this
-    // app paints nothing: with no effect the window paints its own surface, with one
-    // it paints only the panel and leaves the rest of the window bare. The controls
-    // keep a panel of their own because a material takes its colour from whatever is
-    // behind the window, which can be anything.
+    // app paints nothing: with no effect the window paints the theme's canvas, with
+    // one it paints only the panel and leaves the rest of the window bare. The
+    // controls keep a panel of their own because a material takes its colour from
+    // whatever is behind the window, which can be anything.
     return ColoredBox(
-      color: hasEffect ? const Color(0x00000000) : _surface,
+      color: hasEffect ? const Color(0x00000000) : vars.colorCanvas,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          24,
-          _contentUnderTitleBar ? 46 : 24,
-          24,
-          24,
+          vars.spacing5,
+          _contentUnderTitleBar ? 46 : vars.spacing5,
+          vars.spacing5,
+          vars.spacing5,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xE6FFFFFF),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Effect: ${current.name}',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
+            Card(
+              variant: CardVariant.raised,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Effect: ${current.name}',
+                          style: vars.titleLarge,
+                        ),
                       ),
+                      Badge(
+                        size: WidgetSize.small,
+                        variant: BadgeVariant.tinted,
+                        tint: refused
+                            ? BadgeTint.danger
+                            : hasEffect
+                            ? BadgeTint.success
+                            : BadgeTint.neutral,
+                        child: Text(_note),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: vars.spacing3),
+                  const SectionLabel('Window.setVisualEffect'),
+                  SizedBox(height: vars.spacing15),
+                  Wrap(
+                    spacing: vars.spacing1,
+                    runSpacing: vars.spacing1,
+                    children: [
+                      for (final effect in VisualEffect.values)
+                        OptionChip(
+                          label: effect.name,
+                          selected: effect == current,
+                          onTap: Window.isVisualEffectSupported(effect)
+                              ? () => _apply(effect)
+                              : null,
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: vars.spacing15),
+                  const Hint('Greyed out effects are not available here.'),
+                  SizedBox(height: vars.spacing2),
+                  const Divider(),
+                  PreferenceRow(
+                    title: 'Backdrop',
+                    subtitle:
+                        'A plain red window behind this one, to see through',
+                    trailing: Switch(
+                      value: _backdrop != null,
+                      onChanged: (_) => _toggleBackdrop(),
                     ),
-                    const SizedBox(height: 4),
-                    Text(_note),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final effect in VisualEffect.values)
-                          _Chip(
-                            label: effect.name,
-                            selected: effect == current,
-                            enabled: Window.isVisualEffectSupported(effect),
-                            onTap: () => _apply(effect),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _Chip(
-                      label: _backdrop == null
-                          ? 'Show backdrop'
-                          : 'Hide backdrop',
-                      selected: _backdrop != null,
-                      enabled: true,
-                      onTap: _toggleBackdrop,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Greyed out effects are not available here.'),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             // Bare window below the panel: this is where the material shows.
             const Spacer(),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color fill = selected ? _accent : const Color(0xCCFFFFFF);
-    final Color text = selected ? const Color(0xFFFFFFFF) : _ink;
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.35,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x331B1B1F)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            child: Text(label, style: TextStyle(color: text)),
-          ),
         ),
       ),
     );

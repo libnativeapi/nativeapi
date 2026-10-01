@@ -1,7 +1,7 @@
 import 'dart:io' show Platform;
 
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 
 import 'tab_layout.dart';
 import 'tab_page.dart';
@@ -33,26 +33,24 @@ class BrowserWindowPage extends StatelessWidget {
     TabsScope.of(context);
     final tabs = window.tabs;
     final active = tabs.indexOf(window.activeTab);
-    return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TabStrip(window: window),
-          Expanded(
-            // Every tab stays built, so background tabs keep running too.
-            child: IndexedStack(
-              index: active < 0 ? 0 : active,
-              children: [
-                for (final tab in tabs)
-                  KeyedSubtree(
-                    key: tab.pageKey,
-                    child: TabPage(tab: tab),
-                  ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TabStrip(window: window),
+        Expanded(
+          // Every tab stays built, so background tabs keep running too.
+          child: IndexedStack(
+            index: active < 0 ? 0 : active,
+            children: [
+              for (final tab in tabs)
+                KeyedSubtree(
+                  key: tab.pageKey,
+                  child: TabPage(tab: tab),
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -66,13 +64,16 @@ class TabStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = TabsScope.of(context);
     final layout = controller.layout;
-    final colors = Theme.of(context).colorScheme;
+    final vars = context.vars;
     final tabs = window.tabs;
 
+    // The strip is the demo: drawn here, not a kit control, but in the
+    // theme's chrome colours. Its geometry is [TabLayout]'s, which the
+    // controller hit-tests against.
     return Container(
       key: window.stripKey,
       height: TabLayout.height,
-      color: colors.surfaceContainerHighest,
+      color: vars.colorSurfaceChrome,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final extent = layout.tabExtent(constraints.maxWidth, tabs.length);
@@ -89,6 +90,17 @@ class TabStrip extends StatelessWidget {
                   onDragStart: (pointerInView) =>
                       controller.beginWindowDrag(window, pointerInView),
                   child: const SizedBox.expand(),
+                ),
+              ),
+              // The rule under the strip, painted below the tabs so the
+              // active one covers it.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: vars.strokeHairline,
+                child: IgnorePointer(
+                  child: ColoredBox(color: vars.colorBorder),
                 ),
               ),
               for (final tab in ordered)
@@ -116,12 +128,15 @@ class TabStrip extends StatelessWidget {
                 top: TabLayout.tabTop,
                 bottom: 4,
                 width: TabLayout.newTabButtonWidth - 8,
-                child: IconButton(
-                  tooltip: 'New tab',
-                  padding: EdgeInsets.zero,
-                  iconSize: 18,
-                  icon: const Icon(Icons.add),
-                  onPressed: () => controller.addTab(window),
+                child: Center(
+                  child: Tooltip(
+                    label: 'New tab',
+                    child: IconButton(
+                      semanticsLabel: 'New tab',
+                      icon: const Icon(FluentIcons.add_16_regular),
+                      onPressed: () => controller.addTab(window),
+                    ),
+                  ),
                 ),
               ),
               if (!Platform.isMacOS)
@@ -130,11 +145,15 @@ class TabStrip extends StatelessWidget {
                   top: 4,
                   bottom: 4,
                   width: 40,
-                  child: IconButton(
-                    tooltip: 'Close window',
-                    iconSize: 18,
-                    icon: const Icon(Icons.close),
-                    onPressed: () => controller.closeWindow(window),
+                  child: Center(
+                    child: Tooltip(
+                      label: 'Close window',
+                      child: IconButton(
+                        semanticsLabel: 'Close window',
+                        icon: const Icon(FluentIcons.dismiss_16_regular),
+                        onPressed: () => controller.closeWindow(window),
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -160,8 +179,7 @@ class TabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = TabsScope.read(context);
-    final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final vars = context.vars;
     final lifted = controller.isDragging(tab);
 
     return Listener(
@@ -176,39 +194,45 @@ class TabChip extends StatelessWidget {
             pointerInView,
           );
         },
+        // The active tab is the page's own surface, so it covers the strip's
+        // bottom rule and runs into the toolbar; the others are chrome.
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 1),
-          padding: const EdgeInsets.only(left: 10, right: 2),
+          padding: EdgeInsets.only(left: vars.spacing25, right: vars.spacing05),
           decoration: BoxDecoration(
-            color: active ? colors.surface : colors.surfaceContainerHigh,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            boxShadow: lifted
-                ? [const BoxShadow(blurRadius: 6, color: Colors.black26)]
-                : null,
+            // Null still hit-tests the whole box, so a background tab is
+            // grabbed anywhere on it.
+            color: active ? vars.colorSurface : null,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(vars.radiusMedium),
+            ),
+            boxShadow: lifted ? vars.shadowMd : null,
           ),
           child: Row(
             children: [
-              Icon(Icons.circle, size: 10, color: tab.color),
-              const SizedBox(width: 8),
+              Icon(
+                FluentIcons.circle_12_filled,
+                size: 10,
+                color: tabColor(vars, tab),
+              ),
+              SizedBox(width: vars.spacing2),
               Expanded(
                 child: Text(
                   tab.title,
                   maxLines: 1,
                   overflow: TextOverflow.fade,
                   softWrap: false,
-                  style: text.bodySmall?.copyWith(
-                    fontWeight: active ? FontWeight.w600 : null,
+                  style: (active ? vars.labelSmall : vars.labelQuiet).copyWith(
+                    color: active ? vars.colorContent : vars.colorContentMuted,
                   ),
                 ),
               ),
-              SizedBox(
-                width: 24,
-                height: 24,
+              Tooltip(
+                label: 'Close tab',
                 child: IconButton(
-                  tooltip: 'Close tab',
-                  padding: EdgeInsets.zero,
-                  iconSize: 14,
-                  icon: const Icon(Icons.close),
+                  semanticsLabel: 'Close tab',
+                  icon: const Icon(FluentIcons.dismiss_12_regular),
+                  iconSize: 12,
                   onPressed: () => controller.closeTab(window, tab),
                 ),
               ),

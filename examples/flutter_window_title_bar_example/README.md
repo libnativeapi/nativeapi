@@ -29,6 +29,11 @@ The window control buttons have their own chips, which is also how the ordering
 rule shows: setting a style resets the buttons to what that style implies, so an
 override goes after it.
 
+The strip is the subject of the example, so it stays drawn by the example (in
+the theme's chrome colours); everything around it is DazzUI through the shared
+`dazzui_host` package — rows of chips for the states and the buttons, a table for
+the read-out, and a footer that logs every change with the values it left behind.
+
 ```bash
 flutter run -d macos   # or windows, linux
 ```

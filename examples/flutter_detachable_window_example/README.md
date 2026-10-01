@@ -88,11 +88,16 @@ On top of that, `lib/src/detachable/` is a small, UI-agnostic layer:
   Slots can live in any number of host windows; slot ids just have to be
   unique across them.
 
-`lib/main.dart` and `lib/src/demo/` are the demo built from those pieces.
+`lib/main.dart` and `lib/src/demo/` are the demo built from those pieces. It
+is drawn with [DazzUI](https://pub.dev/packages/dazzui) through the shared
+`dazzui_host` package: every window, main or floating, gets its own `Host` (a
+`WidgetsApp` with the DazzUI theme), and the controls in the panels and the
+workspace are DazzUI's. The panel headers and the empty drop slots are what the
+example is about, so it draws those itself, in the theme's colours.
 
 `test/reparent_across_views_test.dart` checks the underlying premise without
 native windows: a `GlobalKey` subtree moved between two views, each with its
-own `MaterialApp`, keeps its `State`, controllers, scroll offset, and running
+own `Host`, keeps its `State`, controllers, scroll offset, and running
 animation.
 
 ## Platform notes

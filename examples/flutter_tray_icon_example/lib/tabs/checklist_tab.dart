@@ -1,9 +1,7 @@
-import 'package:dazzui/dazzui.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/services.dart';
 
 import '../checklist.dart';
-import '../widgets/option_chip.dart';
-import '../widgets/styles.dart';
 
 /// Acceptance in one screen: what ticked itself, what still needs a look.
 class ChecklistTab extends StatelessWidget {

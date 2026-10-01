@@ -15,17 +15,22 @@ flutter run -d macos
 Uses the experimental multi-window API on Flutter stable 3.47.5, enabled in `main`.
 As with the other multi-window examples, Flutter main may have renamed these APIs.
 
-The playground combines a colorful silhouette gallery with the compact option rows
-and system light/dark palette of `tray_icon_example`. Each of the twelve shapes has
-its own fixed gradient, shared by its gallery thumbnail and live window, with
-light spots and a dotted texture. Selecting a shape also selects its colors.
-The 480 × 680 control window uses a
-compact 48 px header and a non-scrolling 4-column × 3-row gallery. Polygon corners
-use sampled quadratic arcs, shared by native clipping, input regions and shadows. Shadow presets are None, Soft,
-Float, Sharp and Glow; Adjust opens the full sliders in place of the gallery,
-and Done returns without changing the selected shape or color. It uses `package:flutter/widgets.dart` only,
-with no Material components or icon font. Shadow sliders support dragging, arrow
-keys and Home/End.
+The control window is drawn with the DazzUI design system through the shared
+`dazzui_host` package (light/dark by the system, or the Omarchy desktop's own
+theme): a 48 px banner, a non-scrolling 4-column × 3-row gallery of option cards,
+labelled rows of chips for **Apply shape**, **Restore rectangle** and **Toggle
+size**, a segmented bar of shadow presets and a status line. Each of the twelve
+shapes has its own fixed gradient, shared by its gallery thumbnail, the banner and
+the live window, with light spots and a dotted texture — that art, the silhouette
+and its drag handle are the subject of the demo and stay drawn by the example.
+Selecting a shape also selects its colors. The 480 × 680 control window sits in
+the shared `Host`; the transparent preview keeps a bare `WidgetsApp` with the same
+DazzUI theme over it, because the host paints the canvas colour under its page.
+Polygon corners use sampled quadratic arcs, shared by native clipping, input
+regions and shadows. Shadow presets are None, Soft, Float, Sharp and Glow; Adjust
+opens the full controls (a switch, color chips and DazzUI sliders, which also take
+arrow keys and Home/End) in place of the gallery, and Done returns without
+changing the selected shape or color.
 
 Choose a silhouette, use the counter, or drag the handle in the preview. **Restore
 rectangle** restores rectangular content. On Linux the input region still excludes
@@ -113,7 +118,7 @@ Choose a shadow color and adjust **Opacity** (0–100%), **Blur radius** (0–64
 **Horizontal** and **Vertical** offset (−64–64 px) to update the preview live.
 **Reset shadow parameters** restores black, 30% opacity, radius 18 and offset (0, 6).
 Changing parameters while the shadow is hidden preserves the disabled state;
-turn it back on to see the result. The controls scroll on smaller windows.
+turn it back on to see the result. The shadow controls scroll on smaller windows.
 
 
 All three desktop implementations render custom shadows in core using the same

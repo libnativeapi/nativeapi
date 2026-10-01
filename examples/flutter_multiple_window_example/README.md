@@ -26,8 +26,11 @@ older stable release.
 ## Using it
 
 The primary window takes the top row (60% of the work area, full width); the
-secondary and tertiary windows share the bottom row. Each window's button opens
-the next one.
+secondary and tertiary windows share the bottom row. Each window is a small
+[DazzUI](../flutter_dazzui_host) panel (one `Host` per `RegularWindow`) naming its
+slot and showing the frame nativeapi reads back for it (**Read frame** reads it
+again); the primary window's **Resize to 1000 × 1000** resizes and re-shows it
+through nativeapi.
 
 A will-show hook *replaces* the platform's show: a window whose hook does not call
 `WindowManager.instance.callOriginalShow(windowId)` never appears.

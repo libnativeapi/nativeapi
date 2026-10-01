@@ -2,7 +2,7 @@
 
 import 'dart:ui' show AppExitType;
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
 import 'package:flutter/src/widgets/_window.dart' as fw;
@@ -18,12 +18,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runWidget(const BrowserTabsApp());
 }
-
-final ThemeData _theme = ThemeData(
-  colorSchemeSeed: Colors.blueGrey,
-  useMaterial3: true,
-  visualDensity: VisualDensity.compact,
-);
 
 class BrowserTabsApp extends StatefulWidget {
   const BrowserTabsApp({super.key});
@@ -87,9 +81,10 @@ class _BrowserTabsAppState extends State<BrowserTabsApp> {
               fw.RegularWindow(
                 key: ObjectKey(window.controller),
                 controller: window.controller,
-                child: MaterialApp(
-                  debugShowCheckedModeBanner: false,
-                  theme: _theme,
+                // One DazzUI host per window: each view is its own app
+                // with the shared theme, toasts and localizations.
+                child: Host(
+                  title: 'Browser',
                   home: BrowserWindowPage(window: window),
                 ),
               ),

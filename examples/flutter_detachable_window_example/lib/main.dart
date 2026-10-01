@@ -2,7 +2,7 @@
 
 import 'dart:ui' show AppExitType;
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
@@ -19,12 +19,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runWidget(const DetachableWindowApp());
 }
-
-final ThemeData _theme = ThemeData(
-  colorSchemeSeed: Colors.indigo,
-  useMaterial3: true,
-  visualDensity: VisualDensity.compact,
-);
 
 class _MainWindowDelegate with fw.RegularWindowControllerDelegate {
   _MainWindowDelegate(this.onCloseRequested);
@@ -44,7 +38,7 @@ class ActivityLog extends ValueNotifier<List<String>> {
   ActivityLog() : super(const []);
 
   void add(String message) {
-    final now = TimeOfDay.now();
+    final now = DateTime.now();
     final stamp =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     debugPrint('[detachable] $message');
@@ -76,9 +70,10 @@ class _DetachableWindowAppState extends State<DetachableWindowApp> {
     );
     return HostWindow(
       controller: controller,
-      builder: (context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: _theme,
+      // One DazzUI host per window: each view is its own app with the
+      // shared theme, toasts and localizations.
+      builder: (context) => Host(
+        title: 'nativeapi · Window $name',
         home: MainPage(name: name, log: _log),
       ),
     );
@@ -159,11 +154,8 @@ class _DetachableWindowAppState extends State<DetachableWindowApp> {
     return DetachableWindows(
       controller: _controller,
       hosts: List.of(_mainWindows),
-      floatingWindowBuilder: (context, item, content) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: _theme,
-        home: content,
-      ),
+      floatingWindowBuilder: (context, item, content) =>
+          Host(title: item.title, home: content),
     );
   }
 }
@@ -177,56 +169,50 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Theme.of(context).colorScheme.outlineVariant;
     final workspace = _Workspace(name: name, log: log);
 
     // The two windows lay their slots out differently on purpose: a panel
     // takes the size and shape of whatever slot it is docked in, and keeps
     // that size when it is torn off.
-    return Scaffold(
-      body: switch (name) {
-        'A' => Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(width: 240, child: _slot('A-left', 'Sidebar')),
-            VerticalDivider(width: 1, color: divider),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: workspace),
-                  Divider(height: 1, color: divider),
-                  SizedBox(
-                    height: 210,
-                    child: _slot('A-bottom', 'Bottom panel'),
-                  ),
-                ],
-              ),
+    return switch (name) {
+      'A' => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(width: 240, child: _slot('A-left', 'Sidebar')),
+          const VerticalDivider(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: workspace),
+                const Divider(),
+                SizedBox(height: 210, child: _slot('A-bottom', 'Bottom panel')),
+              ],
             ),
-          ],
-        ),
-        _ => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: 170, child: _slot('$name-top', 'Top strip')),
-            Divider(height: 1, color: divider),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: workspace),
-                  VerticalDivider(width: 1, color: divider),
-                  SizedBox(
-                    width: 330,
-                    child: _slot('$name-right', 'Wide sidebar'),
-                  ),
-                ],
-              ),
+          ),
+        ],
+      ),
+      _ => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 170, child: _slot('$name-top', 'Top strip')),
+          const Divider(),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: workspace),
+                const VerticalDivider(),
+                SizedBox(
+                  width: 330,
+                  child: _slot('$name-right', 'Wide sidebar'),
+                ),
+              ],
             ),
-          ],
-        ),
-      },
-    );
+          ),
+        ],
+      ),
+    };
   }
 
   static Widget _slot(String id, String label) => DockSlot(
@@ -238,6 +224,9 @@ class MainPage extends StatelessWidget {
 
 /// What a free slot looks like: its name and size on a plain fill covering the
 /// whole slot, highlighted while a dragged panel would dock into it.
+///
+/// The drop target is part of what the example demonstrates, so it is drawn
+/// here rather than taken from the kit, in the theme's colours.
 class _EmptySlot extends StatelessWidget {
   const _EmptySlot({required this.label, required this.isDropTarget});
 
@@ -246,44 +235,48 @@ class _EmptySlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final vars = context.vars;
     final dragging = DetachScope.of(context).isMovingWindow;
-    final accent = isDropTarget ? colors.primary : colors.outline;
+    final accent = isDropTarget
+        ? vars.colorPrimary[600]!
+        : dragging
+        ? vars.colorPrimary[500]!
+        : vars.colorContentSubtle;
     return LayoutBuilder(
       builder: (context, slot) => AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+        duration: vars.motionDuration,
+        curve: vars.motionEasing,
         // Fill the slot edge to edge, with no margin or border: the
         // highlighted area is exactly what a docked panel (and its torn-off
         // window) occupies.
         color: isDropTarget
-            ? colors.primaryContainer
+            ? vars.colorPrimary[500]!.withValues(alpha: vars.washEdge)
             : dragging
-            ? colors.primary.withValues(alpha: 0.06)
-            : colors.surfaceContainerLowest,
+            ? vars.colorPrimary[500]!.withValues(alpha: vars.washSurface)
+            : vars.colorSurfaceSunken,
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(vars.spacing2),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     isDropTarget
-                        ? Icons.download
-                        : Icons.dashboard_customize_outlined,
+                        ? FluentIcons.arrow_download_24_regular
+                        : FluentIcons.board_24_regular,
                     color: accent,
                     size: 32,
                   ),
-                  const SizedBox(height: 6),
-                  Text(label, style: text.titleSmall?.copyWith(color: accent)),
+                  SizedBox(height: vars.spacing15),
+                  Text(label, style: vars.titleSmall.copyWith(color: accent)),
                   Text(
                     isDropTarget
                         ? 'Release to dock'
                         : '${slot.maxWidth.round()} × '
                               '${slot.maxHeight.round()}',
-                    style: text.bodySmall?.copyWith(color: accent),
+                    style: vars.mono.copyWith(color: accent),
                   ),
                 ],
               ),
@@ -303,71 +296,76 @@ class _Workspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final colors = Theme.of(context).colorScheme;
+    final vars = context.vars;
     final controller = DetachScope.of(context);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(vars.spacing5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Window $name', style: text.headlineSmall),
-          const SizedBox(height: 8),
+          Text('Window $name', style: vars.titleLarge),
+          SizedBox(height: vars.spacing1),
           Text(
             'Drag a panel by its header to pop it out into a window of its own, '
             'and onto any empty slot, in this window or the other one, to dock '
             'it there. Panels keep their state throughout: text, counters, '
             'scroll position, and the running stopwatch. Closing a window pops '
             'its panels out.',
-            style: text.bodyMedium,
+            style: vars.bodySmall.copyWith(color: vars.colorContentMuted),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: vars.spacing3),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: vars.spacing1,
+            runSpacing: vars.spacing1,
             children: [
               for (final item in controller.items)
-                Chip(
-                  avatar: Icon(
-                    controller.isFloating(item.id)
-                        ? Icons.open_in_new
-                        : Icons.push_pin_outlined,
-                    size: 16,
-                  ),
-                  label: Text(
-                    controller.isFloating(item.id)
-                        ? '${item.title}: floating'
-                        : '${item.title}: docked ${controller.slotOf(item.id)}',
+                Badge(
+                  variant: BadgeVariant.tinted,
+                  tint: controller.isFloating(item.id)
+                      ? BadgeTint.info
+                      : BadgeTint.neutral,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: vars.spacing1,
+                    children: [
+                      Icon(
+                        controller.isFloating(item.id)
+                            ? FluentIcons.open_16_regular
+                            : FluentIcons.pin_16_regular,
+                        size: vars.iconSmall,
+                      ),
+                      Text(
+                        controller.isFloating(item.id)
+                            ? '${item.title}: floating'
+                            : '${item.title}: docked ${controller.slotOf(item.id)}',
+                      ),
+                    ],
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text('Activity', style: text.titleMedium),
-          const SizedBox(height: 8),
+          SizedBox(height: vars.spacing4),
+          const SectionLabel('Activity'),
+          SizedBox(height: vars.spacing15),
           Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.outlineVariant),
-              ),
+            child: Card(
+              variant: CardVariant.sunken,
+              size: WidgetSize.small,
               child: ValueListenableBuilder<List<String>>(
                 valueListenable: log,
                 builder: (context, entries, _) => entries.isEmpty
                     ? Center(
                         child: Text(
                           'Nothing yet — try dragging a panel header.',
-                          style: TextStyle(color: colors.outline),
+                          style: vars.muted,
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(12),
                         itemCount: entries.length,
                         itemBuilder: (context, i) => Text(
                           entries[i],
-                          style: text.bodySmall?.copyWith(fontFamily: 'Menlo'),
+                          style: vars.mono.copyWith(color: vars.colorContent),
                         ),
                       ),
               ),

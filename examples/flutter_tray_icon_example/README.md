@@ -7,14 +7,12 @@ A playground for `TrayIcon` and `TrayManager`, built to do three jobs in one sma
 - **accept a platform** — every API has a control, and a checklist ticks itself;
 - **record a demo** — everything is one click, no keyboard needed.
 
-It is drawn with [DazzUI](https://pub.dev/packages/dazzui) over `WidgetsApp` — no
-material and nothing hand-drawn: every control is a `Toggle`, `Button`, `Badge`,
-`OptionCard`, `Card`, `SegmentedControl` or `Dialog` from the design system. The theme
-follows the platform's light or dark appearance; on [Omarchy](https://omarchy.org) it
-is the desktop's own palette (`~/.local/state/omarchy/current/theme/colors.toml`,
-resolved through `omarchy-theme-color`) with every corner at Hyprland's
-`decoration:rounding`, the way Omarchy's own shell draws, and it follows
-`omarchy-theme-set` live.
+It is drawn with [DazzUI](https://pub.dev/packages/dazzui) on the examples' shared host
+([`flutter_dazzui_host`](../flutter_dazzui_host)) — no material and nothing hand-drawn:
+every control is a `Toggle`, `Button`, `Badge`, `OptionCard`, `Card`, `SegmentedControl`
+or `Dialog` from the design system. The theme follows the platform's light or dark
+appearance, and on [Omarchy](https://omarchy.org) the desktop's own palette and
+rounding, live across `omarchy-theme-set`.
 
 ```bash
 flutter run -d macos   # or windows, linux
@@ -66,9 +64,7 @@ preview's alpha shape and the menu bar picks the tint; resolution still matters 
 | `lib/icon_animations.dart` | what the frames look like |
 | `lib/context_menu.dart` | the tray's context menu (normal, checkbox, disabled, submenu) |
 | `lib/checklist.dart` | checklist model and report |
-| `lib/omarchy_theme.dart` | on Omarchy, the desktop's palette and Hyprland's rounding mapped onto the design system's tokens, watched for a theme switch |
-| `lib/widgets/option_chip.dart` | `OptionChip` (a DazzUI `Toggle`) and `ActionChip` (a `Button`): every setting is one of these |
-| `lib/tabs/`, `lib/widgets/` | the rest of the UI |
+| `lib/tabs/`, `lib/widgets/` | the UI; the chips, the event footer and the theme come from `dazzui_host` |
 
 ## Testing and recording
 

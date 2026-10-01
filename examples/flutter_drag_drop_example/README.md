@@ -3,13 +3,16 @@
 Drag and drop between the window and other applications, with the two drag and
 drop widgets of `nativeapi`:
 
-- `DropRegion` — the left panel. Drop files (from Finder / Explorer / a file
+- `DropRegion` — the left pane. Drop files (from Finder / Explorer / a file
   manager) or text (from an editor) on it; it highlights while a drag is over it
   and lists what was dropped.
 - `DragOutArea` — the two cards on the right. Drag the note into a file manager
   to copy it there, or the text into an editor. Both can also be dropped on the
-  left panel. "Last drag" shows what the target did (`copy`, or `none` when
+  left pane. "Last drag" shows what the target did (`copy`, or `none` when
   nothing was dropped).
+
+The two widgets' targets are drawn by the example from the DazzUI theme; the
+rest of the window is DazzUI (the examples' shared `dazzui_host`).
 
 ```bash
 flutter run -d macos   # or windows, linux

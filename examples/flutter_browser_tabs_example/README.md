@@ -65,6 +65,11 @@ changes for a tab, because its `State` is never recreated.
 - `NativeDragDetector` cancels the Flutter pointer once the native session
   takes over; the press may belong to a window whose content moves away and
   that never sees the release.
+- The UI is [DazzUI](https://pub.dev/packages/dazzui) through the shared
+  `dazzui_host` package, one `Host` per window. The tab strip is the subject
+  of the example, so it is drawn by hand (in the theme's colours); the
+  toolbar, buttons and address field are DazzUI's, and each tab's marker
+  colour is one of the theme's ramps.
 
 ## Platform notes
 

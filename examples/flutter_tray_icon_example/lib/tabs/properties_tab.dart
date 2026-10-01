@@ -1,9 +1,7 @@
-import 'package:dazzui/dazzui.dart' hide ContextMenu, Menu, MenuItem;
+import 'package:dazzui_host/dazzui_host.dart' hide ContextMenu, Menu, MenuItem;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
 import '../tray_controller.dart';
-import '../widgets/option_chip.dart';
-import '../widgets/styles.dart';
 
 /// Asks the shell to show its text editor.
 typedef EditText = void Function(

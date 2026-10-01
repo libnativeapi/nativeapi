@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart' hide Image;
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
 /// Drag and drop with the two widgets of `nativeapi`:
 ///
-/// - the left panel is a [DropRegion]: drop files or text on it;
+/// - the left pane is a [DropRegion]: drop files or text on it;
 /// - the cards on the right are [DragOutArea]s: drag them into a file manager,
-///   an editor, or onto the left panel.
+///   an editor, or onto the left pane.
 ///
 /// tools/gui/flutter_drag_drop_test.* in the workspace repository drives this
 /// example by its texts; keep them in sync.
@@ -19,13 +19,8 @@ class DragDropApp extends StatelessWidget {
   const DragDropApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const DragDropPage(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const Host(title: 'nativeapi · Drag and drop', home: DragDropPage());
 }
 
 class DragDropPage extends StatefulWidget {
@@ -65,24 +60,35 @@ class _DragDropPageState extends State<DragDropPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _buildDropPanel(theme)),
-            const SizedBox(width: 16),
-            SizedBox(width: 260, child: _buildDragPanel(theme)),
-          ],
+    final vars = context.vars;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.all(vars.spacing4),
+            child: _buildDropPanel(vars),
+          ),
         ),
-      ),
+        const VerticalDivider(),
+        SizedBox(
+          width: 260,
+          child: ColoredBox(
+            color: vars.colorSurfaceSunken,
+            child: Padding(
+              padding: EdgeInsets.all(vars.spacing4),
+              child: _buildDragPanel(vars),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDropPanel(ThemeData theme) {
-    final colors = theme.colorScheme;
+  /// The drop target: drawn here, since it is what the example is about.
+  Widget _buildDropPanel(ThemeVariables vars) {
+    final accent = vars.colorPrimary[600]!;
+    final position = _hoverPosition;
     return DropRegion(
       onDragEntered: (position) => setState(() {
         _hovering = true;
@@ -101,68 +107,106 @@ class _DragDropPageState extends State<DragDropPage> {
         _droppedText = details.text;
       }),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+        duration: vars.motionDuration,
+        curve: vars.motionEasing,
         decoration: BoxDecoration(
           color: _hovering
-              ? colors.primaryContainer
-              : colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+              ? accent.withValues(alpha: vars.washSurface)
+              : vars.colorSurface,
+          borderRadius: BorderRadius.circular(vars.radiusLarge),
           border: Border.all(
-            color: _hovering ? colors.primary : colors.outlineVariant,
-            width: 2,
+            color: _hovering ? accent : vars.colorBorderStrong,
+            width: _hovering ? 2 : context.hairlineWidth,
           ),
         ),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(vars.spacing4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _hovering ? 'Release to drop' : 'Drop files or text here',
-              style: theme.textTheme.titleLarge,
+            Row(
+              children: [
+                Icon(
+                  FluentIcons.arrow_download_20_regular,
+                  size: vars.iconMedium,
+                  color: _hovering ? accent : vars.colorContentSubtle,
+                ),
+                SizedBox(width: vars.spacing2),
+                Expanded(
+                  child: Text(
+                    _hovering ? 'Release to drop' : 'Drop files or text here',
+                    style: vars.titleMedium,
+                  ),
+                ),
+                Badge(
+                  size: WidgetSize.small,
+                  variant: _drops > 0
+                      ? BadgeVariant.tinted
+                      : BadgeVariant.outlined,
+                  tint: _drops > 0 ? BadgeTint.primary : BadgeTint.neutral,
+                  child: Text('Drops: $_drops'),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: vars.spacing1),
             Text(
-              _hoverPosition == null
+              position == null
                   ? 'Supported: ${DropRegion.isSupported}'
-                  : 'At ${_hoverPosition!.dx.round()}, ${_hoverPosition!.dy.round()}',
-              style: theme.textTheme.bodySmall,
+                  : 'At ${position.dx.round()}, ${position.dy.round()}',
+              style: vars.mono,
             ),
-            const Divider(height: 24),
-            Text('Drops: $_drops', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView(
-                children: [
-                  for (final path in _droppedFiles)
-                    ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.insert_drive_file_outlined),
-                      title: Text(path.split(Platform.pathSeparator).last),
-                      subtitle: Text(path),
-                    ),
-                  if (_droppedText != null)
-                    ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.notes),
-                      title: Text('Text: $_droppedText'),
-                    ),
-                ],
-              ),
-            ),
+            SizedBox(height: vars.spacing3),
+            const Divider(),
+            SizedBox(height: vars.spacing2),
+            const SectionLabel('Last drop'),
+            SizedBox(height: vars.spacing1),
+            Expanded(child: _buildDropList(vars)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDragPanel(ThemeData theme) {
+  Widget _buildDropList(ThemeVariables vars) {
+    final text = _droppedText;
+    if (_droppedFiles.isEmpty && text == null) {
+      return Center(
+        child: Text(
+          _drops == 0 ? 'Nothing dropped yet' : 'The drop was empty',
+          style: vars.muted,
+        ),
+      );
+    }
+    return ListView(
+      children: [
+        for (final path in _droppedFiles)
+          PreferenceRow(
+            icon: const Icon(FluentIcons.document_20_regular),
+            title: path.split(Platform.pathSeparator).last,
+            // The full path is its own text: the GUI test looks for it.
+            subtitle: path,
+          ),
+        if (text != null)
+          PreferenceRow(
+            icon: const Icon(FluentIcons.text_description_20_regular),
+            title: 'Text: $text',
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDragPanel(ThemeVariables vars) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Drag out', style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        Text('Drag out', style: vars.titleMedium),
+        SizedBox(height: vars.spacing05),
+        Text(
+          'Into a file manager, an editor, or the pane on the left.',
+          style: vars.muted,
+        ),
+        SizedBox(height: vars.spacing3),
         _DragCard(
-          icon: Icons.description_outlined,
+          icon: FluentIcons.document_text_20_regular,
           title: 'Drag this note',
           subtitle: _file.path.split(Platform.pathSeparator).last,
           child: (card) => DragOutArea(
@@ -171,9 +215,9 @@ class _DragDropPageState extends State<DragDropPage> {
             child: card,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: vars.spacing2),
         _DragCard(
-          icon: Icons.short_text,
+          icon: FluentIcons.text_description_20_regular,
           title: 'Drag this text',
           subtitle: 'Hello from nativeapi',
           child: (card) => DragOutArea(
@@ -182,13 +226,28 @@ class _DragDropPageState extends State<DragDropPage> {
             child: card,
           ),
         ),
-        const SizedBox(height: 16),
-        Text('Last drag: $_lastDragResult', style: theme.textTheme.bodyMedium),
-        const Spacer(),
-        Text(
-          'Supported: ${DragOutArea.isSupported}',
-          style: theme.textTheme.bodySmall,
+        SizedBox(height: vars.spacing4),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Last drag: $_lastDragResult',
+                style: vars.labelStrong.copyWith(color: vars.colorContent),
+              ),
+            ),
+            if (_lastDragResult != '-')
+              Badge(
+                size: WidgetSize.small,
+                variant: BadgeVariant.tinted,
+                tint: _lastDragResult == 'none'
+                    ? BadgeTint.neutral
+                    : BadgeTint.success,
+                child: Text(_lastDragResult == 'none' ? 'not taken' : 'taken'),
+              ),
+          ],
         ),
+        const Spacer(),
+        Text('Supported: ${DragOutArea.isSupported}', style: vars.mono),
       ],
     );
   }
@@ -198,6 +257,8 @@ class _DragDropPageState extends State<DragDropPage> {
   }
 }
 
+/// A drag source: a raised card with a grab cursor, drawn here since it is
+/// half of what the example is about.
 class _DragCard extends StatelessWidget {
   const _DragCard({
     required this.icon,
@@ -213,14 +274,42 @@ class _DragCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vars = context.vars;
     return MouseRegion(
       cursor: SystemMouseCursors.grab,
       child: child(
         Card(
-          child: ListTile(
-            leading: Icon(icon),
-            title: Text(title),
-            subtitle: Text(subtitle),
+          variant: CardVariant.raised,
+          size: WidgetSize.small,
+          child: Row(
+            children: [
+              Icon(icon, size: vars.iconMedium, color: vars.colorPrimary[600]),
+              SizedBox(width: vars.spacing25),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: vars.labelStrong.copyWith(
+                        color: vars.colorContent,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: vars.mono,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                FluentIcons.re_order_dots_vertical_20_regular,
+                size: vars.iconSmall,
+                color: vars.colorContentFaint,
+              ),
+            ],
           ),
         ),
       ),

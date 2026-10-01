@@ -1,0 +1,21 @@
+name: dazzui_host
+description: "What every Flutter example here shares: a DazzUI WidgetsApp host that follows the platform's appearance (and Omarchy's theme), plus the few example-only widgets."
+publish_to: "none"
+version: 1.0.0+1
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  dazzui: ^0.1.0
+  # The icon set dazzui draws its own glyphs from; examples use it for theirs.
+  fluentui_system_icons: ^1.1.255
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: false

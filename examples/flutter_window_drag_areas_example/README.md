@@ -10,7 +10,8 @@ Custom window chrome with the two drag widgets of `nativeapi`:
   `enableResizeEdges` between all handles and right/bottom only.
 
 The native title bar and window buttons are hidden, the minimum size is
-480 × 320.
+480 × 320. The bar and the frame are drawn by the example from the DazzUI
+theme; everything around them is DazzUI (the examples' shared `dazzui_host`).
 
 ```bash
 flutter run -d macos   # or windows, linux

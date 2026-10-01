@@ -3,7 +3,7 @@
 import 'dart:io' show Platform;
 import 'dart:ui' show AppExitType;
 
-import 'package:flutter/material.dart';
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
@@ -25,12 +25,25 @@ const Size _toolbarSize = Size(380, 64);
 /// How far the toolbar floats above the top edge of the main window.
 const double _toolbarGap = 10;
 
-const List<Color> _swatches = [
-  Color(0xFF3F51B5),
-  Color(0xFF009688),
-  Color(0xFFFF9800),
-  Color(0xFFE91E63),
-];
+/// The colours the toolbar offers: ramps of the theme, so each window
+/// resolves the same pick in its own palette.
+enum Swatch {
+  indigo('Primary'),
+  green('Green'),
+  amber('Amber'),
+  red('Red');
+
+  const Swatch(this.label);
+
+  final String label;
+
+  Color resolve(ThemeVariables vars) => switch (this) {
+    Swatch.indigo => vars.colorPrimary,
+    Swatch.green => vars.colorSuccess,
+    Swatch.amber => vars.colorWarning,
+    Swatch.red => vars.colorDanger,
+  }[500]!;
+}
 
 /// On Wayland an application can neither place its top-level windows nor find out
 /// where they are, so nothing here can make the toolbar follow: it stays where the
@@ -43,13 +56,13 @@ final bool canPlaceWindows =
 /// What both windows show. They run in one isolate, so a plain [ChangeNotifier]
 /// is all the "communication between windows" there is.
 class ToolbarModel extends ChangeNotifier {
-  Color color = _swatches.first;
+  Swatch color = Swatch.values.first;
   int stamps = 0;
   bool attached = true;
   bool toolbarVisible = true;
   final List<String> log = [];
 
-  void pick(Color value) {
+  void pick(Swatch value) {
     color = value;
     notifyListeners();
   }
@@ -63,6 +76,11 @@ class ToolbarModel extends ChangeNotifier {
     debugPrint('[floating_toolbar] $message');
     log.insert(0, message);
     if (log.length > 40) log.removeLast();
+    notifyListeners();
+  }
+
+  void clearLog() {
+    log.clear();
     notifyListeners();
   }
 
@@ -242,9 +260,8 @@ class _FloatingToolbarAppState extends State<FloatingToolbarApp> {
       views: [
         fw.RegularWindow(
           controller: _mainController,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(colorSchemeSeed: Colors.indigo),
+          child: Host(
+            title: 'Floating toolbar',
             home: MainPage(
               model: _model,
               onAttach: _attach,
@@ -255,14 +272,11 @@ class _FloatingToolbarAppState extends State<FloatingToolbarApp> {
         ),
         fw.RegularWindow(
           controller: _toolbarController,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorSchemeSeed: Colors.indigo,
-              brightness: Brightness.dark,
-            ),
-            // Nothing opaque between the pill and the desktop.
-            color: const Color(0x00000000),
+          // Not a Host: that paints the canvas under everything, and here
+          // nothing opaque may sit between the pill and the desktop.
+          child: Host(
+            transparent: true,
+            title: 'Toolbar',
             home: ToolbarPage(
               model: _model,
               // Where the app cannot place the toolbar, the user can.
@@ -291,93 +305,160 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vars = context.vars;
     return ListenableBuilder(
       listenable: model,
-      builder: (context, _) => Scaffold(
-        appBar: AppBar(title: const Text('Floating toolbar')),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'The pill above this window is a second Flutter window: '
-                'transparent, frameless, and a child of this one. Move, resize '
-                'or minimize this window and it comes along.',
-              ),
-              if (!canPlaceWindows) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Wayland: applications cannot place their windows here, so '
-                    'the pill cannot follow this window. It stays above it and '
-                    'shares its state; drag the pill to put it where you want it.',
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Row(
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(vars.spacing4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: model.color,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
                   Text(
-                    'Stamps: ${model.stamps}',
-                    key: const ValueKey('stamps'),
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  FilledButton.tonal(
-                    onPressed: model.attached ? onDetach : onAttach,
-                    child: Text(
-                      model.attached ? 'Detach toolbar' : 'Attach toolbar',
+                    'The pill above this window is a second Flutter window: '
+                    'transparent, frameless, and a child of this one. Move, '
+                    'resize or minimize this window and it comes along.',
+                    style: vars.bodyMedium.copyWith(
+                      color: vars.colorContentSubtle,
                     ),
                   ),
-                  FilledButton.tonal(
-                    onPressed: () => onToolbarVisible(!model.toolbarVisible),
-                    child: Text(
-                      model.toolbarVisible ? 'Hide toolbar' : 'Show toolbar',
+                  if (!canPlaceWindows) ...[
+                    SizedBox(height: vars.spacing3),
+                    const Callout(
+                      tint: CalloutTint.warning,
+                      icon: Icon(FluentIcons.warning_20_regular),
+                      title: Text('Wayland'),
+                      message: Text(
+                        'Applications cannot place their windows here, so the '
+                        'pill cannot follow this window. It stays above it and '
+                        'shares its state; drag the pill to put it where you '
+                        'want it.',
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text('Log', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Expanded(
-                child: ListView(
-                  children: [
-                    for (final line in model.log)
-                      Text(line, style: const TextStyle(fontSize: 12)),
                   ],
-                ),
+                  SizedBox(height: vars.spacing4),
+                  _sharedState(vars),
+                  SizedBox(height: vars.spacing4),
+                  _controls(vars),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          EventFooter(
+            headline: model.log.isEmpty ? 'No events yet' : model.log.first,
+            lines: model.log.skip(1),
+            visibleLines: 8,
+            height: 184,
+            onClear: model.log.isEmpty ? null : model.clearLog,
+          ),
+        ],
       ),
+    );
+  }
+
+  /// What the toolbar changes, read back in this window.
+  Widget _sharedState(ThemeVariables vars) {
+    return Card(
+      variant: CardVariant.raised,
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: vars.motionDuration,
+            curve: vars.motionEasing,
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: model.color.resolve(vars),
+              borderRadius: BorderRadius.circular(vars.radiusMedium),
+            ),
+          ),
+          SizedBox(width: vars.spacing4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionLabel('Set from the toolbar'),
+                SizedBox(height: vars.spacing05),
+                Text(
+                  'Stamps: ${model.stamps}',
+                  key: const ValueKey('stamps'),
+                  style: vars.titleLarge,
+                ),
+                Text('Colour: ${model.color.label}', style: vars.muted),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _controls(ThemeVariables vars) {
+    Widget status(bool on, String yes, String no) => Badge(
+      size: WidgetSize.small,
+      variant: on ? BadgeVariant.tinted : BadgeVariant.outlined,
+      tint: on ? BadgeTint.success : BadgeTint.neutral,
+      child: Text(on ? yes : no),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionLabel('Toolbar window'),
+        SizedBox(height: vars.spacing2),
+        Row(
+          children: [
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: model.attached ? onDetach : onAttach,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: vars.spacing15,
+                children: [
+                  Icon(
+                    model.attached
+                        ? FluentIcons.link_dismiss_20_regular
+                        : FluentIcons.link_20_regular,
+                  ),
+                  Text(model.attached ? 'Detach toolbar' : 'Attach toolbar'),
+                ],
+              ),
+            ),
+            SizedBox(width: vars.spacing2),
+            Button(
+              variant: ButtonVariant.normal,
+              tint: ButtonTint.neutral,
+              onPressed: () => onToolbarVisible(!model.toolbarVisible),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: vars.spacing15,
+                children: [
+                  Icon(
+                    model.toolbarVisible
+                        ? FluentIcons.eye_off_20_regular
+                        : FluentIcons.eye_20_regular,
+                  ),
+                  Text(model.toolbarVisible ? 'Hide toolbar' : 'Show toolbar'),
+                ],
+              ),
+            ),
+            const Spacer(),
+            status(model.attached, 'attached', 'detached'),
+            SizedBox(width: vars.spacing1),
+            status(model.toolbarVisible, 'shown', 'hidden'),
+          ],
+        ),
+      ],
     );
   }
 }
 
+/// The floating pill: the subject of the example, drawn here from the theme,
+/// with DazzUI controls on it.
 class ToolbarPage extends StatelessWidget {
   const ToolbarPage({super.key, required this.model, this.onDrag});
 
@@ -388,53 +469,58 @@ class ToolbarPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vars = context.vars;
     return ListenableBuilder(
       listenable: model,
-      builder: (context, _) => Scaffold(
-        backgroundColor: const Color(0x00000000),
-        body: Center(
-          child: GestureDetector(
-            onPanStart: onDrag == null ? null : (_) => onDrag!(),
-            child: Container(
-              height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xF0202124),
-                borderRadius: BorderRadius.circular(26),
+      builder: (context, _) => Center(
+        child: GestureDetector(
+          onPanStart: onDrag == null ? null : (_) => onDrag!(),
+          child: Container(
+            height: 48,
+            padding: EdgeInsets.symmetric(horizontal: vars.spacing2),
+            decoration: BoxDecoration(
+              color: vars.colorSurfaceRaised,
+              border: Border.all(
+                color: vars.colorBorderStrong,
+                width: context.hairlineWidth,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final swatch in _swatches)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => model.pick(swatch),
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: swatch,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: model.color == swatch
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
+              borderRadius: BorderRadius.circular(vars.radiusFull),
+              // The window has no shadow of its own (it would outline the
+              // whole transparent rectangle), so the pill carries a small one.
+              boxShadow: vars.shadowXs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: vars.spacing05,
+              children: [
+                for (final swatch in Swatch.values)
+                  Toggle(
+                    size: WidgetSize.small,
+                    pressed: model.color == swatch,
+                    semanticsLabel: swatch.label,
+                    onPressedChanged: (_) => model.pick(swatch),
+                    child: Icon(
+                      FluentIcons.circle_20_filled,
+                      color: swatch.resolve(vars),
                     ),
-                  const SizedBox(width: 10),
-                  TextButton.icon(
-                    onPressed: model.stamp,
-                    icon: const Icon(Icons.approval, size: 18),
-                    label: const Text('Stamp'),
                   ),
-                ],
-              ),
+                SizedBox(
+                  height: vars.spacing5,
+                  child: VerticalDivider(width: vars.spacing3),
+                ),
+                Button(
+                  variant: ButtonVariant.filled,
+                  onPressed: model.stamp,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: vars.spacing15,
+                    children: const [
+                      Icon(FluentIcons.ribbon_star_20_regular),
+                      Text('Stamp'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

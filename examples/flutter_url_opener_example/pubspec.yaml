@@ -31,10 +31,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # DazzUI plus the host every example shares (the WidgetsApp, the theme, the chips).
+  dazzui_host:
+    path: ../flutter_dazzui_host
 
   nativeapi_flutter:
     path: ../../bindings/dart/nativeapi_flutter
-  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
@@ -56,7 +58,7 @@ flutter:
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
-  uses-material-design: true
+  uses-material-design: false
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -2,45 +2,53 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+// DazzUI has its own Menu, MenuItem and ContextMenu (drawn in Flutter); the
+// ones this example is about are nativeapi's, so dazzui's are hidden.
+import 'package:dazzui_host/dazzui_host.dart' hide Menu, MenuItem, ContextMenu;
 import 'package:nativeapi/nativeapi.dart' as na;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
 import 'animated_icon_generator.dart';
 
+// The window is drawn with DazzUI over the shared host (dazzui_host); every
+// menu it opens is a native one (NSMenu, Win32 / WinUI 3, GTK).
+
 void main() {
-  runApp(const MyApp());
+  runApp(const MenuExampleApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+/// The in-app theme choice, applied to the native menus
+/// (`Application.setBrightness`) and to this window alike.
+enum ThemeChoice { system, light, dark }
+
+class MenuExampleApp extends StatefulWidget {
+  const MenuExampleApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MenuExampleApp> createState() => _MenuExampleAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
+class _MenuExampleAppState extends State<MenuExampleApp> {
+  ThemeChoice _theme = ThemeChoice.system;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Menu Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: ui.Brightness.dark,
+    // The host picks Studio Light or Dark from the platform brightness, so a
+    // forced choice is handed down as that brightness.
+    final media = MediaQuery.of(context);
+    final brightness = switch (_theme) {
+      ThemeChoice.system => media.platformBrightness,
+      ThemeChoice.light => Brightness.light,
+      ThemeChoice.dark => Brightness.dark,
+    };
+    return MediaQuery(
+      data: media.copyWith(platformBrightness: brightness),
+      child: Host(
+        title: 'Menu Example',
+        home: MenuExamplePage(
+          theme: _theme,
+          onThemeChanged: (theme) => setState(() => _theme = theme),
         ),
-        useMaterial3: true,
-      ),
-      themeMode: _themeMode,
-      home: MenuExamplePage(
-        themeMode: _themeMode,
-        onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
       ),
     );
   }
@@ -49,12 +57,12 @@ class _MyAppState extends State<MyApp> {
 class MenuExamplePage extends StatefulWidget {
   const MenuExamplePage({
     super.key,
-    required this.themeMode,
-    required this.onThemeModeChanged,
+    required this.theme,
+    required this.onThemeChanged,
   });
 
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ThemeChoice theme;
+  final ValueChanged<ThemeChoice> onThemeChanged;
 
   @override
   State<MenuExamplePage> createState() => _MenuExamplePageState();
@@ -102,13 +110,15 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
       _contextMenu.setBackend(MenuBackend.winUi3);
       _positioningMenu.setBackend(MenuBackend.winUi3);
     }
-    _setupAnimatedIconGenerator();
   }
 
-  void _setupAnimatedIconGenerator() {
-    _animatedIconGenerator = AnimatedIconGenerator(
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Created here rather than in initState: its ink is the theme's accent.
+    _animatedIconGenerator ??= AnimatedIconGenerator(
       size: 32, // Higher resolution for better quality
-      foregroundColor: Colors.blue,
+      foregroundColor: context.vars.colorPrimary.shade600,
     );
   }
 
@@ -126,7 +136,7 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
   Future<na.Image?> _iconToImage(
     IconData iconData, {
     double size = 24.0,
-    Color color = Colors.black,
+    required Color color,
   }) async {
     try {
       // Create a picture recorder to draw the icon
@@ -669,13 +679,14 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
       return;
     }
 
+    final color = context.vars.colorWarning.shade500;
     _addToHistory('Converting Flutter Icon to image...');
 
-    // Convert Material Icons.star to image
+    // Convert a Fluent star glyph (any IconData works) to image
     _iconFromWidget = await _iconToImage(
-      Icons.star,
+      FluentIcons.star_16_filled,
       size: 16.0,
-      color: Colors.amber,
+      color: color,
     );
 
     if (_iconFromWidget != null) {
@@ -806,7 +817,7 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
 
     _addToHistory('');
     _addToHistory('=== BUG REPRODUCTION (Issue #4) ===');
-    _addToHistory('Menu opened at ${position}');
+    _addToHistory('Menu opened at $position');
     _addToHistory('Checkable item initial state: ${checkableItem.state}');
     _addToHistory('Disabled item enabled: ${disabledItem.isEnabled}');
     _addToHistory('');
@@ -817,514 +828,128 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
     _addToHistory('');
   }
 
+  // --- The window -----------------------------------------------------------
+  //
+  // The GUI tests (tools/gui/flutter_menu_test.py, flutter_menu_test.ps1,
+  // flutter_menu_theme_test.ps1) find controls by their text: "Right-click
+  // here", the Items / Checkbox / Radio read-outs (value right under its
+  // label), the placement, backend and theme choices (clicked as "open at the
+  // current value, then pick another one lower down", so every group is laid
+  // out with its choices on separate lines), the chips, and the history
+  // entries "[hh:mm:ss] …" under "Event History (n)", whose right end stays
+  // empty: the tests click there to dismiss a menu.
+
+  static const _placements = [
+    (Placement.topStart, 'Top Start'),
+    (Placement.topEnd, 'Top End'),
+    (Placement.bottomStart, 'Bottom Start'),
+    (Placement.bottomEnd, 'Bottom End'),
+    (Placement.leftStart, 'Left Start'),
+    (Placement.leftEnd, 'Left End'),
+    (Placement.rightStart, 'Right Start'),
+    (Placement.rightEnd, 'Right End'),
+  ];
+
+  /// The animation playing on the first item's icon, for the chips.
+  String? _animation;
+
+  void _setPlacement(Placement value) {
+    if (value == _selectedPlacement) return;
+    setState(() => _selectedPlacement = value);
+    _addToHistory('Placement changed to: ${value.toString().split('.').last}');
+  }
+
+  void _setBackend(MenuBackend? backend) {
+    if (backend == null || backend == _contextMenu.backend) return;
+    final contextOk = _contextMenu.setBackend(backend);
+    final positioningOk = _positioningMenu.setBackend(backend);
+    _addToHistory(
+      'Backend ${backend.name}: context=$contextOk, positioning=$positioningOk',
+    );
+    setState(() {});
+  }
+
+  void _setTheme(ThemeChoice? mode) {
+    if (mode == null || mode == widget.theme) return;
+    final brightness = switch (mode) {
+      ThemeChoice.system => na.Brightness.system,
+      ThemeChoice.light => na.Brightness.light,
+      ThemeChoice.dark => na.Brightness.dark,
+    };
+    final applied = Application.instance.setBrightness(brightness);
+    widget.onThemeChanged(mode);
+    _addToHistory('Theme: ${mode.name}; native appearance applied: $applied');
+  }
+
+  void _animate(String name, Future<void> Function() start) {
+    if (_menuItems.isNotEmpty) setState(() => _animation = name);
+    start();
+  }
+
+  void _stop() {
+    _stopAnimation();
+    setState(() => _animation = null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Menu Example - Comprehensive Test'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          DropdownButton<MenuBackend>(
-            value: _contextMenu.backend,
-            items: MenuBackend.values
-                .map(
-                  (backend) => DropdownMenuItem(
-                    value: backend,
-                    enabled: Menu.isBackendSupported(backend),
-                    child: Text(
-                      backend == MenuBackend.winUi3 ? 'WinUI 3' : 'Native',
-                    ),
+    final vars = context.vars;
+    return Column(
+      children: [
+        _toolbar(vars),
+        const Divider(),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [_stage(vars), const Divider(), ..._editRows()],
                   ),
-                )
-                .toList(),
-            onChanged: (backend) {
-              if (backend == null) return;
-              final contextOk = _contextMenu.setBackend(backend);
-              final positioningOk = _positioningMenu.setBackend(backend);
-              _addToHistory(
-                'Backend ${backend.name}: context=$contextOk, positioning=$positioningOk',
-              );
-              setState(() {});
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: _clearHistory,
-            tooltip: 'Clear Event History',
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          // Left side - Test controls
-          Expanded(
-            flex: 3,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSectionCard('Appearance', [
-                    DropdownButtonFormField<ThemeMode>(
-                      initialValue: widget.themeMode,
-                      decoration: const InputDecoration(
-                        labelText: 'Theme',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: ThemeMode.system,
-                          child: Text('System'),
-                        ),
-                        DropdownMenuItem(
-                          value: ThemeMode.light,
-                          child: Text('Light'),
-                        ),
-                        DropdownMenuItem(
-                          value: ThemeMode.dark,
-                          child: Text('Dark'),
-                        ),
-                      ],
-                      onChanged: (mode) {
-                        if (mode == null) return;
-                        final brightness = switch (mode) {
-                          ThemeMode.system => na.Brightness.system,
-                          ThemeMode.light => na.Brightness.light,
-                          ThemeMode.dark => na.Brightness.dark,
-                        };
-                        final applied = Application.instance.setBrightness(
-                          brightness,
-                        );
-                        widget.onThemeModeChanged(mode);
-                        _addToHistory(
-                          'Theme: ${mode.name}; native appearance applied: $applied',
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('Open a menu to preview the selected theme.'),
-                  ]),
-                  const SizedBox(height: 10),
-                  // Context Menu Demo Section
-                  _buildSectionCard('Context Menu Demo', [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildInfoRow('Items', '$_menuItemCount'),
-                        ),
-                        Expanded(
-                          child: _buildInfoRow('Checkbox', '$_checkboxState'),
-                        ),
-                        Expanded(
-                          child: _buildInfoRow('Radio', _radioSelection),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Text(
-                          'Placement:',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: DropdownButton<Placement>(
-                            value: _selectedPlacement,
-                            isExpanded: true,
-                            items: [
-                              DropdownMenuItem(
-                                value: Placement.topStart,
-                                child: const Text('Top Start'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.topEnd,
-                                child: const Text('Top End'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.bottomStart,
-                                child: const Text('Bottom Start'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.bottomEnd,
-                                child: const Text('Bottom End'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.leftStart,
-                                child: const Text('Left Start'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.leftEnd,
-                                child: const Text('Left End'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.rightStart,
-                                child: const Text('Right Start'),
-                              ),
-                              DropdownMenuItem(
-                                value: Placement.rightEnd,
-                                child: const Text('Right End'),
-                              ),
-                            ],
-                            onChanged: (Placement? value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedPlacement = value;
-                                });
-                                _addToHistory(
-                                  'Placement changed to: ${value.toString().split('.').last}',
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ContextMenuRegion(
-                      menu: _contextMenu,
-                      placement: _selectedPlacement,
-                      child: Container(
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: colors.primaryContainer,
-                          border: Border.all(color: colors.outlineVariant),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.touch_app,
-                                size: 32,
-                                color: colors.onPrimaryContainer,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Right-click here',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colors.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Item Management Section
-                  _buildSectionCard('Item Management', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.add,
-                          'Add Item',
-                          _addNewMenuItem,
-                        ),
-                        _buildCompactButton(
-                          Icons.insert_drive_file,
-                          'Insert at Pos 2',
-                          _insertMenuItemAtPosition,
-                        ),
-                        _buildCompactButton(
-                          Icons.horizontal_rule,
-                          'Insert Separator',
-                          _insertSeparatorAtPosition,
-                        ),
-                        _buildCompactButton(
-                          Icons.remove_circle,
-                          'Remove First',
-                          _removeFirstMenuItem,
-                        ),
-                        _buildCompactButton(
-                          Icons.delete,
-                          'Remove at Pos 2',
-                          _removeMenuItemAtPosition,
-                        ),
-                        _buildCompactButton(
-                          Icons.delete_forever,
-                          'Remove Last',
-                          _removeLastMenuItem,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Item Properties Section
-                  _buildSectionCard('Item Properties', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.edit,
-                          'Update Label',
-                          _changeDynamicLabel,
-                        ),
-                        _buildCompactButton(
-                          Icons.indeterminate_check_box,
-                          'Checkbox Mixed',
-                          _setCheckboxMixed,
-                        ),
-                        _buildCompactButton(
-                          Icons.add_box,
-                          'Add Submenu Item',
-                          _addSubmenuItem,
-                        ),
-                        _buildCompactButton(
-                          Icons.swap_horiz,
-                          'Detach Submenu',
-                          _toggleSubmenu,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Icon Management Section
-                  _buildSectionCard('Icon Management', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.image,
-                          'Set Asset Icon',
-                          _setIconOnFirstItem,
-                        ),
-                        _buildCompactButton(
-                          Icons.star,
-                          'Set Widget Icon',
-                          _setIconFromWidget,
-                        ),
-                        _buildCompactButton(
-                          Icons.hide_image,
-                          'Remove Icon',
-                          _removeIconFromFirstItem,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Animated Icon Section
-                  _buildSectionCard('Animated Icons', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.refresh,
-                          'Spinner',
-                          _startSpinnerAnimation,
-                        ),
-                        _buildCompactButton(
-                          Icons.circle,
-                          'Pulse',
-                          _startPulseAnimation,
-                        ),
-                        _buildCompactButton(
-                          Icons.radio_button_unchecked,
-                          'Blink',
-                          _startBlinkAnimation,
-                        ),
-                        _buildCompactButton(
-                          Icons.trending_up,
-                          'Progress',
-                          _startProgressAnimation,
-                        ),
-                        _buildCompactButton(
-                          Icons.music_note,
-                          'Wave',
-                          _startWaveAnimation,
-                        ),
-                        _buildCompactButton(
-                          Icons.crop_square,
-                          'Rotate',
-                          _startRotatingSquareAnimation,
-                        ),
-                        _buildCompactButton(Icons.stop, 'Stop', _stopAnimation),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Positioning Section
-                  _buildSectionCard('Positioning', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.location_on,
-                          'Pos (100,100)',
-                          () => _showMenuAtAbsolutePosition(
-                            const Offset(100, 100),
-                          ),
-                        ),
-                        _buildCompactButton(
-                          Icons.location_on,
-                          'Pos (300,200)',
-                          () => _showMenuAtAbsolutePosition(
-                            const Offset(300, 200),
-                          ),
-                        ),
-                        _buildCompactButton(
-                          Icons.mouse,
-                          'At Cursor',
-                          _showMenuAtCursorPosition,
-                        ),
-                      ],
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Test Cases Section
-                  _buildSectionCard('Test Cases', [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildCompactButton(
-                          Icons.add_circle_outline,
-                          'Add 10 Items',
-                          () {
-                            for (int i = 0; i < 10; i++) _addNewMenuItem();
-                          },
-                        ),
-                        _buildCompactButton(
-                          Icons.flash_on,
-                          'Rapid Open/Close',
-                          () {
-                            for (int i = 0; i < 5; i++) {
-                              _showMenuAtAbsolutePosition(
-                                Offset(100.0 + i * 50, 100.0 + i * 50),
-                              );
-                              Future.delayed(
-                                const Duration(milliseconds: 100),
-                                () => _contextMenu.close(),
-                              );
-                            }
-                          },
-                        ),
-                        _buildCompactButton(
-                          Icons.border_outer,
-                          'Top-Left Edge',
-                          () {
-                            _showMenuAtAbsolutePosition(const Offset(10, 10));
-                            _addToHistory(
-                              'Testing menu near screen edge (top-left)',
-                            );
-                          },
-                        ),
-                        _buildCompactButton(
-                          Icons.border_outer,
-                          'Bottom-Right Edge',
-                          () {
-                            _showMenuAtAbsolutePosition(
-                              const Offset(1500, 900),
-                            );
-                            _addToHistory(
-                              'Testing menu near screen edge (bottom-right)',
-                            );
-                          },
-                        ),
-                        _buildCompactButton(
-                          Icons.bug_report,
-                          'Bug #4 (Win)',
-                          () => _openBugReproMenu(const Offset(200, 200)),
-                        ),
-                      ],
-                    ),
-                  ]),
-                ],
+                ),
               ),
+              const VerticalDivider(),
+              SizedBox(width: 280, child: _sidePanel(vars)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _toolbar(ThemeVariables vars) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: vars.spacing3,
+        vertical: vars.spacing2,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            FluentIcons.text_bullet_list_square_20_regular,
+            size: vars.iconLarge,
+            color: vars.colorPrimary.shade600,
+          ),
+          SizedBox(width: vars.spacing2),
+          Text('Native menus', style: vars.titleMedium),
+          SizedBox(width: vars.spacing2),
+          Expanded(
+            child: Text(
+              'nativeapi Menu · MenuItem · ContextMenuRegion',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: vars.muted,
             ),
           ),
-
-          // Right side - Event history
-          Expanded(
-            flex: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerLow,
-                border: Border(left: BorderSide(color: colors.outlineVariant)),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      border: Border(
-                        bottom: BorderSide(color: colors.outlineVariant),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.history, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Event History (${_eventHistory.length})',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: _eventHistory.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No events yet\nInteract with menus to see events',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _eventHistory.length,
-                            padding: const EdgeInsets.all(8),
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 4),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surface,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: colors.outlineVariant,
-                                  ),
-                                ),
-                                child: Text(
-                                  _eventHistory[index],
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
+          Tooltip(
+            label: 'Clear Event History',
+            side: PopoverSide.bottom,
+            child: IconButton(
+              icon: const Icon(FluentIcons.delete_20_regular),
+              semanticsLabel: 'Clear Event History',
+              onPressed: _clearHistory,
             ),
           ),
         ],
@@ -1332,63 +957,394 @@ class _MenuExamplePageState extends State<MenuExamplePage> {
     );
   }
 
-  Widget _buildSectionCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
-            const Divider(height: 16),
-            ...children,
-          ],
+  /// The right-click target with the placement it opens the menu at, and
+  /// what the menu holds right now.
+  Widget _stage(ThemeVariables vars) {
+    return Padding(
+      padding: EdgeInsets.all(vars.spacing3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _region(vars)),
+              SizedBox(width: vars.spacing3),
+              _placementPad(vars),
+            ],
+          ),
+          SizedBox(height: vars.spacing3),
+          Row(
+            children: [
+              _readout(vars, 'Items', '$_menuItemCount'),
+              _readout(vars, 'Checkbox', '$_checkboxState'),
+              _readout(vars, 'Radio', _radioSelection),
+              _readout(
+                vars,
+                'Submenu',
+                _submenuItem.submenu == null
+                    ? 'detached'
+                    : '${_submenu.itemCount} entries',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _region(ThemeVariables vars) {
+    return ContextMenuRegion(
+      menu: _contextMenu,
+      placement: _selectedPlacement,
+      child: Container(
+        height: 136,
+        decoration: BoxDecoration(
+          color: vars.colorSurfaceSunken,
+          border: Border.all(color: vars.colorBorder),
+          borderRadius: BorderRadius.circular(vars.radiusMedium),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                FluentIcons.cursor_click_24_regular,
+                size: vars.iconLarge * 1.5,
+                color: vars.colorPrimary.shade600,
+              ),
+              SizedBox(height: vars.spacing2),
+              Text('Right-click here', style: vars.titleSmall),
+              SizedBox(height: vars.spacing05),
+              Text('opens the native context menu', style: vars.muted),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+  /// Where the menu goes relative to the click point: a two-by-four pad, so
+  /// each choice sits on a line of its own side.
+  Widget _placementPad(ThemeVariables vars) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Placement'),
+        SizedBox(height: vars.spacing1),
+        for (var i = 0; i < _placements.length; i += 2)
+          Padding(
+            padding: EdgeInsets.only(bottom: vars.spacing1),
+            child: Row(
+              children: [
+                for (final (value, label) in _placements.sublist(i, i + 2))
+                  Padding(
+                    padding: EdgeInsets.only(right: vars.spacing1),
+                    child: SizedBox(
+                      width: 100,
+                      child: OptionChip(
+                        label: label,
+                        selected: value == _selectedPlacement,
+                        onTap: () => _setPlacement(value),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// A label with its value right under it, as the tests read them.
+  Widget _readout(ThemeVariables vars, String label, String value) {
+    return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(label, style: vars.muted),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: vars.titleSmall,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCompactButton(
-    IconData icon,
-    String label,
-    VoidCallback onPressed,
-  ) {
-    return SizedBox(
-      height: 36,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 16),
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: const Size(0, 36),
-        ),
+  List<Widget> _editRows() {
+    return [
+      OptionRow(
+        label: 'Add',
+        children: [
+          ActionChip(label: 'Add Item', onTap: _addNewMenuItem),
+          ActionChip(
+            label: 'Insert at Pos 2',
+            onTap: _insertMenuItemAtPosition,
+          ),
+          ActionChip(
+            label: 'Insert Separator',
+            onTap: _insertSeparatorAtPosition,
+          ),
+        ],
       ),
+      OptionRow(
+        label: 'Remove',
+        children: [
+          ActionChip(label: 'Remove First', onTap: _removeFirstMenuItem),
+          ActionChip(
+            label: 'Remove at Pos 2',
+            onTap: _removeMenuItemAtPosition,
+          ),
+          ActionChip(label: 'Remove Last', onTap: _removeLastMenuItem),
+        ],
+      ),
+      OptionRow(
+        label: 'Properties',
+        children: [
+          ActionChip(label: 'Update Label', onTap: _changeDynamicLabel),
+          ActionChip(label: 'Checkbox Mixed', onTap: _setCheckboxMixed),
+          const Hint('label and checkbox state'),
+        ],
+      ),
+      OptionRow(
+        label: 'Submenu',
+        children: [
+          ActionChip(label: 'Add Submenu Item', onTap: _addSubmenuItem),
+          // Pressed again, it attaches the submenu back.
+          ActionChip(label: 'Detach Submenu', onTap: _toggleSubmenu),
+        ],
+      ),
+      OptionRow(
+        label: 'Icon',
+        children: [
+          ActionChip(label: 'Set Asset Icon', onTap: _setIconOnFirstItem),
+          ActionChip(label: 'Set Widget Icon', onTap: _setIconFromWidget),
+          ActionChip(label: 'Remove Icon', onTap: _removeIconFromFirstItem),
+          const Hint('on the first item'),
+        ],
+      ),
+      OptionRow(
+        label: 'Animate',
+        children: [
+          for (final (name, start) in [
+            ('Spinner', _startSpinnerAnimation),
+            ('Pulse', _startPulseAnimation),
+            ('Blink', _startBlinkAnimation),
+            ('Progress', _startProgressAnimation),
+            ('Wave', _startWaveAnimation),
+            ('Rotate', _startRotatingSquareAnimation),
+          ])
+            OptionChip(
+              label: name,
+              selected: _animation == name,
+              onTap: () => _animate(name, start),
+            ),
+          ActionChip(label: 'Stop', onTap: _animation == null ? null : _stop),
+        ],
+      ),
+      OptionRow(
+        label: 'Open at',
+        children: [
+          ActionChip(
+            label: 'Pos (100,100)',
+            onTap: () => _showMenuAtAbsolutePosition(const Offset(100, 100)),
+          ),
+          ActionChip(
+            label: 'Pos (300,200)',
+            onTap: () => _showMenuAtAbsolutePosition(const Offset(300, 200)),
+          ),
+          ActionChip(label: 'At Cursor', onTap: _showMenuAtCursorPosition),
+          const Hint('the positioning menu'),
+        ],
+      ),
+      OptionRow(
+        label: 'Edges',
+        children: [
+          ActionChip(
+            label: 'Top-Left Edge',
+            onTap: () {
+              _showMenuAtAbsolutePosition(const Offset(10, 10));
+              _addToHistory('Testing menu near screen edge (top-left)');
+            },
+          ),
+          ActionChip(
+            label: 'Bottom-Right Edge',
+            onTap: () {
+              _showMenuAtAbsolutePosition(const Offset(1500, 900));
+              _addToHistory('Testing menu near screen edge (bottom-right)');
+            },
+          ),
+          const Hint('kept on screen'),
+        ],
+      ),
+      OptionRow(
+        label: 'Stress',
+        children: [
+          ActionChip(
+            label: 'Add 10 Items',
+            onTap: () {
+              for (int i = 0; i < 10; i++) {
+                _addNewMenuItem();
+              }
+            },
+          ),
+          ActionChip(
+            label: 'Rapid Open/Close',
+            onTap: () {
+              for (int i = 0; i < 5; i++) {
+                _showMenuAtAbsolutePosition(
+                  Offset(100.0 + i * 50, 100.0 + i * 50),
+                );
+                Future.delayed(
+                  const Duration(milliseconds: 100),
+                  () => _contextMenu.close(),
+                );
+              }
+            },
+          ),
+          // Issue #4: checked / disabled states on Windows.
+          ActionChip(
+            label: 'Bug #4 (Win)',
+            onTap: () => _openBugReproMenu(const Offset(200, 200)),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Backend and theme on top, the event history under them.
+  Widget _sidePanel(ThemeVariables vars) {
+    return ColoredBox(
+      color: vars.colorSurfaceSunken,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(vars.spacing3),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _choice(
+                        vars,
+                        'Backend',
+                        RadioGroup<MenuBackend>(
+                          size: WidgetSize.small,
+                          spacing: vars.spacing15,
+                          options: [
+                            for (final backend in MenuBackend.values)
+                              RadioItem(
+                                value: backend,
+                                enabled: Menu.isBackendSupported(backend),
+                                label: Text(
+                                  backend == MenuBackend.winUi3
+                                      ? 'WinUI 3'
+                                      : 'Native',
+                                ),
+                              ),
+                          ],
+                          value: _contextMenu.backend,
+                          onChanged: _setBackend,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: _choice(
+                        vars,
+                        'Theme',
+                        RadioGroup<ThemeChoice>(
+                          size: WidgetSize.small,
+                          spacing: vars.spacing15,
+                          options: const [
+                            RadioItem(
+                              value: ThemeChoice.system,
+                              label: Text('System'),
+                            ),
+                            RadioItem(
+                              value: ThemeChoice.light,
+                              label: Text('Light'),
+                            ),
+                            RadioItem(
+                              value: ThemeChoice.dark,
+                              label: Text('Dark'),
+                            ),
+                          ],
+                          value: widget.theme,
+                          onChanged: _setTheme,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: vars.spacing2),
+                const Hint('Open a menu to preview the selected theme.'),
+              ],
+            ),
+          ),
+          const Divider(),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: vars.spacing3,
+              vertical: vars.spacing2,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.history_20_regular,
+                  size: vars.iconMedium,
+                  color: vars.colorContentMuted,
+                ),
+                SizedBox(width: vars.spacing2),
+                Text(
+                  'Event History (${_eventHistory.length})',
+                  style: vars.titleSmall,
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: _eventHistory.isEmpty
+                ? Center(
+                    child: Text(
+                      'No events yet\nInteract with menus to see events',
+                      textAlign: TextAlign.center,
+                      style: vars.muted,
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _eventHistory.length,
+                    padding: EdgeInsets.all(vars.spacing3),
+                    itemBuilder: (context, index) => Padding(
+                      padding: EdgeInsets.only(bottom: vars.spacing1),
+                      child: Text(
+                        _eventHistory[index],
+                        style: index == 0
+                            ? vars.mono.copyWith(color: vars.colorContent)
+                            : vars.mono,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _choice(ThemeVariables vars, String label, Widget group) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(label),
+        SizedBox(height: vars.spacing15),
+        group,
+      ],
     );
   }
 

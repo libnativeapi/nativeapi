@@ -30,7 +30,7 @@ flutter run -d macos   # or windows, linux
   windows" there is.
 - **Detach toolbar** makes the pill an independent window again; **Hide toolbar** hides
   it, and moving the main window does not bring it back.
-- The log shows `WindowCreatedEvent` / `WindowClosedEvent` and the minimize / restore
+- The log band at the bottom shows `WindowCreatedEvent` / `WindowClosedEvent` and the minimize / restore
   pair as they arrive.
 
 ## How it works
@@ -42,8 +42,10 @@ flutter run -d macos   # or windows, linux
 3. The toolbar window is dressed from Dart: `titleBarStyle = hidden` (which
    takes the window buttons with it), `backgroundColor = transparent`,
    `hasShadow = false`, `isResizable = false`, `isMovable = false`,
-   `isVisibleInTaskbar = false`. The widget tree above it paints nothing opaque
-   (`MaterialApp.color` and `Scaffold.backgroundColor` are transparent).
+   `isVisibleInTaskbar = false`. The widget tree above it paints nothing opaque:
+   the main window uses the examples' shared DazzUI `Host`, but the toolbar gets
+   a bare `WidgetsApp` with the DazzUI theme over it, since `Host` paints the
+   canvas colour under everything.
 4. `toolbar.setParentWindow(main)` makes it a child window: it stays above the main
    window and hides while the main window is minimized.
 5. A `WindowManager` listener re-centres the toolbar on the main window's

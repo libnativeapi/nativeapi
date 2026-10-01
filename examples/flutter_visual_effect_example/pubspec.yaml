@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # DazzUI plus the host every example shares (the WidgetsApp, the theme, the chips).
+  dazzui_host:
+    path: ../flutter_dazzui_host
   nativeapi_flutter:
     path: ../../bindings/dart/nativeapi_flutter
 

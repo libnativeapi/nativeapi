@@ -1,80 +1,33 @@
-import 'package:dazzui/dazzui.dart';
-import 'package:flutter/cupertino.dart' show DefaultCupertinoLocalizations;
+import 'package:dazzui_host/dazzui_host.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart'
     show SizeToNative, WindowManager;
 
-import 'omarchy_theme.dart';
 import 'tabs/animate_tab.dart';
 import 'tabs/checklist_tab.dart';
 import 'tabs/properties_tab.dart';
 import 'tray_controller.dart';
-import 'widgets/event_footer.dart';
 import 'widgets/live_preview.dart';
-import 'widgets/option_chip.dart';
 
-// The example is drawn with DazzUI (package:dazzui) over WidgetsApp — no
-// material — so everything on screen is a few dozen lines you can read here.
+// The example is drawn with DazzUI over the shared host (dazzui_host: the
+// WidgetsApp, the theme, the chips), so everything on screen is a few dozen
+// lines you can read here.
 //
 //   tray_controller.dart   every TrayIcon / TrayManager call, scenes, events
 //   icon_animator.dart     canvas or widget → PNG → TrayIcon.icon, per frame
 //   icon_animations.dart   what the frames look like
 //   context_menu.dart      the tray menu
 //   checklist.dart         the acceptance checklist
-//   omarchy_theme.dart     on Omarchy, the desktop's palette as the theme
 
 void main() {
   runApp(const TrayIconExampleApp());
 }
 
-class TrayIconExampleApp extends StatefulWidget {
+class TrayIconExampleApp extends StatelessWidget {
   const TrayIconExampleApp({super.key});
 
   @override
-  State<TrayIconExampleApp> createState() => _TrayIconExampleAppState();
-}
-
-class _TrayIconExampleAppState extends State<TrayIconExampleApp> {
-  // On Omarchy the window wears the desktop's theme and follows a switch;
-  // elsewhere it is the design system's own, by platform brightness.
-  final OmarchyTheme? _omarchy = OmarchyTheme.start();
-
-  @override
-  void dispose() {
-    _omarchy?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return WidgetsApp(
-      title: 'Tray icon example',
-      color: themeVariables.colorCanvas,
-      debugShowCheckedModeBanner: false,
-      // The kit's text field is a cupertino one underneath and asks these for
-      // the word on its clear button.
-      localizationsDelegates: const [DefaultCupertinoLocalizations.delegate],
-      pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) =>
-          PageRouteBuilder<T>(
-            settings: settings,
-            pageBuilder: (context, _, _) => builder(context),
-          ),
-      // The theme sits above the navigator so a dialog is drawn in it too.
-      builder: (context, child) {
-        final system =
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark
-            ? ThemeData.studioDark()
-            : ThemeData.studioLight();
-        final omarchy = _omarchy;
-        if (omarchy == null) return Theme(data: system, child: child!);
-        return ListenableBuilder(
-          listenable: omarchy,
-          builder: (context, _) =>
-              Theme(data: omarchy.data ?? system, child: child!),
-        );
-      },
-      home: const Shell(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const Host(title: 'Tray icon example', home: Shell());
 }
 
 enum _Tab { animate, properties, checklist }
@@ -138,8 +91,11 @@ class _ShellState extends State<Shell> {
                 ),
               },
             ),
-            const Divider(),
-            EventFooter(controller: _controller),
+            EventFooter(
+              headline: _controller.lastEvent,
+              lines: _controller.log,
+              onClear: _controller.clearLog,
+            ),
           ],
         ),
       ),

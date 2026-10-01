@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:nativeapi_flutter/nativeapi_flutter.dart';
+import 'package:dazzui_host/dazzui_host.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    show LaunchAtLogin, SizeToNative, WindowManager;
 
 void main() {
   runApp(const LaunchAtLoginExampleApp());
@@ -10,17 +11,14 @@ class LaunchAtLoginExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const Host(
       title: 'LaunchAtLogin Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7C3AED)),
-        useMaterial3: true,
-      ),
-      home: const LaunchAtLoginExamplePage(),
+      home: LaunchAtLoginExamplePage(),
     );
   }
 }
 
+/// Header with the state badges, one settings column, the call log.
 class LaunchAtLoginExamplePage extends StatefulWidget {
   const LaunchAtLoginExamplePage({super.key});
 
@@ -48,11 +46,22 @@ class _LaunchAtLoginExamplePageState extends State<LaunchAtLoginExamplePage> {
   String _currentExecutablePath = '';
   String _currentArguments = '';
 
+  // What the calls answered, newest first.
+  String _lastEvent = 'No calls yet';
+  final List<String> _log = [];
+
   @override
   void initState() {
     super.initState();
     _launchAtLogin = LaunchAtLogin.create()!;
     _refreshState();
+    // A compact settings panel rather than the runner's default 800×600.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WindowManager.instance.getCurrent()?.contentSize = const Size(
+        460,
+        640,
+      ).toNative();
+    });
   }
 
   @override
@@ -87,27 +96,33 @@ class _LaunchAtLoginExamplePageState extends State<LaunchAtLoginExamplePage> {
     });
   }
 
+  void _refreshPressed() {
+    _refreshState();
+    _report(_status, 'isEnabled → $_isEnabled');
+  }
+
   Future<void> _setDisplayName() async {
     final name = _displayNameController.text.trim();
     if (name.isEmpty) {
-      _showSnackBar('Display name cannot be empty.');
+      _report('Display name cannot be empty.');
       return;
     }
     setState(() => _isBusy = true);
     final success = _launchAtLogin.setDisplayName(name);
     setState(() => _isBusy = false);
+    final call = 'setDisplayName("$name") → $success';
     if (success) {
-      _showSnackBar('Display name updated.');
+      _report('Display name updated.', call);
       _refreshState();
     } else {
-      _showSnackBar('Failed to set display name.');
+      _report('Failed to set display name.', call);
     }
   }
 
   Future<void> _setProgram() async {
     final path = _executablePathController.text.trim();
     if (path.isEmpty) {
-      _showSnackBar('Executable path cannot be empty.');
+      _report('Executable path cannot be empty.');
       return;
     }
     final args = _argumentsController.text.trim();
@@ -115,11 +130,12 @@ class _LaunchAtLoginExamplePageState extends State<LaunchAtLoginExamplePage> {
     setState(() => _isBusy = true);
     final success = _launchAtLogin.setProgram(path, argsList);
     setState(() => _isBusy = false);
+    final call = 'setProgram("$path", $argsList) → $success';
     if (success) {
-      _showSnackBar('Program configured.');
+      _report('Program configured.', call);
       _refreshState();
     } else {
-      _showSnackBar('Failed to set program.');
+      _report('Failed to set program.', call);
     }
   }
 
@@ -127,223 +143,222 @@ class _LaunchAtLoginExamplePageState extends State<LaunchAtLoginExamplePage> {
     setState(() => _isBusy = true);
     final success = enable ? _launchAtLogin.enable() : _launchAtLogin.disable();
     setState(() => _isBusy = false);
+    final call = '${enable ? 'enable' : 'disable'}() → $success';
     if (success) {
-      _showSnackBar(
+      _report(
         enable ? 'Launch-at-login enabled.' : 'Launch-at-login disabled.',
+        call,
       );
       _refreshState();
     } else {
-      _showSnackBar('Operation failed.');
+      _report('Operation failed.', call);
     }
   }
 
-  void _showSnackBar(String message) {
+  /// Puts [message] in the footer's headline and [call] (or the message) on
+  /// top of its log.
+  void _report(String message, [String? call]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    setState(() {
+      _lastEvent = message;
+      _log.insert(0, call ?? message);
+      if (_log.length > 50) _log.removeLast();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('LaunchAtLogin Example')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text('Manage launch-at-login', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(
-            'Use the LaunchAtLogin API to register your app to launch automatically at user login.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 24),
-
-          // Status card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final vars = context.vars;
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(vars.spacing4),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Preferences(
                 children: [
-                  Text('Status', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  _InfoRow(label: 'Supported', value: _isSupported.toString()),
-                  if (_isSupported) ...[
-                    const SizedBox(height: 8),
-                    _InfoRow(label: 'Status', value: _status),
-                    const SizedBox(height: 8),
-                    _InfoRow(label: 'ID', value: _currentId),
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      label: 'Display name',
-                      value: _currentDisplayName.isNotEmpty
-                          ? _currentDisplayName
-                          : '(not set)',
-                    ),
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      label: 'Executable path',
-                      value: _currentExecutablePath.isNotEmpty
-                          ? _currentExecutablePath
-                          : '(not set)',
-                    ),
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      label: 'Arguments',
-                      value: _currentArguments.isNotEmpty
-                          ? _currentArguments
-                          : '(none)',
-                    ),
-                  ],
+                  PreferenceGroup(
+                    title: 'LaunchAtLogin Example',
+                    description:
+                        'Register this app to start when the user logs in.',
+                    action: _stateBadges(vars),
+                    children: _isSupported ? _sections(vars) : [_unsupported()],
+                  ),
                 ],
               ),
             ),
           ),
-          if (_isSupported) ...[
-            const SizedBox(height: 24),
-
-            // Enable / Disable toggle
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Enable / Disable',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: _isBusy || _isEnabled
-                                ? null
-                                : () => _toggleEnabled(true),
-                            child: const Text('Enable'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: _isBusy || !_isEnabled
-                                ? null
-                                : () => _toggleEnabled(false),
-                            child: const Text('Disable'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Configure display name
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Display Name', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _displayNameController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Display name',
-                        hintText: 'My Application',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.tonal(
-                      onPressed: _isBusy ? null : _setDisplayName,
-                      child: const Text('Set display name'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Configure program
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Program Configuration',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _executablePathController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Executable path',
-                        hintText: '/usr/bin/myapp',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _argumentsController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Arguments (space-separated)',
-                        hintText: '--flag1 --flag2',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.tonal(
-                      onPressed: _isBusy ? null : _setProgram,
-                      child: const Text('Set program'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Refresh
-            Center(
-              child: FilledButton.icon(
-                onPressed: _isBusy ? null : _refreshState,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh state'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
-        SelectableText(value, style: theme.textTheme.bodyMedium),
+        ),
+        EventFooter(
+          headline: _lastEvent,
+          lines: _log,
+          onClear: _log.isEmpty
+              ? null
+              : () => setState(() {
+                  _log.clear();
+                  _lastEvent = 'No calls yet';
+                }),
+        ),
       ],
     );
+  }
+
+  Widget _stateBadges(ThemeVariables vars) {
+    Widget badge(String label, BadgeTint tint) => Badge(
+      size: WidgetSize.small,
+      variant: BadgeVariant.tinted,
+      tint: tint,
+      child: Text(label),
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: vars.spacing1,
+      children: [
+        badge(
+          _isSupported ? 'Supported' : 'Not supported',
+          _isSupported ? BadgeTint.success : BadgeTint.danger,
+        ),
+        if (_isSupported)
+          badge(
+            _isEnabled ? 'Enabled' : 'Disabled',
+            _isEnabled ? BadgeTint.primary : BadgeTint.neutral,
+          ),
+        Tooltip(
+          label: 'Refresh state',
+          child: IconButton(
+            icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
+            semanticsLabel: 'Refresh state',
+            onPressed: _isBusy ? null : _refreshPressed,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _unsupported() {
+    return Callout(
+      tint: CalloutTint.warning,
+      title: const Text('Not supported'),
+      message: Text(_status),
+    );
+  }
+
+  List<Widget> _sections(ThemeVariables vars) {
+    final value = vars.mono.copyWith(color: vars.colorContent);
+    Widget readBack(String label, String text) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 96, child: Text(label, style: vars.muted)),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: value,
+          ),
+        ),
+      ],
+    );
+
+    return [
+      PreferenceSection(
+        label: 'Login item',
+        children: [
+          PreferenceRow(
+            title: 'Launch at login',
+            subtitle: _status,
+            trailing: Switch(
+              value: _isEnabled,
+              onChanged: _isBusy ? null : _toggleEnabled,
+            ),
+          ),
+        ],
+      ),
+      PreferenceSection(
+        label: 'Registered as',
+        children: [
+          Card(
+            variant: CardVariant.sunken,
+            size: WidgetSize.small,
+            child: Column(
+              spacing: vars.spacing1,
+              children: [
+                readBack('ID', _currentId),
+                readBack(
+                  'Display name',
+                  _currentDisplayName.isNotEmpty
+                      ? _currentDisplayName
+                      : '(not set)',
+                ),
+                readBack(
+                  'Executable path',
+                  _currentExecutablePath.isNotEmpty
+                      ? _currentExecutablePath
+                      : '(not set)',
+                ),
+                readBack(
+                  'Arguments',
+                  _currentArguments.isNotEmpty ? _currentArguments : '(none)',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      PreferenceSection(
+        label: 'Display name',
+        children: [
+          Row(
+            spacing: vars.spacing2,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _displayNameController,
+                  placeholder: 'My Application',
+                  onSubmitted: (_) => _setDisplayName(),
+                ),
+              ),
+              Button(
+                variant: ButtonVariant.normal,
+                tint: ButtonTint.neutral,
+                onPressed: _isBusy ? null : _setDisplayName,
+                child: const Text('Set display name'),
+              ),
+            ],
+          ),
+        ],
+      ),
+      PreferenceSection(
+        label: 'Program',
+        children: [
+          FormField(
+            label: 'Executable path',
+            child: TextField(
+              controller: _executablePathController,
+              placeholder: '/usr/bin/myapp',
+              mono: true,
+            ),
+          ),
+          FormField(
+            label: 'Arguments (space-separated)',
+            child: TextField(
+              controller: _argumentsController,
+              placeholder: '--flag1 --flag2',
+              mono: true,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Button(
+              variant: ButtonVariant.filled,
+              onPressed: _isBusy ? null : _setProgram,
+              child: const Text('Set program'),
+            ),
+          ),
+        ],
+      ),
+    ];
   }
 }

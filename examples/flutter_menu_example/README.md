@@ -34,7 +34,7 @@ A comprehensive Flutter application demonstrating all menu functionality provide
 - ✅ Dynamically change icons
 - ✅ Remove icons and restore normal display
 - ✅ Load icons from Flutter assets
-- ✅ Convert Material Icons to native menu icons
+- ✅ Convert icon-font glyphs (Fluent icons here) to native menu icons
 - ✅ **Animated Icons** - Create pixel-perfect animated icons using canvas
   - Spinner animation (rotating loader)
   - Pulse animation (expanding/contracting circle)
@@ -111,54 +111,36 @@ A comprehensive Flutter application demonstrating all menu functionality provide
 
 ## UI Layout
 
-The application is divided into two main sections:
+The window is drawn with the [DazzUI](https://github.com/dazzlabs/dazzui) design
+system through the shared `dazzui_host` package (`examples/flutter_dazzui_host`):
+no Material, no Cupertino. Every menu it opens is a native one (NSMenu, Win32 or
+WinUI 3, GTK); only the window around them is Flutter.
 
-### Left Panel - Test Controls
-Contains multiple test sections organized in cards:
-
-1. **Context Menu Demo**
-   - Shows current menu state (item count, checkbox/radio states)
-   - Placement selector for choosing menu placement strategy
-   - Context menu region for right-click testing
-
-2. **Item Management**
-   - Add Item: adds new menu item at the end
-   - Insert at Pos 2: inserts item at specific position
-   - Insert Separator: adds visual divider
-   - Remove First / Remove at Pos 2 / Remove Last: removes items
-
-3. **Item Properties**
-   - Update Label: changes menu item label dynamically
-   - Checkbox Mixed: sets checkbox to indeterminate state
-   - Add Submenu Item: adds item to submenu
-   - Detach Submenu: toggles submenu attachment
-
-4. **Icon Management**
-   - Set Asset Icon: loads icon from asset file
-   - Set Widget Icon: converts Flutter Icon to native icon
-   - Remove Icon: removes icon from menu item
-
-5. **Positioning**
-   - Pos (100,100) / Pos (300,200): absolute positioning at specific coordinates
-   - At Cursor: displays menu at current mouse position
-
-6. **Test Cases**
-   - Add 10 Items: adds multiple items at once
-   - Rapid Open/Close: tests stability with fast operations
-   - Top-Left Edge / Bottom-Right Edge: tests boundary handling
-
-### Right Panel - Event History
-- Real-time event log with timestamps
-- Shows all menu and menu item events
-- Displays event IDs for verification
-- Scrollable history (keeps last 50 events)
-- Clear button in app bar
+- **Toolbar** — the title and a button that clears the event history.
+- **Stage** (left, top) — the sunken **Right-click here** region
+  (`ContextMenuRegion`), the **Placement** pad (Top / Bottom / Left / Right ×
+  Start / End), and the read-outs **Items**, **Checkbox**, **Radio** and
+  **Submenu**.
+- **Rows of chips** (left) — one labelled row each:
+  - **Add**: Add Item, Insert at Pos 2, Insert Separator
+  - **Remove**: Remove First, Remove at Pos 2, Remove Last
+  - **Properties**: Update Label, Checkbox Mixed
+  - **Submenu**: Add Submenu Item, Detach Submenu (press again to attach it back)
+  - **Icon**: Set Asset Icon, Set Widget Icon, Remove Icon
+  - **Animate**: Spinner, Pulse, Blink, Progress, Wave, Rotate, Stop
+  - **Open at**: Pos (100,100), Pos (300,200), At Cursor (the positioning menu)
+  - **Edges**: Top-Left Edge, Bottom-Right Edge
+  - **Stress**: Add 10 Items, Rapid Open/Close, Bug #4 (Win)
+- **Side panel** (right) — the menu **Backend** (Native / WinUI 3, where
+  supported) and **Theme** (System / Light / Dark: applied to the native menus
+  with `Application.setBrightness` and to the window), then the **Event
+  History**: timestamped, newest first, the last 50 events.
 
 ## How to Run
 
 ```bash
 # Navigate to the example directory
-cd examples/menu_example
+cd examples/flutter_menu_example
 
 # Get dependencies
 flutter pub get
@@ -176,7 +158,7 @@ flutter run -d linux
 ## Testing Guide
 
 ### Basic Testing
-1. **Right-click** on the blue context menu region
+1. **Right-click** the "Right-click here" region
 2. Verify all menu item types display correctly
 3. Click different items and observe events in the history
 
@@ -202,12 +184,12 @@ flutter run -d linux
 ### Icon Management Testing
 1. Click **Set Asset Icon** - first menu item displays icon from asset file
 2. Right-click the context menu region to verify icon appears
-3. Click **Set Widget Icon** - first menu item displays a star icon (converted from Material Icons)
+3. Click **Set Widget Icon** - first menu item displays a star icon (a Fluent icon glyph)
 4. Right-click to verify the widget-based icon appears
 5. Click **Remove Icon** - icon should disappear
 6. Right-click again to verify icon is removed
 
-**Note:** The "Set Widget Icon" feature demonstrates converting Flutter's Material Icons to native menu icons using base64 encoding.
+**Note:** The "Set Widget Icon" feature demonstrates converting a Flutter icon font glyph to a native menu icon using base64 encoding.
 
 ### Animated Icons Testing
 1. Click **Spinner** - first menu item displays a rotating spinner animation
@@ -228,7 +210,7 @@ flutter run -d linux
 3. Click **At Cursor** - menu appears at mouse location
 
 ### Placement Testing
-1. Click each placement button (topStart, bottomEnd, etc.)
+1. Pick each placement in the Placement pad (Top Start, Bottom End, etc.)
 2. Verify menu appears in correct position relative to anchor point
 3. Test near screen edges to verify auto-adjustment
 
@@ -273,12 +255,12 @@ flutter run -d linux
 
 ### Icon Conversion from Flutter Widgets
 
-The example demonstrates converting Flutter Icon widgets (like Material Icons) to native menu icons:
+The example demonstrates converting Flutter `IconData` glyphs (here a Fluent icon) to native menu icons:
 
 ```dart
 Future<Image?> _iconToImage(IconData iconData, {
   double size = 24.0,
-  Color color = Colors.black,
+  required Color color,
 }) async {
   // 1. Create a picture recorder to draw the icon
   final recorder = ui.PictureRecorder();
@@ -311,7 +293,7 @@ Future<Image?> _iconToImage(IconData iconData, {
 }
 ```
 
-This allows you to use any Flutter Icon (Material Icons, Cupertino Icons, custom icon fonts) as native menu icons.
+This allows you to use any icon font glyph (Fluent icons, Material Icons, custom icon fonts) as native menu icons.
 
 ### Using Animated Icons
 
@@ -323,7 +305,7 @@ import 'animated_icon_generator.dart';
 // Create an animated icon generator with high DPI support
 final generator = AnimatedIconGenerator(
   size: 32,  // Higher resolution for better quality
-  foregroundColor: Colors.blue,
+  foregroundColor: const Color(0xFF2196F3), // the example passes the theme's accent
 );
 
 // Create a menu item
@@ -382,7 +364,7 @@ The animations are generated using Flutter's Canvas API and converted to native 
 ## Troubleshooting
 
 ### Menu doesn't appear
-- Ensure you're right-clicking on the blue region
+- Ensure you're right-clicking the "Right-click here" region
 - Try using the button-based menu triggers
 - Check event history for error messages
 
@@ -400,7 +382,7 @@ The animations are generated using Flutter's Canvas API and converted to native 
 
 ```
 main.dart
-├── MyApp - Root application widget
+├── MenuExampleApp - Root: the DazzUI host, and the theme choice
 └── MenuExamplePage - Main example page
     ├── _loadTestIcon() - Loads test icon from assets
     ├── _iconToImage() - Converts Flutter Icon widget to base64 image
@@ -426,14 +408,11 @@ main.dart
     ├── Positioning Methods
     │   ├── _showMenuAtAbsolutePosition() - Shows menu at absolute coordinates
     │   └── _showMenuAtCursorPosition() - Shows menu at cursor position
-    └── UI Sections
-        ├── Context Menu Demo
-        ├── Item Management
-        ├── Item Properties
-        ├── Icon Management
-        ├── Positioning
-        ├── Test Cases
-        └── Event History Panel
+    └── UI (build)
+        ├── _toolbar() - Title and Clear
+        ├── _stage() - Right-click region, placement pad, read-outs
+        ├── _editRows() - The rows of chips
+        └── _sidePanel() - Backend, theme, event history
 ```
 
 ## Related Documentation
