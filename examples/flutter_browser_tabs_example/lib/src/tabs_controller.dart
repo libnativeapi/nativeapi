@@ -131,7 +131,13 @@ class TabsController extends ChangeNotifier {
     // is a title bar the content has taken in; elsewhere the strip carries its own
     // close button and the title bar goes away with its buttons.
     if (native != null) {
-      if (!native.setContentUnderTitleBar(true)) {
+      if (native.setContentUnderTitleBar(true)) {
+        // macOS still moves the window for any press in the title bar band
+        // (the top 28 pt), tabs included, before Flutter sees it. The strip
+        // moves the window itself, so take that away from the system; with
+        // TitleBarStyle.hidden core already does.
+        native.isMovable = false;
+      } else {
         native.titleBarStyle = na.TitleBarStyle.hidden;
       }
       // Either way the frame is kept, so the content just grew into the title
