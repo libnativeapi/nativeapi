@@ -138,3 +138,69 @@ gdbus call --session -d org.gnome.Mutter.DisplayConfig \
   `~/.Xauthority` usually does not exist. `xdotool` would be the input driver there.
 - GTK needs `libgtk-3-dev` etc. for building core; Flutter needs `clang`, `ninja`,
   `pkg-config`.
+
+## Hyprland (the Omarchy laptop, `hosts/omarchy.env`; verified 2026-10-01)
+
+Hyprland 0.56.2 with the **Lua** config (`~/.config/hypr/hyprland.lua`, Omarchy 4), a
+quickshell bar (`/usr/share/omarchy/shell`) with its own StatusNotifierWatcher/Host, a
+1600×1000 logical desktop at scale 1.6. Differences from the GNOME host that cost time:
+
+- `desktop` works unchanged: the systemd user environment carries `WAYLAND_DISPLAY`,
+  `DISPLAY` and `HYPRLAND_INSTANCE_SIGNATURE`; `desktop.sh` exports the first two, so a
+  script sets `HYPRLAND_INSTANCE_SIGNATURE` itself (newest dir under
+  `$XDG_RUNTIME_DIR/hypr`) before calling `hyprctl`. In a bare `exec`, export
+  `XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-1` too, or `grim` says
+  "failed to create display".
+- **Dispatchers are Lua calls**: `hyprctl dispatch 'hl.dsp.cursor.move({ x = 700, y = 120 })'`,
+  `hyprctl dispatch 'hl.dsp.focus({ window = "address:0x..." })'`,
+  `hl.dsp.window.close({ window = ... })`. The classic `movecursor 700 120` /
+  `focuswindow address:...` strings fail with a Lua syntax error (exit 7). `hyprctl repl
+  '<lua>'` prints a return value, `hyprctl eval` does not; listing the keys of `hl.dsp`
+  and `hl.dsp.window` with `pairs` is the quickest way to see what this version has (the
+  wiki documents a newer one — `hl.dsp.window.focus` is not there yet, `hl.dsp.focus` is).
+- **Rules**: edit the config and `hyprctl reload`, then `hyprctl configerrors` (empty when
+  fine). A test appends one marked `require("hypr.<name>")` line to `hyprland.lua` with
+  the rule in `~/.config/hypr/<name>.lua`, and restores the backed-up file at the end;
+  `hl.window_rule({ match = { class = "..." }, ... })` is the global that always exists.
+  `move`/`size` expressions know `cursor_x`/`cursor_y`, `monitor_w/h`, `window_w/h`.
+- **Input**: no Mutter RemoteDesktop, `ydotool` absent, `/dev/uinput` root-only. Use the
+  gui-test kit's `wlpointer` (zwlr_virtual_pointer; `wayland-scanner`, `cc` and
+  `wayland-client` are on the host) for buttons, `hl.dsp.cursor.move` for position.
+- **Measuring**: `hyprctl -j clients` (class/initialClass, `at`, `size`, `floating`,
+  `pinned`, `mapped`, `focusHistoryID`), `hyprctl -j activewindow`, `hyprctl cursorpos`,
+  `hyprctl -j layers` (the bar: namespace `omarchy-bar`, 26 px high, reserved at the top).
+  All logical pixels. A hidden GTK window is unmapped, i.e. gone from `clients`.
+- **Screenshots**: `grim -g "x,y wxh"` with *logical* geometry; the PNG/PPM is physical
+  (`-g "0,0 1600x26"` → 2560×42). `-t ppm` is easy to parse without PIL/numpy, neither of
+  which is installed.
+- **Tray**: Omarchy's tray puts new StatusNotifierItems in a collapsed drawer (revealed on
+  hover of the chevron); the example's item id `nativeapi-tray` is pinned in
+  `~/.config/omarchy/shell.json` (`omarchy.tray` → `pinned`), so it is always visible at
+  the left end of the bar's right cluster (around x 1440 logical). Clicking a layer
+  surface does not take the keyboard focus from the window, so a click in the bar is not
+  a blur.
+- `pkill -f <pattern>` run through `ssh host '...'` matches the remote shell's own
+  command line when the pattern appears in it, and kills the session (exit 255). Put the
+  kill in a script file, or write the pattern so it does not match itself
+  (`bundle/tray_icon_exampl[e]`).
+- Omarchy's light themes (e.g. `lupine`, bar background #fafafa) swallow a white tray
+  icon: locate icons by diffing captures only once the app draws one in the theme's
+  foreground, and wait for a killed instance's item to leave the StatusNotifierWatcher
+  before the reference capture.
+- `foot` is the terminal to use as a helper window (`alacritty`/`kitty` absent); it
+  ignores SIGTERM from a non-tty parent, kill it with SIGKILL by pid — never `pkill foot`,
+  the user's terminals are foot too.
+- **Hyprland sends the four xdg `tiled` states to every toplevel**, floating ones
+  included (`src/protocols/XDGShell.cpp`, unconditional in 0.56.2). Consequences seen on
+  2026-10-01: a decorated GTK3 window maps with its CSD shadow margins
+  (`set_window_geometry(20, 20, w, h)`) and drops them one configure later, so Flutter
+  lays out twice and a popup visibly "grows in" (~150 ms after a ~150 ms click-to-map
+  latency); core's hidden-title-bar shadow (`window_shadow_linux.h`) takes the states
+  as "tiled", goes fitted, and the window stays inflated by the reserved margin
+  (400×640 content became a 664×904 window; fixed the same day: the gutter is decided
+  only once the compositor has answered, and the no-shadow CSS rule clears the theme's
+  decoration margin too - `core/tests/window_shadow_remap_linux_test.cpp`, run it
+  floating). Measure such things with `grim -t ppm`
+  bursts plus `WAYLAND_DEBUG=1` on the app (filter `set_window_geometry`,
+  `xdg_toplevel.configure`, `set_buffer_scale`, `attach`); `hyprctl keyword` does not
+  work with the Lua config ("Use eval"), so toggle nothing that way.

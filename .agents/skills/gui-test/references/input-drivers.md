@@ -141,3 +141,30 @@ idle_ms()                          # ms since the last real user input (GNOME id
   Wayland-native on top".
 - There is no equivalent of `Click-Desktop`: to blur, click a window of your own
   (`GuiApp.blur()` parks one in a corner for that).
+
+## Linux (Hyprland and other wlroots compositors)
+
+Mutter's RemoteDesktop does not exist here; what does is the wlroots virtual pointer
+protocol, which Hyprland, sway and the rest implement (GNOME does not).
+`scripts/linux/wlpointer.c` is a small client for it:
+
+```sh
+wayland-scanner client-header wlr-virtual-pointer-unstable-v1.xml wlr-virtual-pointer-client.h
+wayland-scanner private-code  wlr-virtual-pointer-unstable-v1.xml wlr-virtual-pointer.c
+cc -O1 -o wlpointer wlpointer.c wlr-virtual-pointer.c -lwayland-client
+
+wlpointer click [left|right|middle]      # press + release, 60 ms apart
+wlpointer press|release [button]
+wlpointer move X Y EXTENT_W EXTENT_H     # absolute motion, X/Y in 0..EXTENT
+```
+
+The button goes to whatever is under the real cursor, so position the cursor first —
+on Hyprland `hyprctl dispatch 'hl.dsp.cursor.move({ x = X, y = Y })'` (logical pixels;
+0.56+ with a Lua config only accepts dispatchers in this form, the old `movecursor X Y`
+is a syntax error) and read it back with `hyprctl cursorpos`. Owner checks: there is no
+"window at point" query, but `hyprctl -j clients` has every window's `at`/`size`
+(logical) and `hyprctl -j layers` the bar and other layer surfaces, which is enough to
+decide whether a point is on the app, on the bar, or on somebody else's window before
+pressing. `/dev/uinput` is root-only and `ydotool` is absent on Omarchy, so this is the
+only input path short of sudo. Verified 2026-10-01 on Hyprland 0.56.2 (Omarchy): a
+`click` in the quickshell bar's tray reached the StatusNotifierItem as `Activate`.

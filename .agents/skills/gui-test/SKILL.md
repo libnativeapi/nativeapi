@@ -163,6 +163,18 @@ Screenshots are for *you* to understand a failure, not for assertions.
 - Frames include the window manager's decorations; `app.title_bar_height()` is what to
   skip to press on the content (37 px on Ubuntu 24.04, not a constant to hard-code).
 
+**Linux (Hyprland / wlroots, e.g. the Omarchy laptop)** — no Mutter here, and no X11
+measuring needed: `hyprctl -j clients` gives every window's class, position, size,
+floating/pinned/focus state in logical pixels, `hyprctl cursorpos` the pointer. Move the
+pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x = .., y = .. })'` (0.56+ takes
+dispatchers in Lua form) and press with `scripts/linux/wlpointer` (built from
+`wlpointer.c` + the protocol XML in the kit, through `zwlr_virtual_pointer_manager_v1`;
+the button lands where the real cursor is). `grim -g "x,y wxh"` takes *logical*
+geometry and writes physical pixels. The bar is a layer surface (`hyprctl -j layers`);
+a tray icon has no geometry anywhere, diff two `grim` captures of the bar before and
+after the app registers its item to find it. Example:
+`tools/gui/flutter_tray_popup_test_hyprland.py`.
+
 **All three**
 
 - A cold debug start can take 10+ s; poll, do not sleep blindly.
