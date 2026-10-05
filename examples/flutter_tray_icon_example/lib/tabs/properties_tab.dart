@@ -119,6 +119,21 @@ class PropertiesTab extends StatelessWidget {
           ],
         ),
         OptionRow(
+          label: 'Popup',
+          children: [
+            OptionChip(
+              label: 'Off',
+              selected: !controller.popupMode,
+              onTap: () => controller.setPopupMode(false),
+            ),
+            OptionChip(
+              label: 'Click shows, blur hides',
+              selected: controller.popupMode,
+              onTap: () => controller.setPopupMode(true),
+            ),
+          ],
+        ),
+        OptionRow(
           label: 'Menu',
           children: [
             if (TrayController.openMenuSupported) ...[

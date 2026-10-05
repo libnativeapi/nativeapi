@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:dazzui_host/dazzui_host.dart' show OmarchyTheme;
 import 'package:flutter/widgets.dart';
 import 'package:nativeapi/nativeapi.dart' as na;
 import 'package:flutter/services.dart';
@@ -58,7 +59,15 @@ class TrayController extends ChangeNotifier {
     } else {
       checklist.fail(Checklist.supported, 'false');
     }
+    _omarchy = OmarchyTheme.start();
+    _omarchy?.addListener(_onThemeChanged);
     addIcon();
+    _windowListener = WindowManager.instance.addListener(_onWindowEvent);
+    if (_popupMode) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _applyPopupWindowStyle(),
+      );
+    }
     _sceneTimer = Timer.periodic(
       const Duration(milliseconds: 250),
       (_) => _driveScenes(),
@@ -81,6 +90,16 @@ class TrayController extends ChangeNotifier {
   MenuBackend get menuBackend => _menuBackend;
   MenuBackend _menuBackend = MenuBackend.native;
 
+  /// Popup behaviour, the way a tray utility has it: a click on the icon shows
+  /// the window (and hides it again), losing the focus hides it. `TRAY_POPUP=1`
+  /// in the environment turns it on from the start, for scripts. Where the
+  /// window ends up is the platform's business: on Wayland the app cannot place
+  /// it, a compositor rule can (see the example's README for Hyprland).
+  bool get popupMode => _popupMode;
+  bool _popupMode = Platform.environment['TRAY_POPUP'] == '1';
+  late final ListenerId _windowListener;
+  DateTime _popupHiddenAt = DateTime(0);
+
   int _nextNumber = 1;
   late final Timer _sceneTimer;
 
@@ -101,9 +120,14 @@ class TrayController extends ChangeNotifier {
   static bool get openMenuSupported => !Platform.isLinux;
 
   /// Icon colour when the user picks "Auto". On macOS that means a template
-  /// image, which the menu bar tints itself; elsewhere the tray is usually dark.
-  static Color get autoColor =>
-      Platform.isMacOS ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+  /// image, which the menu bar tints itself. On Omarchy it is the desktop
+  /// theme's foreground, light or dark, like the bar's own icons; elsewhere the
+  /// tray is usually dark, so white.
+  Color get autoColor => _autoColor;
+  Color _autoColor = Platform.isMacOS
+      ? const Color(0xFF000000)
+      : const Color(0xFFFFFFFF);
+  OmarchyTheme? _omarchy;
 
   // ---------------------------------------------------------------------
   // Icons
@@ -238,8 +262,32 @@ class TrayController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WindowManager.instance.removeListener(_windowListener);
+    _omarchy?.dispose();
     disposeIcons();
     super.dispose();
+  }
+
+  /// The desktop theme changed (or was first read): icons on the "Auto" colour
+  /// take its foreground. The asset still is a fixed white image, which a
+  /// light bar would swallow, so an icon showing it switches to the drawn one.
+  void _onThemeChanged() {
+    final foreground = _omarchy?.data?.vars.colorContent;
+    if (foreground == null || foreground == _autoColor) return;
+    final previous = _autoColor;
+    _autoColor = foreground;
+    for (final entry in entries) {
+      if (entry.animator.color != previous) continue;
+      entry.animator.setColor(foreground);
+      final still = entry.still;
+      if (still == StillIcon.asset) {
+        setStill(StillIcon.drawn, entry, true);
+      } else if (still != null) {
+        setStill(still, entry, true);
+      }
+    }
+    _log('auto colour ← ${_omarchy?.name ?? 'theme'} foreground');
+    notifyListeners();
   }
 
   void _refreshManager() {
@@ -529,6 +577,68 @@ class TrayController extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------
+  // Popup: click shows, blur hides
+  // ---------------------------------------------------------------------
+
+  void setPopupMode(bool on) {
+    if (_popupMode == on) return;
+    _popupMode = on;
+    _applyPopupWindowStyle();
+    _log('popup mode ← ${on ? 'on' : 'off'}');
+    notifyListeners();
+  }
+
+  /// A popup has no title bar. On Linux that also keeps every show a single
+  /// layout: a decorated GTK window maps with its CSD shadow margins and drops
+  /// them when the compositor's states arrive, and Flutter re-lays out at each
+  /// size - a visible "grow in". Without the header bar there is nothing to
+  /// drop.
+  void _applyPopupWindowStyle() {
+    final window = WindowManager.instance.getCurrent();
+    if (window == null) return;
+    window.titleBarStyle = _popupMode
+        ? TitleBarStyle.hidden
+        : TitleBarStyle.normal;
+  }
+
+  void _onWindowEvent(WindowEvent event) {
+    if (!_popupMode || event is! WindowBlurredEvent) return;
+    final window = WindowManager.instance.getCurrent();
+    if (window == null || event.windowId != window.id || !window.isVisible) {
+      return;
+    }
+    window.hide();
+    _popupHiddenAt = DateTime.now();
+    _popup('hidden (blur)');
+  }
+
+  /// A click on the icon shows the window, or hides it when it is showing. A
+  /// click that arrives right after a blur hid the window is the same gesture
+  /// (the press took the focus away first), so it leaves the window hidden.
+  void _togglePopup() {
+    final window = WindowManager.instance.getCurrent();
+    if (window == null) return;
+    if (window.isVisible) {
+      window.hide();
+      _popupHiddenAt = DateTime.now();
+      _popup('hidden (click)');
+    } else if (DateTime.now().difference(_popupHiddenAt) <
+        const Duration(milliseconds: 400)) {
+      _popup('stays hidden');
+    } else {
+      window.show();
+      window.focus();
+      _popup('shown');
+    }
+  }
+
+  // Also on stdout, where a script can read it without the UI probe.
+  void _popup(String what) {
+    _log('popup $what');
+    debugPrint('[popup] $what');
+  }
+
+  // ---------------------------------------------------------------------
   // Scenes: one click, a complete picture for the camera
   // ---------------------------------------------------------------------
 
@@ -612,6 +722,7 @@ class TrayController extends ChangeNotifier {
       checklist.count(Checklist.clicked);
       _noteTrayEvent(ContextMenuTrigger.clicked);
       _event('Clicked', entry);
+      if (_popupMode) _togglePopup();
     } else if (event is TrayIconRightClickedEvent) {
       entry.rightClicks++;
       checklist.count(Checklist.rightClicked);

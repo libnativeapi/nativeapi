@@ -53,7 +53,46 @@ What a platform cannot do is not offered, and its checklist items step aside:
 
 macOS shows tray images as 18 pt templates, so there the colour row only changes the
 preview's alpha shape and the menu bar picks the tint; resolution still matters (1x / 2x
-/ 3x pixels for the same 18 pt).
+/ 3x pixels for the same 18 pt). On Omarchy the *Auto* colour is the desktop theme's
+foreground, like the bar's own icons, and follows a theme switch; since the asset
+still is a fixed white image, an icon showing it switches to the drawn star there.
+
+## Popup mode
+
+*Properties → Popup* (or `TRAY_POPUP=1` in the environment) makes the window behave like
+a tray utility's: no title bar, a click on the icon shows it, a click while it shows
+hides it, and losing the focus hides it (`WindowBlurredEvent` → `hide()`). Every show is
+a fresh `show()` after a `hide()`, not a raise.
+
+Where the window appears is the platform's business. On macOS and Windows *Window to
+icon* places it next to the icon from `getBounds`. On Wayland the app can neither read
+the icon's position nor place its own window, so the compositor has to do it. On
+Hyprland (0.56+, Lua config) a window rule evaluated when the window maps does — the
+cursor is still on the icon at that moment:
+
+```lua
+-- ~/.config/hypr/hyprland.lua: right edge 20 px right of the click, top 20 px below it
+hl.window_rule({
+  match = { class = "^com\\.example\\.tray_icon_example$" },
+  float = true,
+  pin = true,
+  no_anim = true,
+  move = { "(cursor_x-window_w+20)", "(cursor_y+20)" },
+})
+```
+
+The example sizes the window itself (400 × 640), so the rule needs no `size`. Static
+rules run once per map, which is why popup mode hides the window instead of
+lowering it. `tools/gui/flutter_tray_popup_test_hyprland.py` installs this rule for a run
+and checks the whole sequence with a real click in Omarchy's bar.
+
+What it looks like there: about 150 ms from the click to the first frame, which is
+already the final layout. With a title bar it would re-lay out once more: Hyprland
+reports every toplevel as tiled and maximized, floating or not, so that it draws no
+client-side shadow, and GTK maps a decorated window with its CSD shadow margins first
+and drops them when those states arrive. Without the title bar core suppresses GTK's
+decoration margin as well, and never adds its own shadow gutter before the compositor
+has answered (`core/tests/window_shadow_remap_linux_test.cpp`).
 
 ## Files
 

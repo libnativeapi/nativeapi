@@ -71,6 +71,11 @@ class Checklist extends ChangeNotifier {
     CheckItem('m.still', 'Icon swaps: asset, drawn, base64', manual: true),
     CheckItem('m.animation', 'Tray animation matches preview', manual: true),
     CheckItem('m.three', 'Three icons animate at once', manual: true),
+    CheckItem(
+      'm.popup',
+      'Popup: a click shows the window, losing focus hides it',
+      manual: true,
+    ),
     if (!Platform.isWindows)
       CheckItem(
         'm.title',
