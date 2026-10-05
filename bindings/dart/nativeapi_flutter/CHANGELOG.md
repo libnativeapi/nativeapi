@@ -1,3 +1,9 @@
+## 0.4.1
+
+* Requires nativeapi 0.4.1.
+* `runNativeApp` is not re-exported: it is for plain Dart programs, and a
+  Flutter app's engine already runs the event loop.
+
 ## 0.4.0
 
 * Initial release. It re-exports `package:nativeapi`.

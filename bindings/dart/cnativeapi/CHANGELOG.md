@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.1
 
 * Event loop shim for plain Dart programs (`src/event_loop*`, bound in
   `lib/src/event_loop.dart`): `cnativeapi_run_ui_thread`,

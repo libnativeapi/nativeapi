@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.1
 
 * `TrayIcon.contentView`: any `View` in place of the icon and title, on macOS.
   The menu bar item is as wide as the view (its `preferredSize`, or what a Row
@@ -37,6 +37,15 @@
   and Linux whoever changes the state, on Windows for `Window.isFullScreen`.
 * Windows: setting `Window.titleBarStyle` on a full-screen window no longer
   puts a title bar on it; leaving full screen shows the title bar asked for.
+* Windows: a window with a hidden title bar keeps the system's frame (thin
+  border, shadow and rounded corners) instead of a classic-theme border on its
+  sides and bottom. Without a shadow, with a custom shadow or with a shape it
+  has no frame at all and resizes from every edge and corner, also through a
+  Flutter view that covers it, without the classic frame flickering in while
+  resizing. The content stays in place when the frame comes or goes.
+* Linux: a hidden title bar's shadow gutter no longer leaves an empty band
+  around the content, and no longer inflates the window on compositors that
+  report every window as tiled, such as Hyprland.
 
 ## 0.4.0
 
