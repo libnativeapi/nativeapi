@@ -1,13 +1,13 @@
 # libnativeapi workspace
 
-This is the workspace repo (`libnativeapi/nativeapi`, formerly `nativeapi-flutter` and `nativeapi-workspace`) for the [libnativeapi](https://github.com/libnativeapi) project family. Every binding (`bindings/dart/`, `bindings/rust/`, `bindings/csharp/`, `bindings/js/`, `bindings/python/`), the code generator (`tools/codegen/`), the `./codegen` script, the specs and the shared tooling live directly in this repo (the Rust and C# histories were merged in from `nativeapi-rust` and `nativeapi-csharp`); only `core/` is a git submodule of an independent repository. Work inside `core/` is committed and pushed from that subdirectory; everything else is committed here.
+This is the workspace repo (`libnativeapi/nativeapi`, formerly `nativeapi-flutter` and `nativeapi-workspace`) for the [libnativeapi](https://github.com/libnativeapi) project family. Every binding (`bindings/dart/`, `bindings/rust/`, `bindings/csharp/`, `bindings/js/`, `bindings/python/`), the code generator (`tools/codegen/`), the `./codegen` script, the specs and the shared tooling live directly in this repo (the Rust and C# histories were merged in from `nativeapi-rust` and `nativeapi-csharp`); only `core/` and `bindings/dart/tray_manager/` are git submodules of independent repositories. Work inside a submodule is committed and pushed from that subdirectory; everything else is committed here.
 
 ## Layout
 
 ```
 core/               # submodule: nativeapi-core — the C++ core library
 bindings/
-├── dart/           # the Dart binding: nativeapi/, cnativeapi/, nativeapi_flutter/
+├── dart/           # the Dart binding: nativeapi/, cnativeapi/, nativeapi_flutter/; tray_manager/ (submodule: leanflutter/tray_manager)
 ├── rust/           # the Rust binding: crates/{nativeapi,cnativeapi}
 ├── csharp/         # the C# binding: src/, tests/, NativeAPI.slnx
 ├── js/             # the JS/TS binding: a Node-API addon (src/) + TypeScript (lib/)
@@ -93,7 +93,7 @@ scenarios for *this project's* examples live in [tools/gui/](tools/gui/README.md
 ## Conventions
 
 - `core` tracks `branch = main`. Use `make sync` to fast-forward it; `make status` to see dirty state everywhere; `make bump` to stage its pointer.
-- The leanflutter packages built on nativeapi (`tray_manager`, `window_manager`, `launch_at_startup`, …) live in their own repos under github.com/leanflutter and depend on the published `nativeapi`; they are not part of this repo. To try one against local changes, point a `dependency_overrides` entry in that package at `bindings/dart/nativeapi_flutter` (and `nativeapi`, `cnativeapi`) and never commit the override.
+- The leanflutter packages built on nativeapi (`tray_manager`, `window_manager`, `launch_at_startup`, …) live in their own repos under github.com/leanflutter and depend on the published `nativeapi`. Only `tray_manager` rides along, as the submodule `bindings/dart/tray_manager` (tracking `main`); it is not a member of the root pub workspace, melos ignores it, and CI does not check it out. To try one against local changes, point a `dependency_overrides` entry in that package at `bindings/dart/nativeapi_flutter` (and `nativeapi`, `cnativeapi`) and never commit the override.
 - Commit workspace submodule pointer updates only when the combination is compatible (a known-good snapshot).
 - Examples live in `examples/<binding>_<name>_example` (`dart_` for plain Dart programs, `flutter_`, `rust_`, `csharp_`, `js_`, `python_`), not inside the bindings; a new Dart, Flutter or Rust example must also be listed in the root `pubspec.yaml` / `Cargo.toml`, a C# one in `bindings/csharp/NativeAPI.slnx`, a JS one in the root `package.json`. A Python example is a standalone uv project whose `pyproject.toml` points `nativeapi` at `../../bindings/python` (`uv run main.py` builds the wheel). Only the pub.dev package examples (`bindings/dart/*/example`) stay inside their package.
 - CI is one workflow per binding (`dart-ci.yml`, `rust-ci.yml`, `csharp-ci.yml`, `js-ci.yml`, `python-ci.yml`), each running only for changes under its `bindings/<lang>/` and its examples (`examples/dart_*` and `examples/flutter_*` for Dart, `examples/rust_*`, `examples/csharp_*`, `examples/js_*`, `examples/python_*`). Release tags are per binding: `v*` publishes the Dart packages (`dart-release.yml`), `rust-v*` publishes the crates (`rust-release.yml`), `python-v*` publishes the Python package to PyPI (`python-release.yml`: an sdist carrying core in `cxx_impl/`, and wheels built from it with cibuildwheel; the tag must equal `python-v` + the version in `bindings/python/pyproject.toml`); never push a bare `v*` tag for anything but the Dart packages. Nothing has been published to PyPI yet: the first release needs `nativeapi` set up on PyPI with this workflow and the `pypi` environment as a trusted publisher.

@@ -2,3 +2,7 @@
 	path = core
 	url = ../nativeapi-core.git
 	branch = main
+[submodule "bindings/dart/tray_manager"]
+	path = bindings/dart/tray_manager
+	url = git@github.com:leanflutter/tray_manager.git
+	branch = main

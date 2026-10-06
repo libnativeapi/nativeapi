@@ -38,6 +38,7 @@ melos:
     - examples/flutter_*
 
   ignore:
+    - "bindings/dart/tray_manager/**"
     - "**/build/**"
     - "**/.dart_tool/**"
     - "**/.symlinks/**"
