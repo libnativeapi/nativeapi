@@ -23,6 +23,13 @@ class TitleBarStyle(enum.IntEnum):
     HIDDEN = 1
 
 
+class WindowCornerPreference(enum.IntEnum):
+    DEFAULT = 0
+    DO_NOT_ROUND = 1
+    ROUND = 2
+    ROUND_SMALL = 3
+
+
 class VisualEffect(enum.IntEnum):
     NONE = 0
     BLUR = 1
@@ -414,6 +421,20 @@ class Window(_rt.NativeObject):
     def title_bar_style(self) -> TitleBarStyle:
         raw = _C.native_window_get_title_bar_style(self._handle)
         return _rt.to_enum(TitleBarStyle, raw)
+
+    def set_corner_preference(self, preference: WindowCornerPreference) -> bool:
+        raw = _C.native_window_set_corner_preference(self._handle, int(preference))
+        return raw
+
+    @property
+    def corner_preference(self) -> WindowCornerPreference:
+        raw = _C.native_window_get_corner_preference(self._handle)
+        return _rt.to_enum(WindowCornerPreference, raw)
+
+    @staticmethod
+    def is_corner_preference_supported() -> bool:
+        raw = _C.native_window_is_corner_preference_supported()
+        return raw
 
     def set_content_under_title_bar(self, is_content_under_title_bar: bool) -> bool:
         raw = _C.native_window_set_content_under_title_bar(

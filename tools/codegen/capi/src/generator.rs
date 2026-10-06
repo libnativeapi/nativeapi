@@ -1183,12 +1183,14 @@ fn render_cpp_enum_converter(out: &mut String, item: &Enum, prefix: &str) {
         .unwrap();
     }
     writeln!(out, "    default:").unwrap();
-    let fallback = item
-        .variants
-        .first()
-        .map(|variant| format!("{}::{}", item.qualified_name, variant.name))
-        .unwrap_or_else(|| "{}".to_string());
-    writeln!(out, "      return {};", fallback).unwrap();
+    // Keep unknown input values so the C++ API can reject them. Substituting
+    // the first variant turns an invalid setter into a successful reset.
+    writeln!(
+        out,
+        "      return static_cast<{}>(value);",
+        item.qualified_name
+    )
+    .unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -2309,4 +2311,29 @@ fn header_uses_string_containers(header: &Header) -> bool {
             .iter()
             .any(|ctor| ctor.params.iter().any(|p| is_container(&p.ty)))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use codegen_shared::ir::EnumVariant;
+
+    #[test]
+    fn enum_input_conversion_preserves_invalid_values_for_cpp_validation() {
+        let item = Enum {
+            name: "WindowCornerPreference".into(),
+            qualified_name: "nativeapi::WindowCornerPreference".into(),
+            variants: vec![EnumVariant {
+                name: "Default".into(),
+                value: 0,
+            }],
+        };
+        let mut out = String::new();
+        render_cpp_enum_converter(&mut out, &item, "native");
+        assert!(out.contains("case NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT:"));
+        assert!(out.contains(
+            "default:\n      return static_cast<nativeapi::WindowCornerPreference>(value);"
+        ));
+        assert!(!out.contains("default:\n      return nativeapi::WindowCornerPreference::Default;"));
+    }
 }

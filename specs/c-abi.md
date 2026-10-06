@@ -50,6 +50,11 @@ struct。** 新类型过不了桥，先回去确认它的归属，而不是在�
 `common_c.h` 承载跨模块共享的定义（`FFI_PLUGIN_EXPORT` 导出宏、
 `native_listener_id_t`、`NATIVE_INVALID_LISTENER_ID`），它本身也是生成的。
 
+枚举传入时逐值映射；未声明的数值保留后交给 C++ 判断，不能偷偷换成首项。
+否则 `bool` setter 无法拒绝非法参数，甚至会以「成功」返回并重置属性。
+例如 `Window::SetCornerPreference` 拒绝未知值，C ABI 也必须返回 false，
+保留上一次成功的偏好。传出方向与语言绑定遇到未知值的默认回退另行处理。
+
 ## 3. 句柄
 
 `typedef uint64_t native_<类型>_t;`——不透明整数，不是指针。编码为

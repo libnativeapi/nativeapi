@@ -15,6 +15,14 @@ public enum TitleBarStyle
     Hidden = 1,
 }
 
+public enum WindowCornerPreference
+{
+    Default = 0,
+    DoNotRound = 1,
+    Round = 2,
+    RoundSmall = 3,
+}
+
 public enum VisualEffect
 {
     None = 0,
@@ -551,6 +559,27 @@ public sealed partial class Window : IDisposable
             var rawResult = Interop.native_window_get_title_bar_style(NativeHandle);
             return (TitleBarStyle)rawResult;
         }
+    }
+
+    public bool SetCornerPreference(WindowCornerPreference preference)
+    {
+        var rawResult = Interop.native_window_set_corner_preference(NativeHandle, (int)preference);
+        return rawResult;
+    }
+
+    public WindowCornerPreference CornerPreference
+    {
+        get
+        {
+            var rawResult = Interop.native_window_get_corner_preference(NativeHandle);
+            return (WindowCornerPreference)rawResult;
+        }
+    }
+
+    public static bool IsCornerPreferenceSupported()
+    {
+        var rawResult = Interop.native_window_is_corner_preference_supported();
+        return rawResult;
     }
 
     public bool SetContentUnderTitleBar(bool isContentUnderTitleBar)

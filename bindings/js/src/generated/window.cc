@@ -1101,6 +1101,51 @@ napi_value Js_native_window_get_title_bar_style(napi_env env, napi_callback_info
   return Value::Number(static_cast<double>(result)).ToJs(env);
 }
 
+napi_value Js_native_window_set_corner_preference(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_window_corner_preference_t p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_corner_preference(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_get_corner_preference(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_get_corner_preference(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_window_is_corner_preference_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_corner_preference_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_set_content_under_title_bar(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1661,6 +1706,9 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_reset_title_bar_colors", Js_native_window_reset_title_bar_colors);
   Export(env, exports, "native_window_set_title_bar_style", Js_native_window_set_title_bar_style);
   Export(env, exports, "native_window_get_title_bar_style", Js_native_window_get_title_bar_style);
+  Export(env, exports, "native_window_set_corner_preference", Js_native_window_set_corner_preference);
+  Export(env, exports, "native_window_get_corner_preference", Js_native_window_get_corner_preference);
+  Export(env, exports, "native_window_is_corner_preference_supported", Js_native_window_is_corner_preference_supported);
   Export(env, exports, "native_window_set_content_under_title_bar", Js_native_window_set_content_under_title_bar);
   Export(env, exports, "native_window_is_content_under_title_bar", Js_native_window_is_content_under_title_bar);
   Export(env, exports, "native_window_is_content_under_title_bar_supported", Js_native_window_is_content_under_title_bar_supported);

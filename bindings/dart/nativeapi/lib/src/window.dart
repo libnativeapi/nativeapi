@@ -33,6 +33,27 @@ enum TitleBarStyle {
       c.native_title_bar_style_t.fromValue(value);
 }
 
+enum WindowCornerPreference {
+  default_(0),
+  doNotRound(1),
+  round(2),
+  roundSmall(3);
+
+  const WindowCornerPreference(this.value);
+  final int value;
+
+  static WindowCornerPreference fromValue(int value) => switch (value) {
+    0 => WindowCornerPreference.default_,
+    1 => WindowCornerPreference.doNotRound,
+    2 => WindowCornerPreference.round,
+    3 => WindowCornerPreference.roundSmall,
+    _ => WindowCornerPreference.default_,
+  };
+
+  c.native_window_corner_preference_t get raw =>
+      c.native_window_corner_preference_t.fromValue(value);
+}
+
 enum VisualEffect {
   none(0),
   blur(1),
@@ -564,6 +585,19 @@ class Window {
   TitleBarStyle get titleBarStyle {
     final raw = c.native_window_get_title_bar_style(nativeHandle);
     return TitleBarStyle.fromValue(raw.value);
+  }
+
+  bool setCornerPreference(WindowCornerPreference preference) {
+    return c.native_window_set_corner_preference(nativeHandle, preference.raw);
+  }
+
+  WindowCornerPreference get cornerPreference {
+    final raw = c.native_window_get_corner_preference(nativeHandle);
+    return WindowCornerPreference.fromValue(raw.value);
+  }
+
+  static bool isCornerPreferenceSupported() {
+    return c.native_window_is_corner_preference_supported();
   }
 
   bool setContentUnderTitleBar(bool isContentUnderTitleBar) {

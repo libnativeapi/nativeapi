@@ -37,6 +37,31 @@ impl TitleBarStyle {
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum WindowCornerPreference {
+    Default = 0,
+    DoNotRound = 1,
+    Round = 2,
+    RoundSmall = 3,
+}
+
+impl WindowCornerPreference {
+    pub(crate) fn from_raw(raw: cnativeapi::native_window_corner_preference_t) -> Self {
+        match raw {
+            cnativeapi::NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT => Self::Default,
+            cnativeapi::NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND => Self::DoNotRound,
+            cnativeapi::NATIVE_WINDOW_CORNER_PREFERENCE_ROUND => Self::Round,
+            cnativeapi::NATIVE_WINDOW_CORNER_PREFERENCE_ROUND_SMALL => Self::RoundSmall,
+            _ => Self::Default,
+        }
+    }
+
+    pub(crate) fn to_raw(self) -> cnativeapi::native_window_corner_preference_t {
+        self as cnativeapi::native_window_corner_preference_t
+    }
+}
+
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VisualEffect {
     None = 0,
     Blur = 1,
@@ -572,6 +597,24 @@ impl Window {
     pub fn title_bar_style(&self) -> TitleBarStyle {
         unsafe {
             TitleBarStyle::from_raw(cnativeapi::native_window_get_title_bar_style(self.handle))
+        }
+    }
+
+    pub fn set_corner_preference(&self, preference: WindowCornerPreference) -> bool {
+        unsafe {
+            cnativeapi::native_window_set_corner_preference(self.handle, preference.to_raw())
+        }
+    }
+
+    pub fn corner_preference(&self) -> WindowCornerPreference {
+        unsafe {
+            WindowCornerPreference::from_raw(cnativeapi::native_window_get_corner_preference(self.handle))
+        }
+    }
+
+    pub fn is_corner_preference_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_corner_preference_supported()
         }
     }
 

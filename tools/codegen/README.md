@@ -19,6 +19,10 @@
 Dart CI 的格式检查失败。Windows 上请将 Flutter SDK 的 `bin/cache/dart-sdk/bin`
 加入 PATH。
 
+C++ 枚举项转换成 Dart 的 lowerCamelCase 后若是保留字，会加尾部下划线，
+例如 `WindowCornerPreference::Default` 对应 `WindowCornerPreference.default_`；
+声明、数值转换与默认回退都使用这个名字。
+
 ## Crate 布局
 
 ```

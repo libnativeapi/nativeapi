@@ -2255,6 +2255,27 @@ native_window_get_title_bar_style = function(
         c_uint64,
     ],
 )
+native_window_set_corner_preference = function(
+    "native_window_set_corner_preference",
+    c_bool,
+    [
+        c_uint64,
+        c_int,
+    ],
+)
+native_window_get_corner_preference = function(
+    "native_window_get_corner_preference",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_corner_preference_supported = function(
+    "native_window_is_corner_preference_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_set_content_under_title_bar = function(
     "native_window_set_content_under_title_bar",
     c_bool,

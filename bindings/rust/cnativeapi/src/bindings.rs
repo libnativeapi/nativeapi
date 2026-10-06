@@ -749,6 +749,11 @@ pub type native_window_id_t = ::std::os::raw::c_uint;
 pub const NATIVE_TITLE_BAR_STYLE_NORMAL: native_title_bar_style_t = 0;
 pub const NATIVE_TITLE_BAR_STYLE_HIDDEN: native_title_bar_style_t = 1;
 pub type native_title_bar_style_t = ::std::os::raw::c_uint;
+pub const NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT: native_window_corner_preference_t = 0;
+pub const NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND: native_window_corner_preference_t = 1;
+pub const NATIVE_WINDOW_CORNER_PREFERENCE_ROUND: native_window_corner_preference_t = 2;
+pub const NATIVE_WINDOW_CORNER_PREFERENCE_ROUND_SMALL: native_window_corner_preference_t = 3;
+pub type native_window_corner_preference_t = ::std::os::raw::c_uint;
 pub const NATIVE_VISUAL_EFFECT_NONE: native_visual_effect_t = 0;
 pub const NATIVE_VISUAL_EFFECT_BLUR: native_visual_effect_t = 1;
 pub const NATIVE_VISUAL_EFFECT_ACRYLIC: native_visual_effect_t = 2;
@@ -1055,6 +1060,20 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_get_title_bar_style(window: native_window_t) -> native_title_bar_style_t;
+}
+unsafe extern "C" {
+    pub fn native_window_set_corner_preference(
+        window: native_window_t,
+        preference: native_window_corner_preference_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_get_corner_preference(
+        window: native_window_t,
+    ) -> native_window_corner_preference_t;
+}
+unsafe extern "C" {
+    pub fn native_window_is_corner_preference_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_set_content_under_title_bar(

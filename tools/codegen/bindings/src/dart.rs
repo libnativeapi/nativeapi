@@ -1752,9 +1752,54 @@ fn dart_from_native(ty: &TypeRef, access: &str) -> String {
 }
 
 fn dart_enum_case(name: &str) -> String {
-    name.strip_prefix('k').unwrap_or(name).to_lower_camel_case()
+    let case = name.strip_prefix('k').unwrap_or(name).to_lower_camel_case();
+    // PascalCase C++ names such as Default become reserved Dart identifiers.
+    // Escape enum constants consistently at both declarations and references.
+    // Contextual keywords (e.g. async) remain usable; await/yield are escaped
+    // so references work inside async/generator functions too.
+    match case.as_str() {
+        "assert" | "await" | "break" | "case" | "catch" | "class" | "const" | "continue"
+        | "default" | "do" | "else" | "enum" | "extends" | "false" | "final" | "finally"
+        | "for" | "if" | "in" | "is" | "new" | "null" | "rethrow" | "return" | "super"
+        | "switch" | "this" | "throw" | "true" | "try" | "var" | "void" | "while" | "with"
+        | "yield" => format!("{case}_"),
+        _ => case,
+    }
 }
 
 fn is_callback(ty: &TypeRef) -> bool {
     codegen_shared::naming::is_callback(ty)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use codegen_shared::ir::EnumVariant;
+
+    #[test]
+    fn reserved_enum_cases_are_escaped_in_declarations_and_conversions() {
+        let item = Enum {
+            name: "WindowCornerPreference".into(),
+            qualified_name: "nativeapi::WindowCornerPreference".into(),
+            variants: vec![
+                EnumVariant {
+                    name: "Default".into(),
+                    value: 0,
+                },
+                EnumVariant {
+                    name: "RoundSmall".into(),
+                    value: 3,
+                },
+            ],
+        };
+        let mut out = String::new();
+        render_dart_enum(&mut out, &item, "native");
+        assert!(out.contains("default_(0),"));
+        assert!(out.contains("0 => WindowCornerPreference.default_,"));
+        assert!(out.contains("_ => WindowCornerPreference.default_,"));
+        assert!(out.contains("roundSmall(3);"));
+        assert_eq!(dart_enum_case("Class"), "class_");
+        assert_eq!(dart_enum_case("kDefault"), "default_");
+        assert_eq!(dart_enum_case("Await"), "await_");
+    }
 }

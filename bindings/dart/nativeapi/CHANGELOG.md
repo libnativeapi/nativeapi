@@ -1,5 +1,10 @@
 ## 0.4.1
 
+* `Window.setCornerPreference()`, `cornerPreference` and
+  `isCornerPreferenceSupported()`: Windows 11's compositor corner policy
+  (default, square, rounded or small rounding), with the native title bar kept.
+  Returns false on other platforms; the getter reports the accepted preference,
+  not the radius Windows chooses for maximized, snapped or shaped windows.
 * `TrayIcon.createWithIdentifier()` and the read-only `identifier`: a persistent
   tray host name, set before registration. Linux defaults to the GApplication ID
   or executable name, with suffixes for additional live icons; macOS uses

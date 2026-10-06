@@ -16,6 +16,14 @@ export const TitleBarStyle = {
 } as const;
 export type TitleBarStyle = (typeof TitleBarStyle)[keyof typeof TitleBarStyle];
 
+export const WindowCornerPreference = {
+  Default: 0,
+  DoNotRound: 1,
+  Round: 2,
+  RoundSmall: 3,
+} as const;
+export type WindowCornerPreference = (typeof WindowCornerPreference)[keyof typeof WindowCornerPreference];
+
 export const VisualEffect = {
   None: 0,
   Blur: 1,
@@ -316,6 +324,18 @@ export class Window extends NativeObject {
 
   get titleBarStyle(): TitleBarStyle {
     return native.native_window_get_title_bar_style(this.nativeHandle);
+  }
+
+  setCornerPreference(preference: WindowCornerPreference): boolean {
+    return native.native_window_set_corner_preference(this.nativeHandle, preference);
+  }
+
+  get cornerPreference(): WindowCornerPreference {
+    return native.native_window_get_corner_preference(this.nativeHandle);
+  }
+
+  static isCornerPreferenceSupported(): boolean {
+    return native.native_window_is_corner_preference_supported();
   }
 
   setContentUnderTitleBar(isContentUnderTitleBar: boolean): boolean {

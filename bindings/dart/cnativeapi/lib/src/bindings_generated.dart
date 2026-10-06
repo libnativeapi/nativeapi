@@ -2402,6 +2402,19 @@ external native_size_t native_window_get_content_size(int window);
 @ffi.Native<native_view_t$1 Function(native_window_t)>()
 external int native_window_get_content_view(int window);
 
+@ffi.Native<ffi.UnsignedInt Function(native_window_t)>(
+  symbol: 'native_window_get_corner_preference',
+)
+external int _native_window_get_corner_preference(int window);
+
+native_window_corner_preference_t native_window_get_corner_preference(
+  Dartnative_window_t window,
+) {
+  return native_window_corner_preference_t.fromValue(
+    _native_window_get_corner_preference(window),
+  );
+}
+
 /// Caller owns the returned handle; release it with native_window_shadow_free().
 @ffi.Native<native_window_shadow_t Function(native_window_t)>()
 external int native_window_get_custom_shadow(int window);
@@ -2482,6 +2495,9 @@ external bool native_window_is_content_under_title_bar(int window);
 
 @ffi.Native<ffi.Bool Function()>()
 external bool native_window_is_content_under_title_bar_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_corner_preference_supported();
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_focusable(int window);
@@ -2696,6 +2712,18 @@ external bool native_window_set_content_under_title_bar(
   int window,
   bool is_content_under_title_bar,
 );
+
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.UnsignedInt)>(
+  symbol: 'native_window_set_corner_preference',
+)
+external bool _native_window_set_corner_preference(int window, int preference);
+
+bool native_window_set_corner_preference(
+  Dartnative_window_t window,
+  native_window_corner_preference_t preference,
+) {
+  return _native_window_set_corner_preference(window, preference.value);
+}
 
 @ffi.Native<ffi.Bool Function(native_window_t, native_window_shadow_t)>()
 external bool native_window_set_custom_shadow(int window, int shadow);
@@ -4752,6 +4780,27 @@ enum native_visual_effect_t {
       'Unknown value for native_visual_effect_t: $value',
     ),
   };
+}
+
+enum native_window_corner_preference_t {
+  NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT(0),
+  NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND(1),
+  NATIVE_WINDOW_CORNER_PREFERENCE_ROUND(2),
+  NATIVE_WINDOW_CORNER_PREFERENCE_ROUND_SMALL(3);
+
+  final int value;
+  const native_window_corner_preference_t(this.value);
+
+  static native_window_corner_preference_t fromValue(int value) =>
+      switch (value) {
+        0 => NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT,
+        1 => NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND,
+        2 => NATIVE_WINDOW_CORNER_PREFERENCE_ROUND,
+        3 => NATIVE_WINDOW_CORNER_PREFERENCE_ROUND_SMALL,
+        _ => throw ArgumentError(
+          'Unknown value for native_window_corner_preference_t: $value',
+        ),
+      };
 }
 
 typedef native_window_drag_event_callback_t =
