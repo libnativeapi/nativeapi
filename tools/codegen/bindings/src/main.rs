@@ -110,6 +110,7 @@ fn main() -> Result<()> {
         files.push(dart::generate_barrel(&api, out));
         files.push(dart::generate_support(out));
         files.push(dart::generate_callbacks(out));
+        files.extend(dart::generate_web_shared(&api, out));
     }
     if let Some(out) = &csharp_out {
         files.push(csharp::generate_support(out));
@@ -146,6 +147,7 @@ fn main() -> Result<()> {
         }
         if let Some(out) = &dart_out {
             files.push(dart::generate(&api, header, &origins, out, prefix));
+            files.push(dart::generate_web(&api, header, &origins, out, prefix));
         }
         if let Some(out) = &csharp_out {
             files.extend(csharp::generate(

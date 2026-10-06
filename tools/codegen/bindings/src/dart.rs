@@ -232,6 +232,188 @@ pub fn generate_barrel(api: &Api, dart_out: &Path) -> GeneratedFile {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Web stub
+// ---------------------------------------------------------------------------
+//
+// `dart:ffi` does not exist on the web, and importing it is a compile error
+// for the whole program, so an app that also targets the web could not even
+// depend on package:nativeapi. `lib/nativeapi.dart` therefore exports the FFI
+// modules only `if (dart.library.ffi)`, and this pure-Dart mirror otherwise:
+// the same enums, value types, events and classes, minus the members that
+// expose the C form (`raw`, `fromNative`, `allocNative`, `nativeObject`, raw
+// pointers). Every call into the platform throws `UnsupportedError`.
+
+/// Where the web mirror lives, under the generated `lib/src`.
+const WEB_DIR: &str = "web";
+
+/// One module of the web mirror.
+pub fn generate_web(
+    api: &Api,
+    header: &Header,
+    origins: &TypeOrigins,
+    dart_out: &Path,
+    prefix: &str,
+) -> GeneratedFile {
+    GeneratedFile {
+        path: dart_out.join(WEB_DIR).join(dart_relative_path(header)),
+        contents: generate_dart_web(api, header, origins, prefix),
+    }
+}
+
+/// The web mirror's barrel, `support.dart`, and the helper every stub throws
+/// through.
+pub fn generate_web_shared(api: &Api, dart_out: &Path) -> Vec<GeneratedFile> {
+    let web_out = dart_out.join(WEB_DIR);
+    let mut unsupported = String::new();
+    write_banner(&mut unsupported);
+    unsupported.push_str(
+        r#"/// What every platform call does on the web, where nativeapi has no backend.
+Never unsupported() => throw UnsupportedError(
+  'nativeapi is not available on the web. Guard the call with kIsWeb.',
+);
+"#,
+    );
+    vec![
+        generate_barrel(api, &web_out),
+        generate_support(&web_out),
+        GeneratedFile {
+            path: web_out.join("unsupported.dart"),
+            contents: unsupported,
+        },
+    ]
+}
+
+fn generate_dart_web(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str) -> String {
+    let mut out = String::new();
+    write_banner(&mut out);
+    writeln!(out, "// ignore_for_file: unused_import, unnecessary_import").unwrap();
+    writeln!(out).unwrap();
+    let here = dart_relative_path(header);
+    if header.classes.iter().any(|class| class.event.is_some()) {
+        writeln!(out, "import 'dart:async';").unwrap();
+        writeln!(out).unwrap();
+    }
+    let mut imports = module_imports(api, header, origins);
+    if header.classes.iter().any(|class| class.event.is_some()) {
+        imports.push(dart_import_path(&here, Path::new("support.dart")));
+    }
+    if !header.classes.is_empty() {
+        imports.push(dart_import_path(&here, Path::new("unsupported.dart")));
+    }
+    for import in &imports {
+        writeln!(out, "import '{import}';").unwrap();
+    }
+    if !imports.is_empty() {
+        writeln!(out).unwrap();
+    }
+
+    for alias in &header.aliases {
+        if origins.get(&alias.name).map(String::as_str) != Some(header.stem.as_str()) {
+            continue;
+        }
+        writeln!(out, "typedef {} = int;", alias.name).unwrap();
+        writeln!(out).unwrap();
+    }
+    for item in &header.enums {
+        render_dart_enum(&mut out, item, prefix, true);
+    }
+    for item in &header.structs {
+        if host_type(&item.name).is_some() {
+            continue;
+        }
+        render_dart_struct(&mut out, item, prefix, true);
+    }
+    for group in &header.events {
+        render_dart_event(&mut out, group, prefix, true);
+    }
+    for class in &header.classes {
+        render_dart_class_web(&mut out, api, class);
+    }
+    out
+}
+
+/// Whether a signature names a raw platform pointer, which has no web form.
+fn mentions_raw_pointer<'a>(mut types: impl Iterator<Item = &'a TypeRef>) -> bool {
+    types.any(|ty| matches!(ty.unwrap_optional(), TypeRef::RawPointer))
+}
+
+fn render_dart_class_web(out: &mut String, api: &Api, class: &Class) {
+    let name = &class.name;
+    if let Some(base) = &class.base {
+        writeln!(out, "class {name} extends {base} {{").unwrap();
+        writeln!(
+            out,
+            "  {name}.fromHandle(super.nativeHandle) : super.fromHandle();"
+        )
+        .unwrap();
+        writeln!(
+            out,
+            "  {name}.borrowed(super.nativeHandle) : super.borrowed();"
+        )
+        .unwrap();
+        writeln!(out).unwrap();
+    } else if class.is_instance() {
+        writeln!(out, "class {name} {{").unwrap();
+        writeln!(out, "  {name}.fromHandle(this.nativeHandle);").unwrap();
+        writeln!(out, "  {name}.borrowed(this.nativeHandle);").unwrap();
+        writeln!(out).unwrap();
+        writeln!(out, "  final int nativeHandle;").unwrap();
+        writeln!(out).unwrap();
+        writeln!(out, "  void dispose() => unsupported();").unwrap();
+        writeln!(out).unwrap();
+    } else {
+        writeln!(out, "class {name} {{").unwrap();
+        writeln!(out, "  const {name}._();").unwrap();
+        writeln!(out).unwrap();
+        writeln!(out, "  static const {name} instance = {name}._();").unwrap();
+        writeln!(out).unwrap();
+    }
+
+    for ctor in &class.constructors {
+        if mentions_raw_pointer(ctor.params.iter().map(|param| &param.ty)) {
+            continue;
+        }
+        writeln!(
+            out,
+            "{} => unsupported();",
+            dart_constructor_signature(class, ctor)
+        )
+        .unwrap();
+        writeln!(out).unwrap();
+    }
+    for method in &class.methods {
+        let types = method.params.iter().map(|param| &param.ty);
+        if mentions_raw_pointer(types.chain(std::iter::once(&method.return_type))) {
+            continue;
+        }
+        writeln!(
+            out,
+            "{} => unsupported();",
+            dart_method_signature(class, method)
+        )
+        .unwrap();
+        writeln!(out).unwrap();
+    }
+    if let Some(group) = emitted_group(api, class) {
+        writeln!(
+            out,
+            "  ListenerId addListener(FutureOr<void> Function({}) callback) => unsupported();",
+            group.name
+        )
+        .unwrap();
+        writeln!(out).unwrap();
+        writeln!(
+            out,
+            "  bool removeListener(ListenerId listenerId) => unsupported();"
+        )
+        .unwrap();
+        writeln!(out).unwrap();
+    }
+    writeln!(out, "}}").unwrap();
+    writeln!(out).unwrap();
+}
+
 /// `foundation/geometry.h` -> `foundation/geometry.dart`, mirroring the source
 /// tree the way the Rust and Swift outputs do.
 fn dart_relative_path(header: &Header) -> PathBuf {
@@ -270,20 +452,7 @@ fn generate_dart(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     writeln!(out).unwrap();
 
     let here = dart_relative_path(header);
-    let deps: Vec<String> = foreign_types(header, origins)
-        .into_iter()
-        .filter_map(|name| origins.get(&name).cloned())
-        .filter(|stem| stem != &header.stem)
-        .collect();
-    let mut imports: Vec<String> = deps
-        .into_iter()
-        .filter_map(|stem| {
-            let other = api.headers.iter().find(|h| h.stem == stem)?;
-            Some(dart_import_path(&here, &dart_relative_path(other)))
-        })
-        .collect();
-    imports.sort();
-    imports.dedup();
+    let imports = module_imports(api, header, origins);
     if !imports.is_empty() {
         for import in &imports {
             writeln!(out, "import '{import}';").unwrap();
@@ -322,18 +491,18 @@ fn generate_dart(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     }
 
     for item in &header.enums {
-        render_dart_enum(&mut out, item, prefix);
+        render_dart_enum(&mut out, item, prefix, false);
     }
 
     for item in &header.structs {
         if host_type(&item.name).is_some() {
             continue;
         }
-        render_dart_struct(&mut out, item, prefix);
+        render_dart_struct(&mut out, item, prefix, false);
     }
 
     for group in &header.events {
-        render_dart_event(&mut out, group, prefix);
+        render_dart_event(&mut out, group, prefix, false);
     }
 
     let mut body = String::new();
@@ -342,6 +511,23 @@ fn generate_dart(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     }
 
     format!("{prelude}{out}{body}")
+}
+
+/// Relative imports of the other generated modules whose types a module uses.
+fn module_imports(api: &Api, header: &Header, origins: &TypeOrigins) -> Vec<String> {
+    let here = dart_relative_path(header);
+    let mut imports: Vec<String> = foreign_types(header, origins)
+        .into_iter()
+        .filter_map(|name| origins.get(&name).cloned())
+        .filter(|stem| stem != &header.stem)
+        .filter_map(|stem| {
+            let other = api.headers.iter().find(|h| h.stem == stem)?;
+            Some(dart_import_path(&here, &dart_relative_path(other)))
+        })
+        .collect();
+    imports.sort();
+    imports.dedup();
+    imports
 }
 
 /// How the ffigen struct exposes a C field. An enum-typed field is an `int`
@@ -375,7 +561,7 @@ fn dart_import_path(from: &Path, to: &Path) -> String {
 // Enums and structs
 // ---------------------------------------------------------------------------
 
-fn render_dart_enum(out: &mut String, item: &Enum, prefix: &str) {
+fn render_dart_enum(out: &mut String, item: &Enum, prefix: &str, web: bool) {
     let c_ty = format!("{C}.{}", c_type_name(prefix, &item.name));
     writeln!(out, "enum {} {{", item.name).unwrap();
     for (index, variant) in item.variants.iter().enumerate() {
@@ -419,8 +605,10 @@ fn render_dart_enum(out: &mut String, item: &Enum, prefix: &str) {
     }
     writeln!(out, "    _ => {}.{fallback},", item.name).unwrap();
     writeln!(out, "  }};").unwrap();
-    writeln!(out).unwrap();
-    writeln!(out, "  {c_ty} get raw => {c_ty}.fromValue(value);").unwrap();
+    if !web {
+        writeln!(out).unwrap();
+        writeln!(out, "  {c_ty} get raw => {c_ty}.fromValue(value);").unwrap();
+    }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
 }
@@ -533,7 +721,7 @@ fn render_dart_value_members(out: &mut String, item: &Struct) {
     }
 }
 
-fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str) {
+fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) {
     let c_ty = format!("{C}.{}", c_type_name(prefix, &item.name));
     writeln!(out, "class {} {{", item.name).unwrap();
     write!(out, "  const {}({{", item.name).unwrap();
@@ -557,6 +745,11 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str) {
     }
     writeln!(out).unwrap();
     render_dart_value_members(out, item);
+    if web {
+        writeln!(out, "}}").unwrap();
+        writeln!(out).unwrap();
+        return;
+    }
 
     writeln!(
         out,
@@ -663,13 +856,7 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str) {
 // Events
 // ---------------------------------------------------------------------------
 
-fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str) {
-    let c_ty = format!("{C}.{}", c_type_name(prefix, &group.name));
-    let type_enum = format!(
-        "{C}.{}",
-        codegen_shared::naming::c_event_type_enum(prefix, &group.name)
-    );
-
+fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str, web: bool) {
     writeln!(out, "/// One `{}`, in its concrete form.", group.name).unwrap();
     writeln!(out, "sealed class {} {{", group.name).unwrap();
     writeln!(out, "  const {}();", group.name).unwrap();
@@ -684,9 +871,56 @@ fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str) {
         )
         .unwrap();
     }
-    if !group.common.is_empty() {
+    if !group.common.is_empty() && !web {
         writeln!(out).unwrap();
     }
+    if !web {
+        render_dart_event_from_native(out, group, prefix);
+    }
+    writeln!(out, "}}").unwrap();
+    writeln!(out).unwrap();
+
+    for variant in &group.variants {
+        let class_name = event_variant_class(variant);
+        let fields: Vec<&codegen_shared::ir::Field> =
+            group.common.iter().chain(variant.fields.iter()).collect();
+        writeln!(out, "final class {class_name} extends {} {{", group.name).unwrap();
+        write!(out, "  const {class_name}(").unwrap();
+        if !fields.is_empty() {
+            write!(out, "{{").unwrap();
+            for field in &fields {
+                write!(out, "required this.{}, ", field.name.to_lower_camel_case()).unwrap();
+            }
+            write!(out, "}}").unwrap();
+        }
+        writeln!(out, ");").unwrap();
+        if !fields.is_empty() {
+            writeln!(out).unwrap();
+        }
+        for (index, field) in fields.iter().enumerate() {
+            if index < group.common.len() {
+                writeln!(out, "  @override").unwrap();
+            }
+            writeln!(
+                out,
+                "  final {} {};",
+                dart_event_field_type(&field.ty),
+                field.name.to_lower_camel_case()
+            )
+            .unwrap();
+        }
+        writeln!(out, "}}").unwrap();
+        writeln!(out).unwrap();
+    }
+}
+
+/// `fromNative`: reads an event out of its C form.
+fn render_dart_event_from_native(out: &mut String, group: &EventGroup, prefix: &str) {
+    let c_ty = format!("{C}.{}", c_type_name(prefix, &group.name));
+    let type_enum = format!(
+        "{C}.{}",
+        codegen_shared::naming::c_event_type_enum(prefix, &group.name)
+    );
     writeln!(
         out,
         "  /// Reads the event out of its C form. Returns null for a variant this"
@@ -728,41 +962,6 @@ fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str) {
     }
     writeln!(out, "    return null;").unwrap();
     writeln!(out, "  }}").unwrap();
-    writeln!(out, "}}").unwrap();
-    writeln!(out).unwrap();
-
-    for variant in &group.variants {
-        let class_name = event_variant_class(variant);
-        let fields: Vec<&codegen_shared::ir::Field> =
-            group.common.iter().chain(variant.fields.iter()).collect();
-        writeln!(out, "final class {class_name} extends {} {{", group.name).unwrap();
-        write!(out, "  const {class_name}(").unwrap();
-        if !fields.is_empty() {
-            write!(out, "{{").unwrap();
-            for field in &fields {
-                write!(out, "required this.{}, ", field.name.to_lower_camel_case()).unwrap();
-            }
-            write!(out, "}}").unwrap();
-        }
-        writeln!(out, ");").unwrap();
-        if !fields.is_empty() {
-            writeln!(out).unwrap();
-        }
-        for (index, field) in fields.iter().enumerate() {
-            if index < group.common.len() {
-                writeln!(out, "  @override").unwrap();
-            }
-            writeln!(
-                out,
-                "  final {} {};",
-                dart_event_field_type(&field.ty),
-                field.name.to_lower_camel_case()
-            )
-            .unwrap();
-        }
-        writeln!(out, "}}").unwrap();
-        writeln!(out).unwrap();
-    }
 }
 
 /// `WindowEvent` + `Focused` -> `WindowFocusedEvent`, matching the C++ name.
@@ -922,24 +1121,27 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
     writeln!(out).unwrap();
 }
 
-fn render_dart_constructor(out: &mut String, class: &Class, ctor: &Constructor, prefix: &str) {
+/// `static Window? create(...)`, without the body.
+fn dart_constructor_signature(class: &Class, ctor: &Constructor) -> String {
     let label = match constructor_suffix(class, ctor) {
         Some(suffix) => format!("create{}", suffix.to_upper_camel_case()),
         None => "create".to_string(),
     };
+    format!(
+        "  static {}? {label}({})",
+        class.name,
+        dart_params(&ctor.params)
+    )
+}
+
+fn render_dart_constructor(out: &mut String, class: &Class, ctor: &Constructor, prefix: &str) {
     writeln!(
         out,
         "  /// Creates a new `{}`; returns null if the native side failed.",
         class.name
     )
     .unwrap();
-    writeln!(
-        out,
-        "  static {}? {label}({}) {{",
-        class.name,
-        dart_params(&ctor.params)
-    )
-    .unwrap();
+    writeln!(out, "{} {{", dart_constructor_signature(class, ctor)).unwrap();
     render_param_bindings(out, &ctor.params, prefix, "    ");
     writeln!(
         out,
@@ -955,31 +1157,22 @@ fn render_dart_constructor(out: &mut String, class: &Class, ctor: &Constructor, 
     writeln!(out).unwrap();
 }
 
-fn render_dart_method(
-    out: &mut String,
-    class: &Class,
-    method: &Method,
-    header: &Header,
-    prefix: &str,
-) {
-    let instance = class.is_instance() && !method.is_static;
+/// A method's declaration as a property setter, getter or plain method,
+/// without the body.
+fn dart_method_signature(class: &Class, method: &Method) -> String {
     let name = swift_method_name(class, method).to_lower_camel_case();
     let accessor = is_binding_accessor(class, method) && method.params.is_empty();
     // Dart spells accessors as properties, and `GetX` already becomes one; a
     // matching one-argument `SetX` has to follow or the property would be
     // readable but not writable.
-    let setter = dart_setter_name(class, method);
     let return_type = dart_return_type(&method.return_type);
-
-    if let Some(name) = &setter {
-        writeln!(
-            out,
-            "  set {name}({} value) {{",
+    if let Some(name) = dart_setter_name(class, method) {
+        format!(
+            "  set {name}({} value)",
             dart_param_type(&method.params[0].ty)
         )
-        .unwrap();
     } else if accessor {
-        writeln!(out, "  {return_type} get {name} {{").unwrap();
+        format!("  {return_type} get {name}")
     } else {
         // Singleton methods are instance methods on `.instance`; only a static
         // method of a handle class stays static.
@@ -988,13 +1181,23 @@ fn render_dart_method(
         } else {
             "  "
         };
-        writeln!(
-            out,
-            "{prefix_kw}{return_type} {name}({}) {{",
+        format!(
+            "{prefix_kw}{return_type} {name}({})",
             dart_params(&method.params)
         )
-        .unwrap();
     }
+}
+
+fn render_dart_method(
+    out: &mut String,
+    class: &Class,
+    method: &Method,
+    header: &Header,
+    prefix: &str,
+) {
+    let instance = class.is_instance() && !method.is_static;
+    let setter = dart_setter_name(class, method);
+    writeln!(out, "{} {{", dart_method_signature(class, method)).unwrap();
 
     // The property form renames the single parameter to `value`.
     let params: Vec<Param> = if setter.is_some() {

@@ -1,5 +1,12 @@
 ## 0.4.1
 
+* Apps that also target the web can depend on nativeapi again
+  (leanflutter/tray_manager#108). On the web `package:nativeapi` resolves to a
+  pure-Dart mirror without `dart:ffi`: the same classes, enums, value types and
+  events, minus the members that expose the C form (`raw`, `fromNative`,
+  `allocNative`, `nativeObject`, raw pointers). Every platform call there
+  throws `UnsupportedError`, so guard it with `kIsWeb`.
+
 * Event listeners run on their registering isolate, including native events
   from foreign UI threads. Callbacks may return a Future; event payloads and
   borrowed handles remain valid until completion. Removing a listener skips
