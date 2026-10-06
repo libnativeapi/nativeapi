@@ -71,6 +71,11 @@ Meyer's 单例在首次调用时构造、在静态析构阶段销毁，**销毁�
 - 需要确定性的关停顺序，就提供显式的 `Shutdown()` 由应用在退出前调用，
   不要依赖析构顺序。
 
+Linux 的 `WindowManager` 保存并移除 GTK show/hide emission hook ID，同时断开逐窗口
+信号和 weak ref；`ShortcutManager` 在成员销毁前停止并 join X11 工作线程。
+真实 Flutter 退出回归见 `tools/gui/core_application_exit_flutter_linux.py`：X11 和 Wayland
+均覆盖主动移除监听器、管理器存活至进程退出两条路径，以及次窗口关闭后的隐式 view 保留。
+
 ## 3. Manager 的职责
 
 Manager 该做的：

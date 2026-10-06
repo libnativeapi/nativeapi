@@ -10,6 +10,7 @@ runner) lives in [`.agents/skills/`](../../.agents/skills); read
 
 | Script | Example | Platform | Covers |
 | --- | --- | --- | --- |
+| `core_application_exit_flutter_linux.py` | real Flutter secondary-window exit regression | Linux X11 / Wayland | No input; private Xvfb and Weston displays. Two realized secondary views exercise controller destruction, nativeapi close, GTK show/hide hooks, implicit-view preservation and normal process exit. Tests both listener removal and a manager that stays alive through process exit (18 checks per mode per backend). Flutter-only controls contain no nativeapi native assets; SDK diagnostics stay in the logs and any additional nativeapi warnings fail the test. Requires Flutter, clang, GTK3 development files, Xvfb, Weston and `dbus-run-session`. |
 | `core_window_shadow_layout_test_linux.cpp` | core shadow | Linux Wayland / X11 | No-input regression: stable shadow geometry, contour pixels inside transparent content, input pass-through, disable and decoration restoration |
 | `flutter_window_shape_smoke_macos.py` / `flutter_window_shape_test_windows.ps1` | `shaped_window_example` | macOS / Windows | macOS: no-input shape and pixel-alpha smoke test; Windows: native regions, real button clicks/drag, resize, clear/reapply, click-through to the underlying app window |
 | `flutter_detachable_window_test.py` / `.ps1` | `detachable_window_example` | macOS / Windows | tear a panel off, exact content size, header stays under the cursor, dock into the other window, `State` preserved |
@@ -104,6 +105,14 @@ $R linux desktop tools/gui/flutter_window_shape_demo_linux.py 240   # dry run: n
 .agents/skills/record-demo/scripts/record_remote_linux.sh linux \
     tools/gui/flutter_window_shape_demo_linux.py tools/gui/output   # the take
 ```
+
+Run the Linux Flutter exit regression on a Linux host with
+`python3 tools/gui/core_application_exit_flutter_linux.py --flutter /path/to/flutter/bin/flutter`.
+It saves both apps, native assets and logs in an isolated work directory. Flutter 3.47.6
+currently emits window-monitor diagnostics in the Flutter-only control too; Xvfb also
+reports compositor shader setup/cleanup warnings, and headless Weston has no keyboard
+seat. The runner preserves these messages and compares their counts with the control;
+`--fatal-warnings` additionally makes all SDK/GTK warnings fatal.
 
 The shape demo runs against a debug build of the example in the host's scratch dir
 (`$REMOTE_SCRATCH/shape-flutter-linux/examples/flutter_shaped_window_example`, or `SHAPE_EXAMPLE_DIR`);
