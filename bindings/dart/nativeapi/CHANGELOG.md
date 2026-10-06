@@ -1,5 +1,26 @@
 ## 0.4.1
 
+* Event listeners run on their registering isolate, including native events
+  from foreign UI threads. Callbacks may return a Future; event payloads and
+  borrowed handles remain valid until completion. Removing a listener skips
+  queued callbacks that have not started.
+
+* Add shared `EventRequest` and owned `EventDecision` primitives for cancellation
+  and deferred confirmation. Programmatic `Application.quit()` now waits for
+  listener Futures and deferred decisions; cancellation leaves the application
+  running. macOS native quit queries now share this confirmation; approval
+  continues the host decision, including Flutter's asynchronous exit callback.
+  Mandatory native termination invalidates old votes and cannot be vetoed.
+
+* Add object-level `Window` listeners and `Window.close()` confirmation on macOS,
+  Windows and GTK (X11 or Wayland). Native aliases share pending votes; approval
+  continues the host close handler, and forced native destruction invalidates
+  old decisions. Mobile platforms report close as unsupported.
+
+* On macOS, initializing `Application` preserves an existing host delegate and
+  activation policy. Native lifecycle listeners observe quit requests and preserve
+  the host's decision without bypassing Flutter's exit confirmation.
+
 * On macOS, empty backgrounds in a hidden window's original title-bar band
   perform the preferred double-click action automatically. Controls and custom
   mouse handlers keep their gestures. The native Fill action is requested when

@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unnecessary_import
 
+import 'dart:async';
 import 'dart:ffi' as ffi;
 
 import 'package:cnativeapi/cnativeapi.dart' as c;
@@ -437,26 +438,32 @@ class View {
 
   /// Registers [callback] for every `ViewEvent` this `View` emits.
   ///
-  /// The callback runs synchronously on whichever thread the native side
-  /// dispatches from, because the event struct is freed as soon as it
-  /// returns. That thread must therefore be this isolate's own; see the
-  /// package README for what that means under Flutter.
-  ListenerId addListener(void Function(ViewEvent) callback) {
+  /// Delivered on the registering isolate, including events from native UI threads.
+  /// The callback may return a Future; borrowed handles stay valid until it completes.
+  /// Events queued before removal are skipped if their callback has not started.
+  ListenerId addListener(FutureOr<void> Function(ViewEvent) callback) {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
             ffi.Pointer<c.native_view_event_t>,
+            ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
-        >.isolateLocal((
+        >.listener((
           ffi.Pointer<c.native_view_event_t> event,
+          int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
-          if (event == ffi.nullptr) return;
-          final value = ViewEvent.fromNative(event.ref);
-          if (value != null) callback(value);
+          unawaited(
+            NativeCallbacks.deliverEvent(
+              delivery,
+              () =>
+                  event == ffi.nullptr ? null : ViewEvent.fromNative(event.ref),
+              callback,
+            ),
+          );
         });
-    return c.native_view_add_listener(
+    return c.native_view_add_listener_async(
       nativeHandle,
       callable.nativeFunction,
       NativeCallbacks.userData(callable),

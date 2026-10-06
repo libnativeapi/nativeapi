@@ -3,25 +3,56 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 
+#include "application_quit_dispatch.h"
+#include "capi/event_request_c.h"
 #include "foundation/dispatcher.h"
 
 namespace nativeapi_js {
 
+struct RuntimeState {
+  napi_env env;
+  std::thread::id js_thread = std::this_thread::get_id();
+  std::atomic<bool> alive{true};
+  bool hop_to_main_thread = false;
+  std::shared_ptr<void> loop_owner;
+  explicit RuntimeState(napi_env value) : env(value) {}
+};
+
 namespace {
+std::mutex g_runtime_mutex;
+std::unordered_map<napi_env, std::shared_ptr<RuntimeState>> g_runtimes;
+std::unordered_map<Callback*, std::shared_ptr<Callback>> g_callbacks;
+std::unordered_map<uint64_t, std::shared_ptr<RuntimeState>> g_event_deliveries;
+std::unordered_map<uint64_t, std::shared_ptr<RuntimeState>> g_event_decisions;
+thread_local std::weak_ptr<RuntimeState> current_runtime;
+std::atomic<uintptr_t> next_callback_token{1};
+Callback* NewCallbackToken() {
+  auto next = next_callback_token.load();
+  while (next != std::numeric_limits<uintptr_t>::max()) {
+    if (next_callback_token.compare_exchange_weak(next, next + 1))
+      return reinterpret_cast<Callback*>(next);
+  }
+  return nullptr;
+}
 
-std::thread::id g_js_thread;
-// Cleared when the environment tears down. Native code can still fire events
-// during process exit (windows closing, static destructors); by then calling
-// into the engine would crash.
-std::atomic<bool> g_env_alive{false};
-bool g_hop_to_main_thread = false;
-
-bool IsJsThread() {
-  return std::this_thread::get_id() == g_js_thread;
+std::shared_ptr<RuntimeState> RuntimeFor(napi_env env) {
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  auto found = g_runtimes.find(env);
+  return found == g_runtimes.end() ? nullptr : found->second;
+}
+bool IsJsThread(const std::shared_ptr<RuntimeState>& runtime) {
+  return runtime && std::this_thread::get_id() == runtime->js_thread;
+}
+std::shared_ptr<Callback> CallbackFor(void* data) {
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  auto found = g_callbacks.find(static_cast<Callback*>(data));
+  return found == g_callbacks.end() ? nullptr : found->second;
 }
 
 bool Throw(napi_env env, const std::string& message) {
@@ -141,6 +172,7 @@ Value CopyStringMap(const native_string_map_t& map) {
 // ---------------------------------------------------------------------------
 
 Args::Args(napi_env env, napi_callback_info info) : env_(env) {
+  current_runtime = RuntimeFor(env);
   ok_ = napi_get_cb_info(env, info, &count_, argv_, nullptr, nullptr) == napi_ok;
   if (count_ > kMaxArgs) {
     count_ = kMaxArgs;
@@ -331,6 +363,15 @@ namespace {
 // Queued in place of call arguments: release the Callback instead.
 char g_release_marker;
 
+struct QueuedCall {
+  std::vector<Value> args;
+  uint64_t delivery = 0;
+  ~QueuedCall() {
+    if (delivery)
+      Callback::CompleteEvent(delivery, false);
+  }
+};
+
 void ReportException(napi_env env) {
   bool pending = false;
   if (napi_is_exception_pending(env, &pending) != napi_ok || !pending) {
@@ -353,93 +394,220 @@ bool GetCallback(napi_env env, napi_value value, bool optional, Callback** out) 
   if (!TypeIs(env, value, napi_function)) {
     return Throw(env, "expected a function");
   }
-  auto* callback = new Callback();
+  auto owner = std::shared_ptr<Callback>(new Callback());
+  auto* callback = owner.get();
+  auto* token = NewCallbackToken();
+  if (!token)
+    return Throw(env, "callback tokens exhausted");
+  callback->runtime_ = RuntimeFor(env);
+  if (!callback->runtime_ || !callback->runtime_->alive.load())
+    return Throw(env, "nativeapi environment is closed");
   callback->env_ = env;
-  napi_create_reference(env, value, 1, &callback->function_);
-
+  if (napi_create_reference(env, value, 1, &callback->function_) != napi_ok)
+    return Throw(env, "could not retain callback");
+  try {
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    g_callbacks.emplace(token, owner);
+  } catch (...) {
+    napi_delete_reference(env, callback->function_);
+    return Throw(env, "could not retain callback owner");
+  }
+  auto queue_owner = std::make_unique<std::shared_ptr<Callback>>(owner);
   napi_value name = nullptr;
   napi_create_string_utf8(env, "nativeapi callback", NAPI_AUTO_LENGTH, &name);
-  // The queue owns the Callback: its finalizer frees it once released and
-  // drained, so a call still queued never touches freed memory.
-  auto finalize = [](napi_env, void* data, void*) { delete static_cast<Callback*>(data); };
-  if (napi_create_threadsafe_function(env, nullptr, nullptr, name, 0, 1, callback, finalize,
-                                      callback, &Callback::CallFromQueue,
+  // The token registry and the TSFN own separate references. Closing an env
+  // discards its registry entries; any later native use of the opaque token
+  // finds no callback, while queued TSFN contexts stay alive through finalizing.
+  auto finalize = [](napi_env env, void* data, void*) {
+    auto keeper =
+        std::unique_ptr<std::shared_ptr<Callback>>(static_cast<std::shared_ptr<Callback>*>(data));
+    auto callback = *keeper;
+    napi_ref function;
+    {
+      std::lock_guard<std::mutex> lock(g_runtime_mutex);
+      callback->queue_ = nullptr;
+      function = callback->function_;
+      callback->function_ = nullptr;
+    }
+    if (env && callback->runtime_->alive.load() && function)
+      napi_delete_reference(env, function);
+  };
+  if (napi_create_threadsafe_function(env, nullptr, nullptr, name, 0, 1, queue_owner.get(),
+                                      finalize, callback, &Callback::CallFromQueue,
                                       &callback->queue_) == napi_ok) {
-    // A registered listener must not keep the process alive on its own.
+    queue_owner.release();
     napi_unref_threadsafe_function(env, callback->queue_);
   } else {
-    callback->queue_ = nullptr;
+    napi_delete_reference(env, callback->function_);
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    g_callbacks.erase(token);
+    return Throw(env, "could not create callback queue");
   }
-  *out = callback;
+  *out = token;
   return true;
 }
 
+void Callback::AttachRegistration(void* user_data, std::function<void()> remove) {
+  auto callback = CallbackFor(user_data);
+  if (!callback)
+    return;
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  callback->remove_registration_ = std::move(remove);
+}
+
 void Callback::Dispatch(void* user_data, std::vector<Value> args) {
-  auto* callback = static_cast<Callback*>(user_data);
-  if (callback == nullptr || !g_env_alive.load()) {
+  DispatchCall(user_data, std::move(args), 0);
+}
+
+bool Callback::CompleteEvent(uint64_t delivery, bool accept) {
+  {
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    if (g_event_deliveries.erase(delivery) == 0)
+      return false;
+  }
+  return native_event_delivery_complete(delivery, accept);
+}
+
+void Callback::DispatchEvent(void* user_data, std::vector<Value> args, uint64_t delivery) {
+  bool registered = false;
+  try {
+    auto callback = CallbackFor(user_data);
+    {
+      std::lock_guard<std::mutex> lock(g_runtime_mutex);
+      if (callback && callback->runtime_->alive.load()) {
+        g_event_deliveries.emplace(delivery, callback->runtime_);
+        registered = true;
+      }
+    }
+    if (!registered) {
+      // Existing deliveries are vetoed during cleanup. A fresh event emitted
+      // after the environment closes has no consumer; an inert registration
+      // awaiting UI removal must not veto another environment's new request.
+      native_event_delivery_complete(delivery, callback && !callback->runtime_->alive.load());
+      return;
+    }
+    args.push_back(Value::BigInt(delivery));
+    DispatchCall(user_data, std::move(args), delivery);
+  } catch (...) {
+    if (registered)
+      CompleteEvent(delivery, false);
+    else
+      native_event_delivery_complete(delivery, false);
+    throw;
+  }
+}
+
+void Callback::DispatchCall(void* user_data, std::vector<Value> args, uint64_t delivery) {
+  auto queued = std::make_unique<QueuedCall>();
+  queued->args = std::move(args);
+  queued->delivery = delivery;
+  auto callback = CallbackFor(user_data);
+  if (!callback) {
     return;
   }
-  if (IsJsThread()) {
+  if (IsJsThread(callback->runtime_)) {
+    if (!callback->runtime_->alive.load())
+      return;
+    auto env = callback->env_;
     // Native code only runs on this thread from inside a call we made (an API
     // call, or the event loop pump), so the engine is in a callable state.
     napi_handle_scope scope = nullptr;
-    napi_open_handle_scope(callback->env_, &scope);
-    callback->Call(callback->env_, args);
-    napi_close_handle_scope(callback->env_, scope);
+    if (napi_open_handle_scope(env, &scope) != napi_ok)
+      return;
+    if (callback->Call(env, queued->args)) {
+      queued->delivery = 0;
+    } else {
+      queued.reset();
+      ReportException(env);
+    }
+    napi_close_handle_scope(env, scope);
     return;
   }
-  if (callback->queue_ != nullptr) {
-    auto* queued = new std::vector<Value>(std::move(args));
-    if (napi_call_threadsafe_function(callback->queue_, queued, napi_tsfn_nonblocking) !=
-        napi_ok) {
-      delete queued;
-    }
+  napi_threadsafe_function queue = nullptr;
+  {
+    // Cleanup/finalization cannot free the callback while acquiring this
+    // temporary producer reference. It keeps the TSFN alive until enqueue ends.
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    if (callback->runtime_->alive.load() && callback->queue_ != nullptr &&
+        napi_acquire_threadsafe_function(callback->queue_) == napi_ok)
+      queue = callback->queue_;
+  }
+  if (queue != nullptr) {
+    if (napi_call_threadsafe_function(queue, queued.get(), napi_tsfn_nonblocking) == napi_ok)
+      queued.release();
+    napi_release_threadsafe_function(queue, napi_tsfn_release);
   }
 }
 
 void Callback::CallFromQueue(napi_env env, napi_value, void* context, void* data) {
   if (data == &g_release_marker) {
-    if (env != nullptr && g_env_alive.load()) {
+    if (env != nullptr && static_cast<Callback*>(context)->runtime_->alive.load()) {
       static_cast<Callback*>(context)->ReleaseOnJsThread();
     }
     return;
   }
-  auto* args = static_cast<std::vector<Value>*>(data);
-  if (env != nullptr && g_env_alive.load()) {
-    static_cast<Callback*>(context)->Call(env, *args);
+  auto queued = std::unique_ptr<QueuedCall>(static_cast<QueuedCall*>(data));
+  if (env != nullptr && static_cast<Callback*>(context)->runtime_->alive.load()) {
+    if (static_cast<Callback*>(context)->Call(env, queued->args)) {
+      queued->delivery = 0;
+    } else {
+      queued.reset();
+      ReportException(env);
+    }
   }
-  delete args;
 }
 
-void Callback::Call(napi_env env, const std::vector<Value>& args) {
+bool Callback::Call(napi_env env, const std::vector<Value>& args) {
   if (function_ == nullptr) {
-    return;
+    return false;
   }
   napi_value function = nullptr;
   if (napi_get_reference_value(env, function_, &function) != napi_ok || function == nullptr) {
-    return;
+    return false;
   }
   std::vector<napi_value> argv;
   argv.reserve(args.size());
   for (const auto& arg : args) {
-    argv.push_back(arg.ToJs(env));
+    auto value = arg.ToJs(env);
+    if (!value)
+      return false;
+    argv.push_back(value);
   }
   napi_value result = nullptr;
   if (napi_call_function(env, Undefined(env), function, argv.size(), argv.data(), &result) !=
       napi_ok) {
-    ReportException(env);
+    return false;
   }
+  return true;
 }
 
 void Callback::ReleaseUserData(void* user_data) {
-  auto* callback = static_cast<Callback*>(user_data);
-  if (callback == nullptr || !g_env_alive.load()) {
-    return;  // The environment is gone, and every Callback with it.
+  std::shared_ptr<Callback> callback;
+  {
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    auto found = g_callbacks.find(static_cast<Callback*>(user_data));
+    if (found == g_callbacks.end())
+      return;
+    callback = std::move(found->second);
+    g_callbacks.erase(found);
   }
-  if (IsJsThread()) {
+  if (!callback->runtime_->alive.load())
+    return;
+  if (IsJsThread(callback->runtime_)) {
     callback->ReleaseOnJsThread();
-  } else if (callback->queue_ != nullptr) {
-    napi_call_threadsafe_function(callback->queue_, &g_release_marker, napi_tsfn_nonblocking);
+  } else {
+    napi_threadsafe_function queue = nullptr;
+    {
+      std::lock_guard<std::mutex> lock(g_runtime_mutex);
+      if (callback->runtime_->alive.load() && callback->queue_ != nullptr &&
+          napi_acquire_threadsafe_function(callback->queue_) == napi_ok)
+        queue = callback->queue_;
+    }
+    if (queue) {
+      if (napi_call_threadsafe_function(queue, &g_release_marker, napi_tsfn_nonblocking) != napi_ok)
+        napi_release_threadsafe_function(queue, napi_tsfn_release);  // Core's producer reference.
+      napi_release_threadsafe_function(queue, napi_tsfn_release);    // Temporary enqueue reference.
+    }
   }
 }
 
@@ -449,11 +617,14 @@ void Callback::ReleaseOnJsThread() {
     function_ = nullptr;
   }
   if (queue_ != nullptr) {
-    auto* queue = queue_;
-    queue_ = nullptr;
-    napi_release_threadsafe_function(queue, napi_tsfn_release);  // finalizer frees this
-  } else {
-    delete this;
+    napi_threadsafe_function queue;
+    {
+      std::lock_guard<std::mutex> lock(g_runtime_mutex);
+      queue = queue_;
+      queue_ = nullptr;
+    }
+    napi_release_threadsafe_function(queue,
+                                     napi_tsfn_release);  // finalizer frees this
   }
 }
 
@@ -462,7 +633,8 @@ void Callback::ReleaseOnJsThread() {
 // ---------------------------------------------------------------------------
 
 bool NeedsMainThreadHop() {
-  return g_hop_to_main_thread && !nativeapi::IsMainThread();
+  auto runtime = current_runtime.lock();
+  return runtime && runtime->hop_to_main_thread && !nativeapi::IsMainThread();
 }
 
 void RunOnMainThreadSync(const std::function<void()>& work) {
@@ -513,12 +685,151 @@ bool MainThreadIsServiced() {
 }  // namespace
 
 void InitRuntime(napi_env env) {
-  g_js_thread = std::this_thread::get_id();
-  g_hop_to_main_thread = !nativeapi::IsMainThread() &&
-                         nativeapi::IsMainThreadDispatchSupported() && MainThreadIsServiced();
-  g_env_alive.store(true);
+  auto runtime = std::make_shared<RuntimeState>(env);
+  runtime->hop_to_main_thread = !nativeapi::IsMainThread() &&
+                                nativeapi::IsMainThreadDispatchSupported() &&
+                                MainThreadIsServiced();
+  {
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    g_runtimes[env] = runtime;
+  }
+  current_runtime = runtime;
+  auto keeper = new std::shared_ptr<RuntimeState>(runtime);
   napi_add_env_cleanup_hook(
-      env, [](void*) { g_env_alive.store(false); }, nullptr);
+      env,
+      [](void* data) {
+        auto keeper = std::unique_ptr<std::shared_ptr<RuntimeState>>(
+            static_cast<std::shared_ptr<RuntimeState>*>(data));
+        auto runtime = *keeper;
+        std::shared_ptr<void> loop_owner;
+        {
+          std::lock_guard<std::mutex> lock(g_runtime_mutex);
+          runtime->alive.store(false);
+          loop_owner = std::move(runtime->loop_owner);
+          auto found = g_runtimes.find(runtime->env);
+          if (found != g_runtimes.end() && found->second == runtime)
+            g_runtimes.erase(found);
+        }
+        // Destroying a vote or delivery can call native continuations. Do it
+        // outside the runtime lock and without calling back into the closing JS
+        // environment.
+        if (loop_owner) {
+          std::weak_ptr<void> old_owner = loop_owner;
+          loop_owner.reset();
+          nativeapi::detail::ApplicationQuitDispatch::CancelForLoop(old_owner);
+        }
+        for (;;) {
+          std::function<void()> remove;
+          {
+            std::lock_guard<std::mutex> lock(g_runtime_mutex);
+            for (const auto& entry : g_callbacks) {
+              if (entry.second->runtime_ == runtime && entry.second->remove_registration_) {
+                remove.swap(entry.second->remove_registration_);
+                break;
+              }
+            }
+          }
+          if (!remove)
+            break;
+          if (runtime->hop_to_main_thread && !nativeapi::IsMainThread()) {
+            try {
+              (void)nativeapi::RunOnMainThread(std::move(remove));
+            } catch (...) {
+            }
+          } else {
+            try {
+              remove();
+            } catch (...) {
+            }
+          }
+        }
+        auto take = [&](auto& handles) -> uint64_t {
+          std::lock_guard<std::mutex> lock(g_runtime_mutex);
+          for (auto it = handles.begin(); it != handles.end(); ++it) {
+            if (it->second == runtime) {
+              const auto handle = it->first;
+              handles.erase(it);
+              return handle;
+            }
+          }
+          return 0;
+        };
+        // Removing one entry at a time requires no allocation during teardown.
+        while (auto delivery = take(g_event_deliveries))
+          native_event_delivery_complete(delivery, false);
+        while (auto decision = take(g_event_decisions)) {
+          native_event_decision_cancel(decision);
+          native_event_decision_free(decision);
+        }
+        for (;;) {
+          std::shared_ptr<Callback> callback;
+          {
+            std::lock_guard<std::mutex> lock(g_runtime_mutex);
+            for (auto it = g_callbacks.begin(); it != g_callbacks.end(); ++it) {
+              if (it->second->runtime_ == runtime) {
+                callback = std::move(it->second);
+                g_callbacks.erase(it);
+                break;
+              }
+            }
+          }
+          if (!callback)
+            break;
+          // Core release tasks carry a monotonic opaque token, not this object's
+          // address. A late release cannot match an allocation in a new env.
+        }
+      },
+      keeper);
+}
+
+uint64_t TrackEventDecision(napi_env env, uint64_t handle) noexcept {
+  if (!handle)
+    return 0;
+  try {
+    auto runtime = RuntimeFor(env);
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    if (runtime && runtime->alive.load()) {
+      g_event_decisions.emplace(handle, runtime);
+      return handle;
+    }
+  } catch (...) {
+  }
+  native_event_decision_cancel(handle);
+  native_event_decision_free(handle);
+  return 0;
+}
+void ForgetEventDecision(uint64_t handle) {
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  g_event_decisions.erase(handle);
+}
+std::shared_ptr<void> EventLoopOwner(napi_env env) {
+  auto runtime = RuntimeFor(env);
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  return runtime && runtime->alive.load() ? runtime->loop_owner : nullptr;
+}
+void EndEventLoopSession(napi_env env) {
+  auto runtime = RuntimeFor(env);
+  std::shared_ptr<void> owner;
+  {
+    std::lock_guard<std::mutex> lock(g_runtime_mutex);
+    if (runtime)
+      owner = std::move(runtime->loop_owner);
+  }
+  if (owner) {
+    std::weak_ptr<void> old_owner = owner;
+    owner.reset();
+    nativeapi::detail::ApplicationQuitDispatch::CancelForLoop(old_owner);
+  }
+}
+bool BeginEventLoopSession(napi_env env) {
+  EndEventLoopSession(env);
+  auto runtime = RuntimeFor(env);
+  auto owner = std::make_shared<int>(0);
+  std::lock_guard<std::mutex> lock(g_runtime_mutex);
+  if (!runtime || !runtime->alive.load())
+    return false;
+  runtime->loop_owner = owner;
+  return true;
 }
 
 void Export(napi_env env, napi_value exports, const char* name, napi_callback callback) {

@@ -4,6 +4,7 @@
 export * from "./geometry.ts";
 export * from "./color.ts";
 export * from "./keyboard.ts";
+export * from "./event_request.ts";
 export * from "./placement.ts";
 export * from "./dialog.ts";
 export * from "./accessibility_manager.ts";

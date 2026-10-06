@@ -3,11 +3,13 @@
 
 // ignore_for_file: unused_import, unnecessary_import
 
+import 'dart:async';
 import 'dart:ffi' as ffi;
 
 import 'package:cnativeapi/cnativeapi.dart' as c;
 import 'package:ffi/ffi.dart' as pkg_ffi;
 
+import 'foundation/event_request.dart';
 import 'menu.dart';
 import 'window.dart';
 
@@ -73,7 +75,9 @@ sealed class ApplicationEvent {
             .native_application_event_type_t
             .NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED
             .value) {
-      return ApplicationQuitRequestedEvent();
+      return ApplicationQuitRequestedEvent(
+        request: EventRequest.borrowed(raw.data.quit_requested.request),
+      );
     }
     return null;
   }
@@ -98,7 +102,9 @@ final class ApplicationDeactivatedEvent extends ApplicationEvent {
 }
 
 final class ApplicationQuitRequestedEvent extends ApplicationEvent {
-  const ApplicationQuitRequestedEvent();
+  const ApplicationQuitRequestedEvent({required this.request});
+
+  final EventRequest request;
 }
 
 class Application {
@@ -195,26 +201,33 @@ class Application {
 
   /// Registers [callback] for every `ApplicationEvent` this `Application` emits.
   ///
-  /// The callback runs synchronously on whichever thread the native side
-  /// dispatches from, because the event struct is freed as soon as it
-  /// returns. That thread must therefore be this isolate's own; see the
-  /// package README for what that means under Flutter.
-  ListenerId addListener(void Function(ApplicationEvent) callback) {
+  /// Delivered on the registering isolate, including events from native UI threads.
+  /// The callback may return a Future; borrowed handles stay valid until it completes.
+  /// Events queued before removal are skipped if their callback has not started.
+  ListenerId addListener(FutureOr<void> Function(ApplicationEvent) callback) {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
             ffi.Pointer<c.native_application_event_t>,
+            ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
-        >.isolateLocal((
+        >.listener((
           ffi.Pointer<c.native_application_event_t> event,
+          int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
-          if (event == ffi.nullptr) return;
-          final value = ApplicationEvent.fromNative(event.ref);
-          if (value != null) callback(value);
+          unawaited(
+            NativeCallbacks.deliverEvent(
+              delivery,
+              () => event == ffi.nullptr
+                  ? null
+                  : ApplicationEvent.fromNative(event.ref),
+              callback,
+            ),
+          );
         });
-    return c.native_application_add_listener(
+    return c.native_application_add_listener_async(
       callable.nativeFunction,
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,

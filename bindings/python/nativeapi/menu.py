@@ -228,13 +228,15 @@ class MenuItem(_rt.NativeObject):
     def add_listener(self, callback: Callable[[MenuEvent], None]) -> int:
         """Calls `callback` with every MenuEvent this MenuItem emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = MenuEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_menu_item_add_listener,
@@ -364,13 +366,15 @@ class Menu(_rt.NativeObject):
     def add_listener(self, callback: Callable[[MenuEvent], None]) -> int:
         """Calls `callback` with every MenuEvent this Menu emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = MenuEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_menu_add_listener,

@@ -6,6 +6,7 @@
 use cnativeapi;
 use std::ffi::{CStr, CString};
 
+use crate::event_request::{EventRequest, EventRequestRef};
 use crate::menu::Menu;
 use crate::window::Window;
 
@@ -42,7 +43,7 @@ pub enum ApplicationEvent {
     Exiting { exit_code: i32 },
     Activated,
     Deactivated,
-    QuitRequested,
+    QuitRequested { request: EventRequestRef },
 }
 
 impl ApplicationEvent {
@@ -52,7 +53,7 @@ impl ApplicationEvent {
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_EXITING => Self::Exiting { exit_code: raw.data.exiting.exit_code },
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED => Self::Activated,
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED => Self::Deactivated,
-            cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED => Self::QuitRequested,
+            cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED => Self::QuitRequested { request: EventRequestRef::from_raw(raw.data.quit_requested.request) },
             _ => return None,
         })
     }

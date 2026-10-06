@@ -146,12 +146,36 @@ pub fn generate_callbacks(dart_out: &Path) -> GeneratedFile {
     let mut out = String::new();
     write_banner(&mut out);
     out.push_str(
-        r#"import 'dart:ffi' as ffi;
+        r#"import 'dart:async';
+import 'dart:ffi' as ffi;
+
+import 'package:cnativeapi/cnativeapi.dart' as c;
 
 /// Owns every NativeCallable handed to the C API until the core releases it.
 abstract final class NativeCallbacks {
   static final _callables = <int, ffi.NativeCallable<Function>>{};
   static var _nextToken = 0;
+
+  /// Keeps borrowed event handles valid across the callback's asynchronous work.
+  /// Removal suppresses callbacks that have not begun, without closing their
+  /// NativeCallable until every delivery has released its payload.
+  static Future<void> deliverEvent<T>(
+    int delivery,
+    T? Function() convert,
+    FutureOr<void> Function(T) callback,
+  ) async {
+    var accept = false;
+    try {
+      if (!c.native_event_delivery_is_active(delivery)) return;
+      final value = convert();
+      if (value == null) return;
+      await callback(value);
+      accept = true;
+    } finally {
+      c.native_event_delivery_complete(delivery, accept);
+    }
+  }
+
 
   /// The user_data to pass with [callable]: a token the release maps back to
   /// it. Null for a null callable, which has nothing to release.
@@ -236,6 +260,9 @@ fn generate_dart(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     write_banner(&mut out);
     writeln!(out, "// ignore_for_file: unused_import, unnecessary_import").unwrap();
     writeln!(out).unwrap();
+    if header.classes.iter().any(|class| class.event.is_some()) {
+        writeln!(out, "import 'dart:async';").unwrap();
+    }
     writeln!(out, "import 'dart:ffi' as ffi;").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "import 'package:cnativeapi/cnativeapi.dart' as {C};").unwrap();
@@ -1038,58 +1065,44 @@ fn render_dart_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
     writeln!(out, "  ///").unwrap();
     writeln!(
         out,
-        "  /// The callback runs synchronously on whichever thread the native side"
+        "  /// Delivered on the registering isolate, including events from native UI threads."
     )
     .unwrap();
     writeln!(
         out,
-        "  /// dispatches from, because the event struct is freed as soon as it"
+        "  /// The callback may return a Future; borrowed handles stay valid until it completes."
     )
     .unwrap();
     writeln!(
         out,
-        "  /// returns. That thread must therefore be this isolate's own; see the"
+        "  /// Events queued before removal are skipped if their callback has not started."
     )
     .unwrap();
     writeln!(
         out,
-        "  /// package README for what that means under Flutter."
-    )
-    .unwrap();
-    writeln!(
-        out,
-        "{keyword}ListenerId addListener(void Function({}) callback) {{",
+        "{keyword}ListenerId addListener(FutureOr<void> Function({}) callback) {{",
         group.name
     )
     .unwrap();
+    writeln!(out, "    final callable = ffi.NativeCallable<\n        ffi.Void Function(ffi.Pointer<{c_event}>, ffi.Uint64, ffi.Pointer<ffi.Void>)>.listener(").unwrap();
     writeln!(
         out,
-        "    final callable = ffi.NativeCallable<\n        ffi.Void Function(ffi.Pointer<{c_event}>, ffi.Pointer<ffi.Void>)>.isolateLocal("
+        "      (ffi.Pointer<{c_event}> event, int delivery, ffi.Pointer<ffi.Void> _) {{"
     )
     .unwrap();
+    writeln!(out, "        unawaited(NativeCallbacks.deliverEvent(").unwrap();
+    writeln!(out, "          delivery,").unwrap();
     writeln!(
         out,
-        "      (ffi.Pointer<{c_event}> event, ffi.Pointer<ffi.Void> _) {{"
-    )
-    .unwrap();
-    writeln!(out, "        if (event == ffi.nullptr) return;").unwrap();
-    writeln!(
-        out,
-        "        final value = {}.fromNative(event.ref);",
+        "          () => event == ffi.nullptr ? null : {}.fromNative(event.ref),",
         group.name
     )
     .unwrap();
-    writeln!(out, "        if (value != null) callback(value);").unwrap();
+    writeln!(out, "          callback,").unwrap();
+    writeln!(out, "        ));").unwrap();
     writeln!(out, "      }},").unwrap();
     writeln!(out, "    );").unwrap();
-    // The core releases the callable once the listener is removed, its
-    // emitter destroyed, or registration failed.
-    writeln!(
-        out,
-        "    return {C}.{}({self_arg}callable.nativeFunction, NativeCallbacks.userData(callable), NativeCallbacks.release);",
-        c_add_listener_symbol(prefix, &class.name)
-    )
-    .unwrap();
+    writeln!(out, "    return {C}.{}_async({self_arg}callable.nativeFunction, NativeCallbacks.userData(callable), NativeCallbacks.release);", c_add_listener_symbol(prefix, &class.name)).unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
 

@@ -48,7 +48,12 @@ const LOOP_QUIT: &str = "native_application_quit";
 /// `OnMainThread` in src/napi_support.h), which matters for code that feeds
 /// them in bulk — a shape morph adds a thousand points per frame. Struct
 /// methods (`Color.fromHex`) never hop either.
-const THREAD_FREE_CLASSES: &[&str] = &["WindowShape", "WindowShadow"];
+const THREAD_FREE_CLASSES: &[&str] = &[
+    "WindowShape",
+    "WindowShadow",
+    "EventRequest",
+    "EventDecision",
+];
 
 // ---------------------------------------------------------------------------
 // Entry points
@@ -565,10 +570,16 @@ impl Glue<'_> {
             format!("{symbol}({})", call_args.join(", "))
         };
         if matches!(return_type, TypeRef::Void) {
+            if symbol == c_free_symbol(self.prefix, "EventDecision") {
+                writeln!(out, "  ForgetEventDecision(self);").unwrap();
+            }
             writeln!(out, "  {call};").unwrap();
             writeln!(out, "  return Undefined(env);").unwrap();
         } else {
             writeln!(out, "  auto result = {call};").unwrap();
+            if matches!(return_type, TypeRef::Object { name, .. } if name == "EventDecision") {
+                writeln!(out, "  result = TrackEventDecision(env, result);").unwrap();
+            }
             render_return(out, self.api, self.prefix, return_type);
         }
         writeln!(out, "}}").unwrap();
@@ -613,19 +624,24 @@ impl Glue<'_> {
         let self_arg = if instance { "self, " } else { "" };
         writeln!(
             out,
-            "  native_listener_id_t id = OnMainThread([&] {{ return {add}({self_arg}+[](const {event_ty}* event, void* user_data) {{"
+            "  native_listener_id_t id = OnMainThread([&] {{ return {add}_async({self_arg}+[](const {event_ty}* event, native_event_delivery_t delivery, void* user_data) {{"
         )
         .unwrap();
         writeln!(out, "    if (event != nullptr) {{").unwrap();
         writeln!(
             out,
-            "      Callback::Dispatch(user_data, {{ToValue(*event)}});"
+            "      Callback::DispatchEvent(user_data, {{ToValue(*event)}}, delivery);"
         )
         .unwrap();
-        writeln!(out, "    }}").unwrap();
+        writeln!(
+            out,
+            "    }} else {{ native_event_delivery_complete(delivery, false); }}"
+        )
+        .unwrap();
         // The core releases `callback` once the listener is removed, its
         // emitter destroyed, or registration failed.
         writeln!(out, "  }}, callback, &Callback::ReleaseUserData); }});").unwrap();
+        writeln!(out, "  if (id) Callback::AttachRegistration(callback, [self, id] {{ (void){remove}({self_arg}id); }});").unwrap();
         writeln!(
             out,
             "  return Value::Number(static_cast<double>(id)).ToJs(env);"
@@ -844,7 +860,8 @@ const RUNTIME_EXPORTS: &[(&str, &str)] = &[
     ("NativeObject", "extends NativeObject"),
     ("wrapHandle", "wrapHandle("),
     ("runEventLoop", "runEventLoop("),
-    ("stopEventLoop", "stopEventLoop("),
+    ("quitEventLoop", "quitEventLoop("),
+    ("deliverEvent", "deliverEvent("),
 ];
 
 fn ts_file(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str) -> String {
@@ -908,7 +925,23 @@ fn foreign_imports(
     origins: &TypeOrigins,
 ) -> Vec<(String, Vec<String>)> {
     let mut by_stem: std::collections::BTreeMap<String, Vec<String>> = Default::default();
-    for name in codegen_shared::naming::foreign_types(header, origins) {
+    let mut names = codegen_shared::naming::foreign_types(header, origins);
+    // Listener wrappers construct borrowed payload handles even when the event
+    // group belongs to another header (WindowManager consumes WindowEvent).
+    for class in &header.classes {
+        if let Some(group) = emitted_group(api, class) {
+            for field in group.variants.iter().flat_map(|variant| &variant.fields) {
+                if let TypeRef::Object { name, .. } = &field.ty {
+                    if origins.get(name).is_some_and(|stem| stem != &header.stem) {
+                        names.push(name.clone());
+                    }
+                }
+            }
+        }
+    }
+    names.sort();
+    names.dedup();
+    for name in names {
         let Some(stem) = origins.get(&name) else {
             continue;
         };
@@ -1202,11 +1235,11 @@ fn render_loop_method(out: &mut String, symbol: &str) -> bool {
         LOOP_QUIT => {
             writeln!(
                 out,
-                "  /** Stops the loop started by `run()`, which then resolves with `exitCode`. */"
+                "  /** Requests quit; `run()` resolves with `exitCode` after confirmation accepts. */"
             )
             .unwrap();
             writeln!(out, "  static quit(exitCode = 0): void {{").unwrap();
-            writeln!(out, "    stopEventLoop(exitCode);").unwrap();
+            writeln!(out, "    quitEventLoop(exitCode);").unwrap();
             writeln!(out, "  }}").unwrap();
             writeln!(out).unwrap();
             true
@@ -1275,38 +1308,30 @@ fn ts_listener(out: &mut String, class: &Class, group: &EventGroup, prefix: &str
         })
         .collect();
 
+    writeln!(out, "  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */").unwrap();
     writeln!(
         out,
-        "  /** Calls `listener` for every {} this {} emits; returns the listener id. */",
-        group.name, class.name
-    )
-    .unwrap();
-    writeln!(
-        out,
-        "  {modifier}addListener(listener: (event: {}) => void): number {{",
+        "  {modifier}addListener(listener: (event: {}) => void | Promise<void>): number {{",
         group.name
     )
     .unwrap();
-    if objects.is_empty() {
-        writeln!(out, "    return native.{add}({self_arg}listener);").unwrap();
-    } else {
+    writeln!(
+        out,
+        "    return native.{add}({self_arg}(event: Record<string, unknown>, delivery: bigint) =>"
+    )
+    .unwrap();
+    writeln!(out, "      deliverEvent(delivery, () => {{").unwrap();
+    for (field, name) in &objects {
+        writeln!(out, "        if (typeof event.{field} === \"bigint\") {{").unwrap();
         writeln!(
             out,
-            "    return native.{add}({self_arg}(event: Record<string, unknown>) => {{"
+            "          event.{field} = event.{field} ? new {name}(event.{field}, false) : null;"
         )
         .unwrap();
-        for (field, name) in &objects {
-            writeln!(out, "      if (typeof event.{field} === \"bigint\") {{").unwrap();
-            writeln!(
-                out,
-                "        event.{field} = event.{field} ? new {name}(event.{field}, false) : null;"
-            )
-            .unwrap();
-            writeln!(out, "      }}").unwrap();
-        }
-        writeln!(out, "      listener(event as unknown as {});", group.name).unwrap();
-        writeln!(out, "    }});").unwrap();
+        writeln!(out, "        }}").unwrap();
     }
+    writeln!(out, "        return event as unknown as {};", group.name).unwrap();
+    writeln!(out, "      }}, listener));").unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
     writeln!(
@@ -1514,5 +1539,114 @@ fn ts_ident(name: &str) -> String {
         format!("{name}_")
     } else {
         name.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use codegen_shared::ir::{ClassKind, EventVariant, Field};
+    use codegen_shared::naming::type_origins;
+
+    #[test]
+    fn owned_decisions_register_for_cleanup_and_free_on_the_calling_thread() {
+        let api = Api {
+            headers: vec![],
+            diagnostics: vec![],
+        };
+        let mut glue = Glue {
+            api: &api,
+            prefix: "test_",
+            out: String::new(),
+            exports: vec![],
+            hop: false,
+        };
+        let decision = TypeRef::Object {
+            name: "EventDecision".into(),
+            qualified_name: "nativeapi::EventDecision".into(),
+            shared: true,
+        };
+        glue.function(
+            "test_event_request_defer",
+            Some(Receiver::Handle),
+            &[],
+            &decision,
+        );
+        glue.function(
+            "test_event_decision_free",
+            Some(Receiver::Handle),
+            &[],
+            &TypeRef::Void,
+        );
+        assert!(glue
+            .out
+            .contains("result = TrackEventDecision(env, result);"));
+        assert!(glue
+            .out
+            .contains("ForgetEventDecision(self);\n  test_event_decision_free(self);"));
+        assert!(THREAD_FREE_CLASSES.contains(&"EventRequest"));
+        assert!(THREAD_FREE_CLASSES.contains(&"EventDecision"));
+    }
+
+    #[test]
+    fn listener_for_foreign_event_imports_its_payload_handle_constructor() {
+        let mut manager = Header {
+            path: "window_manager.h".into(),
+            stem: "window_manager".into(),
+            namespace: "nativeapi".into(),
+            enums: vec![],
+            structs: vec![],
+            aliases: vec![],
+            events: vec![],
+            classes: vec![],
+        };
+        let class = Class {
+            name: "WindowManager".into(),
+            qualified_name: "nativeapi::WindowManager".into(),
+            kind: ClassKind::Singleton,
+            native_object: false,
+            constructors: vec![],
+            methods: vec![],
+            event: Some("WindowEvent".into()),
+            base: None,
+        };
+        manager.classes.push(class.clone());
+        let mut window = manager.clone();
+        window.stem = "window".into();
+        window.classes.clear();
+        window.events.push(EventGroup {
+            name: "WindowEvent".into(),
+            qualified_name: "nativeapi::WindowEvent".into(),
+            common: vec![],
+            variants: vec![EventVariant {
+                name: "WindowCloseRequestedEvent".into(),
+                qualified_name: "nativeapi::WindowCloseRequestedEvent".into(),
+                discriminant: "CloseRequested".into(),
+                fields: vec![Field {
+                    name: "request".into(),
+                    ty: TypeRef::Object {
+                        name: "EventRequest".into(),
+                        qualified_name: "nativeapi::EventRequest".into(),
+                        shared: true,
+                    },
+                }],
+            }],
+        });
+        let mut request = manager.clone();
+        request.stem = "event_request".into();
+        request.classes = vec![Class {
+            name: "EventRequest".into(),
+            qualified_name: "nativeapi::EventRequest".into(),
+            kind: ClassKind::Instance,
+            event: None,
+            ..class
+        }];
+        let api = Api {
+            headers: vec![request, window, manager.clone()],
+            diagnostics: vec![],
+        };
+        let code = ts_file(&api, &manager, &type_origins(&api), "native");
+        assert!(code.contains("import { EventRequest } from \"./event_request.ts\";"));
+        assert!(code.contains("new EventRequest(event.request, false)"));
     }
 }

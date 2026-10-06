@@ -333,13 +333,15 @@ class View(_rt.NativeObject):
     def add_listener(self, callback: Callable[[ViewEvent], None]) -> int:
         """Calls `callback` with every ViewEvent this View emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = ViewEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_view_add_listener,

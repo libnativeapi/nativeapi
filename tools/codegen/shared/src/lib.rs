@@ -13,6 +13,7 @@ pub const API_HEADERS: &[&str] = &[
     "foundation/geometry.h",
     "foundation/color.h",
     "foundation/keyboard.h",
+    "foundation/event_request.h",
     "placement.h",
     "dialog.h",
     "accessibility_manager.h",

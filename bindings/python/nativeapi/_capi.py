@@ -133,6 +133,10 @@ class native_window_event_resized_t(Structure):
     pass
 
 
+class native_window_event_close_requested_t(Structure):
+    pass
+
+
 class native_window_event_data_t(Union):
     pass
 
@@ -234,6 +238,10 @@ class native_shortcut_event_t(Structure):
 
 
 class native_application_event_exiting_t(Structure):
+    pass
+
+
+class native_application_event_quit_requested_t(Structure):
     pass
 
 
@@ -406,9 +414,13 @@ native_window_event_moved_t._fields_ = [
 native_window_event_resized_t._fields_ = [
     ("new_size", native_size_t),
 ]
+native_window_event_close_requested_t._fields_ = [
+    ("request", c_uint64),
+]
 native_window_event_data_t._fields_ = [
     ("moved", native_window_event_moved_t),
     ("resized", native_window_event_resized_t),
+    ("close_requested", native_window_event_close_requested_t),
 ]
 native_window_event_t._fields_ = [
     ("type", c_int),
@@ -513,8 +525,12 @@ native_shortcut_event_t._fields_ = [
 native_application_event_exiting_t._fields_ = [
     ("exit_code", c_int),
 ]
+native_application_event_quit_requested_t._fields_ = [
+    ("request", c_uint64),
+]
 native_application_event_data_t._fields_ = [
     ("exiting", native_application_event_exiting_t),
+    ("quit_requested", native_application_event_quit_requested_t),
 ]
 native_application_event_t._fields_ = [
     ("type", c_int),
@@ -614,6 +630,67 @@ native_keyboard_accelerator_is_empty = function(
     c_bool,
     [
         native_keyboard_accelerator_t,
+    ],
+)
+
+# foundation/event_request.h
+
+native_event_decision_free = function("native_event_decision_free", None, [c_uint64])
+native_event_decision_accept = function(
+    "native_event_decision_accept",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_decision_cancel = function(
+    "native_event_decision_cancel",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_decision_is_pending = function(
+    "native_event_decision_is_pending",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_request_free = function("native_event_request_free", None, [c_uint64])
+native_event_request_is_cancelable = function(
+    "native_event_request_is_cancelable",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_request_is_cancelled = function(
+    "native_event_request_is_cancelled",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_request_is_pending = function(
+    "native_event_request_is_pending",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_request_cancel = function(
+    "native_event_request_cancel",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_event_request_defer = function(
+    "native_event_request_defer",
+    c_uint64,
+    [
+        c_uint64,
     ],
 )
 
@@ -1916,6 +1993,13 @@ native_window_create_with_native_window = function(
         c_void_p,
     ],
 )
+native_window_is_close_supported = function(
+    "native_window_is_close_supported",
+    c_bool,
+    [
+    ],
+)
+native_window_close = function("native_window_close", c_bool, [c_uint64])
 native_window_get_id = function("native_window_get_id", c_uint, [c_uint64])
 native_window_get_content_view = function(
     "native_window_get_content_view",
@@ -2526,6 +2610,24 @@ native_window_start_resizing = function(
     [
         c_uint64,
         c_int,
+    ],
+)
+native_window_add_listener = function(
+    "native_window_add_listener",
+    c_uint64,
+    [
+        c_uint64,
+        native_window_event_callback_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_window_remove_listener = function(
+    "native_window_remove_listener",
+    c_bool,
+    [
+        c_uint64,
+        c_uint64,
     ],
 )
 

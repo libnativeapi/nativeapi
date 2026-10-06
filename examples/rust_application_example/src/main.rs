@@ -22,7 +22,7 @@ fn main() {
         ApplicationEvent::Exiting { exit_code } => println!("[app] exiting ({exit_code})"),
         ApplicationEvent::Activated => println!("[app] activated"),
         ApplicationEvent::Deactivated => println!("[app] deactivated"),
-        ApplicationEvent::QuitRequested => {
+        ApplicationEvent::QuitRequested { .. } => {
             println!("[app] quit requested");
             Application::quit(0);
         }

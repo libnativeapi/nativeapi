@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject, wrapHandle } from "./runtime.ts";
+import { native, NativeObject, wrapHandle, deliverEvent } from "./runtime.ts";
 import { Color } from "./color.ts";
 import { EdgeInsets, type Rectangle, type Size } from "./geometry.ts";
 import { Image } from "./image.ts";
@@ -234,9 +234,12 @@ export class View extends NativeObject {
     return native.native_view_get_native_object(this.nativeHandle);
   }
 
-  /** Calls `listener` for every ViewEvent this View emits; returns the listener id. */
-  addListener(listener: (event: ViewEvent) => void): number {
-    return native.native_view_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: ViewEvent) => void | Promise<void>): number {
+    return native.native_view_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as ViewEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

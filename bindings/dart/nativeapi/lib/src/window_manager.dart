@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unnecessary_import
 
+import 'dart:async';
 import 'dart:ffi' as ffi;
 
 import 'package:cnativeapi/cnativeapi.dart' as c;
@@ -114,26 +115,33 @@ class WindowManager {
 
   /// Registers [callback] for every `WindowEvent` this `WindowManager` emits.
   ///
-  /// The callback runs synchronously on whichever thread the native side
-  /// dispatches from, because the event struct is freed as soon as it
-  /// returns. That thread must therefore be this isolate's own; see the
-  /// package README for what that means under Flutter.
-  ListenerId addListener(void Function(WindowEvent) callback) {
+  /// Delivered on the registering isolate, including events from native UI threads.
+  /// The callback may return a Future; borrowed handles stay valid until it completes.
+  /// Events queued before removal are skipped if their callback has not started.
+  ListenerId addListener(FutureOr<void> Function(WindowEvent) callback) {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
             ffi.Pointer<c.native_window_event_t>,
+            ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
-        >.isolateLocal((
+        >.listener((
           ffi.Pointer<c.native_window_event_t> event,
+          int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
-          if (event == ffi.nullptr) return;
-          final value = WindowEvent.fromNative(event.ref);
-          if (value != null) callback(value);
+          unawaited(
+            NativeCallbacks.deliverEvent(
+              delivery,
+              () => event == ffi.nullptr
+                  ? null
+                  : WindowEvent.fromNative(event.ref),
+              callback,
+            ),
+          );
         });
-    return c.native_window_manager_add_listener(
+    return c.native_window_manager_add_listener_async(
       callable.nativeFunction,
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,

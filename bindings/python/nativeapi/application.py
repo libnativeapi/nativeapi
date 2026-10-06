@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from . import _capi as _C
 from . import _runtime as _rt
+from . import event_request as _event_request
 from . import menu as _menu
 from . import window as _window
 
@@ -35,7 +36,9 @@ class ApplicationEvent:
         if raw.type == 3:
             return ApplicationDeactivatedEvent()
         if raw.type == 4:
-            return ApplicationQuitRequestedEvent()
+            return ApplicationQuitRequestedEvent(
+                _event_request.EventRequest._borrowed(raw.data.quit_requested.request),
+            )
         return None
 
 
@@ -61,7 +64,7 @@ class ApplicationDeactivatedEvent(ApplicationEvent):
 
 @dataclass(frozen=True)
 class ApplicationQuitRequestedEvent(ApplicationEvent):
-    pass
+    request: _event_request.EventRequest | None
 
 
 class Application:
@@ -92,8 +95,12 @@ class Application:
 
     @staticmethod
     def quit(exit_code: int = 0) -> None:
-        """Stops the loop started by `run()` or `run_async()`, which then
-        returns `exit_code`."""
+        """Requests exit of the loop started by `run()` or `run_async()`.
+
+        Returns after requesting confirmation. A quit-request listener may
+        cancel, or defer with an owned EventDecision while awaiting asyncio
+        work. Once all decisions accept, the loop returns `exit_code`.
+        """
         _rt.quit_event_loop(exit_code)
 
     @staticmethod
@@ -174,13 +181,15 @@ class Application:
     def add_listener(callback: Callable[[ApplicationEvent], None]) -> int:
         """Calls `callback` with every ApplicationEvent this Application emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = ApplicationEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_application_add_listener,

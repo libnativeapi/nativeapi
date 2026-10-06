@@ -25,7 +25,7 @@ public abstract record ApplicationEvent
     public sealed record Exiting(int ExitCode) : ApplicationEvent;
     public sealed record Activated : ApplicationEvent;
     public sealed record Deactivated : ApplicationEvent;
-    public sealed record QuitRequested : ApplicationEvent;
+    public sealed record QuitRequested(EventRequest Request) : ApplicationEvent;
 
     internal static ApplicationEvent? FromRaw(in native_application_event_t raw)
     {
@@ -35,7 +35,7 @@ public abstract record ApplicationEvent
             case 1: return new Exiting(raw.data.exiting.exit_code);
             case 2: return new Activated();
             case 3: return new Deactivated();
-            case 4: return new QuitRequested();
+            case 4: return new QuitRequested(new EventRequest(raw.data.quit_requested.request, ownsHandle: false));
             default: return null;
         }
     }

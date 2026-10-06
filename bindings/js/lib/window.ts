@@ -1,8 +1,9 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject, wrapHandle } from "./runtime.ts";
+import { native, NativeObject, wrapHandle, deliverEvent } from "./runtime.ts";
 import { Color } from "./color.ts";
+import { EventRequest } from "./event_request.ts";
 import { type Point, type Rectangle, type Size } from "./geometry.ts";
 import { View } from "./view.ts";
 import { WindowShadow } from "./window_shadow.ts";
@@ -59,7 +60,8 @@ export type WindowEvent =
   | { type: "created"; windowId: WindowId }
   | { type: "closed"; windowId: WindowId }
   | { type: "enteredFullScreen"; windowId: WindowId }
-  | { type: "exitedFullScreen"; windowId: WindowId };
+  | { type: "exitedFullScreen"; windowId: WindowId }
+  | { type: "closeRequested"; windowId: WindowId; request: EventRequest | null };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {
@@ -76,6 +78,14 @@ export class Window extends NativeObject {
   static createWithNativeWindow(nativeWindow: bigint): Window | null {
     const handle: bigint = native.native_window_create_with_native_window(nativeWindow);
     return handle ? new Window(handle) : null;
+  }
+
+  static isCloseSupported(): boolean {
+    return native.native_window_is_close_supported();
+  }
+
+  close(): boolean {
+    return native.native_window_close(this.nativeHandle);
   }
 
   get id(): WindowId {
@@ -493,5 +503,21 @@ export class Window extends NativeObject {
   /** The platform object behind this handle, as an address. */
   get nativeObject(): bigint {
     return native.native_window_get_native_object(this.nativeHandle);
+  }
+
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: WindowEvent) => void | Promise<void>): number {
+    return native.native_window_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        if (typeof event.request === "bigint") {
+          event.request = event.request ? new EventRequest(event.request, false) : null;
+        }
+        return event as unknown as WindowEvent;
+      }, listener));
+  }
+
+  /** Unregisters a listener; returns false if the id is unknown. */
+  removeListener(listenerId: number): boolean {
+    return native.native_window_remove_listener(this.nativeHandle, listenerId);
   }
 }

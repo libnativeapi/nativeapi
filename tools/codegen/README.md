@@ -73,8 +73,9 @@ bindgen / dart 未安装时对应步骤跳过并告警。
 5. Dart FFI → `bindings/dart/nativeapi/lib/src/`
 6. C# FFI → `bindings/csharp/src/CNativeAPI/generated/`（raw 层）+ `bindings/csharp/src/NativeAPI/`（公开层）
 
-`core/src/capi/` **全部由本工具生成**，唯一的例外是手写支持层
-`string_utils_c.{h,cpp}`（字符串 / 值容器的所有权原语）。生成物首行都带
+`core/src/capi/` 的公开 ABI 由本工具生成，手写支持层为
+`string_utils_c.{h,cpp}`（字符串 / 值容器）、`user_data.h`（回调资源）和
+`event_delivery.h`（异步交付负载与隐式请求投票）。生成物首行都带
 `// AUTO-GENERATED. DO NOT EDIT.`，改头文件再重新生成，不要改生成物。
 没有该 banner 的已存在文件永远不会被覆盖（保护手写代码）。
 

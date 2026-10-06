@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, wrapHandle } from "./runtime.ts";
+import { native, wrapHandle, deliverEvent } from "./runtime.ts";
 import { Display, type DisplayEvent } from "./display.ts";
 import { type Point } from "./geometry.ts";
 
@@ -20,14 +20,15 @@ export class DisplayManager {
     return native.native_display_manager_get_cursor_position();
   }
 
-  /** Calls `listener` for every DisplayEvent this DisplayManager emits; returns the listener id. */
-  static addListener(listener: (event: DisplayEvent) => void): number {
-    return native.native_display_manager_add_listener((event: Record<string, unknown>) => {
-      if (typeof event.display === "bigint") {
-        event.display = event.display ? new Display(event.display, false) : null;
-      }
-      listener(event as unknown as DisplayEvent);
-    });
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  static addListener(listener: (event: DisplayEvent) => void | Promise<void>): number {
+    return native.native_display_manager_add_listener((event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        if (typeof event.display === "bigint") {
+          event.display = event.display ? new Display(event.display, false) : null;
+        }
+        return event as unknown as DisplayEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

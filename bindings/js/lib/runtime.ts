@@ -91,6 +91,22 @@ export function wrapHandle<T>(type: new (handle: bigint) => T, handle: bigint): 
   return handle ? new type(handle) : null;
 }
 
+/** Internal event bridge: owns the borrowed payload through the user's Promise. */
+export async function deliverEvent<T>(
+  delivery: bigint,
+  convert: () => T,
+  listener: (event: T) => void | Promise<void>,
+): Promise<void> {
+  let accept = false;
+  try {
+    if (!native.isEventDeliveryActive(delivery)) return;
+    await listener(convert());
+    accept = true;
+  } finally {
+    native.completeEventDelivery(delivery, accept);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Event loop
 // ---------------------------------------------------------------------------
@@ -118,13 +134,21 @@ export function runEventLoop(window: bigint): Promise<number> {
   if (loop) {
     return Promise.reject(new Error("nativeapi: the event loop is already running"));
   }
+  if (!native.beginEventLoopSession()) {
+    return Promise.reject(new Error("nativeapi: could not create event loop owner"));
+  }
   if (isHostedEventLoop()) {
     return new Promise<number>((resolve) => {
       // Keeps the runtime alive the way the pump timer does, without pumping.
       loop = { timer: setInterval(() => {}, 1 << 30), resolve };
     });
   }
-  native.startEventLoop(window);
+  try {
+    native.startEventLoop(window);
+  } catch (error) {
+    native.endEventLoopSession();
+    throw error;
+  }
   return new Promise<number>((resolve) => {
     const tick = () => {
       const exitCode: number = native.pumpEventLoop();
@@ -145,7 +169,16 @@ export function stopEventLoop(exitCode = 0): void {
     return;
   }
   loop = undefined;
+  native.endEventLoopSession();
   clearTimeout(current.timer);
   clearInterval(current.timer);
   current.resolve(exitCode);
+}
+
+/** Confirms an application quit before stopping the loop owned by this runtime. */
+export function quitEventLoop(exitCode = 0): void {
+  const current = loop;
+  if (current) native.requestEventLoopQuit(exitCode, (code: number) => {
+    if (loop === current) stopEventLoop(code);
+  });
 }

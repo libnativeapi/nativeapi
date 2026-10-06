@@ -9,6 +9,16 @@ pub type native_listener_id_t = u64;
 #[doc = " Takes back the `user_data` passed with a callback.\n\n Every function taking a callback also takes one of these (may be NULL).\n The core calls it exactly once per call — including when the call fails\n or the callback is NULL — after the last time it can call that callback:\n when a listener is removed, a callback replaced, a registration ended, or\n its owner destroyed. It runs on the main thread, never inside the call\n that let the callback go."]
 pub type native_release_user_data_t =
     ::std::option::Option<unsafe extern "C" fn(user_data: *mut ::std::os::raw::c_void)>;
+#[doc = " Owns an asynchronous event payload until acknowledged exactly once."]
+pub type native_event_delivery_t = u64;
+unsafe extern "C" {
+    #[doc = " Whether the originating listener is still registered. False for stale handles."]
+    pub fn native_event_delivery_is_active(delivery: native_event_delivery_t) -> bool;
+}
+unsafe extern "C" {
+    #[doc = " Releases the payload and its borrowed handles; accept resolves the implicit request vote.\n Pass false on failure. Returns false for duplicate, stale or type-confused handles."]
+    pub fn native_event_delivery_complete(delivery: native_event_delivery_t, accept: bool) -> bool;
+}
 unsafe extern "C" {
     pub fn native_accessibility_manager_enable();
 }
@@ -31,10 +41,49 @@ unsafe extern "C" {
     #[doc = " Caller owns the returned string; free it with free_c_str()."]
     pub fn native_app_info_get_build_number() -> *mut ::std::os::raw::c_char;
 }
+#[doc = " Opaque EventRequest handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_EVENT_REQUEST rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
+pub type native_event_request_t = u64;
 #[doc = " Opaque Menu handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_MENU rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
 pub type native_menu_t = u64;
 #[doc = " Opaque Window handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_WINDOW rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
 pub type native_window_t = u64;
+#[doc = " Opaque EventDecision handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_EVENT_DECISION rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
+pub type native_event_decision_t = u64;
+unsafe extern "C" {
+    pub fn native_event_decision_accept(event_decision: native_event_decision_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_event_decision_cancel(event_decision: native_event_decision_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_event_decision_is_pending(event_decision: native_event_decision_t) -> bool;
+}
+unsafe extern "C" {
+    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
+    pub fn native_event_decision_free(event_decision: native_event_decision_t);
+}
+unsafe extern "C" {
+    pub fn native_event_request_is_cancelable(event_request: native_event_request_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_event_request_is_cancelled(event_request: native_event_request_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_event_request_is_pending(event_request: native_event_request_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_event_request_cancel(event_request: native_event_request_t) -> bool;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned handle; release it with native_event_decision_free()."]
+    pub fn native_event_request_defer(
+        event_request: native_event_request_t,
+    ) -> native_event_decision_t;
+}
+unsafe extern "C" {
+    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
+    pub fn native_event_request_free(event_request: native_event_request_t);
+}
 #[doc = " Opaque Image handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_IMAGE rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
 pub type native_image_t = u64;
 #[doc = " Opaque PositioningStrategy handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_POSITIONING_STRATEGY rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
@@ -136,7 +185,7 @@ pub const NATIVE_KEYBOARD_EVENT_TYPE_KEY_RELEASED: native_keyboard_event_type_t 
 pub const NATIVE_KEYBOARD_EVENT_TYPE_MODIFIER_KEYS_CHANGED: native_keyboard_event_type_t = 2;
 #[doc = " Which concrete KeyboardEvent arrived."]
 pub type native_keyboard_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One KeyboardEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One KeyboardEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_keyboard_event_t {
@@ -175,6 +224,13 @@ impl Default for native_keyboard_event_t {
 pub type native_keyboard_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_keyboard_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_keyboard_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_keyboard_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -312,7 +368,7 @@ pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED: native_view_event_type_t = 
 pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED: native_view_event_type_t = 4;
 #[doc = " Which concrete ViewEvent arrived."]
 pub type native_view_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One ViewEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One ViewEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_view_event_t {
@@ -359,6 +415,13 @@ impl Default for native_view_event_t {
 }
 pub type native_view_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(event: *const native_view_event_t, user_data: *mut ::std::os::raw::c_void),
+>;
+pub type native_view_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_view_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
 >;
 unsafe extern "C" {
     #[doc = " Creates a View instance; release it with native_view_free()."]
@@ -531,6 +594,15 @@ unsafe extern "C" {
     pub fn native_view_add_listener(
         view: native_view_t,
         callback: native_view_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_view_add_listener_async(
+        view: native_view_t,
+        callback: native_view_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -799,9 +871,10 @@ pub const NATIVE_WINDOW_EVENT_TYPE_CREATED: native_window_event_type_t = 7;
 pub const NATIVE_WINDOW_EVENT_TYPE_CLOSED: native_window_event_type_t = 8;
 pub const NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN: native_window_event_type_t = 9;
 pub const NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN: native_window_event_type_t = 10;
+pub const NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED: native_window_event_type_t = 11;
 #[doc = " Which concrete WindowEvent arrived."]
 pub type native_window_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One WindowEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One WindowEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_window_event_t {
@@ -814,6 +887,7 @@ pub struct native_window_event_t {
 pub union native_window_event_t__bindgen_ty_1 {
     pub moved: native_window_event_t__bindgen_ty_1__bindgen_ty_1,
     pub resized: native_window_event_t__bindgen_ty_1__bindgen_ty_2,
+    pub close_requested: native_window_event_t__bindgen_ty_1__bindgen_ty_3,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -824,6 +898,11 @@ pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_1 {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_2 {
     pub new_size: native_size_t,
+}
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_3 {
+    pub request: native_event_request_t,
 }
 impl Default for native_window_event_t__bindgen_ty_1 {
     fn default() -> Self {
@@ -849,6 +928,13 @@ pub type native_window_event_callback_t = ::std::option::Option<
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
+pub type native_window_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_window_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
 unsafe extern "C" {
     #[doc = " Creates a Window instance; release it with native_window_free()."]
     pub fn native_window_create() -> native_window_t;
@@ -858,6 +944,12 @@ unsafe extern "C" {
     pub fn native_window_create_with_native_window(
         native_window: *mut ::std::os::raw::c_void,
     ) -> native_window_t;
+}
+unsafe extern "C" {
+    pub fn native_window_is_close_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_close(window: native_window_t) -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_get_id(window: native_window_t) -> native_window_id_t;
@@ -1234,6 +1326,31 @@ unsafe extern "C" {
     #[doc = " Frees only the array; the caller takes over the handles."]
     pub fn native_window_list_release(list: *mut native_window_list_t);
 }
+unsafe extern "C" {
+    #[doc = " Registers @p callback for every WindowEvent this Window emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
+    pub fn native_window_add_listener(
+        window: native_window_t,
+        callback: native_window_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_window_add_listener_async(
+        window: native_window_t,
+        callback: native_window_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Unregisters a listener. Returns false if unknown."]
+    pub fn native_window_remove_listener(
+        window: native_window_t,
+        listener_id: native_listener_id_t,
+    ) -> bool;
+}
 pub const NATIVE_POSITIONING_STRATEGY_TYPE_ABSOLUTE: native_positioning_strategy_type_t = 0;
 pub const NATIVE_POSITIONING_STRATEGY_TYPE_CURSOR_POSITION: native_positioning_strategy_type_t = 1;
 pub const NATIVE_POSITIONING_STRATEGY_TYPE_RELATIVE: native_positioning_strategy_type_t = 2;
@@ -1326,7 +1443,7 @@ pub const NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_OPENED: native_menu_event_type_t =
 pub const NATIVE_MENU_EVENT_TYPE_ITEM_SUBMENU_CLOSED: native_menu_event_type_t = 4;
 #[doc = " Which concrete MenuEvent arrived."]
 pub type native_menu_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One MenuEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One MenuEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_menu_event_t {
@@ -1387,6 +1504,13 @@ impl Default for native_menu_event_t {
 }
 pub type native_menu_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(event: *const native_menu_event_t, user_data: *mut ::std::os::raw::c_void),
+>;
+pub type native_menu_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_menu_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
 >;
 unsafe extern "C" {
     #[doc = " Creates a MenuItem instance; release it with native_menu_item_free()."]
@@ -1508,6 +1632,15 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_menu_item_add_listener_async(
+        menu_item: native_menu_item_t,
+        callback: native_menu_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_menu_item_remove_listener(
         menu_item: native_menu_item_t,
@@ -1615,6 +1748,15 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_menu_add_listener_async(
+        menu: native_menu_t,
+        callback: native_menu_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_menu_remove_listener(
         menu: native_menu_t,
@@ -1632,7 +1774,7 @@ pub const NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED: native_application_event_ty
 pub const NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED: native_application_event_type_t = 4;
 #[doc = " Which concrete ApplicationEvent arrived."]
 pub type native_application_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One ApplicationEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One ApplicationEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_application_event_t {
@@ -1643,11 +1785,17 @@ pub struct native_application_event_t {
 #[derive(Copy, Clone)]
 pub union native_application_event_t__bindgen_ty_1 {
     pub exiting: native_application_event_t__bindgen_ty_1__bindgen_ty_1,
+    pub quit_requested: native_application_event_t__bindgen_ty_1__bindgen_ty_2,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_1 {
     pub exit_code: ::std::os::raw::c_int,
+}
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_2 {
+    pub request: native_event_request_t,
 }
 impl Default for native_application_event_t__bindgen_ty_1 {
     fn default() -> Self {
@@ -1670,6 +1818,13 @@ impl Default for native_application_event_t {
 pub type native_application_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_application_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_application_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_application_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -1729,6 +1884,14 @@ unsafe extern "C" {
     #[doc = " Registers @p callback for every ApplicationEvent this Application emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
     pub fn native_application_add_listener(
         callback: native_application_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_application_add_listener_async(
+        callback: native_application_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -1798,7 +1961,7 @@ pub const NATIVE_DISPLAY_EVENT_TYPE_REMOVED: native_display_event_type_t = 1;
 pub const NATIVE_DISPLAY_EVENT_TYPE_CHANGED: native_display_event_type_t = 2;
 #[doc = " Which concrete DisplayEvent arrived."]
 pub type native_display_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One DisplayEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One DisplayEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct native_display_event_t {
@@ -1817,6 +1980,13 @@ impl Default for native_display_event_t {
 pub type native_display_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_display_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_display_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_display_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -1894,6 +2064,14 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_display_manager_add_listener_async(
+        callback: native_display_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_display_manager_remove_listener(listener_id: native_listener_id_t) -> bool;
 }
@@ -1952,7 +2130,7 @@ pub type native_drag_source_t = u64;
 pub const NATIVE_DRAG_SOURCE_EVENT_TYPE_ENDED: native_drag_source_event_type_t = 0;
 #[doc = " Which concrete DragSourceEvent arrived."]
 pub type native_drag_source_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One DragSourceEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One DragSourceEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_drag_source_event_t {
@@ -2001,6 +2179,13 @@ impl Default for native_drag_source_event_t {
 pub type native_drag_source_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_drag_source_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_drag_source_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_drag_source_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -2075,6 +2260,15 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_drag_source_add_listener_async(
+        drag_source: native_drag_source_t,
+        callback: native_drag_source_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_drag_source_remove_listener(
         drag_source: native_drag_source_t,
@@ -2089,7 +2283,7 @@ pub const NATIVE_DROP_TARGET_EVENT_TYPE_EXITED: native_drop_target_event_type_t 
 pub const NATIVE_DROP_TARGET_EVENT_TYPE_DROPPED: native_drop_target_event_type_t = 3;
 #[doc = " Which concrete DropTargetEvent arrived."]
 pub type native_drop_target_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One DropTargetEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One DropTargetEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_drop_target_event_t {
@@ -2142,6 +2336,13 @@ pub type native_drop_target_event_callback_t = ::std::option::Option<
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
+pub type native_drop_target_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_drop_target_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
 unsafe extern "C" {
     #[doc = " Creates a DropTarget instance; release it with native_drop_target_free()."]
     pub fn native_drop_target_create(window: native_window_t) -> native_drop_target_t;
@@ -2177,6 +2378,15 @@ unsafe extern "C" {
     pub fn native_drop_target_add_listener(
         drop_target: native_drop_target_t,
         callback: native_drop_target_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_drop_target_add_listener_async(
+        drop_target: native_drop_target_t,
+        callback: native_drop_target_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -2286,6 +2496,15 @@ unsafe extern "C" {
     pub fn native_keyboard_monitor_add_listener(
         keyboard_monitor: native_keyboard_monitor_t,
         callback: native_keyboard_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_keyboard_monitor_add_listener_async(
+        keyboard_monitor: native_keyboard_monitor_t,
+        callback: native_keyboard_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -2497,7 +2716,7 @@ unsafe extern "C" {
 pub const NATIVE_NOTIFICATION_EVENT_TYPE_ACTIVATED: native_notification_event_type_t = 0;
 #[doc = " Which concrete NotificationEvent arrived."]
 pub type native_notification_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One NotificationEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One NotificationEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_notification_event_t {
@@ -2547,6 +2766,13 @@ pub type native_notification_event_callback_t = ::std::option::Option<
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
+pub type native_notification_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_notification_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
 unsafe extern "C" {
     pub fn native_notification_manager_is_supported() -> bool;
 }
@@ -2575,6 +2801,14 @@ unsafe extern "C" {
     #[doc = " Registers @p callback for every NotificationEvent this NotificationManager emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
     pub fn native_notification_manager_add_listener(
         callback: native_notification_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_notification_manager_add_listener_async(
+        callback: native_notification_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -2770,7 +3004,7 @@ pub const NATIVE_SHORTCUT_EVENT_TYPE_UNREGISTERED: native_shortcut_event_type_t 
 pub const NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED: native_shortcut_event_type_t = 3;
 #[doc = " Which concrete ShortcutEvent arrived."]
 pub type native_shortcut_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One ShortcutEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One ShortcutEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_shortcut_event_t {
@@ -2819,6 +3053,13 @@ impl Default for native_shortcut_event_t {
 pub type native_shortcut_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_shortcut_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_shortcut_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_shortcut_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -2975,6 +3216,14 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_shortcut_manager_add_listener_async(
+        callback: native_shortcut_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_shortcut_manager_remove_listener(listener_id: native_listener_id_t) -> bool;
 }
@@ -3010,7 +3259,7 @@ pub const NATIVE_TRAY_ICON_EVENT_TYPE_RIGHT_CLICKED: native_tray_icon_event_type
 pub const NATIVE_TRAY_ICON_EVENT_TYPE_DOUBLE_CLICKED: native_tray_icon_event_type_t = 2;
 #[doc = " Which concrete TrayIconEvent arrived."]
 pub type native_tray_icon_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One TrayIconEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One TrayIconEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct native_tray_icon_event_t {
@@ -3060,6 +3309,13 @@ impl Default for native_tray_icon_event_t {
 pub type native_tray_icon_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_tray_icon_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_tray_icon_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_tray_icon_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -3212,6 +3468,15 @@ unsafe extern "C" {
     ) -> native_listener_id_t;
 }
 unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_tray_icon_add_listener_async(
+        tray_icon: native_tray_icon_t,
+        callback: native_tray_icon_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_tray_icon_remove_listener(
         tray_icon: native_tray_icon_t,
@@ -3272,7 +3537,7 @@ pub const NATIVE_WINDOW_DRAG_EVENT_TYPE_ENDED: native_window_drag_event_type_t =
 pub const NATIVE_WINDOW_DRAG_EVENT_TYPE_CANCELLED: native_window_drag_event_type_t = 2;
 #[doc = " Which concrete WindowDragEvent arrived."]
 pub type native_window_drag_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One WindowDragEvent, tagged by its concrete type.\n\n Valid only for the duration of the callback: anything it points at\n is released as soon as the callback returns. Copy what you need."]
+#[doc = " One WindowDragEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct native_window_drag_event_t {
@@ -3292,6 +3557,13 @@ impl Default for native_window_drag_event_t {
 pub type native_window_drag_event_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         event: *const native_window_drag_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_window_drag_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_window_drag_event_t,
+        delivery: native_event_delivery_t,
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
@@ -3333,6 +3605,15 @@ unsafe extern "C" {
     pub fn native_window_drag_session_add_listener(
         window_drag_session: native_window_drag_session_t,
         callback: native_window_drag_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_window_drag_session_add_listener_async(
+        window_drag_session: native_window_drag_session_t,
+        callback: native_window_drag_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;
@@ -3404,6 +3685,14 @@ unsafe extern "C" {
     #[doc = " Registers @p callback for every WindowEvent this WindowManager emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
     pub fn native_window_manager_add_listener(
         callback: native_window_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_window_manager_add_listener_async(
+        callback: native_window_event_callback_t_async,
         user_data: *mut ::std::os::raw::c_void,
         release_user_data: native_release_user_data_t,
     ) -> native_listener_id_t;

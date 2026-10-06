@@ -1,7 +1,8 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, wrapHandle, runEventLoop, stopEventLoop } from "./runtime.ts";
+import { native, wrapHandle, runEventLoop, quitEventLoop, deliverEvent } from "./runtime.ts";
+import { EventRequest } from "./event_request.ts";
 import { Menu } from "./menu.ts";
 import { Window } from "./window.ts";
 
@@ -17,7 +18,7 @@ export type ApplicationEvent =
   | { type: "exiting"; exitCode: number }
   | { type: "activated" }
   | { type: "deactivated" }
-  | { type: "quitRequested" };
+  | { type: "quitRequested"; request: EventRequest | null };
 
 export class Application {
   private constructor() {}
@@ -32,9 +33,9 @@ export class Application {
     return runEventLoop(window?.nativeHandle ?? 0n);
   }
 
-  /** Stops the loop started by `run()`, which then resolves with `exitCode`. */
+  /** Requests quit; `run()` resolves with `exitCode` after confirmation accepts. */
   static quit(exitCode = 0): void {
-    stopEventLoop(exitCode);
+    quitEventLoop(exitCode);
   }
 
   static isRunning(): boolean {
@@ -93,9 +94,15 @@ export class Application {
     return (native.native_application_get_all_windows() as bigint[]).map((handle) => new Window(handle));
   }
 
-  /** Calls `listener` for every ApplicationEvent this Application emits; returns the listener id. */
-  static addListener(listener: (event: ApplicationEvent) => void): number {
-    return native.native_application_add_listener(listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  static addListener(listener: (event: ApplicationEvent) => void | Promise<void>): number {
+    return native.native_application_add_listener((event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        if (typeof event.request === "bigint") {
+          event.request = event.request ? new EventRequest(event.request, false) : null;
+        }
+        return event as unknown as ApplicationEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

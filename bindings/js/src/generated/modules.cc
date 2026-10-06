@@ -8,6 +8,7 @@ namespace nativeapi_js {
 void RegisterGeometry(napi_env env, napi_value exports);
 void RegisterColor(napi_env env, napi_value exports);
 void RegisterKeyboard(napi_env env, napi_value exports);
+void RegisterEventRequest(napi_env env, napi_value exports);
 void RegisterPlacement(napi_env env, napi_value exports);
 void RegisterDialog(napi_env env, napi_value exports);
 void RegisterAccessibilityManager(napi_env env, napi_value exports);
@@ -44,6 +45,7 @@ void RegisterGenerated(napi_env env, napi_value exports) {
   RegisterGeometry(env, exports);
   RegisterColor(env, exports);
   RegisterKeyboard(env, exports);
+  RegisterEventRequest(env, exports);
   RegisterPlacement(env, exports);
   RegisterDialog(env, exports);
   RegisterAccessibilityManager(env, exports);

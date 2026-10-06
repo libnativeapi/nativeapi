@@ -65,6 +65,7 @@ fn main() -> Result<()> {
     let origins = codegen_shared::naming::type_origins(&api);
     let mut files = vec![
         generator::generate_common(&capi_dir, prefix),
+        generator::generate_common_source(&capi_dir, prefix),
         generator::generate_umbrella(&api, &repo_root.join("include"), &capi_dir),
     ];
     for header in &api.headers {

@@ -63,6 +63,7 @@ public abstract record WindowEvent
     public sealed record Closed(uint WindowId) : WindowEvent;
     public sealed record EnteredFullScreen(uint WindowId) : WindowEvent;
     public sealed record ExitedFullScreen(uint WindowId) : WindowEvent;
+    public sealed record CloseRequested(uint WindowId, EventRequest Request) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -79,6 +80,7 @@ public abstract record WindowEvent
             case 8: return new Closed(raw.window_id);
             case 9: return new EnteredFullScreen(raw.window_id);
             case 10: return new ExitedFullScreen(raw.window_id);
+            case 11: return new CloseRequested(raw.window_id, new EventRequest(raw.data.close_requested.request, ownsHandle: false));
             default: return null;
         }
     }
@@ -125,6 +127,18 @@ public sealed partial class Window : IDisposable
     {
         var handle = Interop.native_window_create_with_native_window(nativeWindow);
         return handle == 0 ? null : new Window(handle);
+    }
+
+    public static bool IsCloseSupported()
+    {
+        var rawResult = Interop.native_window_is_close_supported();
+        return rawResult;
+    }
+
+    public bool Close()
+    {
+        var rawResult = Interop.native_window_close(NativeHandle);
+        return rawResult;
     }
 
     public uint Id
@@ -848,6 +862,34 @@ public sealed partial class Window : IDisposable
 
     /// <summary>Platform-specific native object behind this handle.</summary>
     public IntPtr NativeObject => Interop.native_window_get_native_object(NativeHandle);
+
+    /// <summary>Registers <paramref name="callback"/> for every WindowEvent this Window emits.</summary>
+    /// <remarks>
+    /// The delegate is kept alive until the listener is removed or its emitter
+    /// destroyed; the core releases it then.
+    /// </remarks>
+    public ulong AddListener(Action<WindowEvent> callback)
+    {
+        WindowEventNativeCallback native = (evt, userData) =>
+        {
+            if (evt == IntPtr.Zero)
+            {
+                return;
+            }
+            var value = WindowEvent.FromRaw(Marshal.PtrToStructure<native_window_event_t>(evt));
+            if (value is not null)
+            {
+                callback(value);
+            }
+        };
+        return Interop.native_window_add_listener(NativeHandle, native, CallbackKeeper.Hold(native), CallbackKeeper.Release);
+    }
+
+    /// <summary>Unregisters a listener. Returns false if unknown.</summary>
+    public bool RemoveListener(ulong listenerId)
+    {
+        return Interop.native_window_remove_listener(NativeHandle, listenerId);
+    }
 
 }
 

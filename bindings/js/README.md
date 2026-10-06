@@ -32,7 +32,13 @@ await Application.run(window); // timers, promises and I/O keep running
 - **Values** (`Point`, `Size`, `Rectangle`, `Color`, …) are plain objects.
 - **Enums** are `as const` objects: `TitleBarStyle.Hidden`.
 - **Events** are discriminated unions on `type`: `{ type: "moved", windowId, newPosition }`.
-  Listeners run on the JS thread.
+  Listeners run on the JS thread and may return `Promise<void>`. Event payloads
+  and borrowed objects stay valid until the Promise settles. Removal skips queued
+  callbacks that have not started; active callbacks may finish. Callback errors
+  release the event before reaching the runtime's error handler. Environment
+  shutdown cancels that environment's outstanding deliveries and owned deferred
+  decisions, releases decision handles and removes native event subscriptions. Closing
+  a Node Worker leaves other environments' requests and callbacks active.
 - **Singletons** (`WindowManager`, `DisplayManager`, `Application`, …) are
   classes with static members.
 
@@ -40,8 +46,15 @@ await Application.run(window); // timers, promises and I/O keep running
 
 `Application.run()` doesn't block. The native event loop is pumped from the JS
 event loop instead, so `await Application.run()` resolves with the exit code once
-`Application.quit(code)` is called. Native events are only dispatched while
-`run()` is active.
+`Application.quit(code)` is confirmed. Listen for `type: "quitRequested"` and
+cancel its `request`, return a Promise for confirmation, or retain a decision
+from `request.defer()`. The loop keeps pumping during confirmation. Repeated
+quit calls share one pending confirmation and use the last exit code; cancellation
+allows a later retry. Stopping a run invalidates its pending confirmation; a late
+reply cannot stop a subsequent run. `Window.close()` and native desktop close
+requests share window confirmation, while macOS native application quit queries
+share application confirmation. Required native termination cannot be delayed.
+The host's platform loop must be serviced for native events to arrive.
 
 ## Runtimes
 
@@ -71,6 +84,19 @@ npm run build        # (in bindings/js) recompile the addon with cmake-js
 npm test
 npm start -w js_window_example
 ```
+
+To run the event ownership regressions against one shared native addon/handle table:
+
+```bash
+# From bindings/js, after cmake-js has configured the build:
+cmake -S . -B build -DNATIVEAPI_JS_BUILD_TESTS=ON
+cmake --build build --config Release
+python ../../tools/tests/js_event_delivery.py --fixture build/Release/nativeapi.node
+```
+
+These tests launch no windows or input. They cover foreign-thread callbacks,
+Promise and explicit votes, environment teardown, Node Worker isolation and
+stopping/restarting the JS loop. Linux runs them under a private Xvfb display.
 
 ## Contributing
 

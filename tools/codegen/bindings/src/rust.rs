@@ -124,6 +124,22 @@ fn render_rust_wrapper(api: &Api, header: &Header, origins: &TypeOrigins, prefix
         .into_iter()
         .filter_map(|name| origins.get(&name).map(|stem| (stem.clone(), name)))
         .collect();
+    // Event handles use the non-owning Ref wrapper, which is a distinct Rust
+    // type even though the IR names only the underlying C++ class.
+    for group in &header.events {
+        for field in group.common.iter().chain(
+            group
+                .variants
+                .iter()
+                .flat_map(|variant| variant.fields.iter()),
+        ) {
+            if let TypeRef::Object { name, .. } = &field.ty {
+                if let Some(module) = origins.get(name).filter(|module| *module != &header.stem) {
+                    imports.push((module.clone(), format!("{name}Ref")));
+                }
+            }
+        }
+    }
     imports.sort();
     imports.dedup();
     if !imports.is_empty() {

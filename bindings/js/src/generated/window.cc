@@ -62,6 +62,32 @@ napi_value Js_native_window_get_native_object(napi_env env, napi_callback_info i
   return Value::BigInt(reinterpret_cast<uintptr_t>(result)).ToJs(env);
 }
 
+napi_value Js_native_window_is_close_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_close_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_close(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_close(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_get_id(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1757,6 +1783,45 @@ napi_value Js_native_window_start_resizing(napi_env env, napi_callback_info info
   return Undefined(env);
 }
 
+napi_value Js_native_window_add_listener(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  Callback* callback = nullptr;
+  if (!GetCallback(env, args[1], /*optional=*/false, &callback)) {
+    return nullptr;
+  }
+  native_listener_id_t id = OnMainThread([&] { return native_window_add_listener_async(self, +[](const native_window_event_t* event, native_event_delivery_t delivery, void* user_data) {
+    if (event != nullptr) {
+      Callback::DispatchEvent(user_data, {ToValue(*event)}, delivery);
+    } else { native_event_delivery_complete(delivery, false); }
+  }, callback, &Callback::ReleaseUserData); });
+  if (id) Callback::AttachRegistration(callback, [self, id] { (void)native_window_remove_listener(self, id); });
+  return Value::Number(static_cast<double>(id)).ToJs(env);
+}
+
+napi_value Js_native_window_remove_listener(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_listener_id_t id = 0;
+  if (!GetNumber(env, args[1], &id)) {
+    return nullptr;
+  }
+  bool removed = OnMainThread([&] { return native_window_remove_listener(self, id); });
+  return Value::Bool(removed).ToJs(env);
+}
+
 }  // namespace
 
 void RegisterWindow(napi_env env, napi_value exports) {
@@ -1764,6 +1829,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_create_with_native_window", Js_native_window_create_with_native_window);
   Export(env, exports, "native_window_free", Js_native_window_free);
   Export(env, exports, "native_window_get_native_object", Js_native_window_get_native_object);
+  Export(env, exports, "native_window_is_close_supported", Js_native_window_is_close_supported);
+  Export(env, exports, "native_window_close", Js_native_window_close);
   Export(env, exports, "native_window_get_id", Js_native_window_get_id);
   Export(env, exports, "native_window_get_content_view", Js_native_window_get_content_view);
   Export(env, exports, "native_window_focus", Js_native_window_focus);
@@ -1867,6 +1934,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_perform_title_bar_double_click", Js_native_window_perform_title_bar_double_click);
   Export(env, exports, "native_window_start_dragging", Js_native_window_start_dragging);
   Export(env, exports, "native_window_start_resizing", Js_native_window_start_resizing);
+  Export(env, exports, "native_window_add_listener", Js_native_window_add_listener);
+  Export(env, exports, "native_window_remove_listener", Js_native_window_remove_listener);
 }
 
 }  // namespace nativeapi_js

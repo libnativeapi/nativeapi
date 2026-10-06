@@ -47,7 +47,7 @@ jobs:
       - name: Build the library
         working-directory: bindings/python
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNATIVEAPI_PY_BUILD_TESTS=ON
           cmake --build build --config Release
       - name: Test
         working-directory: bindings/python

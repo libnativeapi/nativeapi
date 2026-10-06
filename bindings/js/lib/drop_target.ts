@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject } from "./runtime.ts";
+import { native, NativeObject, deliverEvent } from "./runtime.ts";
 import { DragOperation } from "./drag_source.ts";
 import { type Point } from "./geometry.ts";
 import { Window, type WindowId } from "./window.ts";
@@ -44,9 +44,12 @@ export class DropTarget extends NativeObject {
     return native.native_drop_target_is_active(this.nativeHandle);
   }
 
-  /** Calls `listener` for every DropTargetEvent this DropTarget emits; returns the listener id. */
-  addListener(listener: (event: DropTargetEvent) => void): number {
-    return native.native_drop_target_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: DropTargetEvent) => void | Promise<void>): number {
+    return native.native_drop_target_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as DropTargetEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

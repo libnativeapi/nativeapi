@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject, wrapHandle } from "./runtime.ts";
+import { native, NativeObject, wrapHandle, deliverEvent } from "./runtime.ts";
 import { type Point } from "./geometry.ts";
 import { Image } from "./image.ts";
 import { Window, type WindowId } from "./window.ts";
@@ -73,9 +73,12 @@ export class DragSource extends NativeObject {
     return native.native_drag_source_is_dragging(this.nativeHandle);
   }
 
-  /** Calls `listener` for every DragSourceEvent this DragSource emits; returns the listener id. */
-  addListener(listener: (event: DragSourceEvent) => void): number {
-    return native.native_drag_source_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: DragSourceEvent) => void | Promise<void>): number {
+    return native.native_drag_source_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as DragSourceEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

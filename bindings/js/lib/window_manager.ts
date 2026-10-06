@@ -1,7 +1,8 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, wrapHandle } from "./runtime.ts";
+import { native, wrapHandle, deliverEvent } from "./runtime.ts";
+import { EventRequest } from "./event_request.ts";
 import { type Point } from "./geometry.ts";
 import { Window, type WindowEvent, type WindowId } from "./window.ts";
 
@@ -56,9 +57,15 @@ export class WindowManager {
     return native.native_window_manager_call_original_hide(id);
   }
 
-  /** Calls `listener` for every WindowEvent this WindowManager emits; returns the listener id. */
-  static addListener(listener: (event: WindowEvent) => void): number {
-    return native.native_window_manager_add_listener(listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  static addListener(listener: (event: WindowEvent) => void | Promise<void>): number {
+    return native.native_window_manager_add_listener((event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        if (typeof event.request === "bigint") {
+          event.request = event.request ? new EventRequest(event.request, false) : null;
+        }
+        return event as unknown as WindowEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

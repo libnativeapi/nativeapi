@@ -245,11 +245,12 @@ napi_value Js_native_shortcut_manager_add_listener(napi_env env, napi_callback_i
   if (!GetCallback(env, args[0], /*optional=*/false, &callback)) {
     return nullptr;
   }
-  native_listener_id_t id = OnMainThread([&] { return native_shortcut_manager_add_listener(+[](const native_shortcut_event_t* event, void* user_data) {
+  native_listener_id_t id = OnMainThread([&] { return native_shortcut_manager_add_listener_async(+[](const native_shortcut_event_t* event, native_event_delivery_t delivery, void* user_data) {
     if (event != nullptr) {
-      Callback::Dispatch(user_data, {ToValue(*event)});
-    }
+      Callback::DispatchEvent(user_data, {ToValue(*event)}, delivery);
+    } else { native_event_delivery_complete(delivery, false); }
   }, callback, &Callback::ReleaseUserData); });
+  if (id) Callback::AttachRegistration(callback, [self, id] { (void)native_shortcut_manager_remove_listener(id); });
   return Value::Number(static_cast<double>(id)).ToJs(env);
 }
 

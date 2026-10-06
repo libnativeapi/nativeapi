@@ -9,8 +9,9 @@
 
 ## 1. 第一条：不要手写 `capi/`
 
-`src/capi/` 里**唯一**手写的是 `string_utils_c.h` / `string_utils_c.cpp`。其余全部
-带横幅：
+`src/capi/` 的公开 ABI 声明和实现由生成器产出。手写支持层包括
+`string_utils_c.{h,cpp}`、私有 C++ `user_data.h` 和 `event_delivery.h`；
+它们只管理资源所有权，不手写某个业务模块的 ABI。生成物全部带横幅：
 
 ```
 // AUTO-GENERATED. DO NOT EDIT.
@@ -134,6 +135,30 @@ struct，C++ 侧的 `dynamic_cast` 层级在 C 侧摊平成 tag + 联合字段�
 
 struct 里的回调字段在 core 读取这个 struct 时接管（生成的 `to_cpp_*` 转换）。一个
 从未传给 core 的 struct，它的 `user_data` 由调用方自己负责。
+
+### 6.2 异步事件交付
+
+同步 `add_listener` 的签名和回调期间的借用规则保持不变。每个 emitter 另外生成
+`add_listener_async`，回调接收 `(event*, native_event_delivery_t, user_data)`。
+交付句柄使用同一世代句柄表和独立的类型 tag，不是可以随意释放的裸指针。
+
+- core 保留事件 struct、其中的字符串 / 借用句柄以及 `user_data`，直到消费端调用
+  `native_event_delivery_complete(delivery, accept)`；每次交付必须确认一次。
+- 退订立即使 `native_event_delivery_is_active` 为 false，但排队的交付仍持有资源。
+  消费端调用用户代码前检查 active；失效的交付仍需 complete(false)。正在运行的
+  回调可以完成，最后一次交付确认之后才会释放 `user_data`。
+- 事件若携带共享 `EventRequest`，每个异步监听器在原生派发期间取得独立的隐式
+  延后投票；回调成功完成才同意，异常 / 丢弃则否决。不可取消的请求不取得投票，
+  因此系统强制结束不会等待异步观察者。此规则由 IR 中的字段类型决定。
+- complete 在锁外释放负载和回答投票。重复、失效或类型混淆句柄安全返回 false；
+  一份交付的并发回答只生效一次。
+
+Dart 的事件订阅使用 `NativeCallable.listener`，在注册 isolate 消费交付，回调
+可返回 `FutureOr<void>`。JS 使用 Node-API thread-safe function 投递到 JS 线程，
+回调可返回 `Promise<void>`。借用对象到 Future / Promise 完成之前仍有效；异常先
+取消交付，再交给运行时的错误处理。JS 环境清理会取消全部未决交付，包括未消费的
+队列和永不结束的 Promise；原生排队失败也释放交付。普通方法参数里的同步
+callback 不因事件订阅迁移而改变，其余同步 C 消费端继续使用旧接口。
 
 ## 7. 已知未决
 

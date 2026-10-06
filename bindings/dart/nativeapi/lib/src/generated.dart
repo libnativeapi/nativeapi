@@ -12,6 +12,7 @@ export 'drag_source.dart';
 export 'drop_target.dart';
 export 'file_dialog.dart';
 export 'foundation/color.dart';
+export 'foundation/event_request.dart';
 export 'foundation/geometry.dart';
 export 'foundation/keyboard.dart';
 export 'image.dart';

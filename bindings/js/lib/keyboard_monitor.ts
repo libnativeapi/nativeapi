@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject } from "./runtime.ts";
+import { native, NativeObject, deliverEvent } from "./runtime.ts";
 import { type KeyboardEvent } from "./keyboard.ts";
 
 /** A native KeyboardMonitor, held through an owned handle. */
@@ -28,9 +28,12 @@ export class KeyboardMonitor extends NativeObject {
     return native.native_keyboard_monitor_is_monitoring(this.nativeHandle);
   }
 
-  /** Calls `listener` for every KeyboardEvent this KeyboardMonitor emits; returns the listener id. */
-  addListener(listener: (event: KeyboardEvent) => void): number {
-    return native.native_keyboard_monitor_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: KeyboardEvent) => void | Promise<void>): number {
+    return native.native_keyboard_monitor_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as KeyboardEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

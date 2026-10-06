@@ -18,12 +18,19 @@ public struct native_application_event_t
     public struct DataUnion
     {
         [FieldOffset(0)] public ExitingData exiting;
+        [FieldOffset(0)] public QuitRequestedData quit_requested;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ExitingData
     {
         public int exit_code;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct QuitRequestedData
+    {
+        public ulong request;
     }
 }
 

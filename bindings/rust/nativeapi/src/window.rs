@@ -7,10 +7,14 @@ use cnativeapi;
 use std::ffi::{CStr, CString};
 
 use crate::color::Color;
+use crate::event_request::{EventRequest, EventRequestRef};
 use crate::geometry::{Point, Rectangle, Size};
 use crate::view::View;
 use crate::window_shadow::WindowShadow;
 use crate::window_shape::WindowShape;
+
+/// Identifies one registered event listener.
+pub type ListenerId = cnativeapi::native_listener_id_t;
 
 pub type WindowId = u32;
 
@@ -140,6 +144,7 @@ pub enum WindowEvent {
     Closed { window_id: WindowId },
     EnteredFullScreen { window_id: WindowId },
     ExitedFullScreen { window_id: WindowId },
+    CloseRequested { window_id: WindowId, request: EventRequestRef },
 }
 
 impl WindowEvent {
@@ -156,6 +161,7 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSED => Self::Closed { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN => Self::EnteredFullScreen { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN => Self::ExitedFullScreen { window_id: raw.window_id },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED => Self::CloseRequested { window_id: raw.window_id, request: EventRequestRef::from_raw(raw.data.close_requested.request) },
             _ => return None,
         })
     }
@@ -202,6 +208,18 @@ impl Window {
     pub unsafe fn with_native_window(native_window: *mut std::ffi::c_void) -> Option<Self> {
         unsafe {
             Self::from_raw(cnativeapi::native_window_create_with_native_window(native_window))
+        }
+    }
+
+    pub fn is_close_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_close_supported()
+        }
+    }
+
+    pub fn close(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_close(self.handle)
         }
     }
 
@@ -852,6 +870,33 @@ impl Window {
     /// Platform-specific native object behind this handle.
     pub fn native_object(&self) -> *mut std::ffi::c_void {
         unsafe { cnativeapi::native_window_get_native_object(self.handle) }
+    }
+
+    /// Registers `callback` for every `WindowEvent` this `Window` emits.
+    ///
+    /// The closure is dropped on the main thread once the listener is removed
+    /// or its emitter destroyed.
+    pub fn add_listener(&self, callback: impl Fn(&WindowEvent) + 'static) -> ListenerId {
+        unsafe extern "C" fn trampoline(event: *const cnativeapi::native_window_event_t, user_data: *mut std::ffi::c_void) {
+            if event.is_null() || user_data.is_null() {
+                return;
+            }
+            let callback = &*(user_data as *const Box<dyn Fn(&WindowEvent)>);
+            if let Some(event) = WindowEvent::from_raw(&*event) {
+                callback(&event);
+            }
+        }
+        let boxed: Box<Box<dyn Fn(&WindowEvent)>> = Box::new(Box::new(callback));
+        let user_data = Box::into_raw(boxed) as *mut std::ffi::c_void;
+        unsafe extern "C" fn release(user_data: *mut std::ffi::c_void) {
+            drop(Box::from_raw(user_data as *mut Box<dyn Fn(&WindowEvent)>));
+        }
+        unsafe { cnativeapi::native_window_add_listener(self.handle, Some(trampoline), user_data, Some(release)) }
+    }
+
+    /// Unregisters a listener. Returns false if unknown.
+    pub fn remove_listener(&self, listener_id: ListenerId) -> bool {
+        unsafe { cnativeapi::native_window_remove_listener(self.handle, listener_id) }
     }
 
 }

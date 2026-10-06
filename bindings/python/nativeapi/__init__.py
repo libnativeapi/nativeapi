@@ -59,6 +59,10 @@ from .drop_target import (
     DropTargetExitedEvent,
     DropTargetMovedEvent,
 )
+from .event_request import (
+    EventDecision,
+    EventRequest,
+)
 from .file_dialog import (
     FileDialog,
     FileDialogMode,
@@ -181,6 +185,7 @@ from .window import (
     Window,
     WindowBlurredEvent,
     WindowClosedEvent,
+    WindowCloseRequestedEvent,
     WindowCornerPreference,
     WindowCreatedEvent,
     WindowEnteredFullScreenEvent,
@@ -247,6 +252,8 @@ __all__ = [
     "DropTargetExitedEvent",
     "DropTargetMovedEvent",
     "EdgeInsets",
+    "EventDecision",
+    "EventRequest",
     "FileDialog",
     "FileDialogMode",
     "FileDialogResult",
@@ -327,6 +334,7 @@ __all__ = [
     "VisualEffect",
     "Window",
     "WindowBlurredEvent",
+    "WindowCloseRequestedEvent",
     "WindowClosedEvent",
     "WindowCornerPreference",
     "WindowCreatedEvent",

@@ -109,13 +109,15 @@ class WindowManager:
     def add_listener(callback: Callable[[_window.WindowEvent], None]) -> int:
         """Calls `callback` with every WindowEvent this WindowManager emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = _window.WindowEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_window_manager_add_listener,

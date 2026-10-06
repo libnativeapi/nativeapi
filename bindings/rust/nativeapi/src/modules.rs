@@ -13,6 +13,7 @@ pub mod display;
 pub mod display_manager;
 pub mod drag_source;
 pub mod drop_target;
+pub mod event_request;
 pub mod file_dialog;
 pub mod geometry;
 pub mod image;
@@ -50,6 +51,7 @@ pub use display::{DisplayId, DisplayOrientation, DisplayEvent, Display, DisplayR
 pub use display_manager::{DisplayManager};
 pub use drag_source::{DragOperation, DragSourceEvent, DragSource, DragSourceRef};
 pub use drop_target::{DropTargetEvent, DropTarget, DropTargetRef};
+pub use event_request::{EventDecision, EventDecisionRef, EventRequest, EventRequestRef};
 pub use file_dialog::{FileDialogMode, FileDialogResult, FileDialog, FileDialogRef};
 pub use geometry::{Point, Size, Rectangle, EdgeInsets};
 pub use image::{Image, ImageRef};

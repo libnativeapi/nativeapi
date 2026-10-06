@@ -35,6 +35,13 @@ else()
 endif()
 
 add_library(nativeapi_python SHARED ${SOURCES})
+option(NATIVEAPI_PY_BUILD_TESTS "Include headless event-loop regression hooks" OFF)
+if(NATIVEAPI_PY_BUILD_TESTS)
+  if(APPLE)
+    set_source_files_properties(tests/event_loop_fixture.cpp PROPERTIES LANGUAGE OBJCXX)
+  endif()
+  target_sources(nativeapi_python PRIVATE tests/event_loop_fixture.cpp)
+endif()
 target_include_directories(nativeapi_python PRIVATE "${NATIVEAPI_CORE_DIR}/src")
 # Re-export every C ABI symbol of the archive, not just the ones the shim uses.
 target_link_libraries(nativeapi_python PRIVATE

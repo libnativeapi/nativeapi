@@ -122,13 +122,15 @@ class ShortcutManager:
     def add_listener(callback: Callable[[_shortcut.ShortcutEvent], None]) -> int:
         """Calls `callback` with every ShortcutEvent this ShortcutManager emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = _shortcut.ShortcutEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_shortcut_manager_add_listener,

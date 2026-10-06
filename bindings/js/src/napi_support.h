@@ -9,14 +9,18 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "capi/common_c.h"
 #include "capi/string_utils_c.h"
 
 namespace nativeapi_js {
+
+struct RuntimeState;
 
 // ---------------------------------------------------------------------------
 // Value: plain data on its way to JavaScript
@@ -134,18 +138,24 @@ napi_value Undefined(napi_env env);
 // Callbacks
 // ---------------------------------------------------------------------------
 
-// A JS function handed to the C ABI as `user_data`, with ReleaseUserData as
-// its release: the core calls that once it can no longer call the function,
-// and the Callback is freed then.
+// A JS function registered under an opaque token, handed to the C ABI as
+// user_data. The Callback* returned by GetCallback is that token, not an object
+// to dereference. Cleanup drops its registration; late native releases cannot
+// match a new environment's callback. TSFN contexts own the actual Callback.
 class Callback {
  public:
   // `*out` stays null for an optional null/undefined argument.
   friend bool GetCallback(napi_env env, napi_value value, bool optional, Callback** out);
+  friend void InitRuntime(napi_env env);
 
   // Entry point of every generated trampoline. On the JS thread the function
   // runs before this returns; from any other thread the arguments are queued
   // and the function runs on the JS thread later.
   static void Dispatch(void* user_data, std::vector<Value> args);
+  // Retains a C ABI event delivery across JS dispatch and Promise completion.
+  static void DispatchEvent(void* user_data, std::vector<Value> args, uint64_t delivery);
+  static bool CompleteEvent(uint64_t delivery, bool accept);
+  static void AttachRegistration(void* user_data, std::function<void()> remove);
 
   // The `native_release_user_data_t` passed with every Callback. The core
   // calls it on the platform main thread, which need not be the JS thread;
@@ -154,13 +164,16 @@ class Callback {
 
  private:
   Callback() = default;
-  void Call(napi_env env, const std::vector<Value>& args);
+  static void DispatchCall(void* user_data, std::vector<Value> args, uint64_t delivery);
+  bool Call(napi_env env, const std::vector<Value>& args);
   void ReleaseOnJsThread();
   static void CallFromQueue(napi_env env, napi_value js_callback, void* context, void* data);
 
+  std::shared_ptr<RuntimeState> runtime_;
   napi_env env_ = nullptr;
   napi_ref function_ = nullptr;
   napi_threadsafe_function queue_ = nullptr;
+  std::function<void()> remove_registration_;
 };
 
 bool GetCallback(napi_env env, napi_value value, bool optional, Callback** out);
@@ -201,6 +214,18 @@ auto OnMainThread(F&& fn) -> decltype(fn()) {
 // Records the JS thread and registers the teardown hook; call before anything
 // else in the module initializer.
 void InitRuntime(napi_env env);
+
+// Explicit votes are owned by the environment that received the C ABI handle.
+// Environment teardown cancels and releases them even if JS still retains the
+// wrapper. Freeing/finalizing a wrapper removes this registration exactly once.
+uint64_t TrackEventDecision(napi_env env, uint64_t handle) noexcept;
+void ForgetEventDecision(uint64_t handle);
+
+// One weak owner per JS event-loop run. Ending it fences queued confirmation
+// and completion, without cancelling a later run or another environment.
+bool BeginEventLoopSession(napi_env env);
+void EndEventLoopSession(napi_env env);
+std::shared_ptr<void> EventLoopOwner(napi_env env);
 
 void Export(napi_env env, napi_value exports, const char* name, napi_callback callback);
 void ExportValue(napi_env env, napi_value exports, const char* name, const Value& value);

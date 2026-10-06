@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, wrapHandle } from "./runtime.ts";
+import { native, wrapHandle, deliverEvent } from "./runtime.ts";
 import { Shortcut, type ShortcutEvent, type ShortcutId, type ShortcutOptions, ShortcutScope } from "./shortcut.ts";
 
 export class ShortcutManager {
@@ -67,9 +67,12 @@ export class ShortcutManager {
     native.native_shortcut_manager_emit_shortcut_activated(id, accelerator);
   }
 
-  /** Calls `listener` for every ShortcutEvent this ShortcutManager emits; returns the listener id. */
-  static addListener(listener: (event: ShortcutEvent) => void): number {
-    return native.native_shortcut_manager_add_listener(listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  static addListener(listener: (event: ShortcutEvent) => void | Promise<void>): number {
+    return native.native_shortcut_manager_add_listener((event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as ShortcutEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

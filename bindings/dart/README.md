@@ -122,6 +122,19 @@ void main() => runNativeApp(app);
 
 `app` must be a top-level or static function: it runs in an isolate of its own. On macOS that isolate lives on the process's first thread, the only one AppKit accepts, which the Dart VM otherwise keeps parked. The process ends when the app quits (`Application.instance.quit()`, Cmd+Q). See [`dart_view_example`](../../examples/dart_view_example) for a larger app built this way.
 
+### Event listeners
+
+Event listeners run on the isolate that registered them, including events emitted
+from a native UI thread. A listener may return a `Future<void>`; its event payload
+and borrowed objects remain valid until the callback finishes. Use an owned
+`EventDecision` when confirmation must continue after the callback returns.
+Removing a listener skips queued callbacks that have not started; an active
+callback can finish its asynchronous work. Method callback parameters retain
+their documented thread requirements.
+
+The shared request primitives are available, but window close and application
+quit producers are not yet connected to them.
+
 ## Examples
 
 The examples are the `flutter_*` directories in the repository's [`examples/`](../../examples), plus [`dart_view_example`](../../examples/dart_view_example), a plain Dart program (`dart run bin/main.dart`). Each Flutter one is an app for one module; they resolve through the pub workspace at the repository root:

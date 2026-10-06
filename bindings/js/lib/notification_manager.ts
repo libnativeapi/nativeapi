@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native } from "./runtime.ts";
+import { native, deliverEvent } from "./runtime.ts";
 
 export type NotificationEvent =
   | { type: "activated"; argument: string | null };
@@ -33,9 +33,12 @@ export class NotificationManager {
     return native.native_notification_manager_get_last_error();
   }
 
-  /** Calls `listener` for every NotificationEvent this NotificationManager emits; returns the listener id. */
-  static addListener(listener: (event: NotificationEvent) => void): number {
-    return native.native_notification_manager_add_listener(listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  static addListener(listener: (event: NotificationEvent) => void | Promise<void>): number {
+    return native.native_notification_manager_add_listener((event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as NotificationEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

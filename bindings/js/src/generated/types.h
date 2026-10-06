@@ -8,6 +8,7 @@
 #include "capi/geometry_c.h"
 #include "capi/color_c.h"
 #include "capi/keyboard_c.h"
+#include "capi/event_request_c.h"
 #include "capi/placement_c.h"
 #include "capi/dialog_c.h"
 #include "capi/accessibility_manager_c.h"
@@ -467,6 +468,10 @@ inline Value ToValue(const native_window_event_t& event) {
     case NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN:
       result.Set("type", Value::String("exitedFullScreen"));
       break;
+    case NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED:
+      result.Set("type", Value::String("closeRequested"));
+      result.Set("request", Value::BigInt(event.data.close_requested.request));
+      break;
     default:
       return Value::Null();
   }
@@ -687,6 +692,7 @@ inline Value ToValue(const native_application_event_t& event) {
       break;
     case NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED:
       result.Set("type", Value::String("quitRequested"));
+      result.Set("request", Value::BigInt(event.data.quit_requested.request));
       break;
     default:
       return Value::Null();

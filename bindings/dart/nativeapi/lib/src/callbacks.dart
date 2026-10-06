@@ -1,12 +1,35 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
+import 'dart:async';
 import 'dart:ffi' as ffi;
+
+import 'package:cnativeapi/cnativeapi.dart' as c;
 
 /// Owns every NativeCallable handed to the C API until the core releases it.
 abstract final class NativeCallbacks {
   static final _callables = <int, ffi.NativeCallable<Function>>{};
   static var _nextToken = 0;
+
+  /// Keeps borrowed event handles valid across the callback's asynchronous work.
+  /// Removal suppresses callbacks that have not begun, without closing their
+  /// NativeCallable until every delivery has released its payload.
+  static Future<void> deliverEvent<T>(
+    int delivery,
+    T? Function() convert,
+    FutureOr<void> Function(T) callback,
+  ) async {
+    var accept = false;
+    try {
+      if (!c.native_event_delivery_is_active(delivery)) return;
+      final value = convert();
+      if (value == null) return;
+      await callback(value);
+      accept = true;
+    } finally {
+      c.native_event_delivery_complete(delivery, accept);
+    }
+  }
 
   /// The user_data to pass with [callable]: a token the release maps back to
   /// it. Null for a null callable, which has nothing to release.

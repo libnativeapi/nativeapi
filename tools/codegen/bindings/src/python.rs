@@ -1344,7 +1344,7 @@ fn render_loop_method(out: &mut String, module: &mut Module, symbol: &str) -> bo
             writeln!(out, "    def quit(exit_code: int = 0) -> None:").unwrap();
             writeln!(
                 out,
-                "        \"\"\"Stops the loop started by `run()` or `run_async()`, which then\n        returns `exit_code`.\"\"\""
+                "        \"\"\"Requests exit of the loop started by `run()` or `run_async()`.\n\n        Returns after requesting confirmation. A quit-request listener may\n        cancel, or defer with an owned EventDecision while awaiting asyncio\n        work. Once all decisions accept, the loop returns `exit_code`.\n        \"\"\""
             )
             .unwrap();
             writeln!(out, "        _rt.quit_event_loop(exit_code)").unwrap();
@@ -1378,7 +1378,7 @@ fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
     .unwrap();
     writeln!(
         out,
-        "        \"\"\"Calls `callback` with every {} this {} emits.\n\n        Returns the listener id for `remove_listener()`.\n        \"\"\"",
+        "        \"\"\"Calls `callback` with every {} this {} emits.\n\n        Callbacks run synchronously; coroutine callbacks are not accepted.\n        Use an owned EventDecision for asynchronous request confirmation.\n        Returns the listener id for `remove_listener()`.\n        \"\"\"",
         group.name, class.name
     )
     .unwrap();
@@ -1386,7 +1386,7 @@ fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
     writeln!(out, "        def trampoline(raw, _user_data):").unwrap();
     writeln!(out, "            event = {event}._from_c(raw.contents)").unwrap();
     writeln!(out, "            if event is not None:").unwrap();
-    writeln!(out, "                callback(event)").unwrap();
+    writeln!(out, "                _rt.deliver_event(callback, event)").unwrap();
     writeln!(out).unwrap();
     let mut add_args = vec![
         format!("_C.{add}"),

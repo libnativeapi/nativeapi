@@ -110,7 +110,8 @@ macOS 上与之配套的一条：每个 `Window` 包装对象都持有它的 `NS
 | `native_x_create*()` | **是** |
 | 返回句柄的 getter（如 `native_window_manager_get_current()`） | **是** —— 每次返回都是一份新引用 |
 | 列表里的每个句柄（`native_x_list_t`） | 取决于用 `_list_free` 还是 `_list_release`，见 [c-abi.md](c-abi.md) §3.1 |
-| 回调参数里的句柄 | **否** —— 仅在回调期间有效，需要留存请自行 retain |
+| 同步回调参数里的句柄 | **否** —— 仅在回调期间有效，需要留存请自行 retain |
+| 异步事件交付里的句柄 | **否** —— 到 `event_delivery_complete` 为止有效；释放整份交付，不单独释放负载字段 |
 
 规则简化为一句：**凡是返回 `native_*_t` 的函数，调用方都拥有那份引用并负责 release。** 回调参数是唯一例外。
 

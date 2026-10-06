@@ -80,6 +80,22 @@ external int native_application_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_application_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_application_add_listener_async(
+  native_application_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<native_window_list_t Function()>()
 external native_window_list_t native_application_get_all_windows();
 
@@ -289,6 +305,22 @@ external int native_display_manager_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_display_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_display_manager_add_listener_async(
+  native_display_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<native_display_list_t Function()>()
 external native_display_list_t native_display_manager_get_all();
 
@@ -316,6 +348,24 @@ external bool native_display_manager_remove_listener(int listener_id);
 external int native_drag_source_add_listener(
   int drag_source,
   native_drag_source_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_drag_source_t,
+    native_drag_source_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_drag_source_add_listener_async(
+  int drag_source,
+  native_drag_source_event_callback_t_async callback,
   ffi.Pointer<ffi.Void> user_data,
   native_release_user_data_t release_user_data,
 );
@@ -418,6 +468,24 @@ external int native_drop_target_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_drop_target_t,
+    native_drop_target_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_drop_target_add_listener_async(
+  int drop_target,
+  native_drop_target_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 /// Creates a DropTarget instance; release it with native_drop_target_free().
 @ffi.Native<native_drop_target_t Function(native_window_t$2)>()
 external int native_drop_target_create(int window);
@@ -479,6 +547,50 @@ external native_edge_insets_t native_edge_insets_symmetric(
   double vertical,
   double horizontal,
 );
+
+@ffi.Native<ffi.Bool Function(native_event_decision_t)>()
+external bool native_event_decision_accept(int event_decision);
+
+@ffi.Native<ffi.Bool Function(native_event_decision_t)>()
+external bool native_event_decision_cancel(int event_decision);
+
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+@ffi.Native<ffi.Void Function(native_event_decision_t)>()
+external void native_event_decision_free(int event_decision);
+
+@ffi.Native<ffi.Bool Function(native_event_decision_t)>()
+external bool native_event_decision_is_pending(int event_decision);
+
+/// Releases the payload and its borrowed handles; accept resolves the implicit request vote.
+/// Pass false on failure. Returns false for duplicate, stale or type-confused handles.
+@ffi.Native<ffi.Bool Function(native_event_delivery_t, ffi.Bool)>()
+external bool native_event_delivery_complete(int delivery, bool accept);
+
+/// Whether the originating listener is still registered. False for stale handles.
+@ffi.Native<ffi.Bool Function(native_event_delivery_t)>()
+external bool native_event_delivery_is_active(int delivery);
+
+@ffi.Native<ffi.Bool Function(native_event_request_t)>()
+external bool native_event_request_cancel(int event_request);
+
+/// Caller owns the returned handle; release it with native_event_decision_free().
+@ffi.Native<native_event_decision_t Function(native_event_request_t)>()
+external int native_event_request_defer(int event_request);
+
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+@ffi.Native<ffi.Void Function(native_event_request_t)>()
+external void native_event_request_free(int event_request);
+
+@ffi.Native<ffi.Bool Function(native_event_request_t)>()
+external bool native_event_request_is_cancelable(int event_request);
+
+@ffi.Native<ffi.Bool Function(native_event_request_t)>()
+external bool native_event_request_is_cancelled(int event_request);
+
+@ffi.Native<ffi.Bool Function(native_event_request_t)>()
+external bool native_event_request_is_pending(int event_request);
 
 @ffi.Native<ffi.Bool Function(native_file_dialog_t)>()
 external bool native_file_dialog_close(int file_dialog);
@@ -648,6 +760,24 @@ external ffi.Pointer<ffi.Char> native_keyboard_accelerator_to_string(
 external int native_keyboard_monitor_add_listener(
   int keyboard_monitor,
   native_keyboard_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_keyboard_monitor_t,
+    native_keyboard_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_keyboard_monitor_add_listener_async(
+  int keyboard_monitor,
+  native_keyboard_event_callback_t_async callback,
   ffi.Pointer<ffi.Void> user_data,
   native_release_user_data_t release_user_data,
 );
@@ -833,6 +963,24 @@ external int native_menu_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_menu_t,
+    native_menu_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_menu_add_listener_async(
+  int menu,
+  native_menu_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<ffi.Void Function(native_menu_t)>()
 external void native_menu_add_separator(int menu);
 
@@ -917,6 +1065,24 @@ bool native_menu_is_backend_supported(native_menu_backend_t backend) {
 external int native_menu_item_add_listener(
   int menu_item,
   native_menu_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_menu_item_t,
+    native_menu_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_menu_item_add_listener_async(
+  int menu_item,
+  native_menu_event_callback_t_async callback,
   ffi.Pointer<ffi.Void> user_data,
   native_release_user_data_t release_user_data,
 );
@@ -1296,6 +1462,22 @@ external int native_notification_manager_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_notification_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_notification_manager_add_listener_async(
+  native_notification_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 /// Caller owns the returned string; free it with free_c_str().
 @ffi.Native<ffi.Pointer<ffi.Char> Function()>()
 external ffi.Pointer<ffi.Char> native_notification_manager_get_last_error();
@@ -1624,6 +1806,22 @@ external int native_shortcut_manager_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_shortcut_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_shortcut_manager_add_listener_async(
+  native_shortcut_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<ffi.Void Function(native_shortcut_id_t, ffi.Pointer<ffi.Char>)>()
 external void native_shortcut_manager_emit_shortcut_activated(
   int id,
@@ -1864,6 +2062,24 @@ external int native_tray_icon_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_tray_icon_t,
+    native_tray_icon_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_tray_icon_add_listener_async(
+  int tray_icon,
+  native_tray_icon_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<ffi.Bool Function(native_tray_icon_t)>()
 external bool native_tray_icon_close_context_menu(int tray_icon);
 
@@ -2076,6 +2292,24 @@ external native_url_open_result_t native_url_opener_open(
 external int native_view_add_listener(
   int view,
   native_view_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_view_t$1,
+    native_view_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_view_add_listener_async(
+  int view,
+  native_view_event_callback_t_async callback,
   ffi.Pointer<ffi.Void> user_data,
   native_release_user_data_t release_user_data,
 );
@@ -2297,11 +2531,49 @@ external void native_view_set_tooltip(int view, ffi.Pointer<ffi.Char> tooltip);
 @ffi.Native<ffi.Void Function(native_view_t$1, ffi.Bool)>()
 external void native_view_set_visible(int view, bool is_visible);
 
+/// Registers @p callback for every WindowEvent this Window emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_window_t,
+    native_window_event_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_window_add_listener(
+  int window,
+  native_window_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_window_t,
+    native_window_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_window_add_listener_async(
+  int window,
+  native_window_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_blur(int window);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_center(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_close(int window);
 
 /// Creates a Window instance; release it with native_window_free().
 @ffi.Native<native_window_t Function()>()
@@ -2326,6 +2598,24 @@ external int native_window_create_with_native_window(
 external int native_window_drag_session_add_listener(
   int window_drag_session,
   native_window_drag_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_window_drag_session_t,
+    native_window_drag_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_window_drag_session_add_listener_async(
+  int window_drag_session,
+  native_window_drag_event_callback_t_async callback,
   ffi.Pointer<ffi.Void> user_data,
   native_release_user_data_t release_user_data,
 );
@@ -2490,6 +2780,9 @@ external bool native_window_is_always_on_top(int window);
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_closable(int window);
 
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_close_supported();
+
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_content_protected(int window);
 
@@ -2608,6 +2901,22 @@ external int native_window_manager_add_listener(
   native_release_user_data_t release_user_data,
 );
 
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_window_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_window_manager_add_listener_async(
+  native_window_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
 @ffi.Native<ffi.Bool Function(native_window_id_t)>()
 external bool native_window_manager_call_original_hide(int id);
 
@@ -2682,6 +2991,10 @@ external void native_window_minimize(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_perform_title_bar_double_click(int window);
+
+/// Unregisters a listener. Returns false if unknown.
+@ffi.Native<ffi.Bool Function(native_window_t, native_listener_id_t)>()
+external bool native_window_remove_listener(int window, int listener_id);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_reset_title_bar_colors(int window);
@@ -2975,6 +3288,10 @@ const int NATIVE_INVALID_DRAG_SOURCE = 0;
 
 const int NATIVE_INVALID_DROP_TARGET = 0;
 
+const int NATIVE_INVALID_EVENT_DECISION = 0;
+
+const int NATIVE_INVALID_EVENT_REQUEST = 0;
+
 const int NATIVE_INVALID_FILE_DIALOG = 0;
 
 const int NATIVE_INVALID_IMAGE = 0;
@@ -3028,36 +3345,31 @@ final class UnnamedStruct extends ffi.Struct {
 }
 
 final class UnnamedStruct$1 extends ffi.Struct {
-  @ffi.UnsignedInt()
-  external int operationAsInt;
-
-  native_drag_operation_t get operation =>
-      native_drag_operation_t.fromValue(operationAsInt);
-  set operation(native_drag_operation_t value) => operationAsInt = value.value;
+  @native_event_request_t()
+  external int request;
 
   static ffi.Pointer<UnnamedStruct$1> $allocate(
     ffi.Allocator $allocator, {
-    required native_drag_operation_t operation,
-  }) => $allocator<UnnamedStruct$1>()..ref.operation = operation;
+    required int request,
+  }) => $allocator<UnnamedStruct$1>()..ref.request = request;
 }
 
 final class UnnamedStruct$10 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> error_message;
+  external ffi.Pointer<ffi.Char> argument;
 
   static ffi.Pointer<UnnamedStruct$10> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> error_message,
-  }) => $allocator<UnnamedStruct$10>()..ref.error_message = error_message;
+    required ffi.Pointer<ffi.Char> argument,
+  }) => $allocator<UnnamedStruct$10>()..ref.argument = argument;
 }
 
 final class UnnamedStruct$11 extends ffi.Struct {
-  @native_tray_icon_id_t()
-  external int tray_icon_id;
+  external ffi.Pointer<ffi.Char> error_message;
 
   static ffi.Pointer<UnnamedStruct$11> $allocate(
     ffi.Allocator $allocator, {
-    required int tray_icon_id,
-  }) => $allocator<UnnamedStruct$11>()..ref.tray_icon_id = tray_icon_id;
+    required ffi.Pointer<ffi.Char> error_message,
+  }) => $allocator<UnnamedStruct$11>()..ref.error_message = error_message;
 }
 
 final class UnnamedStruct$12 extends ffi.Struct {
@@ -3081,46 +3393,70 @@ final class UnnamedStruct$13 extends ffi.Struct {
 }
 
 final class UnnamedStruct$14 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> text;
+  @native_tray_icon_id_t()
+  external int tray_icon_id;
 
   static ffi.Pointer<UnnamedStruct$14> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> text,
-  }) => $allocator<UnnamedStruct$14>()..ref.text = text;
+    required int tray_icon_id,
+  }) => $allocator<UnnamedStruct$14>()..ref.tray_icon_id = tray_icon_id;
 }
 
 final class UnnamedStruct$15 extends ffi.Struct {
-  external native_point_t new_position;
+  external ffi.Pointer<ffi.Char> text;
+
+  static ffi.Pointer<UnnamedStruct$15> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Char> text,
+  }) => $allocator<UnnamedStruct$15>()..ref.text = text;
 }
 
 final class UnnamedStruct$16 extends ffi.Struct {
+  external native_point_t new_position;
+}
+
+final class UnnamedStruct$17 extends ffi.Struct {
   external native_size_t new_size;
 }
 
+final class UnnamedStruct$18 extends ffi.Struct {
+  @native_event_request_t()
+  external int request;
+
+  static ffi.Pointer<UnnamedStruct$18> $allocate(
+    ffi.Allocator $allocator, {
+    required int request,
+  }) => $allocator<UnnamedStruct$18>()..ref.request = request;
+}
+
 final class UnnamedStruct$2 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int operationAsInt;
+
+  native_drag_operation_t get operation =>
+      native_drag_operation_t.fromValue(operationAsInt);
+  set operation(native_drag_operation_t value) => operationAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$2> $allocate(
+    ffi.Allocator $allocator, {
+    required native_drag_operation_t operation,
+  }) => $allocator<UnnamedStruct$2>()..ref.operation = operation;
+}
+
+final class UnnamedStruct$3 extends ffi.Struct {
   external native_string_list_t file_paths;
 
   external ffi.Pointer<ffi.Char> text;
 }
 
-final class UnnamedStruct$3 extends ffi.Struct {
+final class UnnamedStruct$4 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int modifier_keys;
 
-  static ffi.Pointer<UnnamedStruct$3> $allocate(
-    ffi.Allocator $allocator, {
-    required int modifier_keys,
-  }) => $allocator<UnnamedStruct$3>()..ref.modifier_keys = modifier_keys;
-}
-
-final class UnnamedStruct$4 extends ffi.Struct {
-  @native_menu_id_t()
-  external int menu_id;
-
   static ffi.Pointer<UnnamedStruct$4> $allocate(
     ffi.Allocator $allocator, {
-    required int menu_id,
-  }) => $allocator<UnnamedStruct$4>()..ref.menu_id = menu_id;
+    required int modifier_keys,
+  }) => $allocator<UnnamedStruct$4>()..ref.modifier_keys = modifier_keys;
 }
 
 final class UnnamedStruct$5 extends ffi.Struct {
@@ -3134,13 +3470,13 @@ final class UnnamedStruct$5 extends ffi.Struct {
 }
 
 final class UnnamedStruct$6 extends ffi.Struct {
-  @native_menu_item_id_t()
-  external int item_id;
+  @native_menu_id_t()
+  external int menu_id;
 
   static ffi.Pointer<UnnamedStruct$6> $allocate(
     ffi.Allocator $allocator, {
-    required int item_id,
-  }) => $allocator<UnnamedStruct$6>()..ref.item_id = item_id;
+    required int menu_id,
+  }) => $allocator<UnnamedStruct$6>()..ref.menu_id = menu_id;
 }
 
 final class UnnamedStruct$7 extends ffi.Struct {
@@ -3164,66 +3500,71 @@ final class UnnamedStruct$8 extends ffi.Struct {
 }
 
 final class UnnamedStruct$9 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> argument;
+  @native_menu_item_id_t()
+  external int item_id;
 
   static ffi.Pointer<UnnamedStruct$9> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> argument,
-  }) => $allocator<UnnamedStruct$9>()..ref.argument = argument;
+    required int item_id,
+  }) => $allocator<UnnamedStruct$9>()..ref.item_id = item_id;
 }
 
 final class UnnamedUnion extends ffi.Union {
   external UnnamedStruct exiting;
+
+  external UnnamedStruct$1 quit_requested;
 }
 
 final class UnnamedUnion$1 extends ffi.Union {
-  external UnnamedStruct$1 ended;
+  external UnnamedStruct$2 ended;
 }
 
 final class UnnamedUnion$2 extends ffi.Union {
-  external UnnamedStruct$2 dropped;
+  external UnnamedStruct$3 dropped;
 }
 
 final class UnnamedUnion$3 extends ffi.Union {
-  external UnnamedStruct$3 modifier_keys_changed;
+  external UnnamedStruct$4 modifier_keys_changed;
 }
 
 final class UnnamedUnion$4 extends ffi.Union {
-  external UnnamedStruct$4 opened;
+  external UnnamedStruct$5 opened;
 
-  external UnnamedStruct$5 closed;
+  external UnnamedStruct$6 closed;
 
-  external UnnamedStruct$6 item_clicked;
+  external UnnamedStruct$7 item_clicked;
 
-  external UnnamedStruct$7 item_submenu_opened;
+  external UnnamedStruct$8 item_submenu_opened;
 
-  external UnnamedStruct$8 item_submenu_closed;
+  external UnnamedStruct$9 item_submenu_closed;
 }
 
 final class UnnamedUnion$5 extends ffi.Union {
-  external UnnamedStruct$9 activated;
+  external UnnamedStruct$10 activated;
 }
 
 final class UnnamedUnion$6 extends ffi.Union {
-  external UnnamedStruct$10 registration_failed;
+  external UnnamedStruct$11 registration_failed;
 }
 
 final class UnnamedUnion$7 extends ffi.Union {
-  external UnnamedStruct$11 clicked;
+  external UnnamedStruct$12 clicked;
 
-  external UnnamedStruct$12 right_clicked;
+  external UnnamedStruct$13 right_clicked;
 
-  external UnnamedStruct$13 double_clicked;
+  external UnnamedStruct$14 double_clicked;
 }
 
 final class UnnamedUnion$8 extends ffi.Union {
-  external UnnamedStruct$14 text_field_changed;
+  external UnnamedStruct$15 text_field_changed;
 }
 
 final class UnnamedUnion$9 extends ffi.Union {
-  external UnnamedStruct$15 moved;
+  external UnnamedStruct$16 moved;
 
-  external UnnamedStruct$16 resized;
+  external UnnamedStruct$17 resized;
+
+  external UnnamedStruct$18 close_requested;
 }
 
 typedef native_application_event_callback_t =
@@ -3238,11 +3579,25 @@ typedef Dartnative_application_event_callback_tFunction = void Function(
   ffi.Pointer<native_application_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_application_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_application_event_callback_t_asyncFunction>
+    >;
+typedef native_application_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_application_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_application_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_application_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One ApplicationEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_application_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -3380,11 +3735,25 @@ typedef Dartnative_display_event_callback_tFunction = void Function(
   ffi.Pointer<native_display_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_display_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_display_event_callback_t_asyncFunction>
+    >;
+typedef native_display_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_display_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_display_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_display_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One DisplayEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_display_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -3506,11 +3875,25 @@ typedef Dartnative_drag_source_event_callback_tFunction = void Function(
   ffi.Pointer<native_drag_source_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_drag_source_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_drag_source_event_callback_t_asyncFunction>
+    >;
+typedef native_drag_source_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_drag_source_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_drag_source_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_drag_source_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One DragSourceEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_drag_source_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -3563,11 +3946,25 @@ typedef Dartnative_drop_target_event_callback_tFunction = void Function(
   ffi.Pointer<native_drop_target_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_drop_target_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_drop_target_event_callback_t_asyncFunction>
+    >;
+typedef native_drop_target_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_drop_target_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_drop_target_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_drop_target_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One DropTargetEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_drop_target_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -3640,6 +4037,32 @@ final class native_edge_insets_t extends ffi.Struct {
     ..ref.bottom = bottom
     ..ref.left = left;
 }
+
+/// Opaque EventDecision handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_EVENT_DECISION rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef native_event_decision_t = ffi.Uint64;
+typedef Dartnative_event_decision_t = int;
+
+/// Owns an asynchronous event payload until acknowledged exactly once.
+typedef native_event_delivery_t = ffi.Uint64;
+typedef Dartnative_event_delivery_t = int;
+
+/// Opaque EventRequest handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_EVENT_REQUEST rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef native_event_request_t = ffi.Uint64;
+typedef Dartnative_event_request_t = int;
+typedef native_event_request_t$1 = ffi.Uint64;
+typedef Dartnative_event_request_t$1 = int;
+typedef native_event_request_t$2 = ffi.Uint64;
+typedef Dartnative_event_request_t$2 = int;
 
 enum native_file_dialog_mode_t {
   NATIVE_FILE_DIALOG_MODE_OPEN_FILE(0),
@@ -3748,11 +4171,25 @@ typedef Dartnative_keyboard_event_callback_tFunction = void Function(
   ffi.Pointer<native_keyboard_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_keyboard_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_keyboard_event_callback_t_asyncFunction>
+    >;
+typedef native_keyboard_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_keyboard_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_keyboard_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_keyboard_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One KeyboardEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_keyboard_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -3844,11 +4281,23 @@ typedef Dartnative_menu_event_callback_tFunction = void Function(
   ffi.Pointer<native_menu_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_menu_event_callback_t_async =
+    ffi.Pointer<ffi.NativeFunction<native_menu_event_callback_t_asyncFunction>>;
+typedef native_menu_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_menu_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_menu_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_menu_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One MenuEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_menu_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4035,11 +4484,25 @@ typedef Dartnative_notification_event_callback_tFunction = void Function(
   ffi.Pointer<native_notification_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_notification_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_notification_event_callback_t_asyncFunction>
+    >;
+typedef native_notification_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_notification_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_notification_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_notification_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One NotificationEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_notification_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4253,11 +4716,25 @@ typedef Dartnative_shortcut_event_callback_tFunction = void Function(
   ffi.Pointer<native_shortcut_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_shortcut_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_shortcut_event_callback_t_asyncFunction>
+    >;
+typedef native_shortcut_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_shortcut_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_shortcut_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_shortcut_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One ShortcutEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_shortcut_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4522,11 +4999,25 @@ typedef Dartnative_tray_icon_event_callback_tFunction = void Function(
   ffi.Pointer<native_tray_icon_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_tray_icon_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_tray_icon_event_callback_t_asyncFunction>
+    >;
+typedef native_tray_icon_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_tray_icon_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_tray_icon_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_tray_icon_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One TrayIconEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_tray_icon_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4696,11 +5187,23 @@ typedef Dartnative_view_event_callback_tFunction = void Function(
   ffi.Pointer<native_view_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_view_event_callback_t_async =
+    ffi.Pointer<ffi.NativeFunction<native_view_event_callback_t_asyncFunction>>;
+typedef native_view_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_view_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_view_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_view_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One ViewEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_view_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4846,11 +5349,25 @@ typedef Dartnative_window_drag_event_callback_tFunction = void Function(
   ffi.Pointer<native_window_drag_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_window_drag_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_window_drag_event_callback_t_asyncFunction>
+    >;
+typedef native_window_drag_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_window_drag_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_window_drag_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_window_drag_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One WindowDragEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_window_drag_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4903,11 +5420,25 @@ typedef Dartnative_window_event_callback_tFunction = void Function(
   ffi.Pointer<native_window_event_t> event,
   ffi.Pointer<ffi.Void> user_data,
 );
+typedef native_window_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_window_event_callback_t_asyncFunction>
+    >;
+typedef native_window_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_window_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_window_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_window_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
 
 /// One WindowEvent, tagged by its concrete type.
 ///
-/// Valid only for the duration of the callback: anything it points at
-/// is released as soon as the callback returns. Copy what you need.
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
 final class native_window_event_t extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
@@ -4934,7 +5465,8 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_CREATED(7),
   NATIVE_WINDOW_EVENT_TYPE_CLOSED(8),
   NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN(9),
-  NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10);
+  NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10),
+  NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED(11);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -4951,6 +5483,7 @@ enum native_window_event_type_t {
     8 => NATIVE_WINDOW_EVENT_TYPE_CLOSED,
     9 => NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN,
     10 => NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN,
+    11 => NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),

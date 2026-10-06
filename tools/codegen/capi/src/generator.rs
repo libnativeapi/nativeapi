@@ -93,12 +93,55 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
     )
     .unwrap();
     writeln!(out).unwrap();
+    writeln!(
+        out,
+        "/// Owns an asynchronous event payload until acknowledged exactly once."
+    )
+    .unwrap();
+    writeln!(out, "typedef uint64_t {prefix}event_delivery_t;").unwrap();
+    writeln!(
+        out,
+        "/// Whether the originating listener is still registered. False for stale handles."
+    )
+    .unwrap();
+    writeln!(out, "FFI_PLUGIN_EXPORT bool {prefix}event_delivery_is_active({prefix}event_delivery_t delivery);").unwrap();
+    writeln!(out, "/// Releases the payload and its borrowed handles; accept resolves the implicit request vote.").unwrap();
+    writeln!(
+        out,
+        "/// Pass false on failure. Returns false for duplicate, stale or type-confused handles."
+    )
+    .unwrap();
+    writeln!(out, "FFI_PLUGIN_EXPORT bool {prefix}event_delivery_complete({prefix}event_delivery_t delivery, bool accept);").unwrap();
+    writeln!(out).unwrap();
     writeln!(out, "#ifdef __cplusplus").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out, "#endif").unwrap();
 
     GeneratedFile {
         path: capi_out.join(COMMON_HEADER),
+        contents: out,
+    }
+}
+
+/// Uniform support functions shared by every asynchronous subscription.
+pub fn generate_common_source(capi_out: &Path, prefix: &str) -> GeneratedFile {
+    let mut out = String::new();
+    write_banner(&mut out);
+    out.push_str("#include \"common_c.h\"\n#include \"event_delivery.h\"\n#include \"../foundation/handle_table.h\"\n\n");
+    writeln!(
+        out,
+        "bool {prefix}event_delivery_is_active({prefix}event_delivery_t delivery) {{"
+    )
+    .unwrap();
+    out.push_str("  auto value = nativeapi::HandleTable::GetInstance().Resolve<nativeapi::capi::EventDelivery>(delivery);\n  return value && value->IsActive();\n}\n\n");
+    writeln!(
+        out,
+        "bool {prefix}event_delivery_complete({prefix}event_delivery_t delivery, bool accept) {{"
+    )
+    .unwrap();
+    out.push_str("  auto& table = nativeapi::HandleTable::GetInstance();\n  auto value = table.Resolve<nativeapi::capi::EventDelivery>(delivery);\n  if (!value || !value->Complete(accept)) return false;\n  table.Release(delivery);\n  return true;\n}\n");
+    GeneratedFile {
+        path: capi_out.join("common_c.cpp"),
         contents: out,
     }
 }
@@ -638,6 +681,21 @@ fn render_listener_decl(out: &mut String, api: &Api, class: &Class, prefix: &str
     .unwrap();
     writeln!(out).unwrap();
 
+    writeln!(
+        out,
+        "/// Registers an asynchronous callback. Its event, borrowed handles and user_data"
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "/// remain valid until event_delivery_complete is called, including after removal."
+    )
+    .unwrap();
+    writeln!(out, "/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.").unwrap();
+    writeln!(out, "FFI_PLUGIN_EXPORT").unwrap();
+    writeln!(out, "{LISTENER_ID_TYPE} {}_async({}{callback}_async callback, void* user_data, {RELEASE_USER_DATA_TYPE} release_user_data);", c_add_listener_symbol(prefix, &class.name), receiver).unwrap();
+    writeln!(out).unwrap();
+
     writeln!(out, "/// Unregisters a listener. Returns false if unknown.").unwrap();
     writeln!(out, "FFI_PLUGIN_EXPORT").unwrap();
     writeln!(
@@ -902,12 +960,12 @@ fn render_c_event_types(out: &mut String, group: &EventGroup, prefix: &str) {
     writeln!(out, "///").unwrap();
     writeln!(
         out,
-        "/// Valid only for the duration of the callback: anything it points at"
+        "/// Synchronous callbacks borrow this payload until they return. Async callbacks"
     )
     .unwrap();
     writeln!(
         out,
-        "/// is released as soon as the callback returns. Copy what you need."
+        "/// borrow it until event_delivery_complete. Copy anything needed after that."
     )
     .unwrap();
     writeln!(out, "typedef struct {{").unwrap();
@@ -958,6 +1016,7 @@ fn render_c_event_types(out: &mut String, group: &EventGroup, prefix: &str) {
         c_type_name(prefix, &group.name)
     )
     .unwrap();
+    writeln!(out, "typedef void (*{}_async)(const {}* event, {prefix}event_delivery_t delivery, void* user_data);", c_event_callback_type(prefix, &group.name), c_type_name(prefix, &group.name)).unwrap();
     writeln!(out).unwrap();
 }
 
@@ -1047,6 +1106,10 @@ fn render_c_source(
     )
     .unwrap();
     writeln!(out, "#include \"{USER_DATA_HEADER}\"").unwrap();
+    if header.classes.iter().any(|class| class.event.is_some()) {
+        writeln!(out, "#include \"event_delivery.h\"").unwrap();
+    }
+
     writeln!(
         out,
         "#include \"{}\"",
@@ -2078,6 +2141,8 @@ fn render_listener_impl(out: &mut String, api: &Api, class: &Class, prefix: &str
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
 
+    render_async_listener_impl(out, group, class, prefix);
+
     // remove_listener
     writeln!(
         out,
@@ -2097,6 +2162,64 @@ fn render_listener_impl(out: &mut String, api: &Api, class: &Class, prefix: &str
     writeln!(out, "  }}").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
+}
+
+fn render_async_listener_impl(out: &mut String, group: &EventGroup, class: &Class, prefix: &str) {
+    let callback = c_event_callback_type(prefix, &group.name);
+    let event_type = c_type_name(prefix, &group.name);
+    let receiver_param = listener_receiver_param(class, prefix);
+    writeln!(out, "{LISTENER_ID_TYPE} {}_async({receiver_param}{callback}_async callback, void* user_data, {RELEASE_USER_DATA_TYPE} release_user_data) {{", c_add_listener_symbol(prefix, &class.name)).unwrap();
+    out.push_str("  auto holder = nativeapi::capi::UserData::Make(user_data, release_user_data);\n  if (!callback) return 0;\n");
+    let receiver = render_emitter_receiver(out, class, class.is_instance(), "  ", "0");
+    out.push_str("  try {\n    auto registration = std::make_shared<nativeapi::capi::EventDeliveryRegistration>(holder);\n");
+    writeln!(
+        out,
+        "    return static_cast<{LISTENER_ID_TYPE}>(nativeapi::detail::EventListenerDispatch::AddListener<{}>({},",
+        group.qualified_name,
+        if class.is_instance() { "*self".to_string() } else { receiver.trim_end_matches('.').to_string() }
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "        [callback, registration](const {}& event) {{",
+        group.qualified_name
+    )
+    .unwrap();
+    out.push_str("          std::shared_ptr<nativeapi::EventRequest> request;\n");
+    // Requests are discovered from the IR, rather than hard-coded emitter names.
+    for field in &group.common {
+        if matches!(&field.ty, TypeRef::Object { name, shared: true, .. } if name == "EventRequest")
+        {
+            writeln!(out, "          request = event.Get{}();", field.name).unwrap();
+        }
+    }
+    for variant in &group.variants {
+        for field in &variant.fields {
+            if matches!(&field.ty, TypeRef::Object { name, shared: true, .. } if name == "EventRequest")
+            {
+                writeln!(out, "          if (const auto* typed = dynamic_cast<const {}*>(&event)) request = typed->Get{}();", variant.qualified_name, field.name).unwrap();
+            }
+        }
+    }
+    out.push_str(
+        "          auto vote = request && request->IsCancelable() ? request->Defer() : nullptr;\n",
+    );
+    writeln!(out, "          {prefix}event_delivery_t delivery = 0;").unwrap();
+    out.push_str("          try {\n");
+    writeln!(out, "            auto payload = std::shared_ptr<{event_type}>(new {event_type}{{}}, []({event_type}* value) {{ {}(value); delete value; }});", cpp_event_releaser(&group.name)).unwrap();
+    writeln!(
+        out,
+        "            if (!{}(event, payload.get())) {{ if (request) request->Cancel(); return; }}",
+        cpp_event_converter(&group.name)
+    )
+    .unwrap();
+    out.push_str("            auto* event_pointer = payload.get();\n            auto lease = std::make_shared<nativeapi::capi::EventDelivery>(registration->context, std::move(payload), std::move(vote));\n            delivery = nativeapi::HandleTable::GetInstance().Insert(lease);\n            callback(event_pointer, delivery, registration->context->holder->get());\n          } catch (...) {\n            if (request) request->Cancel();\n");
+    writeln!(
+        out,
+        "            if (delivery) {prefix}event_delivery_complete(delivery, false);"
+    )
+    .unwrap();
+    out.push_str("          }\n        }, registration->context->active));\n  } catch (...) {\n    return 0;\n  }\n}\n\n");
 }
 
 /// Emits the lines that produce the emitter and returns the receiver prefix.

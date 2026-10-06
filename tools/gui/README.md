@@ -10,7 +10,9 @@ runner) lives in [`.agents/skills/`](../../.agents/skills); read
 
 | Script | Example | Platform | Covers |
 | --- | --- | --- | --- |
+| `core_application_exit_flutter_macos.py` | headless Flutter exit regression | macOS | Creates no windows and sends no input. A real Dart `AppLifecycleListener` asynchronously cancels quit with and without nativeapi listeners, then approves quit. Requires Flutter, CMake and the installed debug FlutterMacOS framework; substitutes only the final process termination. |
 | `core_application_exit_flutter_linux.py` | real Flutter secondary-window exit regression | Linux X11 / Wayland | No input; private Xvfb and Weston displays. Two realized secondary views exercise controller destruction, nativeapi close, GTK show/hide hooks, implicit-view preservation and normal process exit. Tests both listener removal and a manager that stays alive through process exit (18 checks per mode per backend). Flutter-only controls contain no nativeapi native assets; SDK diagnostics stay in the logs and any additional nativeapi warnings fail the test. Requires Flutter, clang, GTK3 development files, Xvfb, Weston and `dbus-run-session`. |
+| `core_window_close_flutter_macos.py` | Flutter window/controller ownership regression | macOS | Real FlutterEngine, multi-window controllers and bundled nativeapi Dart FFI: 19 checks for veto, explicit votes, native/public coalescing, host refusal, native close and Flutter-owned destruction, expired wrappers and handles. Test windows remain unshown and no input is sent. Requires Flutter, CMake and the matching debug framework; runs `window_close_flutter.dart`. |
 | `core_window_corner_preference_test.ps1` | core corner preference regression | Windows 11 | No-input test: four DWM policies, unchanged title bar/geometry/shadow, wrapper sharing, fullscreen/maximize restoration, invalid enums and stale handles; saves a comparison image for visual inspection. Override the test executable with `CORE_CORNER_TEST_EXE`. |
 | `core_window_content_protection_test.ps1` | core content protection regression | Windows | No-input test: native display affinity, shared wrappers, C ABI and actual capture exclusion/restoration of a pixel inside the test windows. Override the executable with `CORE_CONTENT_PROTECTION_TEST_EXE`. |
 | `core_window_title_bar_double_click_macos.py` | core title-bar double-click regression | macOS | Guarded real double clicks on bare hidden title bars: zoom/restore, Minimize, None and native Fill. Preferences are overridden only in the fixture process. Build `window_title_bar_double_click_gui_macos_test` in `core/build` first. |
@@ -51,9 +53,9 @@ kit the `remote-hosts` skill pushes, and find the example through `$REMOTE_SCRAT
 
 ## Running
 
-Every script takes over the mouse. It refuses to start while the mouse is moving and
-stops as soon as a press would land outside the example's own windows. No keyboard
-input is ever sent.
+Scripts that drive input take over the mouse. They refuse to start while the mouse
+is moving and stop as soon as a press would land outside the example's own windows.
+No keyboard input is ever sent. The table identifies tests that need no input.
 
 ```bash
 # macOS (examples built with `flutter build macos --debug`, or pass --build)

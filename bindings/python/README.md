@@ -63,11 +63,19 @@ asyncio.run(main())
   the process.
 - `await Application.run_async(window=None)` pumps the platform loop from the
   running asyncio loop instead, so tasks, timers and I/O keep running while
-  windows are up. It resolves with the exit code once `Application.quit(code)`
-  is called. An exception raised in a listener goes to the asyncio loop's
-  exception handler.
+  windows are up. `Application.quit(code)` requests confirmation; the loop
+  resolves with the exit code once all decisions accept. A listener may cancel
+  the request or call `event.request.defer()` and keep the owned decision while
+  awaiting an asyncio task. Resolve it with `accept()` / `cancel()`, then
+  `dispose()` it. Cancelling the `run_async()` task invalidates its pending
+  confirmation, so a late decision cannot stop a later run.
 
-Both must be called on the main thread.
+Listeners are synchronous. For async confirmation, register a normal function
+that defers the request and schedules an asyncio task; registering an `async def`
+callback is rejected. Listener exceptions veto cancellable requests and reach
+the asyncio loop's exception handler.
+
+Both must be called on the Python main thread and platform UI thread.
 
 ## Building
 
@@ -79,9 +87,14 @@ For work on the binding itself, build the library in place and run from the
 source tree; `nativeapi/_library.py` finds it in `build/`:
 
 ```bash
-cmake -S bindings/python -B bindings/python/build && cmake --build bindings/python/build
+cmake -S bindings/python -B bindings/python/build -DNATIVEAPI_PY_BUILD_TESTS=ON
+cmake --build bindings/python/build
 cd bindings/python && PYTHONPATH=. uvx --with pytest pytest
 ```
+
+The test option adds fixture exports to the local library for actual ctypes
+quit/asyncio regressions without opening windows or sending input. Published
+wheels build with that option off.
 
 `NATIVEAPI_LIBRARY=/path/to/libnativeapi.dylib` overrides the lookup.
 

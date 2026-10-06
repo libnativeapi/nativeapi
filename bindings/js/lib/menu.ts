@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject, wrapHandle } from "./runtime.ts";
+import { native, NativeObject, wrapHandle, deliverEvent } from "./runtime.ts";
 import { Image } from "./image.ts";
 import { KeyboardAccelerator } from "./keyboard.ts";
 import { Placement } from "./placement.ts";
@@ -134,9 +134,12 @@ export class MenuItem extends NativeObject {
     return native.native_menu_item_get_native_object(this.nativeHandle);
   }
 
-  /** Calls `listener` for every MenuEvent this MenuItem emits; returns the listener id. */
-  addListener(listener: (event: MenuEvent) => void): number {
-    return native.native_menu_item_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: MenuEvent) => void | Promise<void>): number {
+    return native.native_menu_item_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as MenuEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */
@@ -239,9 +242,12 @@ export class Menu extends NativeObject {
     return native.native_menu_get_native_object(this.nativeHandle);
   }
 
-  /** Calls `listener` for every MenuEvent this Menu emits; returns the listener id. */
-  addListener(listener: (event: MenuEvent) => void): number {
-    return native.native_menu_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: MenuEvent) => void | Promise<void>): number {
+    return native.native_menu_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as MenuEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

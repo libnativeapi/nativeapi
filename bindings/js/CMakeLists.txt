@@ -52,3 +52,18 @@ if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
   execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF}
                   /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
 endif()
+
+# Explicit runtime fixture compiled into the addon: all tests share the actual
+# core and handle table, including Windows static-library symbols. Off in release.
+option(NATIVEAPI_JS_BUILD_TESTS "Build the native event runtime fixture" OFF)
+if(NATIVEAPI_JS_BUILD_TESTS)
+  target_include_directories(nativeapi_js PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  set(FIXTURE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../tools/tests/js_event_delivery_fixture.cpp")
+  if(APPLE)
+    set_source_files_properties("${FIXTURE_SOURCE}" PROPERTIES LANGUAGE OBJCXX)
+  elseif(MSVC)
+    set_source_files_properties("${FIXTURE_SOURCE}" PROPERTIES COMPILE_OPTIONS /utf-8)
+  endif()
+  target_sources(nativeapi_js PRIVATE "${FIXTURE_SOURCE}")
+  target_compile_definitions(nativeapi_js PRIVATE NATIVEAPI_JS_EMBEDDED_FIXTURE=1)
+endif()

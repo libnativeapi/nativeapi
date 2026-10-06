@@ -66,9 +66,13 @@
 ### 无集合 ID 的身份对象
 
 `Preferences`、`SecureStorage`、`LaunchAtLogin`、`KeyboardMonitor`、
-`WindowDragSession`、`DragSource`、`DropTarget`、`MessageDialog`、`Image`：同样禁拷贝、以 handle 跨 ABI，但不进入任何
+`WindowDragSession`、`DragSource`、`DropTarget`、`MessageDialog`、`Image`、
+`EventRequest`、`EventDecision`：同样禁拷贝、以 handle 跨 ABI，但不进入任何
 manager 集合，因此不定义 `XxxId` 别名、不调用 `IdAllocator::Allocate`。
 它们仍需要 `IdTypeTag` 登记——那只服务于 handle 表的类型校验。
+
+`EventRequest` / `EventDecision` 表示一次可取消请求 / 延后投票的共享活状态。
+事件里的请求引用不能按值复制成独立状态；每个监听器都操作同一次请求。
 
 `Image` 是这组里目前唯一的违规者：静态工厂返回 `shared_ptr` 没问题，但它同时
 公开了深拷贝构造（`Image(const Image&)` 深拷贝 pimpl）和移动构造，与本节规则

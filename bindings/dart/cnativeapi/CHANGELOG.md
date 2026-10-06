@@ -1,5 +1,7 @@
 ## 0.4.1
 
+* Add raw window close capability, object listeners and close-request payloads.
+
 * Event loop shim for plain Dart programs (`src/event_loop*`, bound in
   `lib/src/event_loop.dart`): `cnativeapi_run_ui_thread`,
   `cnativeapi_start_event_loop`, `cnativeapi_pump_event_loop` and

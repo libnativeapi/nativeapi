@@ -20,6 +20,7 @@ public struct native_window_event_t
     {
         [FieldOffset(0)] public MovedData moved;
         [FieldOffset(0)] public ResizedData resized;
+        [FieldOffset(0)] public CloseRequestedData close_requested;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -32,6 +33,12 @@ public struct native_window_event_t
     public struct ResizedData
     {
         public native_size_t new_size;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CloseRequestedData
+    {
+        public ulong request;
     }
 }
 
@@ -49,6 +56,10 @@ public static partial class Interop
 {
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_close(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_has_shadow(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -62,6 +73,10 @@ public static partial class Interop
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_is_closable(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_is_close_supported();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -185,6 +200,10 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_remove_listener(ulong self, ulong listenerId);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_reset_title_bar_colors(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -278,6 +297,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern uint native_window_get_id(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_window_add_listener(ulong self, WindowEventNativeCallback callback, IntPtr userData, ReleaseUserDataNativeCallback releaseUserData);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_window_create();

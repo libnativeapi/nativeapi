@@ -100,13 +100,15 @@ class WindowDragSession(_rt.NativeObject):
     def add_listener(self, callback: Callable[[WindowDragEvent], None]) -> int:
         """Calls `callback` with every WindowDragEvent this WindowDragSession emits.
 
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
         Returns the listener id for `remove_listener()`.
         """
 
         def trampoline(raw, _user_data):
             event = WindowDragEvent._from_c(raw.contents)
             if event is not None:
-                callback(event)
+                _rt.deliver_event(callback, event)
 
         return _rt.add_listener(
             _C.native_window_drag_session_add_listener,

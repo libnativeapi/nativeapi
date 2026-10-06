@@ -395,11 +395,12 @@ napi_value Js_native_menu_item_add_listener(napi_env env, napi_callback_info inf
   if (!GetCallback(env, args[1], /*optional=*/false, &callback)) {
     return nullptr;
   }
-  native_listener_id_t id = OnMainThread([&] { return native_menu_item_add_listener(self, +[](const native_menu_event_t* event, void* user_data) {
+  native_listener_id_t id = OnMainThread([&] { return native_menu_item_add_listener_async(self, +[](const native_menu_event_t* event, native_event_delivery_t delivery, void* user_data) {
     if (event != nullptr) {
-      Callback::Dispatch(user_data, {ToValue(*event)});
-    }
+      Callback::DispatchEvent(user_data, {ToValue(*event)}, delivery);
+    } else { native_event_delivery_complete(delivery, false); }
   }, callback, &Callback::ReleaseUserData); });
+  if (id) Callback::AttachRegistration(callback, [self, id] { (void)native_menu_item_remove_listener(self, id); });
   return Value::Number(static_cast<double>(id)).ToJs(env);
 }
 
@@ -813,11 +814,12 @@ napi_value Js_native_menu_add_listener(napi_env env, napi_callback_info info) {
   if (!GetCallback(env, args[1], /*optional=*/false, &callback)) {
     return nullptr;
   }
-  native_listener_id_t id = OnMainThread([&] { return native_menu_add_listener(self, +[](const native_menu_event_t* event, void* user_data) {
+  native_listener_id_t id = OnMainThread([&] { return native_menu_add_listener_async(self, +[](const native_menu_event_t* event, native_event_delivery_t delivery, void* user_data) {
     if (event != nullptr) {
-      Callback::Dispatch(user_data, {ToValue(*event)});
-    }
+      Callback::DispatchEvent(user_data, {ToValue(*event)}, delivery);
+    } else { native_event_delivery_complete(delivery, false); }
   }, callback, &Callback::ReleaseUserData); });
+  if (id) Callback::AttachRegistration(callback, [self, id] { (void)native_menu_remove_listener(self, id); });
   return Value::Number(static_cast<double>(id)).ToJs(env);
 }
 

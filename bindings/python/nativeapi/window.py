@@ -5,11 +5,13 @@
 from __future__ import annotations
 
 import enum
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from . import _capi as _C
 from . import _runtime as _rt
 from . import color as _color
+from . import event_request as _event_request
 from . import geometry as _geometry
 from . import view as _view
 from . import window_shadow as _window_shadow
@@ -88,6 +90,11 @@ class WindowEvent:
             return WindowEnteredFullScreenEvent(raw.window_id)
         if raw.type == 10:
             return WindowExitedFullScreenEvent(raw.window_id)
+        if raw.type == 11:
+            return WindowCloseRequestedEvent(
+                raw.window_id,
+                _event_request.EventRequest._borrowed(raw.data.close_requested.request),
+            )
         return None
 
 
@@ -146,6 +153,11 @@ class WindowExitedFullScreenEvent(WindowEvent):
     pass
 
 
+@dataclass(frozen=True)
+class WindowCloseRequestedEvent(WindowEvent):
+    request: _event_request.EventRequest | None
+
+
 class Window(_rt.NativeObject):
     """Owned reference to a native Window.
 
@@ -168,6 +180,15 @@ class Window(_rt.NativeObject):
         if not handle:
             raise _rt.NativeApiError("failed to create a Window")
         return cls._owned(handle)
+
+    @staticmethod
+    def is_close_supported() -> bool:
+        raw = _C.native_window_is_close_supported()
+        return raw
+
+    def close(self) -> bool:
+        raw = _C.native_window_close(self._handle)
+        return raw
 
     @property
     def id(self) -> WindowId:
@@ -666,3 +687,31 @@ class Window(_rt.NativeObject):
     @background_color.setter
     def background_color(self, value: _color.Color) -> None:
         self.set_background_color(value)
+
+    def add_listener(self, callback: Callable[[WindowEvent], None]) -> int:
+        """Calls `callback` with every WindowEvent this Window emits.
+
+        Callbacks run synchronously; coroutine callbacks are not accepted.
+        Use an owned EventDecision for asynchronous request confirmation.
+        Returns the listener id for `remove_listener()`.
+        """
+
+        def trampoline(raw, _user_data):
+            event = WindowEvent._from_c(raw.contents)
+            if event is not None:
+                _rt.deliver_event(callback, event)
+
+        return _rt.add_listener(
+            _C.native_window_add_listener,
+            _C.native_window_event_callback_t,
+            trampoline,
+            self._handle,
+        )
+
+    def remove_listener(self, listener_id: int) -> bool:
+        """Unregisters a listener. Returns False if unknown."""
+        return _rt.remove_listener(
+            _C.native_window_remove_listener,
+            listener_id,
+            self._handle,
+        )

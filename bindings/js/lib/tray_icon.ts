@@ -1,7 +1,7 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Any manual changes WILL BE LOST when this file is regenerated.
 
-import { native, NativeObject, wrapHandle } from "./runtime.ts";
+import { native, NativeObject, wrapHandle, deliverEvent } from "./runtime.ts";
 import { type Rectangle, type Size } from "./geometry.ts";
 import { Image } from "./image.ts";
 import { Menu } from "./menu.ts";
@@ -155,9 +155,12 @@ export class TrayIcon extends NativeObject {
     return native.native_tray_icon_get_native_object(this.nativeHandle);
   }
 
-  /** Calls `listener` for every TrayIconEvent this TrayIcon emits; returns the listener id. */
-  addListener(listener: (event: TrayIconEvent) => void): number {
-    return native.native_tray_icon_add_listener(this.nativeHandle, listener);
+  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */
+  addListener(listener: (event: TrayIconEvent) => void | Promise<void>): number {
+    return native.native_tray_icon_add_listener(this.nativeHandle, (event: Record<string, unknown>, delivery: bigint) =>
+      deliverEvent(delivery, () => {
+        return event as unknown as TrayIconEvent;
+      }, listener));
   }
 
   /** Unregisters a listener; returns false if the id is unknown. */

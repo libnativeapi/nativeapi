@@ -3,16 +3,22 @@
 
 // ignore_for_file: unused_import, unnecessary_import
 
+import 'dart:async';
 import 'dart:ffi' as ffi;
 
 import 'package:cnativeapi/cnativeapi.dart' as c;
 import 'package:ffi/ffi.dart' as pkg_ffi;
 
 import 'foundation/color.dart';
+import 'foundation/event_request.dart';
 import 'foundation/geometry.dart';
 import 'view.dart';
 import 'window_shadow.dart';
 import 'window_shape.dart';
+
+import 'support.dart';
+
+import 'callbacks.dart';
 
 typedef WindowId = int;
 
@@ -175,6 +181,16 @@ sealed class WindowEvent {
             .value) {
       return WindowExitedFullScreenEvent(windowId: raw.window_id);
     }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED
+            .value) {
+      return WindowCloseRequestedEvent(
+        windowId: raw.window_id,
+        request: EventRequest.borrowed(raw.data.close_requested.request),
+      );
+    }
     return null;
   }
 }
@@ -258,6 +274,17 @@ final class WindowExitedFullScreenEvent extends WindowEvent {
   final WindowId windowId;
 }
 
+final class WindowCloseRequestedEvent extends WindowEvent {
+  const WindowCloseRequestedEvent({
+    required this.windowId,
+    required this.request,
+  });
+
+  @override
+  final WindowId windowId;
+  final EventRequest request;
+}
+
 class Window {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
@@ -293,6 +320,14 @@ class Window {
     final handle = c.native_window_create_with_native_window(nativeWindow);
     if (handle == 0) return null;
     return Window.fromHandle(handle);
+  }
+
+  static bool isCloseSupported() {
+    return c.native_window_is_close_supported();
+  }
+
+  bool close() {
+    return c.native_window_close(nativeHandle);
   }
 
   WindowId get id {
@@ -783,4 +818,44 @@ class Window {
   /// Platform-specific native object behind this handle.
   ffi.Pointer<ffi.Void> get nativeObject =>
       c.native_window_get_native_object(nativeHandle);
+
+  /// Registers [callback] for every `WindowEvent` this `Window` emits.
+  ///
+  /// Delivered on the registering isolate, including events from native UI threads.
+  /// The callback may return a Future; borrowed handles stay valid until it completes.
+  /// Events queued before removal are skipped if their callback has not started.
+  ListenerId addListener(FutureOr<void> Function(WindowEvent) callback) {
+    final callable =
+        ffi.NativeCallable<
+          ffi.Void Function(
+            ffi.Pointer<c.native_window_event_t>,
+            ffi.Uint64,
+            ffi.Pointer<ffi.Void>,
+          )
+        >.listener((
+          ffi.Pointer<c.native_window_event_t> event,
+          int delivery,
+          ffi.Pointer<ffi.Void> _,
+        ) {
+          unawaited(
+            NativeCallbacks.deliverEvent(
+              delivery,
+              () => event == ffi.nullptr
+                  ? null
+                  : WindowEvent.fromNative(event.ref),
+              callback,
+            ),
+          );
+        });
+    return c.native_window_add_listener_async(
+      nativeHandle,
+      callable.nativeFunction,
+      NativeCallbacks.userData(callable),
+      NativeCallbacks.release,
+    );
+  }
+
+  /// Unregisters a listener. Returns false if unknown.
+  bool removeListener(ListenerId listenerId) =>
+      c.native_window_remove_listener(nativeHandle, listenerId);
 }

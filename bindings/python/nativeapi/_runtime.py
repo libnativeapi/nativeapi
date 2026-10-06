@@ -4,7 +4,9 @@ and container marshalling, callbacks, and the platform event loop."""
 from __future__ import annotations
 
 import asyncio
+import atexit
 import ctypes
+import inspect
 import itertools
 import signal
 import sys
@@ -234,6 +236,8 @@ def to_enum(cls: Callable[[int], _E], value: int) -> _E | int:
 # core hands that key to `release_user_data` (on the main thread) once it lets
 # the callback go -- listener removed, callback replaced, registration ended,
 # owner destroyed, or the call failed.
+# The asyncio shim's internal completion is released inline on its last owning
+# thread; ctypes reacquires the GIL, and no further platform pump is needed.
 _callbacks: dict[int, Any] = {}
 _next_key = itertools.count(1)
 
@@ -278,6 +282,24 @@ def add_listener(add, callback_type, trampoline, *receiver: int) -> int:
     return add(*receiver, native, user_data(native), release_user_data)
 
 
+def deliver_event(callback: Callable[[Any], None], event: Any) -> None:
+    """Keep callback failure from silently approving a cancellable request."""
+    try:
+        result = callback(event)
+        if inspect.isawaitable(result):
+            if inspect.iscoroutine(result):
+                result.close()
+            raise TypeError(
+                "nativeapi: event callbacks must be synchronous; use request.defer() "
+                "and resolve the owned decision from an asyncio task"
+            )
+    except BaseException:
+        request = getattr(event, "request", None)
+        if request is not None:
+            request.cancel()
+        raise
+
+
 def remove_listener(remove, listener_id: int, *receiver: int) -> bool:
     return bool(remove(*receiver, listener_id))
 
@@ -302,6 +324,20 @@ def _report(exc: BaseException) -> None:
 _start_event_loop = function("nativeapi_py_start_event_loop", None, [c_uint64])
 _pump_event_loop = function("nativeapi_py_pump_event_loop", c_int, [])
 _is_platform_main_thread = function("nativeapi_py_is_main_thread", c_bool, [])
+_begin_event_loop = function("nativeapi_py_begin_event_loop", c_uint64, [])
+_end_event_loop = function("nativeapi_py_end_event_loop", None, [c_uint64])
+_quit_callback_type = ctypes.CFUNCTYPE(None, c_int, ctypes.c_void_p)
+_request_event_loop_quit = function(
+    "nativeapi_py_request_event_loop_quit",
+    c_bool,
+    [
+        c_uint64,
+        c_int,
+        _quit_callback_type,
+        ctypes.c_void_p,
+        _C.native_release_user_data_t,
+    ],
+)
 
 # How often the platform queue is drained while nothing is happening, in s.
 _IDLE_INTERVAL = 0.008
@@ -314,10 +350,35 @@ class _AsyncLoop:
         self.aio = aio
         self.future = future
         self.timer: asyncio.Handle | None = None
+        self.session = 0
+        self.thread = threading.get_ident()
+
+    def complete(self, exit_code: int) -> None:
+        def finish() -> None:
+            if _async_loop is self and not self.future.done():
+                self.future.set_result(exit_code)
+
+        if threading.get_ident() == self.thread:
+            finish()
+        else:
+            self.aio.call_soon_threadsafe(finish)
 
 
 _async_loop: _AsyncLoop | None = None
 _blocking = False
+
+
+def _shutdown_async_loop() -> None:
+    global _async_loop
+    state = _async_loop
+    _async_loop = None
+    if state is not None and state.session:
+        _end_event_loop(state.session)
+
+
+# End before ctypes trampolines disappear, even when a manually driven asyncio
+# loop is closed with an outstanding run_async task or queued worker quit.
+atexit.register(_shutdown_async_loop)
 
 
 def is_event_loop_running() -> bool:
@@ -330,6 +391,10 @@ def _check_can_run() -> None:
         raise RuntimeError("nativeapi: the event loop is already running")
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError("nativeapi: the event loop must run on the main thread")
+    if not _is_platform_main_thread():
+        raise RuntimeError(
+            "nativeapi: the event loop must run on the platform UI thread"
+        )
 
 
 def run_event_loop(window: NativeObject | None) -> int:
@@ -355,6 +420,9 @@ async def run_event_loop_async(window: NativeObject | None) -> int:
     state = _AsyncLoop(aio, aio.create_future())
     _async_loop = state
     try:
+        state.session = _begin_event_loop()
+        if not state.session:
+            raise NativeApiError("nativeapi: could not start the asyncio loop session")
         _start_event_loop(handle_of(window))
 
         def tick() -> None:
@@ -362,8 +430,10 @@ async def run_event_loop_async(window: NativeObject | None) -> int:
                 return
             exit_code = _pump_event_loop()
             if exit_code >= 0:
-                quit_event_loop(exit_code)
-            elif not state.future.done():
+                # WM_QUIT has already been approved by the native producer,
+                # or is a mandatory platform exit. Do not ask a second time.
+                state.complete(exit_code)
+            if not state.future.done():
                 state.timer = aio.call_later(_IDLE_INTERVAL, tick)
 
         state.timer = aio.call_soon(tick)
@@ -371,6 +441,8 @@ async def run_event_loop_async(window: NativeObject | None) -> int:
     finally:
         if state.timer is not None:
             state.timer.cancel()
+        if state.session:
+            _end_event_loop(state.session)
         _async_loop = None
 
 
@@ -378,6 +450,12 @@ def quit_event_loop(exit_code: int = 0) -> None:
     state = _async_loop
     if state is not None:
         if not state.future.done():
-            state.future.set_result(exit_code)
+            native = make_callback(
+                _quit_callback_type, lambda code, _data: state.complete(code)
+            )
+            if not _request_event_loop_quit(
+                state.session, exit_code, native, user_data(native), release_user_data
+            ):
+                raise NativeApiError("nativeapi: could not schedule the quit request")
         return
     _C.native_application_quit(exit_code)
