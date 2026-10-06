@@ -8,6 +8,11 @@
 /// The stable channel does not offer `flutter config --enable-windowing`: an app
 /// sets `isWindowingEnabled = true` (from
 /// `package:flutter/src/foundation/_features.dart`) before its binding starts.
+///
+/// On the web, where there are no native windows, [nativeWindowOf] returns
+/// null, so an app that also targets the web can still import this library.
 library;
 
-export 'src/windowing/flutter_window.dart';
+export 'src/windowing/flutter_window.dart'
+    if (dart.library.js_interop) 'src/windowing/flutter_window_web.dart';
+export 'src/windowing/window_geometry.dart';

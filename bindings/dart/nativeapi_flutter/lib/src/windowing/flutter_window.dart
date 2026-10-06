@@ -1,7 +1,6 @@
 // ignore_for_file: invalid_use_of_internal_member, implementation_imports
 
 import 'dart:ffi' as ffi;
-import 'dart:ui' show Offset;
 
 import 'package:flutter/src/widgets/_window.dart' as fw;
 import 'package:flutter/src/widgets/_window_linux.dart' as fw_linux;
@@ -9,8 +8,6 @@ import 'package:flutter/src/widgets/_window_macos.dart' as fw_macos;
 import 'package:flutter/src/widgets/_window_win32.dart' as fw_win32;
 
 import 'package:nativeapi/nativeapi.dart' show Window;
-
-import '../conversions.dart';
 
 /// The native window behind a Flutter window controller, as a nativeapi
 /// [Window].
@@ -43,15 +40,4 @@ Window? nativeWindowOf(fw.BaseWindowController controller) {
 extension FlutterWindowControllerNativeWindow on fw.BaseWindowController {
   /// Shorthand for [nativeWindowOf].
   Window? get nativeWindow => nativeWindowOf(this);
-}
-
-extension NativeWindowGeometry on Window {
-  /// Offset from the window's outer frame to its content area (title bar and
-  /// left border), in logical pixels.
-  ///
-  /// `WindowDragSession` anchors on the frame while Flutter reports positions
-  /// inside the content, so an anchor derived from a pointer position needs
-  /// this added.
-  Offset get contentInset =>
-      contentBounds.toRect().topLeft - bounds.toRect().topLeft;
 }

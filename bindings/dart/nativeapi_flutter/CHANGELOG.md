@@ -1,5 +1,9 @@
 ## 0.4.1
 
+* `package:nativeapi_flutter/windowing.dart` compiles for the web too
+  (leanflutter/tray_manager#108): there `nativeWindowOf` and `nativeWindow`
+  return null, since no native window stands behind a controller.
+
 * `DragToMoveArea` follows the macOS title-bar double-click preference,
   including Minimize and None, through the native window action.
 
