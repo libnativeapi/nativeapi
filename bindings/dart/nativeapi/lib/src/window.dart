@@ -615,6 +615,21 @@ class Window {
     return c.native_window_is_content_under_title_bar_supported();
   }
 
+  bool setContentProtection(bool isContentProtected) {
+    return c.native_window_set_content_protection(
+      nativeHandle,
+      isContentProtected,
+    );
+  }
+
+  bool get isContentProtected {
+    return c.native_window_is_content_protected(nativeHandle);
+  }
+
+  static bool isContentProtectionSupported() {
+    return c.native_window_is_content_protection_supported();
+  }
+
   set hasShadow(bool value) {
     c.native_window_set_has_shadow(nativeHandle, value);
   }

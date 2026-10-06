@@ -636,6 +636,24 @@ impl Window {
         }
     }
 
+    pub fn set_content_protection(&self, is_content_protected: bool) -> bool {
+        unsafe {
+            cnativeapi::native_window_set_content_protection(self.handle, is_content_protected)
+        }
+    }
+
+    pub fn is_content_protected(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_content_protected(self.handle)
+        }
+    }
+
+    pub fn is_content_protection_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_content_protection_supported()
+        }
+    }
+
     pub fn set_has_shadow(&self, has_shadow: bool) {
         unsafe {
             cnativeapi::native_window_set_has_shadow(self.handle, has_shadow);

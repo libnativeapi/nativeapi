@@ -2297,6 +2297,27 @@ native_window_is_content_under_title_bar_supported = function(
     [
     ],
 )
+native_window_set_content_protection = function(
+    "native_window_set_content_protection",
+    c_bool,
+    [
+        c_uint64,
+        c_bool,
+    ],
+)
+native_window_is_content_protected = function(
+    "native_window_is_content_protected",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_content_protection_supported = function(
+    "native_window_is_content_protection_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_set_has_shadow = function(
     "native_window_set_has_shadow",
     None,

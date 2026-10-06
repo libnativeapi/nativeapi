@@ -1,5 +1,10 @@
 ## 0.4.1
 
+* `Window.setContentProtection()`, `isContentProtected` and
+  `Window.isContentProtectionSupported()`: native capture policy on Windows and
+  macOS. Recent macOS ScreenCaptureKit ignores the legacy sharing policy; Linux
+  and mobile platforms return false.
+
 * `Window.setCornerPreference()`, `cornerPreference` and
   `isCornerPreferenceSupported()`: Windows 11's compositor corner policy
   (default, square, rounded or small rounding), with the native title bar kept.

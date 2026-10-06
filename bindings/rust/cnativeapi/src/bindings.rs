@@ -1088,6 +1088,18 @@ unsafe extern "C" {
     pub fn native_window_is_content_under_title_bar_supported() -> bool;
 }
 unsafe extern "C" {
+    pub fn native_window_set_content_protection(
+        window: native_window_t,
+        is_content_protected: bool,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_content_protected(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_content_protection_supported() -> bool;
+}
+unsafe extern "C" {
     pub fn native_window_set_has_shadow(window: native_window_t, has_shadow: bool);
 }
 unsafe extern "C" {

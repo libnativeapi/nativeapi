@@ -1191,6 +1191,51 @@ napi_value Js_native_window_is_content_under_title_bar_supported(napi_env env, n
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_set_content_protection(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  bool p0 = {};
+  if (!GetBool(env, args[1], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_content_protection(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_content_protected(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_content_protected(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_content_protection_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_content_protection_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_set_has_shadow(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1712,6 +1757,9 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_set_content_under_title_bar", Js_native_window_set_content_under_title_bar);
   Export(env, exports, "native_window_is_content_under_title_bar", Js_native_window_is_content_under_title_bar);
   Export(env, exports, "native_window_is_content_under_title_bar_supported", Js_native_window_is_content_under_title_bar_supported);
+  Export(env, exports, "native_window_set_content_protection", Js_native_window_set_content_protection);
+  Export(env, exports, "native_window_is_content_protected", Js_native_window_is_content_protected);
+  Export(env, exports, "native_window_is_content_protection_supported", Js_native_window_is_content_protection_supported);
   Export(env, exports, "native_window_set_has_shadow", Js_native_window_set_has_shadow);
   Export(env, exports, "native_window_has_shadow", Js_native_window_has_shadow);
   Export(env, exports, "native_window_set_custom_shadow", Js_native_window_set_custom_shadow);

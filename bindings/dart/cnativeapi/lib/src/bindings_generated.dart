@@ -2491,6 +2491,12 @@ external bool native_window_is_always_on_top(int window);
 external bool native_window_is_closable(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_content_protected(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_content_protection_supported();
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_content_under_title_bar(int window);
 
 @ffi.Native<ffi.Bool Function()>()
@@ -2702,6 +2708,12 @@ external void native_window_set_closable(int window, bool is_closable);
 external void native_window_set_content_bounds(
   int window,
   native_rectangle_t bounds,
+);
+
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.Bool)>()
+external bool native_window_set_content_protection(
+  int window,
+  bool is_content_protected,
 );
 
 @ffi.Native<ffi.Void Function(native_window_t, native_size_t)>()

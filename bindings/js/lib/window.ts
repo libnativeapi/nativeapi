@@ -350,6 +350,18 @@ export class Window extends NativeObject {
     return native.native_window_is_content_under_title_bar_supported();
   }
 
+  setContentProtection(isContentProtected: boolean): boolean {
+    return native.native_window_set_content_protection(this.nativeHandle, isContentProtected);
+  }
+
+  get isContentProtected(): boolean {
+    return native.native_window_is_content_protected(this.nativeHandle);
+  }
+
+  static isContentProtectionSupported(): boolean {
+    return native.native_window_is_content_protection_supported();
+  }
+
   setHasShadow(hasShadow: boolean): void {
     native.native_window_set_has_shadow(this.nativeHandle, hasShadow);
   }

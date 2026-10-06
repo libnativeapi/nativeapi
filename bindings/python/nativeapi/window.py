@@ -453,6 +453,23 @@ class Window(_rt.NativeObject):
         raw = _C.native_window_is_content_under_title_bar_supported()
         return raw
 
+    def set_content_protection(self, is_content_protected: bool) -> bool:
+        raw = _C.native_window_set_content_protection(
+            self._handle,
+            is_content_protected,
+        )
+        return raw
+
+    @property
+    def is_content_protected(self) -> bool:
+        raw = _C.native_window_is_content_protected(self._handle)
+        return raw
+
+    @staticmethod
+    def is_content_protection_supported() -> bool:
+        raw = _C.native_window_is_content_protection_supported()
+        return raw
+
     def set_has_shadow(self, has_shadow: bool) -> None:
         _C.native_window_set_has_shadow(self._handle, has_shadow)
 

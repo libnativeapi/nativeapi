@@ -603,6 +603,27 @@ public sealed partial class Window : IDisposable
         return rawResult;
     }
 
+    public bool SetContentProtection(bool isContentProtected)
+    {
+        var rawResult = Interop.native_window_set_content_protection(NativeHandle, isContentProtected);
+        return rawResult;
+    }
+
+    public bool IsContentProtected
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_content_protected(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public static bool IsContentProtectionSupported()
+    {
+        var rawResult = Interop.native_window_is_content_protection_supported();
+        return rawResult;
+    }
+
     public void SetHasShadow(bool hasShadow)
     {
         Interop.native_window_set_has_shadow(NativeHandle, hasShadow);
