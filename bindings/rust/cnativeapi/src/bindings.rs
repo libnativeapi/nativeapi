@@ -826,6 +826,18 @@ pub const NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND: native_window_corner_pre
 pub const NATIVE_WINDOW_CORNER_PREFERENCE_ROUND: native_window_corner_preference_t = 2;
 pub const NATIVE_WINDOW_CORNER_PREFERENCE_ROUND_SMALL: native_window_corner_preference_t = 3;
 pub type native_window_corner_preference_t = ::std::os::raw::c_uint;
+pub const NATIVE_WINDOW_PROPERTY_TITLE: native_window_property_t = 0;
+pub const NATIVE_WINDOW_PROPERTY_RESIZABLE: native_window_property_t = 1;
+pub const NATIVE_WINDOW_PROPERTY_MOVABLE: native_window_property_t = 2;
+pub const NATIVE_WINDOW_PROPERTY_MINIMIZABLE: native_window_property_t = 3;
+pub const NATIVE_WINDOW_PROPERTY_MAXIMIZABLE: native_window_property_t = 4;
+pub const NATIVE_WINDOW_PROPERTY_FULL_SCREENABLE: native_window_property_t = 5;
+pub const NATIVE_WINDOW_PROPERTY_CLOSABLE: native_window_property_t = 6;
+pub const NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE: native_window_property_t = 7;
+pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP: native_window_property_t = 8;
+pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM: native_window_property_t = 9;
+pub const NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE: native_window_property_t = 10;
+pub type native_window_property_t = ::std::os::raw::c_uint;
 pub const NATIVE_VISUAL_EFFECT_NONE: native_visual_effect_t = 0;
 pub const NATIVE_VISUAL_EFFECT_BLUR: native_visual_effect_t = 1;
 pub const NATIVE_VISUAL_EFFECT_ACRYLIC: native_visual_effect_t = 2;
@@ -872,6 +884,7 @@ pub const NATIVE_WINDOW_EVENT_TYPE_CLOSED: native_window_event_type_t = 8;
 pub const NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN: native_window_event_type_t = 9;
 pub const NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN: native_window_event_type_t = 10;
 pub const NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED: native_window_event_type_t = 11;
+pub const NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED: native_window_event_type_t = 12;
 #[doc = " Which concrete WindowEvent arrived."]
 pub type native_window_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One WindowEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -888,6 +901,7 @@ pub union native_window_event_t__bindgen_ty_1 {
     pub moved: native_window_event_t__bindgen_ty_1__bindgen_ty_1,
     pub resized: native_window_event_t__bindgen_ty_1__bindgen_ty_2,
     pub close_requested: native_window_event_t__bindgen_ty_1__bindgen_ty_3,
+    pub property_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_4,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -903,6 +917,20 @@ pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_2 {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_3 {
     pub request: native_event_request_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_4 {
+    pub property: native_window_property_t,
+}
+impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_4 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
 }
 impl Default for native_window_event_t__bindgen_ty_1 {
     fn default() -> Self {

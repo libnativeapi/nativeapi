@@ -3429,6 +3429,20 @@ final class UnnamedStruct$18 extends ffi.Struct {
   }) => $allocator<UnnamedStruct$18>()..ref.request = request;
 }
 
+final class UnnamedStruct$19 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int propertyAsInt;
+
+  native_window_property_t get property =>
+      native_window_property_t.fromValue(propertyAsInt);
+  set property(native_window_property_t value) => propertyAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$19> $allocate(
+    ffi.Allocator $allocator, {
+    required native_window_property_t property,
+  }) => $allocator<UnnamedStruct$19>()..ref.property = property;
+}
+
 final class UnnamedStruct$2 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int operationAsInt;
@@ -3565,6 +3579,8 @@ final class UnnamedUnion$9 extends ffi.Union {
   external UnnamedStruct$17 resized;
 
   external UnnamedStruct$18 close_requested;
+
+  external UnnamedStruct$19 property_changed;
 }
 
 typedef native_application_event_callback_t =
@@ -5466,7 +5482,8 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_CLOSED(8),
   NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN(9),
   NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10),
-  NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED(11);
+  NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED(11),
+  NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED(12);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -5484,6 +5501,7 @@ enum native_window_event_type_t {
     9 => NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN,
     10 => NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN,
     11 => NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED,
+    12 => NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),
@@ -5529,6 +5547,40 @@ typedef native_window_manager_set_will_show_hook_callback_tFunction =
     ffi.Void Function(ffi.UnsignedInt arg0, ffi.Pointer<ffi.Void> user_data);
 typedef Dartnative_window_manager_set_will_show_hook_callback_tFunction =
     void Function(int arg0, ffi.Pointer<ffi.Void> user_data);
+
+enum native_window_property_t {
+  NATIVE_WINDOW_PROPERTY_TITLE(0),
+  NATIVE_WINDOW_PROPERTY_RESIZABLE(1),
+  NATIVE_WINDOW_PROPERTY_MOVABLE(2),
+  NATIVE_WINDOW_PROPERTY_MINIMIZABLE(3),
+  NATIVE_WINDOW_PROPERTY_MAXIMIZABLE(4),
+  NATIVE_WINDOW_PROPERTY_FULL_SCREENABLE(5),
+  NATIVE_WINDOW_PROPERTY_CLOSABLE(6),
+  NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE(7),
+  NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP(8),
+  NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM(9),
+  NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE(10);
+
+  final int value;
+  const native_window_property_t(this.value);
+
+  static native_window_property_t fromValue(int value) => switch (value) {
+    0 => NATIVE_WINDOW_PROPERTY_TITLE,
+    1 => NATIVE_WINDOW_PROPERTY_RESIZABLE,
+    2 => NATIVE_WINDOW_PROPERTY_MOVABLE,
+    3 => NATIVE_WINDOW_PROPERTY_MINIMIZABLE,
+    4 => NATIVE_WINDOW_PROPERTY_MAXIMIZABLE,
+    5 => NATIVE_WINDOW_PROPERTY_FULL_SCREENABLE,
+    6 => NATIVE_WINDOW_PROPERTY_CLOSABLE,
+    7 => NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE,
+    8 => NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP,
+    9 => NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM,
+    10 => NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE,
+    _ => throw ArgumentError(
+      'Unknown value for native_window_property_t: $value',
+    ),
+  };
+}
 
 /// Opaque WindowShadow handle.
 ///

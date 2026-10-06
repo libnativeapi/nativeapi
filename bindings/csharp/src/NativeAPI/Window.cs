@@ -23,6 +23,21 @@ public enum WindowCornerPreference
     RoundSmall = 3,
 }
 
+public enum WindowProperty
+{
+    Title = 0,
+    Resizable = 1,
+    Movable = 2,
+    Minimizable = 3,
+    Maximizable = 4,
+    FullScreenable = 5,
+    Closable = 6,
+    WindowControlButtonsVisible = 7,
+    AlwaysOnTop = 8,
+    AlwaysOnBottom = 9,
+    TitleBarStyle = 10,
+}
+
 public enum VisualEffect
 {
     None = 0,
@@ -64,6 +79,7 @@ public abstract record WindowEvent
     public sealed record EnteredFullScreen(uint WindowId) : WindowEvent;
     public sealed record ExitedFullScreen(uint WindowId) : WindowEvent;
     public sealed record CloseRequested(uint WindowId, EventRequest Request) : WindowEvent;
+    public sealed record PropertyChanged(uint WindowId, WindowProperty Property) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -81,6 +97,7 @@ public abstract record WindowEvent
             case 9: return new EnteredFullScreen(raw.window_id);
             case 10: return new ExitedFullScreen(raw.window_id);
             case 11: return new CloseRequested(raw.window_id, new EventRequest(raw.data.close_requested.request, ownsHandle: false));
+            case 12: return new PropertyChanged(raw.window_id, (WindowProperty)raw.data.property_changed.property);
             default: return null;
         }
     }

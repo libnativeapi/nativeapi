@@ -196,6 +196,8 @@ from .window import (
     WindowMaximizedEvent,
     WindowMinimizedEvent,
     WindowMovedEvent,
+    WindowProperty,
+    WindowPropertyChangedEvent,
     WindowResizedEvent,
     WindowRestoredEvent,
 )
@@ -352,6 +354,8 @@ __all__ = [
     "WindowMaximizedEvent",
     "WindowMinimizedEvent",
     "WindowMovedEvent",
+    "WindowProperty",
+    "WindowPropertyChangedEvent",
     "WindowResizedEvent",
     "WindowRestoredEvent",
     "WindowShadow",

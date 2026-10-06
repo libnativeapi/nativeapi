@@ -66,6 +66,45 @@ impl WindowCornerPreference {
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum WindowProperty {
+    Title = 0,
+    Resizable = 1,
+    Movable = 2,
+    Minimizable = 3,
+    Maximizable = 4,
+    FullScreenable = 5,
+    Closable = 6,
+    WindowControlButtonsVisible = 7,
+    AlwaysOnTop = 8,
+    AlwaysOnBottom = 9,
+    TitleBarStyle = 10,
+}
+
+impl WindowProperty {
+    pub(crate) fn from_raw(raw: cnativeapi::native_window_property_t) -> Self {
+        match raw {
+            cnativeapi::NATIVE_WINDOW_PROPERTY_TITLE => Self::Title,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_RESIZABLE => Self::Resizable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_MOVABLE => Self::Movable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_MINIMIZABLE => Self::Minimizable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_MAXIMIZABLE => Self::Maximizable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_FULL_SCREENABLE => Self::FullScreenable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_CLOSABLE => Self::Closable,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE => Self::WindowControlButtonsVisible,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP => Self::AlwaysOnTop,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM => Self::AlwaysOnBottom,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE => Self::TitleBarStyle,
+            _ => Self::Title,
+        }
+    }
+
+    pub(crate) fn to_raw(self) -> cnativeapi::native_window_property_t {
+        self as cnativeapi::native_window_property_t
+    }
+}
+
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VisualEffect {
     None = 0,
     Blur = 1,
@@ -145,6 +184,7 @@ pub enum WindowEvent {
     EnteredFullScreen { window_id: WindowId },
     ExitedFullScreen { window_id: WindowId },
     CloseRequested { window_id: WindowId, request: EventRequestRef },
+    PropertyChanged { window_id: WindowId, property: WindowProperty },
 }
 
 impl WindowEvent {
@@ -162,6 +202,7 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN => Self::EnteredFullScreen { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN => Self::ExitedFullScreen { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED => Self::CloseRequested { window_id: raw.window_id, request: EventRequestRef::from_raw(raw.data.close_requested.request) },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED => Self::PropertyChanged { window_id: raw.window_id, property: WindowProperty::from_raw(raw.data.property_changed.property) },
             _ => return None,
         })
     }

@@ -21,6 +21,7 @@ public struct native_window_event_t
         [FieldOffset(0)] public MovedData moved;
         [FieldOffset(0)] public ResizedData resized;
         [FieldOffset(0)] public CloseRequestedData close_requested;
+        [FieldOffset(0)] public PropertyChangedData property_changed;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -39,6 +40,12 @@ public struct native_window_event_t
     public struct CloseRequestedData
     {
         public ulong request;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PropertyChangedData
+    {
+        public int property;
     }
 }
 

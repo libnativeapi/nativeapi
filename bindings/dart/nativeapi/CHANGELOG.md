@@ -1,5 +1,11 @@
 ## 0.4.1
 
+* `WindowPropertyChangedEvent`: a window's title, resizable / movable /
+  minimizable / maximizable / full-screenable / closable state, control button
+  visibility, always-on-top / on-bottom and title bar style report each change,
+  whether a setter on any wrapper or the system or other code changed the
+  native window. Read the new value through the getter `WindowProperty` names.
+
 * Apps that also target the web can depend on nativeapi again
   (leanflutter/tray_manager#108). On the web `package:nativeapi` resolves to a
   pure-Dart mirror without `dart:ffi`: the same classes, enums, value types and

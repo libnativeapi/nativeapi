@@ -60,6 +60,41 @@ enum WindowCornerPreference {
       c.native_window_corner_preference_t.fromValue(value);
 }
 
+enum WindowProperty {
+  title(0),
+  resizable(1),
+  movable(2),
+  minimizable(3),
+  maximizable(4),
+  fullScreenable(5),
+  closable(6),
+  windowControlButtonsVisible(7),
+  alwaysOnTop(8),
+  alwaysOnBottom(9),
+  titleBarStyle(10);
+
+  const WindowProperty(this.value);
+  final int value;
+
+  static WindowProperty fromValue(int value) => switch (value) {
+    0 => WindowProperty.title,
+    1 => WindowProperty.resizable,
+    2 => WindowProperty.movable,
+    3 => WindowProperty.minimizable,
+    4 => WindowProperty.maximizable,
+    5 => WindowProperty.fullScreenable,
+    6 => WindowProperty.closable,
+    7 => WindowProperty.windowControlButtonsVisible,
+    8 => WindowProperty.alwaysOnTop,
+    9 => WindowProperty.alwaysOnBottom,
+    10 => WindowProperty.titleBarStyle,
+    _ => WindowProperty.title,
+  };
+
+  c.native_window_property_t get raw =>
+      c.native_window_property_t.fromValue(value);
+}
+
 enum VisualEffect {
   none(0),
   blur(1),
@@ -191,6 +226,18 @@ sealed class WindowEvent {
         request: EventRequest.borrowed(raw.data.close_requested.request),
       );
     }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED
+            .value) {
+      return WindowPropertyChangedEvent(
+        windowId: raw.window_id,
+        property: WindowProperty.fromValue(
+          raw.data.property_changed.propertyAsInt,
+        ),
+      );
+    }
     return null;
   }
 }
@@ -283,6 +330,17 @@ final class WindowCloseRequestedEvent extends WindowEvent {
   @override
   final WindowId windowId;
   final EventRequest request;
+}
+
+final class WindowPropertyChangedEvent extends WindowEvent {
+  const WindowPropertyChangedEvent({
+    required this.windowId,
+    required this.property,
+  });
+
+  @override
+  final WindowId windowId;
+  final WindowProperty property;
 }
 
 class Window {

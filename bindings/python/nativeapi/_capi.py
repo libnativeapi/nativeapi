@@ -137,6 +137,10 @@ class native_window_event_close_requested_t(Structure):
     pass
 
 
+class native_window_event_property_changed_t(Structure):
+    pass
+
+
 class native_window_event_data_t(Union):
     pass
 
@@ -417,10 +421,14 @@ native_window_event_resized_t._fields_ = [
 native_window_event_close_requested_t._fields_ = [
     ("request", c_uint64),
 ]
+native_window_event_property_changed_t._fields_ = [
+    ("property", c_int),
+]
 native_window_event_data_t._fields_ = [
     ("moved", native_window_event_moved_t),
     ("resized", native_window_event_resized_t),
     ("close_requested", native_window_event_close_requested_t),
+    ("property_changed", native_window_event_property_changed_t),
 ]
 native_window_event_t._fields_ = [
     ("type", c_int),

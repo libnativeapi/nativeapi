@@ -71,7 +71,7 @@ pub use tray_icon::{TrayIconId, ContextMenuTrigger, TrayIconPosition, TrayIconEv
 pub use tray_manager::{TrayManager};
 pub use url_opener::{UrlOpenErrorCode, UrlOpenResult, UrlOpener};
 pub use view::{ViewId, ViewLayout, ViewAlignment, TextAlignment, ViewBackend, ViewEvent, View, ViewRef, Label, LabelRef, Button, ButtonRef, TextField, TextFieldRef, ImageView, ImageViewRef};
-pub use window::{WindowId, TitleBarStyle, WindowCornerPreference, VisualEffect, ResizeEdge, WindowEvent, Window, WindowRef};
+pub use window::{WindowId, TitleBarStyle, WindowCornerPreference, WindowProperty, VisualEffect, ResizeEdge, WindowEvent, Window, WindowRef};
 pub use window_drag_session::{WindowDragEvent, WindowDragSession, WindowDragSessionRef};
 pub use window_manager::{WindowManager};
 pub use window_shadow::{WindowShadow, WindowShadowRef};

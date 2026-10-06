@@ -32,6 +32,20 @@ class WindowCornerPreference(enum.IntEnum):
     ROUND_SMALL = 3
 
 
+class WindowProperty(enum.IntEnum):
+    TITLE = 0
+    RESIZABLE = 1
+    MOVABLE = 2
+    MINIMIZABLE = 3
+    MAXIMIZABLE = 4
+    FULL_SCREENABLE = 5
+    CLOSABLE = 6
+    WINDOW_CONTROL_BUTTONS_VISIBLE = 7
+    ALWAYS_ON_TOP = 8
+    ALWAYS_ON_BOTTOM = 9
+    TITLE_BAR_STYLE = 10
+
+
 class VisualEffect(enum.IntEnum):
     NONE = 0
     BLUR = 1
@@ -95,6 +109,11 @@ class WindowEvent:
                 raw.window_id,
                 _event_request.EventRequest._borrowed(raw.data.close_requested.request),
             )
+        if raw.type == 12:
+            return WindowPropertyChangedEvent(
+                raw.window_id,
+                _rt.to_enum(WindowProperty, raw.data.property_changed.property),
+            )
         return None
 
 
@@ -156,6 +175,11 @@ class WindowExitedFullScreenEvent(WindowEvent):
 @dataclass(frozen=True)
 class WindowCloseRequestedEvent(WindowEvent):
     request: _event_request.EventRequest | None
+
+
+@dataclass(frozen=True)
+class WindowPropertyChangedEvent(WindowEvent):
+    property: WindowProperty
 
 
 class Window(_rt.NativeObject):

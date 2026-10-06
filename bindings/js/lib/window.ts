@@ -25,6 +25,21 @@ export const WindowCornerPreference = {
 } as const;
 export type WindowCornerPreference = (typeof WindowCornerPreference)[keyof typeof WindowCornerPreference];
 
+export const WindowProperty = {
+  Title: 0,
+  Resizable: 1,
+  Movable: 2,
+  Minimizable: 3,
+  Maximizable: 4,
+  FullScreenable: 5,
+  Closable: 6,
+  WindowControlButtonsVisible: 7,
+  AlwaysOnTop: 8,
+  AlwaysOnBottom: 9,
+  TitleBarStyle: 10,
+} as const;
+export type WindowProperty = (typeof WindowProperty)[keyof typeof WindowProperty];
+
 export const VisualEffect = {
   None: 0,
   Blur: 1,
@@ -61,7 +76,8 @@ export type WindowEvent =
   | { type: "closed"; windowId: WindowId }
   | { type: "enteredFullScreen"; windowId: WindowId }
   | { type: "exitedFullScreen"; windowId: WindowId }
-  | { type: "closeRequested"; windowId: WindowId; request: EventRequest | null };
+  | { type: "closeRequested"; windowId: WindowId; request: EventRequest | null }
+  | { type: "propertyChanged"; windowId: WindowId; property: WindowProperty };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {

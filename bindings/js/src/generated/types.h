@@ -472,6 +472,10 @@ inline Value ToValue(const native_window_event_t& event) {
       result.Set("type", Value::String("closeRequested"));
       result.Set("request", Value::BigInt(event.data.close_requested.request));
       break;
+    case NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED:
+      result.Set("type", Value::String("propertyChanged"));
+      result.Set("property", Value::Number(static_cast<double>(event.data.property_changed.property)));
+      break;
     default:
       return Value::Null();
   }
