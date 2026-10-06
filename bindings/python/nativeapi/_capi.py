@@ -2506,6 +2506,13 @@ native_window_is_system_menu_supported = function(
     [
     ],
 )
+native_window_perform_title_bar_double_click = function(
+    "native_window_perform_title_bar_double_click",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
 native_window_start_dragging = function(
     "native_window_start_dragging",
     None,

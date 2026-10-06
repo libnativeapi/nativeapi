@@ -2681,6 +2681,9 @@ external void native_window_maximize(int window);
 external void native_window_minimize(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_perform_title_bar_double_click(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_reset_title_bar_colors(int window);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()

@@ -1708,6 +1708,21 @@ napi_value Js_native_window_is_system_menu_supported(napi_env env, napi_callback
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_perform_title_bar_double_click(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_perform_title_bar_double_click(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_start_dragging(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1849,6 +1864,7 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_is_focusable", Js_native_window_is_focusable);
   Export(env, exports, "native_window_show_system_menu", Js_native_window_show_system_menu);
   Export(env, exports, "native_window_is_system_menu_supported", Js_native_window_is_system_menu_supported);
+  Export(env, exports, "native_window_perform_title_bar_double_click", Js_native_window_perform_title_bar_double_click);
   Export(env, exports, "native_window_start_dragging", Js_native_window_start_dragging);
   Export(env, exports, "native_window_start_resizing", Js_native_window_start_resizing);
 }

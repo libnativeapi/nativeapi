@@ -1,5 +1,13 @@
 ## 0.4.1
 
+* On macOS, empty backgrounds in a hidden window's original title-bar band
+  perform the preferred double-click action automatically. Controls and custom
+  mouse handlers keep their gestures. The native Fill action is requested when
+  the OS provides it.
+
+* Adds `Window.performTitleBarDoubleClick()` for custom title bars, respecting
+  the macOS Maximize, Minimize and None preferences.
+
 * `Window.setIgnoreMouseEvents(ignore, forward)` now returns whether the native
   policy was applied. Linux implements pass-through and restores input shapes;
   macOS, Windows and X11 can forward hover movement while clicks pass through.

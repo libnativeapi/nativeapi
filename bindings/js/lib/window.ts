@@ -478,6 +478,10 @@ export class Window extends NativeObject {
     return native.native_window_is_system_menu_supported();
   }
 
+  performTitleBarDoubleClick(): boolean {
+    return native.native_window_perform_title_bar_double_click(this.nativeHandle);
+  }
+
   startDragging(): void {
     native.native_window_start_dragging(this.nativeHandle);
   }

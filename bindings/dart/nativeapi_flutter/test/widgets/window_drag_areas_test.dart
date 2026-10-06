@@ -8,7 +8,8 @@ class _Window extends Window {
 
   int dragCount = 0;
   final edges = <ResizeEdge>[];
-  bool maximized = false;
+  int doubleClickCount = 0;
+  bool doubleClickAccepted = true;
   final systemMenuPositions = <Point>[];
 
   @override
@@ -24,13 +25,17 @@ class _Window extends Window {
   void startResizing(ResizeEdge edge) => edges.add(edge);
 
   @override
-  bool get isMaximized => maximized;
+  bool performTitleBarDoubleClick() {
+    doubleClickCount++;
+    return doubleClickAccepted;
+  }
 
   @override
-  void maximize() => maximized = true;
+  void maximize() => throw StateError('must delegate the platform preference');
 
   @override
-  void unmaximize() => maximized = false;
+  void unmaximize() =>
+      throw StateError('must delegate the platform preference');
 }
 
 Widget _host(Widget child) => Directionality(
@@ -78,29 +83,33 @@ void main() {
       expect(window.systemMenuPositions, hasLength(1));
     },
   );
-  testWidgets('move area drags and toggles maximization on double tap', (
-    tester,
-  ) async {
-    final window = _Window();
-    await tester.pumpWidget(
-      _host(
-        DragToMoveArea(
-          window: window,
-          child: const SizedBox(width: 200, height: 100),
+  testWidgets(
+    'move area drags and delegates each double tap without a fallback',
+    (tester) async {
+      final window = _Window();
+      await tester.pumpWidget(
+        _host(
+          DragToMoveArea(
+            window: window,
+            child: const SizedBox(width: 200, height: 100),
+          ),
         ),
-      ),
-    );
-    final center = tester.getCenter(find.byType(DragToMoveArea));
-    await _drag(tester, center);
-    expect(window.dragCount, 1);
-    for (final expected in [true, false]) {
-      await tester.tapAt(center);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tapAt(center);
-      await tester.pumpAndSettle();
-      expect(window.maximized, expected);
-    }
-  });
+      );
+      final center = tester.getCenter(find.byType(DragToMoveArea));
+      await _drag(tester, center);
+      expect(window.dragCount, 1);
+      for (final accepted in [true, false]) {
+        window.doubleClickAccepted = accepted;
+        final previous = window.doubleClickCount;
+        await tester.tapAt(center);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(center);
+        await tester.pumpAndSettle();
+        expect(window.doubleClickCount, previous + 1);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets('all eight handles send the correct native resize edge', (
     tester,

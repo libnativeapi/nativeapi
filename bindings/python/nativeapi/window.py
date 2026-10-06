@@ -608,6 +608,10 @@ class Window(_rt.NativeObject):
         raw = _C.native_window_is_system_menu_supported()
         return raw
 
+    def perform_title_bar_double_click(self) -> bool:
+        raw = _C.native_window_perform_title_bar_double_click(self._handle)
+        return raw
+
     def start_dragging(self) -> None:
         _C.native_window_start_dragging(self._handle)
 

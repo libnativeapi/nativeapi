@@ -768,6 +768,10 @@ class Window {
     return c.native_window_is_system_menu_supported();
   }
 
+  bool performTitleBarDoubleClick() {
+    return c.native_window_perform_title_bar_double_click(nativeHandle);
+  }
+
   void startDragging() {
     c.native_window_start_dragging(nativeHandle);
   }

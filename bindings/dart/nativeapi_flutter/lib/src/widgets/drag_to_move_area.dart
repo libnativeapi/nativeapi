@@ -12,8 +12,8 @@ import 'package:nativeapi/nativeapi.dart'
         TextField,
         View;
 
-/// A custom title-bar region that drags the window and toggles maximization
-/// on double tap. A secondary-button press opens the native system window menu
+/// A custom title-bar region that drags the window and performs the native
+/// title-bar double-click action, including the macOS user preference. A secondary-button press opens the native system window menu
 /// where supported (Windows, or a supporting Linux window manager).
 class DragToMoveArea extends StatelessWidget {
   const DragToMoveArea({super.key, required this.child, this.window});
@@ -36,13 +36,8 @@ class DragToMoveArea extends StatelessWidget {
         (window ?? WindowManager.instance.getCurrent())?.startDragging();
       },
       onDoubleTap: () {
-        final target = window ?? WindowManager.instance.getCurrent();
-        if (target == null) return;
-        if (target.isMaximized) {
-          target.unmaximize();
-        } else {
-          target.maximize();
-        }
+        (window ?? WindowManager.instance.getCurrent())
+            ?.performTitleBarDoubleClick();
       },
       child: child,
     );

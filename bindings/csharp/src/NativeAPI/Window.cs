@@ -830,6 +830,12 @@ public sealed partial class Window : IDisposable
         return rawResult;
     }
 
+    public bool PerformTitleBarDoubleClick()
+    {
+        var rawResult = Interop.native_window_perform_title_bar_double_click(NativeHandle);
+        return rawResult;
+    }
+
     public void StartDragging()
     {
         Interop.native_window_start_dragging(NativeHandle);

@@ -1,5 +1,8 @@
 ## 0.4.1
 
+* `DragToMoveArea` follows the macOS title-bar double-click preference,
+  including Minimize and None, through the native window action.
+
 * Requires nativeapi 0.4.1.
 * `DragToMoveArea` opens the native system window menu on a secondary-button
   press on Windows and supporting Linux window managers.

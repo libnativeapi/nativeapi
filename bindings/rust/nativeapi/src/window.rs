@@ -831,6 +831,12 @@ impl Window {
         }
     }
 
+    pub fn perform_title_bar_double_click(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_perform_title_bar_double_click(self.handle)
+        }
+    }
+
     pub fn start_dragging(&self) {
         unsafe {
             cnativeapi::native_window_start_dragging(self.handle);

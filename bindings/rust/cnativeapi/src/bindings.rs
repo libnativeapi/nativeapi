@@ -1210,6 +1210,9 @@ unsafe extern "C" {
     pub fn native_window_is_system_menu_supported() -> bool;
 }
 unsafe extern "C" {
+    pub fn native_window_perform_title_bar_double_click(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
     pub fn native_window_start_dragging(window: native_window_t);
 }
 unsafe extern "C" {
