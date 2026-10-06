@@ -142,6 +142,15 @@ class TrayIcon {
   }
 
   /// Creates a new `TrayIcon`; returns null if the native side failed.
+  static TrayIcon? createWithIdentifier(String identifier) {
+    final identifierNative = identifier.toNativeUtf8().cast<ffi.Char>();
+    final handle = c.native_tray_icon_create_with_identifier(identifierNative);
+    pkg_ffi.calloc.free(identifierNative);
+    if (handle == 0) return null;
+    return TrayIcon.fromHandle(handle);
+  }
+
+  /// Creates a new `TrayIcon`; returns null if the native side failed.
   static TrayIcon? createWithTray(ffi.Pointer<ffi.Void> tray) {
     final handle = c.native_tray_icon_create_with_tray(tray);
     if (handle == 0) return null;
@@ -150,6 +159,14 @@ class TrayIcon {
 
   TrayIconId getId() {
     return c.native_tray_icon_get_id(nativeHandle);
+  }
+
+  String? get identifier {
+    final resultPointer = c.native_tray_icon_get_identifier(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
   }
 
   set icon(Image? value) {

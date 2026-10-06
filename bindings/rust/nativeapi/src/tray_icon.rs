@@ -114,6 +114,14 @@ impl TrayIcon {
     }
 
     /// Creates a new `TrayIcon`; returns `None` if the native side failed.
+    pub fn with_identifier(identifier: &str) -> Option<Self> {
+        let identifier_native = CString::new(identifier).expect("string argument contains interior nul byte");
+        unsafe {
+            Self::from_raw(cnativeapi::native_tray_icon_create_with_identifier(identifier_native.as_ptr()))
+        }
+    }
+
+    /// Creates a new `TrayIcon`; returns `None` if the native side failed.
     ///
     /// # Safety
     /// Raw pointers must reference valid platform objects of the expected type.
@@ -128,6 +136,18 @@ impl TrayIcon {
     pub fn get_id(&self) -> TrayIconId {
         unsafe {
             cnativeapi::native_tray_icon_get_id(self.handle)
+        }
+    }
+
+    pub fn identifier(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_tray_icon_get_identifier(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
         }
     }
 

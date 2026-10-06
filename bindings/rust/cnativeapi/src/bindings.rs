@@ -3019,12 +3019,24 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     #[doc = " Creates a TrayIcon instance; release it with native_tray_icon_free()."]
+    pub fn native_tray_icon_create_with_identifier(
+        identifier: *const ::std::os::raw::c_char,
+    ) -> native_tray_icon_t;
+}
+unsafe extern "C" {
+    #[doc = " Creates a TrayIcon instance; release it with native_tray_icon_free()."]
     pub fn native_tray_icon_create_with_tray(
         tray: *mut ::std::os::raw::c_void,
     ) -> native_tray_icon_t;
 }
 unsafe extern "C" {
     pub fn native_tray_icon_get_id(tray_icon: native_tray_icon_t) -> native_tray_icon_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_tray_icon_get_identifier(
+        tray_icon: native_tray_icon_t,
+    ) -> *mut ::std::os::raw::c_char;
 }
 unsafe extern "C" {
     pub fn native_tray_icon_set_icon(tray_icon: native_tray_icon_t, image: native_image_t);

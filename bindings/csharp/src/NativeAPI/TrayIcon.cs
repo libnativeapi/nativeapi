@@ -81,6 +81,13 @@ public sealed partial class TrayIcon : IDisposable
     }
 
     /// <summary>Creates a new TrayIcon; returns null if the native side failed.</summary>
+    public static TrayIcon? CreateWithIdentifier(string identifier)
+    {
+        var handle = Interop.native_tray_icon_create_with_identifier(identifier);
+        return handle == 0 ? null : new TrayIcon(handle);
+    }
+
+    /// <summary>Creates a new TrayIcon; returns null if the native side failed.</summary>
     public static TrayIcon? CreateWithTray(IntPtr tray)
     {
         var handle = Interop.native_tray_icon_create_with_tray(tray);
@@ -91,6 +98,15 @@ public sealed partial class TrayIcon : IDisposable
     {
         var rawResult = Interop.native_tray_icon_get_id(NativeHandle);
         return rawResult;
+    }
+
+    public string? Identifier
+    {
+        get
+        {
+            var rawResult = Interop.native_tray_icon_get_identifier(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
     }
 
     public void SetIcon(Image? image)

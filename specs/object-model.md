@@ -29,8 +29,8 @@
 1. **以 `std::shared_ptr` 管理和传递，禁拷贝禁移动。**新代码显式 `delete`
    拷贝构造、拷贝赋值、移动构造、移动赋值四件套。存量代码有两种达成方式并存：
    显式四件套（`Display`、`Shortcut`、`Preferences`、`SecureStorage`、
-   `LaunchAtLogin`）；借 `unique_ptr<Impl>` 成员隐式删除（`Window`、`Menu`、
-   `MenuItem`、`TrayIcon`、`KeyboardMonitor`、`MessageDialog`）——效果相同，
+   `LaunchAtLogin`、`TrayIcon`）；借 `unique_ptr<Impl>` 成员隐式删除（`Window`、`Menu`、
+   `MenuItem`、`KeyboardMonitor`、`MessageDialog`）——效果相同，
    但读头文件看不出意图，改到时补成显式。
    已知违规：`Image` 公开了拷贝/移动构造，见下文。
 2. **被 manager/registry 以集合管理的类型持有一个整数 ID。**
@@ -40,6 +40,13 @@
      `GetId()` 返回它。
    - 类型必须先在 `foundation/id_allocator.h` 的 `IdTypeTag<T>` 注册表中
      登记 tag（**只可追加，不可改号**）；漏登记是编译错误。
+   - 宿主用于跨会话保存设置的名字不能替代这个整数 ID。`TrayIcon` 的
+     `identifier` 在构造时指定、只读：Linux 对应 SNI `Id`，macOS 对应
+     `NSStatusItem.autosaveName`；`GetId()` 仍是 manager 和事件使用的整数。
+     默认 Linux 名称从应用 ID / 可执行文件名派生，额外活跃图标追加后缀，
+     不用 PID 或 allocator ID；图标创建顺序不固定时由应用显式指定名字。
+     私有 D-Bus 回归并发启动两个独立可执行应用，读取实际 SNI `Id`，
+     再重启应用验证标识不变；显示名称由 `SetTitle()` 独立设置。
 3. **同一底层资源的重复查询必须返回同一个实例。**manager 负责按底层
    资源的平台身份做实例缓存与去重；实例存活期间 ID 因而稳定。
    去重只覆盖经 manager 的查询路径——直接用 `Window(void*)` 这类包装构造函数

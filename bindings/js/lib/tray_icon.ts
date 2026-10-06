@@ -40,6 +40,11 @@ export class TrayIcon extends NativeObject {
     return handle ? new TrayIcon(handle) : null;
   }
 
+  static createWithIdentifier(identifier: string): TrayIcon | null {
+    const handle: bigint = native.native_tray_icon_create_with_identifier(identifier);
+    return handle ? new TrayIcon(handle) : null;
+  }
+
   static createWithTray(tray: bigint): TrayIcon | null {
     const handle: bigint = native.native_tray_icon_create_with_tray(tray);
     return handle ? new TrayIcon(handle) : null;
@@ -47,6 +52,10 @@ export class TrayIcon extends NativeObject {
 
   getId(): TrayIconId {
     return native.native_tray_icon_get_id(this.nativeHandle);
+  }
+
+  get identifier(): string {
+    return native.native_tray_icon_get_identifier(this.nativeHandle);
   }
 
   setIcon(image: Image | null): void {

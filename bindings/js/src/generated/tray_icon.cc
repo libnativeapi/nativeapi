@@ -17,6 +17,21 @@ napi_value Js_native_tray_icon_create(napi_env env, napi_callback_info info) {
   return Value::BigInt(result).ToJs(env);
 }
 
+napi_value Js_native_tray_icon_create_with_identifier(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_tray_icon_create_with_identifier(p0); });
+  return Value::BigInt(result).ToJs(env);
+}
+
 napi_value Js_native_tray_icon_create_with_tray(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -75,6 +90,23 @@ napi_value Js_native_tray_icon_get_id(napi_env env, napi_callback_info info) {
   }
   auto result = OnMainThread([&] { return native_tray_icon_get_id(self); });
   return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_tray_icon_get_identifier(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_tray_icon_get_identifier(self); });
+  Value value = Value::String(result ? result : "");
+  free_c_str(result);
+  return value.ToJs(env);
 }
 
 napi_value Js_native_tray_icon_set_icon(napi_env env, napi_callback_info info) {
@@ -510,10 +542,12 @@ napi_value Js_native_tray_icon_remove_listener(napi_env env, napi_callback_info 
 
 void RegisterTrayIcon(napi_env env, napi_value exports) {
   Export(env, exports, "native_tray_icon_create", Js_native_tray_icon_create);
+  Export(env, exports, "native_tray_icon_create_with_identifier", Js_native_tray_icon_create_with_identifier);
   Export(env, exports, "native_tray_icon_create_with_tray", Js_native_tray_icon_create_with_tray);
   Export(env, exports, "native_tray_icon_free", Js_native_tray_icon_free);
   Export(env, exports, "native_tray_icon_get_native_object", Js_native_tray_icon_get_native_object);
   Export(env, exports, "native_tray_icon_get_id", Js_native_tray_icon_get_id);
+  Export(env, exports, "native_tray_icon_get_identifier", Js_native_tray_icon_get_identifier);
   Export(env, exports, "native_tray_icon_set_icon", Js_native_tray_icon_set_icon);
   Export(env, exports, "native_tray_icon_get_icon", Js_native_tray_icon_get_icon);
   Export(env, exports, "native_tray_icon_set_icon_template", Js_native_tray_icon_set_icon_template);

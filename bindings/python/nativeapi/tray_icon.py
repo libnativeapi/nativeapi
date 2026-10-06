@@ -77,6 +77,13 @@ class TrayIcon(_rt.NativeObject):
         self._adopt(handle)
 
     @classmethod
+    def with_identifier(cls, identifier: str) -> TrayIcon:
+        handle = _C.native_tray_icon_create_with_identifier(_rt.encode(identifier))
+        if not handle:
+            raise _rt.NativeApiError("failed to create a TrayIcon")
+        return cls._owned(handle)
+
+    @classmethod
     def with_tray(cls, tray: int | None) -> TrayIcon:
         handle = _C.native_tray_icon_create_with_tray(tray)
         if not handle:
@@ -86,6 +93,11 @@ class TrayIcon(_rt.NativeObject):
     def get_id(self) -> TrayIconId:
         raw = _C.native_tray_icon_get_id(self._handle)
         return raw
+
+    @property
+    def identifier(self) -> str:
+        raw = _C.native_tray_icon_get_identifier(self._handle)
+        return _rt.take_str(raw)
 
     def set_icon(self, image: _image.Image | None) -> None:
         _C.native_tray_icon_set_icon(self._handle, _rt.handle_of(image))

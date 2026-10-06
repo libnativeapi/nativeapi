@@ -78,6 +78,9 @@ public static partial class Interop
     public static extern bool native_tray_icon_set_visible(ulong self, [MarshalAs(UnmanagedType.I1)] bool visible);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_tray_icon_get_identifier(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_tray_icon_get_native_object(ulong handle);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -106,6 +109,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_tray_icon_create();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_tray_icon_create_with_identifier([MarshalAs(UnmanagedType.LPUTF8Str)] string? identifier);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_tray_icon_create_with_tray(IntPtr tray);

@@ -255,7 +255,7 @@ class Foo : public EventEmitter<FooEvent>, public NativeObjectProvider {
 
 - 四件套的位置存量有三种（析构后 / 方法末尾 / private 区）；最近新增的
   `WindowDragSession`、`FileDialog`、`NotificationManager`、`Display` 都紧跟构造析构，以此为准。
-- 单参构造 `explicit`：`Window(void*)`、`TrayIcon(void*)` 缺；
+- 单参构造 `explicit`：`Window(void*)` 仍缺；`TrayIcon` 的指针和字符串构造已补齐；
   事件类单参构造 11 个 explicit、9 个没有（`TrayIcon` / `Menu` / `Application` 三组）。
 - **public 区不放内部方法。** public 即导出：`ShortcutManager::EmitShortcutActivated`、
   `WindowManager::HandleWillShow` 已经成了 C 函数（[c-abi.md](c-abi.md) §7）。内部入口放

@@ -3157,6 +3157,13 @@ native_tray_icon_get_native_object = function(
     ],
 )
 native_tray_icon_create = function("native_tray_icon_create", c_uint64, [])
+native_tray_icon_create_with_identifier = function(
+    "native_tray_icon_create_with_identifier",
+    c_uint64,
+    [
+        c_char_p,
+    ],
+)
 native_tray_icon_create_with_tray = function(
     "native_tray_icon_create_with_tray",
     c_uint64,
@@ -3165,6 +3172,13 @@ native_tray_icon_create_with_tray = function(
     ],
 )
 native_tray_icon_get_id = function("native_tray_icon_get_id", c_uint, [c_uint64])
+native_tray_icon_get_identifier = function(
+    "native_tray_icon_get_identifier",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
 native_tray_icon_set_icon = function(
     "native_tray_icon_set_icon",
     None,

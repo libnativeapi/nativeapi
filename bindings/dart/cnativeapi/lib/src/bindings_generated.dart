@@ -1872,6 +1872,12 @@ external bool native_tray_icon_close_context_menu(int tray_icon);
 external int native_tray_icon_create();
 
 /// Creates a TrayIcon instance; release it with native_tray_icon_free().
+@ffi.Native<native_tray_icon_t Function(ffi.Pointer<ffi.Char>)>()
+external int native_tray_icon_create_with_identifier(
+  ffi.Pointer<ffi.Char> identifier,
+);
+
+/// Creates a TrayIcon instance; release it with native_tray_icon_free().
 @ffi.Native<native_tray_icon_t Function(ffi.Pointer<ffi.Void>)>()
 external int native_tray_icon_create_with_tray(ffi.Pointer<ffi.Void> tray);
 
@@ -1926,6 +1932,10 @@ external native_size_t native_tray_icon_get_icon_size(int tray_icon);
 
 @ffi.Native<native_tray_icon_id_t Function(native_tray_icon_t)>()
 external int native_tray_icon_get_id(int tray_icon);
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_tray_icon_t)>()
+external ffi.Pointer<ffi.Char> native_tray_icon_get_identifier(int tray_icon);
 
 /// Platform-specific native object (NSScreen*, HMONITOR, ...).
 @ffi.Native<ffi.Pointer<ffi.Void> Function(native_tray_icon_t)>()

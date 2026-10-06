@@ -1,5 +1,10 @@
 ## 0.4.1
 
+* `TrayIcon.createWithIdentifier()` and the read-only `identifier`: a persistent
+  tray host name, set before registration. Linux defaults to the GApplication ID
+  or executable name, with suffixes for additional live icons; macOS uses
+  `NSStatusItem.autosaveName`. Windows records the name. The numeric object ID
+  remains separate.
 * `TrayIcon.contentView`: any `View` in place of the icon and title, on macOS.
   The menu bar item is as wide as the view (its `preferredSize`, or what a Row
   or Column needs) and follows it as it changes; clicks outside buttons and
