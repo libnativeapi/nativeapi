@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Build a real Flutter app and test secondary close/exit on private displays.
+"""Build a real Flutter app and test secondary close/exit on Linux displays.
 
 Run on Linux with Flutter, clang, GTK3 development files, Xvfb, Weston and
-dbus-run-session installed. No desktop input or existing display is used.
+dbus-run-session installed for private displays. Use --display desktop-wayland
+or desktop-x11 inside a logged-on desktop session to test its real compositor
+and graphics driver instead. No synthetic input is sent in either mode.
 The saved work directory includes the generated app, native assets and logs.
 Flutter-only controls run the same lifecycle without nativeapi native assets;
 SDK warnings remain visible, and additional nativeapi diagnostics fail the test.
@@ -49,9 +51,15 @@ def main():
                         default=Path(__file__).resolve().parents[2])
     parser.add_argument("--flutter", default="flutter")
     parser.add_argument("--work-dir", type=Path)
+    parser.add_argument("--display", choices=("private", "desktop-wayland", "desktop-x11"),
+                        default="private", help="Private displays or the current desktop")
     parser.add_argument("--fatal-warnings", action="store_true",
                         help="Also make Flutter/GTK SDK diagnostics fatal")
     args = parser.parse_args()
+    if args.display == "desktop-wayland" and not os.environ.get("WAYLAND_DISPLAY"):
+        raise ValueError("desktop-wayland requires the logged-on Wayland session environment")
+    if args.display == "desktop-x11" and not os.environ.get("DISPLAY"):
+        raise ValueError("desktop-x11 requires the logged-on X11/Xwayland session environment")
     work = (args.work_dir or Path(tempfile.mkdtemp(prefix="nativeapi-flutter-exit-"))).resolve()
     work.mkdir(parents=True, exist_ok=True)
     print(f"Artifacts: {work}", flush=True)
@@ -120,10 +128,16 @@ def main():
     runtime.mkdir(mode=0o700, exist_ok=True)
     runtime.chmod(0o700)
     test_env = env.copy()
-    for key in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "DBUS_SESSION_BUS_ADDRESS",
-                "NO_AT_BRIDGE", "G_DEBUG"):
+    for key in ("NO_AT_BRIDGE", "G_DEBUG"):
         test_env.pop(key, None)
-    test_env.update(XDG_RUNTIME_DIR=str(runtime), LIBGL_ALWAYS_SOFTWARE="1")
+    if args.display == "private":
+        for key in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "DBUS_SESSION_BUS_ADDRESS"):
+            test_env.pop(key, None)
+        test_env.update(XDG_RUNTIME_DIR=str(runtime), LIBGL_ALWAYS_SOFTWARE="1")
+    else:
+        print(f"Using {args.display}: DISPLAY={test_env.get('DISPLAY')}, "
+              f"WAYLAND_DISPLAY={test_env.get('WAYLAND_DISPLAY')}, "
+              f"LIBGL_ALWAYS_SOFTWARE={test_env.get('LIBGL_ALWAYS_SOFTWARE', 'unset')}", flush=True)
     if args.fatal_warnings:
         test_env["G_DEBUG"] = "fatal-warnings"
 
@@ -163,6 +177,10 @@ def main():
             if diagnostics(control_output):
                 print(f"SDK diagnostics also occur in Flutter-only control: {dict(diagnostics(control_output))}", flush=True)
             print(f"PASS: {backend}/{mode}: 18 checks and real GTK process exit 0", flush=True)
+    if args.display != "private":
+        verify(args.display.removeprefix("desktop-"), [], {})
+        print(f"ALL PASS: real Flutter secondary close and normal exit on {args.display}", flush=True)
+        return
     verify("x11", ["dbus-run-session", "--", "xvfb-run", "-a", "-s",
                    "-screen 0 1280x960x24"], {})
     weston_log = work / "weston.log"

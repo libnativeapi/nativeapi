@@ -121,6 +121,13 @@ reports compositor shader setup/cleanup warnings, and headless Weston has no key
 seat. The runner preserves these messages and compares their counts with the control;
 `--fatal-warnings` additionally makes all SDK/GTK warnings fatal.
 
+For the real compositor and graphics driver, run inside the logged-on session with
+`--display desktop-wayland` (or `--display desktop-x11` for X11/Xwayland).
+These modes retain the session environment and do not force software rendering;
+they run the Flutter-only control plus both nativeapi modes (36 checks). The apps
+show and close their own windows without synthetic input. Xvfb and Weston are only
+required for the default private-display mode.
+
 The shape demo runs against a debug build of the example in the host's scratch dir
 (`$REMOTE_SCRATCH/shape-flutter-linux/examples/flutter_shaped_window_example`, or `SHAPE_EXAMPLE_DIR`);
 put one there with `git archive <sha> pubspec.yaml bindings/dart examples/flutter_shaped_window_example | ssh <host> "mkdir -p ... && tar -x -C ..."` (the example resolves through the root pub workspace, so all three paths are needed)
