@@ -1,0 +1,30 @@
+/* The screen's popup layer: empty until a menu opens, and never in the way. */
+.desktop-stage__overlay > .menu-view__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.menu-view__layer > * {
+  pointer-events: auto;
+}
+
+.menu-view__catcher {
+  position: absolute;
+  inset: 0;
+}
+
+.menu-view__frame {
+  display: flex;
+  border-radius: inherit;
+}
+
+.menu-view__separator-node {
+  color: var(--color-content-faint);
+  font-size: var(--caption-large-font-size);
+}
+
+.menu-view__node-meta {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}

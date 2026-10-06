@@ -1,0 +1,115 @@
+/* A window forced light or dark: the theme rides on a box that adds none of its own. */
+.application-view__themed {
+  display: contents;
+}
+
+/* An event row's icon lights up, and flashes again, as each event arrives. */
+.application-view__event-icon {
+  color: var(--color-content-faint);
+}
+
+.application-view__event-icon[data-fired] {
+  color: var(--color-primary-500);
+  animation: application-view-flash 900ms var(--motion-easing);
+}
+
+@keyframes application-view-flash {
+  from {
+    transform: scale(1.35);
+    color: var(--color-warning-500);
+  }
+}
+
+/* The menu bar items setMenuBar put there: About and Quit. */
+.application-view__bar-menu {
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+}
+
+/* Windows: setMenuBar hangs a Win32 menu bar under the primary window's title. */
+.application-view__menu-strip {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-0-5);
+  padding: var(--spacing-0-5) var(--spacing-2);
+  background: var(--color-surface-chrome);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.application-view__menu-strip button {
+  padding: var(--spacing-0-5) var(--spacing-2);
+  color: var(--color-content);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-small);
+  font-size: var(--body-small-font-size);
+}
+
+.application-view__menu-strip button:hover {
+  background: color-mix(in srgb, var(--color-content) 8%, transparent);
+}
+
+.application-view__extra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  height: 100%;
+  color: var(--color-content-secondary);
+  background: var(--color-surface);
+  font-size: var(--caption-large-font-size);
+}
+
+.application-view__extra > span {
+  padding-inline: var(--spacing-3);
+}
+
+.application-view__extra-id {
+  padding-top: var(--spacing-3);
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+}
+
+/* Where the window stood: what run() returned, and a way to run again. */
+.application-view__notice {
+  position: absolute;
+  top: 38%;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  width: max-content;
+  margin-inline: auto;
+  padding: var(--spacing-4) var(--spacing-6);
+  color: var(--color-content-secondary);
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  border-radius: var(--radius-big);
+  backdrop-filter: blur(20px);
+  font-size: var(--body-small-font-size);
+}
+
+.application-view__notice strong {
+  color: var(--color-content);
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+}
+
+.application-view__no-launcher {
+  position: absolute;
+  bottom: var(--spacing-3);
+  right: var(--spacing-3);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1-5) var(--spacing-3);
+  color: var(--color-content-secondary);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  border-radius: var(--radius-full);
+  font-size: var(--caption-large-font-size);
+}

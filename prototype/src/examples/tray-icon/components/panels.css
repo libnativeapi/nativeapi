@@ -1,0 +1,134 @@
+/* The three tabs of the window: a scrolling column under the live preview. */
+.tray-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+}
+
+/* A tool window, not a settings page: DazzUI's preference spacing, tightened. */
+.tray-panel__preferences {
+  --preferences-group-gap: var(--spacing-3);
+  --preferences-section-gap: var(--spacing-3);
+  --preferences-title-gap: var(--spacing-1);
+  --preferences-row-gap: 0;
+  --preferences-row-padding: var(--spacing-1);
+
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.tray-panel__preferences .dz-preference-section__rows {
+  gap: var(--spacing-3);
+}
+
+.tray-panel__preferences .dz-preference-row {
+  min-height: var(--control-small-size);
+}
+
+.tray-panel__gallery {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--spacing-1-5);
+}
+
+.tray-panel__tile {
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-1);
+}
+
+.tray-panel__tile-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+  white-space: nowrap;
+}
+
+.tray-panel__readback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}
+
+.tray-panel__readback-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.tray-panel__readback-head > :nth-child(2) {
+  flex: 1;
+}
+
+.tray-panel__readback-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--spacing-4);
+  margin: 0;
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.tray-panel__readback-grid > div {
+  display: flex;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.tray-panel__readback-grid dt {
+  width: 5rem;
+  flex-shrink: 0;
+  color: var(--color-content-subtle);
+}
+
+.tray-panel__readback-grid dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-content);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tray-panel__counters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.tray-panel__checklist-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.tray-panel__summary {
+  flex: 1;
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+.tray-panel__detail {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+}
+
+.tray-panel__preferences .dz-preference-row__icon {
+  --dz-icon-size: var(--icon-small);
+}
+
+/* The checklist is a list to scan: rows as tight as their controls allow. */
+.tray-panel__preferences--dense {
+  --preferences-row-padding: 0;
+}
+
+.tray-panel__preferences--dense .dz-preference-row {
+  min-height: var(--control-tiny-size);
+}

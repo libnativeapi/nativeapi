@@ -1,0 +1,205 @@
+.system-window__note {
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+/* macOS: System Settings' pane, a grouped list with its +/− bar. */
+.system-window__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  height: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-surface-sunken);
+}
+
+.system-window__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-content-faint);
+}
+
+.system-window__crumbs strong {
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+}
+
+.system-window__section {
+  margin-top: var(--spacing-2);
+  color: var(--color-content);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+}
+
+.system-window__list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.system-window__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1-5) var(--spacing-3);
+  border-bottom: var(--stroke-hairline) solid var(--color-border-muted);
+  font-size: var(--body-small-font-size);
+}
+
+.system-window__item svg {
+  color: var(--color-content-subtle);
+}
+
+.system-window__item[data-ours] {
+  animation: system-window-arrive 1.4s ease-out;
+}
+
+.system-window__item[data-ours] svg {
+  color: var(--color-primary-500);
+}
+
+@keyframes system-window-arrive {
+  from {
+    background-color: color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+  }
+}
+
+.system-window__name {
+  flex: 1;
+  color: var(--color-content);
+}
+
+.system-window__detail {
+  color: var(--color-content-faint);
+  font-size: var(--caption-large-font-size);
+}
+
+.system-window__toolbar {
+  display: flex;
+  gap: var(--spacing-0-5);
+  padding: var(--spacing-0-5) var(--spacing-1);
+}
+
+/* Windows: Task Manager and Registry Editor. */
+.system-window__tm,
+.system-window__regedit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  height: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--caption-large-font-size);
+}
+
+.system-window__regedit {
+  gap: 0;
+  padding: 0;
+}
+
+.system-window__regedit .system-window__table {
+  margin-bottom: var(--spacing-2);
+}
+
+.system-window__tm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.system-window__address {
+  padding: var(--spacing-1) var(--spacing-2);
+  overflow: hidden;
+  color: var(--color-content-secondary);
+  background: var(--color-surface-chrome);
+  border-block: var(--stroke-hairline) solid var(--color-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-window__table .dz-table__head,
+.system-window__table .dz-table__row {
+  gap: var(--spacing-2);
+  padding-inline: var(--spacing-2);
+}
+
+.system-window__table .dz-table__row {
+  padding-block: var(--spacing-1);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.system-window__table .dz-table__row[data-active='true'] {
+  animation: system-window-arrive 1.4s ease-out;
+}
+
+.system-window__table .dz-table__cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-window__status {
+  flex: 0 0 5rem;
+}
+
+.system-window__type {
+  flex: 0 0 6rem;
+}
+
+/* Linux: a terminal reading the autostart file. */
+.system-window__terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+  padding: var(--spacing-3);
+  overflow: auto;
+  color: var(--color-content-secondary);
+  background: var(--color-surface-sunken);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--body-small-line-height);
+}
+
+.system-window__prompt {
+  color: var(--color-content);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.system-window__prompt > span:first-child {
+  color: var(--color-success-600);
+}
+
+.system-window__line {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.system-window__line[data-missing] {
+  color: var(--color-danger-600);
+}
+
+.system-window__cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--color-content-subtle);
+}
+
+
+/* The Run value's data is the command line: wrap it whole. */
+.system-window__table--wrap .dz-table__cell:last-child {
+  flex: 1.6;
+  white-space: normal;
+  word-break: break-all;
+}

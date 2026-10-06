@@ -1,0 +1,4 @@
+/* The preview's place on the desktop is its rectangle; only the silhouette inside takes the pointer. */
+.shaped-window-view__preview {
+  pointer-events: none;
+}

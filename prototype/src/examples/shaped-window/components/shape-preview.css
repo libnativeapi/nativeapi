@@ -1,0 +1,50 @@
+/*
+ * The window's rectangle takes no input of its own: only the clipped art
+ * does, so a press outside the silhouette reaches whatever is beneath, as it
+ * does on the desktop.
+ */
+.shape-preview {
+  display: flex;
+  pointer-events: none;
+}
+
+.shape-preview__art {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.shape-preview__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2-5);
+}
+
+.shape-preview__handle {
+  all: unset;
+  padding: var(--spacing-2-5);
+  color: color-mix(in srgb, var(--base-color-white) 87%, transparent);
+  font-family: var(--caption-small-font-family);
+  font-size: var(--caption-small-font-size);
+  letter-spacing: 2px;
+  cursor: move;
+  touch-action: none;
+}
+
+.shape-preview__name {
+  font-family: var(--headline-large-font-family);
+  font-size: var(--headline-large-font-size);
+  font-weight: var(--base-font-weight-bold);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.shape-preview__look {
+  color: color-mix(in srgb, var(--base-color-white) 80%, transparent);
+  font-family: var(--caption-small-font-family);
+  font-size: var(--caption-small-font-size);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}

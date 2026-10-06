@@ -1,0 +1,168 @@
+/* A blocked window was clicked: the dialog shakes its head. */
+.dialog-surface__mac[data-refused],
+.dialog-surface__frame[data-refused],
+.dialog-surface__content-dialog[data-refused] {
+  animation: dialog-surface-refuse 360ms var(--motion-easing);
+}
+
+@keyframes dialog-surface-refuse {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+/* NSAlert: no title bar, the app's icon on top, the text centred. */
+.dialog-surface__mac {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 260px;
+  padding: var(--spacing-5) var(--spacing-4) var(--spacing-4);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-big);
+  box-shadow: var(--shadow-2xl);
+  backdrop-filter: blur(30px) saturate(1.6);
+  text-align: center;
+}
+
+.dialog-surface__mac strong {
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+}
+
+.dialog-surface__mac p {
+  margin: 0 0 var(--spacing-2);
+  color: var(--color-content-secondary);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+/* The sheet: hung from the window's top edge, sliding down out of it. */
+.dialog-surface__mac--sheet {
+  width: 300px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  animation: dialog-surface-sheet 260ms var(--motion-easing);
+}
+
+.dialog-surface__mac--sheet[data-refused] {
+  animation: dialog-surface-refuse 360ms var(--motion-easing);
+}
+
+@keyframes dialog-surface-sheet {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+.dialog-surface__app-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--color-on-accent);
+  background: linear-gradient(160deg, var(--color-primary-400), var(--color-primary-700));
+  border-radius: var(--radius-big);
+}
+
+.dialog-surface__frame {
+  display: flex;
+  box-shadow: var(--shadow-2xl);
+  border-radius: var(--frame-window-radius);
+}
+
+.dialog-surface__info {
+  flex-shrink: 0;
+  color: var(--color-info-500);
+}
+
+/* The Win32 MessageBox: the icon and text on white, the buttons on a grey strip. */
+.dialog-surface__win32-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5) var(--spacing-4);
+  background: var(--color-surface);
+}
+
+.dialog-surface__win32-body p {
+  margin: 0;
+  color: var(--color-content);
+  font-size: var(--body-small-font-size);
+}
+
+.dialog-surface__win32-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  background: var(--color-surface-sunken);
+  border-top: var(--stroke-hairline) solid var(--color-border);
+}
+
+.dialog-surface__win32-foot button {
+  min-width: 5.5rem;
+}
+
+/* WinUI 3's ContentDialog: a card with the content above a band of equal buttons. */
+.dialog-surface__content-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  overflow: hidden;
+  color: var(--color-content);
+  background: var(--color-surface-raised);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-2xl);
+}
+
+.dialog-surface__content-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5);
+}
+
+.dialog-surface__content-body strong {
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+}
+
+.dialog-surface__content-body p {
+  margin: 0;
+  font-size: var(--body-small-font-size);
+}
+
+.dialog-surface__content-buttons {
+  display: grid;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-5);
+  background: var(--color-surface-sunken);
+  border-top: var(--stroke-hairline) solid var(--color-border);
+}
+
+/* GtkMessageDialog: the icon, the message as bold primary text, OK underneath. */
+.dialog-surface__gtk {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5) var(--spacing-4) var(--spacing-3);
+  color: var(--color-content);
+  font-size: var(--body-small-font-size);
+}
+
+.dialog-surface__gtk-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}

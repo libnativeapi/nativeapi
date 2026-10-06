@@ -1,0 +1,23 @@
+.preferences-window__hello {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.preferences-window__greeting {
+  color: var(--color-content);
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+  line-height: var(--title-medium-line-height);
+}
+
+.preferences-window__launch {
+  color: var(--color-content-secondary);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.preferences-window__field {
+  width: calc(var(--spacing-20) * 2.5);
+}

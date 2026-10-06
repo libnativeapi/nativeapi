@@ -1,0 +1,8 @@
+.detachable-window-view__probe {
+  display: none;
+}
+
+/* Holds a window so its own title bar can move it, as the window manager would. */
+.detachable-window-view__grab {
+  display: flex;
+}

@@ -1,0 +1,6 @@
+/* Measures the work area for the simulation: maximize fills it, positions start from it. */
+.window-view__measure {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

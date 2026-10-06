@@ -1,0 +1,160 @@
+.inspector-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.inspector-panel__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-2-5);
+}
+
+.inspector-panel[data-wide] .inspector-panel__scroll {
+  flex: 0 0 220px;
+}
+
+.inspector-panel__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.inspector-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  font-size: var(--body-small-font-size);
+}
+
+.inspector-panel__clicks {
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  font-variant-numeric: tabular-nums;
+}
+
+.inspector-panel__opacity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-family: var(--label-small-font-family);
+  font-size: var(--label-small-font-size);
+  font-weight: var(--label-small-font-weight);
+}
+
+.inspector-panel__layers {
+  flex-shrink: 0;
+  height: 160px;
+  overflow-y: auto;
+  background: var(--color-surface-sunken);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--control-container-radius);
+}
+
+.inspector-panel[data-wide] .inspector-panel__layers {
+  flex: 1;
+  height: auto;
+  margin: var(--spacing-2-5) var(--spacing-2-5) var(--spacing-2-5) 0;
+}
+
+.inspector-panel__layer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+}
+
+.stopwatch-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stopwatch-panel[data-wide] {
+  flex-direction: row;
+}
+
+.stopwatch-panel__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-0-5);
+  padding: var(--spacing-3) var(--spacing-2-5);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.stopwatch-panel[data-wide] .stopwatch-panel__clock {
+  flex: 3;
+  padding-block: var(--spacing-1);
+  border-bottom: 0;
+  border-inline-end: var(--stroke-hairline) solid var(--color-border);
+}
+
+.stopwatch-panel__time {
+  color: var(--color-content);
+  font-family: var(--headline-large-font-family);
+  font-size: var(--headline-large-font-size);
+  font-weight: var(--headline-large-font-weight);
+  line-height: var(--headline-large-line-height);
+  font-variant-numeric: tabular-nums;
+}
+
+.stopwatch-panel[data-wide] .stopwatch-panel__time {
+  font-size: var(--headline-medium-font-size);
+  line-height: var(--headline-medium-line-height);
+}
+
+.stopwatch-panel__hint {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+.stopwatch-panel__actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.stopwatch-panel__laps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.stopwatch-panel[data-wide] .stopwatch-panel__laps {
+  flex: 2;
+}
+
+.stopwatch-panel__empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--body-small-font-size);
+}
+
+.stopwatch-panel__lap-number {
+  flex: 0 0 3.5rem;
+  font-family: var(--base-font-code);
+}
+
+.stopwatch-panel__lap-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Short strips have no room for the hint: the clock and its buttons come first. */
+.stopwatch-panel[data-wide] .stopwatch-panel__hint {
+  display: none;
+}
+
+.stopwatch-panel[data-wide] .stopwatch-panel__actions {
+  margin-top: var(--spacing-1);
+}

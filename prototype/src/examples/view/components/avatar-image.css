@@ -1,0 +1,25 @@
+.avatar-image {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background:
+    radial-gradient(
+      circle at var(--avatar-glow-x) var(--avatar-glow-y),
+      color-mix(in srgb, var(--base-color-white) 55%, transparent),
+      transparent 38%
+    ),
+    linear-gradient(
+      var(--avatar-angle),
+      color-mix(in oklch, var(--view-accent) 80%, var(--base-color-white)),
+      color-mix(in oklch, var(--view-accent) 70%, var(--base-color-black))
+    );
+}
+
+/* The light ring, at 86% of the radius. */
+.avatar-image::after {
+  position: absolute;
+  inset: 7%;
+  border: 2px solid color-mix(in srgb, var(--base-color-white) 45%, transparent);
+  border-radius: var(--radius-full);
+  content: '';
+}

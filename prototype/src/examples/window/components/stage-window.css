@@ -1,0 +1,119 @@
+/*
+ * A window on the stage: the frame inside draws itself, this only shows what
+ * the native getters say about it.
+ */
+.stage-window {
+  position: relative;
+  display: flex;
+  transition: opacity 0.12s;
+}
+
+/* A window keeps its own size wherever it stands, even half off the desktop. */
+.stage-window > .dz-window-frame {
+  flex-shrink: 0;
+  max-width: none;
+}
+
+/* hasShadow → false: the hairline edge stays, the drop shadow goes. */
+.stage-window[data-shadow='off'] > .dz-window-frame {
+  box-shadow: 0 0 0 var(--stroke-hairline) var(--color-border-strong);
+}
+
+/* Maximized and full screen: edge to edge, no rounded corners. */
+.stage-window[data-maximized] > .dz-window-frame,
+.stage-window[data-fullscreen] > .dz-window-frame {
+  border-radius: 0;
+}
+
+/* The background colour shows wherever the content leaves it unpainted. */
+.stage-window[data-kind='plain'] > .dz-window-frame {
+  background: var(--stage-window-background);
+}
+
+.stage-window[data-kind='plain'][data-tone='light'] > .dz-window-frame {
+  color: var(--base-color-graphite-900);
+}
+
+.stage-window[data-kind='plain'][data-tone='dark'] > .dz-window-frame {
+  color: var(--base-color-white);
+}
+
+/*
+ * A visual effect stands in for the background: what is behind the window,
+ * blurred and tinted. Each material is a mix of the theme's surface, from the
+ * most see-through (Blur) to the nearly opaque (Mica Alt).
+ */
+.stage-window[data-effect] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface) 55%, transparent);
+
+  background: var(--stage-window-material);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+.stage-window[data-effect='blur'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface) 25%, transparent);
+}
+
+.stage-window[data-effect='mica'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface) 82%, transparent);
+}
+
+.stage-window[data-effect='micaAlt'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface-chrome) 90%, transparent);
+}
+
+.stage-window[data-effect='hud'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--base-color-graphite-900) 66%, transparent);
+
+  color: var(--base-color-white);
+}
+
+.stage-window[data-effect='popover'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+}
+
+.stage-window[data-effect='menu'] > .dz-window-frame {
+  --stage-window-material: color-mix(in srgb, var(--color-surface-overlay) 76%, transparent);
+}
+
+/* The example's own window: its sidebar and pane let the material through. */
+.stage-window[data-kind='example'][data-effect] .dz-sidebar,
+.stage-window[data-kind='example'][data-effect] .dz-window-frame__main {
+  background: transparent;
+}
+
+/* setTitleBarColors (WinUI 3): the caption band in the colours it was sent. */
+.stage-window[data-title-colors] .dz-window-frame__titlebar {
+  --dz-window-titlebar-background: var(--color-primary-600);
+
+  color: var(--color-on-accent);
+}
+
+/* setWindowControlButtonsVisible(false) on macOS: the traffic lights go. */
+.stage-window[data-buttons='hidden'] .dz-window-frame__traffic {
+  visibility: hidden;
+}
+
+/* The corner the window manager resizes from. */
+.stage-window__grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.stage-window__grip::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--color-content-faint);
+  border-bottom: 2px solid var(--color-content-faint);
+  border-bottom-right-radius: var(--radius-tiny);
+}

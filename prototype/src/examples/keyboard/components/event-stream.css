@@ -1,0 +1,56 @@
+.event-stream {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.event-stream li {
+  display: flex;
+  gap: var(--spacing-2);
+  padding: 1px var(--spacing-2);
+  color: var(--color-content);
+  white-space: pre;
+}
+
+.event-stream li:nth-child(odd) {
+  background: var(--color-surface-sunken);
+}
+
+.event-stream li[data-type='released'] {
+  color: var(--color-content-secondary);
+}
+
+.event-stream li[data-type='modifiers'] .event-stream__type {
+  color: var(--color-success-600);
+}
+
+.event-stream__number {
+  width: 3.2em;
+  color: var(--color-content-faint);
+  text-align: end;
+}
+
+.event-stream__type {
+  color: var(--color-primary-600);
+}
+
+.event-stream__value {
+  min-width: 3.5em;
+}
+
+.event-stream__key {
+  color: var(--color-content-subtle);
+}
+
+.event-stream__empty {
+  margin: 0;
+  padding: var(--spacing-3);
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+  text-align: center;
+}

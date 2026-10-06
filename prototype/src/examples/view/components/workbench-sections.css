@@ -1,0 +1,34 @@
+/* setBackgroundColor(wash(accent, 18)): a section on a faint tint of the accent. */
+.workbench-section {
+  background: color-mix(in srgb, var(--view-accent) 7%, transparent);
+}
+
+.workbench-section__heading {
+  letter-spacing: 0.04em;
+}
+
+.tasks-section__empty {
+  padding-block: var(--spacing-2);
+}
+
+.tasks-section__row {
+  background: color-mix(in srgb, var(--view-accent) var(--task-wash), transparent);
+}
+
+/*
+ * The stage lays its boxes out itself, with core's algorithm, so the boxes
+ * stand at the frames it computed rather than where CSS would put them.
+ */
+.native-view.playground-stage {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-content) 8%, transparent);
+}
+
+.playground-stage__box {
+  position: absolute;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--view-accent) var(--box-shade), transparent);
+  justify-content: center;
+}

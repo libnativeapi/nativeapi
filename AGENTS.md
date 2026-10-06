@@ -13,6 +13,7 @@ bindings/
 ├── js/             # the JS/TS binding: a Node-API addon (src/) + TypeScript (lib/)
 └── python/         # the Python binding: ctypes package (nativeapi/) + native shim (src/)
 examples/           # every binding's example apps, prefixed dart_*, flutter_*, rust_*, csharp_*, js_*, python_*
+prototype/          # interface prototypes for the examples (Storybook + DazzUI, pnpm), see prototype/docs/architecture.md
 pubspec.yaml        # pub workspace + melos root: Dart packages and Flutter examples
 Cargo.toml          # cargo workspace root: Rust crates and examples
 tools/codegen/      # in-repo Rust workspace: the code generator

@@ -1,0 +1,85 @@
+/* A tool panel on the desktop, not a window: it belongs to the prototype, not the app. */
+.hook-panel {
+  position: absolute;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 252px;
+  max-height: calc(100% - 2 * var(--spacing-4));
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--spacing-3);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-overlay) 92%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  font-size: var(--body-small-font-size);
+}
+
+.hook-panel__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.hook-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}
+
+.hook-panel__label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hook-panel__label small {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.hook-panel__windows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hook-panel__windows li {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+}
+
+.hook-panel__log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.hook-panel__log li:first-child {
+  color: var(--color-content);
+}
+
+.hook-panel__note {
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}

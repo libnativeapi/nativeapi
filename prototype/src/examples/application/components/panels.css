@@ -1,0 +1,93 @@
+/* A status line across the top of a tab: a light, two lines, the tab's main action. */
+.application-panel__hero,
+.application-panel__preview {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.application-panel__hero-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.application-panel__hero-text strong {
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  line-height: var(--title-small-line-height);
+}
+
+.application-panel__hero-text span {
+  color: var(--color-content-secondary);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.application-panel__pulse {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  margin-inline: var(--spacing-1);
+  background: var(--color-success-500);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success-500) 22%, transparent);
+}
+
+.application-panel__pulse[data-state='quitting'] {
+  background: var(--color-warning-500);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warning-500) 22%, transparent);
+}
+
+.application-panel__code {
+  width: 6.5rem;
+}
+
+.application-panel__badge-field {
+  width: 6rem;
+}
+
+.application-panel__slider {
+  width: 14rem;
+}
+
+.application-panel__preview-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.application-panel__preview-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: var(--spacing-1-5);
+  color: var(--color-on-accent);
+  background: var(--color-danger-500);
+  border-radius: var(--radius-full);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--caption-large-font-size);
+  font-weight: var(--label-strong-font-weight);
+  line-height: 20px;
+  text-align: center;
+}
+
+.application-panel__missing {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-content-subtle);
+  border: var(--stroke-control) dashed var(--color-border-strong);
+  border-radius: var(--radius-small);
+}

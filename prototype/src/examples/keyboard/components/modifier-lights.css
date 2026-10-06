@@ -1,0 +1,59 @@
+.modifier-lights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}
+
+.modifier-lights__row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--spacing-1);
+}
+
+.modifier-lights__light {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--spacing-1) 0;
+  color: var(--color-content-secondary);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-medium);
+  font-size: var(--caption-medium-font-size);
+}
+
+.modifier-lights__light[data-on] {
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-success-500) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-success-500) 50%, transparent);
+}
+
+/* A flag this platform's monitor never sets. */
+.modifier-lights__light[data-unreported] {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.modifier-lights__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+.modifier-lights__light[data-on] .modifier-lights__dot {
+  background: var(--color-success-500);
+  box-shadow: 0 0 6px var(--color-success-400);
+}
+
+.modifier-lights__bit {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-small-font-size);
+}
+
+.modifier-lights__mask {
+  color: var(--color-content);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}

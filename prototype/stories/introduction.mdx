@@ -1,0 +1,53 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Introduction" />
+
+# nativeapi 示例界面原型
+
+nativeapi 各示例应用（仓库的 `examples/`）的界面原型，使用 [DazzUI](https://github.com/dazzlabs/dazzui)
+组件绘制。所有数据与行为都是模拟的：不调用 nativeapi，不创建窗口，也不注入输入。刷新页面即可重置状态。
+目录与命名规则见 `prototype/docs/architecture.md`。
+
+## 示例
+
+每个示例在 **Examples** 下有自己的文件夹，第一项是它的完整界面，按 `examples/` 的名称排序。所有示例共用同一套界面语言：
+示例站在工具栏所选的桌面上，API 的效果直接在桌面上发生；示例窗口左侧是它管理的对象或分区，右侧标题带上是分页，
+底栏是最近的事件与调用日志；getter 的读回证明调用生效；平台不支持的调用禁用并注明原因。
+
+- **Accessibility**：是否受信任（`isEnabled`）与 `enable()`；macOS 上打开模拟的“系统设置 › 隐私与安全性 › 辅助功能”，
+  打开开关后重新检查即受信任；列出依赖它的功能。
+- **Application**：生命周期事件（Started、Activated、Deactivated、QuitRequested、Exiting），`quit(N)` 后桌面提示退出码并可重新启动；
+  角标与进度画在 Dock、任务栏按钮或 Linux 的 dock 上；`setBrightness` 切换窗口明暗；`setMenuBar` 写入菜单栏。
+- **Browser Tabs**：两个以标签栏为窗口框的浏览器窗口；拖动排序、拉出成新窗口、放到另一窗口的标签栏合并，页面状态随标签走；
+  左下角面板显示 `WindowDragSession` 的状态与 `getWindowAtPoint`。Wayland 上只能在本栏内排序。
+- **CocoaPods**：经 CocoaPods 构建的冒烟测试，六项检查依次运行；Build 页是 pubspec、Podfile 与构建命令。仅限 Apple 平台。
+- **Detachable Window**：两个主窗口的停靠槽里有 Inspector 与 Stopwatch 面板，拖动标题拉出成窗口，拖到空槽上松开即停靠，状态始终保留。
+- **Display**：显示器按系统布局画出，本窗口与光标实时叠加；Details 读回每个属性；模拟插拔、旋转、缩放并收到 `DisplayManager` 事件。
+- **Drag Drop**：拖入区域与拖出卡片；桌面上有文件管理器与文本编辑器，文件与文本在它们和示例之间真实拖放；Operations 设置双方的拖放操作。
+- **Floating Toolbar**：主窗口上方 10px 处的透明药丸工具栏是它的子窗口，随主窗口移动、最小化与还原；可分离、隐藏，Wayland 上改为自行拖动。
+- **Keyboard**：开始监听后，页面上的真实按键以全局监听的方式呈现：键盘可视化、各平台原始键码、八个修饰键标志与掩码、事件流。
+- **Launch At Login**：开关、注册信息读回、显示名与程序；桌面旁是系统视角（登录项、任务管理器或注册表、autostart 文件），可模拟注销再登录。
+- **Menu**：右键区域打开原生样式的菜单（复选、单选、禁用、子菜单、提示），12 种 Placement 与屏幕坐标打开；Edit 页逐个调用修改菜单与图标动画；
+  Settings 页切换后端（WinUI 3）与主题。
+- **Message Dialog**：组合标题、正文、模态与 WinUI 3 扩展控件，按平台画出 NSAlert 或 sheet、ContentDialog、MessageBox、GTK 对话框；读回结果。
+- **Multiple Window**：will-show hook 把三个窗口放进工作区 60% 的居中区块；可关闭 hook、切换 will-hide 行为，放大后被 hook 弹回。
+- **Preferences**：一个作用域内的设置表单，“重新启动应用”后值从存储读回、启动次数加一；旁边是 plist、注册表或配置文件。
+- **Shaped Window**：控制窗口与按十二种轮廓裁切的预览窗口，形状之间 450 ms 变形，轮廓阴影的预设与细调。
+- **Shortcut**：已注册的快捷键与激活计数；录制器注册并实时检查有效与可用；按下组合键即触发，应用失焦时只有 Global 作用域触发。
+- **Storage**：Preferences 与 SecureStorage（有无作用域）四个存储；条目表、查找、九项测试，Backend 页显示数据在本平台实际存放的位置。
+- **Tray Icon**：`TrayIcon` 与 `TrayManager` 的调试台，画在它所在的桌面上——macOS 菜单栏、Windows 任务栏、
+  GNOME / Ubuntu 顶栏、KDE 面板或 Omarchy 的 Waybar。栏里的托盘图标是活的：单击、右键、双击都是事件，
+  触发方式打开右键菜单（含子菜单、复选项、禁用项），弹出模式下单击显示窗口、点别处隐藏。窗口左栏是已创建的
+  图标和场景（下载、录制、同步、三个图标），右侧对选中的图标操作：实时预览，Animate（动画库、帧率、分辨率、颜色）、Properties（getter 读回、
+  每个 API 一行）、Checklist（自动与手动验收项），底部是最近的事件与调用日志。
+- **URL Opener**：把 URL 交给系统，接手的应用（浏览器、邮件、拨号、文件管理器）在桌面上打开；读回 `UrlOpenResult`，Error codes 页列出每个错误码。
+- **View**：纯 Dart 的原生控件工作台（登录、任务、布局试验场、笔记）与 View Inspector 窗口：实时视图树、查找并闪烁、事件日志。
+- **Visual Effect**：窗口背景即材质，逐个 `VisualEffect` 应用或被拒绝；可在背后放一个红色窗口来观察透视。
+- **Window**：桌面上的多个窗口可拖动、缩放；State、Geometry、Appearance、Behaviour 四页作用于选中窗口并实时反映在桌面上，Map 页按比例画出全部窗口。
+- **Window Drag Areas**：隐藏标题栏的窗口，移动条拖动窗口，八个内缩的调整手柄从对应边缩放，可只保留三个。
+- **Window Title Bar**：标题栏的三种状态（正常、内容延伸到标题栏下、隐藏）与窗口按钮的显隐，始终存在的拖动条与读回表。
+
+## 工具栏
+
+- **Style**：DazzUI 自有系列（Studio、Bright、Frost、Graphite、Ember、Nocturne）、各桌面（macOS 27 与 15、Windows 11、Ubuntu、Debian、Fedora、KDE Plasma），或 Omarchy 的各个主题。DazzUI 的 `WindowFrame` 随之画出对应桌面的窗口控件；DazzUI 自有系列按 macOS 绘制。
+- **Appearance**：浅色或深色，对所有 Style 生效。

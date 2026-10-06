@@ -1,0 +1,45 @@
+.multiple-window-view__probe {
+  display: none;
+}
+
+/* The hook's placement eases in, so the snap back into a slot is seen. */
+.multiple-window-view__placed {
+  transition:
+    left 320ms var(--motion-easing),
+    top 320ms var(--motion-easing);
+}
+
+.multiple-window-view__grab {
+  display: flex;
+}
+
+/* The block the hook lays the windows out in, drawn on the wallpaper under them. */
+.multiple-window-view__block {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, var(--color-primary-500) 70%, transparent);
+  border-radius: var(--radius-large);
+  pointer-events: none;
+}
+
+.multiple-window-view__block > span,
+.multiple-window-view__work-area {
+  position: absolute;
+  padding: var(--spacing-0-5) var(--spacing-2);
+  color: var(--color-content-secondary);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  border-radius: var(--radius-full);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  white-space: nowrap;
+}
+
+.multiple-window-view__block > span {
+  bottom: calc(100% + var(--spacing-1));
+  left: 0;
+}
+
+.multiple-window-view__work-area {
+  bottom: var(--spacing-3);
+  left: var(--spacing-3);
+}

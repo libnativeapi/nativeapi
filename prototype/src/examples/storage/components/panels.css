@@ -1,0 +1,270 @@
+/* The Entries tab: a table filling the pane, its head pinned. */
+.storage-table {
+  flex: 1;
+  min-height: 0;
+}
+
+.storage-table .dz-table__head,
+.storage-table .dz-table__row {
+  gap: var(--spacing-3);
+  padding-inline: var(--spacing-4);
+}
+
+.storage-table__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.storage-table .dz-table__row {
+  padding-block: var(--spacing-1);
+  font-size: var(--body-small-font-size);
+  line-height: var(--body-small-line-height);
+}
+
+.storage-table__index {
+  flex: 0 0 var(--spacing-6);
+  color: var(--color-content-faint);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.storage-table__key,
+.storage-table__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-table__key {
+  flex: 2;
+  color: var(--color-content);
+  font-family: var(--label-medium-font-family);
+  font-weight: var(--label-medium-font-weight);
+}
+
+.storage-table__value {
+  flex: 3;
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.storage-table__value[data-empty] {
+  color: var(--color-content-faint);
+}
+
+.storage-table__actions {
+  flex: 0 0 calc(var(--control-tiny-size) * 2 + var(--spacing-1));
+}
+
+.storage-table__buttons {
+  display: inline-flex;
+  gap: var(--spacing-0-5);
+}
+
+/* A row a call just wrote flashes the accent and settles. */
+.storage-table__row[data-changed],
+.storage-backend__row[data-changed],
+.storage-file__lines li[data-changed] {
+  animation: storage-changed 1.6s ease-out;
+}
+
+@keyframes storage-changed {
+  from {
+    background-color: color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+  }
+}
+
+.storage-panel__empty {
+  margin: auto;
+}
+
+/* A head over a tab's list: a summary, then its buttons. */
+.storage-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.storage-panel__head > :first-child {
+  flex: 1;
+}
+
+.storage-panel__summary {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.storage-panel__detail {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+}
+
+.storage-panel__detail[data-status='fail'] {
+  color: var(--color-danger-600);
+}
+
+.storage-panel__pass {
+  color: var(--color-success-500);
+}
+
+.storage-panel__fail {
+  color: var(--color-danger-500);
+}
+
+.storage-panel__open {
+  color: var(--color-content-faint);
+}
+
+/* The Lookup tab. */
+.storage-lookup__fields {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--spacing-2);
+}
+
+.storage-lookup__divider {
+  width: var(--stroke-hairline);
+  height: var(--control-small-size);
+  margin-inline: var(--spacing-1);
+  background: var(--color-border);
+}
+
+.storage-lookup__result {
+  white-space: normal;
+  word-break: break-all;
+}
+
+/* The Backend tab: the system's own tables and files. */
+.storage-backend.storage-backend {
+  padding: 0;
+  overflow: hidden;
+}
+
+.storage-backend__address {
+  padding: var(--spacing-1-5) var(--spacing-3);
+  overflow: hidden;
+  color: var(--color-content-secondary);
+  background: var(--color-surface-chrome);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-backend__table .dz-table__head,
+.storage-backend__table .dz-table__row {
+  gap: var(--spacing-3);
+  padding-inline: var(--spacing-3);
+}
+
+.storage-backend__table .dz-table__row {
+  padding-block: var(--spacing-1);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.storage-backend__table .dz-table__row:last-child {
+  border-bottom: 0;
+}
+
+.storage-backend__table .dz-table__cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-backend__type {
+  flex: 0 0 5rem;
+}
+
+.storage-backend__kind {
+  flex: 0.8;
+}
+
+.storage-backend__faint {
+  color: var(--color-content-faint);
+}
+
+.storage-backend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.storage-backend__item svg {
+  flex-shrink: 0;
+  color: var(--color-warning-500);
+}
+
+.storage-file.storage-file {
+  padding: 0;
+  overflow: hidden;
+}
+
+.storage-file__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  padding: var(--spacing-1-5) var(--spacing-3);
+  color: var(--color-content-secondary);
+  background: var(--color-surface-chrome);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+}
+
+.storage-file__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-file__note {
+  color: var(--color-content-faint);
+}
+
+.storage-file__language {
+  color: var(--color-content-faint);
+  font-family: var(--label-small-font-family);
+  font-size: var(--label-small-font-size);
+  text-transform: uppercase;
+}
+
+.storage-file__lines {
+  margin: 0;
+  padding: var(--spacing-2) 0;
+  list-style: none;
+  background: var(--color-surface-muted);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--body-small-line-height);
+  white-space: pre;
+}
+
+.storage-file__lines li {
+  display: flex;
+  gap: var(--spacing-3);
+  padding-inline-end: var(--spacing-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  tab-size: 4;
+}
+
+.storage-file__gutter {
+  flex: 0 0 var(--spacing-8);
+  color: var(--color-content-faint);
+  text-align: end;
+  user-select: none;
+}
+
+.storage-backend__table .dz-table__cell:first-child {
+  flex: 1.5;
+}

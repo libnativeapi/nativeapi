@@ -1,0 +1,63 @@
+.drag-ghost {
+  position: absolute;
+  z-index: 3;
+  margin: var(--spacing-2) 0 0 var(--spacing-2);
+  pointer-events: none;
+}
+
+.drag-ghost__card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  max-width: 16rem;
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow-md);
+  font-size: var(--caption-large-font-size);
+  opacity: 0.92;
+}
+
+.drag-ghost__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drag-ghost__count {
+  padding: 0 var(--spacing-1);
+  color: var(--base-color-white);
+  background: var(--color-danger-500);
+  border-radius: var(--radius-full);
+  font-size: var(--caption-small-font-size);
+}
+
+/* The operation the target under the pointer would perform. */
+.drag-ghost__badge {
+  position: absolute;
+  top: calc(-1 * var(--spacing-2));
+  left: calc(-1 * var(--spacing-2));
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--base-color-white);
+  background: var(--color-success-600);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+}
+
+.drag-ghost__badge--move {
+  background: var(--color-primary-600);
+}
+
+.drag-ghost__badge--link {
+  background: var(--color-info-600);
+}
+
+.drag-ghost__badge--none {
+  color: var(--color-content-secondary);
+  background: var(--color-surface-raised);
+}

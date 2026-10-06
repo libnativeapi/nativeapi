@@ -1,0 +1,44 @@
+.notes-window__page {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-3);
+  overflow: hidden;
+  color: var(--color-content);
+  background: var(--color-surface);
+  font-size: var(--body-small-font-size);
+  line-height: var(--body-small-line-height);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.notes-window__placeholder {
+  color: var(--color-content-faint);
+}
+
+.notes-window__caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.1em;
+  margin-inline-start: 1px;
+  vertical-align: text-bottom;
+  background: var(--color-primary-500);
+  animation: notes-window-blink 1s steps(1) infinite;
+}
+
+@keyframes notes-window-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.notes-window__foot {
+  padding: var(--spacing-1-5) var(--spacing-3);
+  color: var(--color-content-subtle);
+  border-top: var(--stroke-hairline) solid var(--color-border);
+  font-size: var(--caption-medium-font-size);
+}
+
+.notes-window .dz-window-frame__content {
+  display: flex;
+  flex-direction: column;
+}

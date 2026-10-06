@@ -1,0 +1,28 @@
+/* The Windows taskbar's app buttons take no pointer by default: this one restores the window. */
+.floating-toolbar-view__task {
+  all: unset;
+  pointer-events: auto;
+}
+
+.floating-toolbar-view__task.desktop-stage__app {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-medium);
+}
+
+/* Where the minimized window waits, like a dock tile. */
+.floating-toolbar-view__minimized.dz-card {
+  position: absolute;
+  flex-direction: row;
+  inset-inline: 0;
+  bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: max-content;
+  margin-inline: auto;
+  color: var(--color-content);
+  font-size: var(--body-small-font-size);
+}

@@ -1,0 +1,276 @@
+/* The app's icon: a squircle in the preset's colours, as setIcon hands it over. */
+.app-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--app-icon-size);
+  height: var(--app-icon-size);
+  flex-shrink: 0;
+  color: var(--color-on-accent);
+  background: linear-gradient(160deg, var(--color-primary-400), var(--color-primary-700));
+  border-radius: calc(var(--app-icon-size) * 0.24);
+  box-shadow: var(--shadow-xs);
+}
+
+.app-icon[data-preset='night'] {
+  background: linear-gradient(160deg, var(--color-neutral-700), var(--color-neutral-950));
+}
+
+.app-icon[data-preset='amber'] {
+  background: linear-gradient(160deg, var(--color-warning-300), var(--color-warning-600));
+}
+
+.app-icon[data-preset='beta'] {
+  background: linear-gradient(160deg, var(--color-success-400), var(--color-success-700));
+}
+
+.app-icon__ribbon {
+  position: absolute;
+  right: 6%;
+  top: 4%;
+  font-family: var(--base-font-code);
+  font-size: calc(var(--app-icon-size) * 0.28);
+  font-weight: var(--base-font-weight-bold);
+  line-height: 1;
+}
+
+/* The macOS Dock: a glass shelf along the foot of the desktop. */
+.app-dock {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  padding: var(--spacing-1-5);
+  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  border: var(--stroke-hairline) solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: var(--shadow-lg);
+}
+
+.app-dock--dock {
+  bottom: var(--spacing-2);
+  inset-inline: 0;
+  width: max-content;
+  margin-inline: auto;
+  border-radius: var(--radius-big);
+}
+
+/* Ubuntu Dock: a column down the left edge, under the top bar. */
+.app-dock--side {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--spacing-2) var(--spacing-1);
+  background: color-mix(in srgb, var(--base-color-black) 72%, transparent);
+  border: 0;
+  border-radius: 0;
+}
+
+.app-dock__tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+}
+
+.app-dock--side .app-dock__tile {
+  width: 46px;
+  height: 46px;
+}
+
+.app-dock__tile--other {
+  color: var(--color-content-secondary);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-large);
+}
+
+.app-dock--side .app-dock__tile--other {
+  width: 38px;
+  height: 38px;
+  margin: var(--spacing-1);
+  color: var(--base-color-white);
+  background: color-mix(in srgb, var(--base-color-white) 16%, transparent);
+}
+
+.app-dock__separator {
+  width: var(--stroke-hairline);
+  height: 36px;
+  background: var(--color-border-strong);
+}
+
+.app-dock--side .app-dock__separator {
+  width: 30px;
+  height: var(--stroke-hairline);
+  background: color-mix(in srgb, var(--base-color-white) 30%, transparent);
+}
+
+/* The Dock's badge: a red lozenge on the tile's top-right corner. */
+.app-dock__badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: var(--spacing-1-5);
+  color: var(--color-on-accent);
+  background: var(--color-danger-500);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-xs);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--caption-large-font-size);
+  font-weight: var(--label-strong-font-weight);
+  line-height: 20px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.app-dock__progress {
+  position: absolute;
+  inset-inline: 5px;
+  bottom: 5px;
+  height: 6px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--base-color-black) 45%, transparent);
+  border: var(--stroke-hairline) solid color-mix(in srgb, var(--base-color-white) 60%, transparent);
+  border-radius: var(--radius-full);
+}
+
+.app-dock__progress > span {
+  display: block;
+  height: 100%;
+  background: var(--base-color-white);
+  border-radius: var(--radius-full);
+  transition: width var(--motion-duration) var(--motion-easing);
+}
+
+.app-dock__progress[data-busy] > span {
+  width: 40%;
+  animation: app-dock-busy 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes app-dock-busy {
+  from {
+    transform: translateX(-10%);
+  }
+  to {
+    transform: translateX(160%);
+  }
+}
+
+.app-dock__running {
+  position: absolute;
+  bottom: -5px;
+  width: 4px;
+  height: 4px;
+  background: var(--color-content);
+  border-radius: var(--radius-full);
+}
+
+/* A hidden app keeps its dot: it still runs. */
+.app-dock__running[data-hidden] {
+  opacity: 0.45;
+}
+
+.app-dock--side .app-dock__running {
+  left: -3px;
+  bottom: auto;
+  background: var(--color-warning-400);
+}
+
+/* The taskbar button the desktop gives the app's windows. */
+.taskbar-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-medium);
+  pointer-events: auto;
+}
+
+.taskbar-button[data-active] {
+  background: color-mix(in srgb, var(--color-content) 9%, transparent);
+}
+
+/* Windows fills the whole button from the left. */
+.taskbar-button--windows .taskbar-button__progress {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: calc(var(--taskbar-progress) * 100%);
+  background: color-mix(in srgb, var(--color-success-500) 45%, transparent);
+  transition: width var(--motion-duration) var(--motion-easing);
+}
+
+/* KDE draws a bar along the task's foot. */
+.taskbar-button--kde .taskbar-button__progress {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  height: 3px;
+  width: calc(var(--taskbar-progress) * (100% - 6px));
+  background: var(--color-success-500);
+  border-radius: var(--radius-full);
+}
+
+.taskbar-button[data-busy] .taskbar-button__progress {
+  width: 45%;
+  animation: taskbar-busy 1.3s linear infinite;
+}
+
+@keyframes taskbar-busy {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(230%);
+  }
+}
+
+.taskbar-button .app-icon {
+  position: relative;
+}
+
+/* The overlay icon: the badge as a small disc over the icon's corner. */
+.taskbar-button__badge {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 3px;
+  color: var(--color-on-accent);
+  background: var(--color-danger-500);
+  border: var(--stroke-control) solid var(--color-surface-chrome);
+  border-radius: var(--radius-full);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--caption-small-font-size);
+  font-weight: var(--label-strong-font-weight);
+  line-height: 13px;
+  text-align: center;
+}
+
+.taskbar-button__running {
+  position: absolute;
+  bottom: 1px;
+  width: 6px;
+  height: 3px;
+  background: var(--color-content-subtle);
+  border-radius: var(--radius-full);
+}
+
+.taskbar-button[data-active] .taskbar-button__running {
+  width: 16px;
+  background: var(--color-primary-500);
+}

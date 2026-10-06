@@ -1,0 +1,164 @@
+/*
+ * A diagram, not a control: the bezel is ink over the card, so the bars'
+ * strips read in light and dark alike; this window is the warning hue and
+ * the cursor the danger one, as in the Flutter example.
+ */
+.display-canvas {
+  --display-bezel: color-mix(in srgb, var(--color-content) 24%, var(--color-surface-muted));
+  --display-window: var(--color-warning-600);
+  --display-cursor: var(--color-danger-600);
+
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.display-canvas__display {
+  position: absolute;
+  overflow: hidden;
+  padding: 0;
+  color: var(--color-content);
+  background: var(--display-bezel);
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    left var(--motion-duration) var(--motion-easing),
+    top var(--motion-duration) var(--motion-easing),
+    width var(--motion-duration) var(--motion-easing),
+    height var(--motion-duration) var(--motion-easing);
+}
+
+.display-canvas__display--selected {
+  border: 2px solid var(--color-primary-600);
+  box-shadow: var(--shadow-sm);
+}
+
+.display-canvas__work {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-raised);
+}
+
+.display-canvas__display--selected .display-canvas__work {
+  color: var(--color-primary-700);
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-surface) * 100%), var(--color-surface-raised));
+}
+
+.display-canvas__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-0-5);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--spacing-1);
+  color: var(--color-content-muted);
+}
+
+.display-canvas__display--selected .display-canvas__label {
+  color: inherit;
+}
+
+.display-canvas__name {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.display-canvas__display:not(.display-canvas__display--selected) .display-canvas__name {
+  color: var(--color-content);
+}
+
+.display-canvas__size {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  white-space: nowrap;
+}
+
+.display-canvas__window {
+  position: absolute;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--display-window) calc(var(--wash-surface) * 200%), transparent);
+  border: 1.5px solid var(--display-window);
+  border-radius: var(--radius-tiny);
+  pointer-events: none;
+}
+
+.display-canvas__window-title {
+  display: block;
+  overflow: hidden;
+  padding: 0 var(--spacing-1);
+  color: var(--color-warning-700);
+  background: color-mix(in srgb, var(--display-window) calc(var(--wash-edge) * 100%), transparent);
+  font-size: var(--caption-small-font-size);
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.display-canvas__cursor {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  background: var(--display-cursor);
+  border: 2px solid var(--color-surface-raised);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 4px 1px color-mix(in srgb, var(--display-cursor) 40%, transparent);
+  pointer-events: none;
+}
+
+.display-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-1) var(--spacing-4);
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.display-canvas-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.display-canvas-legend i {
+  width: 12px;
+  height: 12px;
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-tiny);
+}
+
+.display-canvas-legend__work {
+  background: var(--color-surface-raised);
+}
+
+.display-canvas-legend__bezel {
+  background: color-mix(in srgb, var(--color-content) 24%, var(--color-surface-muted));
+}
+
+.display-canvas-legend__window {
+  background: color-mix(in srgb, var(--color-warning-600) calc(var(--wash-edge) * 100%), transparent);
+  border-color: var(--color-warning-600) !important;
+}
+
+.display-canvas-legend__cursor {
+  background: var(--color-danger-600);
+  border-radius: var(--radius-full) !important;
+}
+
+.display-canvas-legend__hint {
+  color: var(--color-content-faint);
+}

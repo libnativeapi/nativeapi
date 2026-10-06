@@ -1,0 +1,5 @@
+/* The hint stands beside the HUD, not under it. */
+.browser-tabs-view .desktop-stage__hint--corner {
+  inset-inline: calc(340px + var(--spacing-8)) var(--spacing-4);
+  margin-inline: 0 auto;
+}

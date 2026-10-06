@@ -1,0 +1,50 @@
+.message-dialog-view__ok {
+  color: var(--color-success-500);
+}
+
+.message-dialog-view__plain {
+  color: var(--color-content-faint);
+}
+
+/* The example's window, with what a dialog lays over it. */
+.message-dialog-view__host {
+  position: relative;
+  display: flex;
+}
+
+/* A modal dialog's owner: dimmed a little, and deaf to clicks. */
+.message-dialog-view__blocker {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--color-canvas) 18%, transparent);
+  border-radius: var(--frame-window-radius);
+  cursor: not-allowed;
+}
+
+/* WinUI 3's smoke layer over the parent's client area. */
+.message-dialog-view__blocker[data-smoke] {
+  background: color-mix(in srgb, var(--base-color-black) 38%, transparent);
+}
+
+.message-dialog-view__in-window,
+.message-dialog-view__sheet {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+}
+
+.message-dialog-view__in-window {
+  top: 0;
+  bottom: 0;
+  align-items: center;
+}
+
+/* The sheet hangs from the window's top edge, over the sidebar and band. */
+.message-dialog-view__sheet {
+  top: 0;
+  overflow: hidden;
+  padding-bottom: var(--spacing-8);
+}

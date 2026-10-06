@@ -1,0 +1,147 @@
+.main-window[data-platform='omarchy'] .dz-window-frame__content,
+.floating-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.main-window__row,
+.main-window__column {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.main-window__column {
+  flex-direction: column;
+}
+
+/* The example's slots — 240 wide, 210 and 170 tall, 330 wide — scaled with the window. */
+.main-window__slot {
+  display: flex;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.main-window__slot--sidebar {
+  width: 200px;
+  border-inline-end: var(--stroke-hairline) solid var(--color-border);
+}
+
+.main-window__slot--bottom {
+  height: 170px;
+  border-top: var(--stroke-hairline) solid var(--color-border);
+}
+
+.main-window__slot--top {
+  height: 150px;
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.main-window__slot--wide {
+  width: 240px;
+  border-inline-start: var(--stroke-hairline) solid var(--color-border);
+}
+
+.dock-slot {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dock-slot__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  color: var(--color-content-subtle);
+  background: var(--color-surface-sunken);
+  transition:
+    background var(--motion-duration) var(--motion-easing),
+    color var(--motion-duration) var(--motion-easing);
+}
+
+.dock-slot__empty strong {
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+}
+
+.dock-slot__empty code {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+/* While a panel's window is dragged, every free slot says it takes one; the one under the cursor says it will. */
+.dock-slot[data-lit] .dock-slot__empty {
+  color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface));
+}
+
+.dock-slot[data-target] .dock-slot__empty {
+  color: var(--color-primary-600);
+  background: color-mix(in srgb, var(--color-primary-500) 24%, var(--color-surface));
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-surface);
+}
+
+.workspace__title {
+  margin: 0;
+  color: var(--color-content);
+  font-family: var(--title-large-font-family);
+  font-size: var(--title-large-font-size);
+  font-weight: var(--title-large-font-weight);
+  line-height: var(--title-large-line-height);
+}
+
+.workspace__text {
+  margin: 0;
+  color: var(--color-content-muted);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.workspace__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-1);
+}
+
+.workspace__activity {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.workspace__activity ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-content);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.workspace__empty {
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+.floating-window__content {
+  display: flex;
+  flex-shrink: 0;
+}

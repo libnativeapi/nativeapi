@@ -1,0 +1,14 @@
+.backdrop-window {
+  display: flex;
+}
+
+/* `setBackgroundColor(red)`: the whole window, its title bar included. */
+.backdrop-window__frame.dz-window-frame {
+  color: var(--base-color-white);
+  background: var(--base-color-red-600);
+}
+
+.backdrop-window__frame .dz-window-frame__title,
+.backdrop-window__frame .dz-window-frame__subtitle {
+  color: var(--base-color-white);
+}

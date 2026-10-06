@@ -1,0 +1,68 @@
+/* Measures the stage: the primary display the pointer and the window are read against. */
+.display-view__probe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.display-view__frame {
+  display: flex;
+}
+
+.display-view__trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.display-view__arrangement {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.display-view__canvas-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-height: 0;
+}
+
+/* The live read-outs, under every tab: what getCursorPosition and the window's bounds return. */
+.display-view__status {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  padding: var(--spacing-1-5) var(--spacing-4);
+  color: var(--color-content-secondary);
+  background: var(--color-surface-sunken);
+  border-top: var(--stroke-hairline) solid var(--color-border);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.display-view__status > svg {
+  flex-shrink: 0;
+  color: var(--color-content-muted);
+}
+
+.display-view__status > svg:not(:first-child) {
+  margin-inline-start: var(--spacing-3);
+}
+
+.display-view__status-window {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display-view__status-note {
+  color: var(--color-content-faint);
+  font-family: var(--body-small-font-family);
+}

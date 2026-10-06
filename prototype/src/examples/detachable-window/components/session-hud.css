@@ -1,0 +1,18 @@
+/* A tool panel on the desktop, not a window: it belongs to the prototype, not the app. */
+.detach-hud {
+  position: absolute;
+  left: var(--spacing-4);
+  bottom: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 380px;
+  padding: var(--spacing-3);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-overlay) 92%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+}
+

@@ -1,0 +1,5 @@
+# A workspace of its own: the repository root is an npm workspace that does not list prototype/.
+allowBuilds:
+  esbuild: true
+  # DazzUI builds on install (its prepare script); keep the commit in step with package.json.
+  "@dazzlabs/dazzui@git+https://github.com/dazzlabs/dazzui.git#1202e347c14aee4705bf066a4f9c208565f6bab4&path:/packages/js/dazzui": true

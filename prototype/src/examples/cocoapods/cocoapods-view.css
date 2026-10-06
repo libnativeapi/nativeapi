@@ -1,0 +1,33 @@
+.cocoapods-view__checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+}
+
+.cocoapods-view__heading {
+  margin: 0;
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  line-height: var(--title-small-line-height);
+}
+
+.cocoapods-view__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.cocoapods-view__pass {
+  color: var(--color-success-500);
+}
+
+.cocoapods-view__fail {
+  color: var(--color-danger-500);
+}
+
+.cocoapods-view__idle {
+  color: var(--color-content-faint);
+}

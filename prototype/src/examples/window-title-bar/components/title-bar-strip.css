@@ -1,0 +1,38 @@
+/* The example's strip: drawn in the theme's chrome colours, 44px, a hairline under it. */
+.title-bar-strip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  height: 44px;
+  padding-inline: var(--spacing-4) var(--spacing-2-5);
+  background: var(--color-surface-chrome);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  touch-action: none;
+  cursor: grab;
+}
+
+.title-bar-strip:active {
+  cursor: grabbing;
+}
+
+/* Clear of the traffic lights that float over it. */
+.title-bar-strip[data-under] {
+  padding-inline-start: 78px;
+}
+
+.title-bar-strip__grip {
+  color: var(--color-content-muted);
+}
+
+.title-bar-strip__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-content);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

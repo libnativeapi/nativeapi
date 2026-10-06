@@ -1,0 +1,108 @@
+.tab-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.tab-page__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-0-5);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.tab-page__address {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: var(--spacing-1);
+}
+
+.tab-page__address > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The lock sits inside the field, where a browser draws it. */
+.tab-page__address input {
+  padding-inline-start: calc(var(--spacing-2) + var(--icon-small) + var(--spacing-1));
+}
+
+.tab-page__lock {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--spacing-2);
+  z-index: 1;
+  margin-block: auto;
+  color: var(--color-content-muted);
+  pointer-events: none;
+}
+
+.tab-page__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-5) var(--spacing-6);
+}
+
+.tab-page__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-5);
+}
+
+.tab-page__title {
+  margin: 0;
+  color: var(--color-content);
+  font-family: var(--headline-small-font-family);
+  font-size: var(--headline-small-font-size);
+  font-weight: var(--headline-small-font-weight);
+  line-height: var(--headline-small-line-height);
+}
+
+.tab-page__state {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-3);
+}
+
+.tab-page__hint {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+/* Placeholder paragraphs in the tab's colour, so the page and its scroll position are recognisable in any window. */
+.tab-page__paragraph {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  margin-bottom: var(--spacing-3);
+  padding-inline: var(--spacing-4);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--tab-color) 8%, transparent);
+  border: var(--stroke-hairline) solid color-mix(in srgb, var(--tab-color) 30%, transparent);
+  border-radius: var(--radius-large);
+  font-size: var(--body-small-font-size);
+}
+
+.tab-page__paragraph[data-shade='1'] {
+  background: color-mix(in srgb, var(--tab-color) 13%, transparent);
+}
+
+.tab-page__paragraph[data-shade='2'] {
+  background: color-mix(in srgb, var(--tab-color) 18%, transparent);
+}

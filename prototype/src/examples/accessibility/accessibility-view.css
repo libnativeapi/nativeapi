@@ -1,0 +1,100 @@
+.accessibility-view__hero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.accessibility-view__shield {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  color: var(--color-warning-600);
+  background: color-mix(in srgb, var(--color-warning-500) 14%, transparent);
+  border-radius: var(--radius-big);
+}
+
+.accessibility-view__hero[data-trusted] .accessibility-view__shield {
+  color: var(--color-success-600);
+  background: color-mix(in srgb, var(--color-success-500) 14%, transparent);
+}
+
+.accessibility-view__hero-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.accessibility-view__hero-text strong {
+  color: var(--color-content);
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+  line-height: var(--title-medium-line-height);
+}
+
+.accessibility-view__hero-text span {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.accessibility-view__hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-1);
+}
+
+.accessibility-view__hero-text .accessibility-view__source {
+  color: var(--color-content-subtle);
+  font-family: var(--body-small-font-family);
+}
+
+.accessibility-view__calls {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+}
+
+.accessibility-view__ok {
+  color: var(--color-success-500);
+}
+
+.accessibility-view__warn {
+  color: var(--color-warning-500);
+}
+
+.accessibility-view__here {
+  margin-inline-start: var(--spacing-1-5);
+}
+
+.accessibility-view__behaviour {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.accessibility-view__behaviour b {
+  margin-inline-end: var(--spacing-1);
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-weight: var(--body-medium-font-weight);
+}
+
+/* The system's alert stands over every window, in the middle of the screen. */
+.accessibility-view__prompt {
+  position: absolute;
+  top: 18%;
+  inset-inline: 0;
+  width: max-content;
+  margin-inline: auto;
+}
+
+.accessibility-view__behaviour > span {
+  white-space: normal;
+}

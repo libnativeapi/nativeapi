@@ -1,0 +1,34 @@
+/* The window: nothing painted, its bounds outlined only while hovered. */
+.toolbar-window {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: var(--stroke-hairline) dashed transparent;
+  border-radius: var(--radius-small);
+  transition: border-color var(--motion-duration) var(--motion-easing);
+}
+
+.toolbar-window:hover {
+  border-color: color-mix(in srgb, var(--color-content) 35%, transparent);
+}
+
+.toolbar-window__pill {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-0-5);
+  height: 48px;
+  padding-inline: var(--spacing-2);
+  background: var(--color-surface-raised);
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-xs);
+}
+
+.toolbar-window__pill[data-draggable] {
+  cursor: grab;
+}
+
+.toolbar-window__divider {
+  height: var(--spacing-5);
+  margin-inline: var(--spacing-1-5);
+}

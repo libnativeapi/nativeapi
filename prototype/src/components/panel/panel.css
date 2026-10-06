@@ -1,0 +1,89 @@
+/*
+ * An example's tab: a scrolling column of settings and read-backs. A tool
+ * window, not a settings page: DazzUI's preference spacing, tightened.
+ */
+.example-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+}
+
+.example-panel__preferences {
+  --preferences-group-gap: var(--spacing-3);
+  --preferences-section-gap: var(--spacing-3);
+  --preferences-title-gap: var(--spacing-1);
+  --preferences-row-gap: 0;
+  --preferences-row-padding: var(--spacing-1);
+
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.example-panel__preferences .dz-preference-section__rows {
+  gap: var(--spacing-3);
+}
+
+.example-panel__preferences .dz-preference-row {
+  min-height: var(--control-small-size);
+}
+
+.example-panel__preferences .dz-preference-row__icon {
+  --dz-icon-size: var(--icon-small);
+}
+
+/* A list to scan: rows as tight as their controls allow. */
+.example-panel__preferences--dense {
+  --preferences-row-padding: 0;
+}
+
+.example-panel__preferences--dense .dz-preference-row {
+  min-height: var(--control-tiny-size);
+}
+
+/* What a row reports rather than sets: a value in code type. */
+.example-panel__value {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.example-panel__note {
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+/* A run of buttons under a section. */
+.example-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1-5);
+}
+
+/* A row of tiles: equal columns, as many as the panel asks for. */
+.example-panel__tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--example-tiles, 4), minmax(0, 1fr));
+  gap: var(--spacing-1-5);
+}
+
+.example-panel__tile {
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-1);
+}
+
+.example-panel__tile-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+  text-align: center;
+}

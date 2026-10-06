@@ -1,0 +1,50 @@
+/* A macOS system alert: no title bar, the app's icon on top, the buttons stacked. */
+.system-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 270px;
+  padding: var(--spacing-5) var(--spacing-4) var(--spacing-4);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-big);
+  box-shadow: var(--shadow-2xl);
+  backdrop-filter: blur(30px) saturate(1.6);
+  text-align: center;
+}
+
+.system-prompt strong {
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+}
+
+.system-prompt p {
+  margin: 0;
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.system-prompt__detail {
+  color: var(--color-content-secondary);
+}
+
+.system-prompt__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  color: var(--color-on-accent);
+  background: linear-gradient(160deg, var(--color-primary-400), var(--color-primary-700));
+  border-radius: var(--radius-big);
+}
+
+.system-prompt__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+  width: 100%;
+  margin-top: var(--spacing-2);
+}

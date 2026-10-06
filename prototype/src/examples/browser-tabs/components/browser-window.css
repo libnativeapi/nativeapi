@@ -1,0 +1,120 @@
+/*
+ * The strip is 40px and the traffic lights centre in it: the frame's floating
+ * chrome band is told the strip's height.
+ */
+.browser-window {
+  --dz-window-titlebar-height: 40px;
+}
+
+/* Hyprland draws no title bar: the strip reaches the border. */
+.browser-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.browser-window__strip {
+  position: relative;
+  flex-shrink: 0;
+  height: 40px;
+  overflow: hidden;
+  background: var(--color-surface-chrome);
+  touch-action: none;
+}
+
+/* The rule under the strip, below the tabs so the active one covers it. */
+.browser-window__strip::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  pointer-events: none;
+}
+
+.browser-tab {
+  position: absolute;
+  top: 6px;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  box-sizing: border-box;
+  margin-inline: 1px;
+  padding-inline: var(--spacing-2-5) var(--spacing-0-5);
+  color: var(--color-content-muted);
+  border-radius: var(--radius-large) var(--radius-large) 0 0;
+  font-family: var(--label-quiet-font-family);
+  font-size: var(--label-quiet-font-size);
+  font-weight: var(--label-quiet-font-weight);
+  transition:
+    left 160ms ease-out,
+    width 160ms ease-out;
+}
+
+.browser-tab:not([data-active]):hover {
+  background: color-mix(in srgb, var(--color-content) 6%, transparent);
+}
+
+/* The active tab is the page's own surface: it covers the rule and runs into the toolbar. */
+.browser-tab[data-active] {
+  color: var(--color-content);
+  background: var(--color-surface);
+  font-family: var(--label-small-font-family);
+  font-size: var(--label-small-font-size);
+  font-weight: var(--label-small-font-weight);
+}
+
+.browser-tab[data-lifted] {
+  z-index: 2;
+  box-shadow: var(--shadow-md);
+}
+
+/* Under the cursor, not easing into a slot. */
+.browser-tab[data-sliding] {
+  transition: width 160ms ease-out;
+}
+
+.browser-tab__dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.browser-tab__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, black calc(100% - var(--spacing-4)), transparent);
+}
+
+.browser-tab__close {
+  flex-shrink: 0;
+}
+
+.browser-window__new-tab,
+.browser-window__close {
+  position: absolute;
+  top: 6px;
+  bottom: 4px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+
+.browser-window__new-tab {
+  transition: left 160ms ease-out;
+}
+
+.browser-window__close {
+  top: 4px;
+  right: 4px;
+  width: 40px;
+}
+
+.browser-window__page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}

@@ -1,0 +1,149 @@
+/* A taskbar button: the shared stage centres them and lets presses through to them only. */
+.window-dock__task {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--color-content);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-medium);
+  pointer-events: auto;
+  cursor: default;
+}
+
+.window-dock__task:hover,
+.window-dock__task[data-active] {
+  background: color-mix(in srgb, var(--color-content) 8%, transparent);
+}
+
+.window-dock__task svg {
+  color: var(--color-primary-500);
+}
+
+/* The running indicator: wide under the active window, a dot under the rest. */
+.window-dock__task::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 6px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-content-faint);
+}
+
+.window-dock__task[data-active]::after {
+  width: 16px;
+  background: var(--color-primary-500);
+}
+
+.window-dock__task[data-minimized] {
+  opacity: 0.6;
+}
+
+.window-dock__task-number {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  min-width: 14px;
+  padding-inline: var(--spacing-0-5);
+  color: var(--color-content-secondary);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-small-font-size);
+  line-height: 14px;
+}
+
+/* The Dock, or the Linux shelf: a strip at the foot of the desktop. */
+.window-dock {
+  position: absolute;
+  left: 50%;
+  bottom: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-surface) 62%, transparent);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-md);
+}
+
+.window-dock--mac {
+  border-radius: var(--radius-big);
+}
+
+.window-dock__label {
+  padding-inline: var(--spacing-1);
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+.window-dock__app {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-on-accent);
+  background: var(--color-primary-500);
+  border: 0;
+  border-radius: var(--radius-large);
+  cursor: default;
+}
+
+.window-dock__running {
+  position: absolute;
+  bottom: -5px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-content);
+}
+
+.window-dock__divider {
+  align-self: stretch;
+  width: var(--stroke-hairline);
+  margin-block: var(--spacing-1);
+  background: var(--color-border-strong);
+}
+
+.window-dock__thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-0-5);
+  width: 64px;
+  height: 44px;
+  padding: var(--spacing-1);
+  overflow: hidden;
+  color: var(--color-content);
+  background: var(--color-surface);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-small);
+  font-size: var(--caption-small-font-size);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.window-dock__thumb span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.window-dock__thumb:hover {
+  border-color: var(--color-primary-400);
+}
+
+.window-dock:not(.window-dock--mac) .window-dock__thumb {
+  flex-direction: row;
+  width: auto;
+  height: auto;
+  padding: var(--spacing-1) var(--spacing-2);
+}

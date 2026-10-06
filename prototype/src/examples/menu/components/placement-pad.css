@@ -1,0 +1,80 @@
+.placement-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.placement-pad__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 3rem);
+  grid-template-rows: repeat(5, var(--control-tiny-size));
+  gap: var(--spacing-0-5);
+}
+
+.placement-pad__cell {
+  padding: 0;
+  color: var(--color-content-secondary);
+  background: transparent;
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  font-family: var(--caption-large-font-family);
+  font-size: var(--caption-large-font-size);
+}
+
+.placement-pad__cell:hover {
+  background: var(--control-color-normal-surface-hovered);
+}
+
+.placement-pad__cell--active {
+  color: var(--color-primary-700);
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-surface) * 100%), transparent);
+  border-color: var(--color-primary-600);
+}
+
+/* The anchor point, with the menu sketched where the placement puts it. */
+.placement-pad__point {
+  position: relative;
+  grid-row: 3;
+  grid-column: 3;
+  place-self: center;
+  width: 6px;
+  height: 6px;
+  background: var(--color-danger-600);
+  border-radius: var(--radius-full);
+}
+
+.placement-pad__sketch {
+  --w: 26px;
+  --h: 20px;
+
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: var(--w);
+  height: var(--h);
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-edge) * 100%), transparent);
+  border: var(--stroke-hairline) solid var(--color-primary-600);
+  border-radius: var(--radius-tiny);
+  transition: transform var(--motion-duration) var(--motion-easing);
+}
+
+.placement-pad__sketch[data-placement='bottomStart'] { transform: translate(0, 0); }
+.placement-pad__sketch[data-placement='bottom'] { transform: translate(-50%, 0); }
+.placement-pad__sketch[data-placement='bottomEnd'] { transform: translate(-100%, 0); }
+.placement-pad__sketch[data-placement='topStart'] { transform: translate(0, -100%); }
+.placement-pad__sketch[data-placement='top'] { transform: translate(-50%, -100%); }
+.placement-pad__sketch[data-placement='topEnd'] { transform: translate(-100%, -100%); }
+.placement-pad__sketch[data-placement='rightStart'] { transform: translate(0, 0); }
+.placement-pad__sketch[data-placement='right'] { transform: translate(0, -50%); }
+.placement-pad__sketch[data-placement='rightEnd'] { transform: translate(0, -100%); }
+.placement-pad__sketch[data-placement='leftStart'] { transform: translate(-100%, 0); }
+.placement-pad__sketch[data-placement='left'] { transform: translate(-100%, -50%); }
+.placement-pad__sketch[data-placement='leftEnd'] { transform: translate(-100%, -100%); }
+
+.placement-pad__name {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+}
