@@ -446,12 +446,20 @@ export class Window extends NativeObject {
     return native.native_window_is_visible_in_taskbar(this.nativeHandle);
   }
 
-  setIgnoreMouseEvents(isIgnoreMouseEvents: boolean): void {
-    native.native_window_set_ignore_mouse_events(this.nativeHandle, isIgnoreMouseEvents);
+  setIgnoreMouseEvents(isIgnoreMouseEvents: boolean, forward: boolean): boolean {
+    return native.native_window_set_ignore_mouse_events(this.nativeHandle, isIgnoreMouseEvents, forward);
   }
 
   get isIgnoreMouseEvents(): boolean {
     return native.native_window_is_ignore_mouse_events(this.nativeHandle);
+  }
+
+  get isMouseMoveForwardingEnabled(): boolean {
+    return native.native_window_is_mouse_move_forwarding_enabled(this.nativeHandle);
+  }
+
+  static isMouseMoveForwardingSupported(): boolean {
+    return native.native_window_is_mouse_move_forwarding_supported();
   }
 
   setFocusable(isFocusable: boolean): void {

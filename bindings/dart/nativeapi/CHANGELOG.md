@@ -1,5 +1,12 @@
 ## 0.4.1
 
+* `Window.setIgnoreMouseEvents(ignore, forward)` now returns whether the native
+  policy was applied. Linux implements pass-through and restores input shapes;
+  macOS, Windows and X11 can forward hover movement while clicks pass through.
+  Use `isMouseMoveForwardingEnabled` and `isMouseMoveForwardingSupported()` to
+  inspect forwarding. Wayland rejects forwarding without changing the policy.
+  This method replaces the `isIgnoreMouseEvents` setter; the getter is retained.
+
 * `Window.showSystemMenu(Point)` and `Window.isSystemMenuSupported()`: native
   system window menu on Windows and supporting Linux window managers. Positions
   are logical pixels relative to the content area. Windows keeps command states

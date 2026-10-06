@@ -1182,10 +1182,17 @@ unsafe extern "C" {
     pub fn native_window_set_ignore_mouse_events(
         window: native_window_t,
         is_ignore_mouse_events: bool,
-    );
+        forward: bool,
+    ) -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_is_ignore_mouse_events(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_mouse_move_forwarding_enabled(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_mouse_move_forwarding_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_set_focusable(window: native_window_t, is_focusable: bool);

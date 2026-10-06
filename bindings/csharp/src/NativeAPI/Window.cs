@@ -773,9 +773,10 @@ public sealed partial class Window : IDisposable
         }
     }
 
-    public void SetIgnoreMouseEvents(bool isIgnoreMouseEvents)
+    public bool SetIgnoreMouseEvents(bool isIgnoreMouseEvents, bool forward)
     {
-        Interop.native_window_set_ignore_mouse_events(NativeHandle, isIgnoreMouseEvents);
+        var rawResult = Interop.native_window_set_ignore_mouse_events(NativeHandle, isIgnoreMouseEvents, forward);
+        return rawResult;
     }
 
     public bool IsIgnoreMouseEvents
@@ -785,6 +786,21 @@ public sealed partial class Window : IDisposable
             var rawResult = Interop.native_window_is_ignore_mouse_events(NativeHandle);
             return rawResult;
         }
+    }
+
+    public bool IsMouseMoveForwardingEnabled
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_mouse_move_forwarding_enabled(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public static bool IsMouseMoveForwardingSupported()
+    {
+        var rawResult = Interop.native_window_is_mouse_move_forwarding_supported();
+        return rawResult;
     }
 
     public void SetFocusable(bool isFocusable)

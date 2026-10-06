@@ -726,12 +726,24 @@ class Window {
     return c.native_window_is_visible_in_taskbar(nativeHandle);
   }
 
-  set isIgnoreMouseEvents(bool value) {
-    c.native_window_set_ignore_mouse_events(nativeHandle, value);
+  bool setIgnoreMouseEvents(bool isIgnoreMouseEvents, bool forward) {
+    return c.native_window_set_ignore_mouse_events(
+      nativeHandle,
+      isIgnoreMouseEvents,
+      forward,
+    );
   }
 
   bool get isIgnoreMouseEvents {
     return c.native_window_is_ignore_mouse_events(nativeHandle);
+  }
+
+  bool get isMouseMoveForwardingEnabled {
+    return c.native_window_is_mouse_move_forwarding_enabled(nativeHandle);
+  }
+
+  static bool isMouseMoveForwardingSupported() {
+    return c.native_window_is_mouse_move_forwarding_supported();
   }
 
   set isFocusable(bool value) {

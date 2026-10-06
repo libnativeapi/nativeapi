@@ -782,15 +782,27 @@ impl Window {
         }
     }
 
-    pub fn set_ignore_mouse_events(&self, is_ignore_mouse_events: bool) {
+    pub fn set_ignore_mouse_events(&self, is_ignore_mouse_events: bool, forward: bool) -> bool {
         unsafe {
-            cnativeapi::native_window_set_ignore_mouse_events(self.handle, is_ignore_mouse_events);
+            cnativeapi::native_window_set_ignore_mouse_events(self.handle, is_ignore_mouse_events, forward)
         }
     }
 
     pub fn is_ignore_mouse_events(&self) -> bool {
         unsafe {
             cnativeapi::native_window_is_ignore_mouse_events(self.handle)
+        }
+    }
+
+    pub fn is_mouse_move_forwarding_enabled(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_mouse_move_forwarding_enabled(self.handle)
+        }
+    }
+
+    pub fn is_mouse_move_forwarding_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_mouse_move_forwarding_supported()
         }
     }
 

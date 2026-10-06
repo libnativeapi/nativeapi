@@ -2456,9 +2456,10 @@ native_window_is_visible_in_taskbar = function(
 )
 native_window_set_ignore_mouse_events = function(
     "native_window_set_ignore_mouse_events",
-    None,
+    c_bool,
     [
         c_uint64,
+        c_bool,
         c_bool,
     ],
 )
@@ -2467,6 +2468,19 @@ native_window_is_ignore_mouse_events = function(
     c_bool,
     [
         c_uint64,
+    ],
+)
+native_window_is_mouse_move_forwarding_enabled = function(
+    "native_window_is_mouse_move_forwarding_enabled",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_mouse_move_forwarding_supported = function(
+    "native_window_is_mouse_move_forwarding_supported",
+    c_bool,
+    [
     ],
 )
 native_window_set_focusable = function(

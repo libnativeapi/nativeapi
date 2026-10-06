@@ -564,12 +564,31 @@ class Window(_rt.NativeObject):
         raw = _C.native_window_is_visible_in_taskbar(self._handle)
         return raw
 
-    def set_ignore_mouse_events(self, is_ignore_mouse_events: bool) -> None:
-        _C.native_window_set_ignore_mouse_events(self._handle, is_ignore_mouse_events)
+    def set_ignore_mouse_events(
+        self,
+        is_ignore_mouse_events: bool,
+        forward: bool,
+    ) -> bool:
+        raw = _C.native_window_set_ignore_mouse_events(
+            self._handle,
+            is_ignore_mouse_events,
+            forward,
+        )
+        return raw
 
     @property
     def is_ignore_mouse_events(self) -> bool:
         raw = _C.native_window_is_ignore_mouse_events(self._handle)
+        return raw
+
+    @property
+    def is_mouse_move_forwarding_enabled(self) -> bool:
+        raw = _C.native_window_is_mouse_move_forwarding_enabled(self._handle)
+        return raw
+
+    @staticmethod
+    def is_mouse_move_forwarding_supported() -> bool:
+        raw = _C.native_window_is_mouse_move_forwarding_supported()
         return raw
 
     def set_focusable(self, is_focusable: bool) -> None:

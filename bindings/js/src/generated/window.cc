@@ -1595,8 +1595,12 @@ napi_value Js_native_window_set_ignore_mouse_events(napi_env env, napi_callback_
   if (!GetBool(env, args[1], &p0)) {
     return nullptr;
   }
-  OnMainThread([&] { return native_window_set_ignore_mouse_events(self, p0); });
-  return Undefined(env);
+  bool p1 = {};
+  if (!GetBool(env, args[2], &p1)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_ignore_mouse_events(self, p0, p1); });
+  return Value::Bool(result).ToJs(env);
 }
 
 napi_value Js_native_window_is_ignore_mouse_events(napi_env env, napi_callback_info info) {
@@ -1611,6 +1615,32 @@ napi_value Js_native_window_is_ignore_mouse_events(napi_env env, napi_callback_i
     return nullptr;
   }
   auto result = OnMainThread([&] { return native_window_is_ignore_mouse_events(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_mouse_move_forwarding_enabled(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_mouse_move_forwarding_enabled(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_mouse_move_forwarding_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_mouse_move_forwarding_supported(); });
   return Value::Bool(result).ToJs(env);
 }
 
@@ -1813,6 +1843,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_is_visible_in_taskbar", Js_native_window_is_visible_in_taskbar);
   Export(env, exports, "native_window_set_ignore_mouse_events", Js_native_window_set_ignore_mouse_events);
   Export(env, exports, "native_window_is_ignore_mouse_events", Js_native_window_is_ignore_mouse_events);
+  Export(env, exports, "native_window_is_mouse_move_forwarding_enabled", Js_native_window_is_mouse_move_forwarding_enabled);
+  Export(env, exports, "native_window_is_mouse_move_forwarding_supported", Js_native_window_is_mouse_move_forwarding_supported);
   Export(env, exports, "native_window_set_focusable", Js_native_window_set_focusable);
   Export(env, exports, "native_window_is_focusable", Js_native_window_is_focusable);
   Export(env, exports, "native_window_show_system_menu", Js_native_window_show_system_menu);

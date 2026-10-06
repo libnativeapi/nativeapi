@@ -131,6 +131,12 @@ impl WindowExample {
                 (format!("Window #{window_id} maximized"), None)
             }
             WindowEvent::Restored { window_id } => (format!("Window #{window_id} restored"), None),
+            WindowEvent::EnteredFullScreen { window_id } => {
+                (format!("Window #{window_id} entered fullscreen"), None)
+            }
+            WindowEvent::ExitedFullScreen { window_id } => {
+                (format!("Window #{window_id} exited fullscreen"), None)
+            }
             WindowEvent::Created { window_id } => {
                 (format!("Window #{window_id} created (first shown)"), None)
             }

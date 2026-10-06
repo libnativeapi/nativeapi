@@ -2539,6 +2539,12 @@ external bool native_window_is_minimizable(int window);
 external bool native_window_is_minimized(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_mouse_move_forwarding_enabled(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_mouse_move_forwarding_supported();
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_movable(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
@@ -2758,10 +2764,11 @@ external void native_window_set_full_screenable(
 @ffi.Native<ffi.Void Function(native_window_t, ffi.Bool)>()
 external void native_window_set_has_shadow(int window, bool has_shadow);
 
-@ffi.Native<ffi.Void Function(native_window_t, ffi.Bool)>()
-external void native_window_set_ignore_mouse_events(
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.Bool, ffi.Bool)>()
+external bool native_window_set_ignore_mouse_events(
   int window,
   bool is_ignore_mouse_events,
+  bool forward,
 );
 
 @ffi.Native<ffi.Bool Function(native_window_t, native_window_shape_t)>()

@@ -495,7 +495,9 @@ impl WindowExample {
                         "ignore-mouse",
                         "Ignore Mouse Events",
                         w.is_ignore_mouse_events(),
-                        NativeWindow::set_ignore_mouse_events,
+                        |w, enabled| {
+                            w.set_ignore_mouse_events(enabled, false);
+                        },
                         cx,
                     ),
                     toggle(

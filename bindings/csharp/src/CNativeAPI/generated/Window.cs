@@ -129,6 +129,14 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_is_mouse_move_forwarding_enabled(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_is_mouse_move_forwarding_supported();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_is_movable(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -190,6 +198,10 @@ public static partial class Interop
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_set_custom_shadow(ulong self, ulong shadow);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_set_ignore_mouse_events(ulong self, [MarshalAs(UnmanagedType.I1)] bool isIgnoreMouseEvents, [MarshalAs(UnmanagedType.I1)] bool forward);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -340,9 +352,6 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_window_set_has_shadow(ulong self, [MarshalAs(UnmanagedType.I1)] bool hasShadow);
-
-    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void native_window_set_ignore_mouse_events(ulong self, [MarshalAs(UnmanagedType.I1)] bool isIgnoreMouseEvents);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_window_set_maximizable(ulong self, [MarshalAs(UnmanagedType.I1)] bool isMaximizable);

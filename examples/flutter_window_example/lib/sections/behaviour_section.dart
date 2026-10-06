@@ -76,7 +76,7 @@ class BehaviourSection extends StatelessWidget {
             toggle(
               'Ignore Mouse Events',
               w.isIgnoreMouseEvents,
-              (v) => w.isIgnoreMouseEvents = v,
+              (v) => w.setIgnoreMouseEvents(v, false),
             ),
             toggle('Focusable', w.isFocusable, (v) => w.isFocusable = v),
           ],
