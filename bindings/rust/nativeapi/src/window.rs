@@ -806,6 +806,19 @@ impl Window {
         }
     }
 
+    pub fn show_system_menu(&self, position: &Point) -> bool {
+        let position_raw = position.to_raw();
+        unsafe {
+            cnativeapi::native_window_show_system_menu(self.handle, position_raw.raw)
+        }
+    }
+
+    pub fn is_system_menu_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_system_menu_supported()
+        }
+    }
+
     pub fn start_dragging(&self) {
         unsafe {
             cnativeapi::native_window_start_dragging(self.handle);

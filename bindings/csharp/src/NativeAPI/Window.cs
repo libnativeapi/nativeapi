@@ -801,6 +801,19 @@ public sealed partial class Window : IDisposable
         }
     }
 
+    public bool ShowSystemMenu(Point position)
+    {
+        var rawPosition = position.ToRaw();
+        var rawResult = Interop.native_window_show_system_menu(NativeHandle, rawPosition);
+        return rawResult;
+    }
+
+    public static bool IsSystemMenuSupported()
+    {
+        var rawResult = Interop.native_window_is_system_menu_supported();
+        return rawResult;
+    }
+
     public void StartDragging()
     {
         Interop.native_window_start_dragging(NativeHandle);

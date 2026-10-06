@@ -462,6 +462,14 @@ export class Window extends NativeObject {
     return native.native_window_is_focusable(this.nativeHandle);
   }
 
+  showSystemMenu(position: Point): boolean {
+    return native.native_window_show_system_menu(this.nativeHandle, position);
+  }
+
+  static isSystemMenuSupported(): boolean {
+    return native.native_window_is_system_menu_supported();
+  }
+
   startDragging(): void {
     native.native_window_start_dragging(this.nativeHandle);
   }

@@ -13,7 +13,8 @@ import 'package:nativeapi/nativeapi.dart'
         View;
 
 /// A custom title-bar region that drags the window and toggles maximization
-/// on double tap.
+/// on double tap. A secondary-button press opens the native system window menu
+/// where supported (Windows, or a supporting Linux window manager).
 class DragToMoveArea extends StatelessWidget {
   const DragToMoveArea({super.key, required this.child, this.window});
 
@@ -26,6 +27,11 @@ class DragToMoveArea extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onSecondaryTapDown: (details) {
+        (window ?? WindowManager.instance.getCurrent())?.showSystemMenu(
+          Point(x: details.globalPosition.dx, y: details.globalPosition.dy),
+        );
+      },
       onPanStart: (_) {
         (window ?? WindowManager.instance.getCurrent())?.startDragging();
       },

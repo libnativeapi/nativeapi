@@ -9,6 +9,13 @@ class _Window extends Window {
   int dragCount = 0;
   final edges = <ResizeEdge>[];
   bool maximized = false;
+  final systemMenuPositions = <Point>[];
+
+  @override
+  bool showSystemMenu(Point position) {
+    systemMenuPositions.add(position);
+    return true;
+  }
 
   @override
   void startDragging() => dragCount++;
@@ -42,6 +49,35 @@ Future<void> _drag(WidgetTester tester, Offset position) async {
 }
 
 void main() {
+  testWidgets(
+    'move area opens system menu on secondary down at content coordinates',
+    (tester) async {
+      final window = _Window();
+      await tester.pumpWidget(
+        _host(
+          DragToMoveArea(
+            window: window,
+            child: const SizedBox(width: 200, height: 100),
+          ),
+        ),
+      );
+      final point =
+          tester.getCenter(find.byType(DragToMoveArea)) + const Offset(12, 8);
+      final gesture = await tester.startGesture(
+        point,
+        kind: PointerDeviceKind.mouse,
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(window.systemMenuPositions, hasLength(1));
+      expect(window.systemMenuPositions.single.x, point.dx);
+      expect(window.systemMenuPositions.single.y, point.dy);
+      expect(window.dragCount, 0);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(window.systemMenuPositions, hasLength(1));
+    },
+  );
   testWidgets('move area drags and toggles maximization on double tap', (
     tester,
   ) async {

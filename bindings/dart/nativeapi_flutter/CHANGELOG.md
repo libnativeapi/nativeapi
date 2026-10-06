@@ -1,6 +1,8 @@
 ## 0.4.1
 
 * Requires nativeapi 0.4.1.
+* `DragToMoveArea` opens the native system window menu on a secondary-button
+  press on Windows and supporting Linux window managers.
 * `runNativeApp` is not re-exported: it is for plain Dart programs, and a
   Flutter app's engine already runs the event loop.
 

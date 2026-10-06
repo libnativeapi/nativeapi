@@ -1,5 +1,10 @@
 ## 0.4.1
 
+* `Window.showSystemMenu(Point)` and `Window.isSystemMenuSupported()`: native
+  system window menu on Windows and supporting Linux window managers. Positions
+  are logical pixels relative to the content area. Windows keeps command states
+  current; Wayland requires an active pointer press in the target window.
+
 * `Window.setContentProtection()`, `isContentProtected` and
   `Window.isContentProtectionSupported()`: native capture policy on Windows and
   macOS. Recent macOS ScreenCaptureKit ignores the legacy sharing policy; Linux

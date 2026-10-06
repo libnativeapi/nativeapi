@@ -2478,6 +2478,20 @@ native_window_set_focusable = function(
     ],
 )
 native_window_is_focusable = function("native_window_is_focusable", c_bool, [c_uint64])
+native_window_show_system_menu = function(
+    "native_window_show_system_menu",
+    c_bool,
+    [
+        c_uint64,
+        native_point_t,
+    ],
+)
+native_window_is_system_menu_supported = function(
+    "native_window_is_system_menu_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_start_dragging = function(
     "native_window_start_dragging",
     None,

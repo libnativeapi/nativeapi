@@ -580,6 +580,15 @@ class Window(_rt.NativeObject):
         raw = _C.native_window_is_focusable(self._handle)
         return raw
 
+    def show_system_menu(self, position: _geometry.Point) -> bool:
+        raw = _C.native_window_show_system_menu(self._handle, position._to_c())
+        return raw
+
+    @staticmethod
+    def is_system_menu_supported() -> bool:
+        raw = _C.native_window_is_system_menu_supported()
+        return raw
+
     def start_dragging(self) -> None:
         _C.native_window_start_dragging(self._handle)
 

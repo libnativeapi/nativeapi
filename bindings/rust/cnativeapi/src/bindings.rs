@@ -1194,6 +1194,15 @@ unsafe extern "C" {
     pub fn native_window_is_focusable(window: native_window_t) -> bool;
 }
 unsafe extern "C" {
+    pub fn native_window_show_system_menu(
+        window: native_window_t,
+        position: native_point_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_system_menu_supported() -> bool;
+}
+unsafe extern "C" {
     pub fn native_window_start_dragging(window: native_window_t);
 }
 unsafe extern "C" {

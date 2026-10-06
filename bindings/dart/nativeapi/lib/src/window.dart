@@ -742,6 +742,20 @@ class Window {
     return c.native_window_is_focusable(nativeHandle);
   }
 
+  bool showSystemMenu(Point position) {
+    final positionPointer = position.allocNative();
+    final result = c.native_window_show_system_menu(
+      nativeHandle,
+      positionPointer.ref,
+    );
+    Point.freeNative(positionPointer);
+    return result;
+  }
+
+  static bool isSystemMenuSupported() {
+    return c.native_window_is_system_menu_supported();
+  }
+
   void startDragging() {
     c.native_window_start_dragging(nativeHandle);
   }

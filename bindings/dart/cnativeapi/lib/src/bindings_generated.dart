@@ -2553,6 +2553,9 @@ external bool native_window_is_shape_supported();
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_shaped(int window);
 
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_system_menu_supported();
+
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_visible(int window);
 
@@ -2929,6 +2932,12 @@ external void native_window_show(int window);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_show_inactive(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t, native_point_t)>()
+external bool native_window_show_system_menu(
+  int window,
+  native_point_t position,
+);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_start_dragging(int window);
