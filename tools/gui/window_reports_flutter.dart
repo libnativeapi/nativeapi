@@ -123,6 +123,28 @@ final scenarios = <String, Scenario>{
       ),
     ],
   ),
+  // #75: leanflutter/window_manager#428, #504, #223: sized and centred before
+  // the window first appears.
+  'startup-center': Scenario(
+    before: () async {
+      window.setSize(const Size(900, 600).toNative(), false);
+      window.center();
+    },
+    [Step('look', () {})],
+  ),
+  // #75: leanflutter/window_manager#412, #572: maximized before it appears.
+  'startup-maximize': Scenario(before: () async => window.maximize(), [
+    Step('look', () {}, settle: 2000),
+  ]),
+  // #75: leanflutter/window_manager#383, #153, #155, #578. The runner samples
+  // the screen while each step runs, and drags (#578) before `drag` goes.
+  'flashes': Scenario([
+    Step('maximize', () => window.maximize(), settle: 1500),
+    Step('unmaximize', () => window.unmaximize(), settle: 1500),
+    Step('hide', () => window.hide(), settle: 1000),
+    Step('show', () => window.show(), settle: 1500),
+    Step('drag', () {}),
+  ]),
   // #76: leanflutter/window_manager#554, #450, #378, #397, #547.
   'hidden': Scenario(
     before: () async => window.titleBarStyle = TitleBarStyle.hidden,

@@ -269,6 +269,137 @@ function Test-FullScreen {
   } finally { Stop-Scenario }
 }
 
+# -- #75 flashes and blank frames ---------------------------------------------------
+function Test-Flash([int]$c) {
+  # White or black: the colours of an unpainted Win32 window or GPU surface.
+  ((($c -shr 16) -band 255) -gt 225 -and (($c -shr 8) -band 255) -gt 225 -and ($c -band 255) -gt 225) -or
+  ((($c -shr 16) -band 255) -lt 24 -and (($c -shr 8) -band 255) -lt 24 -and ($c -band 255) -lt 24)
+}
+# From process start: (ms, visible, frame, centre pixel) until the first step.
+function Watch-Startup([string]$Name) {
+  $samples = New-Object System.Collections.Generic.List[object]
+  $watch = [System.Diagnostics.Stopwatch]::StartNew()
+  Start-Scenario $Name
+  $h = [IntPtr]::Zero
+  while ($watch.ElapsedMilliseconds -lt 15000) {
+    if ($h -eq [IntPtr]::Zero) {
+      $w = @(Get-AppWindows $proc.Id | ? { $_.ClientW -gt 100 })
+      if ($w.Count) { $h = [IntPtr]$w[0].Hwnd }
+    }
+    if ($h -ne [IntPtr]::Zero) {
+      $visible = [ReportWin]::IsWindowVisible($h)
+      $f = [ReportWin]::Frame($h)
+      $px = if ($visible) { [ReportWin]::Pixel([int](($f[0] + $f[2]) / 2), [int](($f[1] + $f[3]) / 2)) } else { -1 }
+      $samples.Add(@($watch.ElapsedMilliseconds, $visible, ($f -join ','), $px))
+    }
+    if (Get-Content $log -ErrorAction SilentlyContinue | ? { $_ -like 'STEP look *' }) { break }
+  }
+  $samples
+}
+function Test-StartupCenter {
+  Say '== startup-center (#75: window_manager#428, #504, #223)'
+  try {
+    $samples = @(Watch-Startup 'startup-center')
+    $h = Get-AppWindow
+    $shown = @($samples | ? { $_[1] })
+    $frames = @($shown | % { $_[2] } | Select-Object -Unique)
+    Say "  $($samples.Count) samples, $($shown.Count) visible; frames while visible: $($frames -join ' | ')"
+    Check '#504/#223 the window appears where it stays, no jump' ($frames.Count -eq 1) ($frames -join ' | ')
+    # Centred as Windows sees the window: its rectangle includes the invisible
+    # resize borders, which on Windows 10/11 are at the sides and bottom only.
+    $f = [ReportWin]::Rect($h); $work = [ReportWin]::Monitor($h, $true)
+    $dx = [Math]::Abs(($f[0] + $f[2]) - ($work[0] + $work[2])) / 2; $dy = [Math]::Abs(($f[1] + $f[3]) - ($work[1] + $work[3])) / 2
+    Check '#504 and it is centred' ($dx -le 1 -and $dy -le 1) "off by $dx, $dy"
+    $flashes = @($shown | ? { Test-Flash $_[3] } | % { "$($_[0])ms $(Hex $_[3])" })
+    Check '#428 no white or black frame before the background colour' ($flashes.Count -eq 0) ($flashes -join ' ')
+    Go-Step 'look'
+  } catch {
+    Check 'startup-center ran to the end' $false "$($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)"
+  } finally { Stop-Scenario }
+}
+function Test-StartupMaximize {
+  Say '== startup-maximize (#75: window_manager#412, #572)'
+  try {
+    $samples = @(Watch-Startup 'startup-maximize')
+    $h = Get-AppWindow
+    $shown = @($samples | ? { $_[1] })
+    $frames = @($shown | % { $_[2] } | Select-Object -Unique)
+    Say "  $($samples.Count) samples, $($shown.Count) visible; frames while visible: $($frames -join ' | ')"
+    Check '#572 maximized before it appears, it appears maximized: no jump' ($frames.Count -eq 1) ($frames -join ' | ')
+    Go-Step 'look'
+    Wait-Step 'end' | Out-Null
+    $c = [ReportWin]::Client($h); $work = [ReportWin]::Monitor($h, $true)
+    Check '#412 two seconds later it is still maximized' ([ReportWin]::IsZoomed($h))
+    Check '#412 filling the work area' ([Math]::Abs($c[2] - $c[0] - ($work[2] - $work[0])) -le 16 -and $c[3] -ge $work[3] - 16) "client $($c -join ',') work $($work -join ',')"
+    $flashes = @($shown | ? { Test-Flash $_[3] } | % { "$($_[0])ms $(Hex $_[3])" })
+    Check '#428 no white or black frame at startup' ($flashes.Count -eq 0) ($flashes -join ' ')
+  } catch {
+    Check 'startup-maximize ran to the end' $false "$($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)"
+  } finally { Stop-Scenario }
+}
+# Points inside the content, clear of the panel's text.
+function Get-ContentPoints([IntPtr]$H) {
+  $c = [ReportWin]::Client($H); $w = $c[2] - $c[0]; $hh = $c[3] - $c[1]
+  @(@(0.1, 0.1), @(0.25, 0.5), @(0.75, 0.25), @(0.5, 0.97)) | % { ,@([int]($c[0] + $w * $_[0]), [int]($c[1] + $hh * $_[1])) }
+}
+function Test-Transition([string]$Step, [IntPtr]$H, [string]$Label, [int]$Ms = 1200) {
+  $points = @(Get-ContentPoints $H)
+  $samples = Watch-Step $Step $points $Ms
+  $bad = @()
+  for ($i = 0; $i -lt $points.Count; $i++) { $bad += @($samples[$i] | ? { Test-Flash $_ } | % { Hex $_ }) }
+  Check $Label ($bad.Count -eq 0) "$($samples[0].Count) frames per point, flashes: $(($bad | Select-Object -Unique) -join ' ')"
+}
+function Test-Flashes {
+  Say '== flashes (#75: window_manager#383, #153, #155, #578)'
+  Start-Scenario 'flashes'
+  try {
+    Wait-Step 'maximize' | Out-Null
+    $h = Get-AppWindow
+    Activate-App
+    Test-Transition 'maximize' $h '#383 maximize() shows no white or black frame'
+    Wait-Step 'unmaximize' | Out-Null
+    Test-Transition 'unmaximize' $h '#153 restoring from maximized shows no black frame'
+    Wait-Step 'hide' | Out-Null
+    $points = @(Get-ContentPoints $h)
+    Go-Step 'hide'
+    Wait-Step 'show' | Out-Null
+    # Only frames once the window is visible again count.
+    $seen = @($points | % { ,(New-Object System.Collections.Generic.List[int]) })
+    Go-Step 'show'
+    $end = (Get-Date).AddMilliseconds(1500)
+    while ((Get-Date) -lt $end) {
+      if (-not [ReportWin]::IsWindowVisible($h)) { continue }
+      for ($i = 0; $i -lt $points.Count; $i++) { $seen[$i].Add([ReportWin]::Pixel($points[$i][0], $points[$i][1])) }
+    }
+    $bad = @(); foreach ($list in $seen) { $bad += @($list | ? { Test-Flash $_ } | % { Hex $_ }) }
+    Check '#155 show() after hide() shows no white or black frame' ($seen[0].Count -gt 0 -and $bad.Count -eq 0) "$($seen[0].Count) frames per point, flashes: $(($bad | Select-Object -Unique) -join ' ')"
+    Wait-Step 'drag' | Out-Null
+    # #578: drag the window by its title bar until 40% of it is off the left
+    # edge, back again, then time how long the uncovered part stays unpainted.
+    $f = [ReportWin]::Frame($h); $c = [ReportWin]::Client($h)
+    $grab = @([int]($f[0] + ($f[2] - $f[0]) * 0.7), [int](($f[1] + $c[1]) / 2))
+    $shift = $f[0] + [int](($f[2] - $f[0]) * 0.4)
+    Invoke-Drag $app $grab @(,@(($grab[0] - $shift), $grab[1], 600))
+    Pause 0.6
+    $off = [ReportWin]::Frame($h)
+    Check '#578 the window was dragged partly off screen' ($off[0] -lt 0) "frame $($off -join ',')"
+    $back = @(($grab[0] - $shift), $grab[1])
+    Invoke-Drag $app $back @(,@($grab[0], $grab[1], 600))
+    $watch = [System.Diagnostics.Stopwatch]::StartNew()
+    $c = [ReportWin]::Client($h); $w = $c[2] - $c[0]
+    $points = @(@(0.05, 0.3), @(0.2, 0.6), @(0.35, 0.95)) | % { ,@([int]($c[0] + $w * $_[0]), [int]($c[1] + ($c[3] - $c[1]) * $_[1])) }
+    $lastBad = -1; $frames = 0
+    while ($watch.ElapsedMilliseconds -lt 800) {
+      $frames++
+      foreach ($p in $points) { if (Test-Flash ([ReportWin]::Pixel($p[0], $p[1]))) { $lastBad = $watch.ElapsedMilliseconds } }
+    }
+    Check '#578 the part brought back on screen is painted within 100 ms' ($lastBad -lt 100) "last unpainted sample at $lastBad ms of $frames frames"
+    Go-Step 'drag'
+  } catch {
+    Check 'flashes ran to the end' $false "$($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)"
+  } finally { Stop-Scenario }
+}
+
 # -- #76 hidden title bar ----------------------------------------------------------
 function Test-Hidden {
   Say '== hidden (#76: window_manager#554, #450, #378, #397, #547)'
@@ -398,9 +529,12 @@ function Test-Events {
 Start-Result "$RemoteScratch\flutter_window_reports_test.result.txt"
 Assert-Idle
 if ($env:REPORTS_REBUILD -ne '0' -or -not (Test-Path $exe)) { Build-Fixture }
-$wanted = if ($env:REPORTS_SCENARIOS) { $env:REPORTS_SCENARIOS.Split(',') } else { @('fullscreen', 'hidden', 'transparent', 'events') }
+$wanted = if ($env:REPORTS_SCENARIOS) { $env:REPORTS_SCENARIOS.Split(',') } else { @('startup-center', 'startup-maximize', 'flashes', 'fullscreen', 'hidden', 'transparent', 'events') }
 foreach ($s in $wanted) {
   switch ($s) {
+    'startup-center' { Test-StartupCenter }
+    'startup-maximize' { Test-StartupMaximize }
+    'flashes' { Test-Flashes }
     'fullscreen' { Test-FullScreen }
     'hidden' { Test-Hidden }
     'transparent' { Test-Transparent }
