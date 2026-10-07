@@ -34,6 +34,7 @@ class _TitleBarPageState extends State<TitleBarPage> {
   Window? _window;
   String _note = 'Try the three states and watch the strip at the top';
   final List<String> _log = [];
+  int? _listenerId;
 
   @override
   void initState() {
@@ -45,6 +46,33 @@ class _TitleBarPageState extends State<TitleBarPage> {
     window.minimumSize = const Size(520, 420).toNative();
     window.contentSize = const Size(620, 520).toNative();
     window.center();
+    // The strip's Maximize / Restore follows the window however it changes:
+    // its own button, the snap layouts, a double-click, a shortcut.
+    _listenerId = WindowManager.instance.addListener((event) {
+      if (event.windowId != window.id) return;
+      if (event is WindowMaximizedEvent || event is WindowRestoredEvent) {
+        if (mounted) {
+          setState(
+            () => _note = event is WindowMaximizedEvent
+                ? 'Maximized'
+                : 'Restored',
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    final id = _listenerId;
+    if (id != null) WindowManager.instance.removeListener(id);
+    super.dispose();
+  }
+
+  void _toggleMaximized() {
+    final window = _window;
+    if (window == null) return;
+    window.isMaximized ? window.unmaximize() : window.maximize();
   }
 
   void _act(String what, void Function(Window window) change) {
@@ -80,6 +108,9 @@ class _TitleBarPageState extends State<TitleBarPage> {
       children: [
         _Strip(
           underTitleBar: style == TitleBarStyle.normal && under,
+          // Hidden takes the system's buttons away; the strip brings its own.
+          maximized: style == TitleBarStyle.hidden ? window?.isMaximized : null,
+          onToggleMaximized: _toggleMaximized,
           onQuit: () => Application.instance.quit(0),
         ),
         OptionRow(
@@ -186,6 +217,12 @@ class _TitleBarPageState extends State<TitleBarPage> {
                         'the height of the title bar.',
                       ),
                       const _Bullet(
+                        'Hidden brings a Maximize / Restore chip into the '
+                        'strip. It is marked as the window\'s maximize '
+                        'button, so on Windows 11 resting the pointer on it '
+                        'opens the snap layouts, as on the system\'s own.',
+                      ),
+                      const _Bullet(
                         'Hidden also stops the system moving the window when '
                         'you drag the top of the content — that is what the '
                         'strip is for.',
@@ -230,9 +267,19 @@ class _TitleBarPageState extends State<TitleBarPage> {
 /// up behind the window buttons, which is why its controls start clear of
 /// them.
 class _Strip extends StatelessWidget {
-  const _Strip({required this.underTitleBar, required this.onQuit});
+  const _Strip({
+    required this.underTitleBar,
+    required this.maximized,
+    required this.onToggleMaximized,
+    required this.onQuit,
+  });
 
   final bool underTitleBar;
+
+  /// Whether the window is maximized, or null to leave out the strip's own
+  /// Maximize / Restore button (the system's title bar has one).
+  final bool? maximized;
+  final VoidCallback onToggleMaximized;
   final VoidCallback onQuit;
 
   @override
@@ -274,6 +321,17 @@ class _Strip extends StatelessWidget {
                     style: vars.labelStrong.copyWith(color: vars.colorContent),
                   ),
                 ),
+                if (maximized != null) ...[
+                  // Marked as the window's maximize button: on Windows 11,
+                  // resting the pointer on it opens the snap layouts.
+                  MaximizeButtonArea(
+                    child: ActionChip(
+                      label: maximized! ? 'Restore' : 'Maximize',
+                      onTap: onToggleMaximized,
+                    ),
+                  ),
+                  SizedBox(width: vars.spacing15),
+                ],
                 ActionChip(label: 'Quit', onTap: onQuit),
               ],
             ),
