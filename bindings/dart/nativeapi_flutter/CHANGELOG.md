@@ -1,5 +1,11 @@
 ## 0.4.1
 
+* `DragToMoveArea` opens the system window menu on the secondary button's
+  release on Windows, as a native title bar does. Opened on the press, the
+  menu's modal loop took the release and Flutter ignored the next secondary
+  click, so the menu opened only once. Linux keeps the press, which a Wayland
+  compositor requires.
+
 * `MaximizeButtonArea`: wrap a custom title bar's maximize button in it and
   Windows 11 shows the snap layouts when the pointer rests on it. The button
   still gets hover, press and tap; the area follows it and goes away with it.

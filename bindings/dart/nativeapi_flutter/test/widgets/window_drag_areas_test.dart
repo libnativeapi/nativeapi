@@ -83,6 +83,34 @@ void main() {
       expect(window.systemMenuPositions, hasLength(1));
     },
   );
+  testWidgets('move area opens system menu on secondary release on Windows', (
+    tester,
+  ) async {
+    final window = _Window();
+    await tester.pumpWidget(
+      _host(
+        DragToMoveArea(
+          window: window,
+          child: const SizedBox(width: 200, height: 100),
+        ),
+      ),
+    );
+    final point =
+        tester.getCenter(find.byType(DragToMoveArea)) + const Offset(12, 8);
+    final gesture = await tester.startGesture(
+      point,
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(window.systemMenuPositions, isEmpty);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(window.systemMenuPositions, hasLength(1));
+    expect(window.systemMenuPositions.single.x, point.dx);
+    expect(window.systemMenuPositions.single.y, point.dy);
+    expect(window.dragCount, 0);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
   testWidgets(
     'move area drags and delegates each double tap without a fallback',
     (tester) async {
