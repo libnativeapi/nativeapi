@@ -1062,14 +1062,26 @@ fn render_event(out: &mut String, module: &mut Module, group: &EventGroup) {
         .collect();
     for (index, variant) in group.variants.iter().enumerate() {
         let payload = format!("raw.data.{}", event_payload_field(&variant.discriminant));
-        let mut values = common.clone();
-        values.extend(
+        let fields: Vec<String> = variant
+            .fields
+            .iter()
+            .map(|field| event_value(module, field, &payload))
+            .collect();
+        writeln!(out, "        if raw.type == {index}:").unwrap();
+        // An argument line is indented 16 and ends in a comma; past ruff's 88
+        // columns, read the payload through a local instead.
+        let fields = if fields.iter().any(|value| 16 + value.len() + 1 > 88) {
+            writeln!(out, "            data = {payload}").unwrap();
             variant
                 .fields
                 .iter()
-                .map(|field| event_value(module, field, &payload)),
-        );
-        writeln!(out, "        if raw.type == {index}:").unwrap();
+                .map(|field| event_value(module, field, "data"))
+                .collect()
+        } else {
+            fields
+        };
+        let mut values = common.clone();
+        values.extend(fields);
         write_call(
             out,
             &format!("            return {}(", variant.name),
