@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 
@@ -62,15 +63,18 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   late final TrayIcon _trayIcon;
-  late final Menu _menu;
+
+  /// Null on the web, where nativeapi has no backend and every call throws.
+  Menu? _menu;
 
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return;
 
-    _menu = Menu.create()!;
+    final menu = _menu = Menu.create()!;
     // One listener per emitter now; the event carries which kind it is.
-    _menu.addListener((event) {
+    menu.addListener((event) {
       switch (event) {
         case MenuOpenedEvent(:final menuId):
           print('主菜单打开了！菜单ID: $menuId');
@@ -88,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
           print('$label clicked, item ${event.itemId}');
         }
       });
-      _menu.addItem(item);
+      menu.addItem(item);
     }
   }
 
@@ -133,12 +137,40 @@ class _MyHomePageState extends State<MyHomePage> {
     _trayIcon.setVisible(true);
   }
 
+  void _showContextMenu() {
+    final menu = Menu.create()!;
+    final item1 = MenuItem.createWithLabelAndType(
+      'Item1',
+      MenuItemType.normal,
+    )!;
+    menu.addItem(item1);
+    print(item1.label);
+    final item2 = MenuItem.createWithLabelAndType(
+      'Item2',
+      MenuItemType.normal,
+    )!;
+    menu.addItem(item2);
+    print('Context menu shown, item count: ${menu.itemCount}');
+    menu.open(
+      PositioningStrategy.absolute(const Offset(100.0, 100.0).toNative())!,
+      Placement.bottomStart,
+    );
+  }
+
+  void _openDesktopFeatures() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DesktopFeaturesPage()),
+    );
+  }
+
   void _incrementCounter() {
-    for (final display in DisplayManager.instance.getAll()) {
-      print('Display ID: ${display.id}');
-      print('Display Name: ${display.name}');
-      print('Display Width: ${display.size.width}');
-      print('Display Height: ${display.size.height}');
+    if (!kIsWeb) {
+      for (final display in DisplayManager.instance.getAll()) {
+        print('Display ID: ${display.id}');
+        print('Display Name: ${display.name}');
+        print('Display Width: ${display.size.width}');
+        print('Display Height: ${display.size.height}');
+      }
     }
 
     setState(() {
@@ -193,55 +225,36 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            FilledButton(
-              child: Text('Add TrayIcon'),
-              onPressed: () {
-                addTrayIcon();
-              },
-            ),
-            ContextMenuRegion(
-              menu: _menu,
-              child: Container(
-                color: Colors.blue,
+            if (kIsWeb)
+              const Padding(
                 padding: EdgeInsets.all(16),
-                width: 100,
-                height: 100,
-                child: Center(child: Text('Context Menu Region')),
+                child: Text(
+                  'nativeapi is not available on the web, '
+                  'so the native features below are disabled.',
+                ),
               ),
-            ),
             FilledButton(
+              onPressed: kIsWeb ? null : addTrayIcon,
+              child: Text('Add TrayIcon'),
+            ),
+            if (_menu case final menu?)
+              ContextMenuRegion(
+                menu: menu,
+                child: Container(
+                  color: Colors.blue,
+                  padding: EdgeInsets.all(16),
+                  width: 100,
+                  height: 100,
+                  child: Center(child: Text('Context Menu Region')),
+                ),
+              ),
+            FilledButton(
+              onPressed: kIsWeb ? null : _showContextMenu,
               child: Text('Show Context Menu'),
-              onPressed: () {
-                final menu = Menu.create()!;
-                final item1 = MenuItem.createWithLabelAndType(
-                  'Item1',
-                  MenuItemType.normal,
-                )!;
-                menu.addItem(item1);
-                print(item1.label);
-                final item2 = MenuItem.createWithLabelAndType(
-                  'Item2',
-                  MenuItemType.normal,
-                )!;
-                menu.addItem(item2);
-                print('Context menu shown, item count: ${menu.itemCount}');
-                menu.open(
-                  PositioningStrategy.absolute(
-                    const Offset(100.0, 100.0).toNative(),
-                  )!,
-                  Placement.bottomStart,
-                );
-              },
             ),
             FilledButton(
+              onPressed: kIsWeb ? null : _openDesktopFeatures,
               child: Text('Desktop Features: Dialogs, Pickers, Notifications'),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DesktopFeaturesPage(),
-                  ),
-                );
-              },
             ),
           ],
         ),
