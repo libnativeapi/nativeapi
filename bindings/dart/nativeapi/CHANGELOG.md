@@ -1,5 +1,10 @@
 ## 0.4.1
 
+* `Window.setMaximizeButtonBounds()`: tell the window where a custom title
+  bar draws its maximize button, so Windows 11 opens the snap layouts on it
+  again. Hover, press and release still reach the app's button. Windows
+  only; `Window.isMaximizeButtonBoundsSupported()` says whether it applies.
+
 * `Window.occlusionState` and `WindowOcclusionChangedEvent`: whether any part
   of a window can be seen (`visible`, `occluded`, or `unknown` where the
   platform cannot tell), to pause rendering or video nobody sees. macOS uses

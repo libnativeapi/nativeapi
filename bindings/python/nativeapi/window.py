@@ -680,6 +680,20 @@ class Window(_rt.NativeObject):
         raw = _C.native_window_is_system_menu_supported()
         return raw
 
+    def set_maximize_button_bounds(self, bounds: _geometry.Rectangle) -> bool:
+        raw = _C.native_window_set_maximize_button_bounds(self._handle, bounds._to_c())
+        return raw
+
+    @property
+    def maximize_button_bounds(self) -> _geometry.Rectangle:
+        raw = _C.native_window_get_maximize_button_bounds(self._handle)
+        return _geometry.Rectangle._from_c(raw)
+
+    @staticmethod
+    def is_maximize_button_bounds_supported() -> bool:
+        raw = _C.native_window_is_maximize_button_bounds_supported()
+        return raw
+
     def perform_title_bar_double_click(self) -> bool:
         raw = _C.native_window_perform_title_bar_double_click(self._handle)
         return raw

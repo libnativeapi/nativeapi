@@ -520,6 +520,18 @@ export class Window extends NativeObject {
     return native.native_window_is_system_menu_supported();
   }
 
+  setMaximizeButtonBounds(bounds: Rectangle): boolean {
+    return native.native_window_set_maximize_button_bounds(this.nativeHandle, bounds);
+  }
+
+  get maximizeButtonBounds(): Rectangle {
+    return native.native_window_get_maximize_button_bounds(this.nativeHandle);
+  }
+
+  static isMaximizeButtonBoundsSupported(): boolean {
+    return native.native_window_is_maximize_button_bounds_supported();
+  }
+
   performTitleBarDoubleClick(): boolean {
     return native.native_window_perform_title_bar_double_click(this.nativeHandle);
   }

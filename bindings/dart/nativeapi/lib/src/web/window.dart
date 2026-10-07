@@ -486,6 +486,12 @@ class Window {
 
   static bool isSystemMenuSupported() => unsupported();
 
+  bool setMaximizeButtonBounds(Rectangle bounds) => unsupported();
+
+  Rectangle get maximizeButtonBounds => unsupported();
+
+  static bool isMaximizeButtonBoundsSupported() => unsupported();
+
   bool performTitleBarDoubleClick() => unsupported();
 
   void startDragging() => unsupported();

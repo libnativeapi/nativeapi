@@ -2712,6 +2712,11 @@ external int native_window_get_custom_shadow(int window);
 @ffi.Native<native_window_id_t Function(native_window_t)>()
 external int native_window_get_id(int window);
 
+@ffi.Native<native_rectangle_t Function(native_window_t)>()
+external native_rectangle_t native_window_get_maximize_button_bounds(
+  int window,
+);
+
 @ffi.Native<native_size_t Function(native_window_t)>()
 external native_size_t native_window_get_maximum_size(int window);
 
@@ -2834,6 +2839,9 @@ external bool native_window_is_input_shaped(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_maximizable(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_maximize_button_bounds_supported();
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_maximized(int window);
@@ -3108,6 +3116,12 @@ external bool native_window_set_input_shape(int window, int shape);
 
 @ffi.Native<ffi.Void Function(native_window_t, ffi.Bool)>()
 external void native_window_set_maximizable(int window, bool is_maximizable);
+
+@ffi.Native<ffi.Bool Function(native_window_t, native_rectangle_t)>()
+external bool native_window_set_maximize_button_bounds(
+  int window,
+  native_rectangle_t bounds,
+);
 
 @ffi.Native<ffi.Void Function(native_window_t, native_size_t)>()
 external void native_window_set_maximum_size(int window, native_size_t size);

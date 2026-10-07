@@ -2619,6 +2619,27 @@ native_window_is_system_menu_supported = function(
     [
     ],
 )
+native_window_set_maximize_button_bounds = function(
+    "native_window_set_maximize_button_bounds",
+    c_bool,
+    [
+        c_uint64,
+        native_rectangle_t,
+    ],
+)
+native_window_get_maximize_button_bounds = function(
+    "native_window_get_maximize_button_bounds",
+    native_rectangle_t,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_maximize_button_bounds_supported = function(
+    "native_window_is_maximize_button_bounds_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_perform_title_bar_double_click = function(
     "native_window_perform_title_bar_double_click",
     c_bool,

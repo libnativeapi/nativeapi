@@ -927,6 +927,26 @@ impl Window {
         }
     }
 
+    pub fn set_maximize_button_bounds(&self, bounds: &Rectangle) -> bool {
+        let bounds_raw = bounds.to_raw();
+        unsafe {
+            cnativeapi::native_window_set_maximize_button_bounds(self.handle, bounds_raw.raw)
+        }
+    }
+
+    pub fn maximize_button_bounds(&self) -> Rectangle {
+        unsafe {
+            let raw = cnativeapi::native_window_get_maximize_button_bounds(self.handle);
+            Rectangle::from_raw(&raw)
+        }
+    }
+
+    pub fn is_maximize_button_bounds_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_maximize_button_bounds_supported()
+        }
+    }
+
     pub fn perform_title_bar_double_click(&self) -> bool {
         unsafe {
             cnativeapi::native_window_perform_title_bar_double_click(self.handle)

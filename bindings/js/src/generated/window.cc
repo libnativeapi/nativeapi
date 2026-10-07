@@ -1760,6 +1760,52 @@ napi_value Js_native_window_is_system_menu_supported(napi_env env, napi_callback
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_set_maximize_button_bounds(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_rectangle_t p0 = {};
+  if (!FromJs(env, args[1], &p0, arena)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_maximize_button_bounds(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_get_maximize_button_bounds(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_get_maximize_button_bounds(self); });
+  Value value = ToValue(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_window_is_maximize_button_bounds_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_maximize_button_bounds_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_perform_title_bar_double_click(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1959,6 +2005,9 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_is_focusable", Js_native_window_is_focusable);
   Export(env, exports, "native_window_show_system_menu", Js_native_window_show_system_menu);
   Export(env, exports, "native_window_is_system_menu_supported", Js_native_window_is_system_menu_supported);
+  Export(env, exports, "native_window_set_maximize_button_bounds", Js_native_window_set_maximize_button_bounds);
+  Export(env, exports, "native_window_get_maximize_button_bounds", Js_native_window_get_maximize_button_bounds);
+  Export(env, exports, "native_window_is_maximize_button_bounds_supported", Js_native_window_is_maximize_button_bounds_supported);
   Export(env, exports, "native_window_perform_title_bar_double_click", Js_native_window_perform_title_bar_double_click);
   Export(env, exports, "native_window_start_dragging", Js_native_window_start_dragging);
   Export(env, exports, "native_window_start_resizing", Js_native_window_start_resizing);

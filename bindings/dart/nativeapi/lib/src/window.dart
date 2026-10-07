@@ -912,6 +912,25 @@ class Window {
     return c.native_window_is_system_menu_supported();
   }
 
+  bool setMaximizeButtonBounds(Rectangle bounds) {
+    final boundsPointer = bounds.allocNative();
+    final result = c.native_window_set_maximize_button_bounds(
+      nativeHandle,
+      boundsPointer.ref,
+    );
+    Rectangle.freeNative(boundsPointer);
+    return result;
+  }
+
+  Rectangle get maximizeButtonBounds {
+    final raw = c.native_window_get_maximize_button_bounds(nativeHandle);
+    return Rectangle.fromNative(raw);
+  }
+
+  static bool isMaximizeButtonBoundsSupported() {
+    return c.native_window_is_maximize_button_bounds_supported();
+  }
+
   bool performTitleBarDoubleClick() {
     return c.native_window_perform_title_bar_double_click(nativeHandle);
   }

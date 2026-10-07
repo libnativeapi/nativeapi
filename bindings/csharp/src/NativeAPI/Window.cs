@@ -885,6 +885,28 @@ public sealed partial class Window : IDisposable
         return rawResult;
     }
 
+    public bool SetMaximizeButtonBounds(Rectangle bounds)
+    {
+        var rawBounds = bounds.ToRaw();
+        var rawResult = Interop.native_window_set_maximize_button_bounds(NativeHandle, rawBounds);
+        return rawResult;
+    }
+
+    public Rectangle MaximizeButtonBounds
+    {
+        get
+        {
+            var rawResult = Interop.native_window_get_maximize_button_bounds(NativeHandle);
+            return Rectangle.FromRaw(in rawResult);
+        }
+    }
+
+    public static bool IsMaximizeButtonBoundsSupported()
+    {
+        var rawResult = Interop.native_window_is_maximize_button_bounds_supported();
+        return rawResult;
+    }
+
     public bool PerformTitleBarDoubleClick()
     {
         var rawResult = Interop.native_window_perform_title_bar_double_click(NativeHandle);

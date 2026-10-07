@@ -1,5 +1,9 @@
 ## 0.4.1
 
+* `MaximizeButtonArea`: wrap a custom title bar's maximize button in it and
+  Windows 11 shows the snap layouts when the pointer rests on it. The button
+  still gets hover, press and tap; the area follows it and goes away with it.
+
 * `package:nativeapi_flutter/windowing.dart` compiles for the web too
   (leanflutter/tray_manager#108): there `nativeWindowOf` and `nativeWindow`
   return null, since no native window stands behind a controller.

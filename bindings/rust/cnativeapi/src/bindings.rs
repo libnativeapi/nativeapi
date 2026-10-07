@@ -1358,6 +1358,18 @@ unsafe extern "C" {
     pub fn native_window_is_system_menu_supported() -> bool;
 }
 unsafe extern "C" {
+    pub fn native_window_set_maximize_button_bounds(
+        window: native_window_t,
+        bounds: native_rectangle_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_get_maximize_button_bounds(window: native_window_t) -> native_rectangle_t;
+}
+unsafe extern "C" {
+    pub fn native_window_is_maximize_button_bounds_supported() -> bool;
+}
+unsafe extern "C" {
     pub fn native_window_perform_title_bar_double_click(window: native_window_t) -> bool;
 }
 unsafe extern "C" {
