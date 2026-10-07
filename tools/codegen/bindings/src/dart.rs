@@ -148,13 +148,34 @@ pub fn generate_callbacks(dart_out: &Path) -> GeneratedFile {
     out.push_str(
         r#"import 'dart:async';
 import 'dart:ffi' as ffi;
+import 'dart:math' as math;
 
 import 'package:cnativeapi/cnativeapi.dart' as c;
 
+/// A callable the core holds. When the isolate group shuts down with it still
+/// registered (a Flutter hot restart, for one), its native finalizer revokes
+/// the token, so the core stops calling a function pointer that died with it.
+final class _Registration implements ffi.Finalizable {
+  _Registration(this.callable);
+
+  final ffi.NativeCallable<Function> callable;
+}
+
 /// Owns every NativeCallable handed to the C API until the core releases it.
 abstract final class NativeCallbacks {
-  static final _callables = <int, ffi.NativeCallable<Function>>{};
+  static final _callables = <int, _Registration>{};
+
+  /// The core ignores a revoked token for good, so tokens are never reused,
+  /// not even by the isolate that replaces this one: each starts from its own
+  /// random prefix.
+  static final int _tokenPrefix = math.Random.secure().nextInt(0x7fffffff) + 1;
   static var _nextToken = 0;
+
+  static final _revoker = ffi.NativeFinalizer(
+    ffi.Native.addressOf<
+      ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>
+    >(c.native_user_data_revoke),
+  );
 
   /// Keeps borrowed event handles valid across the callback's asynchronous work.
   /// Removal suppresses callbacks that have not begun, without closing their
@@ -181,8 +202,14 @@ abstract final class NativeCallbacks {
   /// it. Null for a null callable, which has nothing to release.
   static ffi.Pointer<ffi.Void> userData(ffi.NativeCallable<Function>? callable) {
     if (callable == null) return ffi.nullptr;
-    final token = ++_nextToken;
-    _callables[token] = callable;
+    final token = (_tokenPrefix << 32) | ++_nextToken;
+    final registration = _Registration(callable);
+    _revoker.attach(
+      registration,
+      ffi.Pointer<ffi.Void>.fromAddress(token),
+      detach: registration,
+    );
+    _callables[token] = registration;
     return ffi.Pointer<ffi.Void>.fromAddress(token);
   }
 
@@ -195,7 +222,10 @@ abstract final class NativeCallbacks {
   static final _release =
       ffi.NativeCallable<ffi.Void Function(ffi.Pointer<ffi.Void>)>.listener(
         (ffi.Pointer<ffi.Void> userData) {
-          _callables.remove(userData.address)?.close();
+          final registration = _callables.remove(userData.address);
+          if (registration == null) return;
+          _revoker.detach(registration);
+          registration.callable.close();
         },
       )..keepIsolateAlive = false;
 }
@@ -1013,6 +1043,9 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         )
         .unwrap();
         writeln!(out).unwrap();
+    } else if instance {
+        // Finalizable keeps the object alive while a call still uses its handle.
+        writeln!(out, "class {} implements ffi.Finalizable {{", class.name).unwrap();
     } else {
         writeln!(out, "class {} {{", class.name).unwrap();
     }
@@ -1029,7 +1062,7 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         writeln!(out, "  {}.fromHandle(this.nativeHandle) {{", class.name).unwrap();
         writeln!(
             out,
-            "    _finalizer.attach(this, nativeHandle, detach: this);"
+            "    _finalizer.attach(\n      this,\n      ffi.Pointer<ffi.Void>.fromAddress(nativeHandle),\n      detach: this,\n    );"
         )
         .unwrap();
         writeln!(out, "  }}").unwrap();
@@ -1044,15 +1077,18 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         writeln!(out, "  /// The underlying handle-table entry.").unwrap();
         writeln!(out, "  final int nativeHandle;").unwrap();
         writeln!(out).unwrap();
+        // A NativeFinalizer, not a Finalizer: it also runs when the isolate group
+        // shuts down, as on a Flutter hot restart, so the native object does not
+        // outlive the program that created it. The core hands the release to the
+        // main thread, wherever the finalizer runs.
         writeln!(
             out,
-            "  static final Finalizer<int> _finalizer = Finalizer<int>("
+            "  static final _finalizer = ffi.NativeFinalizer("
         )
         .unwrap();
         writeln!(
             out,
-            "    (handle) => {C}.{}(handle),",
-            c_free_symbol(prefix, &class.name)
+            "    ffi.Native.addressOf<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(\n      {C}.{prefix}handle_finalize,\n    ),"
         )
         .unwrap();
         writeln!(out, "  );").unwrap();

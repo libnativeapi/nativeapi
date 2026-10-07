@@ -1,3 +1,14 @@
+## Unreleased
+
+* Objects created from Dart no longer outlive a Flutter hot restart
+  (leanflutter/tray_manager#106): their handles are released by a
+  `NativeFinalizer`, which also runs when the isolate group shuts down, so the
+  old tray icons, menus and the like go away instead of piling up. Native
+  classes implement `Finalizable`.
+* A hot restart no longer crashes the app on the next event: callbacks the old
+  isolate registered are revoked when it shuts down, so the core stops calling
+  them.
+
 ## 0.5.0
 
 * `Window.setMaximizeButtonBounds()`: tell the window where a custom title

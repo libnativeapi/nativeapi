@@ -680,6 +680,14 @@ external bool native_file_dialog_set_suggested_file_name(
   ffi.Pointer<ffi.Char> name,
 );
 
+/// Releases a handle of any type for a garbage collector's native finalizer,
+/// such as Dart's NativeFinalizer, which runs it on an arbitrary thread and
+/// also when the runtime shuts down (a Flutter hot restart, for one). `handle`
+/// is the handle's value cast to a pointer; the release itself runs on the
+/// main thread. Stale or invalid handles are ignored.
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
+external void native_handle_finalize(ffi.Pointer<ffi.Void> handle);
+
 /// Releases the caller's reference. Safe to call with an invalid or
 /// already-released handle.
 @ffi.Native<ffi.Void Function(native_image_t$1)>()
@@ -2278,6 +2286,13 @@ external bool native_url_opener_is_supported();
 external native_url_open_result_t native_url_opener_open(
   ffi.Pointer<ffi.Char> url,
 );
+
+/// Tells the core a binding's runtime is gone for this user_data, from a
+/// native finalizer like the one above: from now on it calls neither the
+/// callback that travels with it nor its release. Safe from any thread.
+/// A binding must not pass a revoked value again.
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
+external void native_user_data_revoke(ffi.Pointer<ffi.Void> user_data);
 
 /// Registers @p callback for every ViewEvent this View emits.
 /// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.

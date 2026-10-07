@@ -191,6 +191,16 @@ C ABI 的异步事件交付与 Dart 接入已实施：交付保留负载、借�
 异常或消费前退订时取消交付。真实原生 worker → Dart isolate 回归覆盖负载、
 Future、借用对象、移除和异常。细节见 [c-abi.md](c-abi.md) §6.2。
 
+**运行时关闭**：Dart 的 `NativeCallable` 随 isolate group 一起销毁（Flutter 热重启即是），
+之后 core 再调用它就会在 `DLRT_GetFfiCallbackMetadata` 断言崩溃，回调和 release 都一样。
+因此 Dart 给每个交给 core 的 callable 挂一个 `NativeFinalizer`，在 group 关闭时调用
+`native_user_data_revoke(user_data)`；`capi/user_data.h` 的 `RevokedUserData` 记下这个值，
+生成的胶水在每次调用回调前检查 `revoked()`，被撤销的异步监听器也不再取得隐式投票，
+`UserData` 析构时跳过它的 release。user_data 是 Dart 侧的 token，带每个 isolate 随机的
+高 32 位前缀，新 isolate 不会复用被撤销的值。存量缺口：撤销时已经发出、尚未完成的
+交付不会被取消，其中的延后投票会一直挂起；被撤销的监听器仍登记在 emitter 上，
+直到其对象销毁。
+
 JS 的跨线程排队 / Promise 接入已实施。原生借用句柄保留到 Promise 结束；
 异常先否决并释放交付，再进入 JS 错误处理器。环境清理取消该环境的全部未决交付及显式 owned EventDecision，释放已完成的投票句柄，
 退订原生事件监听器，包括排队后未调用的回调和永不结束的 Promise。回调状态、线程和

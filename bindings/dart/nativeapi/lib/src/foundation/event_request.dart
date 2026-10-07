@@ -8,11 +8,15 @@ import 'dart:ffi' as ffi;
 import 'package:cnativeapi/cnativeapi.dart' as c;
 import 'package:ffi/ffi.dart' as pkg_ffi;
 
-class EventDecision {
+class EventDecision implements ffi.Finalizable {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
   EventDecision.fromHandle(this.nativeHandle) {
-    _finalizer.attach(this, nativeHandle, detach: this);
+    _finalizer.attach(
+      this,
+      ffi.Pointer<ffi.Void>.fromAddress(nativeHandle),
+      detach: this,
+    );
   }
 
   /// Wraps a handle owned elsewhere; releasing it stays the owner's job.
@@ -21,8 +25,10 @@ class EventDecision {
   /// The underlying handle-table entry.
   final int nativeHandle;
 
-  static final Finalizer<int> _finalizer = Finalizer<int>(
-    (handle) => c.native_event_decision_free(handle),
+  static final _finalizer = ffi.NativeFinalizer(
+    ffi.Native.addressOf<
+      ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>
+    >(c.native_handle_finalize),
   );
 
   /// Releases the handle now instead of at collection.
@@ -44,11 +50,15 @@ class EventDecision {
   }
 }
 
-class EventRequest {
+class EventRequest implements ffi.Finalizable {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
   EventRequest.fromHandle(this.nativeHandle) {
-    _finalizer.attach(this, nativeHandle, detach: this);
+    _finalizer.attach(
+      this,
+      ffi.Pointer<ffi.Void>.fromAddress(nativeHandle),
+      detach: this,
+    );
   }
 
   /// Wraps a handle owned elsewhere; releasing it stays the owner's job.
@@ -57,8 +67,10 @@ class EventRequest {
   /// The underlying handle-table entry.
   final int nativeHandle;
 
-  static final Finalizer<int> _finalizer = Finalizer<int>(
-    (handle) => c.native_event_request_free(handle),
+  static final _finalizer = ffi.NativeFinalizer(
+    ffi.Native.addressOf<
+      ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>
+    >(c.native_handle_finalize),
   );
 
   /// Releases the handle now instead of at collection.

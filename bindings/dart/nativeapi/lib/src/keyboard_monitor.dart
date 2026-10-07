@@ -15,11 +15,15 @@ import 'support.dart';
 
 import 'callbacks.dart';
 
-class KeyboardMonitor {
+class KeyboardMonitor implements ffi.Finalizable {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
   KeyboardMonitor.fromHandle(this.nativeHandle) {
-    _finalizer.attach(this, nativeHandle, detach: this);
+    _finalizer.attach(
+      this,
+      ffi.Pointer<ffi.Void>.fromAddress(nativeHandle),
+      detach: this,
+    );
   }
 
   /// Wraps a handle owned elsewhere; releasing it stays the owner's job.
@@ -28,8 +32,10 @@ class KeyboardMonitor {
   /// The underlying handle-table entry.
   final int nativeHandle;
 
-  static final Finalizer<int> _finalizer = Finalizer<int>(
-    (handle) => c.native_keyboard_monitor_free(handle),
+  static final _finalizer = ffi.NativeFinalizer(
+    ffi.Native.addressOf<
+      ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>
+    >(c.native_handle_finalize),
   );
 
   /// Releases the handle now instead of at collection.

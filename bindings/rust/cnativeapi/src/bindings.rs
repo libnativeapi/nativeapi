@@ -20,6 +20,14 @@ unsafe extern "C" {
     pub fn native_event_delivery_complete(delivery: native_event_delivery_t, accept: bool) -> bool;
 }
 unsafe extern "C" {
+    #[doc = " Releases a handle of any type for a garbage collector's native finalizer,\n such as Dart's NativeFinalizer, which runs it on an arbitrary thread and\n also when the runtime shuts down (a Flutter hot restart, for one). `handle`\n is the handle's value cast to a pointer; the release itself runs on the\n main thread. Stale or invalid handles are ignored."]
+    pub fn native_handle_finalize(handle: *mut ::std::os::raw::c_void);
+}
+unsafe extern "C" {
+    #[doc = " Tells the core a binding's runtime is gone for this user_data, from a\n native finalizer like the one above: from now on it calls neither the\n callback that travels with it nor its release. Safe from any thread.\n A binding must not pass a revoked value again."]
+    pub fn native_user_data_revoke(user_data: *mut ::std::os::raw::c_void);
+}
+unsafe extern "C" {
     pub fn native_accessibility_manager_enable();
 }
 unsafe extern "C" {

@@ -1,3 +1,10 @@
+## Unreleased
+
+* `native_handle_finalize` and `native_user_data_revoke`: the native
+  finalizers `nativeapi` attaches to handles and callbacks, which release a
+  handle on the main thread and stop the core from calling a callback whose
+  isolate group has shut down.
+
 ## 0.5.0
 
 * Regenerated against core for the additions listed in nativeapi 0.5.0: window

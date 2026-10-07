@@ -113,6 +113,27 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
     .unwrap();
     writeln!(out, "FFI_PLUGIN_EXPORT bool {prefix}event_delivery_complete({prefix}event_delivery_t delivery, bool accept);").unwrap();
     writeln!(out).unwrap();
+    for line in [
+        "/// Releases a handle of any type for a garbage collector's native finalizer,",
+        "/// such as Dart's NativeFinalizer, which runs it on an arbitrary thread and",
+        "/// also when the runtime shuts down (a Flutter hot restart, for one). `handle`",
+        "/// is the handle's value cast to a pointer; the release itself runs on the",
+        "/// main thread. Stale or invalid handles are ignored.",
+    ] {
+        writeln!(out, "{line}").unwrap();
+    }
+    writeln!(out, "FFI_PLUGIN_EXPORT void {prefix}handle_finalize(void* handle);").unwrap();
+    writeln!(out).unwrap();
+    for line in [
+        "/// Tells the core a binding's runtime is gone for this user_data, from a",
+        "/// native finalizer like the one above: from now on it calls neither the",
+        "/// callback that travels with it nor its release. Safe from any thread.",
+        "/// A binding must not pass a revoked value again.",
+    ] {
+        writeln!(out, "{line}").unwrap();
+    }
+    writeln!(out, "FFI_PLUGIN_EXPORT void {prefix}user_data_revoke(void* user_data);").unwrap();
+    writeln!(out).unwrap();
     writeln!(out, "#ifdef __cplusplus").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out, "#endif").unwrap();
@@ -127,7 +148,7 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
 pub fn generate_common_source(capi_out: &Path, prefix: &str) -> GeneratedFile {
     let mut out = String::new();
     write_banner(&mut out);
-    out.push_str("#include \"common_c.h\"\n#include \"event_delivery.h\"\n#include \"../foundation/handle_table.h\"\n\n");
+    out.push_str("#include \"common_c.h\"\n#include \"event_delivery.h\"\n#include \"../foundation/dispatcher.h\"\n#include \"../foundation/handle_table.h\"\n#include \"user_data.h\"\n\n");
     writeln!(
         out,
         "bool {prefix}event_delivery_is_active({prefix}event_delivery_t delivery) {{"
@@ -140,6 +161,21 @@ pub fn generate_common_source(capi_out: &Path, prefix: &str) -> GeneratedFile {
     )
     .unwrap();
     out.push_str("  auto& table = nativeapi::HandleTable::GetInstance();\n  auto value = table.Resolve<nativeapi::capi::EventDelivery>(delivery);\n  if (!value || !value->Complete(accept)) return false;\n  table.Release(delivery);\n  return true;\n}\n");
+    writeln!(out).unwrap();
+    writeln!(out, "void {prefix}handle_finalize(void* handle) {{").unwrap();
+    out.push_str(concat!(
+        "  const auto value = static_cast<nativeapi::HandleValue>(\n",
+        "      reinterpret_cast<uintptr_t>(handle));\n",
+        "  // Always posted, even from the main thread: destroying a platform object\n",
+        "  // off it is unsafe, and a runtime shutting down revokes its callbacks in\n",
+        "  // its other finalizers first, which the destruction may otherwise call.\n",
+        "  auto release = [value] { nativeapi::HandleTable::GetInstance().Release(value); };\n",
+        "  if (!nativeapi::RunOnMainThread(release) && !nativeapi::IsMainThreadDispatchSupported()) release();\n",
+        "}\n",
+    ));
+    writeln!(out).unwrap();
+    writeln!(out, "void {prefix}user_data_revoke(void* user_data) {{").unwrap();
+    out.push_str("  nativeapi::capi::RevokedUserData::Revoke(user_data);\n}\n");
     GeneratedFile {
         path: capi_out.join("common_c.cpp"),
         contents: out,
@@ -1354,7 +1390,7 @@ fn render_cpp_struct_converter(out: &mut String, item: &Struct, prefix: &str) {
                 writeln!(out, "    auto callback = value.{c_name};").unwrap();
                 writeln!(
                     out,
-                    "    result.{} = [callback, holder = {c_name}_holder]() {{ callback(holder->get()); }};",
+                    "    result.{} = [callback, holder = {c_name}_holder]() {{ if (!holder->revoked()) callback(holder->get()); }};",
                     field.name
                 )
                 .unwrap();
@@ -1527,7 +1563,7 @@ fn render_callback_binding(
         writeln!(out, "{indent}if ({name}) {{").unwrap();
         writeln!(
             out,
-            "{indent}  {name}_cpp = [{name}, {holder}]({}) {{ {name}({}); }};",
+            "{indent}  {name}_cpp = [{name}, {holder}]({}) {{ if (!{holder}->revoked()) {name}({}); }};",
             lambda_params.join(", "),
             args.iter()
                 .cloned()
@@ -1553,7 +1589,7 @@ fn render_callback_binding(
     writeln!(out, "{indent}if ({name}) {{").unwrap();
     writeln!(
         out,
-        "{indent}  {name}_cpp = [{name}, {holder}]({}) {{ {name}({}); }};",
+        "{indent}  {name}_cpp = [{name}, {holder}]({}) {{ if (!{holder}->revoked()) {name}({}); }};",
         lambda_params.join(", "),
         args.iter()
             .cloned()
@@ -2118,6 +2154,7 @@ fn render_listener_impl(out: &mut String, api: &Api, class: &Class, prefix: &str
         group.qualified_name
     )
     .unwrap();
+    writeln!(out, "          if (holder->revoked()) return;").unwrap();
     writeln!(out, "          {event_type} c_event = {{}};").unwrap();
     writeln!(
         out,
@@ -2185,6 +2222,8 @@ fn render_async_listener_impl(out: &mut String, group: &EventGroup, class: &Clas
         group.qualified_name
     )
     .unwrap();
+    // A revoked listener casts no vote: its runtime can no longer answer one.
+    out.push_str("          if (registration->context->holder->revoked()) return;\n");
     out.push_str("          std::shared_ptr<nativeapi::EventRequest> request;\n");
     // Requests are discovered from the IR, rather than hard-coded emitter names.
     for field in &group.common {

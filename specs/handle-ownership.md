@@ -115,6 +115,23 @@ macOS 上与之配套的一条：每个 `Window` 包装对象都持有它的 `NS
 
 规则简化为一句：**凡是返回 `native_*_t` 的函数，调用方都拥有那份引用并负责 release。** 回调参数是唯一例外。
 
+### 2.7 垃圾回收语言的 finalizer
+
+GC 语言用 finalizer 兜底释放句柄，但 finalizer 运行的线程不确定，而销毁平台对象
+（`NSStatusItem`、`Shell_NotifyIcon`、GTK 对象）必须在主线程。因此 C ABI 另提供一个
+不分类型的 `native_handle_finalize(void*)`：参数是句柄值转成的指针，签名正好是
+`void(*)(void*)`，可以直接交给 Dart 的 `NativeFinalizer`；释放**总是**投递到主线程，
+即使调用时已在主线程。
+
+Dart 生成的身份类型因此实现 `Finalizable`，用 `NativeFinalizer` 而不是 `Finalizer`。
+后者在 isolate group 关闭时不会运行，Flutter 热重启后旧 isolate 创建的对象（托盘图标、
+菜单……）就一直留在进程里（leanflutter/tray_manager#106）。`dispose()` 仍同步调用
+`native_<type>_free`。
+
+总是异步投递是有意的：运行时关闭时，同一批 finalizer 里还有撤销回调的那些（见
+[event-system.md](event-system.md) 的「运行时关闭」）。对象析构可能触发事件（移除
+状态栏项会关闭它的窗口），必须等撤销全部完成之后再析构。
+
 ---
 
 ## 三、对现有代码的影响
