@@ -1,4 +1,4 @@
-## 0.4.1
+## 0.5.0
 
 * `Window.setMaximizeButtonBounds()`: tell the window where a custom title
   bar draws its maximize button, so Windows 11 opens the snap layouts on it
@@ -80,6 +80,15 @@
   or executable name, with suffixes for additional live icons; macOS uses
   `NSStatusItem.autosaveName`. Windows records the name. The numeric object ID
   remains separate.
+* Windows and Linux: `Window.isFocusable` and `isNonActivating` take effect;
+  disabling focus releases a keyboard focus the window holds.
+* `Window.focus()` is reliable, and `blur()` hands the focus back to where it
+  was.
+* Linux: window hooks and shortcuts shut down safely; X11 always-on-top state
+  is read back from the window manager; one window ID on both GTK objects.
+
+## 0.4.1
+
 * `TrayIcon.contentView`: any `View` in place of the icon and title, on macOS.
   The menu bar item is as wide as the view (its `preferredSize`, or what a Row
   or Column needs) and follows it as it changes; clicks outside buttons and

@@ -1,6 +1,10 @@
-## 0.4.1
+## 0.5.0
 
-* Add raw window close capability, object listeners and close-request payloads.
+* Regenerated against core for the additions listed in nativeapi 0.5.0: window
+  close capability, object listeners, close and quit request payloads, event
+  decisions, and the new window and tray icon functions.
+
+## 0.4.1
 
 * Event loop shim for plain Dart programs (`src/event_loop*`, bound in
   `lib/src/event_loop.dart`): `cnativeapi_run_ui_thread`,

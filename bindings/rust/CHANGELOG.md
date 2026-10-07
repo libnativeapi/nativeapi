@@ -1,3 +1,42 @@
+## 0.5.0
+
+* `Window::set_ignore_mouse_events(ignore, forward)` takes a second argument
+  and returns whether the native policy was applied: macOS, Windows and X11 can
+  forward hover movement while clicks pass through, and Linux implements
+  pass-through. `is_mouse_move_forwarding_enabled` and
+  `is_mouse_move_forwarding_supported` inspect forwarding. **Breaking.**
+* `ApplicationEvent::QuitRequested` carries an `EventRequestRef`, and the new
+  `WindowEvent::CloseRequested` one too: `cancel` it, or `defer` it into an
+  `EventDecision` to `accept` or `cancel` later. `Window::close` asks the
+  listeners first; `Window::is_close_supported` says whether it applies.
+  **Breaking** for code matching `QuitRequested` without fields.
+* `Window::add_listener` and `remove_listener`: listeners on one window.
+* `WindowEvent::PropertyChanged` with `WindowProperty`: a window's title,
+  resizable / movable / minimizable / maximizable / full-screenable / closable
+  state, control button visibility, always-on-top / on-bottom and title bar
+  style report each change, whoever made it.
+* `Window::occlusion_state` and `WindowEvent::OcclusionChanged`: whether any
+  part of a window can be seen. macOS uses the system's state, Windows computes
+  it from the windows above, Linux knows only hidden and minimized windows.
+* `Window::set_maximize_button_bounds`: where a custom title bar draws its
+  maximize button, so Windows 11 opens the snap layouts on it.
+* `Window::show_system_menu`: the native system window menu on Windows and
+  supporting Linux window managers.
+* `Window::perform_title_bar_double_click`: the macOS title-bar double-click
+  preference (Maximize, Minimize or None) for custom title bars; a hidden
+  title bar's empty band on macOS performs it by itself.
+* `Window::set_content_protection` and `is_content_protected`: native capture
+  policy on Windows and macOS.
+* `Window::set_corner_preference` and `WindowCornerPreference`: Windows 11's
+  corner rounding policy.
+* `TrayIcon::with_identifier` and `identifier`: a persistent tray host name
+  (the SNI ID on Linux, `autosaveName` on macOS).
+* Windows and Linux: `Window::set_focusable` and `set_non_activating` take
+  effect; disabling focus releases a keyboard focus the window holds.
+* `Window::focus` is reliable, and `blur` hands the focus back to where it was.
+* Linux: window hooks and shortcuts shut down safely; X11 always-on-top state
+  is read back from the window manager; one window ID on both GTK objects.
+
 ## 0.4.1
 
 * `TrayIcon::set_content_view` and `content_view`: any `View` in place of the

@@ -1,10 +1,10 @@
-## 0.4.1
+## 0.5.0
 
-* `DragToMoveArea` opens the system window menu on the secondary button's
-  release on Windows, as a native title bar does. Opened on the press, the
-  menu's modal loop took the release and Flutter ignored the next secondary
-  click, so the menu opened only once. Linux keeps the press, which a Wayland
-  compositor requires.
+* Requires nativeapi 0.5.0.
+
+* `DragToMoveArea` opens the native system window menu on a secondary click:
+  on the release on Windows, as a native title bar does, and on the press on
+  supporting Linux window managers, which a Wayland compositor requires.
 
 * `MaximizeButtonArea`: wrap a custom title bar's maximize button in it and
   Windows 11 shows the snap layouts when the pointer rests on it. The button
@@ -17,9 +17,9 @@
 * `DragToMoveArea` follows the macOS title-bar double-click preference,
   including Minimize and None, through the native window action.
 
+## 0.4.1
+
 * Requires nativeapi 0.4.1.
-* `DragToMoveArea` opens the native system window menu on a secondary-button
-  press on Windows and supporting Linux window managers.
 * `runNativeApp` is not re-exported: it is for plain Dart programs, and a
   Flutter app's engine already runs the event loop.
 
