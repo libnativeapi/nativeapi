@@ -35,6 +35,9 @@ class _TitleBarPageState extends State<TitleBarPage> {
   String _note = 'Try the three states and watch the strip at the top';
   final List<String> _log = [];
   int? _listenerId;
+  int? _closeListenerId;
+  bool _keepOpen = false;
+  int _cancelledCloses = 0;
 
   @override
   void initState() {
@@ -48,6 +51,19 @@ class _TitleBarPageState extends State<TitleBarPage> {
     window.center();
     // The strip's Maximize / Restore follows the window however it changes:
     // its own button, the snap layouts, a double-click, a shortcut.
+    // Every way of closing the window asks first: its close button, the
+    // system menu, Alt+F4, the taskbar. Keep open cancels the request.
+    _closeListenerId = window.addListener((event) {
+      if (event is! WindowCloseRequestedEvent || !_keepOpen) return;
+      if (!event.request.isCancelable) return; // The system insists.
+      event.request.cancel();
+      if (mounted) {
+        setState(() {
+          _cancelledCloses++;
+          _note = 'Close cancelled — choose Allow to let it close';
+        });
+      }
+    });
     _listenerId = WindowManager.instance.addListener((event) {
       if (event.windowId != window.id) return;
       if (event is WindowMaximizedEvent || event is WindowRestoredEvent) {
@@ -66,6 +82,8 @@ class _TitleBarPageState extends State<TitleBarPage> {
   void dispose() {
     final id = _listenerId;
     if (id != null) WindowManager.instance.removeListener(id);
+    final closeId = _closeListenerId;
+    if (closeId != null) _window?.removeListener(closeId);
     super.dispose();
   }
 
@@ -167,6 +185,28 @@ class _TitleBarPageState extends State<TitleBarPage> {
               ),
             ),
             const Hint('A style resets these; set them after it'),
+          ],
+        ),
+        OptionRow(
+          label: 'Closing',
+          children: [
+            OptionChip(
+              label: 'Allow',
+              selected: !_keepOpen,
+              onTap: () => setState(() {
+                _keepOpen = false;
+                _note = 'Closing the window closes it';
+              }),
+            ),
+            OptionChip(
+              label: 'Keep open',
+              selected: _keepOpen,
+              onTap: () => setState(() {
+                _keepOpen = true;
+                _note = 'Close requests are cancelled; try the × or the menu';
+              }),
+            ),
+            Hint('Cancelled closes: $_cancelledCloses'),
           ],
         ),
         Expanded(
