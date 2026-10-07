@@ -838,6 +838,10 @@ pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP: native_window_property_t = 8;
 pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM: native_window_property_t = 9;
 pub const NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE: native_window_property_t = 10;
 pub type native_window_property_t = ::std::os::raw::c_uint;
+pub const NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN: native_window_occlusion_state_t = 0;
+pub const NATIVE_WINDOW_OCCLUSION_STATE_VISIBLE: native_window_occlusion_state_t = 1;
+pub const NATIVE_WINDOW_OCCLUSION_STATE_OCCLUDED: native_window_occlusion_state_t = 2;
+pub type native_window_occlusion_state_t = ::std::os::raw::c_uint;
 pub const NATIVE_VISUAL_EFFECT_NONE: native_visual_effect_t = 0;
 pub const NATIVE_VISUAL_EFFECT_BLUR: native_visual_effect_t = 1;
 pub const NATIVE_VISUAL_EFFECT_ACRYLIC: native_visual_effect_t = 2;
@@ -885,6 +889,7 @@ pub const NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN: native_window_event_type
 pub const NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN: native_window_event_type_t = 10;
 pub const NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED: native_window_event_type_t = 11;
 pub const NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED: native_window_event_type_t = 12;
+pub const NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED: native_window_event_type_t = 13;
 #[doc = " Which concrete WindowEvent arrived."]
 pub type native_window_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One WindowEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -902,6 +907,7 @@ pub union native_window_event_t__bindgen_ty_1 {
     pub resized: native_window_event_t__bindgen_ty_1__bindgen_ty_2,
     pub close_requested: native_window_event_t__bindgen_ty_1__bindgen_ty_3,
     pub property_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_4,
+    pub occlusion_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_5,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -924,6 +930,20 @@ pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_4 {
     pub property: native_window_property_t,
 }
 impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_4 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_5 {
+    pub occlusion_state: native_window_occlusion_state_t,
+}
+impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_5 {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -1006,6 +1026,14 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_is_visible(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_get_occlusion_state(
+        window: native_window_t,
+    ) -> native_window_occlusion_state_t;
+}
+unsafe extern "C" {
+    pub fn native_window_is_occlusion_state_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_maximize(window: native_window_t);

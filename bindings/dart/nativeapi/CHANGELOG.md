@@ -1,5 +1,11 @@
 ## 0.4.1
 
+* `Window.occlusionState` and `WindowOcclusionChangedEvent`: whether any part
+  of a window can be seen (`visible`, `occluded`, or `unknown` where the
+  platform cannot tell), to pause rendering or video nobody sees. macOS uses
+  the system's own state; Windows computes it from the windows above; Linux
+  knows only hidden and minimized windows.
+
 * `WindowPropertyChangedEvent`: a window's title, resizable / movable /
   minimizable / maximizable / full-screenable / closable state, control button
   visibility, always-on-top / on-bottom and title bar style report each change,

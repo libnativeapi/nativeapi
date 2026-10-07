@@ -40,6 +40,13 @@ export const WindowProperty = {
 } as const;
 export type WindowProperty = (typeof WindowProperty)[keyof typeof WindowProperty];
 
+export const WindowOcclusionState = {
+  Unknown: 0,
+  Visible: 1,
+  Occluded: 2,
+} as const;
+export type WindowOcclusionState = (typeof WindowOcclusionState)[keyof typeof WindowOcclusionState];
+
 export const VisualEffect = {
   None: 0,
   Blur: 1,
@@ -77,7 +84,8 @@ export type WindowEvent =
   | { type: "enteredFullScreen"; windowId: WindowId }
   | { type: "exitedFullScreen"; windowId: WindowId }
   | { type: "closeRequested"; windowId: WindowId; request: EventRequest | null }
-  | { type: "propertyChanged"; windowId: WindowId; property: WindowProperty };
+  | { type: "propertyChanged"; windowId: WindowId; property: WindowProperty }
+  | { type: "occlusionChanged"; windowId: WindowId; occlusionState: WindowOcclusionState };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {
@@ -138,6 +146,14 @@ export class Window extends NativeObject {
 
   get isVisible(): boolean {
     return native.native_window_is_visible(this.nativeHandle);
+  }
+
+  get occlusionState(): WindowOcclusionState {
+    return native.native_window_get_occlusion_state(this.nativeHandle);
+  }
+
+  static isOcclusionStateSupported(): boolean {
+    return native.native_window_is_occlusion_state_supported();
   }
 
   maximize(): void {

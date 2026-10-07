@@ -105,6 +105,29 @@ impl WindowProperty {
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum WindowOcclusionState {
+    Unknown = 0,
+    Visible = 1,
+    Occluded = 2,
+}
+
+impl WindowOcclusionState {
+    pub(crate) fn from_raw(raw: cnativeapi::native_window_occlusion_state_t) -> Self {
+        match raw {
+            cnativeapi::NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN => Self::Unknown,
+            cnativeapi::NATIVE_WINDOW_OCCLUSION_STATE_VISIBLE => Self::Visible,
+            cnativeapi::NATIVE_WINDOW_OCCLUSION_STATE_OCCLUDED => Self::Occluded,
+            _ => Self::Unknown,
+        }
+    }
+
+    pub(crate) fn to_raw(self) -> cnativeapi::native_window_occlusion_state_t {
+        self as cnativeapi::native_window_occlusion_state_t
+    }
+}
+
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VisualEffect {
     None = 0,
     Blur = 1,
@@ -185,6 +208,7 @@ pub enum WindowEvent {
     ExitedFullScreen { window_id: WindowId },
     CloseRequested { window_id: WindowId, request: EventRequestRef },
     PropertyChanged { window_id: WindowId, property: WindowProperty },
+    OcclusionChanged { window_id: WindowId, occlusion_state: WindowOcclusionState },
 }
 
 impl WindowEvent {
@@ -203,6 +227,7 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN => Self::ExitedFullScreen { window_id: raw.window_id },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED => Self::CloseRequested { window_id: raw.window_id, request: EventRequestRef::from_raw(raw.data.close_requested.request) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED => Self::PropertyChanged { window_id: raw.window_id, property: WindowProperty::from_raw(raw.data.property_changed.property) },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED => Self::OcclusionChanged { window_id: raw.window_id, occlusion_state: WindowOcclusionState::from_raw(raw.data.occlusion_changed.occlusion_state) },
             _ => return None,
         })
     }
@@ -315,6 +340,18 @@ impl Window {
     pub fn is_visible(&self) -> bool {
         unsafe {
             cnativeapi::native_window_is_visible(self.handle)
+        }
+    }
+
+    pub fn occlusion_state(&self) -> WindowOcclusionState {
+        unsafe {
+            WindowOcclusionState::from_raw(cnativeapi::native_window_get_occlusion_state(self.handle))
+        }
+    }
+
+    pub fn is_occlusion_state_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_occlusion_state_supported()
         }
     }
 

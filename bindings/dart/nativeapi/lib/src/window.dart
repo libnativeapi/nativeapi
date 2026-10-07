@@ -95,6 +95,25 @@ enum WindowProperty {
       c.native_window_property_t.fromValue(value);
 }
 
+enum WindowOcclusionState {
+  unknown(0),
+  visible(1),
+  occluded(2);
+
+  const WindowOcclusionState(this.value);
+  final int value;
+
+  static WindowOcclusionState fromValue(int value) => switch (value) {
+    0 => WindowOcclusionState.unknown,
+    1 => WindowOcclusionState.visible,
+    2 => WindowOcclusionState.occluded,
+    _ => WindowOcclusionState.unknown,
+  };
+
+  c.native_window_occlusion_state_t get raw =>
+      c.native_window_occlusion_state_t.fromValue(value);
+}
+
 enum VisualEffect {
   none(0),
   blur(1),
@@ -238,6 +257,18 @@ sealed class WindowEvent {
         ),
       );
     }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED
+            .value) {
+      return WindowOcclusionChangedEvent(
+        windowId: raw.window_id,
+        occlusionState: WindowOcclusionState.fromValue(
+          raw.data.occlusion_changed.occlusion_stateAsInt,
+        ),
+      );
+    }
     return null;
   }
 }
@@ -343,6 +374,17 @@ final class WindowPropertyChangedEvent extends WindowEvent {
   final WindowProperty property;
 }
 
+final class WindowOcclusionChangedEvent extends WindowEvent {
+  const WindowOcclusionChangedEvent({
+    required this.windowId,
+    required this.occlusionState,
+  });
+
+  @override
+  final WindowId windowId;
+  final WindowOcclusionState occlusionState;
+}
+
 class Window {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
@@ -424,6 +466,15 @@ class Window {
 
   bool get isVisible {
     return c.native_window_is_visible(nativeHandle);
+  }
+
+  WindowOcclusionState get occlusionState {
+    final raw = c.native_window_get_occlusion_state(nativeHandle);
+    return WindowOcclusionState.fromValue(raw.value);
+  }
+
+  static bool isOcclusionStateSupported() {
+    return c.native_window_is_occlusion_state_supported();
   }
 
   void maximize() {

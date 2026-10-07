@@ -2722,6 +2722,19 @@ external native_size_t native_window_get_minimum_size(int window);
 @ffi.Native<ffi.Pointer<ffi.Void> Function(native_window_t)>()
 external ffi.Pointer<ffi.Void> native_window_get_native_object(int window);
 
+@ffi.Native<ffi.UnsignedInt Function(native_window_t)>(
+  symbol: 'native_window_get_occlusion_state',
+)
+external int _native_window_get_occlusion_state(int window);
+
+native_window_occlusion_state_t native_window_get_occlusion_state(
+  Dartnative_window_t window,
+) {
+  return native_window_occlusion_state_t.fromValue(
+    _native_window_get_occlusion_state(window),
+  );
+}
+
 @ffi.Native<ffi.Float Function(native_window_t)>()
 external double native_window_get_opacity(int window);
 
@@ -2842,6 +2855,9 @@ external bool native_window_is_movable(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_non_activating(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_occlusion_state_supported();
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_resizable(int window);
@@ -3457,6 +3473,21 @@ final class UnnamedStruct$2 extends ffi.Struct {
   }) => $allocator<UnnamedStruct$2>()..ref.operation = operation;
 }
 
+final class UnnamedStruct$20 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int occlusion_stateAsInt;
+
+  native_window_occlusion_state_t get occlusion_state =>
+      native_window_occlusion_state_t.fromValue(occlusion_stateAsInt);
+  set occlusion_state(native_window_occlusion_state_t value) =>
+      occlusion_stateAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$20> $allocate(
+    ffi.Allocator $allocator, {
+    required native_window_occlusion_state_t occlusion_state,
+  }) => $allocator<UnnamedStruct$20>()..ref.occlusion_state = occlusion_state;
+}
+
 final class UnnamedStruct$3 extends ffi.Struct {
   external native_string_list_t file_paths;
 
@@ -3581,6 +3612,8 @@ final class UnnamedUnion$9 extends ffi.Union {
   external UnnamedStruct$18 close_requested;
 
   external UnnamedStruct$19 property_changed;
+
+  external UnnamedStruct$20 occlusion_changed;
 }
 
 typedef native_application_event_callback_t =
@@ -5483,7 +5516,8 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_ENTERED_FULL_SCREEN(9),
   NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10),
   NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED(11),
-  NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED(12);
+  NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED(12),
+  NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED(13);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -5502,6 +5536,7 @@ enum native_window_event_type_t {
     10 => NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN,
     11 => NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED,
     12 => NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED,
+    13 => NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),
@@ -5547,6 +5582,25 @@ typedef native_window_manager_set_will_show_hook_callback_tFunction =
     ffi.Void Function(ffi.UnsignedInt arg0, ffi.Pointer<ffi.Void> user_data);
 typedef Dartnative_window_manager_set_will_show_hook_callback_tFunction =
     void Function(int arg0, ffi.Pointer<ffi.Void> user_data);
+
+enum native_window_occlusion_state_t {
+  NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN(0),
+  NATIVE_WINDOW_OCCLUSION_STATE_VISIBLE(1),
+  NATIVE_WINDOW_OCCLUSION_STATE_OCCLUDED(2);
+
+  final int value;
+  const native_window_occlusion_state_t(this.value);
+
+  static native_window_occlusion_state_t fromValue(int value) =>
+      switch (value) {
+        0 => NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN,
+        1 => NATIVE_WINDOW_OCCLUSION_STATE_VISIBLE,
+        2 => NATIVE_WINDOW_OCCLUSION_STATE_OCCLUDED,
+        _ => throw ArgumentError(
+          'Unknown value for native_window_occlusion_state_t: $value',
+        ),
+      };
+}
 
 enum native_window_property_t {
   NATIVE_WINDOW_PROPERTY_TITLE(0),

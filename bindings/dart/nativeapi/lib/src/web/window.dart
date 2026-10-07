@@ -80,6 +80,22 @@ enum WindowProperty {
   };
 }
 
+enum WindowOcclusionState {
+  unknown(0),
+  visible(1),
+  occluded(2);
+
+  const WindowOcclusionState(this.value);
+  final int value;
+
+  static WindowOcclusionState fromValue(int value) => switch (value) {
+    0 => WindowOcclusionState.unknown,
+    1 => WindowOcclusionState.visible,
+    2 => WindowOcclusionState.occluded,
+    _ => WindowOcclusionState.unknown,
+  };
+}
+
 enum VisualEffect {
   none(0),
   blur(1),
@@ -240,6 +256,17 @@ final class WindowPropertyChangedEvent extends WindowEvent {
   final WindowProperty property;
 }
 
+final class WindowOcclusionChangedEvent extends WindowEvent {
+  const WindowOcclusionChangedEvent({
+    required this.windowId,
+    required this.occlusionState,
+  });
+
+  @override
+  final WindowId windowId;
+  final WindowOcclusionState occlusionState;
+}
+
 class Window {
   Window.fromHandle(this.nativeHandle);
   Window.borrowed(this.nativeHandle);
@@ -271,6 +298,10 @@ class Window {
   void hide() => unsupported();
 
   bool get isVisible => unsupported();
+
+  WindowOcclusionState get occlusionState => unsupported();
+
+  static bool isOcclusionStateSupported() => unsupported();
 
   void maximize() => unsupported();
 

@@ -476,6 +476,10 @@ inline Value ToValue(const native_window_event_t& event) {
       result.Set("type", Value::String("propertyChanged"));
       result.Set("property", Value::Number(static_cast<double>(event.data.property_changed.property)));
       break;
+    case NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED:
+      result.Set("type", Value::String("occlusionChanged"));
+      result.Set("occlusionState", Value::Number(static_cast<double>(event.data.occlusion_changed.occlusion_state)));
+      break;
     default:
       return Value::Null();
   }

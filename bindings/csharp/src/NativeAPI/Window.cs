@@ -38,6 +38,13 @@ public enum WindowProperty
     TitleBarStyle = 10,
 }
 
+public enum WindowOcclusionState
+{
+    Unknown = 0,
+    Visible = 1,
+    Occluded = 2,
+}
+
 public enum VisualEffect
 {
     None = 0,
@@ -80,6 +87,7 @@ public abstract record WindowEvent
     public sealed record ExitedFullScreen(uint WindowId) : WindowEvent;
     public sealed record CloseRequested(uint WindowId, EventRequest Request) : WindowEvent;
     public sealed record PropertyChanged(uint WindowId, WindowProperty Property) : WindowEvent;
+    public sealed record OcclusionChanged(uint WindowId, WindowOcclusionState OcclusionState) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -98,6 +106,7 @@ public abstract record WindowEvent
             case 10: return new ExitedFullScreen(raw.window_id);
             case 11: return new CloseRequested(raw.window_id, new EventRequest(raw.data.close_requested.request, ownsHandle: false));
             case 12: return new PropertyChanged(raw.window_id, (WindowProperty)raw.data.property_changed.property);
+            case 13: return new OcclusionChanged(raw.window_id, (WindowOcclusionState)raw.data.occlusion_changed.occlusion_state);
             default: return null;
         }
     }
@@ -217,6 +226,21 @@ public sealed partial class Window : IDisposable
             var rawResult = Interop.native_window_is_visible(NativeHandle);
             return rawResult;
         }
+    }
+
+    public WindowOcclusionState OcclusionState
+    {
+        get
+        {
+            var rawResult = Interop.native_window_get_occlusion_state(NativeHandle);
+            return (WindowOcclusionState)rawResult;
+        }
+    }
+
+    public static bool IsOcclusionStateSupported()
+    {
+        var rawResult = Interop.native_window_is_occlusion_state_supported();
+        return rawResult;
     }
 
     public void Maximize()

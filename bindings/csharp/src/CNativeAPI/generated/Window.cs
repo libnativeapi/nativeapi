@@ -22,6 +22,7 @@ public struct native_window_event_t
         [FieldOffset(0)] public ResizedData resized;
         [FieldOffset(0)] public CloseRequestedData close_requested;
         [FieldOffset(0)] public PropertyChangedData property_changed;
+        [FieldOffset(0)] public OcclusionChangedData occlusion_changed;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -46,6 +47,12 @@ public struct native_window_event_t
     public struct PropertyChangedData
     {
         public int property;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct OcclusionChangedData
+    {
+        public int occlusion_state;
     }
 }
 
@@ -167,6 +174,10 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_is_occlusion_state_supported();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_is_resizable(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -271,6 +282,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_window_get_corner_preference(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int native_window_get_occlusion_state(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_window_get_title_bar_style(ulong self);

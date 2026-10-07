@@ -141,6 +141,10 @@ class native_window_event_property_changed_t(Structure):
     pass
 
 
+class native_window_event_occlusion_changed_t(Structure):
+    pass
+
+
 class native_window_event_data_t(Union):
     pass
 
@@ -424,11 +428,15 @@ native_window_event_close_requested_t._fields_ = [
 native_window_event_property_changed_t._fields_ = [
     ("property", c_int),
 ]
+native_window_event_occlusion_changed_t._fields_ = [
+    ("occlusion_state", c_int),
+]
 native_window_event_data_t._fields_ = [
     ("moved", native_window_event_moved_t),
     ("resized", native_window_event_resized_t),
     ("close_requested", native_window_event_close_requested_t),
     ("property_changed", native_window_event_property_changed_t),
+    ("occlusion_changed", native_window_event_occlusion_changed_t),
 ]
 native_window_event_t._fields_ = [
     ("type", c_int),
@@ -2023,6 +2031,19 @@ native_window_show = function("native_window_show", None, [c_uint64])
 native_window_show_inactive = function("native_window_show_inactive", None, [c_uint64])
 native_window_hide = function("native_window_hide", None, [c_uint64])
 native_window_is_visible = function("native_window_is_visible", c_bool, [c_uint64])
+native_window_get_occlusion_state = function(
+    "native_window_get_occlusion_state",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_occlusion_state_supported = function(
+    "native_window_is_occlusion_state_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_maximize = function("native_window_maximize", None, [c_uint64])
 native_window_unmaximize = function("native_window_unmaximize", None, [c_uint64])
 native_window_is_maximized = function("native_window_is_maximized", c_bool, [c_uint64])

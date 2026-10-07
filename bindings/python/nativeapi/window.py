@@ -46,6 +46,12 @@ class WindowProperty(enum.IntEnum):
     TITLE_BAR_STYLE = 10
 
 
+class WindowOcclusionState(enum.IntEnum):
+    UNKNOWN = 0
+    VISIBLE = 1
+    OCCLUDED = 2
+
+
 class VisualEffect(enum.IntEnum):
     NONE = 0
     BLUR = 1
@@ -113,6 +119,12 @@ class WindowEvent:
             return WindowPropertyChangedEvent(
                 raw.window_id,
                 _rt.to_enum(WindowProperty, raw.data.property_changed.property),
+            )
+        if raw.type == 13:
+            data = raw.data.occlusion_changed
+            return WindowOcclusionChangedEvent(
+                raw.window_id,
+                _rt.to_enum(WindowOcclusionState, data.occlusion_state),
             )
         return None
 
@@ -182,6 +194,11 @@ class WindowPropertyChangedEvent(WindowEvent):
     property: WindowProperty
 
 
+@dataclass(frozen=True)
+class WindowOcclusionChangedEvent(WindowEvent):
+    occlusion_state: WindowOcclusionState
+
+
 class Window(_rt.NativeObject):
     """Owned reference to a native Window.
 
@@ -247,6 +264,16 @@ class Window(_rt.NativeObject):
     @property
     def is_visible(self) -> bool:
         raw = _C.native_window_is_visible(self._handle)
+        return raw
+
+    @property
+    def occlusion_state(self) -> WindowOcclusionState:
+        raw = _C.native_window_get_occlusion_state(self._handle)
+        return _rt.to_enum(WindowOcclusionState, raw)
+
+    @staticmethod
+    def is_occlusion_state_supported() -> bool:
+        raw = _C.native_window_is_occlusion_state_supported()
         return raw
 
     def maximize(self) -> None:

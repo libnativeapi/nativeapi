@@ -223,6 +223,32 @@ napi_value Js_native_window_is_visible(napi_env env, napi_callback_info info) {
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_get_occlusion_state(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_get_occlusion_state(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_window_is_occlusion_state_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_occlusion_state_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_maximize(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1840,6 +1866,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_show_inactive", Js_native_window_show_inactive);
   Export(env, exports, "native_window_hide", Js_native_window_hide);
   Export(env, exports, "native_window_is_visible", Js_native_window_is_visible);
+  Export(env, exports, "native_window_get_occlusion_state", Js_native_window_get_occlusion_state);
+  Export(env, exports, "native_window_is_occlusion_state_supported", Js_native_window_is_occlusion_state_supported);
   Export(env, exports, "native_window_maximize", Js_native_window_maximize);
   Export(env, exports, "native_window_unmaximize", Js_native_window_unmaximize);
   Export(env, exports, "native_window_is_maximized", Js_native_window_is_maximized);
