@@ -459,3 +459,46 @@ def quit_event_loop(exit_code: int = 0) -> None:
                 raise NativeApiError("nativeapi: could not schedule the quit request")
         return
     _C.native_application_quit(exit_code)
+
+
+_retain_handle = function("native_handle_retain", c_uint64, [c_uint64])
+_delivery_active = function("native_event_delivery_is_active", c_bool, [c_uint64])
+_delivery_complete = function(
+    "native_event_delivery_complete", c_bool, [c_uint64, c_bool]
+)
+
+
+def retain_handle(handle: int) -> int:
+    return int(_retain_handle(handle)) if handle else 0
+
+
+def deliver_callback(delivery: int, invoke: Callable[[], None]) -> None:
+    try:
+        if _delivery_active(delivery):
+            invoke()
+    finally:
+        _delivery_complete(delivery, True)
+
+
+async def read_async(read: Callable) -> Any:
+    future = asyncio.get_running_loop().create_future()
+
+    def complete(success: bool, value: Any) -> None:
+        if future.done():
+            return
+        if success:
+            future.set_result(value)
+        else:
+            future.set_exception(NativeApiError("nativeapi: operation failed"))
+
+    read(complete)
+    return await future
+
+
+def valid_clipboard_text(value: str | None) -> bool:
+    if value is None:
+        return True
+    try:
+        return "\0" not in value and bool(value.encode("utf-8") or value == "")
+    except UnicodeEncodeError:
+        return False

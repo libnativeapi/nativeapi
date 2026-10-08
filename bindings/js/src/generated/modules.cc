@@ -5,6 +5,7 @@
 
 namespace nativeapi_js {
 
+void RegisterClipboard(napi_env env, napi_value exports);
 void RegisterGeometry(napi_env env, napi_value exports);
 void RegisterColor(napi_env env, napi_value exports);
 void RegisterKeyboard(napi_env env, napi_value exports);
@@ -42,6 +43,7 @@ void RegisterKeyboardMonitor(napi_env env, napi_value exports);
 void RegisterApplication(napi_env env, napi_value exports);
 
 void RegisterGenerated(napi_env env, napi_value exports) {
+  RegisterClipboard(env, exports);
   RegisterGeometry(env, exports);
   RegisterColor(env, exports);
   RegisterKeyboard(env, exports);

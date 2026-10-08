@@ -1,3 +1,4 @@
+use codegen_shared::naming::{c_field_type, callback_has_payload};
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 
@@ -425,6 +426,7 @@ fn render_dart_class_web(out: &mut String, api: &Api, class: &Class) {
         .unwrap();
         writeln!(out).unwrap();
     }
+    render_dart_async(out, class);
     if let Some(group) = emitted_group(api, class) {
         writeln!(
             out,
@@ -756,8 +758,17 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
     writeln!(out, "class {} {{", item.name).unwrap();
     write!(out, "  const {}({{", item.name).unwrap();
     for field in &item.fields {
-        if is_callback(&field.ty) {
+        if is_callback(&field.ty)
+            || matches!(field.ty, TypeRef::Optional { .. } | TypeRef::Object { .. })
+        {
             write!(out, "this.{}, ", field.name.to_lower_camel_case()).unwrap();
+        } else if matches!(field.ty, TypeRef::Vector { .. }) {
+            write!(
+                out,
+                "this.{} = const [], ",
+                field.name.to_lower_camel_case()
+            )
+            .unwrap();
         } else {
             write!(out, "required this.{}, ", field.name.to_lower_camel_case()).unwrap();
         }
@@ -795,7 +806,7 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
         writeln!(
             out,
             "    {name}: {},",
-            dart_from_native(&field.ty, &format!("raw.{}", c_field(field)))
+            dart_owned_from_native(&field.ty, &format!("raw.{}", c_field(field)))
         )
         .unwrap();
     }
@@ -821,6 +832,15 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
                     "    pointer.ref.{raw} = {name} == null\n        ? ffi.nullptr\n        : {name}!.toNativeUtf8().cast<ffi.Char>();"
                 )
                 .unwrap();
+            }
+            TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+                writeln!(out, "    pointer.ref.{raw} = {name}?.toNativeUtf8().cast<ffi.Char>() ?? ffi.nullptr;").unwrap();
+            }
+            TypeRef::Object { .. } => {
+                writeln!(out, "    pointer.ref.{raw} = {name}?.nativeHandle ?? 0;").unwrap();
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                writeln!(out, "    final {name}Items = pkg_ffi.calloc<ffi.Pointer<ffi.Char>>({name}.length);\n    for (var i = 0; i < {name}.length; ++i) {{ {name}Items[i] = {name}[i].toNativeUtf8().cast<ffi.Char>(); }}\n    pointer.ref.{raw}.items = {name}Items;\n    pointer.ref.{raw}.count = {name}.length;").unwrap();
             }
             TypeRef::Enum { .. } => {
                 writeln!(out, "    pointer.ref.{raw}AsInt = {name}.value;").unwrap();
@@ -868,11 +888,20 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
     .unwrap();
     if struct_has_owned_fields(item) {
         for field in &item.fields {
-            if matches!(field.ty, TypeRef::String | TypeRef::CString) {
+            if matches!(
+                field.ty.unwrap_optional(),
+                TypeRef::String | TypeRef::CString
+            ) {
                 let raw = field.name.to_snake_case();
                 writeln!(out, "    if (pointer.ref.{raw} != ffi.nullptr) {{").unwrap();
                 writeln!(out, "      pkg_ffi.calloc.free(pointer.ref.{raw});").unwrap();
                 writeln!(out, "    }}").unwrap();
+            }
+            if let TypeRef::Vector { element } = &field.ty {
+                if matches!(element.as_ref(), TypeRef::String) {
+                    let raw = field.name.to_snake_case();
+                    writeln!(out, "    for (var i = 0; i < pointer.ref.{raw}.count; ++i) {{ pkg_ffi.calloc.free(pointer.ref.{raw}.items[i]); }}\n    pkg_ffi.calloc.free(pointer.ref.{raw}.items);").unwrap();
+                }
             }
         }
     }
@@ -1081,11 +1110,7 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         // shuts down, as on a Flutter hot restart, so the native object does not
         // outlive the program that created it. The core hands the release to the
         // main thread, wherever the finalizer runs.
-        writeln!(
-            out,
-            "  static final _finalizer = ffi.NativeFinalizer("
-        )
-        .unwrap();
+        writeln!(out, "  static final _finalizer = ffi.NativeFinalizer(").unwrap();
         writeln!(
             out,
             "    ffi.Native.addressOf<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(\n      {C}.{prefix}handle_finalize,\n    ),"
@@ -1151,6 +1176,10 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         writeln!(out).unwrap();
     }
 
+    if class.name == "Clipboard" {
+        writeln!(out, "  static bool _validText(String? value) {{\n    if (value == null) return true;\n    final units = value.codeUnits;\n    for (var i = 0; i < units.length; ++i) {{\n      final unit = units[i];\n      if (unit == 0) return false;\n      if (unit >= 0xd800 && unit <= 0xdbff) {{\n        if (++i == units.length || units[i] < 0xdc00 || units[i] > 0xdfff) {{ return false; }}\n      }} else if (unit >= 0xdc00 && unit <= 0xdfff) {{ return false; }}\n    }}\n    return true;\n  }}").unwrap();
+    }
+    render_dart_async(out, class);
     render_dart_listener(out, api, class, prefix);
 
     writeln!(out, "}}").unwrap();
@@ -1245,6 +1274,18 @@ fn render_dart_method(
     } else {
         method.params.clone()
     };
+    if class.name == "Clipboard" {
+        let condition = match method.name.as_str() {
+            "Write" => "!_validText(data.text) || !_validText(data.html) || data.filePaths.any((path) => !_validText(path))",
+            "WriteText" => "!_validText(text)",
+            "WriteHtml" => "!_validText(html)",
+            "WriteFilePaths" => "filePaths.any((path) => !_validText(path))",
+            _ => "",
+        };
+        if !condition.is_empty() {
+            writeln!(out, "    if ({condition}) {{ return false; }}").unwrap();
+        }
+    }
     render_param_bindings(out, &params, prefix, "    ");
     let receiver = instance.then(|| "nativeHandle".to_string());
     let call = format!(
@@ -1597,6 +1638,10 @@ fn render_callback_binding(
     indent: &str,
     optional: bool,
 ) {
+    if callback_has_payload(params) {
+        render_dart_payload_callback(out, name, params, indent, optional);
+        return;
+    }
     let c_args: Vec<String> = params
         .iter()
         .map(dart_native_type)
@@ -1982,6 +2027,8 @@ fn dart_native_type(ty: &TypeRef) -> String {
 /// Reads one value out of its C form.
 fn dart_from_native(ty: &TypeRef, access: &str) -> String {
     match ty {
+        TypeRef::Optional { inner } => dart_from_native(inner, access),
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => format!("[for (var i = 0; i < {access}.count; ++i) {}.fromValue({access}.values[i]) ]", element.named_type().unwrap()),
         TypeRef::String | TypeRef::CString => format!(
             "{access} == ffi.nullptr ? null : {access}.cast<pkg_ffi.Utf8>().toDartString()"
         ),
@@ -2053,5 +2100,76 @@ mod tests {
         assert_eq!(dart_enum_case("Class"), "class_");
         assert_eq!(dart_enum_case("kDefault"), "default_");
         assert_eq!(dart_enum_case("Await"), "await_");
+    }
+}
+
+fn dart_owned_from_native(ty: &TypeRef, access: &str) -> String {
+    if let TypeRef::Object { name, .. } = ty {
+        format!("{access} == 0 ? null : {name}.fromHandle({C}.native_handle_retain({access}))")
+    } else {
+        dart_from_native(ty, access)
+    }
+}
+fn render_dart_payload_callback(
+    out: &mut String,
+    name: &str,
+    params: &[TypeRef],
+    indent: &str,
+    optional: bool,
+) {
+    let mut native_args = Vec::new();
+    let mut args = Vec::new();
+    let mut values = Vec::new();
+    for (i, ty) in params.iter().enumerate() {
+        let native = match ty {
+            TypeRef::Optional { .. } | TypeRef::String | TypeRef::CString => {
+                "ffi.Pointer<ffi.Char>".into()
+            }
+            TypeRef::Object { .. } => "ffi.Uint64".into(),
+            TypeRef::Struct { .. } | TypeRef::Vector { .. } => {
+                format!("ffi.Pointer<{C}.{}>", c_field_type(ty, "native_"))
+            }
+            _ => dart_native_type(ty),
+        };
+        let dart = match ty {
+            TypeRef::Bool => "bool".into(),
+            TypeRef::Object { .. } | TypeRef::Int { .. } | TypeRef::Enum { .. } => "int".into(),
+            _ => native.clone(),
+        };
+        native_args.push(native);
+        args.push(format!("{dart} arg{i}"));
+        let access = if matches!(ty, TypeRef::Struct { .. } | TypeRef::Vector { .. }) {
+            format!("arg{i}.ref")
+        } else {
+            format!("arg{i}")
+        };
+        values.push(dart_owned_from_native(ty, &access));
+    }
+    native_args.extend(["ffi.Uint64".into(), "ffi.Pointer<ffi.Void>".into()]);
+    args.extend(["int delivery".into(), "ffi.Pointer<ffi.Void> _".into()]);
+    let guard = if optional {
+        format!("{name} == null ? null : ")
+    } else {
+        String::new()
+    };
+    writeln!(out, "{indent}final {name}Callable = {guard}ffi.NativeCallable<ffi.Void Function({})>.listener(({}) {{\n{indent}  try {{\n{indent}    if ({C}.native_event_delivery_is_active(delivery)) {{ {name}({}); }}\n{indent}  }} finally {{ {C}.native_event_delivery_complete(delivery, true); }}\n{indent}}});", native_args.join(", "), args.join(", "), values.join(", ")).unwrap();
+}
+
+fn render_dart_async(out: &mut String, class: &Class) {
+    for method in &class.methods {
+        if let [Param {
+            ty: TypeRef::Callback { params },
+            ..
+        }] = method.params.as_slice()
+        {
+            if params.len() == 2
+                && matches!(params[0], TypeRef::Bool)
+                && callback_has_payload(params)
+            {
+                let name = method.binding_name().to_lower_camel_case();
+                let ty = dart_field_type(&params[1]);
+                writeln!(out, "  Future<{ty}> {name}Async() {{\n    final completer = Completer<{ty}>();\n    {name}((success, value) {{\n      if (success) {{ completer.complete(value); }}\n      else {{ completer.completeError(StateError('Clipboard operation failed')); }}\n    }});\n    return completer.future;\n  }}").unwrap();
+            }
+        }
     }
 }

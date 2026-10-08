@@ -19,6 +19,7 @@ use codegen_shared::naming::{
     STRING_DUP_FN, STRING_FREE_FN, STRING_LIST_DUP_FN, STRING_LIST_FREE_FN, STRING_LIST_TYPE,
     STRING_MAP_DUP_FN, STRING_MAP_TYPE, USER_DATA_HEADER,
 };
+use codegen_shared::naming::{c_callback_param_type, callback_has_payload};
 use codegen_shared::GeneratedFile;
 
 pub fn generate(
@@ -101,6 +102,16 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
     writeln!(out, "typedef uint64_t {prefix}event_delivery_t;").unwrap();
     writeln!(
         out,
+        "/// Creates an independently owned reference; returns zero for invalid handles."
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "FFI_PLUGIN_EXPORT uint64_t {prefix}handle_retain(uint64_t handle);"
+    )
+    .unwrap();
+    writeln!(
+        out,
         "/// Whether the originating listener is still registered. False for stale handles."
     )
     .unwrap();
@@ -122,7 +133,11 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
     ] {
         writeln!(out, "{line}").unwrap();
     }
-    writeln!(out, "FFI_PLUGIN_EXPORT void {prefix}handle_finalize(void* handle);").unwrap();
+    writeln!(
+        out,
+        "FFI_PLUGIN_EXPORT void {prefix}handle_finalize(void* handle);"
+    )
+    .unwrap();
     writeln!(out).unwrap();
     for line in [
         "/// Tells the core a binding's runtime is gone for this user_data, from a",
@@ -132,7 +147,11 @@ pub fn generate_common(capi_out: &Path, prefix: &str) -> GeneratedFile {
     ] {
         writeln!(out, "{line}").unwrap();
     }
-    writeln!(out, "FFI_PLUGIN_EXPORT void {prefix}user_data_revoke(void* user_data);").unwrap();
+    writeln!(
+        out,
+        "FFI_PLUGIN_EXPORT void {prefix}user_data_revoke(void* user_data);"
+    )
+    .unwrap();
     writeln!(out).unwrap();
     writeln!(out, "#ifdef __cplusplus").unwrap();
     writeln!(out, "}}").unwrap();
@@ -149,6 +168,7 @@ pub fn generate_common_source(capi_out: &Path, prefix: &str) -> GeneratedFile {
     let mut out = String::new();
     write_banner(&mut out);
     out.push_str("#include \"common_c.h\"\n#include \"event_delivery.h\"\n#include \"../foundation/dispatcher.h\"\n#include \"../foundation/handle_table.h\"\n#include \"user_data.h\"\n\n");
+    writeln!(out, "uint64_t {prefix}handle_retain(uint64_t handle) {{ try {{ return nativeapi::HandleTable::GetInstance().Retain(handle); }} catch (...) {{ return 0; }} }}").unwrap();
     writeln!(
         out,
         "bool {prefix}event_delivery_is_active({prefix}event_delivery_t delivery) {{"
@@ -373,15 +393,45 @@ fn render_c_header(
 
     for item in &header.enums {
         render_c_enum(&mut out, item, prefix);
+        if header_enum_lists(header).contains(&item.name) {
+            let ty = c_type_name(prefix, &item.name);
+            let list = c_list_type_name(prefix, &item.name);
+            writeln!(
+                out,
+                "typedef struct {{ {ty}* values; long count; }} {list};"
+            )
+            .unwrap();
+        }
     }
 
+    let callback_structs: BTreeSet<String> = collect_callbacks(header, prefix)
+        .iter()
+        .flat_map(|callback| &callback.params)
+        .filter_map(|ty| match ty.unwrap_optional() {
+            TypeRef::Struct { name, .. } => Some(name.clone()),
+            _ => None,
+        })
+        .collect();
+    for item in header
+        .structs
+        .iter()
+        .filter(|item| callback_structs.contains(&item.name))
+    {
+        let name = c_type_name(prefix, &item.name);
+        writeln!(out, "typedef struct {name} {name};").unwrap();
+    }
     // Function-pointer typedefs come before anything that names them.
     for callback in collect_callbacks(header, prefix) {
         render_callback_typedef(&mut out, &callback, prefix);
     }
 
     for item in &header.structs {
-        render_c_struct(&mut out, item, prefix);
+        render_c_struct(
+            &mut out,
+            item,
+            prefix,
+            callback_structs.contains(&item.name),
+        );
     }
 
     // Opaque handle for every instance class; list types only where some API
@@ -486,6 +536,23 @@ fn render_cpp_converters(out: &mut String, header: &Header, capi_out: &Path, pre
     .unwrap();
     writeln!(out).unwrap();
 
+    let complex_fields = header
+        .structs
+        .iter()
+        .flat_map(|item| &item.fields)
+        .any(|field| {
+            matches!(
+                &field.ty,
+                TypeRef::Optional { .. } | TypeRef::Object { .. } | TypeRef::Vector { .. }
+            )
+        });
+    if complex_fields || !header_enum_lists(header).is_empty() {
+        writeln!(
+            out,
+            "#include <cstdlib>\n#include <stdexcept>\n#include \"../foundation/handle_table.h\""
+        )
+        .unwrap();
+    }
     // Declared up front so a converter can call one defined further down.
     for item in &header.enums {
         writeln!(
@@ -528,6 +595,11 @@ fn render_cpp_converters(out: &mut String, header: &Header, capi_out: &Path, pre
     for item in &header.enums {
         render_c_enum_converter(out, item, prefix);
         render_cpp_enum_converter(out, item, prefix);
+    }
+    for name in header_enum_lists(header) {
+        let ty = c_type_name(prefix, &name);
+        let list = c_list_type_name(prefix, &name);
+        writeln!(out, "inline {list} to_c_{name}_list(const std::vector<nativeapi::{name}>& value) {{\n  {list} result{{}};\n  if (!value.empty()) {{\n    result.values = static_cast<{ty}*>(std::calloc(value.size(), sizeof({ty})));\n    if (!result.values) throw std::bad_alloc();\n    result.count = static_cast<long>(value.size());\n    for (size_t i = 0; i < value.size(); ++i) result.values[i] = {}(value[i]);\n  }}\n  return result;\n}}", cpp_to_c_fn(&name)).unwrap();
     }
     for item in &header.structs {
         render_c_struct_converter(out, item, prefix);
@@ -784,8 +856,12 @@ fn render_c_enum(out: &mut String, item: &Enum, prefix: &str) {
     writeln!(out).unwrap();
 }
 
-fn render_c_struct(out: &mut String, item: &Struct, prefix: &str) {
-    writeln!(out, "typedef struct {{").unwrap();
+fn render_c_struct(out: &mut String, item: &Struct, prefix: &str, tagged: bool) {
+    if tagged {
+        writeln!(out, "struct {} {{", c_type_name(prefix, &item.name)).unwrap();
+    } else {
+        writeln!(out, "typedef struct {{").unwrap();
+    }
     for field in &item.fields {
         let name = field.name.to_snake_case();
         if is_callback(&field.ty) {
@@ -811,7 +887,11 @@ fn render_c_struct(out: &mut String, item: &Struct, prefix: &str) {
         }
         writeln!(out, "  {} {name};", c_field_type(&field.ty, prefix)).unwrap();
     }
-    writeln!(out, "}} {};", c_type_name(prefix, &item.name)).unwrap();
+    if tagged {
+        writeln!(out, "}};").unwrap();
+    } else {
+        writeln!(out, "}} {};", c_type_name(prefix, &item.name)).unwrap();
+    }
     writeln!(out).unwrap();
 }
 
@@ -966,8 +1046,21 @@ fn render_callback_typedef(out: &mut String, decl: &CallbackDecl, prefix: &str) 
         .params
         .iter()
         .enumerate()
-        .map(|(index, ty)| format!("{} arg{index}", c_param_type(ty, prefix)))
+        .map(|(index, ty)| {
+            format!(
+                "{} arg{index}",
+                if callback_has_payload(&decl.params) {
+                    c_callback_param_type(ty, prefix)
+                } else {
+                    c_param_type(ty, prefix)
+                }
+            )
+        })
         .collect();
+    if callback_has_payload(&decl.params) {
+        writeln!(out, "/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.").unwrap();
+        params.push(format!("{prefix}event_delivery_t delivery"));
+    }
     params.push("void* user_data".to_string());
     writeln!(out, "typedef void (*{})({});", decl.name, params.join(", ")).unwrap();
     writeln!(out).unwrap();
@@ -1142,7 +1235,11 @@ fn render_c_source(
     )
     .unwrap();
     writeln!(out, "#include \"{USER_DATA_HEADER}\"").unwrap();
-    if header.classes.iter().any(|class| class.event.is_some()) {
+    if header.classes.iter().any(|class| class.event.is_some())
+        || collect_callbacks(header, prefix)
+            .iter()
+            .any(|cb| callback_has_payload(&cb.params))
+    {
         writeln!(out, "#include \"event_delivery.h\"").unwrap();
     }
 
@@ -1336,6 +1433,25 @@ fn render_c_struct_converter(out: &mut String, item: &Struct, prefix: &str) {
             }
             // A callback field has no meaningful C++ -> C direction: the C side
             // supplies it, never receives it.
+            TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+                writeln!(out, "  result.{c_name} = value.{} ? (value.{}->empty() ? new char[1]{{0}} : {STRING_DUP_FN}(*value.{})) : nullptr;", field.name, field.name, field.name).unwrap();
+            }
+            TypeRef::Object { .. } => {
+                writeln!(
+                    out,
+                    "  result.{c_name} = nativeapi::HandleTable::GetInstance().Insert(value.{});",
+                    field.name
+                )
+                .unwrap();
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                writeln!(
+                    out,
+                    "  result.{c_name} = {STRING_LIST_DUP_FN}(value.{});",
+                    field.name
+                )
+                .unwrap();
+            }
             TypeRef::Callback { .. } | TypeRef::Optional { .. } => {}
             _ => {
                 writeln!(out, "  result.{c_name} = value.{};", field.name).unwrap();
@@ -1396,6 +1512,20 @@ fn render_cpp_struct_converter(out: &mut String, item: &Struct, prefix: &str) {
                 .unwrap();
                 writeln!(out, "  }}").unwrap();
             }
+            TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+                writeln!(
+                    out,
+                    "  if (value.{c_name}) result.{} = std::string(value.{c_name});",
+                    field.name
+                )
+                .unwrap();
+            }
+            TypeRef::Object { qualified_name, .. } => {
+                writeln!(out, "  result.{} = nativeapi::HandleTable::GetInstance().Resolve<{qualified_name}>(value.{c_name});\n  if (value.{c_name} && !result.{}) throw std::invalid_argument(\"Invalid struct handle\");", field.name, field.name).unwrap();
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                writeln!(out, "  if (value.{c_name}.count < 0 || (value.{c_name}.count && !value.{c_name}.items)) throw std::invalid_argument(\"Invalid string list\");\n  for (long i = 0; i < value.{c_name}.count; ++i) {{\n    if (!value.{c_name}.items[i]) throw std::invalid_argument(\"Null string item\");\n    result.{}.emplace_back(value.{c_name}.items[i]);\n  }}", field.name).unwrap();
+            }
             TypeRef::Optional { .. } => {}
             _ => {
                 writeln!(out, "  result.{} = value.{c_name};", field.name).unwrap();
@@ -1435,6 +1565,11 @@ fn render_param_bindings(
                     "{indent}auto {name}_cpp = nativeapi::HandleTable::GetInstance().Resolve<{qualified_name}>({name});"
                 )
                 .unwrap();
+                if header.stem == "clipboard" && *shared {
+                    writeln!(out, "{indent}if ({name} && !{name}_cpp) {{").unwrap();
+                    fail_return(out, &format!("{indent}  "));
+                    writeln!(out, "{indent}}}").unwrap();
+                }
                 // A shared parameter may legitimately be null (clearing an icon,
                 // for instance); a by-value one is about to be dereferenced.
                 if !shared {
@@ -1455,6 +1590,18 @@ fn render_param_bindings(
                 .unwrap();
             }
             TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                if header.stem == "clipboard" {
+                    writeln!(
+                        out,
+                        "{indent}if ({name}.count < 0 || ({name}.count > 0 && !{name}.items)) {{"
+                    )
+                    .unwrap();
+                    fail_return(out, &format!("{indent}  "));
+                    writeln!(out, "{indent}}}").unwrap();
+                    writeln!(out, "{indent}for (long i = 0; i < {name}.count; ++i) {{\n{indent}  if (!{name}.items[i]) {{").unwrap();
+                    fail_return(out, &format!("{indent}    "));
+                    writeln!(out, "{indent}  }}\n{indent}}}").unwrap();
+                }
                 writeln!(
                     out,
                     "{indent}std::vector<std::string> {name}_cpp;\n{indent}for (long i = 0; i < {name}.count; ++i) {{\n{indent}  {name}_cpp.emplace_back({name}.items[i] ? {name}.items[i] : \"\");\n{indent}}}"
@@ -1536,6 +1683,10 @@ fn render_callback_binding(
     indent: &str,
     optional: bool,
 ) {
+    if callback_has_payload(params) {
+        render_payload_callback(out, name, params, indent);
+        return;
+    }
     let user_data = format!("{name}_holder->get()");
     let holder = format!("{name}_holder");
     let args: Vec<String> = params
@@ -2101,11 +2252,13 @@ fn render_c_free(out: &mut String, item: &Struct, prefix: &str) {
     writeln!(out, "    return;").unwrap();
     writeln!(out, "  }}").unwrap();
     for field in &item.fields {
-        if matches!(field.ty, TypeRef::String) {
-            let name = field.name.to_snake_case();
-            writeln!(out, "  {STRING_FREE_FN}(value->{name});").unwrap();
-            writeln!(out, "  value->{name} = nullptr;").unwrap();
-        }
+        release_value(
+            out,
+            &field.ty,
+            &format!("value->{}", field.name.to_snake_case()),
+            "  ",
+            prefix,
+        );
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -2481,6 +2634,107 @@ mod tests {
     use codegen_shared::ir::EnumVariant;
 
     #[test]
+    fn complex_callbacks_lease_copied_payload_and_preserve_empty_optional_strings() {
+        let params = vec![
+            TypeRef::Bool,
+            TypeRef::Optional {
+                inner: Box::new(TypeRef::String),
+            },
+        ];
+        let mut out = String::new();
+        render_payload_callback(&mut out, "callback", &params, "");
+        assert!(out.contains("std::optional<std::string>"));
+        assert!(out.contains("new char[1]{0}"));
+        assert!(out.contains("EventDeliveryContext>(holder)"));
+        assert!(out.contains("holder->revoked()"));
+        assert!(out.contains("delivery, holder->get()"));
+        assert!(out.contains("free_c_str(value->arg1)"));
+        let image = TypeRef::Object {
+            name: "Image".into(),
+            shared: true,
+            qualified_name: "nativeapi::Image".into(),
+        };
+        assert_eq!(
+            cpp_payload_type(&image),
+            "std::shared_ptr<nativeapi::Image>"
+        );
+    }
+
+    #[test]
+    fn clipboard_struct_conversion_preserves_absence_and_owned_fields() {
+        let item = Struct {
+            name: "ClipboardData".into(),
+            qualified_name: "nativeapi::ClipboardData".into(),
+            fields: vec![
+                Field {
+                    name: "text".into(),
+                    ty: TypeRef::Optional {
+                        inner: Box::new(TypeRef::String),
+                    },
+                },
+                Field {
+                    name: "image".into(),
+                    ty: TypeRef::Object {
+                        name: "Image".into(),
+                        qualified_name: "nativeapi::Image".into(),
+                        shared: true,
+                    },
+                },
+                Field {
+                    name: "file_paths".into(),
+                    ty: TypeRef::Vector {
+                        element: Box::new(TypeRef::String),
+                    },
+                },
+            ],
+            methods: vec![],
+            constants: vec![],
+        };
+        assert!(struct_has_owned_fields(&item));
+        let mut out = String::new();
+        render_c_struct_converter(&mut out, &item, "native_");
+        render_cpp_struct_converter(&mut out, &item, "native_");
+        assert!(out.contains("new char[1]{0}"));
+        assert!(out.contains("if (value.text) result.text"));
+        assert!(out.contains("Insert(value.image)"));
+        assert!(out.contains("Resolve<nativeapi::Image>(value.image)"));
+        assert!(out.contains("Invalid struct handle"));
+        assert!(out.contains("to_c_string_list(value.file_paths)"));
+        assert!(out.contains("Invalid string list"));
+        let mut callback = String::new();
+        render_payload_callback(
+            &mut callback,
+            "read",
+            &[
+                TypeRef::Bool,
+                TypeRef::Struct {
+                    name: item.name,
+                    qualified_name: item.qualified_name,
+                },
+            ],
+            "",
+        );
+        assert!(callback.contains("native_clipboard_data_free(&value->arg1)"));
+        assert!(callback.contains("&payload->arg1, delivery"));
+    }
+
+    #[test]
+    fn enum_lists_are_typed_and_passed_by_pointer_in_callbacks() {
+        let list = TypeRef::Vector {
+            element: Box::new(TypeRef::Enum {
+                name: "Format".into(),
+                qualified_name: "nativeapi::Format".into(),
+            }),
+        };
+        assert_eq!(c_field_type(&list, "native_"), "native_format_list_t");
+        assert_eq!(
+            c_callback_param_type(&list, "native_"),
+            "const native_format_list_t*"
+        );
+        assert_eq!(cpp_payload_type(&list), "std::vector<nativeapi::Format>");
+    }
+
+    #[test]
     fn enum_input_conversion_preserves_invalid_values_for_cpp_validation() {
         let item = Enum {
             name: "WindowCornerPreference".into(),
@@ -2497,5 +2751,179 @@ mod tests {
             "default:\n      return static_cast<nativeapi::WindowCornerPreference>(value);"
         ));
         assert!(!out.contains("default:\n      return nativeapi::WindowCornerPreference::Default;"));
+    }
+}
+
+fn header_enum_lists(header: &Header) -> BTreeSet<String> {
+    fn walk(ty: &TypeRef, found: &mut BTreeSet<String>) {
+        match ty {
+            TypeRef::Vector { element } => {
+                if let TypeRef::Enum { name, .. } = element.as_ref() {
+                    found.insert(name.clone());
+                }
+            }
+            TypeRef::Callback { params } => {
+                for ty in params {
+                    walk(ty, found);
+                }
+            }
+            TypeRef::Optional { inner } => walk(inner, found),
+            _ => {}
+        }
+    }
+    let mut found = BTreeSet::new();
+    for class in &header.classes {
+        for method in &class.methods {
+            walk(&method.return_type, &mut found);
+            for param in &method.params {
+                walk(&param.ty, &mut found);
+            }
+        }
+    }
+    found
+}
+
+fn release_value(out: &mut String, ty: &TypeRef, value: &str, indent: &str, prefix: &str) {
+    match ty {
+        TypeRef::String => {
+            writeln!(out, "{indent}{STRING_FREE_FN}({value});").unwrap();
+            writeln!(out, "{indent}{value} = nullptr;").unwrap();
+        }
+        TypeRef::Optional { inner } => release_value(out, inner, value, indent, prefix),
+        TypeRef::Object { .. } => {
+            writeln!(
+                out,
+                "{indent}nativeapi::HandleTable::GetInstance().Release({value}); {value} = 0;"
+            )
+            .unwrap();
+        }
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+            writeln!(out, "{indent}{STRING_LIST_FREE_FN}(&{value});").unwrap();
+        }
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => {
+            writeln!(out, "{indent}std::free({value}.values); {value} = {{}};").unwrap();
+        }
+        TypeRef::Struct { name, .. } => {
+            writeln!(out, "{indent}{}(&{value});", c_free_symbol(prefix, name)).unwrap();
+        }
+        _ => {}
+    }
+}
+
+fn assign_value(
+    out: &mut String,
+    ty: &TypeRef,
+    target: &str,
+    value: &str,
+    indent: &str,
+    _prefix: &str,
+) {
+    let expr = match ty {
+        TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => format!(
+            "{value} ? ({value}->empty() ? new char[1]{{0}} : {STRING_DUP_FN}(*{value})) : nullptr"
+        ),
+        TypeRef::String => format!("{STRING_DUP_FN}({value})"),
+        TypeRef::Struct { name, .. } | TypeRef::Enum { name, .. } => {
+            format!("{}({value})", cpp_to_c_fn(name))
+        }
+        TypeRef::Object { .. } => format!("nativeapi::HandleTable::GetInstance().Insert({value})"),
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+            format!("{STRING_LIST_DUP_FN}({value})")
+        }
+        TypeRef::Vector { element } => {
+            format!("to_c_{}_list({value})", element.named_type().unwrap())
+        }
+        _ => value.to_owned(),
+    };
+    writeln!(out, "{indent}{target} = {expr};").unwrap();
+}
+
+fn render_payload_callback(out: &mut String, name: &str, params: &[TypeRef], indent: &str) {
+    let prefix = "native_";
+    let signature = params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| format!("{} arg{i}", cpp_payload_type(ty)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    writeln!(
+        out,
+        "{indent}std::function<void({})> {name}_cpp;",
+        params
+            .iter()
+            .map(cpp_payload_type)
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+    .unwrap();
+    writeln!(out, "{indent}if ({name}) {{\n{indent}  {name}_cpp = [{name}, holder = {name}_holder]({signature}) {{\n{indent}    if (holder->revoked()) return;\n{indent}    struct Payload {{").unwrap();
+    for (i, ty) in params.iter().enumerate() {
+        writeln!(
+            out,
+            "{indent}      {} arg{i}{{}};",
+            c_field_type(ty, prefix)
+        )
+        .unwrap();
+    }
+    writeln!(out, "{indent}    }};\n{indent}    auto payload = std::shared_ptr<Payload>(new Payload{{}}, [](Payload* value) {{").unwrap();
+    for (i, ty) in params.iter().enumerate() {
+        release_value(
+            out,
+            ty,
+            &format!("value->arg{i}"),
+            &format!("{indent}      "),
+            prefix,
+        );
+    }
+    writeln!(out, "{indent}      delete value;\n{indent}    }});").unwrap();
+    for (i, ty) in params.iter().enumerate() {
+        assign_value(
+            out,
+            ty,
+            &format!("payload->arg{i}"),
+            &format!("arg{i}"),
+            &format!("{indent}    "),
+            prefix,
+        );
+    }
+    writeln!(out, "{indent}    auto context = std::make_shared<nativeapi::capi::EventDeliveryContext>(holder);\n{indent}    auto lease = std::make_shared<nativeapi::capi::EventDelivery>(context, payload, nullptr);\n{indent}    auto delivery = nativeapi::HandleTable::GetInstance().Insert(lease);").unwrap();
+    let forwarded = params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| {
+            if matches!(
+                ty,
+                TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+            ) {
+                format!("&payload->arg{i}")
+            } else {
+                format!("payload->arg{i}")
+            }
+        })
+        .chain(["delivery".to_owned(), "holder->get()".to_owned()])
+        .collect::<Vec<_>>()
+        .join(", ");
+    writeln!(
+        out,
+        "{indent}    {name}({forwarded});\n{indent}  }};\n{indent}}}"
+    )
+    .unwrap();
+}
+
+fn cpp_payload_type(ty: &TypeRef) -> String {
+    match ty {
+        TypeRef::Object { name, shared, .. } => {
+            if *shared {
+                format!("std::shared_ptr<nativeapi::{name}>")
+            } else {
+                format!("nativeapi::{name}*")
+            }
+        }
+        TypeRef::Struct { name, .. } | TypeRef::Enum { name, .. } | TypeRef::Alias { name, .. } => {
+            format!("nativeapi::{name}")
+        }
+        TypeRef::Vector { element } => format!("std::vector<{}>", cpp_payload_type(element)),
+        TypeRef::Optional { inner } => format!("std::optional<{}>", cpp_payload_type(inner)),
+        _ => ty.display_name(),
     }
 }

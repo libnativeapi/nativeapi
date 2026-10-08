@@ -33,6 +33,13 @@ napi_value JsIsMainThread(napi_env env, napi_callback_info) {
   return Value::Bool(IsPlatformMainThread()).ToJs(env);
 }
 
+napi_value JsRetainHandle(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  uint64_t handle = 0;
+  if (!args.ok() || !GetHandle(env, args[0], &handle)) return nullptr;
+  return Value::BigInt(native_handle_retain(handle)).ToJs(env);
+}
+
 napi_value JsIsEventDeliveryActive(napi_env env, napi_callback_info info) {
   Args args(env, info);
   uint64_t delivery = 0;
@@ -97,6 +104,7 @@ napi_value Init(napi_env env, napi_value exports) {
   Export(env, exports, "startEventLoop", JsStartEventLoop);
   Export(env, exports, "pumpEventLoop", JsPumpEventLoop);
   Export(env, exports, "isMainThread", JsIsMainThread);
+  Export(env, exports, "retainHandle", JsRetainHandle);
   Export(env, exports, "isEventDeliveryActive", JsIsEventDeliveryActive);
   Export(env, exports, "completeEventDelivery", JsCompleteEventDelivery);
   Export(env, exports, "requestEventLoopQuit", JsRequestEventLoopQuit);

@@ -11,6 +11,9 @@ static inline void go_release_callback(void* data) {
 if (data) { goReleaseCallback(*(uintptr_t*)data); free(data); }
 }
 static inline native_release_user_data_t go_get_release_callback(void) { return go_release_callback; }
+extern void goEvent_native_clipboard_event_t(uintptr_t handle, native_clipboard_event_t* event);
+static inline void go_native_clipboard_event_callback_t(const native_clipboard_event_t* event, void* data) { goEvent_native_clipboard_event_t(*(uintptr_t*)data, (native_clipboard_event_t*)event); }
+static inline native_clipboard_event_callback_t go_get_native_clipboard_event_callback_t(void) { return go_native_clipboard_event_callback_t; }
 static inline unsigned int go_native_keyboard_event_t_modifier_keys_changed_ModifierKeys(const native_keyboard_event_t* event) { return event->data.modifier_keys_changed.modifier_keys; }
 extern void goEvent_native_keyboard_event_t(uintptr_t handle, native_keyboard_event_t* event);
 static inline void go_native_keyboard_event_callback_t(const native_keyboard_event_t* event, void* data) { goEvent_native_keyboard_event_t(*(uintptr_t*)data, (native_keyboard_event_t*)event); }
@@ -69,6 +72,21 @@ static inline native_event_request_t go_native_application_event_t_quit_requeste
 extern void goEvent_native_application_event_t(uintptr_t handle, native_application_event_t* event);
 static inline void go_native_application_event_callback_t(const native_application_event_t* event, void* data) { goEvent_native_application_event_t(*(uintptr_t*)data, (native_application_event_t*)event); }
 static inline native_application_event_callback_t go_get_native_application_event_callback_t(void) { return go_native_application_event_callback_t; }
+extern void goCall_native_clipboard_read_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_callback_t(bool arg0, const native_clipboard_data_t* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_callback_t go_get_native_clipboard_read_callback_t(void) { return go_native_clipboard_read_callback_t; }
+extern void goCall_native_clipboard_read_file_paths_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_file_paths_callback_t(bool arg0, const native_string_list_t* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_file_paths_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_file_paths_callback_t go_get_native_clipboard_read_file_paths_callback_t(void) { return go_native_clipboard_read_file_paths_callback_t; }
+extern void goCall_native_clipboard_read_html_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_html_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_html_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_html_callback_t go_get_native_clipboard_read_html_callback_t(void) { return go_native_clipboard_read_html_callback_t; }
+extern void goCall_native_clipboard_read_image_callback_t(uintptr_t handle, bool arg0, native_image_t arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_image_callback_t(bool arg0, native_image_t arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_image_callback_t(*(uintptr_t*)data, arg0, arg1, delivery); }
+static inline native_clipboard_read_image_callback_t go_get_native_clipboard_read_image_callback_t(void) { return go_native_clipboard_read_image_callback_t; }
+extern void goCall_native_clipboard_read_text_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_text_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_text_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_text_callback_t go_get_native_clipboard_read_text_callback_t(void) { return go_native_clipboard_read_text_callback_t; }
 extern void goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t(uintptr_t handle);
 static inline void go_native_shortcut_create_with_id_and_accelerator_and_callback_t(void* data) { goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t(*(uintptr_t*)data); }
 static inline native_shortcut_create_with_id_and_accelerator_and_callback_t go_get_native_shortcut_create_with_id_and_accelerator_and_callback_t(void) { return go_native_shortcut_create_with_id_and_accelerator_and_callback_t; }

@@ -6,6 +6,7 @@
 pub mod accessibility_manager;
 pub mod app_info;
 pub mod application;
+pub mod clipboard;
 pub mod color;
 pub mod device_info;
 pub mod dialog;
@@ -44,6 +45,7 @@ pub mod window_shape;
 pub use accessibility_manager::{AccessibilityManager};
 pub use app_info::{AppInfo};
 pub use application::{Brightness, ApplicationEvent, Application};
+pub use clipboard::{ClipboardData, ClipboardEvent, Clipboard};
 pub use color::{Color};
 pub use device_info::{DeviceInfo};
 pub use dialog::{DialogModality};

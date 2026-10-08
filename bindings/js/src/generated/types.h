@@ -5,6 +5,7 @@
 
 #include "../napi_support.h"
 
+#include "capi/clipboard_c.h"
 #include "capi/geometry_c.h"
 #include "capi/color_c.h"
 #include "capi/keyboard_c.h"
@@ -43,6 +44,9 @@
 
 namespace nativeapi_js {
 
+inline Value ToValue(const native_clipboard_data_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_clipboard_data_t* out, Arena& arena);
+inline Value ToValue(const native_clipboard_event_t& event);
 inline Value ToValue(const native_point_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_point_t* out, Arena& arena);
 inline Value ToValue(const native_size_t& value);
@@ -71,6 +75,67 @@ inline Value ToValue(const native_shortcut_options_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_shortcut_options_t* out, Arena& arena);
 inline Value ToValue(const native_shortcut_event_t& event);
 inline Value ToValue(const native_application_event_t& event);
+
+inline Value ToValue(const native_clipboard_data_t& value) {
+  Value result = Value::Object();
+  result.Set("text", Value::String(value.text));
+  result.Set("html", Value::String(value.html));
+  result.Set("image", Value::BigInt(value.image));
+  result.Set("filePaths", CopyStringList(value.file_paths));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_clipboard_data_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "ClipboardData")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "text", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetString(env, field, arena, &out->text)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "html", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetString(env, field, arena, &out->html)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "image", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetHandle(env, field, &out->image)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "filePaths", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetStringList(env, field, arena, &out->file_paths)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline Value ToValue(const native_clipboard_event_t& event) {
+  Value result = Value::Object();
+  switch (event.type) {
+    case NATIVE_CLIPBOARD_EVENT_TYPE_CHANGED:
+      result.Set("type", Value::String("changed"));
+      break;
+    default:
+      return Value::Null();
+  }
+  return result;
+}
 
 inline Value ToValue(const native_point_t& value) {
   Value result = Value::Object();

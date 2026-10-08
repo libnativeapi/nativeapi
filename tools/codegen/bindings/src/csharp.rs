@@ -1,3 +1,4 @@
+use codegen_shared::naming::callback_has_payload;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
@@ -223,6 +224,15 @@ public static partial class Interop
         {STRING_LIST_FREE_FN}(ref list);
         return items;
     }}
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_handle_retain(ulong handle);
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_event_delivery_is_active(ulong delivery);
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_event_delivery_complete(ulong delivery, [MarshalAs(UnmanagedType.I1)] bool accept);
 
     /// <summary>Copies a borrowed C string list, leaving it to its owner.</summary>
     public static string[] ReadStringList(in native_string_list_t list)
@@ -464,6 +474,12 @@ fn generate_struct(ctx: &mut Ctx, item: &Struct, prefix: &str) {
             TypeRef::Enum { name, .. } => format!("({name}){raw}"),
             TypeRef::Struct { name, .. } => format!("{name}.FromRaw(in {raw})"),
             TypeRef::Callback { .. } => "null".to_string(),
+            TypeRef::Object { name, .. } => {
+                format!("{raw} == 0 ? null : new {name}(Interop.native_handle_retain({raw}))")
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                format!("Interop.ReadStringList(in {raw})")
+            }
             TypeRef::Int { name } if int_needs_conv(name) => int_from_raw(name, &raw),
             _ => raw,
         };
@@ -490,6 +506,12 @@ fn generate_struct(ctx: &mut Ctx, item: &Struct, prefix: &str) {
                     "        raw.{raw} = Marshal.StringToCoTaskMemUTF8({name});"
                 )
                 .unwrap();
+            }
+            TypeRef::Object { .. } => {
+                writeln!(out, "        raw.{raw} = {name}?.NativeHandle ?? 0;").unwrap();
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                writeln!(out, "        var {raw}Values = {name} ?? Array.Empty<string>();\n        raw.{raw}.count = new CLong({raw}Values.Length);\n        raw.{raw}.items = Marshal.AllocCoTaskMem(IntPtr.Size * {raw}Values.Length);\n        for (var i = 0; i < {raw}Values.Length; ++i) Marshal.WriteIntPtr(raw.{raw}.items, i * IntPtr.Size, Marshal.StringToCoTaskMemUTF8({raw}Values[i]));").unwrap();
             }
             TypeRef::Enum { .. } => {
                 writeln!(out, "        raw.{raw} = (int){name};").unwrap();
@@ -549,6 +571,12 @@ fn generate_struct(ctx: &mut Ctx, item: &Struct, prefix: &str) {
                 let raw = field.name.to_snake_case();
                 writeln!(out, "        Marshal.FreeCoTaskMem(raw.{raw});").unwrap();
                 writeln!(out, "        raw.{raw} = IntPtr.Zero;").unwrap();
+            }
+            if let TypeRef::Vector { element } = &field.ty {
+                if matches!(element.as_ref(), TypeRef::String) {
+                    let raw = field.name.to_snake_case();
+                    writeln!(out, "        for (var i = 0; i < (int)raw.{raw}.count.Value; ++i) Marshal.FreeCoTaskMem(Marshal.ReadIntPtr(raw.{raw}.items, i * IntPtr.Size));\n        Marshal.FreeCoTaskMem(raw.{raw}.items);\n        raw.{raw} = default;").unwrap();
+                }
             }
         }
         writeln!(out, "    }}").unwrap();
@@ -867,6 +895,7 @@ fn generate_handle_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) 
         writeln!(out).unwrap();
     }
 
+    generate_async_methods(ctx, class);
     generate_listener(ctx, api, class, prefix);
 
     let out = &mut ctx.public;
@@ -906,6 +935,10 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
         generate_method(ctx, api, class, method, prefix);
     }
 
+    if class.name == "Clipboard" {
+        writeln!(ctx.public, "    private static bool ValidText(string? value) {{\n        if (value is null) return true;\n        if (value.IndexOf((char)0) >= 0) return false;\n        try {{ new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }}\n        catch (System.Text.EncoderFallbackException) {{ return false; }}\n    }}").unwrap();
+    }
+    generate_async_methods(ctx, class);
     generate_listener(ctx, api, class, prefix);
 
     let out = &mut ctx.public;
@@ -1048,6 +1081,18 @@ fn generate_method(ctx: &mut Ctx, api: &Api, class: &Class, method: &Method, pre
         writeln!(out, "    {{").unwrap();
     }
 
+    if class.name == "Clipboard" {
+        let condition = match method.name.as_str() {
+            "Write" => "!ValidText(data.Text) || !ValidText(data.Html) || Array.Exists(data.FilePaths ?? Array.Empty<string>(), path => !ValidText(path))",
+            "WriteText" => "!ValidText(text)",
+            "WriteHtml" => "!ValidText(html)",
+            "WriteFilePaths" => "System.Linq.Enumerable.Any(filePaths, path => !ValidText(path))",
+            _ => "",
+        };
+        if !condition.is_empty() {
+            writeln!(out, "{indent}if ({condition}) return false;").unwrap();
+        }
+    }
     out.push_str(&body);
     let receiver = instance.then(|| "NativeHandle".to_string());
     let args = call_args(&method.params, receiver);
@@ -1208,8 +1253,30 @@ fn register_delegate(
     let mut params: Vec<String> = args
         .iter()
         .enumerate()
-        .map(|(index, ty)| format!("{} arg{index}", cs_callback_c_type(ty, prefix)))
+        .map(|(index, ty)| {
+            format!(
+                "{} arg{index}",
+                if callback_has_payload(args)
+                    && matches!(ty, TypeRef::Struct { .. } | TypeRef::Vector { .. })
+                {
+                    "IntPtr".into()
+                } else {
+                    cs_callback_c_type(ty, prefix)
+                }
+            )
+        })
         .collect();
+    if callback_has_payload(args) {
+        params.push("ulong delivery".into());
+    }
+    for arg in args {
+        if let TypeRef::Vector { element } = arg {
+            if let TypeRef::Enum { name, .. } = element.as_ref() {
+                let list = c_list_type_name(prefix, name);
+                delegates.insert(format!("{list}Layout"), format!("[StructLayout(LayoutKind.Sequential)]\npublic struct {list} {{ public IntPtr values; public CLong count; }}"));
+            }
+        }
+    }
     params.push("IntPtr userData".to_string());
     delegates.insert(
         name.to_string(),
@@ -1237,6 +1304,31 @@ fn cs_callback_c_type(ty: &TypeRef, prefix: &str) -> String {
 
 /// The lambda bridging C-level callback arguments to the public `Action`.
 fn trampoline_lambda(args: &[TypeRef], body: &str) -> String {
+    if callback_has_payload(args) {
+        let names = (0..args.len())
+            .map(|i| format!("arg{i}"))
+            .chain(["delivery".into(), "userData".into()])
+            .collect::<Vec<_>>();
+        let mut locals = String::new();
+        let values = args.iter().enumerate().map(|(i, ty)| {
+            let arg = format!("arg{i}");
+            match ty {
+                TypeRef::Struct { name, .. } => { let raw = format!("raw{i}"); write!(locals, "var {raw} = Marshal.PtrToStructure<{}>({arg}); ", c_type_name("native_", name)).unwrap(); format!("{name}.FromRaw(in {raw})") }
+                TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                    write!(locals, "var raw{i} = Marshal.PtrToStructure<native_string_list_t>({arg}); ").unwrap(); format!("Interop.ReadStringList(in raw{i})")
+                }
+                TypeRef::Vector { element } => {
+                    let name = element.named_type().unwrap(); let list = c_list_type_name("native_", name);
+                    write!(locals, "var raw{i} = Marshal.PtrToStructure<{list}>({arg}); var values{i} = new {name}[checked((int)raw{i}.count.Value)]; for (var i = 0; i < values{i}.Length; ++i) values{i}[i] = ({name})Marshal.ReadInt32(raw{i}.values, i * sizeof(int)); ").unwrap(); format!("values{i}")
+                }
+                TypeRef::Object { name, .. } => format!("{arg} == 0 ? null : new {name}(Interop.native_handle_retain({arg}))"),
+                TypeRef::Optional { inner } => cs_callback_arg_expr(inner, &arg),
+                _ => cs_callback_arg_expr(ty, &arg),
+            }
+        }).collect::<Vec<_>>();
+        return format!("({}) => {{ try {{ if (!Interop.native_event_delivery_is_active(delivery)) return; {locals}{body}({}); }} catch (Exception) {{ }} finally {{ Interop.native_event_delivery_complete(delivery, true); }} }}", names.join(", "), values.join(", "));
+    }
+
     let mut params: Vec<String> = (0..args.len()).map(|index| format!("arg{index}")).collect();
     params.push("userData".to_string());
     let converted: Vec<String> = args
@@ -1426,7 +1518,11 @@ fn cs_action_type(params: &[TypeRef]) -> String {
             "Action<{}>",
             params
                 .iter()
-                .map(cs_public_type)
+                .map(|ty| if callback_has_payload(params) {
+                    cs_return_type(ty)
+                } else {
+                    cs_public_type(ty)
+                })
                 .collect::<Vec<_>>()
                 .join(", ")
         )
@@ -1747,6 +1843,7 @@ fn cs_return_type(ty: &TypeRef) -> String {
         TypeRef::Object { name, .. } => format!("{name}?"),
         TypeRef::Vector { element } => match element.as_ref() {
             TypeRef::Object { name, .. } => format!("{name}[]"),
+            TypeRef::Enum { name, .. } => format!("{name}[]"),
             _ => "string[]".to_string(),
         },
         TypeRef::Map { .. } => "Dictionary<string, string>".to_string(),
@@ -1791,6 +1888,9 @@ fn cs_struct_field_type(ty: &TypeRef) -> String {
     match ty.unwrap_optional() {
         TypeRef::Callback { params } => format!("{}?", cs_action_type(params)),
         TypeRef::String | TypeRef::CString => "string?".to_string(),
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+            "string[]".into()
+        }
         other => cs_public_type(other),
     }
 }
@@ -1989,4 +2089,24 @@ fn with_overload_suffix(base: String, class: &Class, method: &Method) -> String 
             .collect::<Vec<_>>()
             .join("_and_")
     )
+}
+
+fn generate_async_methods(ctx: &mut Ctx, class: &Class) {
+    for method in &class.methods {
+        if let [Param {
+            ty: TypeRef::Callback { params },
+            ..
+        }] = method.params.as_slice()
+        {
+            if params.len() == 2
+                && matches!(params[0], TypeRef::Bool)
+                && callback_has_payload(params)
+            {
+                let name = pascal(&method.binding_name());
+                let ty = cs_return_type(&params[1]);
+                let modifier = if method.is_static { "static " } else { "" };
+                writeln!(ctx.public, "    public {modifier}System.Threading.Tasks.Task<{ty}> {name}Async() {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
+            }
+        }
+    }
 }

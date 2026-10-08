@@ -1,3 +1,7 @@
+## Unreleased
+
+- Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
+
 ## 0.5.2
 
 * Windows: `Display.name` is the monitor's name ("DELL U2720Q", or "Generic PnP

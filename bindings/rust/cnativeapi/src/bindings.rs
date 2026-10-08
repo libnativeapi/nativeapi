@@ -12,6 +12,10 @@ pub type native_release_user_data_t =
 #[doc = " Owns an asynchronous event payload until acknowledged exactly once."]
 pub type native_event_delivery_t = u64;
 unsafe extern "C" {
+    #[doc = " Creates an independently owned reference; returns zero for invalid handles."]
+    pub fn native_handle_retain(handle: u64) -> u64;
+}
+unsafe extern "C" {
     #[doc = " Whether the originating listener is still registered. False for stale handles."]
     pub fn native_event_delivery_is_active(delivery: native_event_delivery_t) -> bool;
 }
@@ -1976,6 +1980,230 @@ unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_application_remove_listener(listener_id: native_listener_id_t) -> bool;
 }
+#[doc = " An owning list of strings.\n\n Free with native_string_list_free(); it releases every item and the array."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_string_list_t {
+    pub items: *mut *mut ::std::os::raw::c_char,
+    pub count: ::std::os::raw::c_long,
+}
+impl Default for native_string_list_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+#[doc = " An owning list of string key/value pairs. `keys[i]` corresponds to\n `values[i]`.\n\n Free with native_string_map_free(); it releases every entry and the arrays."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_string_map_t {
+    pub keys: *mut *mut ::std::os::raw::c_char,
+    pub values: *mut *mut ::std::os::raw::c_char,
+    pub count: ::std::os::raw::c_long,
+}
+impl Default for native_string_map_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+unsafe extern "C" {
+    #[doc = " Free a C string allocated by to_c_str\n @param str The string to free (can be nullptr)"]
+    pub fn free_c_str(str_: *mut ::std::os::raw::c_char);
+}
+unsafe extern "C" {
+    #[doc = " Free a string list allocated by to_c_string_list\n @param list The list to free (can be nullptr)"]
+    pub fn native_string_list_free(list: *mut native_string_list_t);
+}
+unsafe extern "C" {
+    #[doc = " Free a string map allocated by to_c_string_map\n @param map The map to free (can be nullptr)"]
+    pub fn native_string_map_free(map: *mut native_string_map_t);
+}
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const native_clipboard_data_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_text_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_html_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_image_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: native_image_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_file_paths_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const native_string_list_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_clipboard_data_t {
+    pub text: *mut ::std::os::raw::c_char,
+    pub html: *mut ::std::os::raw::c_char,
+    pub image: native_image_t,
+    pub file_paths: native_string_list_t,
+}
+impl Default for native_clipboard_data_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub const NATIVE_CLIPBOARD_EVENT_TYPE_CHANGED: native_clipboard_event_type_t = 0;
+#[doc = " Which concrete ClipboardEvent arrived."]
+pub type native_clipboard_event_type_t = ::std::os::raw::c_uint;
+#[doc = " One ClipboardEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_clipboard_event_t {
+    pub type_: native_clipboard_event_type_t,
+}
+impl Default for native_clipboard_event_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type native_clipboard_event_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_clipboard_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_clipboard_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_clipboard_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_clipboard_data_free(value: *mut native_clipboard_data_t);
+}
+unsafe extern "C" {
+    pub fn native_clipboard_is_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_is_change_monitoring_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_read(
+        callback: native_clipboard_read_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_clipboard_read_text(
+        callback: native_clipboard_read_text_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_clipboard_read_html(
+        callback: native_clipboard_read_html_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_clipboard_read_image(
+        callback: native_clipboard_read_image_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_clipboard_read_file_paths(
+        callback: native_clipboard_read_file_paths_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_clipboard_write(data: native_clipboard_data_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_write_text(text: *const ::std::os::raw::c_char) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_write_html(html: *const ::std::os::raw::c_char) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_write_image(image: native_image_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_write_file_paths(file_paths: native_string_list_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_clear() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_is_monitoring() -> bool;
+}
+unsafe extern "C" {
+    #[doc = " Registers @p callback for every ClipboardEvent this Clipboard emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
+    pub fn native_clipboard_add_listener(
+        callback: native_clipboard_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_clipboard_add_listener_async(
+        callback: native_clipboard_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Unregisters a listener. Returns false if unknown."]
+    pub fn native_clipboard_remove_listener(listener_id: native_listener_id_t) -> bool;
+}
 unsafe extern "C" {
     #[doc = " Caller owns the returned string; free it with free_c_str()."]
     pub fn native_device_info_get_name() -> *mut ::std::os::raw::c_char;
@@ -2150,51 +2378,6 @@ unsafe extern "C" {
 unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_display_manager_remove_listener(listener_id: native_listener_id_t) -> bool;
-}
-#[doc = " An owning list of strings.\n\n Free with native_string_list_free(); it releases every item and the array."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct native_string_list_t {
-    pub items: *mut *mut ::std::os::raw::c_char,
-    pub count: ::std::os::raw::c_long,
-}
-impl Default for native_string_list_t {
-    fn default() -> Self {
-        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
-        unsafe {
-            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
-            s.assume_init()
-        }
-    }
-}
-#[doc = " An owning list of string key/value pairs. `keys[i]` corresponds to\n `values[i]`.\n\n Free with native_string_map_free(); it releases every entry and the arrays."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct native_string_map_t {
-    pub keys: *mut *mut ::std::os::raw::c_char,
-    pub values: *mut *mut ::std::os::raw::c_char,
-    pub count: ::std::os::raw::c_long,
-}
-impl Default for native_string_map_t {
-    fn default() -> Self {
-        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
-        unsafe {
-            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
-            s.assume_init()
-        }
-    }
-}
-unsafe extern "C" {
-    #[doc = " Free a C string allocated by to_c_str\n @param str The string to free (can be nullptr)"]
-    pub fn free_c_str(str_: *mut ::std::os::raw::c_char);
-}
-unsafe extern "C" {
-    #[doc = " Free a string list allocated by to_c_string_list\n @param list The list to free (can be nullptr)"]
-    pub fn native_string_list_free(list: *mut native_string_list_t);
-}
-unsafe extern "C" {
-    #[doc = " Free a string map allocated by to_c_string_map\n @param map The map to free (can be nullptr)"]
-    pub fn native_string_map_free(map: *mut native_string_map_t);
 }
 pub const NATIVE_DRAG_OPERATION_NONE: native_drag_operation_t = 0;
 pub const NATIVE_DRAG_OPERATION_COPY: native_drag_operation_t = 1;

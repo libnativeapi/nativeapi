@@ -1,5 +1,6 @@
 //! Go's public API over cgo. C retains only malloc'd contexts containing
 //! runtime/cgo.Handle integers; no Go pointer crosses a callback lifetime.
+use codegen_shared::naming::{c_callback_param_type, callback_has_payload};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::Path;
@@ -282,11 +283,12 @@ fn from_c(t: &TypeRef, value: &str, borrowed: bool) -> String {
         TypeRef::Void => String::new(),
         TypeRef::String | TypeRef::CString => format!("C.GoString({value})"),
         TypeRef::Struct { name: n, .. } => format!("fromC{}({value})", name(n)),
-        TypeRef::Object { name: n, .. } => format!("wrap{}(uint64({value}), {borrowed})", name(n)),
+        TypeRef::Object { name: n, .. } => if borrowed { format!("wrap{}(uint64({value}), true)", name(n)) } else { format!("wrap{}(uint64({value}), false)", name(n)) },
         TypeRef::RawPointer => value.to_owned(),
         TypeRef::Vector { element } => match element.as_ref() {
             TypeRef::String => format!("stringsFromC({value})"),
             TypeRef::Object { name: n, .. } => format!("list{}FromC({value}, {borrowed})", name(n)),
+            TypeRef::Enum { name: n, .. } => format!("func() []{} {{ values := unsafe.Slice(({value}).values, int(({value}).count)); result := make([]{}, len(values)); for i, v := range values {{ result[i] = {}(v) }}; return result }}()", name(n), name(n), name(n)),
             _ => panic!("unsupported Go list element"),
         },
         TypeRef::Map { .. } => format!("mapFromC({value})"),
@@ -463,6 +465,11 @@ struct Callback {
     params: Vec<TypeRef>,
 }
 fn callback_bridge(out: &mut String, bridge: &mut String, cb: &Callback) {
+    if callback_has_payload(&cb.params) {
+        payload_callback_bridge(out, bridge, cb);
+        return;
+    }
+
     let n = &cb.c_name;
     let declarations = cb
         .params
@@ -660,6 +667,18 @@ fn class(out: &mut String, api: &Api, c: &Class) {
             write!(out, "func {function}(").unwrap();
         }
         writeln!(out, "{}) {} {{", params(&m.params), result_type(c, m)).unwrap();
+        if c.name == "Clipboard" {
+            let condition = match m.name.as_str() {
+                "Write" => "!validClipboardOptionalText(data.Text) || !validClipboardOptionalText(data.HTML) || !validClipboardPaths(data.FilePaths)",
+                "WriteText" => "!validClipboardText(text)",
+                "WriteHtml" => "!validClipboardText(html)",
+                "WriteFilePaths" => "!validClipboardPaths(filePaths)",
+                _ => "",
+            };
+            if !condition.is_empty() {
+                writeln!(out, "if {condition} {{ return ErrOperationFailed }}").unwrap();
+            }
+        }
         let mut args = Vec::new();
         if instance {
             args.push(format!("C.{cn}({recv}.nativeHandleValue())"));
@@ -763,7 +782,14 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
                     out,
                     "{}: {},",
                     name(&f.name),
-                    from_c(&f.ty, &format!("raw.{}", field(&f.name)), true)
+                    match f.ty.unwrap_optional() {
+                        TypeRef::Object { name: n, .. } => format!(
+                            "wrap{}(uint64(C.native_handle_retain(raw.{})), false)",
+                            name(n),
+                            field(&f.name)
+                        ),
+                        _ => from_c(&f.ty, &format!("raw.{}", field(&f.name)), true),
+                    }
                 )
                 .unwrap();
             }
@@ -998,4 +1024,105 @@ mod tests {
         assert!(!out.contains("func DisplayManagerAll"));
         assert!(!out.contains("nativeHandleValue"));
     }
+}
+
+fn payload_callback_bridge(out: &mut String, bridge: &mut String, cb: &Callback) {
+    let n = &cb.c_name;
+    let cargs = cb
+        .params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| format!("{} arg{i}", c_callback_param_type(ty, PREFIX)))
+        .chain([
+            "native_event_delivery_t delivery".into(),
+            "void* data".into(),
+        ])
+        .collect::<Vec<_>>();
+    let go_decl = cb
+        .params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| {
+            if matches!(
+                ty,
+                TypeRef::Struct { .. }
+                    | TypeRef::Vector { .. }
+                    | TypeRef::Map { .. }
+                    | TypeRef::Optional { .. }
+                    | TypeRef::String
+            ) {
+                format!("void* arg{i}")
+            } else {
+                format!("{} arg{i}", c_param_type(ty, PREFIX))
+            }
+        })
+        .collect::<Vec<_>>();
+    let forwarded = cb
+        .params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| {
+            if matches!(
+                ty,
+                TypeRef::Struct { .. }
+                    | TypeRef::Vector { .. }
+                    | TypeRef::Map { .. }
+                    | TypeRef::Optional { .. }
+                    | TypeRef::String
+            ) {
+                format!("(void*)arg{i}")
+            } else {
+                format!("arg{i}")
+            }
+        })
+        .collect::<Vec<_>>();
+    writeln!(bridge, "extern void goCall_{n}(uintptr_t handle, {}, native_event_delivery_t delivery);\nstatic inline void go_{n}({}) {{ goCall_{n}(*(uintptr_t*)data, {}, delivery); }}\nstatic inline {n} go_get_{n}(void) {{ return go_{n}; }}", go_decl.join(", "), cargs.join(", "), forwarded.join(", ")).unwrap();
+    let args = cb
+        .params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| {
+            let value = if matches!(
+                ty,
+                TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+            ) {
+                format!("*(*{})(arg{i})", cty(ty))
+            } else if matches!(ty, TypeRef::Optional { .. } | TypeRef::String) {
+                format!("(*C.char)(arg{i})")
+            } else {
+                format!("arg{i}")
+            };
+            if let TypeRef::Object { name: n, .. } = ty {
+                format!(
+                    "wrap{}(uint64(C.native_handle_retain({value})), false)",
+                    name(n)
+                )
+            } else {
+                from_c(ty, &value, false)
+            }
+        })
+        .collect::<Vec<_>>();
+    let go_args = cb
+        .params
+        .iter()
+        .enumerate()
+        .map(|(i, ty)| {
+            format!(
+                "arg{i} {}",
+                if matches!(
+                    ty,
+                    TypeRef::Struct { .. }
+                        | TypeRef::Vector { .. }
+                        | TypeRef::Map { .. }
+                        | TypeRef::Optional { .. }
+                        | TypeRef::String
+                ) {
+                    "unsafe.Pointer".into()
+                } else {
+                    cty(ty)
+                }
+            )
+        })
+        .collect::<Vec<_>>();
+    writeln!(out, "//export goCall_{n}\nfunc goCall_{n}(handle C.uintptr_t, {}, delivery C.native_event_delivery_t) {{\ndefer C.native_event_delivery_complete(delivery, true)\nif !bool(C.native_event_delivery_is_active(delivery)) {{ return }}\ncgo.Handle(handle).Value().({})({})\n}}", go_args.join(", "), ty(&TypeRef::Callback { params: cb.params.clone() }), args.join(", ")).unwrap();
 }

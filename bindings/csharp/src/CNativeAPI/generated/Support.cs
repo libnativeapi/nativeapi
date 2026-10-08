@@ -91,6 +91,15 @@ public static partial class Interop
         return items;
     }
 
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_handle_retain(ulong handle);
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_event_delivery_is_active(ulong delivery);
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_event_delivery_complete(ulong delivery, [MarshalAs(UnmanagedType.I1)] bool accept);
+
     /// <summary>Copies a borrowed C string list, leaving it to its owner.</summary>
     public static string[] ReadStringList(in native_string_list_t list)
     {

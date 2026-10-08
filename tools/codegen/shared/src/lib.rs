@@ -10,6 +10,7 @@ use anyhow::{bail, Context, Result};
 /// C++ header files to generate bindings for. Ordered roughly by dependency so
 /// the generated includes read top-down; the generator itself does not care.
 pub const API_HEADERS: &[&str] = &[
+    "clipboard.h",
     "foundation/geometry.h",
     "foundation/color.h",
     "foundation/keyboard.h",

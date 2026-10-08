@@ -12,6 +12,7 @@
 //! `_runtime.py` (handle ownership, string marshalling, callbacks, the event
 //! loop) are what both layers import.
 
+use codegen_shared::naming::{callback_has_payload, callback_payload_type, listed_enums};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::Path;
@@ -205,6 +206,16 @@ fn capi_module(api: &Api, prefix: &str) -> String {
         for group in &header.events {
             event_aggregates(&mut aggregates, group, prefix);
         }
+    }
+    for name in listed_enums(api) {
+        aggregates.push(RawAggregate {
+            name: c_list_type_name(prefix, &name),
+            union: false,
+            fields: vec![
+                ("values".into(), "POINTER(c_int)".into()),
+                ("count".into(), "c_long".into()),
+            ],
+        });
     }
     for class in listed_classes(api) {
         aggregates.push(RawAggregate {
@@ -629,7 +640,22 @@ fn return_ctype(ty: &TypeRef, prefix: &str) -> String {
 /// Registers the `CFUNCTYPE` for a callback signature and returns its name.
 /// Callbacks are named after their signature: many share one.
 fn callback_type(callbacks: &mut Callbacks, params: &[TypeRef], prefix: &str) -> String {
-    let args: Vec<String> = params.iter().map(|ty| raw_type(ty, prefix)).collect();
+    let args: Vec<String> = params
+        .iter()
+        .map(|ty| {
+            let raw = raw_type(ty, prefix);
+            if callback_has_payload(params)
+                && matches!(
+                    ty,
+                    TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+                )
+            {
+                format!("POINTER({raw})")
+            } else {
+                raw
+            }
+        })
+        .collect();
     let stem: Vec<String> = args
         .iter()
         .map(|ty| {
@@ -639,13 +665,18 @@ fn callback_type(callbacks: &mut Callbacks, params: &[TypeRef], prefix: &str) ->
                 .to_string()
         })
         .collect();
-    let name = if stem.is_empty() {
+    let name = if callback_has_payload(params) {
+        callback_payload_type(params, prefix)
+    } else if stem.is_empty() {
         format!("{prefix}void_callback_t")
     } else {
         format!("{prefix}{}_callback_t", stem.join("_"))
     };
     let mut signature_args = vec!["None".to_string()];
     signature_args.extend(args);
+    if callback_has_payload(params) {
+        signature_args.push("c_uint64".into());
+    }
     signature_args.push("c_void_p".to_string());
     callbacks.insert(
         name.clone(),
@@ -673,7 +704,9 @@ fn raw_type(ty: &TypeRef, prefix: &str) -> String {
         TypeRef::Object { .. } => "c_uint64".to_string(),
         TypeRef::Alias { underlying, .. } => raw_type(underlying, prefix),
         TypeRef::Vector { element } => match element.as_ref() {
-            TypeRef::Object { name, .. } => c_list_type_name(prefix, name),
+            TypeRef::Object { name, .. } | TypeRef::Enum { name, .. } => {
+                c_list_type_name(prefix, name)
+            }
             _ => STRING_LIST_TYPE.to_string(),
         },
         TypeRef::Map { .. } => STRING_MAP_TYPE.to_string(),
@@ -934,7 +967,11 @@ fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
         .iter()
         .map(|field| match field.ty.unwrap_optional() {
             TypeRef::Callback { .. } => "None".to_string(),
-            ty => borrowed_value(module, ty, &format!("raw.{}", raw_field_name(&field.name))),
+            _ => owned_value(
+                module,
+                &field.ty,
+                &format!("raw.{}", raw_field_name(&field.name)),
+            ),
         })
         .collect();
     write_call(out, "        return cls(", &values, ")");
@@ -976,8 +1013,13 @@ fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
                 )
                 .unwrap();
             }
-            ty => {
-                writeln!(out, "        {raw} = {}", c_value(module, ty, &value)).unwrap();
+            _ => {
+                writeln!(
+                    out,
+                    "        {raw} = {}",
+                    c_value(module, &field.ty, &value)
+                )
+                .unwrap();
             }
         }
     }
@@ -1176,6 +1218,7 @@ fn render_instance_class(out: &mut String, module: &mut Module, class: &Class) {
         }
         writeln!(out).unwrap();
         render_method(out, module, class, method);
+        render_async_method(out, module, class, method);
     }
 
     if class.native_object {
@@ -1282,6 +1325,7 @@ fn render_singleton_class(out: &mut String, module: &mut Module, class: &Class) 
         }
         writeln!(out).unwrap();
         render_method(out, module, class, method);
+        render_async_method(out, module, class, method);
     }
     render_listener(out, module, class);
     writeln!(out, "\n").unwrap();
@@ -1305,6 +1349,18 @@ fn render_method(out: &mut String, module: &mut Module, class: &Class, method: &
     } else {
         writeln!(out, "    @staticmethod").unwrap();
         write_def(out, &name, "", &method.params, module, &ret);
+    }
+    if class.name == "Clipboard" {
+        let condition = match method.name.as_str() {
+            "Write" => "(\n            not _rt.valid_clipboard_text(data.text)\n            or not _rt.valid_clipboard_text(data.html)\n            or any(not _rt.valid_clipboard_text(path) for path in data.file_paths)\n        )",
+            "WriteText" => "not _rt.valid_clipboard_text(text)",
+            "WriteHtml" => "not _rt.valid_clipboard_text(html)",
+            "WriteFilePaths" => "any(not _rt.valid_clipboard_text(path) for path in file_paths)",
+            _ => "",
+        };
+        if !condition.is_empty() {
+            writeln!(out, "        if {condition}:\n            return False").unwrap();
+        }
     }
     let receiver = if instance {
         vec!["self._handle".to_string()]
@@ -1643,6 +1699,32 @@ fn borrowed_value(module: &mut Module, ty: &TypeRef, access: &str) -> String {
 
 /// A lambda turning the C arguments of a callback into the Python ones.
 fn callback_trampoline(module: &mut Module, params: &[TypeRef], target: &str) -> String {
+    if callback_has_payload(params) {
+        let names = (0..params.len())
+            .map(|i| format!("a{i}"))
+            .collect::<Vec<_>>();
+        let values = params
+            .iter()
+            .zip(&names)
+            .map(|(ty, name)| {
+                let access = if matches!(
+                    ty,
+                    TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+                ) {
+                    format!("{name}.contents")
+                } else {
+                    name.clone()
+                };
+                owned_value(module, ty, &access)
+            })
+            .collect::<Vec<_>>();
+        return format!(
+            "lambda {}, delivery, _user_data: _rt.deliver_callback(\n    delivery,\n    lambda: {target}(\n        {}\n    ),\n)",
+            names.join(", "),
+            values.join(",\n        ")
+        );
+    }
+
     let names: Vec<String> = (0..params.len()).map(|index| format!("a{index}")).collect();
     let values: Vec<String> = params
         .iter()
@@ -1707,7 +1789,12 @@ fn write_call(out: &mut String, head: &str, values: &[String], tail: &str) {
     let indent: String = head.chars().take_while(|c| *c == ' ').collect();
     writeln!(out, "{head}").unwrap();
     for value in values {
-        writeln!(out, "{indent}    {value},").unwrap();
+        for line in value.lines() {
+            writeln!(out, "{indent}    {line}").unwrap();
+        }
+        // Attach the separator to the final line of a multiline expression.
+        out.pop();
+        out.push_str(",\n");
     }
     writeln!(out, "{indent}{tail}").unwrap();
 }
@@ -1740,7 +1827,9 @@ fn annotation(module: &mut Module, ty: &TypeRef, position: Position) -> String {
             }
         }
         TypeRef::Vector { element } => match element.as_ref() {
-            TypeRef::Object { name, .. } => format!("list[{}]", module.qual(name)),
+            TypeRef::Object { name, .. } | TypeRef::Enum { name, .. } => {
+                format!("list[{}]", module.qual(name))
+            }
             _ => "list[str]".to_string(),
         },
         TypeRef::Map { .. } => "dict[str, str]".to_string(),
@@ -1843,4 +1932,50 @@ fn py_ident(name: &str) -> String {
     } else {
         name.to_string()
     }
+}
+
+fn owned_value(module: &mut Module, ty: &TypeRef, access: &str) -> String {
+    match ty {
+        TypeRef::Object { name, .. } => {
+            format!("{}._owned(_rt.retain_handle({access}))", module.qual(name))
+        }
+        TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+            format!("None if {access} is None else _rt.decode({access})")
+        }
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => format!(
+            "[{}({access}.values[i]) for i in range({access}.count)]",
+            module.qual(element.named_type().unwrap())
+        ),
+        _ => borrowed_value(module, ty, access),
+    }
+}
+
+fn render_async_method(out: &mut String, module: &mut Module, class: &Class, method: &Method) {
+    if method.params.len() != 1 {
+        return;
+    }
+    let TypeRef::Callback { params } = &method.params[0].ty else {
+        return;
+    };
+    if params.len() != 2 || !matches!(params[0], TypeRef::Bool) || !callback_has_payload(params) {
+        return;
+    }
+    let instance = class.is_instance() && !method.is_static;
+    let name = py_method_name(class, method);
+    let ty = annotation(module, &params[1], Position::Return);
+    if !instance {
+        writeln!(out, "\n    @staticmethod").unwrap();
+    }
+    writeln!(
+        out,
+        "    async def {name}_async({}) -> {ty}:",
+        if instance { "self" } else { "" }
+    )
+    .unwrap();
+    writeln!(
+        out,
+        "        return await _rt.read_async({}.{name})",
+        if instance { "self" } else { &class.name }
+    )
+    .unwrap();
 }

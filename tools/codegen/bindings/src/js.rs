@@ -24,12 +24,12 @@ use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 
 use codegen_shared::ir::{Api, Class, EventGroup, Header, Method, Param, Struct, TypeRef};
 use codegen_shared::naming::{
-    ancestor_constructors, c_add_listener_symbol, c_constructor_symbol, c_event_variant,
-    c_event_variant_field, c_free_symbol, c_list_field, c_list_release_symbol, c_method_symbol,
-    c_native_object_symbol, c_param_type, c_release_user_data_param, c_remove_listener_symbol,
-    c_type_name, c_user_data_param, constructor_suffix, is_binding_accessor,
-    struct_has_owned_fields, swift_method_name, TypeOrigins, STRING_FREE_FN, STRING_LIST_FREE_FN,
-    STRING_MAP_FREE_FN,
+    ancestor_constructors, c_add_listener_symbol, c_callback_param_type, c_constructor_symbol,
+    c_event_variant, c_event_variant_field, c_free_symbol, c_list_field, c_list_release_symbol,
+    c_method_symbol, c_native_object_symbol, c_param_type, c_release_user_data_param,
+    c_remove_listener_symbol, c_type_name, c_user_data_param, callback_has_payload,
+    constructor_suffix, is_binding_accessor, struct_has_owned_fields, swift_method_name,
+    TypeOrigins, STRING_FREE_FN, STRING_LIST_FREE_FN, STRING_MAP_FREE_FN,
 };
 use codegen_shared::GeneratedFile;
 
@@ -347,6 +347,9 @@ fn value_expr(ty: &TypeRef, access: &str) -> String {
         TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
             format!("CopyStringList({access})")
         }
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => {
+            format!("[&] {{ Value result = Value::Array(); for (long i = 0; i < {access}.count; ++i) result.Push(Value::Number({access}.values[i])); return result; }}()")
+        }
         TypeRef::Map { .. } => format!("CopyStringMap({access})"),
         TypeRef::RawPointer => format!("Value::BigInt(reinterpret_cast<uintptr_t>({access}))"),
         _ => "Value::Undefined()".to_string(),
@@ -383,21 +386,47 @@ fn read_into(ty: &TypeRef, js: &str, target: &str) -> String {
 /// arguments to the `Callback` in `user_data`. Unary `+` decays it to the
 /// function pointer, so it can sit in a conditional against `nullptr`.
 fn trampoline(params: &[TypeRef], prefix: &str) -> String {
+    let rich = callback_has_payload(params);
     let mut decl: Vec<String> = params
         .iter()
         .enumerate()
-        .map(|(index, ty)| format!("{} arg{index}", c_param_type(ty, prefix)))
+        .map(|(i, ty)| {
+            format!(
+                "{} arg{i}",
+                if rich {
+                    c_callback_param_type(ty, prefix)
+                } else {
+                    c_param_type(ty, prefix)
+                }
+            )
+        })
         .collect();
-    decl.push("void* user_data".to_string());
+    if rich {
+        decl.push("native_event_delivery_t delivery".into());
+    }
+    decl.push("void* user_data".into());
     let args: Vec<String> = params
         .iter()
         .enumerate()
-        .map(|(index, ty)| value_expr(ty, &format!("arg{index}")))
+        .map(|(i, ty)| {
+            let value = if rich
+                && matches!(
+                    ty.unwrap_optional(),
+                    TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+                ) {
+                format!("(*arg{i})")
+            } else {
+                format!("arg{i}")
+            };
+            value_expr(ty, &value)
+        })
         .collect();
     format!(
-        "+[]({}) {{ Callback::Dispatch(user_data, {{{}}}); }}",
+        "+[]({}) {{ Callback::{}(user_data, {{{}}}{}); }}",
         decl.join(", "),
-        args.join(", ")
+        if rich { "DispatchEvent" } else { "Dispatch" },
+        args.join(", "),
+        if rich { ", delivery" } else { "" }
     )
 }
 
@@ -867,6 +896,9 @@ const RUNTIME_EXPORTS: &[(&str, &str)] = &[
 fn ts_file(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str) -> String {
     let mut body = String::new();
 
+    if header.stem == "clipboard" {
+        writeln!(body, "function validClipboardText(value: string | null | undefined): boolean {{\n  for (const character of value ?? \"\") {{\n    const point = character.codePointAt(0)!;\n    if (point === 0 || (point >= 0xd800 && point <= 0xdfff)) return false;\n  }}\n  return true;\n}}\n").unwrap();
+    }
     for alias in &header.aliases {
         if origins.get(&alias.name) == Some(&header.stem) {
             writeln!(body, "export type {} = number;", alias.name).unwrap();
@@ -1003,13 +1035,18 @@ fn ts_struct(out: &mut String, item: &Struct, prefix: &str) {
     writeln!(out, "export interface {} {{", item.name).unwrap();
     for field in &item.fields {
         let optional = matches!(field.ty, TypeRef::Optional { .. })
-            || matches!(field.ty, TypeRef::Callback { .. });
+            || matches!(
+                field.ty,
+                TypeRef::Callback { .. }
+                    | TypeRef::Object { shared: true, .. }
+                    | TypeRef::Vector { .. }
+            );
         writeln!(
             out,
             "  {}{}: {};",
             js_field(&field.name),
             if optional { "?" } else { "" },
-            ts_type(field.ty.unwrap_optional(), Position::Field)
+            ts_type(&field.ty, Position::Field)
         )
         .unwrap();
     }
@@ -1183,7 +1220,7 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
         if render_loop_method(out, &symbol) {
             continue;
         }
-        ts_method(out, class, method, &symbol);
+        ts_method(out, api, class, method, &symbol);
     }
 
     if class.is_instance() && class.native_object {
@@ -1248,14 +1285,14 @@ fn render_loop_method(out: &mut String, symbol: &str) -> bool {
     }
 }
 
-fn ts_method(out: &mut String, class: &Class, method: &Method, symbol: &str) {
+fn ts_method(out: &mut String, api: &Api, class: &Class, method: &Method, symbol: &str) {
     let instance = class.is_instance() && !method.is_static;
     let name = ts_ident(&swift_method_name(class, method));
     let mut args: Vec<String> = Vec::new();
     if instance {
         args.push("this.nativeHandle".to_string());
     }
-    args.extend(method.params.iter().map(ts_arg));
+    args.extend(method.params.iter().map(|p| ts_method_arg(api, p)));
     let call = format!("native.{symbol}({})", args.join(", "));
     let result = ts_wrap_result(&method.return_type, &call);
     let return_type = ts_type(&method.return_type, Position::Return);
@@ -1273,6 +1310,18 @@ fn ts_method(out: &mut String, class: &Class, method: &Method, symbol: &str) {
         )
         .unwrap();
     }
+    if class.name == "Clipboard" {
+        let condition = match method.name.as_str() {
+            "Write" => "!validClipboardText(data.text) || !validClipboardText(data.html) || (data.filePaths ?? []).some(path => !validClipboardText(path))",
+            "WriteText" => "!validClipboardText(text)",
+            "WriteHtml" => "!validClipboardText(html)",
+            "WriteFilePaths" => "filePaths.some(path => !validClipboardText(path))",
+            _ => "",
+        };
+        if !condition.is_empty() {
+            writeln!(out, "    if ({condition}) return false;").unwrap();
+        }
+    }
     if matches!(method.return_type, TypeRef::Void) {
         writeln!(out, "    {result};").unwrap();
     } else {
@@ -1280,6 +1329,18 @@ fn ts_method(out: &mut String, class: &Class, method: &Method, symbol: &str) {
     }
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
+    if method.params.len() == 1 {
+        if let TypeRef::Callback { params } = &method.params[0].ty {
+            if params.len() == 2
+                && matches!(params[0], TypeRef::Bool)
+                && callback_has_payload(params)
+            {
+                let ty = ts_type(&params[1], Position::Return);
+                let modifier = if instance { "" } else { "static " };
+                writeln!(out, "  {modifier}{name}Async(): Promise<{ty}> {{\n    return new Promise((resolve, reject) => this.{name}((success, value) => {{\n      if (success) resolve(value);\n      else reject(new Error(\"nativeapi: operation failed\"));\n    }}));\n  }}\n").unwrap();
+            }
+        }
+    }
 }
 
 fn ts_listener(out: &mut String, class: &Class, group: &EventGroup, prefix: &str) {
@@ -1648,5 +1709,72 @@ mod tests {
         let code = ts_file(&api, &manager, &type_origins(&api), "native");
         assert!(code.contains("import { EventRequest } from \"./event_request.ts\";"));
         assert!(code.contains("new EventRequest(event.request, false)"));
+    }
+}
+
+fn ts_payload_value(api: &Api, ty: &TypeRef, value: &str, input: bool) -> String {
+    match ty.unwrap_optional() {
+        TypeRef::Object { name, .. } => {
+            if input {
+                format!("{value}?.nativeHandle ?? 0n")
+            } else {
+                format!("({value} ? new {name}(native.retainHandle({value})) : null)")
+            }
+        }
+        TypeRef::Struct { name, .. } => {
+            let item = api
+                .headers
+                .iter()
+                .flat_map(|h| &h.structs)
+                .find(|s| s.name == *name)
+                .unwrap();
+            let fields: Vec<String> = item
+                .fields
+                .iter()
+                .filter(|f| {
+                    matches!(
+                        f.ty.unwrap_optional(),
+                        TypeRef::Object { .. } | TypeRef::Struct { .. }
+                    )
+                })
+                .map(|f| {
+                    let field = js_field(&f.name);
+                    format!(
+                        "{field}: {}",
+                        ts_payload_value(api, &f.ty, &format!("{value}.{field}"), input)
+                    )
+                })
+                .collect();
+            if fields.is_empty() {
+                value.into()
+            } else {
+                format!("({{ ...{value}, {} }})", fields.join(", "))
+            }
+        }
+        _ => value.into(),
+    }
+}
+fn ts_method_arg(api: &Api, param: &Param) -> String {
+    let name = ts_ident(&param.name.to_lower_camel_case());
+    if let TypeRef::Callback { params } = &param.ty {
+        if callback_has_payload(params) {
+            let args: Vec<String> = params
+                .iter()
+                .enumerate()
+                .map(|(i, t)| ts_payload_value(api, t, &format!("arg{i}"), false))
+                .collect();
+            let decl: Vec<String> = params
+                .iter()
+                .enumerate()
+                .map(|(i, _)| format!("arg{i}: any"))
+                .chain(["delivery: bigint".into()])
+                .collect();
+            return format!("({}) => deliverEvent(delivery, () => [{}] as const, (values) => {name}(...values))", decl.join(", "), args.join(", "));
+        }
+    }
+    if matches!(param.ty.unwrap_optional(), TypeRef::Struct { .. }) {
+        ts_payload_value(api, &param.ty, &name, true)
+    } else {
+        ts_arg(param)
     }
 }

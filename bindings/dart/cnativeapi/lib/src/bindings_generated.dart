@@ -174,6 +174,141 @@ external ffi.Pointer<ffi.Char> native_button_get_text(int button);
 @ffi.Native<ffi.Void Function(native_button_t, ffi.Pointer<ffi.Char>)>()
 external void native_button_set_text(int button, ffi.Pointer<ffi.Char> text);
 
+/// Registers @p callback for every ClipboardEvent this Clipboard emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_clipboard_event_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_clipboard_add_listener(
+  native_clipboard_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_clipboard_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_clipboard_add_listener_async(
+  native_clipboard_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_clear();
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_clipboard_data_t>)>()
+external void native_clipboard_data_free(
+  ffi.Pointer<native_clipboard_data_t> value,
+);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_is_change_monitoring_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_is_monitoring();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_is_supported();
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read(
+  native_clipboard_read_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_file_paths_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_file_paths(
+  native_clipboard_read_file_paths_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_html_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_html(
+  native_clipboard_read_html_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_image_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_image(
+  native_clipboard_read_image_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_text_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_text(
+  native_clipboard_read_text_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+/// Unregisters a listener. Returns false if unknown.
+@ffi.Native<ffi.Bool Function(native_listener_id_t)>()
+external bool native_clipboard_remove_listener(int listener_id);
+
+@ffi.Native<ffi.Bool Function(native_clipboard_data_t)>()
+external bool native_clipboard_write(native_clipboard_data_t data);
+
+@ffi.Native<ffi.Bool Function(native_string_list_t)>()
+external bool native_clipboard_write_file_paths(
+  native_string_list_t file_paths,
+);
+
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
+external bool native_clipboard_write_html(ffi.Pointer<ffi.Char> html);
+
+@ffi.Native<ffi.Bool Function(native_image_t)>()
+external bool native_clipboard_write_image(int image);
+
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
+external bool native_clipboard_write_text(ffi.Pointer<ffi.Char> text);
+
 @ffi.Native<native_color_t Function(ffi.Pointer<ffi.Char>)>()
 external native_color_t native_color_from_hex(ffi.Pointer<ffi.Char> hex);
 
@@ -398,7 +533,7 @@ external native_string_list_t native_drag_source_get_file_paths(
 );
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t Function(native_drag_source_t)>()
+@ffi.Native<native_image_t$1 Function(native_drag_source_t)>()
 external int native_drag_source_get_image(int drag_source);
 
 /// Caller owns the returned string; free it with free_c_str().
@@ -439,7 +574,7 @@ external void native_drag_source_set_file_paths(
   native_string_list_t file_paths,
 );
 
-@ffi.Native<ffi.Void Function(native_drag_source_t, native_image_t)>()
+@ffi.Native<ffi.Void Function(native_drag_source_t, native_image_t$1)>()
 external void native_drag_source_set_image(int drag_source, int image);
 
 @ffi.Native<ffi.Void Function(native_drag_source_t, ffi.Pointer<ffi.Char>)>()
@@ -688,38 +823,42 @@ external bool native_file_dialog_set_suggested_file_name(
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
 external void native_handle_finalize(ffi.Pointer<ffi.Void> handle);
 
+/// Creates an independently owned reference; returns zero for invalid handles.
+@ffi.Native<ffi.Uint64 Function(ffi.Uint64)>()
+external int native_handle_retain(int handle);
+
 /// Releases the caller's reference. Safe to call with an invalid or
 /// already-released handle.
-@ffi.Native<ffi.Void Function(native_image_t$1)>()
+@ffi.Native<ffi.Void Function(native_image_t$2)>()
 external void native_image_free(int image);
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$1 Function(ffi.Pointer<ffi.Char>)>()
+@ffi.Native<native_image_t$2 Function(ffi.Pointer<ffi.Char>)>()
 external int native_image_from_base64(ffi.Pointer<ffi.Char> base64_data);
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$1 Function(ffi.Pointer<ffi.Char>)>()
+@ffi.Native<native_image_t$2 Function(ffi.Pointer<ffi.Char>)>()
 external int native_image_from_file(ffi.Pointer<ffi.Char> file_path);
 
 /// Caller owns the returned string; free it with free_c_str().
-@ffi.Native<ffi.Pointer<ffi.Char> Function(native_image_t$1)>()
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_image_t$2)>()
 external ffi.Pointer<ffi.Char> native_image_get_format(int image);
 
 /// Platform-specific native object (NSScreen*, HMONITOR, ...).
-@ffi.Native<ffi.Pointer<ffi.Void> Function(native_image_t$1)>()
+@ffi.Native<ffi.Pointer<ffi.Void> Function(native_image_t$2)>()
 external ffi.Pointer<ffi.Void> native_image_get_native_object(int image);
 
-@ffi.Native<native_size_t Function(native_image_t$1)>()
+@ffi.Native<native_size_t Function(native_image_t$2)>()
 external native_size_t native_image_get_size(int image);
 
-@ffi.Native<ffi.Bool Function(native_image_t$1, ffi.Pointer<ffi.Char>)>()
+@ffi.Native<ffi.Bool Function(native_image_t$2, ffi.Pointer<ffi.Char>)>()
 external bool native_image_save_to_file(
   int image,
   ffi.Pointer<ffi.Char> file_path,
 );
 
 /// Caller owns the returned string; free it with free_c_str().
-@ffi.Native<ffi.Pointer<ffi.Char> Function(native_image_t$1)>()
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_image_t$2)>()
 external ffi.Pointer<ffi.Char> native_image_to_base64(int image);
 
 /// Creates a ImageView instance; release it with native_image_view_free().
@@ -732,10 +871,10 @@ external int native_image_view_create();
 external void native_image_view_free(int image_view);
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$1 Function(native_image_view_t)>()
+@ffi.Native<native_image_t$2 Function(native_image_view_t)>()
 external int native_image_view_get_image(int image_view);
 
-@ffi.Native<ffi.Void Function(native_image_view_t, native_image_t$1)>()
+@ffi.Native<ffi.Void Function(native_image_view_t, native_image_t$2)>()
 external void native_image_view_set_image(int image_view, int image);
 
 /// Frees everything the struct owns.
@@ -1128,7 +1267,7 @@ external native_keyboard_accelerator_t native_menu_item_get_accelerator(
 );
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$1 Function(native_menu_item_t)>()
+@ffi.Native<native_image_t$2 Function(native_menu_item_t)>()
 external int native_menu_item_get_icon(int menu_item);
 
 @ffi.Native<native_menu_item_id_t Function(native_menu_item_t)>()
@@ -1214,7 +1353,7 @@ external void native_menu_item_set_accelerator(
 @ffi.Native<ffi.Void Function(native_menu_item_t, ffi.Bool)>()
 external void native_menu_item_set_enabled(int menu_item, bool enabled);
 
-@ffi.Native<ffi.Void Function(native_menu_item_t, native_image_t$1)>()
+@ffi.Native<ffi.Void Function(native_menu_item_t, native_image_t$2)>()
 external void native_menu_item_set_icon(int menu_item, int image);
 
 @ffi.Native<ffi.Void Function(native_menu_item_t, ffi.Pointer<ffi.Char>)>()
@@ -2135,7 +2274,7 @@ native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
 }
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$2 Function(native_tray_icon_t)>()
+@ffi.Native<native_image_t$3 Function(native_tray_icon_t)>()
 external int native_tray_icon_get_icon(int tray_icon);
 
 @ffi.Native<ffi.UnsignedInt Function(native_tray_icon_t)>(
@@ -2221,7 +2360,7 @@ void native_tray_icon_set_context_menu_trigger(
   return _native_tray_icon_set_context_menu_trigger(tray_icon, trigger.value);
 }
 
-@ffi.Native<ffi.Void Function(native_tray_icon_t, native_image_t$2)>()
+@ffi.Native<ffi.Void Function(native_tray_icon_t, native_image_t$3)>()
 external void native_tray_icon_set_icon(int tray_icon, int image);
 
 @ffi.Native<ffi.Void Function(native_tray_icon_t, ffi.UnsignedInt)>(
@@ -3739,6 +3878,163 @@ enum native_brightness_t {
 typedef native_button_t = ffi.Uint64;
 typedef Dartnative_button_t = int;
 
+final class native_clipboard_data_t extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> text;
+
+  external ffi.Pointer<ffi.Char> html;
+
+  @native_image_t()
+  external int image;
+
+  external native_string_list_t file_paths;
+}
+
+typedef native_clipboard_event_callback_t =
+    ffi.Pointer<ffi.NativeFunction<native_clipboard_event_callback_tFunction>>;
+typedef native_clipboard_event_callback_tFunction = ffi.Void Function(
+  ffi.Pointer<native_clipboard_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_event_callback_tFunction = void Function(
+  ffi.Pointer<native_clipboard_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef native_clipboard_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_event_callback_t_asyncFunction>
+    >;
+typedef native_clipboard_event_callback_t_asyncFunction = ffi.Void Function(
+  ffi.Pointer<native_clipboard_event_t> event,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_event_callback_t_asyncFunction = void Function(
+  ffi.Pointer<native_clipboard_event_t> event,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// One ClipboardEvent, tagged by its concrete type.
+///
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
+final class native_clipboard_event_t extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int typeAsInt;
+
+  native_clipboard_event_type_t get type =>
+      native_clipboard_event_type_t.fromValue(typeAsInt);
+  set type(native_clipboard_event_type_t value) => typeAsInt = value.value;
+
+  static ffi.Pointer<native_clipboard_event_t> $allocate(
+    ffi.Allocator $allocator, {
+    required native_clipboard_event_type_t type,
+  }) => $allocator<native_clipboard_event_t>()..ref.type = type;
+}
+
+/// Which concrete ClipboardEvent arrived.
+enum native_clipboard_event_type_t {
+  NATIVE_CLIPBOARD_EVENT_TYPE_CHANGED(0);
+
+  final int value;
+  const native_clipboard_event_type_t(this.value);
+
+  static native_clipboard_event_type_t fromValue(int value) => switch (value) {
+    0 => NATIVE_CLIPBOARD_EVENT_TYPE_CHANGED,
+    _ => throw ArgumentError(
+      'Unknown value for native_clipboard_event_type_t: $value',
+    ),
+  };
+}
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_callback_t =
+    ffi.Pointer<ffi.NativeFunction<native_clipboard_read_callback_tFunction>>;
+typedef native_clipboard_read_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  ffi.Pointer<native_clipboard_data_t> arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_callback_tFunction = void Function(
+  bool arg0,
+  ffi.Pointer<native_clipboard_data_t> arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_file_paths_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_file_paths_callback_tFunction>
+    >;
+typedef native_clipboard_read_file_paths_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  ffi.Pointer<native_string_list_t> arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_file_paths_callback_tFunction = void Function(
+  bool arg0,
+  ffi.Pointer<native_string_list_t> arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_html_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_html_callback_tFunction>
+    >;
+typedef native_clipboard_read_html_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_html_callback_tFunction = void Function(
+  bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_image_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_image_callback_tFunction>
+    >;
+typedef native_clipboard_read_image_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  native_image_t arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_image_callback_tFunction = void Function(
+  bool arg0,
+  Dartnative_image_t arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_text_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_text_callback_tFunction>
+    >;
+typedef native_clipboard_read_text_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_text_callback_tFunction = void Function(
+  bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
 final class native_color_t extends ffi.Struct {
   @ffi.UnsignedChar()
   external int r;
@@ -4192,6 +4488,8 @@ typedef native_file_dialog_t = ffi.Uint64;
 typedef Dartnative_file_dialog_t = int;
 typedef native_image_t = ffi.Uint64;
 typedef Dartnative_image_t = int;
+typedef native_image_t$1 = ffi.Uint64;
+typedef Dartnative_image_t$1 = int;
 
 /// Opaque Image handle.
 ///
@@ -4199,14 +4497,14 @@ typedef Dartnative_image_t = int;
 /// never dereference it, and compare it against NATIVE_INVALID_IMAGE rather than NULL.
 /// Releasing a handle invalidates it; later calls fail safely instead of
 /// touching freed memory.
-typedef native_image_t$1 = ffi.Uint64;
-typedef Dartnative_image_t$1 = int;
 typedef native_image_t$2 = ffi.Uint64;
 typedef Dartnative_image_t$2 = int;
 typedef native_image_t$3 = ffi.Uint64;
 typedef Dartnative_image_t$3 = int;
 typedef native_image_t$4 = ffi.Uint64;
 typedef Dartnative_image_t$4 = int;
+typedef native_image_t$5 = ffi.Uint64;
+typedef Dartnative_image_t$5 = int;
 
 /// Opaque ImageView handle.
 ///

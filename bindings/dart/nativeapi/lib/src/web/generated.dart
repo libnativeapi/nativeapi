@@ -4,6 +4,7 @@
 export 'accessibility_manager.dart';
 export 'app_info.dart';
 export 'application.dart';
+export 'clipboard.dart';
 export 'device_info.dart';
 export 'dialog.dart';
 export 'display.dart';

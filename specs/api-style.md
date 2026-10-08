@@ -146,6 +146,7 @@ C 没有重载，codegen 给重载方法加参数后缀：`Run(window)` →
 | 可清空的字符串属性 | `const std::optional<std::string>&` | `std::optional<std::string>` |
 | 枚举 | 按值 | 按值 |
 | ID | `XxxId` 别名，不写裸 `int` / `unsigned` | 同左 |
+| 枚举列表 | `const std::vector<Enum>&` | `std::vector<Enum>` |
 | 字符串列表 | `const std::vector<std::string>&` | `std::vector<std::string>` |
 | 对象列表 | — | `std::vector<std::shared_ptr<T>>` |
 | 回调 | `std::function<void(...)>` 按值 | 不返回回调 |
@@ -350,7 +351,7 @@ class Foo : public EventEmitter<FooEvent>, public NativeObjectProvider {
 |---|---|
 | 签名只用 §2 表内的类型 | 其他类型 → 整个方法被跳过 |
 | `std::map` 只支持 `<string, string>` | 同上 |
-| `std::vector` 只支持句柄和字符串元素 | 同上 |
+| `std::vector` 只支持句柄、字符串和枚举元素 | 同上 |
 | `std::function` 只支持返回 `void` | 同上 |
 | 自由函数、运算符不导出 | `RunApp()`、`ModifierKey` 的 `operator\|` 已被跳过 |
 | 单例靠方法名 `GetInstance` 识别 | 改名就变成实例类 |
@@ -361,6 +362,10 @@ class Foo : public EventEmitter<FooEvent>, public NativeObjectProvider {
 事件 getter 带上领域词：`GetWindowId()`、`GetTrayIconId()`、`GetMenuId()`，而不是
 `GetId()`——它会变成 C struct 的字段名，多个领域的事件在绑定里并排出现时要能分辨。
 `MenuItemClickedEvent::GetItemId()` 少了前缀，是存量。
+
+普通 `void` 回调可以携带可选字符串、图片等共享对象、字符串 / 枚举列表和可转换
+struct。复杂负载使用交付 lease，绑定复制字符串、容器并 retain 需要保留的句柄后确认
+释放（[c-abi.md](c-abi.md) §6.3），不能把原生临时地址排队给异步消费者。
 
 ## 8. 新能力放哪
 

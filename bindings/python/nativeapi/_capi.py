@@ -57,6 +57,14 @@ native_string_map_free = function(
 # --- structures ---
 
 
+class native_clipboard_data_t(Structure):
+    pass
+
+
+class native_clipboard_event_t(Structure):
+    pass
+
+
 class native_point_t(Structure):
     pass
 
@@ -292,6 +300,39 @@ native_application_event_callback_t = CFUNCTYPE(
     POINTER(native_application_event_t),
     c_void_p,
 )
+native_callback_bool_clipboard_data_payload_t = CFUNCTYPE(
+    None,
+    c_bool,
+    POINTER(native_clipboard_data_t),
+    c_uint64,
+    c_void_p,
+)
+native_callback_bool_image_payload_t = CFUNCTYPE(
+    None,
+    c_bool,
+    c_uint64,
+    c_uint64,
+    c_void_p,
+)
+native_callback_bool_std_optional_std_string_payload_t = CFUNCTYPE(
+    None,
+    c_bool,
+    c_char_p,
+    c_uint64,
+    c_void_p,
+)
+native_callback_bool_std_vector_std_string_payload_t = CFUNCTYPE(
+    None,
+    c_bool,
+    POINTER(native_string_list_t),
+    c_uint64,
+    c_void_p,
+)
+native_clipboard_event_callback_t = CFUNCTYPE(
+    None,
+    POINTER(native_clipboard_event_t),
+    c_void_p,
+)
 native_display_event_callback_t = CFUNCTYPE(
     None,
     POINTER(native_display_event_t),
@@ -345,6 +386,15 @@ native_window_event_callback_t = CFUNCTYPE(
 
 # --- structure layouts, in dependency order ---
 
+native_clipboard_data_t._fields_ = [
+    ("text", c_char_p),
+    ("html", c_char_p),
+    ("image", c_uint64),
+    ("file_paths", native_string_list_t),
+]
+native_clipboard_event_t._fields_ = [
+    ("type", c_int),
+]
 native_point_t._fields_ = [
     ("x", c_double),
     ("y", c_double),
@@ -590,6 +640,121 @@ NATIVE_COLOR_CYAN = constant("NATIVE_COLOR_CYAN", native_color_t)
 NATIVE_COLOR_MAGENTA = constant("NATIVE_COLOR_MAGENTA", native_color_t)
 
 # --- functions ---
+
+# clipboard.h
+
+native_clipboard_data_free = function(
+    "native_clipboard_data_free",
+    None,
+    [
+        POINTER(native_clipboard_data_t),
+    ],
+)
+native_clipboard_is_supported = function("native_clipboard_is_supported", c_bool, [])
+native_clipboard_is_change_monitoring_supported = function(
+    "native_clipboard_is_change_monitoring_supported",
+    c_bool,
+    [
+    ],
+)
+native_clipboard_read = function(
+    "native_clipboard_read",
+    None,
+    [
+        native_callback_bool_clipboard_data_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_text = function(
+    "native_clipboard_read_text",
+    None,
+    [
+        native_callback_bool_std_optional_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_html = function(
+    "native_clipboard_read_html",
+    None,
+    [
+        native_callback_bool_std_optional_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_image = function(
+    "native_clipboard_read_image",
+    None,
+    [
+        native_callback_bool_image_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_file_paths = function(
+    "native_clipboard_read_file_paths",
+    None,
+    [
+        native_callback_bool_std_vector_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_write = function(
+    "native_clipboard_write",
+    c_bool,
+    [
+        native_clipboard_data_t,
+    ],
+)
+native_clipboard_write_text = function(
+    "native_clipboard_write_text",
+    c_bool,
+    [
+        c_char_p,
+    ],
+)
+native_clipboard_write_html = function(
+    "native_clipboard_write_html",
+    c_bool,
+    [
+        c_char_p,
+    ],
+)
+native_clipboard_write_image = function(
+    "native_clipboard_write_image",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_clipboard_write_file_paths = function(
+    "native_clipboard_write_file_paths",
+    c_bool,
+    [
+        native_string_list_t,
+    ],
+)
+native_clipboard_clear = function("native_clipboard_clear", c_bool, [])
+native_clipboard_is_monitoring = function("native_clipboard_is_monitoring", c_bool, [])
+native_clipboard_add_listener = function(
+    "native_clipboard_add_listener",
+    c_uint64,
+    [
+        native_clipboard_event_callback_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_remove_listener = function(
+    "native_clipboard_remove_listener",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
 
 # foundation/geometry.h
 

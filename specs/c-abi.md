@@ -41,6 +41,8 @@
 | 值对象（`Point`/`Size`/`Rectangle`/`Color`） | 同名 `native_*_t` struct | 按值 |
 | `XxxId`（`IdAllocator::IdType`） | `native_xxx_id_t` = `unsigned int` | 按值 |
 | `std::string` | `char*` | 调用方所有，见 §4 |
+| `std::optional<std::string>` | `char*` | NULL 表示缺失；非 NULL 空字符串表示存在的空内容 |
+| `std::vector<Enum>` | `native_enum_list_t` | `values` 与 `long count`；复制后释放 |
 | `std::vector<shared_ptr<T>>` | `native_x_list_t` | 见 §5 |
 | `bool` / 整数 / 浮点 | `stdbool.h` / `stdint.h` 对应类型 | 按值 |
 | 监听器 id | `native_listener_id_t` = `uint64_t` | `common_c.h` |
@@ -159,6 +161,18 @@ Dart 的事件订阅使用 `NativeCallable.listener`，在注册 isolate 消费�
 取消交付，再交给运行时的错误处理。JS 环境清理会取消全部未决交付，包括未消费的
 队列和永不结束的 Promise；原生排队失败也释放交付。普通方法参数里的同步
 callback 不因事件订阅迁移而改变，其余同步 C 消费端继续使用旧接口。
+
+### 6.3 普通回调的复杂负载
+
+携带可选字符串、对象、列表或 struct 的普通回调增加 `native_event_delivery_t`
+参数，位置在 `user_data` 前。struct / 列表通过 `const T*` 交付；字符串、列表及其中
+对象句柄在确认前有效。消费者必须调用一次 `native_event_delivery_complete`，重复确认
+返回 false。该 lease 同时保活回调的 `user_data`，复用现有交付的撤销与释放机制。
+简单标量回调的 ABI 不变。
+
+六种高级绑定自动复制内容并确认交付。图片结果通过 `native_handle_retain` 创建独立
+所有权槽位；该函数对 0 或过期句柄返回 0，保留原有类型与基类解析规则。调用方可以
+在回调返回、确认完成或剪贴板随后变化后继续使用读取结果。
 
 ## 7. 已知未决
 

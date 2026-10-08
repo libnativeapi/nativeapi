@@ -1,3 +1,4 @@
+use codegen_shared::naming::{c_field_type, callback_has_payload};
 use std::fmt::Write;
 use std::path::Path;
 
@@ -294,7 +295,13 @@ fn c_enum_variant_const(prefix: &str, item: &codegen_shared::ir::Enum, variant: 
 fn render_rust_struct(out: &mut String, item: &Struct, prefix: &str) {
     // A callback field holds a closure, which is neither printable nor
     // comparable, so those derives have to go when one is present.
-    let derives = if item.fields.iter().any(|field| is_callback(&field.ty)) {
+    let derives = if item
+        .fields
+        .iter()
+        .any(|field| matches!(field.ty, TypeRef::Object { .. }))
+    {
+        "#[derive(Debug)]"
+    } else if item.fields.iter().any(|field| is_callback(&field.ty)) {
         "#[derive(Clone)]"
     } else if struct_has_float_fields(item) {
         "#[derive(Debug, Clone, PartialEq)]"
@@ -356,6 +363,14 @@ fn render_rust_struct(out: &mut String, item: &Struct, prefix: &str) {
                 )
                 .unwrap();
             }
+            TypeRef::Optional { .. } | TypeRef::Object { .. } | TypeRef::Vector { .. } => {
+                writeln!(
+                    out,
+                    "            {name}: {},",
+                    owned_raw_expr(&field.ty, &format!("raw.{raw}"))
+                )
+                .unwrap();
+            }
             TypeRef::Callback { .. } => {
                 writeln!(out, "            {name}: None,").unwrap();
             }
@@ -401,6 +416,22 @@ fn render_rust_struct(out: &mut String, item: &Struct, prefix: &str) {
                 writeln!(out, "        let {raw}_nested = self.{name}.to_raw();").unwrap();
                 writeln!(out, "        raw.{raw} = {raw}_nested.raw;").unwrap();
                 owned.push(format!("{raw}_nested"));
+            }
+            TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+                writeln!(out, "        let {raw}_owned = self.{name}.as_deref().map(|v| CString::new(v).expect(\"interior NUL\"));\n        raw.{raw} = {raw}_owned.as_ref().map_or(std::ptr::null_mut(), |v| v.as_ptr() as *mut _);").unwrap();
+                owned.push(format!("{raw}_owned"));
+            }
+            TypeRef::Object { .. } => {
+                writeln!(
+                    out,
+                    "        raw.{raw} = self.{name}.as_ref().map_or(0, |v| v.as_raw());"
+                )
+                .unwrap();
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                writeln!(out, "        let {raw}_owned: Vec<CString> = self.{name}.iter().map(|v| CString::new(v.as_str()).expect(\"interior NUL\")).collect();\n        let mut {raw}_items: Vec<*mut std::os::raw::c_char> = {raw}_owned.iter().map(|v| v.as_ptr() as *mut _).collect();\n        raw.{raw} = cnativeapi::native_string_list_t {{ items: {raw}_items.as_mut_ptr(), count: {raw}_items.len() as _ }};").unwrap();
+                owned.push(format!("{raw}_owned"));
+                owned.push(format!("{raw}_items"));
             }
             TypeRef::Callback { params } => {
                 let user_data = codegen_shared::naming::c_user_data_param(&field.name);
@@ -453,6 +484,13 @@ fn owned_tuple_type(item: &Struct) -> String {
         match &field.ty {
             TypeRef::String | TypeRef::CString => parts.push("Option<CString>".to_string()),
             TypeRef::Struct { name, .. } => parts.push(format!("RawOf{name}")),
+            TypeRef::Optional { inner } if matches!(inner.as_ref(), TypeRef::String) => {
+                parts.push("Option<CString>".into())
+            }
+            TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::String) => {
+                parts.push("Vec<CString>".into());
+                parts.push("Vec<*mut std::os::raw::c_char>".into());
+            }
             _ => {}
         }
     }
@@ -945,6 +983,18 @@ fn render_rust_method(
         .unwrap();
     }
 
+    if class.name == "Clipboard" {
+        let condition = match method.name.as_str() {
+            "Write" => "data.text.as_ref().is_some_and(|s| s.contains('\\0')) || data.html.as_ref().is_some_and(|s| s.contains('\\0')) || data.file_paths.iter().any(|s| s.contains('\\0'))",
+            "WriteText" => "text.contains('\\0')",
+            "WriteHtml" => "html.contains('\\0')",
+            "WriteFilePaths" => "file_paths.iter().any(|s| s.contains('\\0'))",
+            _ => "",
+        };
+        if !condition.is_empty() {
+            writeln!(out, "        if {condition} {{ return false; }}").unwrap();
+        }
+    }
     render_param_bindings(out, &method.params, "        ");
     writeln!(out, "        unsafe {{").unwrap();
 
@@ -1159,12 +1209,20 @@ fn render_callback_trampoline(out: &mut String, params: &[TypeRef], indent: &str
     let args: Vec<String> = (0..params.len())
         .map(|index| format!("arg{index}"))
         .collect();
-    let decl: Vec<String> = args
+    let mut decl: Vec<String> = args
         .iter()
         .zip(signature.iter())
         .map(|(name, ty)| format!("{name}: {ty}"))
         .collect();
 
+    if callback_has_payload(params) {
+        decl = params
+            .iter()
+            .enumerate()
+            .map(|(i, ty)| format!("arg{i}: {}", callback_raw_type(ty)))
+            .collect();
+        decl.push("delivery: cnativeapi::native_event_delivery_t".into());
+    }
     writeln!(
         out,
         "{indent}unsafe extern \"C\" fn trampoline({}{}user_data: *mut std::ffi::c_void) {{",
@@ -1172,6 +1230,9 @@ fn render_callback_trampoline(out: &mut String, params: &[TypeRef], indent: &str
         if decl.is_empty() { "" } else { ", " }
     )
     .unwrap();
+    if callback_has_payload(params) {
+        writeln!(out, "{indent}    struct Delivery(cnativeapi::native_event_delivery_t);\n{indent}    impl Drop for Delivery {{ fn drop(&mut self) {{ unsafe {{ cnativeapi::native_event_delivery_complete(self.0, true); }} }} }}\n{indent}    let _delivery = Delivery(delivery);\n{indent}    if !cnativeapi::native_event_delivery_is_active(delivery) {{ return; }}").unwrap();
+    }
     writeln!(out, "{indent}    if user_data.is_null() {{").unwrap();
     writeln!(out, "{indent}        return;").unwrap();
     writeln!(out, "{indent}    }}").unwrap();
@@ -1181,7 +1242,30 @@ fn render_callback_trampoline(out: &mut String, params: &[TypeRef], indent: &str
         signature.join(", ")
     )
     .unwrap();
-    writeln!(out, "{indent}    callback({});", args.join(", ")).unwrap();
+    let values = if callback_has_payload(params) {
+        params
+            .iter()
+            .zip(&args)
+            .map(|(ty, arg)| {
+                let access = if matches!(
+                    ty,
+                    TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. }
+                ) {
+                    format!("(*{arg})")
+                } else {
+                    arg.clone()
+                };
+                owned_raw_expr(ty, &access)
+            })
+            .collect::<Vec<_>>()
+    } else {
+        args.clone()
+    };
+    if callback_has_payload(params) {
+        writeln!(out, "{indent}    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback({})));", values.join(", ")).unwrap();
+    } else {
+        writeln!(out, "{indent}    callback({});", values.join(", ")).unwrap();
+    }
     writeln!(out, "{indent}}}").unwrap();
     writeln!(
         out,
@@ -1434,3 +1518,23 @@ fn is_callback(ty: &TypeRef) -> bool {
 }
 
 fn _unused(_: &Field) {}
+
+fn callback_raw_type(ty: &TypeRef) -> String {
+    match ty {
+        TypeRef::Optional { inner } => callback_raw_type(inner),
+        TypeRef::String | TypeRef::CString => "*const std::os::raw::c_char".into(),
+        TypeRef::Object { .. } => "u64".into(),
+        TypeRef::Struct { .. } | TypeRef::Vector { .. } => {
+            format!("*const cnativeapi::{}", c_field_type(ty, "native_"))
+        }
+        _ => rust_public_type(ty),
+    }
+}
+fn owned_raw_expr(ty: &TypeRef, access: &str) -> String {
+    match ty {
+        TypeRef::Optional { inner } => owned_raw_expr(inner, access),
+        TypeRef::Object { name, .. } => format!("{name}::from_raw(cnativeapi::native_handle_retain({access}))"),
+        TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => format!("if {access}.values.is_null() {{ Vec::new() }} else {{ (0..{access}.count as usize).map(|i| {}::from_raw(*{access}.values.add(i))).collect() }}", element.named_type().unwrap()),
+        _ => raw_field_expr(ty, access),
+    }
+}

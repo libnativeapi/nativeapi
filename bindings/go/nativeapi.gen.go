@@ -13,6 +13,265 @@ import (
 	"unsafe"
 )
 
+// ClipboardData holds the native ClipboardData value.
+type ClipboardData struct {
+	Text      *string
+	HTML      *string
+	Image     *Image
+	FilePaths []string
+}
+
+func fromCClipboardData(raw C.native_clipboard_data_t) ClipboardData {
+	return ClipboardData{
+		Text:      optionalStringFromC(raw.text),
+		HTML:      optionalStringFromC(raw.html),
+		Image:     wrapImage(uint64(C.native_handle_retain(raw.image)), false),
+		FilePaths: stringsFromC(raw.file_paths),
+	}
+}
+func toCClipboardData(value ClipboardData) (C.native_clipboard_data_t, func()) {
+	var raw C.native_clipboard_data_t
+	var cleanup []func()
+	var cField0 *C.char
+	if value.Text != nil {
+		cField0 = C.CString(*value.Text)
+		cleanup = append(cleanup, func() { C.free(unsafe.Pointer(cField0)) })
+	}
+	raw.text = cField0
+	var cField1 *C.char
+	if value.HTML != nil {
+		cField1 = C.CString(*value.HTML)
+		cleanup = append(cleanup, func() { C.free(unsafe.Pointer(cField1)) })
+	}
+	raw.html = cField1
+	raw.image = C.native_image_t(value.Image.nativeHandleValue())
+	cField3, cField3Cleanup := stringsToC(value.FilePaths)
+	cleanup = append(cleanup, func() { cField3Cleanup() })
+	raw.file_paths = cField3
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
+// ClipboardEventType identifies the active event variant.
+type ClipboardEventType int32
+
+const (
+	ClipboardEventChanged ClipboardEventType = 0
+)
+
+// ClipboardEvent copies an event payload. Handle fields are borrowed until the callback returns.
+// Only fields belonging to Type are populated.
+type ClipboardEvent struct {
+	Type ClipboardEventType
+}
+
+func fromCClipboardEvent(raw *C.native_clipboard_event_t) ClipboardEvent {
+	value := ClipboardEvent{Type: ClipboardEventType(raw._type)}
+	switch value.Type {
+	case ClipboardEventChanged:
+	}
+	return value
+}
+
+//export goEvent_native_clipboard_event_t
+func goEvent_native_clipboard_event_t(handle C.uintptr_t, event *C.native_clipboard_event_t) {
+	cgo.Handle(handle).Value().(func(ClipboardEvent))(fromCClipboardEvent(event))
+}
+
+type clipboard struct{}
+
+// Clipboard provides access to the native Clipboard singleton.
+// It has no owned handle and does not need to be released.
+var Clipboard = clipboard{}
+
+// IsSupported invokes the native IsSupported operation.
+func (c clipboard) IsSupported() bool {
+	result := C.native_clipboard_is_supported()
+	return bool(result)
+}
+
+// IsChangeMonitoringSupported invokes the native IsChangeMonitoringSupported operation.
+func (c clipboard) IsChangeMonitoringSupported() bool {
+	result := C.native_clipboard_is_change_monitoring_supported()
+	return bool(result)
+}
+
+// Read invokes the native Read operation.
+func (c clipboard) Read(callback func(bool, ClipboardData)) {
+	var cArg0Fn C.native_clipboard_read_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_callback_t(C.go_get_native_clipboard_read_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// ReadText invokes the native ReadText operation.
+func (c clipboard) ReadText(callback func(bool, *string)) {
+	var cArg0Fn C.native_clipboard_read_text_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_text_callback_t(C.go_get_native_clipboard_read_text_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_text(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// ReadHTML invokes the native ReadHtml operation.
+func (c clipboard) ReadHTML(callback func(bool, *string)) {
+	var cArg0Fn C.native_clipboard_read_html_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_html_callback_t(C.go_get_native_clipboard_read_html_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_html(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// ReadImage invokes the native ReadImage operation.
+func (c clipboard) ReadImage(callback func(bool, *Image)) {
+	var cArg0Fn C.native_clipboard_read_image_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_image_callback_t(C.go_get_native_clipboard_read_image_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_image(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// ReadFilePaths invokes the native ReadFilePaths operation.
+func (c clipboard) ReadFilePaths(callback func(bool, []string)) {
+	var cArg0Fn C.native_clipboard_read_file_paths_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_file_paths_callback_t(C.go_get_native_clipboard_read_file_paths_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_file_paths(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// Write invokes the native Write operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) Write(data ClipboardData) error {
+	if !validClipboardOptionalText(data.Text) || !validClipboardOptionalText(data.HTML) || !validClipboardPaths(data.FilePaths) {
+		return ErrOperationFailed
+	}
+	cArg0, cArg0Cleanup := toCClipboardData(data)
+	defer cArg0Cleanup()
+	result := C.native_clipboard_write(cArg0)
+	if !bool(result) {
+		return nativeError("Clipboard.Write")
+	}
+	return nil
+}
+
+// WriteText invokes the native WriteText operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteText(text string) error {
+	if !validClipboardText(text) {
+		return ErrOperationFailed
+	}
+	cArg0 := C.CString(text)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_clipboard_write_text(cArg0)
+	if !bool(result) {
+		return nativeError("Clipboard.WriteText")
+	}
+	return nil
+}
+
+// WriteHTML invokes the native WriteHtml operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteHTML(html string) error {
+	if !validClipboardText(html) {
+		return ErrOperationFailed
+	}
+	cArg0 := C.CString(html)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_clipboard_write_html(cArg0)
+	if !bool(result) {
+		return nativeError("Clipboard.WriteHTML")
+	}
+	return nil
+}
+
+// WriteImage invokes the native WriteImage operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteImage(image *Image) error {
+	result := C.native_clipboard_write_image(C.native_image_t(image.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("Clipboard.WriteImage")
+	}
+	return nil
+}
+
+// WriteFilePaths invokes the native WriteFilePaths operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteFilePaths(filePaths []string) error {
+	if !validClipboardPaths(filePaths) {
+		return ErrOperationFailed
+	}
+	cArg0, cArg0Cleanup := stringsToC(filePaths)
+	defer cArg0Cleanup()
+	result := C.native_clipboard_write_file_paths(cArg0)
+	if !bool(result) {
+		return nativeError("Clipboard.WriteFilePaths")
+	}
+	return nil
+}
+
+// Clear invokes the native Clear operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) Clear() error {
+	result := C.native_clipboard_clear()
+	if !bool(result) {
+		return nativeError("Clipboard.Clear")
+	}
+	return nil
+}
+
+// IsMonitoring invokes the native IsMonitoring operation.
+func (c clipboard) IsMonitoring() bool {
+	result := C.native_clipboard_is_monitoring()
+	return bool(result)
+}
+
+// AddListener invokes callback synchronously on the native UI thread.
+// Remove the listener before releasing its owner. A nil callback is invalid.
+func (c clipboard) AddListener(callback func(ClipboardEvent)) (ListenerID, error) {
+	if callback == nil {
+		return 0, invalidArgument("Clipboard.AddListener")
+	}
+	data := newCallback(callback)
+	id := C.native_clipboard_add_listener(C.native_clipboard_event_callback_t(C.go_get_native_clipboard_event_callback_t()), data, C.native_release_user_data_t(C.go_get_release_callback()))
+	if id == 0 {
+		return 0, nativeError("Clipboard.AddListener")
+	}
+	return ListenerID(id), nil
+}
+
+// RemoveListener unregisters id; an unknown id returns an error.
+func (c clipboard) RemoveListener(id ListenerID) error {
+	if !bool(C.native_clipboard_remove_listener(C.native_listener_id_t(id))) {
+		return nativeError("Clipboard.RemoveListener")
+	}
+	return nil
+}
+
 // Point holds the native Point value.
 type Point struct {
 	X float64
@@ -5868,6 +6127,51 @@ func listWindowFromC(raw C.native_window_list_t, borrowed bool) []*Window {
 		result[i] = wrapWindow(uint64(handle), borrowed)
 	}
 	return result
+}
+
+//export goCall_native_clipboard_read_callback_t
+func goCall_native_clipboard_read_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, ClipboardData))(bool(arg0), fromCClipboardData(*(*C.native_clipboard_data_t)(arg1)))
+}
+
+//export goCall_native_clipboard_read_file_paths_callback_t
+func goCall_native_clipboard_read_file_paths_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, []string))(bool(arg0), stringsFromC(*(*C.native_string_list_t)(arg1)))
+}
+
+//export goCall_native_clipboard_read_html_callback_t
+func goCall_native_clipboard_read_html_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *string))(bool(arg0), optionalStringFromC((*C.char)(arg1)))
+}
+
+//export goCall_native_clipboard_read_image_callback_t
+func goCall_native_clipboard_read_image_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 C.native_image_t, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *Image))(bool(arg0), wrapImage(uint64(C.native_handle_retain(arg1)), false))
+}
+
+//export goCall_native_clipboard_read_text_callback_t
+func goCall_native_clipboard_read_text_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *string))(bool(arg0), optionalStringFromC((*C.char)(arg1)))
 }
 
 //export goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t

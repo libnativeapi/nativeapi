@@ -1,3 +1,7 @@
+## Unreleased
+
+- Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
+
 ## 0.5.2
 
 * Built from core with the Windows display name fix listed in nativeapi 0.5.2.

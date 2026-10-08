@@ -997,7 +997,10 @@ fn map_type(ty: Type, types: &TypeIndex) -> TypeRef {
             Some(element) => {
                 let mapped = map_type(element, types);
                 // Handles and strings have a C list representation.
-                if matches!(mapped, TypeRef::Object { .. } | TypeRef::String) {
+                if matches!(
+                    mapped,
+                    TypeRef::Object { .. } | TypeRef::String | TypeRef::Enum { .. }
+                ) {
                     TypeRef::Vector {
                         element: Box::new(mapped),
                     }

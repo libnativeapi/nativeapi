@@ -598,7 +598,9 @@ pub fn c_field_type(ty: &TypeRef, prefix: &str) -> String {
         | TypeRef::Struct { name, .. }
         | TypeRef::Object { name, .. } => c_type_name(prefix, name),
         TypeRef::Vector { element } => match element.as_ref() {
-            TypeRef::Object { name, .. } => c_list_type_name(prefix, name),
+            TypeRef::Object { name, .. } | TypeRef::Enum { name, .. } => {
+                c_list_type_name(prefix, name)
+            }
             TypeRef::String => STRING_LIST_TYPE.to_string(),
             other => c_field_type(other, prefix),
         },
@@ -694,9 +696,7 @@ pub fn rust_int_type(name: &str) -> String {
 }
 
 pub fn struct_has_owned_fields(item: &Struct) -> bool {
-    item.fields
-        .iter()
-        .any(|field| matches!(field.ty, TypeRef::String))
+    item.fields.iter().any(|field| owns_c_memory(&field.ty))
 }
 
 pub fn relative_include(from_dir: &Path, target: &Path) -> String {
@@ -915,4 +915,83 @@ mod tests {
             "NATIVE_URL_OPEN_ERROR_CODE_INVALID_URL_EMPTY"
         );
     }
+}
+
+/// Non-scalar callbacks carry an acknowledged, heap-owned payload, so queued
+/// language runtimes never observe pointers into a returned stack frame.
+pub fn callback_has_payload(params: &[TypeRef]) -> bool {
+    params.iter().any(|ty| {
+        !matches!(
+            ty,
+            TypeRef::Bool
+                | TypeRef::Int { .. }
+                | TypeRef::Float { .. }
+                | TypeRef::Alias { .. }
+                | TypeRef::Enum { .. }
+        )
+    })
+}
+
+pub fn callback_payload_type(params: &[TypeRef], prefix: &str) -> String {
+    let signature = params
+        .iter()
+        .map(|ty| {
+            ty.display_name()
+                .to_snake_case()
+                .replace(['<', '>', ':', '&', ' ', ',', '*'], "_")
+        })
+        .collect::<Vec<_>>()
+        .join("_");
+    format!("{prefix}callback_{signature}_payload_t")
+}
+
+pub fn owns_c_memory(ty: &TypeRef) -> bool {
+    match ty {
+        TypeRef::String
+        | TypeRef::Object { .. }
+        | TypeRef::Vector { .. }
+        | TypeRef::Struct { .. } => true,
+        TypeRef::Optional { inner } => owns_c_memory(inner),
+        _ => false,
+    }
+}
+
+pub fn c_callback_param_type(ty: &TypeRef, prefix: &str) -> String {
+    match ty {
+        TypeRef::Struct { .. } | TypeRef::Vector { .. } | TypeRef::Map { .. } => {
+            format!("const {}*", c_field_type(ty, prefix))
+        }
+        _ => c_param_type(ty, prefix),
+    }
+}
+
+pub fn listed_enums(api: &Api) -> BTreeSet<String> {
+    fn walk(ty: &TypeRef, result: &mut BTreeSet<String>) {
+        match ty {
+            TypeRef::Vector { element } => {
+                if let TypeRef::Enum { name, .. } = element.as_ref() {
+                    result.insert(name.clone());
+                }
+            }
+            TypeRef::Callback { params } => {
+                for ty in params {
+                    walk(ty, result);
+                }
+            }
+            TypeRef::Optional { inner } => walk(inner, result),
+            _ => {}
+        }
+    }
+    let mut result = BTreeSet::new();
+    for header in &api.headers {
+        for class in &header.classes {
+            for method in &class.methods {
+                walk(&method.return_type, &mut result);
+                for p in &method.params {
+                    walk(&p.ty, &mut result);
+                }
+            }
+        }
+    }
+    result
 }
