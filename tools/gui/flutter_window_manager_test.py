@@ -12,10 +12,11 @@ import os
 import re
 import sys
 
-from common import LEANFLUTTER
+from common import WORKSPACE
 from guiapp import Abort, Checks, GuiApp, assert_idle, build_flutter, flutter_executable, pause
 
-PROJECT = os.path.join(LEANFLUTTER, 'window_manager', 'example')  # see LEANFLUTTER in common.py
+PROJECT = os.path.join(os.environ.get(
+    'WINDOW_MANAGER_DIR', os.path.join(WORKSPACE, 'bindings', 'dart', 'window_manager')), 'example')
 NAME = 'window_manager_example'
 
 # What main() asks waitUntilReadyToShow for, and what the chips ask for afterwards.

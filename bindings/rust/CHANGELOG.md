@@ -1,3 +1,9 @@
+## Unreleased
+
+* macOS: the title bar's close button is a cancellable close request again.
+  On macOS 26 it bypassed `WindowEvent::CloseRequested` and closed the window
+  even when a listener cancelled.
+
 ## 0.5.2
 
 * Windows: `Display::name` is the monitor's name ("DELL U2720Q", or "Generic PnP

@@ -1,6 +1,9 @@
 ## Unreleased
 
 - Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
+- macOS: the title bar's close button is a cancellable close request again.
+  On macOS 26 it bypassed `WindowCloseRequestedEvent` and closed the window
+  even when a listener cancelled.
 
 ## 0.5.2
 
