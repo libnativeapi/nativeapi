@@ -10,3 +10,7 @@
 	path = bindings/dart/screen_retriever
 	url = git@github.com:leanflutter/screen_retriever.git
 	branch = main
+[submodule "bindings/dart/window_manager"]
+	path = bindings/dart/window_manager
+	url = git@github.com:leanflutter/window_manager.git
+	branch = main
