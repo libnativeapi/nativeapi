@@ -2045,7 +2045,7 @@ mod tests {
             ],
         };
         let mut out = String::new();
-        render_dart_enum(&mut out, &item, "native");
+        render_dart_enum(&mut out, &item, "native", false);
         assert!(out.contains("default_(0),"));
         assert!(out.contains("0 => WindowCornerPreference.default_,"));
         assert!(out.contains("_ => WindowCornerPreference.default_,"));

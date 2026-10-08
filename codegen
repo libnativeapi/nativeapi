@@ -6,7 +6,7 @@ Orchestrates the Rust generators in tools/codegen against the workspace layout:
     ./codegen                    # full run: C ABI, then all bindings
     ./codegen capi               # C ABI + umbrella header only
     ./codegen bindings           # bindings only (parses headers, writes no C ABI)
-    ./codegen bindings --lang rust,swift
+    ./codegen bindings --lang rust,go
     ./codegen check              # verify everything is up to date (CI mode)
     ./codegen ffigen             # Dart bindings, then ffigen (cnativeapi's raw FFI)
     ./codegen readme             # copy the shared README sections into every repo
@@ -43,6 +43,7 @@ BINDINGS = {
     "csharp": ("--csharp", WORKSPACE / "bindings" / "csharp"),
     "js": ("--js", WORKSPACE / "bindings" / "js"),
     "python": ("--python", WORKSPACE / "bindings" / "python"),
+    "go": ("--go", WORKSPACE / "bindings" / "go"),
 }
 
 
@@ -99,6 +100,7 @@ README_SECTIONS = {
         "bindings/csharp/README.md",
         "bindings/js/README.md",
         "bindings/python/README.md",
+        "bindings/go/README.md",
     ],
     "contributing.zh.md": [
         "bindings/dart/README-ZH.md",

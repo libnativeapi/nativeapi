@@ -1,0 +1,100 @@
+name: Go CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bindings/go/**"
+      - "core"
+      - "examples/go_*/**"
+      - "tools/codegen/**"
+      - "codegen"
+      - ".github/workflows/go-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "bindings/go/**"
+      - "core"
+      - "examples/go_*/**"
+      - "tools/codegen/**"
+      - "codegen"
+      - ".github/workflows/go-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout core
+        run: git submodule update --init core
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache: false
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake pkg-config libgtk-3-dev libx11-dev libxi-dev xvfb
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-gcc
+      - name: Configure Windows cgo and DLL lookup
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "C:\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:GITHUB_WORKSPACE\bindings\go\build" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "CC=gcc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Build the native library
+        run: |
+          cmake -S bindings/go -B bindings/go/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build bindings/go/build --config Release --parallel 4
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          files=$(gofmt -l bindings/go/*.go examples/go_*/*.go)
+          if [ -n "$files" ]; then echo "$files"; exit 1; fi
+      - name: Vet
+        working-directory: bindings/go
+        run: go vet ./...
+      - name: Test
+        working-directory: bindings/go
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a go test -v ./...; else go test -v ./...; fi
+      - name: Build examples
+        shell: bash
+        run: |
+          for example in examples/go_*_example; do
+            (cd "$example" && go build -o "$RUNNER_TEMP/$(basename "$example").exe" .)
+          done
+
+  generated:
+    name: Check generated Go API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init core
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache: false
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - run: cargo test --manifest-path tools/codegen/Cargo.toml -p codegen-bindings
+      - run: ./codegen check --lang go

@@ -10,6 +10,7 @@ use codegen_shared::{naming, resolve_repo_root, write_files};
 
 mod csharp;
 mod dart;
+mod go;
 mod js;
 mod python;
 mod rust;
@@ -17,7 +18,7 @@ mod rust;
 #[derive(Debug, Parser)]
 #[command(name = "codegen-bindings")]
 #[command(
-    about = "Generate Rust/Dart/C#/JS/Python FFI bindings from the IR emitted by codegen-capi."
+    about = "Generate Rust/Dart/C#/JS/Python/Go FFI bindings from the IR emitted by codegen-capi."
 )]
 struct CliArgs {
     /// Path to the IR JSON emitted by `codegen-capi --emit-ir`.
@@ -54,6 +55,10 @@ struct CliArgs {
     /// skipped when this is absent.
     #[arg(long)]
     python: Option<PathBuf>,
+
+    /// Path to the Go binding (bindings/go).
+    #[arg(long)]
+    go: Option<PathBuf>,
 
     /// Verify that generated files are up to date without writing anything.
     /// Exits non-zero when any file would change.
@@ -95,6 +100,7 @@ fn main() -> Result<()> {
     report_binding("csharp", &csharp_out);
     report_binding("js", &js_out);
     report_binding("python", &python_out);
+    report_binding("go", &args.go);
 
     let json = std::fs::read_to_string(&args.ir)
         .with_context(|| format!("failed to read IR from {}", args.ir.display()))?;
@@ -129,6 +135,9 @@ fn main() -> Result<()> {
             &cnativeapi_root,
             &core_rel,
         ));
+    }
+    if let Some(out) = &args.go {
+        files.extend(go::generate(&api, out));
     }
     for header in &api.headers {
         // C# mirrors the source tree, so `foundation/geometry.h` lands in
@@ -167,6 +176,11 @@ fn main() -> Result<()> {
     for file in &mut files {
         if file.path.extension().is_some_and(|ext| ext == "dart") {
             file.contents = format_dart(&file.path, &file.contents)?;
+        }
+    }
+    for file in &mut files {
+        if file.path.extension().is_some_and(|ext| ext == "go") {
+            file.contents = format_go(&file.contents)?;
         }
     }
     write_files(&files, args.check)
@@ -215,4 +229,26 @@ fn report_binding(lang: &str, out: &Option<PathBuf>) {
         Some(path) => eprintln!("  {lang:<11} {}", path.display()),
         None => eprintln!("  {lang:<11} (skipped)"),
     }
+}
+
+fn format_go(source: &str) -> Result<String> {
+    let mut child = Command::new("gofmt")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .context("Go SDK is required to format Go bindings")?;
+    let mut stdin = child.stdin.take().expect("piped stdin");
+    let source = source.to_owned();
+    let writer = std::thread::spawn(move || stdin.write_all(source.as_bytes()));
+    let output = child.wait_with_output()?;
+    writer
+        .join()
+        .map_err(|_| anyhow::anyhow!("formatter input thread failed"))??;
+    anyhow::ensure!(
+        output.status.success(),
+        "gofmt failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(String::from_utf8(output.stdout)?)
 }

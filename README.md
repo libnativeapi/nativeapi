@@ -1,6 +1,6 @@
 # nativeapi
 
-Unified access to native system APIs — windows, tray icons, menus, displays, keyboard, dialogs, storage and more — from Dart/Flutter, Rust, C#, JavaScript/TypeScript and Python, all built on one C++ core.
+Unified access to native system APIs — windows, tray icons, menus, displays, keyboard, dialogs, storage and more — from Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python and Go, all built on one C++ core.
 
 | Android | iOS | Linux | macOS | Windows |
 |:-------:|:---:|:-----:|:-----:|:-------:|
@@ -8,7 +8,7 @@ Unified access to native system APIs — windows, tray icons, menus, displays, k
 
 🚧 **Work in Progress**: the API is under active development.
 
-This repository is the home of every binding: the Dart, Rust, C#, JS and Python bindings, the code generator, the design specs and the shared tooling live here directly, and the C++ core ([nativeapi-core](https://github.com/libnativeapi/nativeapi-core)) is checked out as a git submodule. A core change and its regenerated bindings (core → codegen → bindings) are made and tracked together.
+This repository is the home of every binding: the Dart, Rust, C#, JS, Python and Go bindings, the code generator, the design specs and the shared tooling live here directly, and the C++ core ([nativeapi-core](https://github.com/libnativeapi/nativeapi-core)) is checked out as a git submodule. A core change and its regenerated bindings (core → codegen → bindings) are made and tracked together.
 
 ## Bindings
 
@@ -19,6 +19,7 @@ This repository is the home of every binding: the Dart, Rust, C#, JS and Python 
 | [C#](bindings/csharp) | `NativeAPI` | not yet on NuGet; build from source |
 | [JavaScript / TypeScript](bindings/js) | `nativeapi` (Node-API addon for Node.js, Deno and Bun) | not yet on npm |
 | [Python](bindings/python) | `nativeapi` (`ctypes`, Python 3.10+) | prototype, not yet on PyPI |
+| [Go](bindings/go) | `github.com/libnativeapi/nativeapi/bindings/go` (cgo, Go 1.22+) | build from source |
 
 Each binding's README covers installation and usage.
 
@@ -36,7 +37,8 @@ This repository was `nativeapi-flutter`, then `nativeapi-workspace`, and is now 
 | [bindings/csharp](bindings/csharp) | C# binding |
 | [bindings/js](bindings/js) | JavaScript / TypeScript binding (Node-API addon) |
 | [bindings/python](bindings/python) | Python binding (`ctypes`) |
-| [examples](examples) | example apps of every binding, prefixed by binding: `flutter_*`, `rust_*`, `csharp_*`, `js_*`, `python_*`, … |
+| [bindings/go](bindings/go) | Go binding (cgo) |
+| [examples](examples) | example apps of every binding, prefixed by binding: `flutter_*`, `rust_*`, `csharp_*`, `js_*`, `python_*`, `go_*`, … |
 | [tools/codegen](tools/codegen) | the C ABI and binding generators |
 | [specs](specs) | design rules for the core's public API |
 
@@ -86,7 +88,7 @@ Work on the bindings, the tooling and the specs is committed here directly. Work
 
 ## Releases
 
-Each binding is released from a tag of its own: `v<version>` publishes the Dart packages to pub.dev (`dart-release.yml`), `rust-v<version>` publishes the crates to crates.io (`rust-release.yml`). The C#, JS and Python bindings are not published yet.
+Each binding is released from a tag of its own: `v<version>` publishes the Dart packages to pub.dev (`dart-release.yml`), `rust-v<version>` publishes the crates to crates.io (`rust-release.yml`). The C#, JS, Python and Go bindings are not published yet.
 
 ## License
 
