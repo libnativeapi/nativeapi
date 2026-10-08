@@ -6,3 +6,7 @@
 	path = bindings/dart/tray_manager
 	url = git@github.com:leanflutter/tray_manager.git
 	branch = main
+[submodule "bindings/dart/screen_retriever"]
+	path = bindings/dart/screen_retriever
+	url = git@github.com:leanflutter/screen_retriever.git
+	branch = main

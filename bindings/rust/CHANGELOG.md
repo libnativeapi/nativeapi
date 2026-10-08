@@ -1,3 +1,9 @@
+## Unreleased
+
+* Windows: `Display::name` is the monitor's name ("DELL U2720Q", or "Generic PnP
+  Monitor" where Windows has none) instead of the adapter output
+  `\\.\DISPLAY1`.
+
 ## 0.5.1
 
 * Linux: `TrayIcon::set_title` sets the StatusNotifierItem label, drawn next to

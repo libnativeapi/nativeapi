@@ -39,6 +39,7 @@ melos:
 
   ignore:
     - "bindings/dart/tray_manager/**"
+    - "bindings/dart/screen_retriever/**"
     - "**/build/**"
     - "**/.dart_tool/**"
     - "**/.symlinks/**"

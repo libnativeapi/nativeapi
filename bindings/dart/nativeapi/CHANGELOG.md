@@ -1,3 +1,9 @@
+## Unreleased
+
+* Windows: `Display.name` is the monitor's name ("DELL U2720Q", or "Generic PnP
+  Monitor" where Windows has none) instead of the adapter output
+  `\\.\DISPLAY1` (leanflutter/screen_retriever#19).
+
 ## 0.5.1
 
 * Objects created from Dart no longer outlive a Flutter hot restart
