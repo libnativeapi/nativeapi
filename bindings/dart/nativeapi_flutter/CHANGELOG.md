@@ -1,3 +1,8 @@
+## 0.5.1
+
+* Requires nativeapi 0.5.1, which no longer leaves objects behind or crashes
+  on a hot restart.
+
 ## 0.5.0
 
 * Requires nativeapi 0.5.0.

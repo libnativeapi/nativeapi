@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.1
 
 * Objects created from Dart no longer outlive a Flutter hot restart
   (leanflutter/tray_manager#106): their handles are released by a
@@ -8,6 +8,10 @@
 * A hot restart no longer crashes the app on the next event: callbacks the old
   isolate registered are revoked when it shuts down, so the core stops calling
   them.
+* Linux: `TrayIcon.setTitle()` sets the StatusNotifierItem label, drawn next to
+  the icon by hosts that show one (GNOME's AppIndicator extension), instead of
+  the tooltip's heading. The tooltip shows `setTooltip()` alone, and the item's
+  `Title` is the application name.
 
 ## 0.5.0
 

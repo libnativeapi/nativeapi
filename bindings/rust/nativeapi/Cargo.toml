@@ -1,6 +1,6 @@
 [package]
 name = "nativeapi"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["LiJianying <lijy91@foxmail.com>"]
 description = "Rust bindings for nativeapi - providing seamless, unified access to native system APIs."
@@ -11,5 +11,5 @@ keywords = ["native", "desktop", "window", "tray", "menu"]
 categories = ["api-bindings", "gui", "os"]
 
 [dependencies]
-cnativeapi = { version = "0.5.0", path = "../cnativeapi" }
+cnativeapi = { version = "0.5.1", path = "../cnativeapi" }
 thiserror = "2.0"

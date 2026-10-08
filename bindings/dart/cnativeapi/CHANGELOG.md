@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.1
 
 * `native_handle_finalize` and `native_user_data_revoke`: the native
   finalizers `nativeapi` attaches to handles and callbacks, which release a

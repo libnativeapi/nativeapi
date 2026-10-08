@@ -1,3 +1,13 @@
+## 0.5.1
+
+* Linux: `TrayIcon::set_title` sets the StatusNotifierItem label, drawn next to
+  the icon by hosts that show one (GNOME's AppIndicator extension), instead of
+  the tooltip's heading. The tooltip shows the tooltip alone, and the item's
+  `Title` is the application name.
+* The C ABI gains `native_handle_finalize` and `native_user_data_revoke`, for
+  bindings whose runtime frees handles and callbacks from a garbage
+  collector's native finalizer.
+
 ## 0.5.0
 
 * `Window::set_ignore_mouse_events(ignore, forward)` takes a second argument
