@@ -1,3 +1,7 @@
+## 0.5.2
+
+* Requires nativeapi 0.5.2.
+
 ## 0.5.1
 
 * Requires nativeapi 0.5.1, which no longer leaves objects behind or crashes

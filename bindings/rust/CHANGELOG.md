@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.2
 
 * Windows: `Display::name` is the monitor's name ("DELL U2720Q", or "Generic PnP
   Monitor" where Windows has none) instead of the adapter output

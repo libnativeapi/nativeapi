@@ -37,7 +37,7 @@ dependencies = [
 
 [[package]]
 name = "cnativeapi"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "cc",
  "cmake",
@@ -87,7 +87,7 @@ dependencies = [
 
 [[package]]
 name = "nativeapi"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "cnativeapi",
  "thiserror",

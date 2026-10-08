@@ -1,3 +1,7 @@
+## 0.5.2
+
+* Built from core with the Windows display name fix listed in nativeapi 0.5.2.
+
 ## 0.5.1
 
 * `native_handle_finalize` and `native_user_data_revoke`: the native
