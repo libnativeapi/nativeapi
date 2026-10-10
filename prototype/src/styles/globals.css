@@ -1,0 +1,26 @@
+/*
+ * The ground the prototype stands on. Every value is a DazzUI token from
+ * `@dazzlabs/dazzui/style.css`; none is written here as a literal.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-content);
+  background: var(--color-surface);
+  font-family: var(--body-medium-font-family);
+  font-size: var(--body-medium-font-size);
+  font-weight: var(--body-medium-font-weight);
+  line-height: var(--body-medium-line-height);
+  -webkit-font-smoothing: antialiased;
+}

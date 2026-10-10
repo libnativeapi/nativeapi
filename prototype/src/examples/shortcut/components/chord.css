@@ -1,0 +1,6 @@
+.chord {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-0-5);
+  white-space: nowrap;
+}

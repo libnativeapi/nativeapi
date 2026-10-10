@@ -1,0 +1,8 @@
+.tray-icon-canvas {
+  display: block;
+  flex-shrink: 0;
+}
+
+.tray-icon-canvas--pixelated {
+  image-rendering: pixelated;
+}

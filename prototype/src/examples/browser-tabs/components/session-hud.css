@@ -1,0 +1,40 @@
+/* A tool panel on the desktop, not a window: it belongs to the prototype, not the app. */
+.session-hud {
+  position: absolute;
+  left: var(--spacing-4);
+  bottom: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 340px;
+  padding: var(--spacing-3);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface-overlay) 92%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+}
+
+.session-hud__log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.session-hud__log li {
+  overflow: hidden;
+  color: var(--color-content-subtle);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-hud__log li:first-child {
+  color: var(--color-content);
+}

@@ -1,0 +1,70 @@
+.display-details__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  color: var(--color-content-secondary);
+}
+
+.display-details__title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.display-details__title strong {
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  line-height: var(--title-small-line-height);
+}
+
+.display-details__title span {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+/* A tool window's table: the kit's row padding, tightened. */
+.display-table .dz-table__head,
+.display-table .dz-table__row {
+  gap: var(--spacing-2);
+  padding-inline: var(--spacing-4);
+}
+
+.display-table .dz-table__row {
+  padding-block: var(--spacing-2);
+  font-size: var(--body-small-font-size);
+}
+
+.display-table__name {
+  flex: 2.2;
+}
+
+.display-table__wide {
+  flex: 1.4;
+}
+
+.display-table__narrow {
+  flex: 0.7;
+}
+
+.display-table__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+}
+
+.display-table__label > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.display-table__mono {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  white-space: nowrap;
+}

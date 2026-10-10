@@ -1,0 +1,127 @@
+.settings-window__body {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  font-size: var(--body-small-font-size);
+}
+
+.settings-window__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  width: 180px;
+  flex-shrink: 0;
+  padding: var(--spacing-2);
+  background: var(--color-surface-sunken);
+  border-right: var(--stroke-hairline) solid var(--color-border);
+}
+
+.settings-window__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-content-subtle);
+  background: var(--color-surface);
+  border-radius: var(--radius-medium);
+}
+
+.settings-window__pane {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-content);
+  border-radius: var(--radius-medium);
+}
+
+.settings-window__pane[data-active] {
+  color: var(--color-on-accent);
+  background: var(--color-primary-500);
+}
+
+.settings-window__pane-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-on-accent);
+  background: var(--color-neutral-500);
+  border-radius: var(--radius-small);
+}
+
+.settings-window__pane[data-active] .settings-window__pane-icon {
+  background: var(--color-primary-700);
+}
+
+.settings-window__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  overflow-y: auto;
+}
+
+.settings-window__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+}
+
+.settings-window__lead {
+  margin: 0;
+  color: var(--color-content-secondary);
+}
+
+.settings-window__list {
+  padding: 0;
+  gap: 0;
+}
+
+.settings-window__app {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  border-bottom: var(--stroke-hairline) solid var(--color-border-muted);
+}
+
+/* The row enable() added: the one the user is here to switch on. */
+.settings-window__app[data-self] {
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+}
+
+.settings-window__app-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--color-on-accent);
+  background: var(--color-neutral-600);
+  border-radius: var(--radius-small);
+  font-size: var(--caption-large-font-size);
+  font-weight: var(--base-font-weight-bold);
+}
+
+.settings-window__app-icon[data-self] {
+  background: var(--color-primary-500);
+}
+
+.settings-window__app-name {
+  flex: 1;
+  color: var(--color-content);
+}
+
+.settings-window__tools {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  color: var(--color-content-subtle);
+}

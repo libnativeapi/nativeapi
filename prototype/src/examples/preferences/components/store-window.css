@@ -1,0 +1,135 @@
+/* A terminal in the theme's own colours: the sunken surface, code type. */
+.store-window__terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+  padding: var(--spacing-3);
+  overflow: auto;
+  color: var(--color-content);
+  background: var(--color-surface-sunken);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--body-small-line-height);
+}
+
+.store-window__prompt {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.store-window__prompt > span:first-child {
+  color: var(--color-success-600);
+}
+
+.store-window__line {
+  color: var(--color-content-secondary);
+  white-space: pre;
+}
+
+.store-window__line--changed,
+.store-window__values .dz-table__row[data-changed] {
+  animation: store-window-changed 1.6s ease-out;
+}
+
+@keyframes store-window-changed {
+  from {
+    color: var(--color-content);
+    background-color: color-mix(in srgb, var(--color-primary-500) 26%, transparent);
+  }
+}
+
+.store-window__cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--color-content-subtle);
+  animation: store-window-blink 1.1s steps(1) infinite;
+}
+
+@keyframes store-window-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Registry Editor: the address bar, the key tree, the values. */
+.store-window__regedit {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: var(--caption-large-font-size);
+}
+
+.store-window__address {
+  padding: var(--spacing-1) var(--spacing-2);
+  overflow: hidden;
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  color: var(--color-content-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-window__split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.store-window__tree {
+  flex: 0 0 40%;
+  margin: 0;
+  padding: var(--spacing-1);
+  overflow: hidden;
+  list-style: none;
+  border-inline-end: var(--stroke-hairline) solid var(--color-border);
+}
+
+.store-window__tree li {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding-block: var(--spacing-0-5);
+  white-space: nowrap;
+}
+
+.store-window__tree li svg:nth-child(2) {
+  color: var(--color-warning-500);
+}
+
+.store-window__tree li[data-selected] {
+  background: color-mix(in srgb, var(--color-primary-500) 16%, transparent);
+  border-radius: var(--radius-tiny);
+}
+
+.store-window__values {
+  flex: 1;
+  min-width: 0;
+}
+
+.store-window__values .dz-table__head,
+.store-window__values .dz-table__row {
+  gap: var(--spacing-2);
+  padding-inline: var(--spacing-2);
+}
+
+.store-window__values .dz-table__row {
+  padding-block: var(--spacing-1);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+.store-window__values .dz-table__cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-window__type {
+  flex: 0 0 4.5rem;
+}
+
+.store-window__faint {
+  color: var(--color-content-faint);
+}

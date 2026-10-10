@@ -1,0 +1,159 @@
+/* The page is paper, the gallery's cards the muted surface on it. */
+.controls-window .dz-window-frame__content {
+  background: var(--color-surface);
+}
+
+.controls-window__banner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding-inline: var(--spacing-4);
+  color: var(--base-color-white);
+  background: linear-gradient(90deg, var(--banner-from), var(--banner-to));
+  transition: background var(--motion-duration) var(--motion-easing);
+}
+
+.controls-window__headline {
+  font-family: var(--headline-small-font-family);
+  font-size: var(--headline-small-font-size);
+  font-weight: var(--base-font-weight-bold);
+}
+
+.controls-window__kicker {
+  opacity: 0.85;
+  font-family: var(--caption-small-font-family);
+  font-size: var(--caption-small-font-size);
+  letter-spacing: 1.3px;
+}
+
+.controls-window__heading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--control-tiny-size);
+  padding: var(--spacing-3) var(--spacing-3-5) var(--spacing-2);
+}
+
+.controls-window__heading > :first-child {
+  margin-inline-end: auto;
+}
+
+.controls-window__heading--shadow {
+  padding-block: var(--spacing-2-5) var(--spacing-1-5);
+}
+
+/* On the shadow's heading the preset's name sits by the label, the toggle at the end. */
+.controls-window__heading--shadow > :first-child {
+  margin-inline-end: 0;
+}
+
+.controls-window__adjust {
+  margin-inline-start: auto;
+}
+
+.controls-window__mono {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.controls-window__gallery {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-3) var(--spacing-2);
+}
+
+.controls-window__card.dz-option-card {
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-1);
+}
+
+.controls-window__card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-family: var(--label-medium-font-family);
+  font-size: var(--label-medium-font-size);
+  font-weight: var(--label-medium-font-weight);
+}
+
+.controls-window__thumb {
+  width: 46px;
+  height: 46px;
+}
+
+.controls-window__row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  min-height: var(--control-small-size);
+  padding: var(--spacing-1) var(--spacing-3-5);
+}
+
+.controls-window__label {
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--body-small-font-size);
+}
+
+.controls-window__hint {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+.controls-window__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.controls-window__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 var(--stroke-hairline) var(--color-border);
+}
+
+.controls-window__slider {
+  flex: 1;
+}
+
+.controls-window__shadow {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  overflow-y: auto;
+  padding-block-end: var(--spacing-2);
+}
+
+.controls-window__shadow > .dz-callout,
+.controls-window__shadow > .read-back {
+  margin: var(--spacing-1-5) var(--spacing-3-5) 0;
+}
+
+.controls-window__presets {
+  flex-shrink: 0;
+  padding: 0 var(--spacing-3) var(--spacing-3);
+}
+
+.controls-window__foot.dz-window-frame__footer {
+  padding: var(--spacing-2-5) var(--spacing-3-5);
+}
+
+/* Hyprland draws no title bar: the banner starts at the window's top edge. */
+.controls-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}

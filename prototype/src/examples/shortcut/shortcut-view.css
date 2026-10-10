@@ -1,0 +1,64 @@
+.shortcut-view__accelerator {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.shortcut-view__row[data-disabled] {
+  opacity: 0.55;
+}
+
+/* A shortcut's icon flashes as it fires. */
+.shortcut-view__icon[data-flash] {
+  animation: shortcut-view-flash 700ms var(--motion-easing);
+}
+
+@keyframes shortcut-view-flash {
+  from {
+    color: var(--color-primary-500);
+    transform: scale(1.4);
+  }
+}
+
+.shortcut-view__none {
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+/* What the user just pressed, over the desktop, wherever the focus is. */
+.shortcut-view__hud {
+  position: absolute;
+  top: var(--spacing-6);
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  width: max-content;
+  margin-inline: auto;
+  padding: var(--spacing-3) var(--spacing-5);
+  color: var(--color-content-secondary);
+  background: color-mix(in srgb, var(--color-surface-raised) 85%, transparent);
+  border-radius: var(--radius-big);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(20px);
+  font-size: var(--caption-large-font-size);
+  animation: shortcut-view-hud 1400ms var(--motion-easing) forwards;
+  pointer-events: none;
+}
+
+@keyframes shortcut-view-hud {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  12%,
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+  }
+}

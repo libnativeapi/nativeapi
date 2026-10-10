@@ -1,0 +1,95 @@
+/*
+ * The native views, approximated: the platform's push buttons and text
+ * fields are DazzUI's, which the Style toolbar themes after each desktop;
+ * containers and labels are bare, as View and Label draw nothing of their own.
+ */
+.native-view {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+
+.native-view--row {
+  flex-direction: row;
+}
+
+.native-view--column {
+  flex-direction: column;
+}
+
+/* Absolute: the subviews keep the frames they were given. */
+.native-view--absolute {
+  position: relative;
+  display: block;
+}
+
+.native-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-content);
+  font-family: var(--body-small-font-family);
+  font-size: var(--body-small-font-size);
+  line-height: var(--body-small-line-height);
+  white-space: pre-line;
+  text-overflow: ellipsis;
+}
+
+.native-label[data-size='title'] {
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+  line-height: var(--title-medium-line-height);
+}
+
+.native-label[data-size='small'] {
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.native-label[data-mono] {
+  font-family: var(--base-font-code);
+  font-variant-numeric: tabular-nums;
+}
+
+.native-label[data-tone='muted'] {
+  color: var(--color-content-subtle);
+}
+
+.native-label[data-tone='accent'] {
+  color: var(--view-accent);
+}
+
+.native-label[data-tone='success'] {
+  color: var(--color-success-600);
+}
+
+.native-label[data-tone='danger'] {
+  color: var(--color-danger-600);
+}
+
+.native-label[data-tone='warning'] {
+  color: var(--color-warning-600);
+}
+
+.native-label[data-tone='white'] {
+  color: var(--base-color-white);
+}
+
+.native-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.native-field {
+  min-width: 0;
+}
+
+textarea.native-field {
+  resize: none;
+}
+
+.native-image {
+  position: relative;
+  flex-shrink: 0;
+}

@@ -1,0 +1,28 @@
+.url-opener-view__field {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.url-opener-view__field > :first-child {
+  flex: 1;
+}
+
+.url-opener-view__ok {
+  color: var(--color-success-500);
+}
+
+.url-opener-view__fail {
+  color: var(--color-danger-500);
+}
+
+.url-opener-view__code {
+  font-family: var(--base-font-code);
+}
+
+.url-opener-view__dot {
+  width: 8px;
+  height: 8px;
+  margin: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}

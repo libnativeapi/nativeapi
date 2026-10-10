@@ -1,0 +1,43 @@
+.text-editor {
+  height: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  overflow-y: auto;
+  color: var(--color-content);
+  background: var(--color-surface);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color var(--motion-duration) var(--motion-easing);
+}
+
+.text-editor--targeted {
+  outline-color: var(--color-primary-600);
+}
+
+.text-editor__text {
+  margin: 0;
+  font-family: var(--base-font-code);
+  font-size: var(--body-small-font-size);
+  line-height: var(--body-small-line-height);
+  white-space: pre-wrap;
+}
+
+/* The selected sentence: what a press-and-drag picks up. */
+.text-editor__selection {
+  color: inherit;
+  background: color-mix(in srgb, var(--color-primary-600) 28%, transparent);
+  border-radius: var(--radius-tiny);
+  cursor: grab;
+}
+
+.text-editor__inserted--last {
+  background: color-mix(in srgb, var(--color-success-500) 22%, transparent);
+}
+
+.text-editor__caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-inline-start: 1px;
+  vertical-align: text-bottom;
+  background: var(--color-primary-600);
+}

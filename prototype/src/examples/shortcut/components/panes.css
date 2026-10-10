@@ -1,0 +1,105 @@
+.shortcut-pane__hero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.shortcut-pane__chord {
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-large);
+}
+
+/* Each activation flashes the chord. */
+.shortcut-pane__chord[data-flash] {
+  animation: shortcut-pane-flash 700ms var(--motion-easing);
+}
+
+@keyframes shortcut-pane-flash {
+  from {
+    background: color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+    transform: scale(1.06);
+  }
+}
+
+.shortcut-pane__hero-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.shortcut-pane__hero-text strong {
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+}
+
+.shortcut-pane__hero-text span {
+  color: var(--color-content-secondary);
+  font-size: var(--caption-large-font-size);
+}
+
+.shortcut-pane__counters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-1);
+}
+
+.shortcut-pane__inline {
+  display: flex;
+  gap: var(--spacing-1-5);
+}
+
+.shortcut-pane__found {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-family: var(--base-font-code);
+}
+
+.register-pane__field {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.register-pane__field > :first-child {
+  flex: 1;
+}
+
+.register-pane__checks,
+.register-pane__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5) var(--spacing-3);
+}
+
+.register-pane__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-danger-600);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.register-pane__check[data-ok] {
+  color: var(--color-success-600);
+}
+
+.register-pane__check[data-warn] {
+  color: var(--color-warning-600);
+  font-family: var(--body-small-font-family);
+}
+
+.register-pane__presets {
+  gap: var(--spacing-1);
+}
+
+.register-pane__description {
+  width: 14rem;
+}

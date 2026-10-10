@@ -1,0 +1,60 @@
+/*
+ * The resize frame: 12px bands 16px in from the window's edge, the accent's
+ * edge wash so they show without shouting. Corners are 12px squares; the
+ * edges run between them.
+ */
+.resize-handles__handle {
+  --resize-inset: 16px;
+  --resize-size: 12px;
+  --resize-span: calc(var(--resize-inset) + var(--resize-size));
+
+  position: absolute;
+  z-index: 2;
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-edge) * 100%), transparent);
+  touch-action: none;
+}
+
+.resize-handles__handle:hover {
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-edge) * 200%), transparent);
+}
+
+.resize-handles__handle[data-edge='top'],
+.resize-handles__handle[data-edge='bottom'] {
+  left: var(--resize-span);
+  right: var(--resize-span);
+  height: var(--resize-size);
+}
+
+.resize-handles__handle[data-edge='left'],
+.resize-handles__handle[data-edge='right'] {
+  top: var(--resize-span);
+  bottom: var(--resize-span);
+  width: var(--resize-size);
+}
+
+.resize-handles__handle[data-edge^='top'],
+.resize-handles__handle[data-edge='top'] {
+  top: var(--resize-inset);
+}
+
+.resize-handles__handle[data-edge^='bottom'] {
+  bottom: var(--resize-inset);
+}
+
+.resize-handles__handle[data-edge$='Left'],
+.resize-handles__handle[data-edge='left'] {
+  left: var(--resize-inset);
+}
+
+.resize-handles__handle[data-edge$='Right'],
+.resize-handles__handle[data-edge='right'] {
+  right: var(--resize-inset);
+}
+
+.resize-handles__handle[data-edge='topLeft'],
+.resize-handles__handle[data-edge='topRight'],
+.resize-handles__handle[data-edge='bottomLeft'],
+.resize-handles__handle[data-edge='bottomRight'] {
+  width: var(--resize-size);
+  height: var(--resize-size);
+}

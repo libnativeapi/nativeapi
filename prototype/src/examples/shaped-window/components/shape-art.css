@@ -1,0 +1,15 @@
+/* The sparkles of the example's ShapeArt painter, over the look's gradient. */
+.shape-art {
+  --shape-light: color-mix(in srgb, var(--base-color-white) 10%, transparent);
+  --shape-ring: color-mix(in srgb, var(--base-color-white) 14%, transparent);
+  --shape-dot: color-mix(in srgb, var(--base-color-white) 22%, transparent);
+
+  position: relative;
+  color: var(--base-color-white);
+  background:
+    radial-gradient(circle at 83% 18%, var(--shape-light) 31%, transparent calc(31% + 0.5px)),
+    radial-gradient(circle at 10% 86%, var(--shape-light) 37%, transparent calc(37% + 0.5px)),
+    radial-gradient(circle at 78% 22%, transparent 38.7%, var(--shape-ring) 39%, var(--shape-ring) 39.3%, transparent 39.6%),
+    radial-gradient(circle, var(--shape-dot) 0.8px, transparent 1.2px) 6px 6px / 20px 20px,
+    linear-gradient(135deg, var(--shape-a), var(--shape-b), var(--shape-c));
+}

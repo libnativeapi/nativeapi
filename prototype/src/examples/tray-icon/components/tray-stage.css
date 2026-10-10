@@ -1,0 +1,42 @@
+/* The example's tray icons, in the bar the shared desktop stage draws. */
+.tray-stage__item-anchor {
+  position: relative;
+  display: flex;
+}
+
+.tray-stage__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: calc(var(--desktop-bar-height) - 6px);
+  min-width: calc(var(--desktop-bar-height) - 6px);
+  justify-content: center;
+  padding-inline: var(--spacing-1-5);
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-small);
+  cursor: default;
+}
+
+.desktop-stage[data-platform='windows'] .tray-stage__item {
+  height: 40px;
+  min-width: 32px;
+}
+
+.tray-stage__item:hover,
+.tray-stage__item[data-open] {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.tray-stage__title {
+  font-variant-numeric: tabular-nums;
+}
+
+.tray-stage__tooltip {
+  white-space: pre-line;
+  max-width: 18rem;
+  display: inline-block;
+}
+

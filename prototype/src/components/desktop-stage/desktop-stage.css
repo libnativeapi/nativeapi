@@ -1,0 +1,262 @@
+/*
+ * A desktop drawn from the theme's tokens: a wallpaper washed from the
+ * accent colours, and the bar the tray lives in, shaped as each desktop
+ * shapes it.
+ */
+.desktop-stage {
+  --desktop-bar-height: 28px;
+  --desktop-bar-surface: color-mix(in srgb, var(--color-surface) 62%, transparent);
+  --desktop-bar-content: var(--color-content);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  min-height: 640px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-primary-400) 55%, transparent), transparent 55%),
+    radial-gradient(circle at 82% 78%, color-mix(in srgb, var(--color-info-300) 50%, transparent), transparent 50%),
+    radial-gradient(circle at 70% 10%, color-mix(in srgb, var(--color-warning-200) 40%, transparent), transparent 40%),
+    var(--color-canvas);
+  user-select: none;
+}
+
+.desktop-stage--bottom {
+  flex-direction: column-reverse;
+}
+
+.desktop-stage__bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  height: var(--desktop-bar-height);
+  padding-inline: var(--spacing-3);
+  color: var(--desktop-bar-content);
+  background: var(--desktop-bar-surface);
+  backdrop-filter: blur(24px) saturate(1.6);
+  font-family: var(--label-medium-font-family);
+  font-size: var(--label-medium-font-size);
+  font-weight: var(--label-medium-font-weight);
+  white-space: nowrap;
+}
+
+/* GNOME and Ubuntu: the black top bar, whatever the theme. */
+.desktop-stage[data-platform='gnome'],
+.desktop-stage[data-platform='ubuntu'] {
+  --desktop-bar-height: 32px;
+  --desktop-bar-surface: var(--base-color-black);
+  --desktop-bar-content: var(--base-color-white);
+}
+
+.desktop-stage[data-platform='windows'] {
+  --desktop-bar-height: 48px;
+  --desktop-bar-surface: color-mix(in srgb, var(--color-surface-chrome) 88%, transparent);
+}
+
+.desktop-stage[data-platform='windows'] .desktop-stage__bar,
+.desktop-stage[data-platform='kde'] .desktop-stage__bar {
+  border-top: var(--stroke-hairline) solid var(--color-border);
+}
+
+.desktop-stage[data-platform='kde'] {
+  --desktop-bar-height: 44px;
+  --desktop-bar-surface: var(--color-surface-chrome);
+}
+
+/* Omarchy: Waybar, a thin strip in the theme's own colours and type. */
+.desktop-stage[data-platform='omarchy'] {
+  --desktop-bar-height: 26px;
+  --desktop-bar-surface: var(--color-surface);
+}
+
+.desktop-stage[data-platform='omarchy'] .desktop-stage__bar {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.desktop-stage__menus,
+.desktop-stage__end,
+.desktop-stage__tray,
+.desktop-stage__status,
+.desktop-stage__taskbar-apps,
+.desktop-stage__workspaces {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.desktop-stage__tray {
+  gap: var(--spacing-0-5);
+}
+
+.desktop-stage__end {
+  margin-inline-start: auto;
+}
+
+.desktop-stage__status {
+  gap: var(--spacing-2);
+}
+
+.desktop-stage__center {
+  position: absolute;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: max-content;
+}
+
+.desktop-stage__workspaces {
+  gap: var(--spacing-1);
+}
+
+.desktop-stage__workspaces > span {
+  min-width: 1.4em;
+  padding-inline: var(--spacing-1);
+  text-align: center;
+  opacity: 0.55;
+}
+
+.desktop-stage__workspaces > span[data-active] {
+  opacity: 1;
+  border-bottom: 2px solid currentColor;
+}
+
+/* Ubuntu's workspace dots. */
+.desktop-stage[data-platform='ubuntu'] .desktop-stage__workspaces > span {
+  min-width: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.desktop-stage[data-platform='ubuntu'] .desktop-stage__workspaces > span[data-active] {
+  width: 26px;
+}
+
+.desktop-stage[data-platform='windows'] .desktop-stage__taskbar-apps {
+  position: absolute;
+  inset-inline: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.desktop-stage__start,
+.desktop-stage__app {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-medium);
+}
+
+.desktop-stage__start {
+  color: var(--color-primary-500);
+}
+
+.desktop-stage__app::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--color-content) 22%, transparent);
+}
+
+.desktop-stage__app--running {
+  background: color-mix(in srgb, var(--color-content) 8%, transparent);
+}
+
+.desktop-stage__app--running::before {
+  background: var(--color-primary-500);
+}
+
+.desktop-stage__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--caption-large-font-size);
+  line-height: 1.25;
+}
+
+.desktop-stage__glyph {
+  display: grid;
+  place-items: center;
+  height: calc(var(--desktop-bar-height) - 8px);
+  padding-inline: var(--spacing-1);
+}
+
+/* The desktop under the bar, where the window stands. */
+.desktop-stage__desktop {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+}
+
+/* Next to the icons: under a top bar, over a taskbar, at the trailing edge. */
+.desktop-stage__desktop[data-placement='icon'] {
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: var(--spacing-2);
+}
+
+.desktop-stage--bottom .desktop-stage__desktop[data-placement='icon'] {
+  align-items: flex-end;
+}
+
+.desktop-stage__window {
+  display: flex;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.desktop-stage__hint {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--color-content-secondary);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  border-radius: var(--radius-full);
+  font-size: var(--body-small-font-size);
+}
+
+/* A free desktop: the windows stand where they put themselves. */
+.desktop-stage__desktop[data-layout='free'] {
+  display: block;
+  padding: 0;
+}
+
+.desktop-stage__placed {
+  position: absolute;
+  display: flex;
+}
+
+/* What an example lays over the desktop itself: a dock, a HUD. */
+.desktop-stage__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.desktop-stage__overlay > * {
+  pointer-events: auto;
+}
+
+/* On a free desktop the hint stays under the windows, at the foot. */
+.desktop-stage__hint--corner {
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--spacing-4);
+  width: max-content;
+  margin-inline: auto;
+}

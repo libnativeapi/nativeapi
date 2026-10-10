@@ -1,0 +1,21 @@
+.message-dialog-panel__field {
+  width: 18rem;
+}
+
+.message-dialog-panel__short {
+  width: 6.5rem;
+}
+
+.message-dialog-panel__slider {
+  width: 14rem;
+}
+
+/* Why the extended controls are greyed out on this backend. */
+.message-dialog-panel__off {
+  margin: 0;
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  color: var(--color-content-secondary);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-medium);
+  font-size: var(--caption-large-font-size);
+}

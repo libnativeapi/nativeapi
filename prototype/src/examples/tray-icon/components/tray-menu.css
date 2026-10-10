@@ -1,0 +1,56 @@
+.tray-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  z-index: 2;
+  min-width: 13rem;
+  /* The sheet scrolls its rows; this one has few, and its submenu hangs outside it. */
+  overflow: visible;
+}
+
+.tray-menu--down {
+  top: calc(100% + var(--spacing-1));
+}
+
+.tray-menu--up {
+  bottom: calc(100% + var(--spacing-1));
+}
+
+.tray-menu__item:hover:not([data-disabled]) {
+  background-color: var(--control-color-normal-surface-hovered);
+}
+
+/* WinUI 3's flyout: taller rows and a rounder sheet than the Win32 menu. */
+.tray-menu[data-backend='winUi3'] {
+  padding: var(--spacing-1-5);
+  border-radius: var(--radius-big);
+}
+
+.tray-menu[data-backend='winUi3'] .tray-menu__item {
+  padding-block: var(--spacing-2);
+}
+
+
+.tray-menu__item[data-disabled] {
+  color: var(--color-content-faint);
+}
+
+.tray-menu__separator {
+  height: var(--stroke-hairline);
+  margin: var(--spacing-1) var(--spacing-2);
+  background: var(--color-border);
+}
+
+.tray-menu__submenu-anchor {
+  position: relative;
+}
+
+/* The icons sit at the screen's trailing edge, so the submenu opens inward. */
+.tray-menu__flyout {
+  inset-inline-end: calc(100% + var(--spacing-1));
+  top: calc(-1 * var(--spacing-1));
+}
+
+.tray-menu--up .tray-menu__flyout {
+  top: auto;
+  bottom: calc(-1 * var(--spacing-1));
+}

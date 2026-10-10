@@ -1,0 +1,63 @@
+/*
+ * The window's content view is the root of the tree: it fills the content
+ * area, and on Hyprland, which draws no titlebar, starts at the window's top
+ * edge rather than DazzUI's 20px inset.
+ */
+.workbench-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.native-view.workbench-window__root {
+  position: relative;
+  flex: 1 1 0px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+/* header.bar: a 3px view on the accent. */
+.workbench-window__bar {
+  height: 3px;
+  background: var(--view-accent);
+}
+
+.workbench-window__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The inspector's flash: setBackgroundColor(highlight) for 900 ms. */
+.workbench-window__flash {
+  position: absolute;
+  background: color-mix(in srgb, var(--color-warning-300) 62%, transparent);
+  animation: workbench-window-flash 900ms ease-out;
+}
+
+@keyframes workbench-window-flash {
+  from {
+    background: color-mix(in srgb, var(--color-warning-400) 80%, transparent);
+  }
+}
+
+.workbench-window__outline {
+  position: absolute;
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 1px;
+  background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+  border-radius: var(--radius-tiny);
+}
+
+.workbench-window__outline-tag {
+  position: absolute;
+  bottom: 100%;
+  left: -3px;
+  margin-bottom: 3px;
+  padding: 0 var(--spacing-1-5);
+  color: var(--color-primary-50);
+  background: var(--color-primary-600);
+  border-radius: var(--radius-tiny);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-small-font-size);
+  line-height: var(--caption-small-line-height);
+  white-space: nowrap;
+}

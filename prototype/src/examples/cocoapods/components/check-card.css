@@ -1,0 +1,103 @@
+.check-card.check-card {
+  flex-direction: row;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+  transition: box-shadow 0.2s;
+}
+
+.check-card[data-selected] {
+  box-shadow: 0 0 0 var(--stroke-control) var(--color-primary-500);
+}
+
+.check-card__module {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--control-small-size);
+  height: var(--control-small-size);
+  color: var(--color-content-secondary);
+  background: var(--color-surface);
+  border-radius: var(--radius-small);
+}
+
+.check-card__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  min-width: 0;
+}
+
+.check-card__name {
+  color: var(--color-content);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+  line-height: var(--label-strong-line-height);
+}
+
+.check-card__detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.check-card[data-status='idle'] .check-card__detail,
+.check-card[data-status='running'] .check-card__detail {
+  color: var(--color-content-faint);
+}
+
+.check-card[data-status='fail'] .check-card__detail {
+  color: var(--color-danger-700);
+}
+
+.check-card__status {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--icon-medium);
+  height: var(--icon-medium);
+}
+
+.check-card__pass {
+  color: var(--color-success-600);
+}
+
+.check-card__fail {
+  color: var(--color-danger-600);
+}
+
+.check-card__idle {
+  color: var(--color-content-faint);
+}
+
+/* A check that just finished settles in. */
+.check-card[data-status='pass'],
+.check-card[data-status='fail'] {
+  animation: check-card-done 0.5s ease-out;
+}
+
+@keyframes check-card-done {
+  from {
+    transform: scale(0.98);
+    opacity: 0.6;
+  }
+}
+
+/* An error names a symbol: break anywhere, and show it whole once the check is picked. */
+.check-card[data-status='fail'] .check-card__detail {
+  word-break: break-all;
+  -webkit-line-clamp: 3;
+}
+
+.check-card[data-selected] .check-card__detail {
+  display: block;
+}

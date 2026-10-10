@@ -1,0 +1,18 @@
+.lal-panel__inline {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.lal-panel__inline > :first-child {
+  flex: 1;
+}
+
+.lal-panel__end {
+  justify-content: flex-end;
+}
+
+/* Paths are the point here: let the read-back wrap them rather than cut them. */
+.lal-panel .read-back__grid dd {
+  white-space: normal;
+  word-break: break-all;
+}

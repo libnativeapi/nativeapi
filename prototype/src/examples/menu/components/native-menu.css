@@ -1,0 +1,81 @@
+.native-menu {
+  position: absolute;
+  z-index: 2;
+  min-width: 14rem;
+  /* Few rows, and a submenu hangs outside the sheet. */
+  overflow: visible;
+  color: var(--color-content);
+}
+
+.native-menu__item:hover:not([data-disabled]) {
+  background-color: var(--control-color-normal-surface-hovered);
+}
+
+.native-menu__item[data-disabled] {
+  color: var(--color-content-faint);
+}
+
+.native-menu__check {
+  font-size: var(--label-medium-font-size);
+}
+
+.native-menu__icon {
+  display: flex;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.native-menu__separator {
+  height: var(--stroke-hairline);
+  margin: var(--spacing-1) var(--spacing-2);
+  background: var(--color-border);
+}
+
+.native-menu__anchor {
+  position: relative;
+}
+
+.native-menu__flyout {
+  top: calc(-1 * var(--spacing-1));
+  left: calc(100% + var(--spacing-1));
+  min-width: 12rem;
+}
+
+.native-menu__flyout--flip {
+  right: calc(100% + var(--spacing-1));
+  left: auto;
+}
+
+/* Win32 draws a square, tight sheet. */
+.native-menu[data-os='windows'][data-backend='native'] {
+  border-radius: var(--radius-small);
+}
+
+.native-menu[data-os='windows'][data-backend='native'] .native-menu__item {
+  border-radius: 0;
+}
+
+/* WinUI 3's flyout: taller rows, more room, a rounder sheet. */
+.native-menu[data-backend='winUi3'] {
+  min-width: 16rem;
+  padding: var(--spacing-1-5);
+  border-radius: var(--radius-big);
+}
+
+.native-menu[data-backend='winUi3'] .native-menu__item {
+  gap: var(--spacing-3);
+  padding-block: var(--spacing-2);
+  padding-inline: var(--spacing-3);
+}
+
+.native-menu[data-backend='winUi3'] .native-menu__separator {
+  margin-block: var(--spacing-1-5);
+}
+
+.native-menu__tooltip {
+  position: absolute;
+  top: calc(100% + var(--spacing-1));
+  left: var(--spacing-6);
+  z-index: 3;
+  white-space: nowrap;
+}

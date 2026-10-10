@@ -1,0 +1,59 @@
+/* The wallpaper's shapes sit on the desktop itself, under every window. */
+.wallpaper-shapes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wallpaper-shapes > span {
+  position: absolute;
+  display: block;
+}
+
+.wallpaper-shapes__circle {
+  left: 250px;
+  top: 110px;
+  width: 300px;
+  height: 300px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-700));
+}
+
+.wallpaper-shapes__stripes {
+  left: 80px;
+  top: 330px;
+  width: 1180px;
+  height: 64px;
+  transform: rotate(-7deg);
+  background: repeating-linear-gradient(90deg, var(--color-info-500) 0 28px, transparent 28px 56px);
+}
+
+.wallpaper-shapes__square {
+  left: 860px;
+  top: 390px;
+  width: 240px;
+  height: 240px;
+  border-radius: var(--radius-big);
+  transform: rotate(18deg);
+  background: var(--color-warning-400);
+}
+
+.wallpaper-shapes__triangle {
+  left: 560px;
+  top: 470px;
+  width: 280px;
+  height: 230px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: var(--color-success-500);
+}
+
+.wallpaper-shapes__ring {
+  left: 930px;
+  top: 40px;
+  width: 190px;
+  height: 190px;
+  box-sizing: border-box;
+  border: 26px solid var(--color-danger-400);
+  border-radius: var(--radius-full);
+}

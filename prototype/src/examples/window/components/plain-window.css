@@ -1,0 +1,38 @@
+/* The window's content leaves its background bare: what shows is the window's own. */
+.plain-window__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-height: 0;
+  padding: var(--spacing-4);
+  color: inherit;
+  text-align: center;
+}
+
+/* Under a transparent title bar the content starts at the top edge, clear of the buttons. */
+.plain-window__content[data-under] {
+  padding-top: var(--spacing-10);
+}
+
+.plain-window__title {
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  line-height: var(--title-small-line-height);
+}
+
+.plain-window__size {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.plain-window__note {
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+  opacity: 0.64;
+}

@@ -1,0 +1,58 @@
+/*
+ * The workbench's accent, which every section, the title, the boxes and the
+ * inspector's headings repaint themselves with. Each is a DazzUI ramp; Pink
+ * has none, so it is mixed from red and brand.
+ */
+.view-view {
+  --view-accent: var(--base-color-brand-500);
+}
+
+.view-view--teal {
+  --view-accent: var(--base-color-frost-500);
+}
+
+.view-view--orange {
+  --view-accent: var(--base-color-ember-500);
+}
+
+.view-view--pink {
+  --view-accent: color-mix(in oklch, var(--base-color-red-500) 62%, var(--base-color-brand-500));
+}
+
+.view-view--green {
+  --view-accent: var(--base-color-green-500);
+}
+
+.view-view__window {
+  position: relative;
+}
+
+/* The corner the window manager resizes from. */
+.view-view__grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    var(--color-border-strong) 50%,
+    var(--color-border-strong) 58%,
+    transparent 58%,
+    transparent 70%,
+    var(--color-border-strong) 70%,
+    var(--color-border-strong) 78%,
+    transparent 78%
+  );
+  border-end-end-radius: var(--radius-medium);
+  touch-action: none;
+}
+
+.view-view__quit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+}

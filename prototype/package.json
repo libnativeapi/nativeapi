@@ -1,0 +1,32 @@
+{
+  "name": "@nativeapi/prototype",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interface prototypes for the nativeapi example apps",
+  "scripts": {
+    "dev": "storybook dev -p 6026 --host 127.0.0.1",
+    "build": "storybook build",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@dazzlabs/dazzui": "github:dazzlabs/dazzui#1202e347c14aee4705bf066a4f9c208565f6bab4&path:/packages/js/dazzui",
+    "@fluentui/react-icons": "^2.0.339",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/react-vite": "^10.6.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "storybook": "^10.6.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.1.5"
+  }
+}

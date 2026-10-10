@@ -1,0 +1,56 @@
+/* The tabs of the selected window: shared bits under the shared panel kit. */
+.window-panel__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+/* Pinned over the tabs: the window's state, and where it stands. */
+.window-panel__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+  padding: var(--spacing-2-5) var(--spacing-4);
+  background: var(--color-surface-sunken);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.window-panel__bounds {
+  color: var(--color-content-secondary);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A press-and-hold button: the gesture starts on the press, not on release. */
+.window-panel__hold {
+  touch-action: none;
+  cursor: grab;
+}
+
+.window-panel__hold:active {
+  cursor: grabbing;
+}
+
+.window-panel__swatch {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-tiny);
+}
+
+/* The transparent swatch: a checkerboard, as every colour picker draws one. */
+.window-panel__swatch[data-transparent] {
+  background:
+    conic-gradient(var(--color-border) 25%, transparent 0 50%, var(--color-border) 0 75%, transparent 0) 0 0 / 7px 7px,
+    var(--color-surface);
+}
+
+.window-panel__opacity {
+  width: 200px;
+}
+
+.window-panel__effect {
+  width: 140px;
+}

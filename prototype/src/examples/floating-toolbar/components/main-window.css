@@ -1,0 +1,78 @@
+.main-window {
+  display: flex;
+}
+
+/* Hyprland draws no title bar, and the page needs no inset for one. */
+.main-window__frame[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.main-window__scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  overflow-y: auto;
+}
+
+.main-window__intro {
+  margin: 0;
+  color: var(--color-content-subtle);
+  font-size: var(--body-medium-font-size);
+  line-height: var(--body-medium-line-height);
+}
+
+.main-window__shared.dz-card {
+  flex-direction: row;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.main-window__swatch {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-medium);
+  transition: background var(--motion-duration) var(--motion-easing);
+}
+
+.main-window__shared-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.main-window__stamps {
+  color: var(--color-content);
+  font-family: var(--title-large-font-family);
+  font-size: var(--title-large-font-size);
+  font-weight: var(--title-large-font-weight);
+}
+
+.main-window__muted {
+  color: var(--color-content-subtle);
+  font-size: var(--body-small-font-size);
+}
+
+.main-window__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.main-window__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.main-window__spacer {
+  flex: 1;
+}
+
+.main-window__foot.dz-window-frame__footer {
+  padding: var(--spacing-2-5) var(--spacing-4);
+}

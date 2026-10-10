@@ -1,0 +1,79 @@
+.example-window__content {
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * DazzUI gives an Omarchy window's content a 20px inset on top, the one it has
+ * on every other edge — right for content alone, but an application window's
+ * sidebar and band reach the top edge themselves.
+ */
+.example-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+/*
+ * One inset for the whole pane: the band, the panels and the footer all start
+ * and end 16px in. DazzUI's pane band has no inset of its own, and centres its
+ * title on macOS only; here the title leads on every platform and the tabs and
+ * actions trail it.
+ */
+.example-window .dz-window-frame__main > .dz-window-frame__titlebar {
+  --dz-window-title-justify: flex-start;
+  --dz-window-title-flex: 1;
+  --dz-window-toolbar-flex: none;
+  padding-inline: var(--spacing-4);
+}
+
+/* Caption buttons belong at the window's edge, as the platform draws them. */
+.example-window .dz-window-frame__main > .dz-window-frame__titlebar:has(.dz-window-frame__caption) {
+  padding-inline-end: 0;
+}
+
+.example-window .dz-window-frame__main > .dz-window-frame__titlebar .dz-window-frame__caption {
+  margin-inline-start: var(--spacing-2);
+}
+
+.example-window .dz-window-frame__footer {
+  padding-block: var(--spacing-2-5);
+  padding-inline: var(--spacing-4);
+}
+
+.example-window__app-name {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-inline: var(--spacing-2);
+  color: var(--color-content);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+}
+
+/* A sidebar row's second line. */
+.example-window__row {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.example-window__row-detail {
+  overflow: hidden;
+  opacity: 0.72;
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The pane's scrolling column under whatever it pins on top. */
+.example-window__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The pane's title stays whole; its subtitle gives way first. */
+.example-window .dz-window-frame__main > .dz-window-frame__titlebar .dz-window-frame__title-text {
+  flex-shrink: 0;
+}

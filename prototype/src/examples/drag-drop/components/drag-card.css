@@ -1,0 +1,42 @@
+.drag-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-card--dragging {
+  opacity: 0.55;
+}
+
+.drag-card__icon {
+  flex-shrink: 0;
+  color: var(--color-primary-600);
+}
+
+.drag-card__text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.drag-card__text strong {
+  white-space: nowrap;
+  color: var(--color-content);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+}
+
+.drag-card__text span {
+  overflow: hidden;
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

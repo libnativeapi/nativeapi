@@ -1,0 +1,84 @@
+/* The display, to scale: the bar along its edge, the windows where they stand. */
+.window-map {
+  position: relative;
+  align-self: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-primary-400) 30%, transparent), transparent 55%),
+    var(--color-surface-sunken);
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-medium);
+}
+
+.window-map__bar {
+  position: absolute;
+  inset-inline: 0;
+  background: color-mix(in srgb, var(--color-content) 14%, transparent);
+}
+
+.window-map__window {
+  position: absolute;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  border: var(--stroke-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-tiny);
+  font: inherit;
+  text-align: start;
+  cursor: default;
+}
+
+.window-map__window:hover {
+  border-color: var(--color-primary-400);
+}
+
+.window-map__window[data-selected] {
+  z-index: 100;
+  border: 2px solid var(--color-primary-500);
+}
+
+.window-map__window[data-hidden] {
+  background: transparent;
+  border-style: dashed;
+}
+
+.window-map__window[data-minimized] {
+  opacity: 0.4;
+}
+
+/* The content bounds: below the title bar, when there is one. */
+.window-map__content {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+}
+
+.window-map__window[data-focused] .window-map__content {
+  background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.window-map__label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-0-5) var(--spacing-1);
+  overflow: hidden;
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.window-map__label > span {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+}
+
+.window-map__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}

@@ -1,0 +1,77 @@
+.menu-panel__stage {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-3);
+}
+
+/* The ContextMenuRegion: the one place a right-click opens the menu. */
+.menu-panel__region {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-height: 9rem;
+  color: var(--color-content-subtle);
+  background: var(--color-surface-sunken);
+  border: var(--stroke-hairline) dashed var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  font-size: var(--caption-large-font-size);
+  text-align: center;
+  cursor: context-menu;
+}
+
+.menu-panel__region > svg {
+  color: var(--color-primary-600);
+}
+
+.menu-panel__region strong {
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+}
+
+.menu-panel__region[data-open] {
+  border-style: solid;
+  border-color: var(--color-primary-600);
+}
+
+/* A label with its value right under it. */
+.menu-panel__readouts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.menu-panel__readouts > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-small);
+}
+
+.menu-panel__readouts span {
+  color: var(--color-content-subtle);
+  font-size: var(--caption-large-font-size);
+}
+
+.menu-panel__readouts strong {
+  overflow: hidden;
+  color: var(--color-content);
+  font-family: var(--title-small-font-family);
+  font-size: var(--title-small-font-size);
+  font-weight: var(--title-small-font-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}

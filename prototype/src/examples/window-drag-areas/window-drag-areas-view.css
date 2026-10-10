@@ -1,0 +1,128 @@
+/* Measures the desktop: the window is centred in it and maximizes to it. */
+.window-drag-areas-view__measure {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The window's bare content, the page's canvas: the panel stands inside the handles. */
+.window-drag-areas-view__window {
+  flex-shrink: 0;
+  max-width: none;
+  background: var(--color-canvas);
+}
+
+.window-drag-areas-view__window[data-maximized] {
+  border-radius: 0;
+}
+
+/* Inside the handles: the inset plus the handles' thickness. */
+.window-drag-areas-view__panel {
+  position: absolute;
+  inset: 28px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The custom title bar: the accent's surface wash, 44px. */
+.window-drag-areas-view__bar {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding-inline: var(--spacing-3);
+  color: var(--color-content);
+  background: color-mix(in srgb, var(--color-primary-600) calc(var(--wash-surface) * 100%), transparent);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+  font-family: var(--label-strong-font-family);
+  font-size: var(--label-strong-font-size);
+  font-weight: var(--label-strong-font-weight);
+  touch-action: none;
+  cursor: grab;
+}
+
+.window-drag-areas-view__bar:active {
+  cursor: grabbing;
+}
+
+.window-drag-areas-view__bar-icon {
+  position: absolute;
+  left: var(--spacing-3);
+  color: var(--color-primary-600);
+}
+
+.window-drag-areas-view__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: var(--spacing-4);
+  overflow-y: auto;
+  text-align: center;
+}
+
+.window-drag-areas-view__size {
+  color: var(--color-content);
+  font-family: var(--title-large-font-family);
+  font-size: var(--title-large-font-size);
+  font-weight: var(--title-large-font-weight);
+  line-height: var(--title-large-line-height);
+  font-variant-numeric: tabular-nums;
+}
+
+.window-drag-areas-view__lead {
+  margin: var(--spacing-1) 0 var(--spacing-5);
+  color: var(--color-content-subtle);
+  font-size: var(--body-medium-font-size);
+  line-height: var(--body-medium-line-height);
+}
+
+.window-drag-areas-view__cards {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.window-drag-areas-view__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  width: 184px;
+  text-align: start;
+}
+
+.window-drag-areas-view__card > :last-child {
+  margin-top: auto;
+}
+
+.window-drag-areas-view__value {
+  color: var(--color-content);
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+  line-height: var(--title-medium-line-height);
+}
+
+.window-drag-areas-view__note {
+  margin-bottom: var(--spacing-2);
+  color: var(--color-content-muted);
+  font-size: var(--caption-large-font-size);
+  line-height: var(--caption-large-line-height);
+}
+
+/* The HUD: the calls and events, at the desktop's foot, clear of the window. */
+.window-drag-areas-view__hud {
+  position: absolute;
+  left: var(--spacing-4);
+  bottom: var(--spacing-4);
+  width: 400px;
+}

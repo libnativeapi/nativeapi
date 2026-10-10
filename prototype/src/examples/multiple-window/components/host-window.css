@@ -1,0 +1,55 @@
+/* The hook's frame eases in, so a snap back into the slot is seen; a drag by the title bar does not. */
+.host-window {
+  transition:
+    width 320ms var(--motion-easing),
+    height 320ms var(--motion-easing);
+}
+
+.host-window[data-moving] {
+  transition: none;
+}
+
+.host-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.host-window__head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2-5) var(--spacing-4);
+  border-bottom: var(--stroke-hairline) solid var(--color-border);
+}
+
+.host-window__title {
+  overflow: hidden;
+  color: var(--color-content);
+  font-family: var(--title-medium-font-family);
+  font-size: var(--title-medium-font-size);
+  font-weight: var(--title-medium-font-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.host-window__spacer {
+  flex: 1;
+}
+
+.host-window__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-surface);
+}
+
+.host-window__description {
+  margin: 0;
+  color: var(--color-content-muted);
+  font-size: var(--body-small-font-size);
+  line-height: var(--body-small-line-height);
+}

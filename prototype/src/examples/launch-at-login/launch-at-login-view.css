@@ -1,0 +1,39 @@
+/* The system's window, and on Windows the switch between its two tools above it. */
+.launch-at-login-view__system {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+/* The login screen while the session ends and starts again. */
+.launch-at-login-view__login {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--color-canvas) 55%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.launch-at-login-view__login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-6) var(--spacing-10);
+}
+
+.launch-at-login-view__login-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-content-secondary);
+  font-size: var(--body-small-font-size);
+}
+
+.launch-at-login-view__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}

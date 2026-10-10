@@ -1,0 +1,68 @@
+/* A line over a tab's content: what to do now, and the one toggle that goes with it. */
+.keyboard-view__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.keyboard-view__prompt {
+  flex: 1;
+  color: var(--color-content-secondary);
+  font-size: var(--body-small-font-size);
+}
+
+.keyboard-view__focus {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-content);
+  font-size: var(--caption-large-font-size);
+}
+
+.keyboard-view__state {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+.keyboard-view__state[data-state='monitoring'] {
+  background: var(--color-success-500);
+}
+
+.keyboard-view__state[data-state='blocked'] {
+  background: var(--color-danger-500);
+}
+
+.keyboard-view__table {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.keyboard-view__table .dz-table__head,
+.keyboard-view__table .dz-table__row {
+  padding-inline: var(--spacing-2);
+}
+
+.keyboard-view__table .dz-table__row {
+  padding-block: var(--spacing-0-5);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.keyboard-view__table [data-here] {
+  color: var(--color-primary-600);
+  font-weight: var(--base-font-weight-semibold);
+}
+
+.keyboard-view__code-name {
+  color: var(--color-content-faint);
+}
+
+/* While it monitors, the monitor says so where the user is typing: on the desktop. */
+.keyboard-view__live {
+  position: absolute;
+  right: var(--spacing-4);
+  top: var(--spacing-3);
+}

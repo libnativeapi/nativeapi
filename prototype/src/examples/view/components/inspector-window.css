@@ -1,0 +1,107 @@
+.inspector-window[data-platform='omarchy'] .dz-window-frame__content {
+  padding-block-start: 0;
+}
+
+.native-view.inspector-window__root {
+  flex: 1 1 0px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.inspector-window__heading {
+  font-weight: var(--label-strong-font-weight);
+  letter-spacing: 0.04em;
+}
+
+/* The two read-only multi-line fields the example prints into: sunken boxes that scroll. */
+.inspector-window__box {
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  background: var(--color-surface-sunken);
+  border: var(--stroke-hairline) solid var(--color-border);
+  border-radius: var(--control-field-radius);
+}
+
+.inspector-window__tree {
+  flex: 3 1 0px;
+  padding: var(--spacing-1);
+}
+
+.inspector-window__log {
+  flex: 2 1 0px;
+  padding: var(--spacing-1-5) var(--spacing-2);
+  list-style: none;
+  font-family: var(--base-font-code);
+  font-size: var(--caption-medium-font-size);
+  line-height: var(--caption-medium-line-height);
+}
+
+.inspector-window__node {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.inspector-window__node[data-hidden] {
+  opacity: 0.55;
+}
+
+.inspector-window__node-name {
+  font-family: var(--base-font-code);
+  font-size: var(--caption-large-font-size);
+}
+
+.inspector-window__node-kind {
+  color: var(--view-accent);
+  font-size: var(--caption-medium-font-size);
+}
+
+.inspector-window__node-details {
+  overflow: hidden;
+  color: var(--color-content-subtle);
+  font-size: var(--caption-medium-font-size);
+  text-overflow: ellipsis;
+}
+
+.inspector-window__frame {
+  color: var(--color-content-subtle);
+  font-family: var(--base-font-code);
+  font-size: var(--caption-small-font-size);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inspector-window__log li {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  min-height: 20px;
+  white-space: nowrap;
+}
+
+.inspector-window__time {
+  color: var(--color-content-faint);
+}
+
+.inspector-window__source {
+  color: var(--color-content-secondary);
+}
+
+.inspector-window__message {
+  overflow: hidden;
+  color: var(--view-accent);
+  text-overflow: ellipsis;
+}
+
+/* The example's own notes, between the view events. */
+.inspector-window__log li[data-note] .inspector-window__message {
+  color: var(--color-content-subtle);
+}
+
+.inspector-window__empty {
+  color: var(--color-content-faint);
+}

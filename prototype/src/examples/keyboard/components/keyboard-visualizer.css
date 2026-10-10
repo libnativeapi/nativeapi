@@ -1,0 +1,63 @@
+.keyboard-visualizer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-large);
+}
+
+.keyboard-visualizer__row {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.keyboard-visualizer .keyboard-visualizer__key[data-variant] {
+  position: relative;
+  display: flex;
+  flex: var(--key-w) 1 0;
+  min-width: 0;
+  height: 30px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 2px var(--spacing-1);
+  transition:
+    background-color 60ms,
+    transform 60ms;
+}
+
+.keyboard-visualizer__row[data-fn] .keyboard-visualizer__key[data-variant] {
+  height: 22px;
+}
+
+.keyboard-visualizer .keyboard-visualizer__key[data-pressed] {
+  color: var(--color-on-accent);
+  background: var(--color-primary-500);
+  border-color: var(--color-primary-600);
+  transform: translateY(1px);
+}
+
+.keyboard-visualizer[data-idle] .keyboard-visualizer__key {
+  opacity: 0.6;
+}
+
+.keyboard-visualizer__cap {
+  overflow: hidden;
+  font-size: var(--caption-medium-font-size);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keyboard-visualizer__code {
+  align-self: flex-end;
+  opacity: 0.55;
+  font-family: var(--base-font-code);
+  font-size: var(--caption-small-font-size);
+  line-height: 1;
+}
+
+.keyboard-visualizer__row[data-fn] .keyboard-visualizer__code {
+  display: none;
+}
