@@ -17,6 +17,7 @@ examples/           # every binding's example apps, prefixed dart_*, flutter_*, 
 pubspec.yaml        # pub workspace + melos root: Dart packages and Flutter examples
 Cargo.toml          # cargo workspace root: Rust crates and examples
 tools/codegen/      # in-repo Rust workspace: the code generator
+website/            # the project website (TanStack Start on Cloudflare Workers): landing page, docs, API reference
 tools/gui/          # GUI tests and demo scenarios for the examples (built on the skills)
 codegen             # Python entry point orchestrating the generators
 .agents/skills/     # agent skills: core API changes, GUI testing, demo recording (see below)
@@ -56,7 +57,9 @@ Always drive the generators through `./codegen` at the workspace root:
 - `./codegen readme` — copy the shared README sections (`tools/readme/*.md`, e.g. Contributing) into core and every binding; `check` flags drift, `sync` runs it. Edit the snippet, never the copies.
 - `./codegen sync [-m "msg"] [--push]` — full downstream propagation, see below
 
-Generated files start with `// AUTO-GENERATED. DO NOT EDIT.` (`#` in Python) — change the C++ headers in `core/src/` and regenerate instead of editing outputs. Files without that banner are hand-written and never overwritten. The header list (`API_HEADERS`) lives in `tools/codegen/shared/src/lib.rs`.
+Every bindings run also writes the API reference the website renders, `website/content/api/` (one JSON file per header: the doc comments parsed from the headers plus every binding's signature for each symbol). Each generator's `reference()` builds those signatures with the same helpers that render the binding, keyed by `tools/codegen/shared/src/symbols.rs`, so the reference cannot drift from the generated code; `./codegen check` verifies it and `./codegen sync` commits it. Doc text comes only from the doxygen comments in `core/src/` — document a symbol there, not in the website.
+
+Generated files start with `// AUTO-GENERATED. DO NOT EDIT.` (`#` in Python; a `"$comment"` key in JSON) — change the C++ headers in `core/src/` and regenerate instead of editing outputs. Files without that banner are hand-written and never overwritten. The header list (`API_HEADERS`) lives in `tools/codegen/shared/src/lib.rs`.
 
 Go builds require Go 1.22+, cgo and CMake 3.24+; build the shared library with
 `cmake -S bindings/go -B bindings/go/build && cmake --build bindings/go/build --config Release`.

@@ -5,8 +5,12 @@ use std::path::{Path, PathBuf};
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 
 use codegen_shared::ir::{
-    Api, Class, Constructor, Enum, EventGroup, Header, Method, Param, Struct, TypeRef,
+    Alias, Api, Class, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field, Header,
+    Method, Param, Struct, TypeRef,
 };
+use codegen_shared::symbols;
+
+use crate::reference::Reference;
 use codegen_shared::naming::{
     c_add_listener_symbol, c_constructor_symbol, c_event_variant, c_event_variant_field,
     c_free_symbol, c_list_field, c_list_release_symbol, c_method_symbol, c_native_object_symbol,
@@ -340,10 +344,10 @@ fn generate_dart_web(api: &Api, header: &Header, origins: &TypeOrigins, prefix: 
     }
 
     for alias in &header.aliases {
-        if origins.get(&alias.name).map(String::as_str) != Some(header.stem.as_str()) {
+        if !alias_emitted(origins, header, alias) {
             continue;
         }
-        writeln!(out, "typedef {} = int;", alias.name).unwrap();
+        writeln!(out, "{};", dart_alias_decl(alias)).unwrap();
         writeln!(out).unwrap();
     }
     for item in &header.enums {
@@ -430,16 +434,12 @@ fn render_dart_class_web(out: &mut String, api: &Api, class: &Class) {
     if let Some(group) = emitted_group(api, class) {
         writeln!(
             out,
-            "  ListenerId addListener(FutureOr<void> Function({}) callback) => unsupported();",
-            group.name
+            "  {} => unsupported();",
+            dart_add_listener_signature(group)
         )
         .unwrap();
         writeln!(out).unwrap();
-        writeln!(
-            out,
-            "  bool removeListener(ListenerId listenerId) => unsupported();"
-        )
-        .unwrap();
+        writeln!(out, "  {DART_REMOVE_LISTENER_SIGNATURE} => unsupported();").unwrap();
         writeln!(out).unwrap();
     }
     writeln!(out, "}}").unwrap();
@@ -515,10 +515,10 @@ fn generate_dart(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     let prelude = std::mem::take(&mut out);
 
     for alias in &header.aliases {
-        if origins.get(&alias.name).map(String::as_str) != Some(header.stem.as_str()) {
+        if !alias_emitted(origins, header, alias) {
             continue;
         }
-        writeln!(out, "typedef {} = int;", alias.name).unwrap();
+        writeln!(out, "{};", dart_alias_decl(alias)).unwrap();
         writeln!(out).unwrap();
     }
 
@@ -595,20 +595,14 @@ fn dart_import_path(from: &Path, to: &Path) -> String {
 
 fn render_dart_enum(out: &mut String, item: &Enum, prefix: &str, web: bool) {
     let c_ty = format!("{C}.{}", c_type_name(prefix, &item.name));
-    writeln!(out, "enum {} {{", item.name).unwrap();
+    writeln!(out, "{} {{", dart_enum_head(item)).unwrap();
     for (index, variant) in item.variants.iter().enumerate() {
         let sep = if index + 1 == item.variants.len() {
             ";"
         } else {
             ","
         };
-        writeln!(
-            out,
-            "  {}({}){sep}",
-            dart_enum_case(&variant.name),
-            variant.value
-        )
-        .unwrap();
+        writeln!(out, "  {}{sep}", dart_enum_variant_decl(variant)).unwrap();
     }
     writeln!(out).unwrap();
     writeln!(out, "  const {}(this.value);", item.name).unwrap();
@@ -755,7 +749,7 @@ fn render_dart_value_members(out: &mut String, item: &Struct) {
 
 fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) {
     let c_ty = format!("{C}.{}", c_type_name(prefix, &item.name));
-    writeln!(out, "class {} {{", item.name).unwrap();
+    writeln!(out, "{} {{", dart_struct_head(item)).unwrap();
     write!(out, "  const {}({{", item.name).unwrap();
     for field in &item.fields {
         if is_callback(&field.ty)
@@ -776,13 +770,7 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
     writeln!(out, "}});").unwrap();
     writeln!(out).unwrap();
     for field in &item.fields {
-        writeln!(
-            out,
-            "  final {} {};",
-            dart_field_type(&field.ty),
-            field.name.to_lower_camel_case()
-        )
-        .unwrap();
+        writeln!(out, "  {};", dart_struct_field_decl(field)).unwrap();
     }
     writeln!(out).unwrap();
     render_dart_value_members(out, item);
@@ -917,18 +905,12 @@ fn render_dart_struct(out: &mut String, item: &Struct, prefix: &str, web: bool) 
 
 fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str, web: bool) {
     writeln!(out, "/// One `{}`, in its concrete form.", group.name).unwrap();
-    writeln!(out, "sealed class {} {{", group.name).unwrap();
+    writeln!(out, "{} {{", dart_event_group_head(group)).unwrap();
     writeln!(out, "  const {}();", group.name).unwrap();
     writeln!(out).unwrap();
     // What every variant carries can be read without matching the variant.
     for field in &group.common {
-        writeln!(
-            out,
-            "  {} get {};",
-            dart_event_field_type(&field.ty),
-            field.name.to_lower_camel_case()
-        )
-        .unwrap();
+        writeln!(out, "  {};", dart_event_common_decl(field)).unwrap();
     }
     if !group.common.is_empty() && !web {
         writeln!(out).unwrap();
@@ -943,7 +925,7 @@ fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str, web: bo
         let class_name = event_variant_class(variant);
         let fields: Vec<&codegen_shared::ir::Field> =
             group.common.iter().chain(variant.fields.iter()).collect();
-        writeln!(out, "final class {class_name} extends {} {{", group.name).unwrap();
+        writeln!(out, "{} {{", dart_event_variant_head(group, variant)).unwrap();
         write!(out, "  const {class_name}(").unwrap();
         if !fields.is_empty() {
             write!(out, "{{").unwrap();
@@ -960,13 +942,7 @@ fn render_dart_event(out: &mut String, group: &EventGroup, prefix: &str, web: bo
             if index < group.common.len() {
                 writeln!(out, "  @override").unwrap();
             }
-            writeln!(
-                out,
-                "  final {} {};",
-                dart_event_field_type(&field.ty),
-                field.name.to_lower_camel_case()
-            )
-            .unwrap();
+            writeln!(out, "  {};", dart_event_field_decl(field)).unwrap();
         }
         writeln!(out, "}}").unwrap();
         writeln!(out).unwrap();
@@ -1043,10 +1019,8 @@ fn dart_event_field_type(ty: &TypeRef) -> String {
 
 fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class, prefix: &str) {
     let instance = class.is_instance();
-    if let Some(base) = &class.base {
-        // A derived class shares its base's handle plumbing: the C ABI resolves
-        // this handle as the base too, so inherited methods just work.
-        writeln!(out, "class {} extends {base} {{", class.name).unwrap();
+    writeln!(out, "{} {{", dart_class_head(class)).unwrap();
+    if class.base.is_some() {
         writeln!(
             out,
             "  /// Adopts a handle returned by the C API and releases it when this"
@@ -1072,11 +1046,6 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         )
         .unwrap();
         writeln!(out).unwrap();
-    } else if instance {
-        // Finalizable keeps the object alive while a call still uses its handle.
-        writeln!(out, "class {} implements ffi.Finalizable {{", class.name).unwrap();
-    } else {
-        writeln!(out, "class {} {{", class.name).unwrap();
     }
 
     if class.base.is_some() {
@@ -1186,15 +1155,20 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
     writeln!(out).unwrap();
 }
 
-/// `static Window? create(...)`, without the body.
-fn dart_constructor_signature(class: &Class, ctor: &Constructor) -> String {
-    let label = match constructor_suffix(class, ctor) {
+/// The static factory a constructor becomes: `create`, `createWithTitle`.
+fn dart_constructor_name(class: &Class, ctor: &Constructor) -> String {
+    match constructor_suffix(class, ctor) {
         Some(suffix) => format!("create{}", suffix.to_upper_camel_case()),
         None => "create".to_string(),
-    };
+    }
+}
+
+/// `static Window? create(...)`, without the body.
+fn dart_constructor_signature(class: &Class, ctor: &Constructor) -> String {
     format!(
-        "  static {}? {label}({})",
+        "  static {}? {}({})",
         class.name,
+        dart_constructor_name(class, ctor),
         dart_params(&ctor.params)
     )
 }
@@ -1225,6 +1199,12 @@ fn render_dart_constructor(out: &mut String, class: &Class, ctor: &Constructor, 
 /// A method's declaration as a property setter, getter or plain method,
 /// without the body.
 fn dart_method_signature(class: &Class, method: &Method) -> String {
+    dart_method_decl(class, method).1
+}
+
+/// A method's Dart name (the property name for a getter or setter) and its
+/// declaration, without the body.
+fn dart_method_decl(class: &Class, method: &Method) -> (String, String) {
     let name = swift_method_name(class, method).to_lower_camel_case();
     let accessor = is_binding_accessor(class, method) && method.params.is_empty();
     // Dart spells accessors as properties, and `GetX` already becomes one; a
@@ -1232,12 +1212,14 @@ fn dart_method_signature(class: &Class, method: &Method) -> String {
     // readable but not writable.
     let return_type = dart_return_type(&method.return_type);
     if let Some(name) = dart_setter_name(class, method) {
-        format!(
+        let signature = format!(
             "  set {name}({} value)",
             dart_param_type(&method.params[0].ty)
-        )
+        );
+        (name, signature)
     } else if accessor {
-        format!("  {return_type} get {name}")
+        let signature = format!("  {return_type} get {name}");
+        (name, signature)
     } else {
         // Singleton methods are instance methods on `.instance`; only a static
         // method of a handle class stays static.
@@ -1246,10 +1228,11 @@ fn dart_method_signature(class: &Class, method: &Method) -> String {
         } else {
             "  "
         };
-        format!(
+        let signature = format!(
             "{prefix_kw}{return_type} {name}({})",
             dart_params(&method.params)
-        )
+        );
+        (name, signature)
     }
 }
 
@@ -1358,12 +1341,7 @@ fn render_dart_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
         "  /// Events queued before removal are skipped if their callback has not started."
     )
     .unwrap();
-    writeln!(
-        out,
-        "{keyword}ListenerId addListener(FutureOr<void> Function({}) callback) {{",
-        group.name
-    )
-    .unwrap();
+    writeln!(out, "{keyword}{} {{", dart_add_listener_signature(group)).unwrap();
     writeln!(out, "    final callable = ffi.NativeCallable<\n        ffi.Void Function(ffi.Pointer<{c_event}>, ffi.Uint64, ffi.Pointer<ffi.Void>)>.listener(").unwrap();
     writeln!(
         out,
@@ -1391,11 +1369,7 @@ fn render_dart_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
         "  /// Unregisters a listener. Returns false if unknown."
     )
     .unwrap();
-    writeln!(
-        out,
-        "{keyword}bool removeListener(ListenerId listenerId) =>"
-    )
-    .unwrap();
+    writeln!(out, "{keyword}{} =>", DART_REMOVE_LISTENER_SIGNATURE).unwrap();
     writeln!(
         out,
         "      {C}.{}({self_arg}listenerId);",
@@ -2157,19 +2131,223 @@ fn render_dart_payload_callback(
 
 fn render_dart_async(out: &mut String, class: &Class) {
     for method in &class.methods {
-        if let [Param {
-            ty: TypeRef::Callback { params },
-            ..
-        }] = method.params.as_slice()
-        {
-            if params.len() == 2
-                && matches!(params[0], TypeRef::Bool)
-                && callback_has_payload(params)
+        if let Some((name, ty)) = dart_async_method(method) {
+            writeln!(out, "  {} {{\n    final completer = Completer<{ty}>();\n    {name}((success, value) {{\n      if (success) {{ completer.complete(value); }}\n      else {{ completer.completeError(StateError('Clipboard operation failed')); }}\n    }});\n    return completer.future;\n  }}", dart_async_signature(&name, &ty)).unwrap();
+        }
+    }
+}
+
+/// A method whose only parameter is a `(bool success, T value)` callback also
+/// gets a `Future<T>` form. Returns the method's Dart name and `T`.
+fn dart_async_method(method: &Method) -> Option<(String, String)> {
+    let [Param {
+        ty: TypeRef::Callback { params },
+        ..
+    }] = method.params.as_slice()
+    else {
+        return None;
+    };
+    if params.len() == 2 && matches!(params[0], TypeRef::Bool) && callback_has_payload(params) {
+        Some((
+            method.binding_name().to_lower_camel_case(),
+            dart_field_type(&params[1]),
+        ))
+    } else {
+        None
+    }
+}
+
+/// `Future<String?> readTextAsync()`, without the body.
+fn dart_async_signature(name: &str, ty: &str) -> String {
+    format!("Future<{ty}> {name}Async()")
+}
+
+// ---------------------------------------------------------------------------
+// Declaration heads, shared by the renderers and `reference`
+// ---------------------------------------------------------------------------
+
+/// Whether this header is the one that declares `alias` (an alias several
+/// headers use is declared once).
+fn alias_emitted(origins: &TypeOrigins, header: &Header, alias: &Alias) -> bool {
+    origins.get(&alias.name).map(String::as_str) == Some(header.stem.as_str())
+}
+
+fn dart_alias_decl(alias: &Alias) -> String {
+    format!("typedef {} = int", alias.name)
+}
+
+fn dart_enum_head(item: &Enum) -> String {
+    format!("enum {}", item.name)
+}
+
+/// `hidden(1)`, without the separator.
+fn dart_enum_variant_decl(variant: &EnumVariant) -> String {
+    format!("{}({})", dart_enum_case(&variant.name), variant.value)
+}
+
+fn dart_struct_head(item: &Struct) -> String {
+    format!("class {}", item.name)
+}
+
+fn dart_struct_field_decl(field: &Field) -> String {
+    format!(
+        "final {} {}",
+        dart_field_type(&field.ty),
+        field.name.to_lower_camel_case()
+    )
+}
+
+fn dart_event_group_head(group: &EventGroup) -> String {
+    format!("sealed class {}", group.name)
+}
+
+/// A field every variant carries, readable on the group without matching.
+fn dart_event_common_decl(field: &Field) -> String {
+    format!(
+        "{} get {}",
+        dart_event_field_type(&field.ty),
+        field.name.to_lower_camel_case()
+    )
+}
+
+fn dart_event_variant_head(group: &EventGroup, variant: &EventVariant) -> String {
+    format!(
+        "final class {} extends {}",
+        event_variant_class(variant),
+        group.name
+    )
+}
+
+fn dart_event_field_decl(field: &Field) -> String {
+    format!(
+        "final {} {}",
+        dart_event_field_type(&field.ty),
+        field.name.to_lower_camel_case()
+    )
+}
+
+fn dart_class_head(class: &Class) -> String {
+    if let Some(base) = &class.base {
+        // A derived class shares its base's handle plumbing: the C ABI resolves
+        // this handle as the base too, so inherited methods just work.
+        format!("class {} extends {base}", class.name)
+    } else if class.is_instance() {
+        // Finalizable keeps the object alive while a call still uses its handle.
+        format!("class {} implements ffi.Finalizable", class.name)
+    } else {
+        format!("class {}", class.name)
+    }
+}
+
+fn dart_add_listener_signature(group: &EventGroup) -> String {
+    format!(
+        "ListenerId addListener(FutureOr<void> Function({}) callback)",
+        group.name
+    )
+}
+
+const DART_REMOVE_LISTENER_SIGNATURE: &str = "bool removeListener(ListenerId listenerId)";
+
+// ---------------------------------------------------------------------------
+// API reference
+// ---------------------------------------------------------------------------
+
+/// Signatures this generator emits, keyed by `codegen_shared::symbols`. Only
+/// the native modules count; the web mirror declares a subset of the same.
+pub fn reference(api: &Api, origins: &TypeOrigins, _prefix: &str) -> Reference {
+    let mut reference = Reference::default();
+    for header in &api.headers {
+        for alias in &header.aliases {
+            if alias_emitted(origins, header, alias) {
+                reference.insert(&alias.name, &alias.name, dart_alias_decl(alias));
+            }
+        }
+        for item in &header.enums {
+            reference.insert(&item.name, &item.name, dart_enum_head(item));
+            for (key, variant) in symbols::enum_variants(item).into_iter().zip(&item.variants) {
+                reference.insert(
+                    key,
+                    format!("{}.{}", item.name, dart_enum_case(&variant.name)),
+                    dart_enum_variant_decl(variant),
+                );
+            }
+        }
+        for item in &header.structs {
+            if host_type(&item.name).is_some() {
+                continue;
+            }
+            reference.insert(&item.name, &item.name, dart_struct_head(item));
+            for (key, field) in symbols::struct_fields(item).into_iter().zip(&item.fields) {
+                reference.insert(
+                    key,
+                    field.name.to_lower_camel_case(),
+                    dart_struct_field_decl(field),
+                );
+            }
+            // Struct methods and constants have no Dart form.
+        }
+        for group in &header.events {
+            reference.insert(&group.name, &group.name, dart_event_group_head(group));
+            for (key, field) in symbols::event_common_fields(group)
+                .into_iter()
+                .zip(&group.common)
             {
-                let name = method.binding_name().to_lower_camel_case();
-                let ty = dart_field_type(&params[1]);
-                writeln!(out, "  Future<{ty}> {name}Async() {{\n    final completer = Completer<{ty}>();\n    {name}((success, value) {{\n      if (success) {{ completer.complete(value); }}\n      else {{ completer.completeError(StateError('Clipboard operation failed')); }}\n    }});\n    return completer.future;\n  }}").unwrap();
+                reference.insert(
+                    key,
+                    field.name.to_lower_camel_case(),
+                    dart_event_common_decl(field),
+                );
+            }
+            for variant in &group.variants {
+                reference.insert(
+                    &variant.name,
+                    event_variant_class(variant),
+                    dart_event_variant_head(group, variant),
+                );
+                for (key, field) in symbols::event_variant_fields(variant)
+                    .into_iter()
+                    .zip(&variant.fields)
+                {
+                    reference.insert(
+                        key,
+                        field.name.to_lower_camel_case(),
+                        dart_event_field_decl(field),
+                    );
+                }
+            }
+        }
+        for class in &header.classes {
+            reference.insert(&class.name, &class.name, dart_class_head(class));
+            for (key, ctor) in symbols::constructors(class)
+                .into_iter()
+                .zip(&class.constructors)
+            {
+                reference.insert(
+                    key,
+                    dart_constructor_name(class, ctor),
+                    dart_constructor_signature(class, ctor).trim_start(),
+                );
+            }
+            for (key, method) in symbols::class_methods(class).into_iter().zip(&class.methods) {
+                let (name, signature) = dart_method_decl(class, method);
+                let mut signature = signature.trim_start().to_string();
+                if let Some((async_name, ty)) = dart_async_method(method) {
+                    signature.push('\n');
+                    signature.push_str(&dart_async_signature(&async_name, &ty));
+                }
+                reference.insert(key, name, signature);
+            }
+            if let Some(group) = emitted_group(api, class) {
+                reference.insert(
+                    symbols::listener(class),
+                    "addListener",
+                    format!(
+                        "{}\n{DART_REMOVE_LISTENER_SIGNATURE}",
+                        dart_add_listener_signature(group)
+                    ),
+                );
             }
         }
     }
+    reference
 }

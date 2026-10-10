@@ -133,6 +133,8 @@ dependencies = [
  "clap",
  "codegen-shared",
  "heck",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -16,6 +16,10 @@ Orchestrates the Rust generators in tools/codegen against the workspace layout:
     ./codegen sync -m "Add Foo API" --push
     ./codegen --dump-ir ir.json  # also keep the intermediate IR at this path
 
+Every bindings run also writes the API reference the website renders
+(website/content/api/: per-header JSON with docs and every binding's
+signatures); `check` verifies it like any other generated file.
+
 The C ABI generator parses the C++ headers in core/ with libclang and emits an
 IR JSON; the bindings generator consumes that IR. Every binding lives in this
 repository under bindings/ and builds against the core/ submodule directly.
@@ -35,6 +39,8 @@ WORKSPACE = Path(__file__).resolve().parent
 CORE = WORKSPACE / "core"
 CODEGEN = WORKSPACE / "tools" / "codegen"
 DEFAULT_IR = CODEGEN / "target" / "ir.json"
+# API reference JSON for the website (every binding's signatures + docs).
+API_REFERENCE = WORKSPACE / "website" / "content" / "api"
 
 # lang -> (cli flag of codegen-bindings, binding directory)
 BINDINGS = {
@@ -77,7 +83,8 @@ def run_capi(ir: Path, check: bool, parse_only: bool = False) -> None:
 
 
 def run_bindings(ir: Path, langs: list[str], check: bool) -> None:
-    extra = ["--ir", str(ir), "--repo", str(CORE), *binding_flags(langs)]
+    extra = ["--ir", str(ir), "--repo", str(CORE), *binding_flags(langs),
+             "--api-reference", str(API_REFERENCE)]
     if check:
         extra.append("--check")
     run("codegen-bindings", *extra)
@@ -274,11 +281,12 @@ def cmd_sync(args, langs: list[str], ir: Path) -> None:
         if binding == BINDINGS["dart"][1]:
             regen_dart_ffi(binding)
 
-    # The core pointer, plus everything under the synced bindings.
+    # The core pointer, everything under the synced bindings, and the API
+    # reference the website builds from.
     print("==> committing workspace")
     paths = [str(CORE.relative_to(WORKSPACE))] + [
         str(binding.relative_to(WORKSPACE)) for binding in bindings
-    ]
+    ] + [str(API_REFERENCE.relative_to(WORKSPACE))]
     git(WORKSPACE, "add", "--", *paths)
     if git(WORKSPACE, "diff", "--cached", "--name-only", capture=True):
         git(WORKSPACE, "commit", "-m", sync_message)

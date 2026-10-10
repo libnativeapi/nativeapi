@@ -398,3 +398,58 @@ a {
   border-radius: 0.5rem;
   margin-block: 1.25rem;
 }
+
+/* ---------------------------------------------------------------------------
+ * API reference — highlighted signatures and doc comments.
+ * ------------------------------------------------------------------------- */
+
+.api-signature pre.shiki {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.dark .api-signature .shiki,
+.dark .api-signature .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
+.dark .api-signature .shiki span {
+  background-color: transparent !important;
+}
+
+.api-doc > :first-child,
+.api-doc > :first-child > :first-child {
+  margin-top: 0;
+}
+
+.api-doc > :last-child {
+  margin-bottom: 0;
+}
+
+.api-doc p {
+  margin-block: 0.5rem;
+}
+
+.api-params {
+  margin-block: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.api-params dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.api-params dd {
+  margin: 0.25rem 0 0;
+}

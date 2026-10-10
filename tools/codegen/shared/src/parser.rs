@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
@@ -6,9 +6,35 @@ use clang::diagnostic::Severity;
 use clang::{Accessibility, Clang, Entity, EntityKind, Index, Type, TypeKind};
 
 use crate::ir::{
-    Alias, Api, Class, ClassKind, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field,
-    Header, Method, Param, Struct, TypeRef,
+    Alias, Api, Class, ClassKind, Constructor, Doc, Enum, EnumVariant, EventGroup, EventVariant,
+    Field, Header, Method, Param, Struct, TypeRef,
 };
+use crate::symbols;
+
+/// Doc comments collected while parsing, keyed by `crate::symbols`.
+type Docs = BTreeMap<String, Doc>;
+
+/// Files the doc comment attached to `entity`, if it has one, under `key`.
+fn record_doc(docs: &mut Docs, key: String, entity: &Entity) {
+    record_comment(docs, key, entity.get_comment());
+}
+
+/// A method's own doc comment, or the one on the method it overrides
+/// (`Preferences::Set` documents nothing beyond `Storage::Set`).
+fn method_comment(entity: &Entity) -> Option<String> {
+    entity.get_comment().or_else(|| {
+        entity
+            .get_overridden_methods()?
+            .iter()
+            .find_map(method_comment)
+    })
+}
+
+fn record_comment(docs: &mut Docs, key: String, comment: Option<String>) {
+    if let Some(doc) = comment.as_deref().and_then(crate::doc::parse) {
+        docs.insert(key, doc);
+    }
+}
 
 /// Base class that opts a class into the generated `GetNativeObject()` accessor.
 const NATIVE_OBJECT_PROVIDER: &str = "NativeObjectProvider";
@@ -57,6 +83,7 @@ pub fn parse(headers: &[PathBuf], includes: &[PathBuf]) -> Result<Api> {
     let index = Index::new(&clang, false, false);
     let mut parsed_headers = Vec::new();
     let mut diagnostics = Vec::new();
+    let mut docs = Docs::new();
 
     // Types are only resolvable if they are declared by a header we generate
     // bindings for; anything else has no C ABI representation.
@@ -69,6 +96,7 @@ pub fn parse(headers: &[PathBuf], includes: &[PathBuf]) -> Result<Api> {
         let parsed = parse_header(&index, header, includes, &scope)
             .with_context(|| format!("failed to parse {}", header.display()))?;
         diagnostics.extend(parsed.1);
+        docs.extend(parsed.2);
         parsed_headers.push(parsed.0);
     }
 
@@ -91,6 +119,7 @@ pub fn parse(headers: &[PathBuf], includes: &[PathBuf]) -> Result<Api> {
     Ok(Api {
         headers: parsed_headers,
         diagnostics,
+        docs,
     })
 }
 
@@ -99,7 +128,7 @@ fn parse_header(
     header: &Path,
     includes: &[PathBuf],
     scope: &HashSet<PathBuf>,
-) -> Result<(Header, Vec<String>)> {
+) -> Result<(Header, Vec<String>, Docs)> {
     let mut args = vec![
         "-x".to_string(),
         "c++".to_string(),
@@ -143,6 +172,7 @@ fn parse_header(
     }
 
     let mut diagnostics = Vec::new();
+    let mut docs = Docs::new();
     let root = tu.get_entity();
 
     // Collect ALL namespace blocks named "nativeapi" (there may be multiple
@@ -196,11 +226,12 @@ fn parse_header(
             match child.get_kind() {
                 EntityKind::EnumDecl => {
                     if let Some(item) = parse_enum(&child, None) {
+                        record_enum_docs(&child, &item, &mut docs);
                         enums.push(item);
                     }
                 }
                 EntityKind::StructDecl => {
-                    if let Some(item) = parse_struct(&child, &types, &mut diagnostics) {
+                    if let Some(item) = parse_struct(&child, &types, &mut diagnostics, &mut docs) {
                         structs.push(item);
                     }
                 }
@@ -215,13 +246,17 @@ fn parse_header(
                     }
                     // Nested enums have no C++ enclosing scope in C, so they are
                     // hoisted to the header's top level under a flattened name.
-                    enums.extend(nested_enums(&child));
-                    if let Some(item) = parse_class(&child, &types, &mut diagnostics) {
+                    for (entity, item) in nested_enums(&child) {
+                        record_enum_docs(&entity, &item, &mut docs);
+                        enums.push(item);
+                    }
+                    if let Some(item) = parse_class(&child, &types, &mut diagnostics, &mut docs) {
                         classes.push(item);
                     }
                 }
                 EntityKind::TypedefDecl | EntityKind::TypeAliasDecl => {
                     if let Some(item) = parse_alias(&child, &types) {
+                        record_doc(&mut docs, item.name.clone(), &child);
                         aliases.push(item);
                     }
                 }
@@ -236,7 +271,7 @@ fn parse_header(
         }
     }
 
-    let events = parse_event_groups(&event_classes, &types);
+    let events = parse_event_groups(&event_classes, &types, &mut docs);
 
     Ok((
         Header {
@@ -254,6 +289,7 @@ fn parse_header(
             events,
         },
         diagnostics,
+        docs,
     ))
 }
 
@@ -311,8 +347,9 @@ fn index_entity(entity: &Entity, enclosing: Option<&str>, types: &mut TypeIndex)
     }
 }
 
-/// Public enums declared inside a class, hoisted to header scope.
-fn nested_enums(entity: &Entity) -> Vec<Enum> {
+/// Public enums declared inside a class, hoisted to header scope, with the
+/// declaration each came from.
+fn nested_enums<'tu>(entity: &Entity<'tu>) -> Vec<(Entity<'tu>, Enum)> {
     entity
         .get_children()
         .into_iter()
@@ -320,8 +357,23 @@ fn nested_enums(entity: &Entity) -> Vec<Enum> {
             child.get_kind() == EntityKind::EnumDecl
                 && child.get_accessibility() == Some(Accessibility::Public)
         })
-        .filter_map(|child| parse_enum(&child, entity.get_name().as_deref()))
+        .filter_map(|child| {
+            let item = parse_enum(&child, entity.get_name().as_deref())?;
+            Some((child, item))
+        })
         .collect()
+}
+
+fn record_enum_docs(entity: &Entity, item: &Enum, docs: &mut Docs) {
+    record_doc(docs, item.name.clone(), entity);
+    for child in entity.get_children() {
+        if child.get_kind() != EntityKind::EnumConstantDecl {
+            continue;
+        }
+        if let Some(name) = child.get_name() {
+            record_doc(docs, symbols::member(&item.name, &name), &child);
+        }
+    }
 }
 
 /// Extra clang arguments the compiler driver would normally inject. On macOS
@@ -397,23 +449,28 @@ fn parse_struct(
     entity: &Entity,
     types: &TypeIndex,
     diagnostics: &mut Vec<String>,
+    docs: &mut Docs,
 ) -> Option<Struct> {
     let name = entity.get_name()?;
+    record_doc(docs, name.clone(), entity);
     let fields = entity
         .get_children()
         .into_iter()
         .filter(|child| child.get_kind() == EntityKind::FieldDecl)
         .filter_map(|field| {
-            Some(Field {
+            let item = Field {
                 name: field.get_name()?,
                 ty: map_entity_type(&field, types)?,
-            })
+            };
+            record_doc(docs, symbols::member(&name, &item.name), &field);
+            Some(item)
         })
         .collect();
 
     // Structs are values, so only helpers that neither mutate nor allocate make
     // sense across the ABI: static factories and const accessors.
     let mut methods = Vec::new();
+    let mut method_comments = Vec::new();
     for child in entity.get_children() {
         if child.get_kind() != EntityKind::Method
             || child.get_accessibility() != Some(Accessibility::Public)
@@ -428,7 +485,10 @@ fn parse_struct(
             continue;
         }
         match parse_method(&child, types) {
-            Some(method) if method_is_supported(&method) => methods.push(method),
+            Some(method) if method_is_supported(&method) => {
+                methods.push(method);
+                method_comments.push(method_comment(&child));
+            }
             Some(method) => diagnostics.push(format!(
                 "skipped {name}::{}: unsupported type in signature: {}",
                 method.name,
@@ -451,17 +511,23 @@ fn parse_struct(
             let ty = child.get_type()?;
             let short = normalize_type_name(&ty.get_display_name());
             let short = short.rsplit("::").next().unwrap_or(&short);
-            (short == name).then(|| child.get_name())?
+            let constant = (short == name).then(|| child.get_name())??;
+            record_doc(docs, symbols::member(&name, &constant), &child);
+            Some(constant)
         })
         .collect();
 
-    Some(Struct {
+    let item = Struct {
         qualified_name: format!("nativeapi::{name}"),
         name,
         fields,
         methods,
         constants,
-    })
+    };
+    for (key, comment) in symbols::struct_methods(&item).into_iter().zip(method_comments) {
+        record_comment(docs, key, comment);
+    }
+    Some(item)
 }
 
 /// Whether this class is part of an `Event` hierarchy, directly or through a
@@ -525,7 +591,7 @@ fn emitted_event(entity: &Entity) -> Option<String> {
 /// Groups the event classes of a header into hierarchies: one base per group,
 /// with the concrete events under it. Nothing else in the pipeline treats these
 /// as classes, so their accessors become struct fields rather than methods.
-fn parse_event_groups(entities: &[Entity], types: &TypeIndex) -> Vec<EventGroup> {
+fn parse_event_groups(entities: &[Entity], types: &TypeIndex, docs: &mut Docs) -> Vec<EventGroup> {
     // Bases first: a group's root is the class whose own base is `Event`.
     let mut groups: Vec<EventGroup> = Vec::new();
     for entity in entities {
@@ -540,9 +606,10 @@ fn parse_event_groups(entities: &[Entity], types: &TypeIndex) -> Vec<EventGroup>
         if !derives_directly {
             continue;
         }
+        record_doc(docs, name.clone(), entity);
         groups.push(EventGroup {
             qualified_name: format!("nativeapi::{name}"),
-            common: event_fields(entity, types),
+            common: event_fields(entity, types, &name, docs),
             name,
             variants: Vec::new(),
         });
@@ -560,9 +627,10 @@ fn parse_event_groups(entities: &[Entity], types: &TypeIndex) -> Vec<EventGroup>
         };
         // `WindowFocusedEvent` in group `WindowEvent` -> `Focused`.
         let discriminant = discriminant_of(&name, &group.name);
+        record_doc(docs, name.clone(), entity);
         group.variants.push(EventVariant {
             qualified_name: format!("nativeapi::{name}"),
-            fields: event_fields(entity, types),
+            fields: event_fields(entity, types, &name, docs),
             discriminant,
             name,
         });
@@ -602,7 +670,7 @@ fn inherits_from(entity: &Entity, base: &str) -> bool {
 
 /// Const, argument-less accessors on an event class, as payload fields.
 /// `GetNewPosition()` becomes `new_position`.
-fn event_fields(entity: &Entity, types: &TypeIndex) -> Vec<Field> {
+fn event_fields(entity: &Entity, types: &TypeIndex, owner: &str, docs: &mut Docs) -> Vec<Field> {
     entity
         .get_children()
         .into_iter()
@@ -626,6 +694,7 @@ fn event_fields(entity: &Entity, types: &TypeIndex) -> Vec<Field> {
             if !ty.is_supported() {
                 return None;
             }
+            record_doc(docs, symbols::member(owner, stem), &child);
             Some(Field {
                 name: stem.to_string(),
                 ty,
@@ -634,11 +703,18 @@ fn event_fields(entity: &Entity, types: &TypeIndex) -> Vec<Field> {
         .collect()
 }
 
-fn parse_class(entity: &Entity, types: &TypeIndex, diagnostics: &mut Vec<String>) -> Option<Class> {
+fn parse_class(
+    entity: &Entity,
+    types: &TypeIndex,
+    diagnostics: &mut Vec<String>,
+    docs: &mut Docs,
+) -> Option<Class> {
     let name = entity.get_name()?;
     let mut singleton = false;
     let mut methods = Vec::new();
     let mut constructors = Vec::new();
+    let mut method_comments = Vec::new();
+    let mut constructor_comments = Vec::new();
 
     for child in entity.get_children() {
         match child.get_kind() {
@@ -656,7 +732,10 @@ fn parse_class(entity: &Entity, types: &TypeIndex, diagnostics: &mut Vec<String>
                     continue;
                 }
                 match parse_method(&child, types) {
-                    Some(method) if method_is_supported(&method) => methods.push(method),
+                    Some(method) if method_is_supported(&method) => {
+                        methods.push(method);
+                        method_comments.push(method_comment(&child));
+                    }
                     Some(method) => diagnostics.push(format!(
                         "skipped {name}::{}: unsupported type in signature: {}",
                         method.name,
@@ -685,6 +764,7 @@ fn parse_class(entity: &Entity, types: &TypeIndex, diagnostics: &mut Vec<String>
                             continue;
                         }
                         constructors.push(Constructor { params });
+                        constructor_comments.push(child.get_comment());
                     }
                     None => diagnostics.push(format!(
                         "skipped {name} constructor: unsupported parameter shape"
@@ -721,9 +801,10 @@ fn parse_class(entity: &Entity, types: &TypeIndex, diagnostics: &mut Vec<String>
 
     if kind == ClassKind::Singleton {
         constructors.clear();
+        constructor_comments.clear();
     }
 
-    Some(Class {
+    let class = Class {
         qualified_name: format!("nativeapi::{name}"),
         event: emitted_event(entity),
         name,
@@ -732,7 +813,15 @@ fn parse_class(entity: &Entity, types: &TypeIndex, diagnostics: &mut Vec<String>
         base: class_base(entity),
         constructors,
         methods,
-    })
+    };
+    record_doc(docs, class.name.clone(), entity);
+    for (key, comment) in symbols::constructors(&class).into_iter().zip(constructor_comments) {
+        record_comment(docs, key, comment);
+    }
+    for (key, comment) in symbols::class_methods(&class).into_iter().zip(method_comments) {
+        record_comment(docs, key, comment);
+    }
+    Some(class)
 }
 
 /// The direct base class that is itself a library class, ignoring the mixin

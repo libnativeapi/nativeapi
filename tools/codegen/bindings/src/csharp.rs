@@ -343,16 +343,10 @@ fn generate_header(ctx: &mut Ctx, api: &Api, header: &Header, prefix: &str) {
 
 fn generate_enum(ctx: &mut Ctx, item: &codegen_shared::ir::Enum) {
     let out = &mut ctx.public;
-    writeln!(out, "public enum {}", item.name).unwrap();
+    writeln!(out, "{}", enum_decl(item)).unwrap();
     writeln!(out, "{{").unwrap();
     for variant in &item.variants {
-        writeln!(
-            out,
-            "    {} = {},",
-            enum_member(&variant.name),
-            variant.value
-        )
-        .unwrap();
+        writeln!(out, "    {},", enum_variant_decl(variant)).unwrap();
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -415,16 +409,10 @@ fn generate_struct(ctx: &mut Ctx, item: &Struct, prefix: &str) {
     // Public form.
     let delegates = &mut ctx.delegates;
     let out = &mut ctx.public;
-    writeln!(out, "public struct {}", item.name).unwrap();
+    writeln!(out, "{}", struct_decl(item)).unwrap();
     writeln!(out, "{{").unwrap();
     for field in &item.fields {
-        writeln!(
-            out,
-            "    public {} {};",
-            cs_struct_field_type(&field.ty),
-            pascal(&field.name)
-        )
-        .unwrap();
+        writeln!(out, "    {}", struct_field_decl(field)).unwrap();
     }
     writeln!(out).unwrap();
     write!(out, "    public {}(", item.name).unwrap();
@@ -666,35 +654,12 @@ fn generate_event(ctx: &mut Ctx, group: &EventGroup, prefix: &str) {
         group.name
     )
     .unwrap();
-    writeln!(out, "public abstract record {}", group.name).unwrap();
+    writeln!(out, "{}", event_group_decl(group)).unwrap();
     writeln!(out, "{{").unwrap();
     writeln!(out, "    private {}() {{ }}", group.name).unwrap();
     writeln!(out).unwrap();
     for variant in &group.variants {
-        let fields: Vec<String> = group
-            .common
-            .iter()
-            .chain(variant.fields.iter())
-            .map(|field| format!("{} {}", cs_event_field_type(&field.ty), pascal(&field.name)))
-            .collect();
-        if fields.is_empty() {
-            writeln!(
-                out,
-                "    public sealed record {} : {};",
-                pascal(&variant.discriminant),
-                group.name
-            )
-            .unwrap();
-        } else {
-            writeln!(
-                out,
-                "    public sealed record {}({}) : {};",
-                pascal(&variant.discriminant),
-                fields.join(", "),
-                group.name
-            )
-            .unwrap();
-        }
+        writeln!(out, "    {}", event_variant_decl(group, variant)).unwrap();
     }
     writeln!(out).unwrap();
 
@@ -799,7 +764,7 @@ fn generate_handle_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) 
         symbol
     });
 
-    if let Some(base) = &class.base {
+    if class.base.is_some() {
         // The C ABI resolves this handle as the base too; handle ownership,
         // Dispose and the inherited methods all come from the base class.
         let out = &mut ctx.public;
@@ -809,7 +774,7 @@ fn generate_handle_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) 
             class.name
         )
         .unwrap();
-        writeln!(out, "public partial class {} : {base}", class.name).unwrap();
+        writeln!(out, "{}", class_decl(api, class)).unwrap();
         writeln!(out, "{{").unwrap();
         writeln!(
             out,
@@ -826,18 +791,7 @@ fn generate_handle_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) 
             class.name
         )
         .unwrap();
-        // A class other classes derive from cannot be sealed.
-        let sealed = if is_base_of_any(api, &class.name) {
-            ""
-        } else {
-            "sealed "
-        };
-        writeln!(
-            out,
-            "public {sealed}partial class {} : IDisposable",
-            class.name
-        )
-        .unwrap();
+        writeln!(out, "{}", class_decl(api, class)).unwrap();
         writeln!(out, "{{").unwrap();
         writeln!(out, "    public ulong NativeHandle {{ get; private set; }}").unwrap();
         writeln!(out, "    private readonly bool _ownsHandle;").unwrap();
@@ -913,7 +867,7 @@ fn is_base_of_any(api: &Api, name: &str) -> bool {
 fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) {
     {
         let out = &mut ctx.public;
-        writeln!(out, "public sealed partial class {}", class.name).unwrap();
+        writeln!(out, "{}", class_decl(api, class)).unwrap();
         writeln!(out, "{{").unwrap();
         writeln!(
             out,
@@ -947,27 +901,7 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
 }
 
 fn generate_constructor(ctx: &mut Ctx, api: &Api, class: &Class, ctor: &Constructor, prefix: &str) {
-    let label = match constructor_suffix(class, ctor) {
-        Some(suffix) => format!("Create{}", pascal(&suffix)),
-        None => "Create".to_string(),
-    };
-    // A base constructor with the same name and parameter types is hidden.
-    let hides_base = ancestor_constructors(api, class)
-        .into_iter()
-        .any(|(base, base_ctor)| {
-            let base_label = match constructor_suffix(base, base_ctor) {
-                Some(suffix) => format!("Create{}", pascal(&suffix)),
-                None => "Create".to_string(),
-            };
-            base_label == label
-                && base_ctor.params.len() == ctor.params.len()
-                && base_ctor
-                    .params
-                    .iter()
-                    .zip(&ctor.params)
-                    .all(|(a, b)| a.ty == b.ty)
-        });
-    let modifier = if hides_base { "new " } else { "" };
+    let (label, declaration) = constructor_decl(api, class, ctor);
     let symbol = c_constructor_symbol(prefix, class, ctor);
     let owner = format!("{}.{label}", class.name);
     let delegates = param_delegates(&mut ctx.delegates, &owner, &ctor.params, prefix);
@@ -1001,13 +935,7 @@ fn generate_constructor(ctx: &mut Ctx, api: &Api, class: &Class, ctor: &Construc
         class.name
     )
     .unwrap();
-    writeln!(
-        out,
-        "    public {modifier}static {}? {label}({})",
-        class.name,
-        cs_params(&ctor.params)
-    )
-    .unwrap();
+    writeln!(out, "    {declaration}").unwrap();
     writeln!(out, "    {{").unwrap();
     out.push_str(&body);
     writeln!(
@@ -1043,11 +971,11 @@ fn generate_method(ctx: &mut Ctx, api: &Api, class: &Class, method: &Method, pre
         prefix,
     ));
 
-    let return_type = cs_return_type(&method.return_type);
-    // A parameterless const getter reads better as a property, unless its name
-    // would collide with the enclosing type.
-    let accessor = is_binding_accessor(class, method) && method.params.is_empty();
-    let property = accessor && name != class.name;
+    let MethodDecl {
+        property,
+        declaration,
+        ..
+    } = method_decl(class, method);
     let indent = if property { "            " } else { "        " };
 
     let mut body = String::new();
@@ -1061,24 +989,11 @@ fn generate_method(ctx: &mut Ctx, api: &Api, class: &Class, method: &Method, pre
     );
 
     let out = &mut ctx.public;
+    writeln!(out, "    {declaration}").unwrap();
+    writeln!(out, "    {{").unwrap();
     if property {
-        writeln!(out, "    public {return_type} {name}").unwrap();
-        writeln!(out, "    {{").unwrap();
         writeln!(out, "        get").unwrap();
         writeln!(out, "        {{").unwrap();
-    } else {
-        let keyword = if class.is_instance() && method.is_static {
-            "public static"
-        } else {
-            "public"
-        };
-        writeln!(
-            out,
-            "    {keyword} {return_type} {name}({})",
-            cs_params(&method.params)
-        )
-        .unwrap();
-        writeln!(out, "    {{").unwrap();
     }
 
     if class.name == "Clipboard" {
@@ -1149,12 +1064,8 @@ fn generate_listener(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) {
     .unwrap();
     writeln!(out, "    /// destroyed; the core releases it then.").unwrap();
     writeln!(out, "    /// </remarks>").unwrap();
-    writeln!(
-        out,
-        "    public ulong AddListener(Action<{}> callback)",
-        group.name
-    )
-    .unwrap();
+    let [add_declaration, remove_declaration] = listener_decls(group);
+    writeln!(out, "    {add_declaration}").unwrap();
     writeln!(out, "    {{").unwrap();
     writeln!(out, "        {delegate} native = (evt, userData) =>").unwrap();
     writeln!(out, "        {{").unwrap();
@@ -1186,7 +1097,7 @@ fn generate_listener(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &str) {
         "    /// <summary>Unregisters a listener. Returns false if unknown.</summary>"
     )
     .unwrap();
-    writeln!(out, "    public bool RemoveListener(ulong listenerId)").unwrap();
+    writeln!(out, "    {remove_declaration}").unwrap();
     writeln!(out, "    {{").unwrap();
     writeln!(
         out,
@@ -2093,20 +2004,287 @@ fn with_overload_suffix(base: String, class: &Class, method: &Method) -> String 
 
 fn generate_async_methods(ctx: &mut Ctx, class: &Class) {
     for method in &class.methods {
-        if let [Param {
-            ty: TypeRef::Callback { params },
-            ..
-        }] = method.params.as_slice()
+        if let Some(AsyncDecl {
+            name,
+            ty,
+            declaration,
+        }) = async_decl(method)
         {
-            if params.len() == 2
-                && matches!(params[0], TypeRef::Bool)
-                && callback_has_payload(params)
-            {
-                let name = pascal(&method.binding_name());
-                let ty = cs_return_type(&params[1]);
-                let modifier = if method.is_static { "static " } else { "" };
-                writeln!(ctx.public, "    public {modifier}System.Threading.Tasks.Task<{ty}> {name}Async() {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
+            writeln!(ctx.public, "    {declaration} {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
+        }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Declarations
+//
+// The head line of every public declaration, shared by the renderer and by
+// `reference`, so the API reference shows exactly what the binding declares.
+// ---------------------------------------------------------------------------
+
+fn enum_decl(item: &codegen_shared::ir::Enum) -> String {
+    format!("public enum {}", item.name)
+}
+
+/// The enum member line, without its trailing comma.
+fn enum_variant_decl(variant: &codegen_shared::ir::EnumVariant) -> String {
+    format!("{} = {}", enum_member(&variant.name), variant.value)
+}
+
+fn struct_decl(item: &Struct) -> String {
+    format!("public struct {}", item.name)
+}
+
+fn struct_field_decl(field: &codegen_shared::ir::Field) -> String {
+    format!(
+        "public {} {};",
+        cs_struct_field_type(&field.ty),
+        pascal(&field.name)
+    )
+}
+
+fn event_group_decl(group: &EventGroup) -> String {
+    format!("public abstract record {}", group.name)
+}
+
+/// A positional parameter of an event variant record.
+fn event_field_decl(field: &codegen_shared::ir::Field) -> String {
+    format!("{} {}", cs_event_field_type(&field.ty), pascal(&field.name))
+}
+
+fn event_variant_decl(group: &EventGroup, variant: &codegen_shared::ir::EventVariant) -> String {
+    let fields: Vec<String> = group
+        .common
+        .iter()
+        .chain(variant.fields.iter())
+        .map(event_field_decl)
+        .collect();
+    if fields.is_empty() {
+        format!(
+            "public sealed record {} : {};",
+            pascal(&variant.discriminant),
+            group.name
+        )
+    } else {
+        format!(
+            "public sealed record {}({}) : {};",
+            pascal(&variant.discriminant),
+            fields.join(", "),
+            group.name
+        )
+    }
+}
+
+fn class_decl(api: &Api, class: &Class) -> String {
+    if !class.is_instance() {
+        return format!("public sealed partial class {}", class.name);
+    }
+    if let Some(base) = &class.base {
+        return format!("public partial class {} : {base}", class.name);
+    }
+    // A class other classes derive from cannot be sealed.
+    let sealed = if is_base_of_any(api, &class.name) {
+        ""
+    } else {
+        "sealed "
+    };
+    format!("public {sealed}partial class {} : IDisposable", class.name)
+}
+
+/// The factory's name and declaration line.
+fn constructor_decl(api: &Api, class: &Class, ctor: &Constructor) -> (String, String) {
+    let label = match constructor_suffix(class, ctor) {
+        Some(suffix) => format!("Create{}", pascal(&suffix)),
+        None => "Create".to_string(),
+    };
+    // A base constructor with the same name and parameter types is hidden.
+    let hides_base = ancestor_constructors(api, class)
+        .into_iter()
+        .any(|(base, base_ctor)| {
+            let base_label = match constructor_suffix(base, base_ctor) {
+                Some(suffix) => format!("Create{}", pascal(&suffix)),
+                None => "Create".to_string(),
+            };
+            base_label == label
+                && base_ctor.params.len() == ctor.params.len()
+                && base_ctor
+                    .params
+                    .iter()
+                    .zip(&ctor.params)
+                    .all(|(a, b)| a.ty == b.ty)
+        });
+    let modifier = if hides_base { "new " } else { "" };
+    let declaration = format!(
+        "public {modifier}static {}? {label}({})",
+        class.name,
+        cs_params(&ctor.params)
+    );
+    (label, declaration)
+}
+
+struct MethodDecl {
+    name: String,
+    /// Rendered as a get-only property rather than a method.
+    property: bool,
+    declaration: String,
+}
+
+fn method_decl(class: &Class, method: &Method) -> MethodDecl {
+    let name = cs_method_name(class, method);
+    let return_type = cs_return_type(&method.return_type);
+    // A parameterless const getter reads better as a property, unless its name
+    // would collide with the enclosing type.
+    let accessor = is_binding_accessor(class, method) && method.params.is_empty();
+    let property = accessor && name != class.name;
+    let declaration = if property {
+        format!("public {return_type} {name}")
+    } else {
+        let keyword = if class.is_instance() && method.is_static {
+            "public static"
+        } else {
+            "public"
+        };
+        format!(
+            "{keyword} {return_type} {name}({})",
+            cs_params(&method.params)
+        )
+    };
+    MethodDecl {
+        name,
+        property,
+        declaration,
+    }
+}
+
+/// The `Task` wrapper emitted next to a method taking one
+/// `(bool success, T value)` completion callback.
+struct AsyncDecl {
+    /// The wrapped method the body calls.
+    name: String,
+    /// The task's result type.
+    ty: String,
+    declaration: String,
+}
+
+fn async_decl(method: &Method) -> Option<AsyncDecl> {
+    let [Param {
+        ty: TypeRef::Callback { params },
+        ..
+    }] = method.params.as_slice()
+    else {
+        return None;
+    };
+    if !(params.len() == 2 && matches!(params[0], TypeRef::Bool) && callback_has_payload(params)) {
+        return None;
+    }
+    let name = pascal(&method.binding_name());
+    let ty = cs_return_type(&params[1]);
+    let modifier = if method.is_static { "static " } else { "" };
+    let declaration =
+        format!("public {modifier}System.Threading.Tasks.Task<{ty}> {name}Async()");
+    Some(AsyncDecl {
+        name,
+        ty,
+        declaration,
+    })
+}
+
+/// `AddListener` and `RemoveListener`.
+fn listener_decls(group: &EventGroup) -> [String; 2] {
+    [
+        format!("public ulong AddListener(Action<{}> callback)", group.name),
+        "public bool RemoveListener(ulong listenerId)".to_string(),
+    ]
+}
+
+/// Signatures this generator emits, keyed by `codegen_shared::symbols`.
+///
+/// Absent by design: aliases (C# inlines the underlying type), struct methods
+/// and struct constants (the public struct carries fields only), and
+/// constructors of singletons (they get a `Shared` instance instead).
+pub fn reference(
+    api: &codegen_shared::ir::Api,
+    _origins: &codegen_shared::naming::TypeOrigins,
+    _prefix: &str,
+) -> crate::reference::Reference {
+    use codegen_shared::symbols;
+
+    let mut reference = crate::reference::Reference::default();
+    for header in &api.headers {
+        for item in &header.enums {
+            reference.insert(&item.name, &item.name, enum_decl(item));
+            for (key, variant) in symbols::enum_variants(item).into_iter().zip(&item.variants) {
+                reference.insert(
+                    key,
+                    format!("{}.{}", item.name, enum_member(&variant.name)),
+                    enum_variant_decl(variant),
+                );
+            }
+        }
+
+        for item in &header.structs {
+            reference.insert(&item.name, &item.name, struct_decl(item));
+            for (key, field) in symbols::struct_fields(item).into_iter().zip(&item.fields) {
+                reference.insert(key, pascal(&field.name), struct_field_decl(field));
+            }
+        }
+
+        for group in &header.events {
+            reference.insert(&group.name, &group.name, event_group_decl(group));
+            // Common fields are positional parameters of every variant record.
+            if !group.variants.is_empty() {
+                for (key, field) in symbols::event_common_fields(group)
+                    .into_iter()
+                    .zip(&group.common)
+                {
+                    reference.insert(key, pascal(&field.name), event_field_decl(field));
+                }
+            }
+            for variant in &group.variants {
+                reference.insert(
+                    &variant.name,
+                    format!("{}.{}", group.name, pascal(&variant.discriminant)),
+                    event_variant_decl(group, variant),
+                );
+                for (key, field) in symbols::event_variant_fields(variant)
+                    .into_iter()
+                    .zip(&variant.fields)
+                {
+                    reference.insert(key, pascal(&field.name), event_field_decl(field));
+                }
+            }
+        }
+
+        for class in &header.classes {
+            reference.insert(&class.name, &class.name, class_decl(api, class));
+            if class.is_instance() {
+                for (key, ctor) in symbols::constructors(class)
+                    .into_iter()
+                    .zip(&class.constructors)
+                {
+                    let (label, declaration) = constructor_decl(api, class, ctor);
+                    reference.insert(key, label, declaration);
+                }
+            }
+            for (key, method) in symbols::class_methods(class).into_iter().zip(&class.methods) {
+                let MethodDecl {
+                    name, declaration, ..
+                } = method_decl(class, method);
+                let signature = match async_decl(method) {
+                    Some(task) => format!("{declaration}\n{}", task.declaration),
+                    None => declaration,
+                };
+                reference.insert(key, name, signature);
+            }
+            if let Some(group) = emitted_group(api, class) {
+                reference.insert(
+                    symbols::listener(class),
+                    "AddListener",
+                    listener_decls(group).join("\n"),
+                );
             }
         }
     }
+    reference
 }

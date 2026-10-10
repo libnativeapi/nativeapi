@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "build:docs": "node scripts/build-docs.mjs",
-    "dev": "node scripts/build-docs.mjs && vite --port 3000",
+    "build:api": "node scripts/build-api.mjs",
+    "dev": "node scripts/build-docs.mjs && node scripts/build-api.mjs && vite --port 3000",
     "generate-routes": "tsr generate",
-    "build": "node scripts/build-docs.mjs && vite build",
+    "build": "node scripts/build-docs.mjs && node scripts/build-api.mjs && vite build",
     "deploy": "pnpm run build && wrangler deploy",
     "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "preview": "vite preview --port 3000",
-    "check-types": "node scripts/build-docs.mjs && tsc --noEmit"
+    "check-types": "node scripts/build-docs.mjs && node scripts/build-api.mjs && tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

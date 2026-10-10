@@ -29,6 +29,7 @@ export function SiteHeader({
       label: copy.header.features,
     },
     { href: docsUrl(locale), label: copy.header.docs },
+    { href: localizedPath(locale, '/api'), label: copy.header.api },
   ] as const
 
   return (

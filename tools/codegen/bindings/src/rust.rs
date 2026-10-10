@@ -5,7 +5,8 @@ use std::path::Path;
 use heck::{ToSnakeCase, ToUpperCamelCase};
 
 use codegen_shared::ir::{
-    Api, Class, Constructor, EventGroup, Field, Header, Method, Param, Struct, TypeRef,
+    Alias, Api, Class, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field, Header,
+    Method, Param, Struct, TypeRef,
 };
 use codegen_shared::naming::{
     c_add_listener_symbol, c_constructor_symbol, c_event_variant, c_free_symbol, c_list_field,
@@ -172,13 +173,7 @@ fn render_rust_wrapper(api: &Api, header: &Header, origins: &TypeOrigins, prefix
         if origins.get(&alias.name).map(String::as_str) != Some(header.stem.as_str()) {
             continue;
         }
-        writeln!(
-            out,
-            "pub type {} = {};",
-            alias.name,
-            rust_public_type(&alias.underlying)
-        )
-        .unwrap();
+        writeln!(out, "{}", alias_decl(alias)).unwrap();
         writeln!(out).unwrap();
     }
 
@@ -198,7 +193,7 @@ fn render_rust_wrapper(api: &Api, header: &Header, origins: &TypeOrigins, prefix
         if class.is_instance() {
             render_rust_handle_type(&mut out, class, prefix);
         } else {
-            writeln!(out, "pub struct {};", class.name).unwrap();
+            writeln!(out, "{};", class_decl(class)).unwrap();
             writeln!(out).unwrap();
         }
 
@@ -245,15 +240,9 @@ fn write_use(out: &mut String, module: &str, names: &[String]) {
 fn render_rust_enum(out: &mut String, item: &codegen_shared::ir::Enum, prefix: &str) {
     writeln!(out, "#[repr(i32)]").unwrap();
     writeln!(out, "#[derive(Debug, Copy, Clone, PartialEq, Eq)]").unwrap();
-    writeln!(out, "pub enum {} {{", item.name).unwrap();
+    writeln!(out, "{} {{", enum_decl(item)).unwrap();
     for variant in &item.variants {
-        writeln!(
-            out,
-            "    {} = {},",
-            rust_enum_variant(&variant.name),
-            variant.value
-        )
-        .unwrap();
+        writeln!(out, "    {},", enum_variant_decl(item, variant).1).unwrap();
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -309,27 +298,9 @@ fn render_rust_struct(out: &mut String, item: &Struct, prefix: &str) {
         "#[derive(Debug, Clone, PartialEq, Eq)]"
     };
     writeln!(out, "{derives}").unwrap();
-    writeln!(out, "pub struct {} {{", item.name).unwrap();
+    writeln!(out, "{} {{", struct_decl(item)).unwrap();
     for field in &item.fields {
-        if is_callback(&field.ty) {
-            // A callback field is set by the caller, never read back; the
-            // wrapper stores the closure and installs it in `to_raw`.
-            writeln!(
-                out,
-                "    pub {}: Option<std::sync::Arc<dyn Fn({})>>,",
-                rust_ident(&field.name.to_snake_case()),
-                callback_signature(&field.ty)
-            )
-            .unwrap();
-            continue;
-        }
-        writeln!(
-            out,
-            "    pub {}: {},",
-            rust_ident(&field.name.to_snake_case()),
-            rust_public_type(&field.ty)
-        )
-        .unwrap();
+        writeln!(out, "    {},", struct_field_decl(field).1).unwrap();
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -513,31 +484,9 @@ fn struct_has_float_fields(item: &Struct) -> bool {
 fn render_rust_event(out: &mut String, group: &EventGroup, prefix: &str) {
     writeln!(out, "/// One `{}`, in its concrete form.", group.name).unwrap();
     writeln!(out, "#[derive(Debug, Clone, PartialEq)]").unwrap();
-    writeln!(out, "pub enum {} {{", group.name).unwrap();
+    writeln!(out, "{} {{", event_decl(group)).unwrap();
     for variant in &group.variants {
-        let fields: Vec<String> = group
-            .common
-            .iter()
-            .chain(variant.fields.iter())
-            .map(|field| {
-                format!(
-                    "{}: {}",
-                    rust_ident(&field.name.to_snake_case()),
-                    rust_event_field_type(&field.ty)
-                )
-            })
-            .collect();
-        if fields.is_empty() {
-            writeln!(out, "    {},", variant.discriminant.to_upper_camel_case()).unwrap();
-        } else {
-            writeln!(
-                out,
-                "    {} {{ {} }},",
-                variant.discriminant.to_upper_camel_case(),
-                fields.join(", ")
-            )
-            .unwrap();
-        }
+        writeln!(out, "    {},", event_variant_decl(group, variant).1).unwrap();
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -631,7 +580,7 @@ fn render_rust_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
     };
     let raw_ty = format!("cnativeapi::{}", c_type_name(prefix, &group.name));
     let instance = class.is_instance();
-    let receiver = if instance { "&self, " } else { "" };
+    let (add_decl, remove_decl) = listener_decls(class, group);
     let self_arg = if instance { "self.handle, " } else { "" };
 
     writeln!(
@@ -647,12 +596,7 @@ fn render_rust_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
     )
     .unwrap();
     writeln!(out, "    /// or its emitter destroyed.").unwrap();
-    writeln!(
-        out,
-        "    pub fn add_listener({receiver}callback: impl Fn(&{}) + 'static) -> ListenerId {{",
-        group.name
-    )
-    .unwrap();
+    writeln!(out, "    {add_decl} {{").unwrap();
     writeln!(
         out,
         "        unsafe extern \"C\" fn trampoline(event: *const {raw_ty}, user_data: *mut std::ffi::c_void) {{"
@@ -717,11 +661,7 @@ fn render_rust_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
         "    /// Unregisters a listener. Returns false if unknown."
     )
     .unwrap();
-    writeln!(
-        out,
-        "    pub fn remove_listener({receiver}listener_id: ListenerId) -> bool {{"
-    )
-    .unwrap();
+    writeln!(out, "    {remove_decl} {{").unwrap();
     writeln!(
         out,
         "        unsafe {{ cnativeapi::{}({self_arg}listener_id) }}",
@@ -765,13 +705,14 @@ fn render_rust_handle_type(out: &mut String, class: &Class, prefix: &str) {
     // Transparent over the handle so a derived class can reinterpret itself as
     // its base (same single field, same layout).
     writeln!(out, "#[repr(transparent)]").unwrap();
-    writeln!(out, "pub struct {} {{", class.name).unwrap();
+    writeln!(out, "{} {{", class_decl(class)).unwrap();
     writeln!(out, "    handle: {handle_ty},").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
     if let Some(base) = &class.base {
-        writeln!(out, "impl std::ops::Deref for {} {{", class.name).unwrap();
-        writeln!(out, "    type Target = {base};").unwrap();
+        let (deref_impl, deref_target) = deref_decls(class, base);
+        writeln!(out, "{deref_impl} {{").unwrap();
+        writeln!(out, "    {deref_target}").unwrap();
         writeln!(out, "    fn deref(&self) -> &{base} {{").unwrap();
         writeln!(
             out,
@@ -919,22 +860,14 @@ fn render_rust_drop(out: &mut String, class: &Class, prefix: &str) {
 // ---------------------------------------------------------------------------
 
 fn render_rust_constructor(out: &mut String, class: &Class, ctor: &Constructor, prefix: &str) {
-    let name = rust_constructor_name(class, ctor);
-    let params = rust_param_list(&ctor.params);
-
     writeln!(
         out,
         "    /// Creates a new `{}`; returns `None` if the native side failed.",
         class.name
     )
     .unwrap();
-    let safety = render_pointer_safety(out, &ctor.params);
-    writeln!(
-        out,
-        "    pub {safety}fn {name}({}) -> Option<Self> {{",
-        params.join(", ")
-    )
-    .unwrap();
+    render_pointer_safety(out, &ctor.params);
+    writeln!(out, "    {} {{", constructor_decl(class, ctor).1).unwrap();
     render_param_bindings(out, &ctor.params, "        ");
     writeln!(out, "        unsafe {{").unwrap();
     writeln!(
@@ -956,32 +889,9 @@ fn render_rust_method(
     header: &Header,
     prefix: &str,
 ) {
-    let method_name = rust_method_name(class, method);
-    let instance = class.is_instance() && !method.is_static;
-
-    let mut params: Vec<String> = Vec::new();
-    if instance {
-        params.push("&self".to_string());
-    }
-    params.extend(rust_param_list(&method.params));
-
-    let rust_return = rust_public_type(&method.return_type);
-    let safety = render_pointer_safety(out, &method.params);
-    if rust_return == "()" {
-        writeln!(
-            out,
-            "    pub {safety}fn {method_name}({}) {{",
-            params.join(", ")
-        )
-        .unwrap();
-    } else {
-        writeln!(
-            out,
-            "    pub {safety}fn {method_name}({}) -> {rust_return} {{",
-            params.join(", ")
-        )
-        .unwrap();
-    }
+    let instance = method_has_receiver(class, method);
+    render_pointer_safety(out, &method.params);
+    writeln!(out, "    {} {{", method_decl(class, method).1).unwrap();
 
     if class.name == "Clipboard" {
         let condition = match method.name.as_str() {
@@ -1010,12 +920,22 @@ fn render_rust_method(
     writeln!(out).unwrap();
 }
 
-fn render_pointer_safety(out: &mut String, params: &[Param]) -> &'static str {
-    if !params
+/// `unsafe ` when a parameter is a raw pointer, else nothing.
+fn pointer_safety(params: &[Param]) -> &'static str {
+    if params
         .iter()
         .any(|param| rust_param_type(&param.ty).starts_with('*'))
     {
-        return "";
+        "unsafe "
+    } else {
+        ""
+    }
+}
+
+/// The `# Safety` doc section of a function `pointer_safety` marks unsafe.
+fn render_pointer_safety(out: &mut String, params: &[Param]) {
+    if pointer_safety(params).is_empty() {
+        return;
     }
     writeln!(out, "    ///").unwrap();
     writeln!(out, "    /// # Safety").unwrap();
@@ -1034,7 +954,6 @@ fn render_pointer_safety(out: &mut String, params: &[Param]) -> &'static str {
         "    /// including keeping objects alive while the returned wrapper uses them."
     )
     .unwrap();
-    "unsafe "
 }
 
 fn rust_param_list(params: &[Param]) -> Vec<String> {
@@ -1537,4 +1456,239 @@ fn owned_raw_expr(ty: &TypeRef, access: &str) -> String {
         TypeRef::Vector { element } if matches!(element.as_ref(), TypeRef::Enum { .. }) => format!("if {access}.values.is_null() {{ Vec::new() }} else {{ (0..{access}.count as usize).map(|i| {}::from_raw(*{access}.values.add(i))).collect() }}", element.named_type().unwrap()),
         _ => raw_field_expr(ty, access),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Declarations
+//
+// Each helper builds one declaration line exactly as the renderer writes it,
+// minus indentation and the trailing ` {` / `,` / `;`. The renderer and
+// `reference` both call them, so the API reference cannot drift from the
+// binding. Helpers for members return `(rust name, declaration)`.
+// ---------------------------------------------------------------------------
+
+fn alias_decl(alias: &Alias) -> String {
+    format!(
+        "pub type {} = {};",
+        alias.name,
+        rust_public_type(&alias.underlying)
+    )
+}
+
+fn enum_decl(item: &Enum) -> String {
+    format!("pub enum {}", item.name)
+}
+
+fn enum_variant_decl(item: &Enum, variant: &EnumVariant) -> (String, String) {
+    let name = rust_enum_variant(&variant.name);
+    (
+        format!("{}::{name}", item.name),
+        format!("{name} = {}", variant.value),
+    )
+}
+
+fn struct_decl(item: &Struct) -> String {
+    format!("pub struct {}", item.name)
+}
+
+fn struct_field_decl(field: &Field) -> (String, String) {
+    let name = rust_ident(&field.name.to_snake_case());
+    // A callback field is set by the caller, never read back; the wrapper
+    // stores the closure and installs it in `to_raw`.
+    let ty = if is_callback(&field.ty) {
+        format!(
+            "Option<std::sync::Arc<dyn Fn({})>>",
+            callback_signature(&field.ty)
+        )
+    } else {
+        rust_public_type(&field.ty)
+    };
+    let decl = format!("pub {name}: {ty}");
+    (name, decl)
+}
+
+fn event_decl(group: &EventGroup) -> String {
+    format!("pub enum {}", group.name)
+}
+
+/// One payload field of an event variant (common or variant-specific).
+fn event_field_decl(field: &Field) -> (String, String) {
+    let name = rust_ident(&field.name.to_snake_case());
+    let decl = format!("{name}: {}", rust_event_field_type(&field.ty));
+    (name, decl)
+}
+
+/// A variant of the event enum; it carries the group's common fields first.
+fn event_variant_decl(group: &EventGroup, variant: &EventVariant) -> (String, String) {
+    let name = variant.discriminant.to_upper_camel_case();
+    let fields: Vec<String> = group
+        .common
+        .iter()
+        .chain(variant.fields.iter())
+        .map(|field| event_field_decl(field).1)
+        .collect();
+    let decl = if fields.is_empty() {
+        name.clone()
+    } else {
+        format!("{name} {{ {} }}", fields.join(", "))
+    };
+    (format!("{}::{name}", group.name), decl)
+}
+
+/// `pub struct Window`: a handle wrapper for instance classes, a unit struct
+/// (written with a trailing `;`) for singletons.
+fn class_decl(class: &Class) -> String {
+    format!("pub struct {}", class.name)
+}
+
+/// The `Deref` to the base class of a derived handle: the `impl` line and its
+/// `Target`.
+fn deref_decls(class: &Class, base: &str) -> (String, String) {
+    (
+        format!("impl std::ops::Deref for {}", class.name),
+        format!("type Target = {base};"),
+    )
+}
+
+fn constructor_decl(class: &Class, ctor: &Constructor) -> (String, String) {
+    let name = rust_constructor_name(class, ctor);
+    let decl = format!(
+        "pub {}fn {name}({}) -> Option<Self>",
+        pointer_safety(&ctor.params),
+        rust_param_list(&ctor.params).join(", ")
+    );
+    (name, decl)
+}
+
+fn method_has_receiver(class: &Class, method: &Method) -> bool {
+    class.is_instance() && !method.is_static
+}
+
+fn method_decl(class: &Class, method: &Method) -> (String, String) {
+    let name = rust_method_name(class, method);
+    let mut params: Vec<String> = Vec::new();
+    if method_has_receiver(class, method) {
+        params.push("&self".to_string());
+    }
+    params.extend(rust_param_list(&method.params));
+
+    let rust_return = rust_public_type(&method.return_type);
+    let safety = pointer_safety(&method.params);
+    let decl = if rust_return == "()" {
+        format!("pub {safety}fn {name}({})", params.join(", "))
+    } else {
+        format!(
+            "pub {safety}fn {name}({}) -> {rust_return}",
+            params.join(", ")
+        )
+    };
+    (name, decl)
+}
+
+/// `add_listener` and `remove_listener` of a class emitting `group`.
+fn listener_decls(class: &Class, group: &EventGroup) -> (String, String) {
+    let receiver = if class.is_instance() { "&self, " } else { "" };
+    (
+        format!(
+            "pub fn add_listener({receiver}callback: impl Fn(&{}) + 'static) -> ListenerId",
+            group.name
+        ),
+        format!("pub fn remove_listener({receiver}listener_id: ListenerId) -> bool"),
+    )
+}
+
+/// Signatures this generator emits, keyed by `codegen_shared::symbols`.
+///
+/// Struct methods and struct constants (`Color::FromHex`, `Color::Black`) are
+/// not generated for Rust, so their keys are absent.
+pub fn reference(
+    api: &codegen_shared::ir::Api,
+    origins: &codegen_shared::naming::TypeOrigins,
+    _prefix: &str,
+) -> crate::reference::Reference {
+    use codegen_shared::symbols;
+
+    let mut reference = crate::reference::Reference::default();
+    for header in &api.headers {
+        for alias in &header.aliases {
+            // Rendered only by the module that owns it.
+            if origins.get(&alias.name).map(String::as_str) != Some(header.stem.as_str()) {
+                continue;
+            }
+            reference.insert(&alias.name, &alias.name, alias_decl(alias));
+        }
+
+        for item in &header.enums {
+            reference.insert(&item.name, &item.name, enum_decl(item));
+            for (key, variant) in symbols::enum_variants(item).into_iter().zip(&item.variants) {
+                let (name, decl) = enum_variant_decl(item, variant);
+                reference.insert(key, name, decl);
+            }
+        }
+
+        for item in &header.structs {
+            reference.insert(&item.name, &item.name, struct_decl(item));
+            for (key, field) in symbols::struct_fields(item).into_iter().zip(&item.fields) {
+                let (name, decl) = struct_field_decl(field);
+                reference.insert(key, name, decl);
+            }
+        }
+
+        for group in &header.events {
+            reference.insert(&group.name, &group.name, event_decl(group));
+            for (key, field) in symbols::event_common_fields(group)
+                .into_iter()
+                .zip(&group.common)
+            {
+                let (name, decl) = event_field_decl(field);
+                reference.insert(key, name, decl);
+            }
+            for variant in &group.variants {
+                let (name, decl) = event_variant_decl(group, variant);
+                reference.insert(&variant.name, name, decl);
+                for (key, field) in symbols::event_variant_fields(variant)
+                    .into_iter()
+                    .zip(&variant.fields)
+                {
+                    let (name, decl) = event_field_decl(field);
+                    reference.insert(key, name, decl);
+                }
+            }
+        }
+
+        for class in &header.classes {
+            let mut head = class_decl(class);
+            if class.is_instance() {
+                if let Some(base) = &class.base {
+                    let (deref_impl, deref_target) = deref_decls(class, base);
+                    head = format!("{head}\n{deref_impl}\n{deref_target}");
+                }
+            }
+            reference.insert(&class.name, &class.name, head);
+
+            for (key, ctor) in symbols::constructors(class)
+                .into_iter()
+                .zip(&class.constructors)
+            {
+                let (name, decl) = constructor_decl(class, ctor);
+                reference.insert(key, name, decl);
+            }
+            for (key, method) in symbols::class_methods(class)
+                .into_iter()
+                .zip(&class.methods)
+            {
+                let (name, decl) = method_decl(class, method);
+                reference.insert(key, name, decl);
+            }
+            if let Some(group) = emitted_group(api, class) {
+                let (add, remove) = listener_decls(class, group);
+                reference.insert(
+                    symbols::listener(class),
+                    "add_listener",
+                    format!("{add}\n{remove}"),
+                );
+            }
+        }
+    }
+    reference
 }

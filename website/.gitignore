@@ -15,6 +15,7 @@
 
 # Generated docs content (rebuilt by scripts/build-docs.mjs)
 /src/content/docs-gen/
+/src/content/api-gen/
 
 # TanStack Start / Vite
 /.output/

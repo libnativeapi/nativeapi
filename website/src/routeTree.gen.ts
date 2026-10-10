@@ -13,10 +13,16 @@ import { Route as SupportRouteImport } from './routes/support'
 import { Route as LocaleRouteImport } from './routes/$locale'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as ApiIndexRouteImport } from './routes/api/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as LocaleSupportRouteImport } from './routes/$locale_.support'
+import { Route as ApiLangIndexRouteImport } from './routes/api/$lang/index'
 import { Route as LocaleDocsIndexRouteImport } from './routes/$locale_.docs.index'
+import { Route as LocaleApiIndexRouteImport } from './routes/$locale_.api.index'
+import { Route as ApiLangModuleRouteImport } from './routes/api/$lang/$module'
 import { Route as LocaleDocsSplatRouteImport } from './routes/$locale_.docs.$'
+import { Route as LocaleApiLangIndexRouteImport } from './routes/$locale_.api.$lang.index'
+import { Route as LocaleApiLangModuleRouteImport } from './routes/$locale_.api.$lang.$module'
 
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
@@ -38,6 +44,11 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIndexRoute = ApiIndexRouteImport.update({
+  id: '/api/',
+  path: '/api/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
   path: '/docs/$',
@@ -48,14 +59,39 @@ const LocaleSupportRoute = LocaleSupportRouteImport.update({
   path: '/$locale/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLangIndexRoute = ApiLangIndexRouteImport.update({
+  id: '/api/$lang/',
+  path: '/api/$lang/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocaleDocsIndexRoute = LocaleDocsIndexRouteImport.update({
   id: '/$locale_/docs/',
   path: '/$locale/docs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleApiIndexRoute = LocaleApiIndexRouteImport.update({
+  id: '/$locale_/api/',
+  path: '/$locale/api/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLangModuleRoute = ApiLangModuleRouteImport.update({
+  id: '/api/$lang/$module',
+  path: '/api/$lang/$module',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocaleDocsSplatRoute = LocaleDocsSplatRouteImport.update({
   id: '/$locale_/docs/$',
   path: '/$locale/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleApiLangIndexRoute = LocaleApiLangIndexRouteImport.update({
+  id: '/$locale_/api/$lang/',
+  path: '/$locale/api/$lang/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleApiLangModuleRoute = LocaleApiLangModuleRouteImport.update({
+  id: '/$locale_/api/$lang/$module',
+  path: '/$locale/api/$lang/$module',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -65,9 +101,15 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/$locale/support': typeof LocaleSupportRoute
   '/docs/$': typeof DocsSplatRoute
+  '/api/': typeof ApiIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$locale/docs/$': typeof LocaleDocsSplatRoute
+  '/api/$lang/$module': typeof ApiLangModuleRoute
+  '/$locale/api/': typeof LocaleApiIndexRoute
   '/$locale/docs/': typeof LocaleDocsIndexRoute
+  '/api/$lang/': typeof ApiLangIndexRoute
+  '/$locale/api/$lang/$module': typeof LocaleApiLangModuleRoute
+  '/$locale/api/$lang/': typeof LocaleApiLangIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,9 +117,15 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/$locale/support': typeof LocaleSupportRoute
   '/docs/$': typeof DocsSplatRoute
+  '/api': typeof ApiIndexRoute
   '/docs': typeof DocsIndexRoute
   '/$locale/docs/$': typeof LocaleDocsSplatRoute
+  '/api/$lang/$module': typeof ApiLangModuleRoute
+  '/$locale/api': typeof LocaleApiIndexRoute
   '/$locale/docs': typeof LocaleDocsIndexRoute
+  '/api/$lang': typeof ApiLangIndexRoute
+  '/$locale/api/$lang/$module': typeof LocaleApiLangModuleRoute
+  '/$locale/api/$lang': typeof LocaleApiLangIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,9 +134,15 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/$locale_/support': typeof LocaleSupportRoute
   '/docs/$': typeof DocsSplatRoute
+  '/api/': typeof ApiIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$locale_/docs/$': typeof LocaleDocsSplatRoute
+  '/api/$lang/$module': typeof ApiLangModuleRoute
+  '/$locale_/api/': typeof LocaleApiIndexRoute
   '/$locale_/docs/': typeof LocaleDocsIndexRoute
+  '/api/$lang/': typeof ApiLangIndexRoute
+  '/$locale_/api/$lang/$module': typeof LocaleApiLangModuleRoute
+  '/$locale_/api/$lang/': typeof LocaleApiLangIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,9 +152,15 @@ export interface FileRouteTypes {
     | '/support'
     | '/$locale/support'
     | '/docs/$'
+    | '/api/'
     | '/docs/'
     | '/$locale/docs/$'
+    | '/api/$lang/$module'
+    | '/$locale/api/'
     | '/$locale/docs/'
+    | '/api/$lang/'
+    | '/$locale/api/$lang/$module'
+    | '/$locale/api/$lang/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -108,9 +168,15 @@ export interface FileRouteTypes {
     | '/support'
     | '/$locale/support'
     | '/docs/$'
+    | '/api'
     | '/docs'
     | '/$locale/docs/$'
+    | '/api/$lang/$module'
+    | '/$locale/api'
     | '/$locale/docs'
+    | '/api/$lang'
+    | '/$locale/api/$lang/$module'
+    | '/$locale/api/$lang'
   id:
     | '__root__'
     | '/'
@@ -118,9 +184,15 @@ export interface FileRouteTypes {
     | '/support'
     | '/$locale_/support'
     | '/docs/$'
+    | '/api/'
     | '/docs/'
     | '/$locale_/docs/$'
+    | '/api/$lang/$module'
+    | '/$locale_/api/'
     | '/$locale_/docs/'
+    | '/api/$lang/'
+    | '/$locale_/api/$lang/$module'
+    | '/$locale_/api/$lang/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,9 +201,15 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRoute
   LocaleSupportRoute: typeof LocaleSupportRoute
   DocsSplatRoute: typeof DocsSplatRoute
+  ApiIndexRoute: typeof ApiIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   LocaleDocsSplatRoute: typeof LocaleDocsSplatRoute
+  ApiLangModuleRoute: typeof ApiLangModuleRoute
+  LocaleApiIndexRoute: typeof LocaleApiIndexRoute
   LocaleDocsIndexRoute: typeof LocaleDocsIndexRoute
+  ApiLangIndexRoute: typeof ApiLangIndexRoute
+  LocaleApiLangModuleRoute: typeof LocaleApiLangModuleRoute
+  LocaleApiLangIndexRoute: typeof LocaleApiLangIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/': {
+      id: '/api/'
+      path: '/api'
+      fullPath: '/api/'
+      preLoaderRoute: typeof ApiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs/$': {
       id: '/docs/$'
       path: '/docs/$'
@@ -178,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleSupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/$lang/': {
+      id: '/api/$lang/'
+      path: '/api/$lang'
+      fullPath: '/api/$lang/'
+      preLoaderRoute: typeof ApiLangIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$locale_/docs/': {
       id: '/$locale_/docs/'
       path: '/$locale/docs'
@@ -185,11 +277,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleDocsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale_/api/': {
+      id: '/$locale_/api/'
+      path: '/$locale/api'
+      fullPath: '/$locale/api/'
+      preLoaderRoute: typeof LocaleApiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/$lang/$module': {
+      id: '/api/$lang/$module'
+      path: '/api/$lang/$module'
+      fullPath: '/api/$lang/$module'
+      preLoaderRoute: typeof ApiLangModuleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$locale_/docs/$': {
       id: '/$locale_/docs/$'
       path: '/$locale/docs/$'
       fullPath: '/$locale/docs/$'
       preLoaderRoute: typeof LocaleDocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale_/api/$lang/': {
+      id: '/$locale_/api/$lang/'
+      path: '/$locale/api/$lang'
+      fullPath: '/$locale/api/$lang/'
+      preLoaderRoute: typeof LocaleApiLangIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale_/api/$lang/$module': {
+      id: '/$locale_/api/$lang/$module'
+      path: '/$locale/api/$lang/$module'
+      fullPath: '/$locale/api/$lang/$module'
+      preLoaderRoute: typeof LocaleApiLangModuleRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -201,9 +321,15 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRoute,
   LocaleSupportRoute: LocaleSupportRoute,
   DocsSplatRoute: DocsSplatRoute,
+  ApiIndexRoute: ApiIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   LocaleDocsSplatRoute: LocaleDocsSplatRoute,
+  ApiLangModuleRoute: ApiLangModuleRoute,
+  LocaleApiIndexRoute: LocaleApiIndexRoute,
   LocaleDocsIndexRoute: LocaleDocsIndexRoute,
+  ApiLangIndexRoute: ApiLangIndexRoute,
+  LocaleApiLangModuleRoute: LocaleApiLangModuleRoute,
+  LocaleApiLangIndexRoute: LocaleApiLangIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

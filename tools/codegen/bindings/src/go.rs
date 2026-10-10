@@ -5,7 +5,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::Path;
 
-use codegen_shared::ir::{Api, Class, ClassKind, Constructor, EventGroup, Method, Param, TypeRef};
+use codegen_shared::ir::{
+    Alias, Api, Class, ClassKind, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field,
+    Method, Param, Struct, TypeRef,
+};
 use codegen_shared::naming::*;
 use codegen_shared::GeneratedFile;
 use heck::{ToShoutySnakeCase, ToSnakeCase, ToUpperCamelCase};
@@ -512,6 +515,157 @@ fn callback_bridge(out: &mut String, bridge: &mut String, cb: &Callback) {
     .unwrap();
 }
 
+// Declaration helpers. The renderers below and `reference` both build every
+// exported declaration through these, so the API reference cannot drift from
+// the generated binding.
+
+/// A function declaration split where the generator writes it: `head` runs
+/// through the closing parenthesis of the parameters, `result` follows it.
+struct FuncDecl {
+    /// The exported identifier.
+    name: String,
+    head: String,
+    result: String,
+}
+impl FuncDecl {
+    /// What the renderer writes before the body: `head result {`.
+    fn open(&self) -> String {
+        format!("{} {} {{", self.head, self.result)
+    }
+    /// The declaration as Go reads it (no doubled space before a missing result).
+    fn signature(&self) -> String {
+        if self.result.is_empty() {
+            self.head.clone()
+        } else {
+            format!("{} {}", self.head, self.result)
+        }
+    }
+}
+fn alias_decl(a: &Alias) -> String {
+    format!("type {} {}", name(&a.name), ty(&a.underlying))
+}
+fn enum_decl(e: &Enum) -> String {
+    format!("type {} int32", name(&e.name))
+}
+fn enum_variant_name(e: &Enum, v: &EnumVariant) -> String {
+    format!("{}{}", name(&e.name), name(v.name.strip_prefix('k').unwrap_or(&v.name)))
+}
+/// One line of the enum's `const (` block.
+fn enum_variant_decl(e: &Enum, v: &EnumVariant) -> String {
+    format!("{} {} = {}", enum_variant_name(e, v), name(&e.name), v.value)
+}
+/// `type X struct`, the generator appends the body.
+fn struct_decl(type_name: &str) -> String {
+    format!("type {type_name} struct")
+}
+/// A struct or event payload field.
+fn field_decl(f: &Field) -> String {
+    format!("{} {}", name(&f.name), ty(&f.ty))
+}
+fn event_variant_name(group: &EventGroup, v: &EventVariant) -> String {
+    format!("{}{}", name(&group.name), name(&v.discriminant))
+}
+/// One line of the event group's `const (` block of discriminants.
+fn event_variant_decl(group: &EventGroup, v: &EventVariant, index: usize) -> String {
+    format!("{} {}Type = {index}", event_variant_name(group, v), name(&group.name))
+}
+/// The exported value standing for a singleton.
+fn singleton_decl(c: &Class) -> String {
+    format!("var {} = {}{{}}", name(&c.name), ident(&c.name))
+}
+fn constructor_decl(c: &Class, ctor: &Constructor) -> FuncDecl {
+    let function = constructor_name(c, ctor);
+    FuncDecl {
+        head: format!("func {function}({})", params(&ctor.params)),
+        result: format!("(*{}, error)", name(&c.name)),
+        name: function,
+    }
+}
+/// `None` for methods the binding skips (unsupported types).
+fn class_method_decl(c: &Class, m: &Method) -> Option<FuncDecl> {
+    if !m.return_type.is_supported() || !m.params.iter().all(|p| p.ty.is_supported()) {
+        return None;
+    }
+    let n = name(&c.name);
+    let mn = method_name(c, m);
+    let instance = c.is_instance() && !m.is_static;
+    let function = if instance || c.is_singleton() {
+        mn
+    } else {
+        format!("{n}{mn}")
+    };
+    let recv = receiver(c, &m.params);
+    let head = if instance {
+        format!("func ({recv} *{n}) {function}({})", params(&m.params))
+    } else if c.is_singleton() {
+        format!("func ({recv} {}) {function}({})", ident(&c.name), params(&m.params))
+    } else {
+        format!("func {function}({})", params(&m.params))
+    };
+    Some(FuncDecl {
+        name: function,
+        head,
+        result: result_type(c, m),
+    })
+}
+/// Struct methods are rendered through a stand-in instance class.
+fn struct_pseudo_class(s: &Struct) -> Class {
+    Class {
+        name: s.name.clone(),
+        qualified_name: s.qualified_name.clone(),
+        kind: ClassKind::Instance,
+        native_object: false,
+        constructors: vec![],
+        methods: s.methods.clone(),
+        event: None,
+        base: None,
+    }
+}
+fn struct_method_decl(pseudo: &Class, m: &Method) -> FuncDecl {
+    let n = name(&pseudo.name);
+    let mn = method_name(pseudo, m);
+    let recv = receiver(pseudo, &m.params);
+    let function = if m.is_static { format!("{n}{mn}") } else { mn };
+    let head = if m.is_static {
+        format!("func {function}({})", params(&m.params))
+    } else {
+        format!("func ({recv} {n}) {function}({})", params(&m.params))
+    };
+    FuncDecl {
+        name: function,
+        head,
+        result: result_type(pseudo, m),
+    }
+}
+/// `(name, var Name)`; the generator appends the initializer.
+fn struct_constant_decl(s: &Struct, constant: &str) -> (String, String) {
+    let value = format!("{}{}", name(&s.name), name(constant));
+    let decl = format!("var {value}");
+    (value, decl)
+}
+/// `AddListener` and `RemoveListener` of a class with an event.
+fn listener_decls(c: &Class, event: &str) -> (FuncDecl, FuncDecl) {
+    let n = name(&c.name);
+    let recv = receiver(c, &[]);
+    let receiver = if c.is_instance() {
+        format!("({recv} *{n}) ")
+    } else {
+        format!("({recv} {}) ", ident(&c.name))
+    };
+    (
+        FuncDecl {
+            name: "AddListener".into(),
+            head: format!("func {receiver}AddListener(callback func({}))", name(event)),
+            result: "(ListenerID, error)".into(),
+        },
+        FuncDecl {
+            name: "RemoveListener".into(),
+            head: format!("func {receiver}RemoveListener(id ListenerID)"),
+            result: "error".into(),
+        },
+    )
+}
+
 fn events(out: &mut String, bridge: &mut String, group: &EventGroup) {
     let gn = name(&group.name);
     let cn = c_type_name(PREFIX, &group.name);
@@ -521,9 +675,9 @@ fn events(out: &mut String, bridge: &mut String, group: &EventGroup) {
     )
     .unwrap();
     for (i, v) in group.variants.iter().enumerate() {
-        writeln!(out, "{gn}{} {gn}Type = {i}", name(&v.discriminant)).unwrap();
+        writeln!(out, "{}", event_variant_decl(group, v, i)).unwrap();
     }
-    writeln!(out,")\n// {gn} copies an event payload. Handle fields are borrowed until the callback returns.\n// Only fields belonging to Type are populated.\ntype {gn} struct {{\nType {gn}Type").unwrap();
+    writeln!(out,")\n// {gn} copies an event payload. Handle fields are borrowed until the callback returns.\n// Only fields belonging to Type are populated.\n{} {{\nType {gn}Type", struct_decl(&gn)).unwrap();
     let mut seen = BTreeMap::new();
     for f in group
         .common
@@ -534,7 +688,7 @@ fn events(out: &mut String, bridge: &mut String, group: &EventGroup) {
             assert_eq!(t, f.ty, "conflicting Go event fields");
             continue;
         }
-        writeln!(out, "{} {}", name(&f.name), ty(&f.ty)).unwrap();
+        writeln!(out, "{}", field_decl(f)).unwrap();
     }
     writeln!(
         out,
@@ -593,7 +747,7 @@ fn class(out: &mut String, api: &Api, c: &Class) {
     let recv = receiver(c, &[]);
     let singleton_type = ident(&c.name);
     if c.is_singleton() {
-        writeln!(out, "type {singleton_type} struct {{}}\n// {n} provides access to the native {n} singleton.\n// It has no owned handle and does not need to be released.\nvar {n} = {singleton_type}{{}}\n").unwrap();
+        writeln!(out, "type {singleton_type} struct {{}}\n// {n} provides access to the native {n} singleton.\n// It has no owned handle and does not need to be released.\n{}\n", singleton_decl(c)).unwrap();
     }
     if c.is_instance() {
         let member = c
@@ -601,7 +755,7 @@ fn class(out: &mut String, api: &Api, c: &Class) {
             .as_ref()
             .map(|b| name(b))
             .unwrap_or_else(|| "nativeHandle".into());
-        writeln!(out,"// {n} owns a native handle. Call Release on the UI thread when done.\n// Copies share ownership state; borrowed event handles must not outlive their callback.\ntype {n} struct {{ *{member} }}\nfunc wrap{n}(value uint64, borrowed bool) *{n} {{\nif value == 0 {{ return nil }}\nreturn wrap{n}State(&nativeHandle{{value: value, borrowed: borrowed}})\n}}\nfunc wrap{n}State(state *nativeHandle) *{n} {{").unwrap();
+        writeln!(out,"// {n} owns a native handle. Call Release on the UI thread when done.\n// Copies share ownership state; borrowed event handles must not outlive their callback.\n{} {{ *{member} }}\nfunc wrap{n}(value uint64, borrowed bool) *{n} {{\nif value == 0 {{ return nil }}\nreturn wrap{n}State(&nativeHandle{{value: value, borrowed: borrowed}})\n}}\nfunc wrap{n}State(state *nativeHandle) *{n} {{", struct_decl(&n)).unwrap();
         if let Some(base) = &c.base {
             writeln!(out, "return &{n}{{wrap{}State(state)}}", name(base)).unwrap();
         } else {
@@ -611,12 +765,13 @@ fn class(out: &mut String, api: &Api, c: &Class) {
     }
     let mut exported = BTreeSet::new();
     for ctor in &c.constructors {
-        let function = constructor_name(c, ctor);
+        let decl = constructor_decl(c, ctor);
+        let function = decl.name.clone();
         assert!(
             exported.insert(function.clone()),
             "Go constructor collision: {function}"
         );
-        writeln!(out, "// {function} creates an owned {n}.\n// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.\nfunc {function}({}) (*{n}, error) {{", params(&ctor.params)).unwrap();
+        writeln!(out, "// {function} creates an owned {n}.\n// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.\n{}", decl.open()).unwrap();
         let symbol = c_constructor_symbol(PREFIX, c, ctor);
         let member = symbol
             .strip_prefix(&format!("native_{}_", c.name.to_snake_case()))
@@ -625,16 +780,11 @@ fn class(out: &mut String, api: &Api, c: &Class) {
         writeln!(out, "result := C.{symbol}({})\nif result == 0 {{ return nil, nativeError(\"{function}\") }}\nreturn wrap{n}(uint64(result), false), nil\n}}",args.join(", ")).unwrap();
     }
     for m in &c.methods {
-        if !m.return_type.is_supported() || !m.params.iter().all(|p| p.ty.is_supported()) {
+        let Some(decl) = class_method_decl(c, m) else {
             continue;
-        }
-        let mn = method_name(c, m);
-        let instance = c.is_instance() && !m.is_static;
-        let function = if instance || c.is_singleton() {
-            mn.clone()
-        } else {
-            format!("{n}{mn}")
         };
+        let instance = c.is_instance() && !m.is_static;
+        let function = decl.name.clone();
         assert!(
             exported.insert(function.clone()),
             "Go method collision: {n}.{function}"
@@ -659,14 +809,7 @@ fn class(out: &mut String, api: &Api, c: &Class) {
             )
             .unwrap();
         }
-        if instance {
-            write!(out, "func ({recv} *{n}) {function}(").unwrap();
-        } else if c.is_singleton() {
-            write!(out, "func ({recv} {singleton_type}) {function}(").unwrap();
-        } else {
-            write!(out, "func {function}(").unwrap();
-        }
-        writeln!(out, "{}) {} {{", params(&m.params), result_type(c, m)).unwrap();
+        writeln!(out, "{}", decl.open()).unwrap();
         if c.name == "Clipboard" {
             let condition = match m.name.as_str() {
                 "Write" => "!validClipboardOptionalText(data.Text) || !validClipboardOptionalText(data.HTML) || !validClipboardPaths(data.FilePaths)",
@@ -702,13 +845,9 @@ fn class(out: &mut String, api: &Api, c: &Class) {
         writeln!(out,"// NativeObject returns a borrowed platform pointer.\nfunc ({recv} *{n}) NativeObject() unsafe.Pointer {{ return C.{}(C.{cn}({recv}.nativeHandleValue())) }}",c_native_object_symbol(PREFIX,&c.name)).unwrap();
     }
     if let Some(event) = &c.event {
-        let en = name(event);
+        let (add, remove) = listener_decls(c, event);
+        let (add, remove) = (add.open(), remove.open());
         let cb = c_event_callback_type(PREFIX, event);
-        let receiver = if c.is_instance() {
-            format!("({recv} *{n}) ")
-        } else {
-            format!("({recv} {singleton_type}) ")
-        };
         let prefix = "";
         let handle = if c.is_instance() {
             format!("C.{cn}({recv}.nativeHandleValue()), ")
@@ -716,7 +855,7 @@ fn class(out: &mut String, api: &Api, c: &Class) {
             String::new()
         };
         let operation = format!("{n}.");
-        writeln!(out,"// {prefix}AddListener invokes callback synchronously on the native UI thread.\n// Remove the listener before releasing its owner. A nil callback is invalid.\nfunc {receiver}{prefix}AddListener(callback func({en})) (ListenerID, error) {{\nif callback == nil {{ return 0, invalidArgument(\"{operation}AddListener\") }}\ndata := newCallback(callback)\nid := C.{}({handle}C.{cb}(C.go_get_{cb}()), data, C.native_release_user_data_t(C.go_get_release_callback()))\nif id == 0 {{ return 0, nativeError(\"{operation}AddListener\") }}\nreturn ListenerID(id), nil\n}}\n// {prefix}RemoveListener unregisters id; an unknown id returns an error.\nfunc {receiver}{prefix}RemoveListener(id ListenerID) error {{\nif !bool(C.{}({handle}C.native_listener_id_t(id))) {{ return nativeError(\"{operation}RemoveListener\") }}\nreturn nil\n}}",c_add_listener_symbol(PREFIX,&c.name),c_remove_listener_symbol(PREFIX,&c.name)).unwrap();
+        writeln!(out,"// {prefix}AddListener invokes callback synchronously on the native UI thread.\n// Remove the listener before releasing its owner. A nil callback is invalid.\n{add}\nif callback == nil {{ return 0, invalidArgument(\"{operation}AddListener\") }}\ndata := newCallback(callback)\nid := C.{}({handle}C.{cb}(C.go_get_{cb}()), data, C.native_release_user_data_t(C.go_get_release_callback()))\nif id == 0 {{ return 0, nativeError(\"{operation}AddListener\") }}\nreturn ListenerID(id), nil\n}}\n// {prefix}RemoveListener unregisters id; an unknown id returns an error.\n{remove}\nif !bool(C.{}({handle}C.native_listener_id_t(id))) {{ return nativeError(\"{operation}RemoveListener\") }}\nreturn nil\n}}",c_add_listener_symbol(PREFIX,&c.name),c_remove_listener_symbol(PREFIX,&c.name)).unwrap();
     }
 }
 
@@ -731,10 +870,9 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
             if seen_aliases.insert(&a.name) {
                 writeln!(
                     out,
-                    "// {} identifies a native object.\ntype {} {}",
+                    "// {} identifies a native object.\n{}",
                     name(&a.name),
-                    name(&a.name),
-                    ty(&a.underlying)
+                    alias_decl(a)
                 )
                 .unwrap();
             }
@@ -742,22 +880,14 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
         for e in &h.enums {
             writeln!(
                 out,
-                "// {} represents native {} values.\ntype {} int32\nconst (",
+                "// {} represents native {} values.\n{}\nconst (",
                 name(&e.name),
                 e.name,
-                name(&e.name)
+                enum_decl(e)
             )
             .unwrap();
             for v in &e.variants {
-                writeln!(
-                    out,
-                    "{}{} {} = {}",
-                    name(&e.name),
-                    name(v.name.strip_prefix('k').unwrap_or(&v.name)),
-                    name(&e.name),
-                    v.value
-                )
-                .unwrap();
+                writeln!(out, "{}", enum_variant_decl(e, v)).unwrap();
             }
             writeln!(out, ")").unwrap();
         }
@@ -766,12 +896,13 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
             let cn = c_type_name(PREFIX, &s.name);
             writeln!(
                 out,
-                "// {n} holds the native {} value.\ntype {n} struct {{",
-                s.name
+                "// {n} holds the native {} value.\n{} {{",
+                s.name,
+                struct_decl(&n)
             )
             .unwrap();
             for f in &s.fields {
-                writeln!(out, "{} {}", name(&f.name), ty(&f.ty)).unwrap();
+                writeln!(out, "{}", field_decl(f)).unwrap();
             }
             writeln!(out, "}}\nfunc fromC{n}(raw C.{cn}) {n} {{\nreturn {n}{{").unwrap();
             for f in &s.fields {
@@ -824,36 +955,19 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
                 }
             }
             writeln!(out,"return raw, func() {{ for i := len(cleanup)-1; i >= 0; i-- {{ cleanup[i]() }} }}\n}}").unwrap();
-            let pseudo = Class {
-                name: s.name.clone(),
-                qualified_name: s.qualified_name.clone(),
-                kind: ClassKind::Instance,
-                native_object: false,
-                constructors: vec![],
-                methods: s.methods.clone(),
-                event: None,
-                base: None,
-            };
+            let pseudo = struct_pseudo_class(s);
             for m in &s.methods {
+                let decl = struct_method_decl(&pseudo, m);
                 let mn = method_name(&pseudo, m);
                 let recv = receiver(&pseudo, &m.params);
-                let function = if m.is_static {
-                    format!("{n}{mn}")
-                } else {
-                    mn.clone()
-                };
                 writeln!(
                     out,
-                    "// {function} invokes the native {} operation.",
-                    m.name
+                    "// {} invokes the native {} operation.\n{}",
+                    decl.name,
+                    m.name,
+                    decl.open()
                 )
                 .unwrap();
-                if m.is_static {
-                    write!(out, "func {function}(").unwrap();
-                } else {
-                    write!(out, "func ({recv} {n}) {function}(").unwrap();
-                }
-                writeln!(out, "{}) {} {{", params(&m.params), result_type(&pseudo, m)).unwrap();
                 let mut args = Vec::new();
                 if !m.is_static {
                     args.extend(to_c(
@@ -884,12 +998,11 @@ pub fn generate(api: &Api, out_dir: &Path) -> Vec<GeneratedFile> {
                 writeln!(out, "}}").unwrap();
             }
             for constant in &s.constants {
+                let (value, decl) = struct_constant_decl(s, constant);
                 writeln!(
                     out,
-                    "// {n}{} is the native {} value.\nvar {n}{} = fromC{n}(C.NATIVE_{}_{})",
-                    name(constant),
+                    "// {value} is the native {} value.\n{decl} = fromC{n}(C.NATIVE_{}_{})",
                     constant.to_snake_case(),
-                    name(constant),
                     s.name.to_shouty_snake_case(),
                     constant.to_shouty_snake_case()
                 )
@@ -1010,6 +1123,7 @@ mod tests {
             &Api {
                 headers: vec![],
                 diagnostics: vec![],
+                docs: Default::default(),
             },
             &manager,
         );
@@ -1125,4 +1239,97 @@ fn payload_callback_bridge(out: &mut String, bridge: &mut String, cb: &Callback)
         })
         .collect::<Vec<_>>();
     writeln!(out, "//export goCall_{n}\nfunc goCall_{n}(handle C.uintptr_t, {}, delivery C.native_event_delivery_t) {{\ndefer C.native_event_delivery_complete(delivery, true)\nif !bool(C.native_event_delivery_is_active(delivery)) {{ return }}\ncgo.Handle(handle).Value().({})({})\n}}", go_args.join(", "), ty(&TypeRef::Callback { params: cb.params.clone() }), args.join(", ")).unwrap();
+}
+
+/// Signatures this generator emits, keyed by `codegen_shared::symbols`.
+///
+/// Every signature comes from the declaration helpers `generate` writes with.
+/// Lines the generator writes inside a `const (` block get a `const ` prefix,
+/// and a struct constant (whose initializer reads the C ABI) is shown with its
+/// type instead of the initializer.
+pub fn reference(
+    api: &codegen_shared::ir::Api,
+    _origins: &codegen_shared::naming::TypeOrigins,
+    _prefix: &str,
+) -> crate::reference::Reference {
+    use codegen_shared::symbols;
+    let mut r = crate::reference::Reference::default();
+    for h in &api.headers {
+        for a in &h.aliases {
+            // `generate` writes only the first declaration of an alias.
+            if !r.entries.contains_key(&a.name) {
+                r.insert(a.name.as_str(), name(&a.name), alias_decl(a));
+            }
+        }
+        for e in &h.enums {
+            r.insert(e.name.as_str(), name(&e.name), enum_decl(e));
+            for (key, v) in symbols::enum_variants(e).into_iter().zip(&e.variants) {
+                r.insert(
+                    key,
+                    enum_variant_name(e, v),
+                    format!("const {}", enum_variant_decl(e, v)),
+                );
+            }
+        }
+        for s in &h.structs {
+            let n = name(&s.name);
+            r.insert(s.name.as_str(), n.as_str(), struct_decl(&n));
+            for (key, f) in symbols::struct_fields(s).into_iter().zip(&s.fields) {
+                r.insert(key, name(&f.name), field_decl(f));
+            }
+            let pseudo = struct_pseudo_class(s);
+            for (key, m) in symbols::struct_methods(s).into_iter().zip(&s.methods) {
+                let decl = struct_method_decl(&pseudo, m);
+                r.insert(key, decl.name.as_str(), decl.signature());
+            }
+            for (key, constant) in symbols::struct_constants(s).into_iter().zip(&s.constants) {
+                let (value, decl) = struct_constant_decl(s, constant);
+                r.insert(key, value, format!("{decl} {n}"));
+            }
+        }
+        for group in &h.events {
+            let gn = name(&group.name);
+            r.insert(group.name.as_str(), gn.as_str(), struct_decl(&gn));
+            for (key, f) in symbols::event_common_fields(group).into_iter().zip(&group.common) {
+                r.insert(key, name(&f.name), field_decl(f));
+            }
+            for (i, v) in group.variants.iter().enumerate() {
+                r.insert(
+                    v.name.as_str(),
+                    event_variant_name(group, v),
+                    format!("const {}", event_variant_decl(group, v, i)),
+                );
+                for (key, f) in symbols::event_variant_fields(v).into_iter().zip(&v.fields) {
+                    r.insert(key, name(&f.name), field_decl(f));
+                }
+            }
+        }
+        for c in &h.classes {
+            let n = name(&c.name);
+            let decl = if c.is_singleton() {
+                singleton_decl(c)
+            } else {
+                struct_decl(&n)
+            };
+            r.insert(c.name.as_str(), n.as_str(), decl);
+            for (key, ctor) in symbols::constructors(c).into_iter().zip(&c.constructors) {
+                let decl = constructor_decl(c, ctor);
+                r.insert(key, decl.name.as_str(), decl.signature());
+            }
+            for (key, m) in symbols::class_methods(c).into_iter().zip(&c.methods) {
+                if let Some(decl) = class_method_decl(c, m) {
+                    r.insert(key, decl.name.as_str(), decl.signature());
+                }
+            }
+            if let Some(event) = &c.event {
+                let (add, remove) = listener_decls(c, event);
+                r.insert(
+                    symbols::listener(c),
+                    add.name.as_str(),
+                    format!("{}\n{}", add.signature(), remove.signature()),
+                );
+            }
+        }
+    }
+    r
 }

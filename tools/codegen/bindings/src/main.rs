@@ -8,11 +8,14 @@ use clap::Parser;
 use codegen_shared::ir::serializer;
 use codegen_shared::{naming, resolve_repo_root, write_files};
 
+mod api_reference;
+
 mod csharp;
 mod dart;
 mod go;
 mod js;
 mod python;
+mod reference;
 mod rust;
 
 #[derive(Debug, Parser)]
@@ -59,6 +62,17 @@ struct CliArgs {
     /// Path to the Go binding (bindings/go).
     #[arg(long)]
     go: Option<PathBuf>,
+
+    /// Directory to write the API reference JSON into (one file per header
+    /// plus `index.json`), for the website. Covers every binding, whichever
+    /// binding paths are given.
+    #[arg(long)]
+    api_reference: Option<PathBuf>,
+
+    /// Write every binding's reference (signature per symbol key) as JSON to
+    /// this path, for inspecting what the API reference will show.
+    #[arg(long)]
+    dump_reference: Option<PathBuf>,
 
     /// Verify that generated files are up to date without writing anything.
     /// Exits non-zero when any file would change.
@@ -108,6 +122,12 @@ fn main() -> Result<()> {
 
     eprintln!("  generating bindings...");
     let origins = naming::type_origins(&api);
+    if let Some(path) = &args.dump_reference {
+        let references = references(&api, &origins, prefix);
+        std::fs::write(path, serde_json::to_string_pretty(&references)?)
+            .with_context(|| format!("failed to write {}", path.display()))?;
+        eprintln!("  wrote references to {}", path.display());
+    }
     let mut files = Vec::new();
     if let Some(out) = &rust_out {
         files.push(rust::generate_modules(&api, &origins, out));
@@ -138,6 +158,10 @@ fn main() -> Result<()> {
     }
     if let Some(out) = &args.go {
         files.extend(go::generate(&api, out));
+    }
+    if let Some(out) = &args.api_reference {
+        let references = references(&api, &origins, prefix);
+        files.extend(api_reference::generate(&api, &references, &src_dir, out));
     }
     for header in &api.headers {
         // C# mirrors the source tree, so `foundation/geometry.h` lands in
@@ -184,6 +208,24 @@ fn main() -> Result<()> {
         }
     }
     write_files(&files, args.check)
+}
+
+/// Every binding's reference, by language id.
+fn references(
+    api: &codegen_shared::ir::Api,
+    origins: &naming::TypeOrigins,
+    prefix: &str,
+) -> std::collections::BTreeMap<&'static str, reference::Reference> {
+    [
+        ("rust", rust::reference(api, origins, prefix)),
+        ("dart", dart::reference(api, origins, prefix)),
+        ("csharp", csharp::reference(api, origins, prefix)),
+        ("js", js::reference(api, origins, prefix)),
+        ("python", python::reference(api, origins, prefix)),
+        ("go", go::reference(api, origins, prefix)),
+    ]
+    .into_iter()
+    .collect()
 }
 
 fn format_dart(path: &Path, source: &str) -> Result<String> {

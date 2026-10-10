@@ -20,8 +20,8 @@ use std::path::Path;
 use heck::{ToShoutySnakeCase, ToSnakeCase};
 
 use codegen_shared::ir::{
-    Api, Class, ClassKind, Constructor, Enum, EventGroup, Field, Header, Method, Param, Struct,
-    TypeRef,
+    Alias, Api, Class, ClassKind, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field,
+    Header, Method, Param, Struct, TypeRef,
 };
 use codegen_shared::naming::{
     c_add_listener_symbol, c_constructor_symbol, c_free_symbol, c_list_field, c_list_free_symbol,
@@ -813,8 +813,7 @@ fn public_module(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     let mut aliases = BTreeSet::new();
     for alias in &header.aliases {
         if aliases.insert(alias.name.clone()) {
-            let underlying = annotation(&mut module, &alias.underlying, Position::Field);
-            writeln!(body, "{} = {underlying}\n", alias.name).unwrap();
+            writeln!(body, "{}\n", alias_decl(&mut module, alias)).unwrap();
         }
     }
     if !aliases.is_empty() {
@@ -888,23 +887,30 @@ fn public_module(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
 
 // --- enums ---
 
+fn alias_decl(module: &mut Module, alias: &Alias) -> String {
+    let underlying = annotation(module, &alias.underlying, Position::Field);
+    format!("{} = {underlying}", alias.name)
+}
+
 fn render_enum(out: &mut String, item: &Enum) {
+    writeln!(out, "{}", enum_decl(item)).unwrap();
+    for variant in &item.variants {
+        write_indented(out, &enum_variant_decl(variant));
+    }
+    writeln!(out, "\n").unwrap();
+}
+
+fn enum_decl(item: &Enum) -> String {
     let base = if is_flag_enum(item) {
         "IntFlag"
     } else {
         "IntEnum"
     };
-    writeln!(out, "class {}(enum.{base}):", item.name).unwrap();
-    for variant in &item.variants {
-        writeln!(
-            out,
-            "    {} = {}",
-            enum_member(&variant.name),
-            variant.value
-        )
-        .unwrap();
-    }
-    writeln!(out, "\n").unwrap();
+    format!("class {}(enum.{base}):", item.name)
+}
+
+fn enum_variant_decl(variant: &EnumVariant) -> String {
+    format!("{} = {}", enum_member(&variant.name), variant.value)
 }
 
 /// Bit flags: every non-zero value a distinct power of two, reaching past
@@ -930,32 +936,12 @@ fn enum_member(name: &str) -> String {
 
 fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
     let c_ty = format!("_C.{}", c_type_name(module.prefix, &item.name));
-    writeln!(out, "@dataclass").unwrap();
-    writeln!(out, "class {}:", item.name).unwrap();
+    writeln!(out, "{}", struct_decl(item)).unwrap();
     for field in &item.fields {
-        let ty = match &field.ty {
-            // Unset until the caller supplies one.
-            TypeRef::Callback { .. } => {
-                format!("{} | None", annotation(module, &field.ty, Position::Field))
-            }
-            other => annotation(module, other, Position::Field),
-        };
-        let default = field_default(module, &field.ty);
-        writeln!(
-            out,
-            "    {}: {ty} = {default}",
-            py_ident(&field.name.to_snake_case())
-        )
-        .unwrap();
+        write_indented(out, &struct_field_decl(module, field));
     }
     for constant in &item.constants {
-        writeln!(
-            out,
-            "    {}: ClassVar[{}]",
-            constant.to_shouty_snake_case(),
-            item.name
-        )
-        .unwrap();
+        write_indented(out, &struct_constant_decl(item, constant));
     }
     writeln!(out).unwrap();
 
@@ -1036,7 +1022,7 @@ fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
             out,
             "{}.{} = {}._from_c(_C.{})",
             item.name,
-            constant.to_shouty_snake_case(),
+            struct_constant_name(constant),
             item.name,
             c_struct_constant(module.prefix, &item.name, constant)
         )
@@ -1047,16 +1033,52 @@ fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
     }
 }
 
+fn struct_decl(item: &Struct) -> String {
+    format!("@dataclass\nclass {}:", item.name)
+}
+
+fn struct_field_decl(module: &mut Module, field: &Field) -> String {
+    let ty = match &field.ty {
+        // Unset until the caller supplies one.
+        TypeRef::Callback { .. } => {
+            format!("{} | None", annotation(module, &field.ty, Position::Field))
+        }
+        other => annotation(module, other, Position::Field),
+    };
+    let default = field_default(module, &field.ty);
+    format!("{}: {ty} = {default}", py_field_name(field))
+}
+
+fn struct_constant_name(constant: &str) -> String {
+    constant.to_shouty_snake_case()
+}
+
+fn struct_constant_decl(item: &Struct, constant: &str) -> String {
+    format!("{}: ClassVar[{}]", struct_constant_name(constant), item.name)
+}
+
+fn struct_method_name(method: &Method) -> String {
+    py_ident(&method.name.to_snake_case())
+}
+
+fn struct_method_decl(module: &mut Module, method: &Method) -> String {
+    let name = struct_method_name(method);
+    let ret = annotation(module, &method.return_type, Position::Return);
+    if method.is_static {
+        format!(
+            "@classmethod\n{}",
+            def_decl(module, &name, "cls", &method.params, &ret)
+        )
+    } else {
+        def_decl(module, &name, "self", &method.params, &ret)
+    }
+}
+
 fn render_struct_method(out: &mut String, module: &mut Module, item: &Struct, method: &Method) {
     let symbol = format!("_C.{}", c_struct_method_symbol(module.prefix, item, method));
-    let name = py_ident(&method.name.to_snake_case());
-    let ret = annotation(module, &method.return_type, Position::Return);
+    write_indented(out, &struct_method_decl(module, method));
     let mut args: Vec<String> = Vec::new();
-    if method.is_static {
-        writeln!(out, "    @classmethod").unwrap();
-        write_def(out, &name, "cls", &method.params, module, &ret);
-    } else {
-        write_def(out, &name, "self", &method.params, module, &ret);
+    if !method.is_static {
         args.push("self._to_c()".to_string());
     }
     render_call_body(
@@ -1074,8 +1096,7 @@ fn render_struct_method(out: &mut String, module: &mut Module, item: &Struct, me
 
 fn render_event(out: &mut String, module: &mut Module, group: &EventGroup) {
     let c_ty = format!("_C.{}", c_type_name(module.prefix, &group.name));
-    writeln!(out, "@dataclass(frozen=True)").unwrap();
-    writeln!(out, "class {}:", group.name).unwrap();
+    writeln!(out, "{}", event_group_decl(group)).unwrap();
     writeln!(
         out,
         "    \"\"\"Base of every {}; listeners receive one of its subclasses.\"\"\"",
@@ -1084,8 +1105,7 @@ fn render_event(out: &mut String, module: &mut Module, group: &EventGroup) {
     .unwrap();
     writeln!(out).unwrap();
     for field in &group.common {
-        let ty = annotation(module, &field.ty, Position::Field);
-        writeln!(out, "    {}: {ty}", py_ident(&field.name.to_snake_case())).unwrap();
+        write_indented(out, &event_field_decl(module, field));
     }
     if !group.common.is_empty() {
         writeln!(out).unwrap();
@@ -1135,17 +1155,35 @@ fn render_event(out: &mut String, module: &mut Module, group: &EventGroup) {
     writeln!(out, "\n").unwrap();
 
     for variant in &group.variants {
-        writeln!(out, "@dataclass(frozen=True)").unwrap();
-        writeln!(out, "class {}({}):", variant.name, group.name).unwrap();
+        writeln!(out, "{}", event_variant_decl(group, variant)).unwrap();
         if variant.fields.is_empty() {
             writeln!(out, "    pass").unwrap();
         }
         for field in &variant.fields {
-            let ty = annotation(module, &field.ty, Position::Field);
-            writeln!(out, "    {}: {ty}", py_ident(&field.name.to_snake_case())).unwrap();
+            write_indented(out, &event_field_decl(module, field));
         }
         writeln!(out, "\n").unwrap();
     }
+}
+
+fn event_group_decl(group: &EventGroup) -> String {
+    format!("@dataclass(frozen=True)\nclass {}:", group.name)
+}
+
+fn event_variant_decl(group: &EventGroup, variant: &EventVariant) -> String {
+    format!(
+        "@dataclass(frozen=True)\nclass {}({}):",
+        variant.name, group.name
+    )
+}
+
+fn py_field_name(field: &Field) -> String {
+    py_ident(&field.name.to_snake_case())
+}
+
+fn event_field_decl(module: &mut Module, field: &Field) -> String {
+    let ty = annotation(module, &field.ty, Position::Field);
+    format!("{}: {ty}", py_field_name(field))
 }
 
 /// Event payloads are only valid during the callback, so everything is
@@ -1169,13 +1207,7 @@ fn render_class(out: &mut String, module: &mut Module, class: &Class) {
 
 fn render_instance_class(out: &mut String, module: &mut Module, class: &Class) {
     let prefix = module.prefix;
-    // A derived class inherits the base's handle plumbing (and `_free`, which
-    // releases the same table slot): the C ABI resolves its handle as the base.
-    let parent = class
-        .base
-        .clone()
-        .unwrap_or_else(|| "_rt.NativeObject".to_string());
-    writeln!(out, "class {}({parent}):", class.name).unwrap();
+    writeln!(out, "{}", class_decl(class)).unwrap();
     writeln!(
         out,
         "    \"\"\"Owned reference to a native {}.\n\n    `dispose()` (or `with`) releases it; otherwise it is released when the\n    wrapper is garbage collected.\n    \"\"\"",
@@ -1193,33 +1225,19 @@ fn render_instance_class(out: &mut String, module: &mut Module, class: &Class) {
         .unwrap();
     }
 
-    let (default, named): (Vec<&Constructor>, Vec<&Constructor>) = class
-        .constructors
-        .iter()
-        .partition(|ctor| constructor_suffix(class, ctor).is_none());
-    if let Some(ctor) = default.first() {
+    for ctor in emitted_constructors(class) {
+        let (_, decl) = constructor_decl(module, class, ctor);
+        let finish = if constructor_suffix(class, ctor).is_none() {
+            "self._adopt(handle)"
+        } else {
+            "return cls._owned(handle)"
+        };
         writeln!(out).unwrap();
-        write_def(out, "__init__", "self", &ctor.params, module, "None");
-        render_constructor_body(out, module, class, ctor, "self._adopt(handle)");
-    }
-    for ctor in named {
-        let suffix = constructor_suffix(class, ctor).unwrap_or_default();
-        writeln!(out).unwrap();
-        writeln!(out, "    @classmethod").unwrap();
-        let name = py_ident(&suffix.to_snake_case());
-        write_def(out, &name, "cls", &ctor.params, module, &class.name);
-        render_constructor_body(out, module, class, ctor, "return cls._owned(handle)");
+        write_indented(out, &decl);
+        render_constructor_body(out, module, class, ctor, finish);
     }
 
-    for method in &class.methods {
-        if c_method_symbol(module.prefix, class, method) == LOOP_RUN_WITH_WINDOW {
-            // Folded into `run(window=None)`.
-            continue;
-        }
-        writeln!(out).unwrap();
-        render_method(out, module, class, method);
-        render_async_method(out, module, class, method);
-    }
+    render_methods(out, module, class);
 
     if class.native_object {
         writeln!(out).unwrap();
@@ -1247,6 +1265,18 @@ fn render_instance_class(out: &mut String, module: &mut Module, class: &Class) {
 /// one-argument `void SetTitle`. The `set_title()` method stays; setters are
 /// rendered last so the property object they extend is already in place.
 fn render_setters(out: &mut String, module: &mut Module, class: &Class) {
+    for (setter, decl) in property_setters(module, class) {
+        let method = py_method_name(class, setter);
+        writeln!(out).unwrap();
+        write_indented(out, &decl);
+        writeln!(out, "        self.{method}(value)").unwrap();
+    }
+}
+
+/// The property setters `render_setters` writes, in order: the `SetTitle`
+/// method behind each and the `@title.setter` declaration.
+fn property_setters<'a>(module: &mut Module, class: &'a Class) -> Vec<(&'a Method, String)> {
+    let mut found = Vec::new();
     for getter in &class.methods {
         if !(is_binding_accessor(class, getter) && getter.params.is_empty()) {
             continue;
@@ -1267,18 +1297,74 @@ fn render_setters(out: &mut String, module: &mut Module, class: &Class) {
             continue;
         }
         let property = py_method_name(class, getter);
-        let method = py_method_name(class, setter);
         let ty = annotation(module, &setter.params[0].ty, Position::Param);
-        writeln!(out).unwrap();
-        writeln!(out, "    @{property}.setter").unwrap();
-        write_def_raw(
-            out,
+        let decl = def_decl_raw(
             &property,
             &["self".to_string(), format!("value: {ty}")],
             "None",
         );
-        writeln!(out, "        self.{method}(value)").unwrap();
+        found.push((setter, format!("@{property}.setter\n{decl}")));
     }
+    found
+}
+
+/// `class Window(_rt.NativeObject):`, `class Application:`.
+fn class_decl(class: &Class) -> String {
+    match class.kind {
+        ClassKind::Instance => {
+            // A derived class inherits the base's handle plumbing (and
+            // `_free`, which releases the same table slot): the C ABI
+            // resolves its handle as the base.
+            let parent = class.base.as_deref().unwrap_or("_rt.NativeObject");
+            format!("class {}({parent}):", class.name)
+        }
+        ClassKind::Singleton => format!("class {}:", class.name),
+    }
+}
+
+/// The constructors an instance class renders, in order: the first default
+/// one becomes `__init__`, every named one a classmethod.
+fn emitted_constructors(class: &Class) -> Vec<&Constructor> {
+    if !class.is_instance() {
+        return Vec::new();
+    }
+    let (default, named): (Vec<&Constructor>, Vec<&Constructor>) = class
+        .constructors
+        .iter()
+        .partition(|ctor| constructor_suffix(class, ctor).is_none());
+    default.into_iter().take(1).chain(named).collect()
+}
+
+/// Name and declaration of a constructor.
+fn constructor_decl(module: &mut Module, class: &Class, ctor: &Constructor) -> (String, String) {
+    match constructor_suffix(class, ctor) {
+        None => {
+            let decl = def_decl(module, "__init__", "self", &ctor.params, "None");
+            ("__init__".to_string(), decl)
+        }
+        Some(suffix) => {
+            let name = py_ident(&suffix.to_snake_case());
+            let decl = def_decl(module, &name, "cls", &ctor.params, &class.name);
+            (name, format!("@classmethod\n{decl}"))
+        }
+    }
+}
+
+/// Methods in order, each followed by its `_async` companion.
+fn render_methods(out: &mut String, module: &mut Module, class: &Class) {
+    for method in &class.methods {
+        if is_folded_method(module.prefix, class, method) {
+            continue;
+        }
+        writeln!(out).unwrap();
+        render_method(out, module, class, method);
+        render_async_method(out, module, class, method);
+    }
+}
+
+/// `RunWithWindow` is folded into `run(window=None)`.
+fn is_folded_method(prefix: &str, class: &Class, method: &Method) -> bool {
+    c_method_symbol(prefix, class, method) == LOOP_RUN_WITH_WINDOW
 }
 
 fn render_constructor_body(
@@ -1303,7 +1389,7 @@ fn render_constructor_body(
 }
 
 fn render_singleton_class(out: &mut String, module: &mut Module, class: &Class) {
-    writeln!(out, "class {}:", class.name).unwrap();
+    writeln!(out, "{}", class_decl(class)).unwrap();
     writeln!(
         out,
         "    \"\"\"The process-wide {}; every member is static.\"\"\"",
@@ -1318,17 +1404,29 @@ fn render_singleton_class(out: &mut String, module: &mut Module, class: &Class) 
         class.name
     )
     .unwrap();
-    for method in &class.methods {
-        if c_method_symbol(module.prefix, class, method) == LOOP_RUN_WITH_WINDOW {
-            // Folded into `run(window=None)`.
-            continue;
-        }
-        writeln!(out).unwrap();
-        render_method(out, module, class, method);
-        render_async_method(out, module, class, method);
-    }
+    render_methods(out, module, class);
     render_listener(out, module, class);
     writeln!(out, "\n").unwrap();
+}
+
+/// Declaration of an ordinary (not loop) method: a property, an instance
+/// method or a static method.
+fn method_decl(module: &mut Module, class: &Class, method: &Method) -> String {
+    let instance = class.is_instance() && !method.is_static;
+    let name = py_method_name(class, method);
+    let ret = annotation(module, &method.return_type, Position::Return);
+    let property = is_binding_accessor(class, method) && method.params.is_empty();
+
+    if property {
+        format!("@property\ndef {name}(self) -> {ret}:")
+    } else if instance {
+        def_decl(module, &name, "self", &method.params, &ret)
+    } else {
+        format!(
+            "@staticmethod\n{}",
+            def_decl(module, &name, "", &method.params, &ret)
+        )
+    }
 }
 
 fn render_method(out: &mut String, module: &mut Module, class: &Class, method: &Method) {
@@ -1337,19 +1435,7 @@ fn render_method(out: &mut String, module: &mut Module, class: &Class, method: &
         return;
     }
     let instance = class.is_instance() && !method.is_static;
-    let name = py_method_name(class, method);
-    let ret = annotation(module, &method.return_type, Position::Return);
-    let property = is_binding_accessor(class, method) && method.params.is_empty();
-
-    if property {
-        writeln!(out, "    @property").unwrap();
-        writeln!(out, "    def {name}(self) -> {ret}:").unwrap();
-    } else if instance {
-        write_def(out, &name, "self", &method.params, module, &ret);
-    } else {
-        writeln!(out, "    @staticmethod").unwrap();
-        write_def(out, &name, "", &method.params, module, &ret);
-    }
+    write_indented(out, &method_decl(module, class, method));
     if class.name == "Clipboard" {
         let condition = match method.name.as_str() {
             "Write" => "(\n            not _rt.valid_clipboard_text(data.text)\n            or not _rt.valid_clipboard_text(data.html)\n            or any(not _rt.valid_clipboard_text(path) for path in data.file_paths)\n        )",
@@ -1381,11 +1467,12 @@ fn render_method(out: &mut String, module: &mut Module, class: &Class, method: &
 /// `Application.run` / `quit` go through the runtime, which can also pump the
 /// platform loop from asyncio. Returns false for every other symbol.
 fn render_loop_method(out: &mut String, module: &mut Module, symbol: &str) -> bool {
+    let Some(decls) = loop_method_decls(module, symbol) else {
+        return false;
+    };
     match symbol {
         LOOP_RUN => {
-            let window = module.qual("Window");
-            writeln!(out, "    @staticmethod").unwrap();
-            writeln!(out, "    def run(window: {window} | None = None) -> int:").unwrap();
+            write_indented(out, &decls[0]);
             writeln!(
                 out,
                 "        \"\"\"Runs the platform event loop until `quit()`; returns the exit code.\n\n        Blocks the calling thread, which must be the main thread. With `window`,\n        it is shown and made the primary window. See `run_async()` to keep an\n        asyncio loop running alongside.\n        \"\"\""
@@ -1393,12 +1480,7 @@ fn render_loop_method(out: &mut String, module: &mut Module, symbol: &str) -> bo
             .unwrap();
             writeln!(out, "        return _rt.run_event_loop(window)").unwrap();
             writeln!(out).unwrap();
-            writeln!(out, "    @staticmethod").unwrap();
-            writeln!(
-                out,
-                "    async def run_async(window: {window} | None = None) -> int:"
-            )
-            .unwrap();
+            write_indented(out, &decls[1]);
             writeln!(
                 out,
                 "        \"\"\"Pumps the platform event loop from the running asyncio loop until\n        `quit()`; resolves with the exit code.\n\n        Tasks, timers and I/O keep running while windows are up. Must be awaited\n        on the main thread.\n        \"\"\""
@@ -1408,8 +1490,7 @@ fn render_loop_method(out: &mut String, module: &mut Module, symbol: &str) -> bo
             true
         }
         LOOP_QUIT => {
-            writeln!(out, "    @staticmethod").unwrap();
-            writeln!(out, "    def quit(exit_code: int = 0) -> None:").unwrap();
+            write_indented(out, &decls[0]);
             writeln!(
                 out,
                 "        \"\"\"Requests exit of the loop started by `run()` or `run_async()`.\n\n        Returns after requesting confirmation. A quit-request listener may\n        cancel, or defer with an owned EventDecision while awaiting asyncio\n        work. Once all decisions accept, the loop returns `exit_code`.\n        \"\"\""
@@ -1422,6 +1503,26 @@ fn render_loop_method(out: &mut String, module: &mut Module, symbol: &str) -> bo
     }
 }
 
+/// Name and declarations of a loop entry point rerouted through the runtime
+/// (`run` comes with `run_async`); `None` for every other symbol.
+fn loop_method_decls(module: &mut Module, symbol: &str) -> Option<Vec<String>> {
+    match symbol {
+        LOOP_RUN => {
+            let window = module.qual("Window");
+            Some(vec![
+                format!("@staticmethod\ndef run(window: {window} | None = None) -> int:"),
+                format!(
+                    "@staticmethod\nasync def run_async(window: {window} | None = None) -> int:"
+                ),
+            ])
+        }
+        LOOP_QUIT => Some(vec![
+            "@staticmethod\ndef quit(exit_code: int = 0) -> None:".to_string()
+        ]),
+        _ => None,
+    }
+}
+
 fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
     let Some(group) = emitted_group(module.api, class) else {
         return;
@@ -1431,19 +1532,10 @@ fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
     let add = c_add_listener_symbol(prefix, &class.name);
     let remove = c_remove_listener_symbol(prefix, &class.name);
     let callback_ty = event_callback_type(prefix, &group.name);
-    let (decorator, receiver_param) = if class.is_instance() {
-        ("", "self, ")
-    } else {
-        ("    @staticmethod\n", "")
-    };
+    let (add_decl, remove_decl) = listener_decls(class, &event);
 
     writeln!(out).unwrap();
-    out.push_str(decorator);
-    writeln!(
-        out,
-        "    def add_listener({receiver_param}callback: Callable[[{event}], None]) -> int:"
-    )
-    .unwrap();
+    write_indented(out, &add_decl);
     writeln!(
         out,
         "        \"\"\"Calls `callback` with every {} this {} emits.\n\n        Callbacks run synchronously; coroutine callbacks are not accepted.\n        Use an owned EventDecision for asynchronous request confirmation.\n        Returns the listener id for `remove_listener()`.\n        \"\"\"",
@@ -1466,12 +1558,7 @@ fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
     }
     write_call(out, "        return _rt.add_listener(", &add_args, ")");
     writeln!(out).unwrap();
-    out.push_str(decorator);
-    writeln!(
-        out,
-        "    def remove_listener({receiver_param}listener_id: int) -> bool:"
-    )
-    .unwrap();
+    write_indented(out, &remove_decl);
     writeln!(
         out,
         "        \"\"\"Unregisters a listener. Returns False if unknown.\"\"\""
@@ -1487,6 +1574,22 @@ fn render_listener(out: &mut String, module: &mut Module, class: &Class) {
         &remove_args,
         ")",
     );
+}
+
+/// `add_listener` and `remove_listener`, given the event type as the
+/// module spells it.
+fn listener_decls(class: &Class, event: &str) -> (String, String) {
+    let (decorator, receiver_param) = if class.is_instance() {
+        ("", "self, ")
+    } else {
+        ("@staticmethod\n", "")
+    };
+    (
+        format!(
+            "{decorator}def add_listener({receiver_param}callback: Callable[[{event}], None]) -> int:"
+        ),
+        format!("{decorator}def remove_listener({receiver_param}listener_id: int) -> bool:"),
+    )
 }
 
 // --- calls ---
@@ -1740,16 +1843,19 @@ fn callback_trampoline(module: &mut Module, params: &[TypeRef], target: &str) ->
     )
 }
 
-/// `def name(receiver, params) -> ret:` at class level, one parameter per
-/// line when it would not fit.
-fn write_def(
-    out: &mut String,
-    name: &str,
-    receiver: &str,
-    params: &[Param],
-    module: &mut Module,
-    ret: &str,
-) {
+/// Indentation of every member declaration: class level.
+const MEMBER_INDENT: &str = "    ";
+
+/// `decl` (a declaration as the reference shows it) at class level.
+fn write_indented(out: &mut String, decl: &str) {
+    for line in decl.lines() {
+        writeln!(out, "{MEMBER_INDENT}{line}").unwrap();
+    }
+}
+
+/// `def name(receiver, params) -> ret:` for class level, one parameter per
+/// line when it would not fit; unindented, see `write_indented`.
+fn def_decl(module: &mut Module, name: &str, receiver: &str, params: &[Param], ret: &str) -> String {
     let mut parts: Vec<String> = Vec::new();
     if !receiver.is_empty() {
         parts.push(receiver.to_string());
@@ -1761,21 +1867,21 @@ fn write_def(
             annotation(module, &param.ty, Position::Param)
         ));
     }
-    write_def_raw(out, name, &parts, ret);
+    def_decl_raw(name, &parts, ret)
 }
 
-/// `write_def` over already rendered parameters.
-fn write_def_raw(out: &mut String, name: &str, parts: &[String], ret: &str) {
-    let line = format!("    def {name}({}) -> {ret}:", parts.join(", "));
-    if line.len() <= 88 {
-        writeln!(out, "{line}").unwrap();
-        return;
+/// `def_decl` over already rendered parameters.
+fn def_decl_raw(name: &str, parts: &[String], ret: &str) -> String {
+    let line = format!("def {name}({}) -> {ret}:", parts.join(", "));
+    if MEMBER_INDENT.len() + line.len() <= 88 {
+        return line;
     }
-    writeln!(out, "    def {name}(").unwrap();
+    let mut out = format!("def {name}(\n");
     for part in parts {
-        writeln!(out, "        {part},").unwrap();
+        writeln!(out, "    {part},").unwrap();
     }
-    writeln!(out, "    ) -> {ret}:").unwrap();
+    write!(out, ") -> {ret}:").unwrap();
+    out
 }
 
 /// `head` + comma-separated `values` + `tail`, wrapped one value per line
@@ -1950,32 +2056,180 @@ fn owned_value(module: &mut Module, ty: &TypeRef, access: &str) -> String {
     }
 }
 
-fn render_async_method(out: &mut String, module: &mut Module, class: &Class, method: &Method) {
+/// `async def name_async()` for a method taking one `(bool, payload)`
+/// completion callback; `None` for every other method.
+fn async_method_decl(module: &mut Module, class: &Class, method: &Method) -> Option<String> {
     if method.params.len() != 1 {
-        return;
+        return None;
     }
     let TypeRef::Callback { params } = &method.params[0].ty else {
-        return;
+        return None;
     };
     if params.len() != 2 || !matches!(params[0], TypeRef::Bool) || !callback_has_payload(params) {
-        return;
+        return None;
     }
     let instance = class.is_instance() && !method.is_static;
     let name = py_method_name(class, method);
     let ty = annotation(module, &params[1], Position::Return);
-    if !instance {
-        writeln!(out, "\n    @staticmethod").unwrap();
-    }
-    writeln!(
-        out,
-        "    async def {name}_async({}) -> {ty}:",
+    let decorator = if instance { "" } else { "@staticmethod\n" };
+    Some(format!(
+        "{decorator}async def {name}_async({}) -> {ty}:",
         if instance { "self" } else { "" }
-    )
-    .unwrap();
+    ))
+}
+
+fn render_async_method(out: &mut String, module: &mut Module, class: &Class, method: &Method) {
+    let Some(decl) = async_method_decl(module, class, method) else {
+        return;
+    };
+    let instance = class.is_instance() && !method.is_static;
+    let name = py_method_name(class, method);
+    if !instance {
+        writeln!(out).unwrap();
+    }
+    write_indented(out, &decl);
     writeln!(
         out,
         "        return await _rt.read_async({}.{name})",
         if instance { "self" } else { &class.name }
     )
     .unwrap();
+}
+
+// ---------------------------------------------------------------------------
+// API reference
+// ---------------------------------------------------------------------------
+
+
+/// Signatures this generator emits, keyed by `codegen_shared::symbols`. Every
+/// declaration comes from the helper the renderer writes it with.
+pub fn reference(
+    api: &codegen_shared::ir::Api,
+    origins: &codegen_shared::naming::TypeOrigins,
+    prefix: &str,
+) -> crate::reference::Reference {
+    use codegen_shared::symbols;
+
+    let mut reference = crate::reference::Reference::default();
+    for header in &api.headers {
+        let mut module = Module {
+            api,
+            stem: &header.stem,
+            origins,
+            prefix,
+            imports: BTreeSet::new(),
+        };
+        let module = &mut module;
+
+        for alias in &header.aliases {
+            reference.insert(&alias.name, &alias.name, alias_decl(module, alias));
+        }
+
+        for item in &header.enums {
+            reference.insert(&item.name, &item.name, enum_decl(item));
+            for (key, variant) in symbols::enum_variants(item).into_iter().zip(&item.variants) {
+                reference.insert(key, enum_member(&variant.name), enum_variant_decl(variant));
+            }
+        }
+
+        for item in &header.structs {
+            reference.insert(&item.name, &item.name, struct_decl(item));
+            for (key, field) in symbols::struct_fields(item).into_iter().zip(&item.fields) {
+                reference.insert(key, py_field_name(field), struct_field_decl(module, field));
+            }
+            for (key, constant) in symbols::struct_constants(item)
+                .into_iter()
+                .zip(&item.constants)
+            {
+                reference.insert(
+                    key,
+                    struct_constant_name(constant),
+                    struct_constant_decl(item, constant),
+                );
+            }
+            for (key, method) in symbols::struct_methods(item).into_iter().zip(&item.methods) {
+                reference.insert(
+                    key,
+                    struct_method_name(method),
+                    struct_method_decl(module, method),
+                );
+            }
+        }
+
+        for group in &header.events {
+            reference.insert(&group.name, &group.name, event_group_decl(group));
+            for (key, field) in symbols::event_common_fields(group)
+                .into_iter()
+                .zip(&group.common)
+            {
+                reference.insert(key, py_field_name(field), event_field_decl(module, field));
+            }
+            for variant in &group.variants {
+                reference.insert(
+                    &variant.name,
+                    &variant.name,
+                    event_variant_decl(group, variant),
+                );
+                for (key, field) in symbols::event_variant_fields(variant)
+                    .into_iter()
+                    .zip(&variant.fields)
+                {
+                    reference.insert(key, py_field_name(field), event_field_decl(module, field));
+                }
+            }
+        }
+
+        for class in &header.classes {
+            reference_class(&mut reference, module, class);
+        }
+    }
+    reference
+}
+
+fn reference_class(reference: &mut crate::reference::Reference, module: &mut Module, class: &Class) {
+    use codegen_shared::symbols;
+
+    reference.insert(&class.name, &class.name, class_decl(class));
+
+    let emitted = emitted_constructors(class);
+    for (key, ctor) in symbols::constructors(class)
+        .into_iter()
+        .zip(&class.constructors)
+    {
+        if emitted.iter().any(|other| std::ptr::eq(*other, ctor)) {
+            let (name, decl) = constructor_decl(module, class, ctor);
+            reference.insert(key, name, decl);
+        }
+    }
+
+    let setters = property_setters(module, class);
+    for (key, method) in symbols::class_methods(class).into_iter().zip(&class.methods) {
+        let symbol = c_method_symbol(module.prefix, class, method);
+        // `RunWithWindow` is folded into `run(window=None)`, which serves it.
+        let symbol = if is_folded_method(module.prefix, class, method) {
+            LOOP_RUN
+        } else {
+            symbol.as_str()
+        };
+        if let Some(decls) = loop_method_decls(module, symbol) {
+            let name = if symbol == LOOP_QUIT { "quit" } else { "run" };
+            reference.insert(key, name, decls.join("\n"));
+            continue;
+        }
+        let mut decls = vec![method_decl(module, class, method)];
+        decls.extend(async_method_decl(module, class, method));
+        decls.extend(
+            setters
+                .iter()
+                .filter(|(setter, _)| std::ptr::eq(*setter, method))
+                .map(|(_, decl)| decl.clone()),
+        );
+        reference.insert(key, py_method_name(class, method), decls.join("\n"));
+    }
+
+    if let Some(group) = emitted_group(module.api, class) {
+        let event = module.qual(&group.name);
+        let (add, remove) = listener_decls(class, &event);
+        reference.insert(symbols::listener(class), "add_listener", format!("{add}\n{remove}"));
+    }
 }

@@ -22,7 +22,10 @@ use std::path::Path;
 
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 
-use codegen_shared::ir::{Api, Class, EventGroup, Header, Method, Param, Struct, TypeRef};
+use codegen_shared::ir::{
+    Alias, Api, Class, Constructor, Enum, EnumVariant, EventGroup, EventVariant, Field, Header,
+    Method, Param, Struct, TypeRef,
+};
 use codegen_shared::naming::{
     ancestor_constructors, c_add_listener_symbol, c_callback_param_type, c_constructor_symbol,
     c_event_variant, c_event_variant_field, c_free_symbol, c_list_field, c_list_release_symbol,
@@ -900,8 +903,8 @@ fn ts_file(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str) -> S
         writeln!(body, "function validClipboardText(value: string | null | undefined): boolean {{\n  for (const character of value ?? \"\") {{\n    const point = character.codePointAt(0)!;\n    if (point === 0 || (point >= 0xd800 && point <= 0xdfff)) return false;\n  }}\n  return true;\n}}\n").unwrap();
     }
     for alias in &header.aliases {
-        if origins.get(&alias.name) == Some(&header.stem) {
-            writeln!(body, "export type {} = number;", alias.name).unwrap();
+        if alias_emitted(origins, header, alias) {
+            writeln!(body, "{};", ts_alias_decl(alias)).unwrap();
             writeln!(body).unwrap();
         }
     }
@@ -1016,78 +1019,129 @@ fn struct_has_companion(item: &Struct) -> bool {
     !item.methods.is_empty() || !item.constants.is_empty()
 }
 
-fn ts_enum(out: &mut String, item: &codegen_shared::ir::Enum) {
-    writeln!(out, "export const {} = {{", item.name).unwrap();
+/// An alias belongs to the module of the header that declares it first.
+fn alias_emitted(origins: &TypeOrigins, header: &Header, alias: &Alias) -> bool {
+    origins.get(&alias.name) == Some(&header.stem)
+}
+
+fn ts_alias_decl(alias: &Alias) -> String {
+    format!("export type {} = number", alias.name)
+}
+
+/// The enum object's head (`export const X =`, before its `{`) and the
+/// companion union type.
+fn ts_enum_decls(item: &Enum) -> (String, String) {
+    (
+        format!("export const {} =", item.name),
+        format!(
+            "export type {0} = (typeof {0})[keyof typeof {0}]",
+            item.name
+        ),
+    )
+}
+
+fn ts_enum_variant_decl(variant: &EnumVariant) -> String {
+    format!("{}: {}", enum_member(&variant.name), variant.value)
+}
+
+fn ts_enum(out: &mut String, item: &Enum) {
+    let (head, ty) = ts_enum_decls(item);
+    writeln!(out, "{head} {{").unwrap();
     for variant in &item.variants {
-        writeln!(out, "  {}: {},", enum_member(&variant.name), variant.value).unwrap();
+        writeln!(out, "  {},", ts_enum_variant_decl(variant)).unwrap();
     }
     writeln!(out, "}} as const;").unwrap();
-    writeln!(
-        out,
-        "export type {0} = (typeof {0})[keyof typeof {0}];",
-        item.name
-    )
-    .unwrap();
+    writeln!(out, "{ty};").unwrap();
     writeln!(out).unwrap();
 }
 
+/// The struct's interface head and, when it has one, its companion object's
+/// head (`export const X =`, before its `{`).
+fn ts_struct_decls(item: &Struct) -> (String, Option<String>) {
+    (
+        format!("export interface {}", item.name),
+        struct_has_companion(item).then(|| format!("export const {} =", item.name)),
+    )
+}
+
+fn ts_struct_field_decl(field: &Field) -> String {
+    let optional = matches!(field.ty, TypeRef::Optional { .. })
+        || matches!(
+            field.ty,
+            TypeRef::Callback { .. }
+                | TypeRef::Object { shared: true, .. }
+                | TypeRef::Vector { .. }
+        );
+    format!(
+        "{}{}: {}",
+        js_field(&field.name),
+        if optional { "?" } else { "" },
+        ts_type(&field.ty, Position::Field)
+    )
+}
+
+fn ts_struct_constant_decl(item: &Struct, constant: &str, prefix: &str) -> String {
+    format!(
+        "{}: Object.freeze(native.{} as {})",
+        constant,
+        c_struct_constant(prefix, &item.name, constant),
+        item.name
+    )
+}
+
+/// The parameter a non-static struct method takes the struct value through.
+fn ts_struct_self_param(item: &Struct) -> String {
+    item.name.to_lower_camel_case()
+}
+
+fn ts_struct_method_name(method: &Method) -> String {
+    ts_ident(&method.name.to_lower_camel_case())
+}
+
+fn ts_struct_method_decl(item: &Struct, method: &Method) -> String {
+    let mut params: Vec<String> = Vec::new();
+    if !method.is_static {
+        params.push(format!("{}: {}", ts_struct_self_param(item), item.name));
+    }
+    params.extend(method.params.iter().map(ts_param));
+    format!(
+        "{}({}): {}",
+        ts_struct_method_name(method),
+        params.join(", "),
+        ts_type(&method.return_type, Position::Return)
+    )
+}
+
 fn ts_struct(out: &mut String, item: &Struct, prefix: &str) {
-    writeln!(out, "export interface {} {{", item.name).unwrap();
+    let (head, companion) = ts_struct_decls(item);
+    writeln!(out, "{head} {{").unwrap();
     for field in &item.fields {
-        let optional = matches!(field.ty, TypeRef::Optional { .. })
-            || matches!(
-                field.ty,
-                TypeRef::Callback { .. }
-                    | TypeRef::Object { shared: true, .. }
-                    | TypeRef::Vector { .. }
-            );
-        writeln!(
-            out,
-            "  {}{}: {};",
-            js_field(&field.name),
-            if optional { "?" } else { "" },
-            ts_type(&field.ty, Position::Field)
-        )
-        .unwrap();
+        writeln!(out, "  {};", ts_struct_field_decl(field)).unwrap();
     }
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
 
-    if !struct_has_companion(item) {
+    let Some(companion) = companion else {
         return;
-    }
-    let self_param = item.name.to_lower_camel_case();
-    writeln!(out, "export const {} = {{", item.name).unwrap();
+    };
+    let self_param = ts_struct_self_param(item);
+    writeln!(out, "{companion} {{").unwrap();
     for constant in &item.constants {
         writeln!(
             out,
-            "  {}: Object.freeze(native.{} as {}),",
-            constant,
-            c_struct_constant(prefix, &item.name, constant),
-            item.name
+            "  {},",
+            ts_struct_constant_decl(item, constant, prefix)
         )
         .unwrap();
     }
     for method in &item.methods {
-        let mut params: Vec<String> = Vec::new();
         let mut args: Vec<String> = Vec::new();
         if !method.is_static {
-            params.push(format!("{self_param}: {}", item.name));
             args.push(self_param.clone());
         }
-        for param in &method.params {
-            params.push(ts_param(param));
-            args.push(ts_arg(param));
-        }
+        args.extend(method.params.iter().map(ts_arg));
         let symbol = c_struct_method_symbol(prefix, item, method);
-        writeln!(
-            out,
-            "  {}({}): {} {{",
-            ts_ident(&method.name.to_lower_camel_case()),
-            params.join(", "),
-            ts_type(&method.return_type, Position::Return)
-        )
-        .unwrap();
+        writeln!(out, "  {} {{", ts_struct_method_decl(item, method)).unwrap();
         writeln!(
             out,
             "    return {};",
@@ -1103,18 +1157,43 @@ fn ts_struct(out: &mut String, item: &Struct, prefix: &str) {
     writeln!(out).unwrap();
 }
 
+fn ts_event_head(group: &EventGroup) -> String {
+    format!("export type {} =", group.name)
+}
+
+fn ts_event_field_decl(field: &Field) -> String {
+    format!(
+        "{}: {}",
+        js_field(&field.name),
+        ts_type(&field.ty, Position::Event)
+    )
+}
+
+/// The union member a variant contributes, as TypeScript names it.
+fn ts_event_variant_name(group: &EventGroup, variant: &EventVariant) -> String {
+    format!(
+        "Extract<{}, {{ type: \"{}\" }}>",
+        group.name,
+        event_tag(&variant.discriminant)
+    )
+}
+
+fn ts_event_variant_decl(group: &EventGroup, variant: &EventVariant) -> String {
+    let mut fields = vec![format!("type: \"{}\"", event_tag(&variant.discriminant))];
+    fields.extend(
+        group
+            .common
+            .iter()
+            .chain(variant.fields.iter())
+            .map(ts_event_field_decl),
+    );
+    format!("| {{ {} }}", fields.join("; "))
+}
+
 fn ts_event(out: &mut String, group: &EventGroup) {
-    writeln!(out, "export type {} =", group.name).unwrap();
+    writeln!(out, "{}", ts_event_head(group)).unwrap();
     for variant in &group.variants {
-        let mut fields = vec![format!("type: \"{}\"", event_tag(&variant.discriminant))];
-        for field in group.common.iter().chain(variant.fields.iter()) {
-            fields.push(format!(
-                "{}: {}",
-                js_field(&field.name),
-                ts_type(&field.ty, Position::Event)
-            ));
-        }
-        writeln!(out, "  | {{ {} }}", fields.join("; ")).unwrap();
+        writeln!(out, "  {}", ts_event_variant_decl(group, variant)).unwrap();
     }
     // Close the union on its own line so every variant diffs alike.
     let len = out.len();
@@ -1131,11 +1210,9 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
             class.name
         )
         .unwrap();
+        writeln!(out, "{} {{", ts_class_head(class)).unwrap();
         match &class.base {
-            Some(base) => {
-                // The C ABI resolves this handle as the base too, so the
-                // inherited methods and listeners work on it unchanged.
-                writeln!(out, "export class {} extends {base} {{", class.name).unwrap();
+            Some(_) => {
                 writeln!(
                     out,
                     "  /** Wraps a raw handle; an owned one is released on `dispose()` or collection. */"
@@ -1147,7 +1224,6 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
                 writeln!(out).unwrap();
             }
             None => {
-                writeln!(out, "export class {} extends NativeObject {{", class.name).unwrap();
                 writeln!(
                     out,
                     "  /** Wraps a raw handle; an owned one is released on `dispose()` or collection. */"
@@ -1164,34 +1240,14 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
                 writeln!(out).unwrap();
             }
         }
-        let ts_constructor_name = |class: &Class, ctor| match constructor_suffix(class, ctor) {
-            Some(suffix) => format!("create_{suffix}").to_lower_camel_case(),
-            None => "create".to_string(),
-        };
-        let inherited: Vec<String> = ancestor_constructors(api, class)
-            .into_iter()
-            .map(|(base, ctor)| ts_constructor_name(base, ctor))
-            .collect();
+        let inherited = ts_inherited_constructors(api, class);
         for ctor in &class.constructors {
-            let name = ts_constructor_name(class, ctor);
-            // Statics are inherited too; redeclaring one is an override.
-            let modifier = if inherited.contains(&name) {
-                "override "
-            } else {
-                ""
-            };
             let symbol = c_constructor_symbol(prefix, class, ctor);
-            let params: Vec<String> = ctor
-                .params
-                .iter()
-                .map(|param| ts_param_with_default(api, param))
-                .collect();
             let args: Vec<String> = ctor.params.iter().map(ts_arg).collect();
             writeln!(
                 out,
-                "  static {modifier}{name}({}): {} | null {{",
-                params.join(", "),
-                class.name
+                "  {} {{",
+                ts_constructor_decl(api, class, ctor, &inherited)
             )
             .unwrap();
             writeln!(
@@ -1210,7 +1266,7 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
             writeln!(out).unwrap();
         }
     } else {
-        writeln!(out, "export class {} {{", class.name).unwrap();
+        writeln!(out, "{} {{", ts_class_head(class)).unwrap();
         writeln!(out, "  private constructor() {{}}").unwrap();
         writeln!(out).unwrap();
     }
@@ -1251,6 +1307,83 @@ fn ts_class(out: &mut String, api: &Api, class: &Class, prefix: &str) {
     writeln!(out).unwrap();
 }
 
+fn ts_class_head(class: &Class) -> String {
+    if !class.is_instance() {
+        return format!("export class {}", class.name);
+    }
+    match &class.base {
+        // The C ABI resolves this handle as the base too, so the inherited
+        // methods and listeners work on it unchanged.
+        Some(base) => format!("export class {} extends {base}", class.name),
+        None => format!("export class {} extends NativeObject", class.name),
+    }
+}
+
+fn ts_constructor_name(class: &Class, ctor: &Constructor) -> String {
+    match constructor_suffix(class, ctor) {
+        Some(suffix) => format!("create_{suffix}").to_lower_camel_case(),
+        None => "create".to_string(),
+    }
+}
+
+/// The static factories `class` inherits from its ancestors.
+fn ts_inherited_constructors(api: &Api, class: &Class) -> Vec<String> {
+    ancestor_constructors(api, class)
+        .into_iter()
+        .map(|(base, ctor)| ts_constructor_name(base, ctor))
+        .collect()
+}
+
+fn ts_constructor_decl(
+    api: &Api,
+    class: &Class,
+    ctor: &Constructor,
+    inherited: &[String],
+) -> String {
+    let name = ts_constructor_name(class, ctor);
+    // Statics are inherited too; redeclaring one is an override.
+    let modifier = if inherited.contains(&name) {
+        "override "
+    } else {
+        ""
+    };
+    let params: Vec<String> = ctor
+        .params
+        .iter()
+        .map(|param| ts_param_with_default(api, param))
+        .collect();
+    format!(
+        "static {modifier}{name}({}): {} | null",
+        params.join(", "),
+        class.name
+    )
+}
+
+/// `addListener` and `removeListener` of a class that emits `group`.
+fn ts_listener_decls(class: &Class, group: &EventGroup) -> (String, String) {
+    let modifier = if class.is_instance() { "" } else { "static " };
+    (
+        format!(
+            "{modifier}addListener(listener: (event: {}) => void | Promise<void>): number",
+            group.name
+        ),
+        format!("{modifier}removeListener(listenerId: number): boolean"),
+    )
+}
+
+/// Name and declaration of the TypeScript replacements for the loop symbols.
+const LOOP_RUN_DECL: (&str, &str) = ("run", "static run(window?: Window): Promise<number>");
+const LOOP_QUIT_DECL: (&str, &str) = ("quit", "static quit(exitCode = 0): void");
+
+/// What a loop symbol is declared as; `run_with_window` is folded into `run`.
+fn loop_method_decl(symbol: &str) -> Option<(&'static str, &'static str)> {
+    match symbol {
+        LOOP_RUN | LOOP_RUN_WITH_WINDOW => Some(LOOP_RUN_DECL),
+        LOOP_QUIT => Some(LOOP_QUIT_DECL),
+        _ => None,
+    }
+}
+
 /// The `Application` loop entry points, rerouted through `lib/runtime.ts`.
 /// Returns false for every other symbol.
 fn render_loop_method(out: &mut String, symbol: &str) -> bool {
@@ -1261,7 +1394,7 @@ fn render_loop_method(out: &mut String, symbol: &str) -> bool {
                 "  /**\n   * Runs the platform event loop until `quit()`; resolves with the exit code.\n   *\n   * The loop is pumped from the JS event loop, so timers, promises and I/O\n   * keep running. With `window`, it is shown and made the primary window.\n   */"
             )
             .unwrap();
-            writeln!(out, "  static run(window?: Window): Promise<number> {{").unwrap();
+            writeln!(out, "  {} {{", LOOP_RUN_DECL.1).unwrap();
             writeln!(out, "    return runEventLoop(window?.nativeHandle ?? 0n);").unwrap();
             writeln!(out, "  }}").unwrap();
             writeln!(out).unwrap();
@@ -1275,7 +1408,7 @@ fn render_loop_method(out: &mut String, symbol: &str) -> bool {
                 "  /** Requests quit; `run()` resolves with `exitCode` after confirmation accepts. */"
             )
             .unwrap();
-            writeln!(out, "  static quit(exitCode = 0): void {{").unwrap();
+            writeln!(out, "  {} {{", LOOP_QUIT_DECL.1).unwrap();
             writeln!(out, "    quitEventLoop(exitCode);").unwrap();
             writeln!(out, "  }}").unwrap();
             writeln!(out).unwrap();
@@ -1285,9 +1418,52 @@ fn render_loop_method(out: &mut String, symbol: &str) -> bool {
     }
 }
 
-fn ts_method(out: &mut String, api: &Api, class: &Class, method: &Method, symbol: &str) {
+/// What a class method becomes in TypeScript: its name, its declaration, and
+/// the declaration of its `…Async()` Promise companion when it gets one.
+struct TsMethodDecls {
+    name: String,
+    decl: String,
+    async_decl: Option<String>,
+}
+
+fn ts_method_decls(class: &Class, method: &Method) -> TsMethodDecls {
     let instance = class.is_instance() && !method.is_static;
     let name = ts_ident(&swift_method_name(class, method));
+    let return_type = ts_type(&method.return_type, Position::Return);
+    let modifier = if instance { "" } else { "static " };
+    let getter = is_binding_accessor(class, method) && method.params.is_empty();
+    let decl = if getter {
+        format!("get {name}(): {return_type}")
+    } else {
+        let params: Vec<String> = method.params.iter().map(ts_param).collect();
+        format!("{modifier}{name}({}): {return_type}", params.join(", "))
+    };
+    let mut async_decl = None;
+    if method.params.len() == 1 {
+        if let TypeRef::Callback { params } = &method.params[0].ty {
+            if params.len() == 2
+                && matches!(params[0], TypeRef::Bool)
+                && callback_has_payload(params)
+            {
+                let ty = ts_type(&params[1], Position::Return);
+                async_decl = Some(format!("{modifier}{name}Async(): Promise<{ty}>"));
+            }
+        }
+    }
+    TsMethodDecls {
+        name,
+        decl,
+        async_decl,
+    }
+}
+
+fn ts_method(out: &mut String, api: &Api, class: &Class, method: &Method, symbol: &str) {
+    let instance = class.is_instance() && !method.is_static;
+    let TsMethodDecls {
+        name,
+        decl,
+        async_decl,
+    } = ts_method_decls(class, method);
     let mut args: Vec<String> = Vec::new();
     if instance {
         args.push("this.nativeHandle".to_string());
@@ -1295,21 +1471,8 @@ fn ts_method(out: &mut String, api: &Api, class: &Class, method: &Method, symbol
     args.extend(method.params.iter().map(|p| ts_method_arg(api, p)));
     let call = format!("native.{symbol}({})", args.join(", "));
     let result = ts_wrap_result(&method.return_type, &call);
-    let return_type = ts_type(&method.return_type, Position::Return);
 
-    let getter = is_binding_accessor(class, method) && method.params.is_empty();
-    if getter {
-        writeln!(out, "  get {name}(): {return_type} {{").unwrap();
-    } else {
-        let params: Vec<String> = method.params.iter().map(ts_param).collect();
-        let modifier = if instance { "" } else { "static " };
-        writeln!(
-            out,
-            "  {modifier}{name}({}): {return_type} {{",
-            params.join(", ")
-        )
-        .unwrap();
-    }
+    writeln!(out, "  {decl} {{").unwrap();
     if class.name == "Clipboard" {
         let condition = match method.name.as_str() {
             "Write" => "!validClipboardText(data.text) || !validClipboardText(data.html) || (data.filePaths ?? []).some(path => !validClipboardText(path))",
@@ -1329,27 +1492,18 @@ fn ts_method(out: &mut String, api: &Api, class: &Class, method: &Method, symbol
     }
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
-    if method.params.len() == 1 {
-        if let TypeRef::Callback { params } = &method.params[0].ty {
-            if params.len() == 2
-                && matches!(params[0], TypeRef::Bool)
-                && callback_has_payload(params)
-            {
-                let ty = ts_type(&params[1], Position::Return);
-                let modifier = if instance { "" } else { "static " };
-                writeln!(out, "  {modifier}{name}Async(): Promise<{ty}> {{\n    return new Promise((resolve, reject) => this.{name}((success, value) => {{\n      if (success) resolve(value);\n      else reject(new Error(\"nativeapi: operation failed\"));\n    }}));\n  }}\n").unwrap();
-            }
-        }
+    if let Some(async_decl) = async_decl {
+        writeln!(out, "  {async_decl} {{\n    return new Promise((resolve, reject) => this.{name}((success, value) => {{\n      if (success) resolve(value);\n      else reject(new Error(\"nativeapi: operation failed\"));\n    }}));\n  }}\n").unwrap();
     }
 }
 
 fn ts_listener(out: &mut String, class: &Class, group: &EventGroup, prefix: &str) {
     let add = c_add_listener_symbol(prefix, &class.name);
     let remove = c_remove_listener_symbol(prefix, &class.name);
-    let (modifier, self_arg) = if class.is_instance() {
-        ("", "this.nativeHandle, ")
+    let self_arg = if class.is_instance() {
+        "this.nativeHandle, "
     } else {
-        ("static ", "")
+        ""
     };
 
     // Handles inside an event are borrowed for the duration of the callback;
@@ -1369,13 +1523,9 @@ fn ts_listener(out: &mut String, class: &Class, group: &EventGroup, prefix: &str
         })
         .collect();
 
+    let (add_decl, remove_decl) = ts_listener_decls(class, group);
     writeln!(out, "  /** Receives events on the JS thread. Borrowed objects stay valid until the returned Promise settles. */").unwrap();
-    writeln!(
-        out,
-        "  {modifier}addListener(listener: (event: {}) => void | Promise<void>): number {{",
-        group.name
-    )
-    .unwrap();
+    writeln!(out, "  {add_decl} {{").unwrap();
     writeln!(
         out,
         "    return native.{add}({self_arg}(event: Record<string, unknown>, delivery: bigint) =>"
@@ -1400,11 +1550,7 @@ fn ts_listener(out: &mut String, class: &Class, group: &EventGroup, prefix: &str
         "  /** Unregisters a listener; returns false if the id is unknown. */"
     )
     .unwrap();
-    writeln!(
-        out,
-        "  {modifier}removeListener(listenerId: number): boolean {{"
-    )
-    .unwrap();
+    writeln!(out, "  {remove_decl} {{").unwrap();
     writeln!(out, "    return native.{remove}({self_arg}listenerId);").unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
@@ -1614,6 +1760,7 @@ mod tests {
         let api = Api {
             headers: vec![],
             diagnostics: vec![],
+            docs: Default::default(),
         };
         let mut glue = Glue {
             api: &api,
@@ -1705,6 +1852,7 @@ mod tests {
         let api = Api {
             headers: vec![request, window, manager.clone()],
             diagnostics: vec![],
+            docs: Default::default(),
         };
         let code = ts_file(&api, &manager, &type_origins(&api), "native");
         assert!(code.contains("import { EventRequest } from \"./event_request.ts\";"));
@@ -1777,4 +1925,133 @@ fn ts_method_arg(api: &Api, param: &Param) -> String {
     } else {
         ts_arg(param)
     }
+}
+
+
+/// Signatures of the public TypeScript layer (`lib/*.ts`), keyed by
+/// `codegen_shared::symbols`. Built from the same declaration helpers the
+/// `ts_*` renderers write, so each entry is the line as generated, minus its
+/// body, a trailing `{` / `;` / `,` and indentation.
+pub fn reference(api: &Api, origins: &TypeOrigins, prefix: &str) -> crate::reference::Reference {
+    use codegen_shared::symbols;
+
+    let mut reference = crate::reference::Reference::default();
+    for header in &api.headers {
+        for alias in &header.aliases {
+            if alias_emitted(origins, header, alias) {
+                reference.insert(&alias.name, &alias.name, ts_alias_decl(alias));
+            }
+        }
+
+        for item in &header.enums {
+            let (head, ty) = ts_enum_decls(item);
+            reference.insert(&item.name, &item.name, format!("{head}\n{ty}"));
+            for (key, variant) in symbols::enum_variants(item).into_iter().zip(&item.variants) {
+                reference.insert(
+                    key,
+                    format!("{}.{}", item.name, enum_member(&variant.name)),
+                    ts_enum_variant_decl(variant),
+                );
+            }
+        }
+
+        for item in &header.structs {
+            let (head, companion) = ts_struct_decls(item);
+            let signature = match companion {
+                Some(companion) => format!("{head}\n{companion}"),
+                None => head,
+            };
+            reference.insert(&item.name, &item.name, signature);
+            for (key, field) in symbols::struct_fields(item).into_iter().zip(&item.fields) {
+                reference.insert(key, js_field(&field.name), ts_struct_field_decl(field));
+            }
+            for (key, constant) in symbols::struct_constants(item)
+                .into_iter()
+                .zip(&item.constants)
+            {
+                reference.insert(
+                    key,
+                    format!("{}.{constant}", item.name),
+                    ts_struct_constant_decl(item, constant, prefix),
+                );
+            }
+            for (key, method) in symbols::struct_methods(item).into_iter().zip(&item.methods) {
+                reference.insert(
+                    key,
+                    format!("{}.{}", item.name, ts_struct_method_name(method)),
+                    ts_struct_method_decl(item, method),
+                );
+            }
+        }
+
+        for group in &header.events {
+            reference.insert(&group.name, &group.name, ts_event_head(group));
+            for (key, field) in symbols::event_common_fields(group)
+                .into_iter()
+                .zip(&group.common)
+            {
+                reference.insert(key, js_field(&field.name), ts_event_field_decl(field));
+            }
+            for variant in &group.variants {
+                reference.insert(
+                    &variant.name,
+                    ts_event_variant_name(group, variant),
+                    ts_event_variant_decl(group, variant),
+                );
+                for (key, field) in symbols::event_variant_fields(variant)
+                    .into_iter()
+                    .zip(&variant.fields)
+                {
+                    reference.insert(key, js_field(&field.name), ts_event_field_decl(field));
+                }
+            }
+        }
+
+        for class in &header.classes {
+            reference.insert(&class.name, &class.name, ts_class_head(class));
+            // Only handle-backed classes get static factories.
+            if class.is_instance() {
+                let inherited = ts_inherited_constructors(api, class);
+                for (key, ctor) in symbols::constructors(class)
+                    .into_iter()
+                    .zip(&class.constructors)
+                {
+                    reference.insert(
+                        key,
+                        ts_constructor_name(class, ctor),
+                        ts_constructor_decl(api, class, ctor, &inherited),
+                    );
+                }
+            }
+            for (key, method) in symbols::class_methods(class)
+                .into_iter()
+                .zip(&class.methods)
+            {
+                let symbol = c_method_symbol(prefix, class, method);
+                if let Some((name, decl)) = loop_method_decl(&symbol) {
+                    reference.insert(key, name, decl);
+                    continue;
+                }
+                let TsMethodDecls {
+                    name,
+                    decl,
+                    async_decl,
+                } = ts_method_decls(class, method);
+                let signature = match async_decl {
+                    Some(async_decl) => format!("{decl}\n{async_decl}"),
+                    None => decl,
+                };
+                reference.insert(key, name, signature);
+            }
+            if let Some(group) = emitted_group(api, class) {
+                let (add, remove) = ts_listener_decls(class, group);
+                reference.insert(
+                    symbols::listener(class),
+                    "addListener",
+                    format!("{add}\n{remove}"),
+                );
+            }
+        }
+    }
+    reference
 }

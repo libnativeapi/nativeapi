@@ -75,6 +75,21 @@ bindgen / dart 未安装时对应步骤跳过并告警。
 6. JS / TS → `bindings/js/src/` + `bindings/js/lib/`
 7. Python → `bindings/python/nativeapi/`
 8. Go → `bindings/go/nativeapi.gen.go` + `bindings/go/bridge.gen.h`
+9. API 参考 → `website/content/api/`（`index.json` + 每个头文件一个 JSON，供网站 `/api` 页面使用）
+
+### API 参考
+
+parser 用 libclang 读取头文件里的 doxygen 注释（`@brief` / `@param` / `@return` /
+`@note` / `@see` / `@code` 等，转换为 Markdown），存进 IR 的 `docs` 表；覆盖方法没有注释时
+沿用被覆盖方法的注释。`docs` 与各生成器导出的签名使用同一套符号键
+（`shared/src/symbols.rs`：`Window`、`Window::SetTitle`、重载依次加 `/1`、`/2`）。
+
+每个生成器的 `reference()` 返回它为各符号生成的名字与声明，必须与渲染绑定调用同一个
+签名辅助函数，不能另写一套命名或类型规则；某绑定不生成的符号不出现在它的 reference 里，
+网站显示为"该语言不可用"。`codegen-bindings --api-reference <dir>` 把 IR 文档、C++ 签名与
+六个绑定的 reference 汇总成 JSON（`bindings/src/api_reference.rs`），
+`--dump-reference <file>` 可导出原始 reference 便于排查。JSON 无法写注释，生成标记是
+首个键 `"$comment"`。
 
 生成或校验 Go 绑定需要 Go SDK（`gofmt`）在 PATH 中；写入和只读校验前都会格式化。
 Go 的公开层遵循 Go 命名与错误约定：getter 去掉 `Get`，`ToString` 转为 `String`，

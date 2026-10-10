@@ -1,6 +1,8 @@
+pub mod doc;
 pub mod ir;
 pub mod naming;
 pub mod parser;
+pub mod symbols;
 
 use std::fs;
 use std::path::PathBuf;
@@ -59,9 +61,17 @@ pub struct GeneratedFile {
 pub const GENERATED_BANNER: &str = "AUTO-GENERATED. DO NOT EDIT.";
 
 /// Whether `contents` carries the generated banner, in any of the comment
-/// syntaxes the outputs use (`//` for C-likes, `#` for YAML).
+/// syntaxes the outputs use (`//` for C-likes, `#` for YAML). JSON has no
+/// comments, so a generated JSON object opens with a `"$comment"` key holding
+/// the banner instead.
 fn is_generated(contents: &str) -> bool {
-    let first = contents.lines().next().unwrap_or_default().trim_start();
+    let mut lines = contents.lines();
+    let first = lines.next().unwrap_or_default().trim_start();
+    if first == "{" {
+        let second = lines.next().unwrap_or_default().trim_start();
+        let banner = format!("\"$comment\": \"{GENERATED_BANNER}");
+        return second.starts_with(&banner);
+    }
     for marker in ["//", "#"] {
         if let Some(rest) = first.strip_prefix(marker) {
             if rest.trim_start().starts_with(GENERATED_BANNER) {

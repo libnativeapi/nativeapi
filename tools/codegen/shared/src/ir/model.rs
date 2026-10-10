@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -6,6 +7,42 @@ use serde::{Deserialize, Serialize};
 pub struct Api {
     pub headers: Vec<Header>,
     pub diagnostics: Vec<String>,
+    /// Documentation comments from the headers, keyed by symbol (see
+    /// `crate::symbols`). Kept beside the declarations rather than on them so
+    /// the code generators, which never read docs, are unaffected.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub docs: BTreeMap<String, Doc>,
+}
+
+/// A parsed doxygen comment. Every text field is Markdown.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Doc {
+    /// `@brief`, or the first paragraph when there is none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub summary: String,
+    /// Everything after the summary that is not a tag: paragraphs, examples.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub details: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<ParamDoc>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub returns: Option<String>,
+    /// `@note`, `@warning`, `@see`, `@thread_safety`, in source order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<NoteDoc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ParamDoc {
+    pub name: String,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NoteDoc {
+    /// The tag without `@`: `note`, `warning`, `see`, `thread_safety`.
+    pub kind: String,
+    pub text: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
