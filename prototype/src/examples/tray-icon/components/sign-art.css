@@ -1,0 +1,26 @@
+.sign-art {
+  --sign-blue: var(--base-color-debian-light-900);
+  --sign-green: var(--base-color-green-700);
+  --sign-brown: var(--base-color-amber-900);
+  --sign-ochre: var(--base-color-amber-400);
+  --sign-light: var(--base-color-amber-50);
+  --sign-ink: var(--base-color-neutral-900);
+
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  max-width: 100%;
+  height: calc(var(--spacing-6) * 3);
+  overflow: hidden;
+  border-radius: var(--radius-tiny);
+  font-family: var(--base-font-ui);
+  font-weight: var(--base-font-weight-bold);
+}
+
+.sign-art--tray {
+  height: calc(var(--desktop-bar-height) - var(--spacing-1));
+  max-width: none;
+}
+
+.sign-art--tile { height: var(--spacing-8); }
+.sign-art--large { height: calc(var(--spacing-6) * 4); }

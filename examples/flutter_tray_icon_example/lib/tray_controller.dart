@@ -13,6 +13,8 @@ import 'checklist.dart';
 import 'context_menu.dart';
 import 'icon_animations.dart';
 import 'icon_animator.dart';
+import 'signs/sign_controller.dart';
+import 'signs/sign_style.dart';
 
 const String kAssetIcon = 'images/tray_icon.png';
 const String kDefaultTooltip = 'nativeapi tray icon';
@@ -32,13 +34,23 @@ enum Scene { download, recording, syncing }
 
 /// One tray icon together with everything the example tracks about it.
 class TrayEntry {
-  TrayEntry(this.number, this.trayIcon);
+  TrayEntry(this.number, this.trayIcon, {this.isSign = false});
 
   /// 1-based number shown in the UI ("#1"); not the native id.
   final int number;
   final TrayIcon trayIcon;
   late final TrayMenu menu;
   late final IconAnimator animator;
+  final bool isSign;
+  SignController? sign;
+  ListenerId? listener;
+  VoidCallback? signListener;
+  String get label => '${isSign ? 'Sign' : 'Icon'} #$number';
+  String get description =>
+      sign?.displayTitle ??
+      (scene != null
+          ? '${scene!.name[0].toUpperCase()}${scene!.name.substring(1)} scene'
+          : animator.animation?.label ?? '${still?.name ?? 'Still'} icon');
 
   int clicks = 0;
   int rightClicks = 0;
@@ -63,6 +75,10 @@ class TrayController extends ChangeNotifier {
     _omarchy?.addListener(_onThemeChanged);
     addIcon();
     _windowListener = WindowManager.instance.addListener(_onWindowEvent);
+    // The Flutter host window may not be current until its first frame.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _attachSettingsWindow(),
+    );
     if (_popupMode) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _applyPopupWindowStyle(),
@@ -98,8 +114,11 @@ class TrayController extends ChangeNotifier {
   bool get popupMode => _popupMode;
   bool _popupMode = Platform.environment['TRAY_POPUP'] == '1';
   late final ListenerId _windowListener;
+  Window? _settingsWindow;
+  ListenerId? _settingsWindowListener;
   DateTime _popupHiddenAt = DateTime(0);
 
+  VoidCallback? onContentRequested;
   int _nextNumber = 1;
   late final Timer _sceneTimer;
 
@@ -111,6 +130,8 @@ class TrayController extends ChangeNotifier {
 
   /// Windows tray icons have no title: core's SetTitle is a no-op there and
   /// GetTitle returns nothing, so the title is left out of the read-back check.
+  static bool get signsSupported => Platform.isMacOS;
+
   static bool get titleSupported => !Platform.isWindows;
 
   /// Linux tray icons are StatusNotifierItems: the shell owns the icon, so
@@ -133,7 +154,8 @@ class TrayController extends ChangeNotifier {
   // Icons
   // ---------------------------------------------------------------------
 
-  TrayEntry? addIcon() {
+  TrayEntry? addIcon({SignStyle? signStyle}) {
+    if (signStyle != null && !signsSupported) return null;
     final trayIcon = TrayIcon.create();
     if (trayIcon == null) {
       checklist.fail(Checklist.create, 'create returned null');
@@ -141,12 +163,29 @@ class TrayController extends ChangeNotifier {
       return null;
     }
     trayIcon.isIconTemplate = Platform.isMacOS;
-    final entry = TrayEntry(_nextNumber++, trayIcon);
+    final entry = TrayEntry(_nextNumber++, trayIcon, isSign: signStyle != null);
     entry.animator = IconAnimator(
       onFrame: (image) => trayIcon.icon = image,
       onMilestone: (animator) => _onFrameMilestone(entry, animator),
     )..setColor(autoColor);
+    if (signStyle != null) {
+      trayIcon.isIconTemplate = false;
+      entry.still = null;
+      entry.sign = SignController(
+        _settingsWindow,
+        id: entry.number,
+        tray: trayIcon,
+        initialStyle: signStyle,
+        onSelect: () {
+          select(entry);
+          onContentRequested?.call();
+        },
+      );
+      entry.signListener = notifyListeners;
+      entry.sign!.addListener(entry.signListener!);
+    }
     entry.menu = TrayMenu(
+      onPreview: entry.isSign ? () => entry.sign?.showPreview() : null,
       backend: _menuBackend,
       onOpened: () => _onMenuOpened(entry),
       onClosed: () => _onMenuClosed(entry),
@@ -174,7 +213,9 @@ class TrayController extends ChangeNotifier {
       onShowWindow: () {
         checklist.part(Checklist.menuItems, 'item', 3);
         _event('Menu item "Show window"', entry);
-        final window = WindowManager.instance.getCurrent();
+        select(entry);
+        onContentRequested?.call();
+        final window = _settingsWindow;
         window?.show();
         window?.focus();
       },
@@ -184,15 +225,17 @@ class TrayController extends ChangeNotifier {
       },
     );
 
-    trayIcon.addListener((event) => _onTrayEvent(entry, event));
+    entry.listener = trayIcon.addListener(
+      (event) => _onTrayEvent(entry, event),
+    );
     trayIcon.setContextMenu(entry.menu.menu);
-    trayIcon.setTooltip(kDefaultTooltip);
+    if (!entry.isSign) trayIcon.setTooltip(kDefaultTooltip);
     trayIcon.setContextMenuTrigger(ContextMenuTrigger.rightClicked);
     trayIcon.setVisible(true);
 
     entries.add(entry);
     _selected = entry;
-    setStill(StillIcon.asset, entry, true);
+    if (!entry.isSign) setStill(StillIcon.asset, entry, true);
 
     _refreshManager();
     checklist.pass(Checklist.create, 'id ${trayIcon.getId()}');
@@ -210,12 +253,46 @@ class TrayController extends ChangeNotifier {
     return entry;
   }
 
+  TrayEntry? addSign([SignStyle style = SignStyle.missing]) =>
+      addIcon(signStyle: style);
+
+  void addScene(Scene scene) {
+    if (addIcon() != null) playScene(scene);
+    onContentRequested?.call();
+  }
+
+  void addThreeIcons() {
+    for (final animation in [
+      IconAnimation.spinner,
+      IconAnimation.pulse,
+      IconAnimation.wave,
+    ]) {
+      final entry = addIcon();
+      if (entry != null) play(animation, entry);
+    }
+    onContentRequested?.call();
+  }
+
+  void _disposeEntry(TrayEntry entry) {
+    entry.animator.dispose();
+    if (entry.listener case final listener?) {
+      entry.trayIcon.removeListener(listener);
+    }
+    if (entry.signListener case final listener?) {
+      entry.sign?.removeListener(listener);
+    }
+    entry.sign?.dispose();
+    entry.trayIcon.setContextMenu(null);
+    entry.trayIcon.setVisible(false);
+    entry.trayIcon.dispose();
+    entry.menu.dispose();
+  }
+
   void removeIcon(TrayEntry entry) {
     final index = entries.indexOf(entry);
     if (index < 0) return;
     entries.removeAt(index);
-    entry.animator.dispose();
-    entry.trayIcon.dispose();
+    _disposeEntry(entry);
     if (_selected == entry) {
       _selected = entries.isEmpty
           ? null
@@ -254,8 +331,7 @@ class TrayController extends ChangeNotifier {
   void disposeIcons() {
     _sceneTimer.cancel();
     for (final entry in entries) {
-      entry.animator.dispose();
-      entry.trayIcon.dispose();
+      _disposeEntry(entry);
     }
     entries.clear();
   }
@@ -263,6 +339,10 @@ class TrayController extends ChangeNotifier {
   @override
   void dispose() {
     WindowManager.instance.removeListener(_windowListener);
+    if (_settingsWindowListener case final listener?) {
+      _settingsWindow?.removeListener(listener);
+    }
+    _settingsWindow?.dispose();
     _omarchy?.dispose();
     disposeIcons();
     super.dispose();
@@ -277,7 +357,7 @@ class TrayController extends ChangeNotifier {
     final previous = _autoColor;
     _autoColor = foreground;
     for (final entry in entries) {
-      if (entry.animator.color != previous) continue;
+      if (entry.isSign || entry.animator.color != previous) continue;
       entry.animator.setColor(foreground);
       final still = entry.still;
       if (still == StillIcon.asset) {
@@ -300,7 +380,7 @@ class TrayController extends ChangeNotifier {
 
   void play(IconAnimation animation, [TrayEntry? target, bool quiet = false]) {
     final entry = target ?? _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     if (!quiet) entry.scene = null;
     entry.still = null;
     entry.animator.play(animation);
@@ -318,7 +398,7 @@ class TrayController extends ChangeNotifier {
     bool quiet = false,
   ]) async {
     final entry = target ?? _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     if (!quiet) entry.scene = null;
     entry.animator.stop();
     entry.still = kind;
@@ -377,7 +457,7 @@ class TrayController extends ChangeNotifier {
 
   void setScale(int scale) {
     final entry = _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     entry.animator.setScale(scale);
     _log('resolution #${entry.number} ← ${entry.animator.pixelSize} px');
     final still = entry.still;
@@ -386,7 +466,7 @@ class TrayController extends ChangeNotifier {
 
   void setColor(Color color) {
     final entry = _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     // A picked colour only shows on macOS once the icon stops being a template.
     entry.trayIcon.isIconTemplate = Platform.isMacOS && color == autoColor;
     entry.animator.setColor(color);
@@ -412,7 +492,7 @@ class TrayController extends ChangeNotifier {
 
   void setTitle(String? title, {bool fromScene = false}) {
     final entry = _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     if (!fromScene) entry.scene = null;
     _applyTitle(entry, title);
     _log('setTitle(${_quote(title)}) #${entry.number}');
@@ -534,7 +614,7 @@ class TrayController extends ChangeNotifier {
   /// kept inside the display's work area.
   void moveWindowToIcon() {
     final entry = _selected;
-    final window = WindowManager.instance.getCurrent();
+    final window = _settingsWindow;
     if (entry == null || window == null) return;
     final icon = entry.trayIcon.getBounds().toRect();
     if (icon.isEmpty) {
@@ -594,7 +674,7 @@ class TrayController extends ChangeNotifier {
   /// size - a visible "grow in". Without the header bar there is nothing to
   /// drop.
   void _applyPopupWindowStyle() {
-    final window = WindowManager.instance.getCurrent();
+    final window = _settingsWindow;
     if (window == null) return;
     window.titleBarStyle = _popupMode
         ? TitleBarStyle.hidden
@@ -603,7 +683,7 @@ class TrayController extends ChangeNotifier {
 
   void _onWindowEvent(WindowEvent event) {
     if (!_popupMode || event is! WindowBlurredEvent) return;
-    final window = WindowManager.instance.getCurrent();
+    final window = _settingsWindow;
     if (window == null || event.windowId != window.id || !window.isVisible) {
       return;
     }
@@ -612,11 +692,23 @@ class TrayController extends ChangeNotifier {
     _popup('hidden (blur)');
   }
 
+  void _attachSettingsWindow() {
+    _settingsWindow = WindowManager.instance.getCurrent();
+    _settingsWindowListener = _settingsWindow?.addListener((event) {
+      if (event is WindowCloseRequestedEvent &&
+          entries.isNotEmpty &&
+          event.request.isCancelable) {
+        event.request.cancel();
+        _settingsWindow?.hide();
+      }
+    });
+  }
+
   /// A click on the icon shows the window, or hides it when it is showing. A
   /// click that arrives right after a blur hid the window is the same gesture
   /// (the press took the focus away first), so it leaves the window hidden.
   void _togglePopup() {
-    final window = WindowManager.instance.getCurrent();
+    final window = _settingsWindow;
     if (window == null) return;
     if (window.isVisible) {
       window.hide();
@@ -644,7 +736,7 @@ class TrayController extends ChangeNotifier {
 
   void playScene(Scene scene) {
     final entry = _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     entry.scene = scene;
     switch (scene) {
       case Scene.download:
@@ -665,7 +757,7 @@ class TrayController extends ChangeNotifier {
   /// Back to the asset icon, no title, default tooltip.
   void resetScene() {
     final entry = _selected;
-    if (entry == null) return;
+    if (entry == null || entry.isSign) return;
     entry.scene = null;
     entry.trayIcon.setTitle(null);
     entry.trayIcon.setTooltip(kDefaultTooltip);
@@ -675,19 +767,22 @@ class TrayController extends ChangeNotifier {
 
   /// Three icons, three different animations, all running together.
   void playThreeAtOnce() {
-    while (entries.length < 3) {
-      if (addIcon() == null) return;
+    final icons = entries.where((entry) => !entry.isSign).toList();
+    while (icons.length < 3) {
+      final entry = addIcon();
+      if (entry == null) return;
+      icons.add(entry);
     }
     const animations = [
       IconAnimation.spinner,
+      IconAnimation.pulse,
       IconAnimation.wave,
-      IconAnimation.clock,
     ];
     for (var i = 0; i < 3; i++) {
-      entries[i].scene = null;
-      play(animations[i], entries[i], true);
+      icons[i].scene = null;
+      play(animations[i], icons[i], true);
     }
-    _selected = entries.first;
+    _selected = icons.first;
     _log('scene ← three icons');
     notifyListeners();
   }
@@ -722,7 +817,13 @@ class TrayController extends ChangeNotifier {
       checklist.count(Checklist.clicked);
       _noteTrayEvent(ContextMenuTrigger.clicked);
       _event('Clicked', entry);
-      if (_popupMode) _togglePopup();
+      if (entry.isSign) {
+        entry.sign?.showSettings();
+      } else if (_popupMode) {
+        select(entry);
+        onContentRequested?.call();
+        _togglePopup();
+      }
     } else if (event is TrayIconRightClickedEvent) {
       entry.rightClicks++;
       checklist.count(Checklist.rightClicked);

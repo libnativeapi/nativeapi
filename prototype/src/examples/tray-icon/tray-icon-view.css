@@ -1,3 +1,16 @@
 .tray-icon-view__empty {
   margin: auto;
 }
+
+.tray-icon-view__sign-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+}
+
+.tray-icon-view__sign-thumbnail .sign-art {
+  width: 100%;
+  height: auto;
+}

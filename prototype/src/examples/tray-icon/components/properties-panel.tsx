@@ -56,11 +56,13 @@ export function PropertiesPanel({ entry, caps, state, actions }: PropertiesPanel
     </Badge>
   )
 
-  const bounds = caps.bounds ? boundsOf(entry, state.entries, caps) : 'unsupported'
+  const available = entry.contentMode === 'icon' || caps.contentView
+  const bounds = caps.bounds && available ? boundsOf(entry, state.entries, caps) : 'unsupported'
 
   const readBack: [string, string][] = [
     ['id', String(entry.id)],
-    ['visible', String(entry.visible)],
+    ['visible', String(entry.visible && available)],
+    ['contentView', entry.contentMode === 'sign' && caps.contentView ? entry.sign.style : 'null'],
     ['trigger', entry.trigger],
     ['title', caps.title ? quote(title) : 'null · Windows'],
     ['tooltip', quote(entry.tooltip)],
@@ -82,7 +84,7 @@ export function PropertiesPanel({ entry, caps, state, actions }: PropertiesPanel
               Reset
             </Button>
           </div>
-          <Button size="small" variant="plain" disabled={!caps.bounds} onClick={actions.moveWindowToIcon}>
+          <Button size="small" variant="plain" disabled={!caps.bounds || !available} onClick={actions.moveWindowToIcon}>
             <Icon icon={WindowArrowUp20Regular} />
             Window to icon
           </Button>
@@ -102,16 +104,16 @@ export function PropertiesPanel({ entry, caps, state, actions }: PropertiesPanel
 
       <Preferences className="tray-panel__preferences">
         <PreferenceSection>
-          <PreferenceGroup title="Icon">
-            <PreferenceRow title="Title" subtitle={caps.title ? undefined : 'Windows draws no titles'}>
+          <PreferenceGroup title={entry.contentMode === 'sign' ? 'Sign' : 'Icon'}>
+            <PreferenceRow title="Title" subtitle={entry.contentMode === 'sign' ? 'Signs use their own content' : caps.title ? undefined : 'Windows draws no titles'}>
               <SegmentedControl
                 size="small"
-                disabled={!caps.title}
+                disabled={!caps.title || entry.contentMode === 'sign'}
                 items={TITLE_PRESETS.map(p => ({ value: p.label, label: p.label }))}
                 value={presetOf(TITLE_PRESETS, title)}
                 onValueChange={label => actions.setTitle(TITLE_PRESETS.find(p => p.label === label)!.value)}
               />
-              <IconButton label="Edit title" size="small" disabled={!caps.title} onClick={() => setEditing('title')}>
+              <IconButton label="Edit title" size="small" disabled={!caps.title || entry.contentMode === 'sign'} onClick={() => setEditing('title')}>
                 <Icon icon={Edit16Regular} />
               </IconButton>
             </PreferenceRow>
@@ -127,7 +129,7 @@ export function PropertiesPanel({ entry, caps, state, actions }: PropertiesPanel
               </IconButton>
             </PreferenceRow>
             <PreferenceRow title="Visible">
-              <Switch checked={entry.visible} onCheckedChange={actions.setVisible} />
+              <Switch disabled={!available} checked={entry.visible && available} onCheckedChange={actions.setVisible} />
             </PreferenceRow>
           </PreferenceGroup>
           <PreferenceGroup title="Menu">

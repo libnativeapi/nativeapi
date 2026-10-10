@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dazzui_host/dazzui_host.dart';
 
-import '../icon_animations.dart';
 import '../icon_animator.dart';
 import '../tray_controller.dart';
 
@@ -35,28 +34,7 @@ class LivePreview extends StatelessWidget {
               listenable: entry.animator,
               builder: (context, _) => Row(
                 children: [
-                  Stack(
-                    children: [
-                      // Live widgets being screenshotted for "Any widget".
-                      // They have to be painted, so they sit under the
-                      // (opaque) preview box instead of being Offstage.
-                      for (final other in controller.entries)
-                        if (other.animator.animation == IconAnimation.widget)
-                          Positioned(
-                            left: 30,
-                            top: 30,
-                            child: RepaintBoundary(
-                              key: other.animator.captureKey,
-                              child: CounterBadge(
-                                time: other.animator.time,
-                                color: other.animator.color,
-                                size: kIconPoints,
-                              ),
-                            ),
-                          ),
-                      _frameBox(entry.animator, vars),
-                    ],
-                  ),
+                  _frameBox(entry.animator, vars),
                   SizedBox(width: vars.spacing25),
                   Expanded(child: _details(entry, vars)),
                 ],

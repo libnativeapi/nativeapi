@@ -1,7 +1,7 @@
 # tray_icon_example
 
 A playground for `TrayIcon` and `TrayManager`, built to do three jobs in one small
-(400 × 640) window:
+(800 × 600) window:
 
 - **show animated tray icons** — Flutter renders every frame and hands it to the tray;
 - **accept a platform** — every API has a control, and a checklist ticks itself;
@@ -22,12 +22,32 @@ flutter run -d macos   # or windows, linux
 
 | Part | What it is for |
 | --- | --- |
-| **Tray icons** strip | several icons at once; the rest of the window acts on the selected one |
-| **Live preview** | the magnified image that was *just handed to the tray* — same frame, same pixels — with frame count, measured rate, render time, dropped frames, and Pause / Step |
-| **Animate** tab | a gallery of live tiles (click one and the tray plays it), rate, resolution, colour, and one-click scenes |
-| **Properties** tab | one row per API; the block on top shows what the native getters return, not what was written. *Window to icon* moves the window next to the icon the way a tray popup would: below it where the tray is at the top (macOS, GNOME), above it where it is at the bottom (Windows) |
-| **Checklist** tab | auto items settle from real events and return values, manual items are marked by eye; *Copy report* gives a plain-text result with the OS version |
-| Event footer | the last tray or menu event in large type, over a short log of API calls |
+| **Icons / Signs** sidebar | Independently select, edit and remove images and custom content views. |
+| **Add** | A single menu creates a default icon, Download / Recording / Syncing scene, three animated icons, or any of the four sign styles. Existing items stay intact. |
+| **Content** | The selected item's editor: live animation tiles and frame controls for icons; a compact row of sign styles, text and display options for signs. |
+| **Properties** | Native getter read-back, visibility, tooltip, menu trigger and popup mode. Signs supply their own text rather than an icon title. |
+| **Checklist** | Existing automatic and manual API acceptance checks. |
+| Event footer | Latest event and call; Log opens the history. |
+
+## Native signs
+
+Native signs are integrated into this example alongside image icons.
+The four styles are Missing You, City Welcome, Travel and Scenic Guide. Each item
+keeps its own content for every style, colors and directions. The Missing You pinyin
+strip always displays. All controls are in English; the editable sample sign text
+remains Chinese.
+
+On macOS, each sign owns a native `View` / `Label` tree mounted in
+`TrayIcon.contentView`, with 4 pt of transparent space on each side. A separate tree
+is embedded in Flutter through an AppKit `PlatformView`: the inline face is 40 pt
+high in an 80 pt preview area. Style choices fit on one row. **Enlarge preview**
+opens a separate native window that follows edits. Closing the settings window
+keeps tray items running; click a sign to select it and return to its editor.
+
+Native typography, PlatformView registration and window ownership are in the macOS
+runner; the sign geometry and lifetimes remain in Dart/nativeapi. Windows and Linux
+keep the image-icon example and disable sign creation because custom tray content
+views are currently available on macOS.
 
 ## Animated icons
 
@@ -81,7 +101,7 @@ hl.window_rule({
 })
 ```
 
-The example sizes the window itself (400 × 640), so the rule needs no `size`. Static
+The example sizes the window itself (800 × 600), so the rule needs no `size`. Static
 rules run once per map, which is why popup mode hides the window instead of
 lowering it. `tools/gui/flutter_tray_popup_test_hyprland.py` installs this rule for a run
 and checks the whole sequence with a real click in Omarchy's bar.
@@ -101,6 +121,8 @@ has answered (`core/tests/window_shadow_remap_linux_test.cpp`).
 | `lib/tray_controller.dart` | every `TrayIcon` / `TrayManager` call, scenes, events, checklist wiring |
 | `lib/icon_animator.dart` | the frame loop: canvas or widget → PNG → `TrayIcon.icon` |
 | `lib/icon_animations.dart` | what the frames look like |
+| `lib/signs/` | Native sign geometry, per-item state, PlatformView preview and template thumbnails |
+| `lib/widgets/add_tray_menu.dart` | The single Add menu for icons, scenes and signs |
 | `lib/context_menu.dart` | the tray's context menu (normal, checkbox, disabled, submenu) |
 | `lib/checklist.dart` | checklist model and report |
 | `lib/tabs/`, `lib/widgets/` | the UI; the chips, the event footer and the theme come from `dazzui_host` |
@@ -111,3 +133,5 @@ The workspace repo drives this example with real mouse input:
 `tools/gui/flutter_tray_icon_test.py` (asserts on the frame counters, the read-back
 state and the `[checklist]` lines this app prints) and
 `tools/gui/flutter_tray_icon_demo.py --record` (the demo video).
+
+`tools/gui/flutter_tray_icon_sign_test.py` checks the integrated native signs, independent state, PlatformView attachment and disposal on macOS without synthetic input.

@@ -57,7 +57,7 @@ export const TITLE_PRESETS: readonly { label: string; value: string | null }[] =
   { label: 'None', value: null },
   { label: '42%', value: '42%' },
   { label: '00:12', value: '00:12' },
-  { label: '你好', value: '你好' },
+  { label: 'Chinese greeting', value: '你好' },
 ]
 
 export const TOOLTIP_PRESETS: readonly { label: string; value: string | null }[] = [
@@ -93,6 +93,7 @@ export function capabilitiesOf(platform: WindowFramePlatform): Capabilities {
     bounds: os !== 'linux',
     openMenu: os !== 'linux',
     backend: os === 'windows',
+    contentView: os === 'macos',
   }
 }
 

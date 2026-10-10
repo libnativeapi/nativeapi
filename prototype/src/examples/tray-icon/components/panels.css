@@ -29,7 +29,7 @@
 
 .tray-panel__gallery {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-1-5);
 }
 
@@ -131,4 +131,10 @@
 
 .tray-panel__preferences--dense .dz-preference-row {
   min-height: var(--control-tiny-size);
+}
+
+.tray-panel__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
 }

@@ -1,4 +1,5 @@
 import type { WindowFramePlatform } from '@dazzlabs/dazzui'
+import type { SignEntry } from './sign-types'
 
 /** What `IconAnimator` can play on a tray icon (`icon_animations.dart`). */
 export type IconAnimation = 'spinner' | 'pulse' | 'blink' | 'progress' | 'wave' | 'rotate' | 'clock' | 'widget'
@@ -32,6 +33,8 @@ export interface Capabilities {
   openMenu: boolean
   /** A second menu backend (WinUI 3) to choose. */
   backend: boolean
+  /** Custom native content views currently render in the macOS menu bar. */
+  contentView: boolean
 }
 
 /** One `TrayIcon` the example created, with what the window shows about it. */
@@ -40,6 +43,8 @@ export interface TrayEntry {
   number: number
   /** `TrayIcon.getId()`. */
   id: number
+  contentMode: 'icon' | 'sign'
+  sign: SignEntry
   animation: IconAnimation | null
   /** The still image shown when nothing plays. */
   still: StillIcon | null
@@ -73,7 +78,7 @@ export interface CheckItem {
   detail: string
 }
 
-export type Tab = 'animate' | 'properties' | 'checklist'
+export type Tab = 'content' | 'properties' | 'checklist'
 
 /** Where the window stands on the desktop. */
 export type WindowPlacement = 'center' | 'icon'

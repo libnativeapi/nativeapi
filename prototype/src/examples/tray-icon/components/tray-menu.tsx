@@ -16,6 +16,7 @@ export interface TrayMenuProps {
   onCheckbox: () => void
   onSubmenuOpened: () => void
   onAnimation: (animation: IconAnimation | null) => void
+  onPreviewSign?: () => void
 }
 
 /**
@@ -25,7 +26,7 @@ export interface TrayMenuProps {
  * icon's animation from the tray. It is the platform's menu, not the app's,
  * drawn in the theme's popup sheet; WinUI 3 is the roomier one.
  */
-export function TrayMenu({ backend, notifications, direction, onItem, onCheckbox, onSubmenuOpened, onAnimation }: TrayMenuProps) {
+export function TrayMenu({ backend, notifications, direction, onItem, onCheckbox, onSubmenuOpened, onAnimation, onPreviewSign }: TrayMenuProps) {
   const [submenu, setSubmenu] = useState(false)
 
   const openSubmenu = () => {
@@ -62,8 +63,9 @@ export function TrayMenu({ backend, notifications, direction, onItem, onCheckbox
       onClick={event => event.stopPropagation()}
     >
       {item('Show window')}
+      {onPreviewSign && item('Enlarge preview', onPreviewSign)}
       <div className="tray-menu__separator" role="separator" />
-      <div className="tray-menu__submenu-anchor" onPointerEnter={openSubmenu}>
+      {!onPreviewSign && <div className="tray-menu__submenu-anchor" onPointerEnter={openSubmenu}>
         <button
           type="button"
           role="menuitem"
@@ -112,7 +114,7 @@ export function TrayMenu({ backend, notifications, direction, onItem, onCheckbox
             </button>
           </div>
         )}
-      </div>
+      </div>}
       {item('Notifications', onCheckbox, { check: notifications })}
       {item('Check for updates', undefined, { disabled: true })}
       {item('About')}

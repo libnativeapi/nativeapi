@@ -68,6 +68,10 @@ class _AnimateTabState extends State<AnimateTab>
       builder: (context, _) => ListView(
         children: [
           Padding(
+            padding: EdgeInsets.only(left: vars.spacing25, top: vars.spacing25),
+            child: const SectionLabel('Animations'),
+          ),
+          Padding(
             padding: EdgeInsets.all(vars.spacing25),
             // Plain rows rather than a GridView: a UI probe reads box offsets,
             // and sliver grids keep their children's elsewhere.
@@ -92,7 +96,41 @@ class _AnimateTabState extends State<AnimateTab>
               ],
             ),
           ),
+          OptionRow(
+            label: 'Icon presets',
+            children: [
+              OptionChip(
+                label: 'Download',
+                selected: entry.scene == Scene.download,
+                onTap: () => entry.scene == Scene.download
+                    ? controller.resetScene()
+                    : controller.playScene(Scene.download),
+              ),
+              OptionChip(
+                label: 'Recording',
+                selected: entry.scene == Scene.recording,
+                onTap: () => entry.scene == Scene.recording
+                    ? controller.resetScene()
+                    : controller.playScene(Scene.recording),
+              ),
+              OptionChip(
+                label: 'Syncing',
+                selected: entry.scene == Scene.syncing,
+                onTap: () => entry.scene == Scene.syncing
+                    ? controller.resetScene()
+                    : controller.playScene(Scene.syncing),
+              ),
+              ActionChip(
+                label: 'Three icons',
+                onTap: controller.playThreeAtOnce,
+              ),
+            ],
+          ),
           const Divider(),
+          Padding(
+            padding: EdgeInsets.only(left: vars.spacing25, top: vars.spacing25),
+            child: const SectionLabel('Frames'),
+          ),
           OptionRow(
             label: 'Still icon',
             children: [
@@ -142,30 +180,6 @@ class _AnimateTabState extends State<AnimateTab>
                       controller.setColor(value ?? controller.autoColor),
                 ),
               if (Platform.isMacOS) const Hint('macOS tints it itself'),
-            ],
-          ),
-          OptionRow(
-            label: 'Scenes',
-            children: [
-              OptionChip(
-                label: 'Download',
-                selected: entry.scene == Scene.download,
-                onTap: () => controller.playScene(Scene.download),
-              ),
-              OptionChip(
-                label: 'Recording',
-                selected: entry.scene == Scene.recording,
-                onTap: () => controller.playScene(Scene.recording),
-              ),
-              OptionChip(
-                label: 'Syncing',
-                selected: entry.scene == Scene.syncing,
-                onTap: () => controller.playScene(Scene.syncing),
-              ),
-              ActionChip(
-                label: 'Three icons',
-                onTap: controller.playThreeAtOnce,
-              ),
             ],
           ),
         ],

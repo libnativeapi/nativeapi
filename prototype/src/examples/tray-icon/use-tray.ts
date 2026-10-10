@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { animationLabel, checklistOf, DEFAULT_TOOLTIP, ICON_POINTS, SCENES } from './data'
 import { progressAt } from './icon-paint'
+import { createSign, headingOf, templateOf } from './sign-data'
+import { signLayoutOf } from './sign-layout'
+import type { SignContent, SignStyle } from './sign-types'
 import type {
   Capabilities,
   CheckItem,
@@ -32,6 +35,7 @@ export interface TrayState {
   placement: WindowPlacement
   /** The icon whose context menu is open. */
   menuOpenFor: number | null
+  previewSigns: number[]
   backend: MenuBackend
   /** The menu's checkbox item. */
   notifications: boolean
@@ -46,7 +50,7 @@ export interface TrayState {
 /** What an icon created on start shows. */
 export type InitialIcon = Partial<
   Pick<TrayEntry, 'animation' | 'still' | 'scene' | 'title' | 'tooltip' | 'visible' | 'trigger' | 'color'>
->
+> & { signStyle?: SignStyle }
 
 export interface TrayOptions {
   /** Icons created on start; one plain icon when left out. */
@@ -68,6 +72,7 @@ export const framesOf = (entry: TrayEntry, now = nowSeconds()) =>
 
 /** What `getTitle` returns: a scene writes its title every frame. */
 export function titleOf(entry: TrayEntry, now = nowSeconds()): string | null {
+  if (entry.contentMode === 'sign') return null
   if (entry.scene === 'download') return `${Math.round(progressAt(timeOf(entry, now)) * 100)}%`
   if (entry.scene === 'recording') {
     const s = Math.floor(timeOf(entry, now))
@@ -78,9 +83,14 @@ export function titleOf(entry: TrayEntry, now = nowSeconds()): string | null {
 
 /** What `getBounds` returns: where the icon sits in the bar, or an empty rectangle once hidden. */
 export function boundsOf(entry: TrayEntry, entries: TrayEntry[], caps: Capabilities) {
-  const index = entries.filter(e => e.visible).indexOf(entry)
+  const visible = entries.filter(e => e.visible)
+  const index = visible.indexOf(entry)
   if (index < 0) return '0,0 0×0'
-  return caps.os === 'windows' ? `${1630 - index * 32},1032 32×40` : `${1180 - index * 30},0 30×24`
+  if (caps.os === 'windows') return `${1630 - index * 32},1032 32×40`
+  const widthOf = (item: TrayEntry) => item.contentMode === 'sign' ? signLayoutOf(item.sign).width * 0.24 + 8 : 30
+  const offset = visible.slice(0, index).reduce((total, item) => total + widthOf(item), 0)
+  const round = (value: number) => Math.round(value * 100) / 100
+  return `${round(1180 - offset)},0 ${round(widthOf(entry))}×24`
 }
 
 /** The pixel size of an icon's frames. */
@@ -100,6 +110,7 @@ function createState(caps: Capabilities, options: TrayOptions): TrayState {
     windowVisible: !options.popupMode,
     placement: 'center',
     menuOpenFor: null,
+    previewSigns: [],
     backend: 'native',
     notifications: true,
     lastEvent: 'No events yet',
@@ -108,7 +119,9 @@ function createState(caps: Capabilities, options: TrayOptions): TrayState {
     parts: {},
   }
   pass(state, 'supported', 'true')
-  for (const initial of options.initial ?? [{}]) addEntry(state, initial)
+  for (const initial of options.initial ?? [{}]) {
+    addEntry(state, initial)
+  }
   return state
 }
 
@@ -158,6 +171,8 @@ function addEntry(d: TrayState, initial: InitialIcon) {
   const entry: TrayEntry = {
     number: d.nextNumber++,
     id: d.nextId++,
+    contentMode: initial.signStyle ? 'sign' : 'icon',
+    sign: createSign(d.nextNumber - 1, initial.signStyle),
     animation,
     still: animation ? null : (initial.still ?? 'asset'),
     scene,
@@ -175,6 +190,12 @@ function addEntry(d: TrayState, initial: InitialIcon) {
     rightClicks: 0,
     doubleClicks: 0,
   }
+  if (initial.signStyle) {
+    entry.animation = null
+    entry.scene = null
+    entry.title = null
+    entry.tooltip = headingOf(entry.sign)
+  }
   d.entries.push(entry)
   d.selected = entry.number
   log(d, `create #${entry.number} → id ${entry.id}`)
@@ -184,6 +205,7 @@ function addEntry(d: TrayState, initial: InitialIcon) {
 }
 
 function startAnimation(entry: TrayEntry, animation: IconAnimation | null) {
+  entry.contentMode = 'icon'
   entry.animation = animation
   entry.still = animation ? null : 'asset'
   entry.paused = false
@@ -259,9 +281,70 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       addIcon: () => update(d => void addEntry(d, {})),
 
+      addScene: (scene: Scene) => update(d => void addEntry(d, { scene })),
+
+      addThreeIcons: () => update(d => {
+        for (const animation of ['spinner', 'pulse', 'wave'] as const) addEntry(d, { animation })
+      }),
+
+      addSign: (style: SignStyle = 'missing') => update(d => {
+        if (!caps.contentView) return
+        addEntry(d, { signStyle: style })
+        d.windowVisible = true
+      }),
+
+      setSignStyle: (style: SignStyle) => onSelected((d, entry) => {
+        entry.sign.style = style
+        entry.sign.english = entry.sign.right = true
+        if (caps.contentView) {
+          leaveScene(entry)
+          startAnimation(entry, null)
+          entry.contentMode = 'sign'
+          entry.title = null
+          entry.tooltip = headingOf(entry.sign)
+        }
+        log(d, `contentView #${entry.number} ← ${templateOf(style).label}`)
+      }),
+
+      setSignContent: (content: SignContent) => onSelected((d, entry) => {
+        entry.sign.contents[entry.sign.style] = content
+        if (caps.contentView && entry.contentMode !== 'sign') {
+          leaveScene(entry)
+          startAnimation(entry, null)
+          entry.contentMode = 'sign'
+          entry.title = null
+        }
+        if (entry.contentMode === 'sign') entry.tooltip = headingOf(entry.sign)
+        log(d, `sign #${entry.number} ← ${headingOf(entry.sign)}`)
+      }),
+
+      restoreSign: () => onSelected((d, entry) => {
+        const sign = entry.sign
+        sign.contents[sign.style] = { ...templateOf(sign.style).defaults }
+        sign.english = sign.right = true
+        if (sign.style === 'missing') sign.green = false
+        if (entry.contentMode === 'sign') entry.tooltip = headingOf(sign)
+        log(d, `restore sign #${entry.number}`)
+      }),
+
+      setSignOption: (option: 'green' | 'english' | 'right', value: boolean) => onSelected((d, entry) => {
+        entry.sign[option] = value
+        log(d, `sign #${entry.number} ${option} ← ${value}`)
+      }),
+
+      previewSign: (number?: number) => onSelected((d, entry) => {
+        if (!d.previewSigns.includes(entry.number)) d.previewSigns.push(entry.number)
+        log(d, `preview sign #${entry.number}`)
+      }, number),
+
+      closeSignPreview: (number: number) => update(d => {
+        d.previewSigns = d.previewSigns.filter(preview => preview !== number)
+      }),
+
       removeIcon: (number?: number) =>
         onSelected((d, entry) => {
           if (d.menuOpenFor === entry.number) d.menuOpenFor = null
+          d.previewSigns = d.previewSigns.filter(number => number !== entry.number)
           d.entries = d.entries.filter(e => e !== entry)
           d.selected = d.entries.at(-1)?.number ?? null
           log(d, `dispose #${entry.number}`)
@@ -269,6 +352,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       play: (animation: IconAnimation | null, number?: number) => {
         onSelected((d, entry) => {
+          if (entry.contentMode !== 'icon') return
           leaveScene(entry)
           startAnimation(entry, animation)
           log(d, animation ? `play #${entry.number} ← ${animationLabel(animation)}` : `stop #${entry.number}`)
@@ -279,6 +363,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       setStill: (still: StillIcon) =>
         onSelected((d, entry) => {
+          if (entry.contentMode !== 'icon') return
           leaveScene(entry)
           startAnimation(entry, null)
           entry.still = still
@@ -327,6 +412,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       playScene: (scene: Scene) =>
         onSelected((d, entry) => {
+          if (entry.contentMode !== 'icon') return
           const data = SCENES.find(s => s.value === scene)!
           leaveScene(entry)
           startAnimation(entry, data.animation)
@@ -338,6 +424,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       resetScene: () =>
         onSelected((d, entry) => {
+          if (entry.contentMode !== 'icon') return
           leaveScene(entry)
           startAnimation(entry, null)
           log(d, `scene #${entry.number} ← default`)
@@ -345,20 +432,21 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
 
       playThreeAtOnce: () =>
         update(d => {
-          while (d.entries.length < 3) addEntry(d, {})
+          const icons = d.entries.filter(entry => entry.contentMode === 'icon')
+          while (icons.length < 3) icons.push(addEntry(d, {}))
           const three: IconAnimation[] = ['spinner', 'pulse', 'wave']
-          d.entries.slice(0, 3).forEach((entry, i) => {
+          icons.slice(0, 3).forEach((entry, i) => {
             leaveScene(entry)
             startAnimation(entry, three[i]!)
             entry.visible = true
           })
-          d.selected = d.entries[0]!.number
+          d.selected = icons[0]!.number
           log(d, 'scene ← three icons')
         }),
 
       setTitle: (title: string | null) =>
         onSelected((d, entry) => {
-          if (!caps.title) return
+          if (!caps.title || entry.contentMode === 'sign') return
           leaveScene(entry)
           entry.title = title
           log(d, `setTitle(${quote(title)}) #${entry.number}`)
@@ -448,10 +536,14 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
           if (kind === 'doubleClicked') entry.doubleClicks++
           event(d, { clicked: 'Clicked', rightClicked: 'Right clicked', doubleClicked: 'Double clicked' }[kind], entry)
           count(d, kind)
+          if (entry.contentMode === 'sign' && kind === 'clicked') {
+            d.selected = entry.number
+            d.windowVisible = true
+          }
           if (entry.trigger === kind) {
             openMenu(d, entry)
             part(d, 'triggers', kind, caps.os === 'linux' ? 3 : 4)
-          } else if (d.popupMode && kind === 'clicked') {
+          } else if (d.popupMode && kind === 'clicked' && entry.contentMode !== 'sign') {
             d.windowVisible = !d.windowVisible
             d.placement = 'icon'
             d.selected = entry.number
@@ -484,6 +576,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
             for (const entry of d.entries) log(d, `dispose #${entry.number}`)
             d.entries = []
             d.selected = null
+            d.previewSigns = []
           }
         }),
 
@@ -506,7 +599,7 @@ export function useTray(caps: Capabilities, options: TrayOptions = {}) {
         update(d => {
           const entry = d.entries.find(e => e.number === d.menuOpenFor)
           closeMenu(d)
-          if (!entry) return
+          if (!entry || entry.contentMode !== 'icon') return
           leaveScene(entry)
           startAnimation(entry, animation)
           d.lastEvent = `${animation ? animationLabel(animation) : 'Stop'} · menu`

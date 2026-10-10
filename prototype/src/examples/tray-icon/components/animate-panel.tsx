@@ -1,7 +1,9 @@
 import { useRef } from 'react'
 
 import {
+  Button,
   OptionCard,
+  SectionLabel,
   PreferenceGroup,
   PreferenceRow,
   Preferences,
@@ -10,7 +12,7 @@ import {
   ToggleGroup,
 } from '@dazzlabs/dazzui'
 
-import { ANIMATIONS, COLORS, ICON_POINTS, RATES, SCALES, STILL_ICONS } from '../data'
+import { ANIMATIONS, COLORS, ICON_POINTS, RATES, SCALES, SCENES, STILL_ICONS } from '../data'
 import type { Capabilities, IconColor, StillIcon, TrayEntry } from '../types'
 import { nowSeconds, type TrayActions } from '../use-tray'
 import { IconCanvas } from './icon-canvas'
@@ -35,6 +37,7 @@ export function AnimatePanel({ entry, caps, actions }: AnimatePanelProps) {
 
   return (
     <div className="tray-panel">
+      <SectionLabel>Animations</SectionLabel>
       <div className="tray-panel__gallery">
         {ANIMATIONS.map(({ value, label }) => (
           <OptionCard
@@ -51,6 +54,13 @@ export function AnimatePanel({ entry, caps, actions }: AnimatePanelProps) {
           />
         ))}
       </div>
+      <SectionLabel>Icon presets</SectionLabel>
+      <div className="tray-panel__presets">
+        {SCENES.map(({ value, label }) => <Button key={value} size="small"
+          variant={entry.scene === value ? 'tinted' : 'normal'} aria-pressed={entry.scene === value}
+          onClick={() => entry.scene === value ? actions.resetScene() : actions.playScene(value)}>{label}</Button>)}
+        <Button size="small" variant="normal" onClick={actions.playThreeAtOnce}>Three icons</Button>
+      </div>
       <Preferences className="tray-panel__preferences">
         <PreferenceSection>
           <PreferenceGroup title="Frames">
@@ -58,7 +68,7 @@ export function AnimatePanel({ entry, caps, actions }: AnimatePanelProps) {
               <ToggleGroup<StillIcon>
                 size="small"
                 items={STILL_ICONS}
-                value={entry.still ? [entry.still] : []}
+                value={entry.contentMode === 'icon' && entry.still ? [entry.still] : []}
                 onValueChange={([still]) => still && actions.setStill(still)}
               />
             </PreferenceRow>

@@ -36,6 +36,20 @@ export const Scenes: Story = {
   },
 }
 
+/** Sign content views have their own sidebar group and content editor. */
+export const Signs: Story = {
+  name: 'Signs',
+  args: { initialTab: 'content', options: { initial: [{ signStyle: 'missing' }] } },
+}
+
+/** All four retained signs alongside a normal animated icon. */
+export const MixedContent: Story = {
+  name: 'Icons and Signs',
+  args: { initialTab: 'content', options: { initial: [
+    { animation: 'spinner' }, { signStyle: 'missing' }, { signStyle: 'welcome' }, { signStyle: 'travel' }, { signStyle: 'guide' },
+  ] } },
+}
+
 /** Popup mode: the window is hidden until the icon is clicked, and hides again when it loses focus. */
 export const PopupMode: Story = {
   name: 'Popup Mode',

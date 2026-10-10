@@ -18,9 +18,10 @@ class TrayMenu {
     required void Function(IconAnimation? animation) onAnimation,
     required void Function() onShowWindow,
     required void Function() onQuit,
+    void Function()? onPreview,
   }) : menu = Menu.create()! {
     menu.setBackend(backend);
-    menu.addListener((event) {
+    _menuListener = menu.addListener((event) {
       if (event is MenuOpenedEvent) {
         isOpen = true;
         onOpened();
@@ -33,29 +34,34 @@ class TrayMenu {
     _add(menu, 'Show window', onShowWindow);
     _separator(menu);
 
-    final animations = Menu.create()!;
-    for (final animation in IconAnimation.values) {
-      _add(animations, animation.label, () => onAnimation(animation));
+    if (onPreview != null) {
+      _add(menu, 'Enlarge preview', onPreview);
+    } else {
+      final animations = Menu.create()!;
+      for (final animation in IconAnimation.values) {
+        _add(animations, animation.label, () => onAnimation(animation));
+      }
+      _separator(animations);
+      _add(animations, 'Stop', () => onAnimation(null));
+      final animate = MenuItem.createWithLabelAndType(
+        'Animate',
+        MenuItemType.submenu,
+      )!;
+      animate.submenu = animations;
+      final animateListener = animate.addListener((event) {
+        if (event is MenuItemSubmenuOpenedEvent) onSubmenuOpened();
+      });
+      _itemListeners.add((animate, animateListener));
+      menu.addItem(animate);
+      _keep.addAll([animations, animate]);
     }
-    _separator(animations);
-    _add(animations, 'Stop', () => onAnimation(null));
-    final animate = MenuItem.createWithLabelAndType(
-      'Animate',
-      MenuItemType.submenu,
-    )!;
-    animate.submenu = animations;
-    animate.addListener((event) {
-      if (event is MenuItemSubmenuOpenedEvent) onSubmenuOpened();
-    });
-    menu.addItem(animate);
-    _keep.addAll([animations, animate]);
 
     final checkbox = MenuItem.createWithLabelAndType(
       'Notifications',
       MenuItemType.checkbox,
     )!;
     checkbox.state = MenuItemState.checked;
-    checkbox.addListener((event) {
+    final checkboxListener = checkbox.addListener((event) {
       if (event is! MenuItemClickedEvent) return;
       final checked = checkbox.state != MenuItemState.checked;
       checkbox.state = checked
@@ -63,6 +69,7 @@ class TrayMenu {
           : MenuItemState.unchecked;
       onCheckbox(checked);
     });
+    _itemListeners.add((checkbox, checkboxListener));
     menu.addItem(checkbox);
     _keep.add(checkbox);
 
@@ -86,12 +93,27 @@ class TrayMenu {
 
   // Keeps the Dart wrappers (and their listeners) alive with the menu.
   final List<Object> _keep = [];
+  final List<(MenuItem, ListenerId)> _itemListeners = [];
+  late final ListenerId _menuListener;
+
+  void dispose() {
+    menu.removeListener(_menuListener);
+    for (final (item, listener) in _itemListeners) {
+      item.removeListener(listener);
+    }
+    for (final item in _keep.reversed) {
+      if (item is MenuItem) item.dispose();
+      if (item is Menu) item.dispose();
+    }
+    menu.dispose();
+  }
 
   void _add(Menu parent, String label, void Function() onClicked) {
     final item = MenuItem.createWithLabelAndType(label, MenuItemType.normal)!;
-    item.addListener((event) {
+    final listener = item.addListener((event) {
       if (event is MenuItemClickedEvent) onClicked();
     });
+    _itemListeners.add((item, listener));
     parent.addItem(item);
     _keep.add(item);
   }

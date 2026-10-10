@@ -26,7 +26,7 @@ class PropertiesTab extends StatelessWidget {
     'No title': null,
     '42%': '42%',
     '00:12': '00:12',
-    '你好': '你好',
+    'Chinese greeting': '你好',
   };
 
   static const _tooltips = <String, String?>{
@@ -65,9 +65,13 @@ class PropertiesTab extends StatelessWidget {
               OptionChip(
                 label: key,
                 selected: (title ?? '') == (value ?? ''),
-                onTap: () => controller.setTitle(value),
+                onTap: !entry.isSign && TrayController.titleSupported
+                    ? () => controller.setTitle(value)
+                    : null,
               ),
-            if (TrayController.titleSupported)
+            if (entry.isSign)
+              const Hint('Signs use their own content')
+            else if (TrayController.titleSupported)
               ActionChip(
                 label: 'Title…',
                 onTap: () => onEdit('Title', title ?? '', controller.setTitle),
@@ -222,6 +226,7 @@ class _StateBlock extends StatelessWidget {
                 'id ${icon.getId()} · visible ${icon.isVisible()} · '
                 'trigger ${icon.getContextMenuTrigger().name}',
               ),
+              if (entry.isSign) line('contentView ${entry.sign!.style.name}'),
               line('title ${quote(icon.getTitle())}'),
               line('tooltip ${quote(icon.getTooltip())}'),
               line(

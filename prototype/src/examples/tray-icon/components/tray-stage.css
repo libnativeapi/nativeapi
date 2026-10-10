@@ -40,3 +40,6 @@
   display: inline-block;
 }
 
+.tray-stage--signs .desktop-stage__tray { gap: 0; }
+.tray-stage__item--sign { height: var(--desktop-bar-height); min-width: 0; padding-inline: var(--spacing-1); }
+.tray-stage__item--sign:focus-visible { outline: var(--stroke-control) solid var(--color-primary-500); }
