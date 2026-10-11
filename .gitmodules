@@ -14,7 +14,3 @@
 	path = bindings/dart/window_manager
 	url = git@github.com:leanflutter/window_manager.git
 	branch = main
-[submodule "bindings/dart/clipboard_watcher"]
-	path = bindings/dart/clipboard_watcher
-	url = git@github.com:leanflutter/clipboard_watcher.git
-	branch = main

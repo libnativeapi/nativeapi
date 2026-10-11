@@ -41,7 +41,6 @@ melos:
     - "bindings/dart/tray_manager/**"
     - "bindings/dart/screen_retriever/**"
     - "bindings/dart/window_manager/**"
-    - "bindings/dart/clipboard_watcher/**"
     - "**/build/**"
     - "**/.dart_tool/**"
     - "**/.symlinks/**"
