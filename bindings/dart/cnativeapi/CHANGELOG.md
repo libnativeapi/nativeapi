@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.3
 
 - Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
 
