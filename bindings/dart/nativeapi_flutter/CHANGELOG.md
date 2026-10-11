@@ -1,7 +1,7 @@
 ## 0.5.3
 
 - macOS: add `ShortcutReleasedEvent` for system key-up delivery and accept Fn / CapsLock accelerators (hotkey_manager migration).
-- Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
+- Add core clipboard text, HTML, images, file paths and change notifications on desktop and iOS; Android native hosts support monitoring and text/HTML through C++/JNI (no Flutter auto-initialization).
 
 ## 0.5.2
 

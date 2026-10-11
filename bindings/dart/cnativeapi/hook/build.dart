@@ -113,6 +113,9 @@ void main(List<String> args) async {
       flags: flags,
       language: Language.cpp,
       std: 'c++17',
+      // Native assets package this one library; no Gradle CMake target supplies
+      // libc++_shared.so. Keep the NDK runtime inside our Android library.
+      cppLinkStdLib: targetOS == OS.android ? 'c++_static' : null,
     );
     await builder.run(
       input: input,

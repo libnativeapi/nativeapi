@@ -8,11 +8,11 @@
       "kind": "singleton",
       "doc": {
         "summary": "Accesses the system copy/paste clipboard (not the X11 PRIMARY selection).",
-        "details": "Desktop calls and listener registration are UI-thread only. Reads complete exactly once, on a later UI-loop turn, and require a running host event loop. A callback's first argument is false on access, conversion or concurrent-change failure; its second argument is then default-initialized. Missing formats are successful reads. Notifications may be coalesced and contain no clipboard content. Subscribing does not emit an initial event. Writes replace every previous format and retain copies. Native commit failures may leave the clipboard empty or partially updated.\n\n```cpp\nauto& clipboard = Clipboard::GetInstance();\nClipboardData data;\ndata.text = \"Hello\";\ndata.html = \"<b>Hello</b>\";\nclipboard.Write(data);\nclipboard.ReadText([](bool success, std::optional<std::string> text) {\n  if (success && text) { }\n});\n```",
+        "details": "Desktop calls and listener registration are UI-thread only; mobile backends marshal calls to the host UI thread. Reads complete exactly once, on a later UI-loop turn, and require a running host event loop. A callback's first argument is false on access, conversion or concurrent-change failure; its second argument is then default-initialized. Missing formats are successful reads. Notifications may be coalesced and contain no clipboard content. Subscribing does not emit an initial event. Writes replace every previous format and retain copies. Native commit failures may leave the clipboard empty or partially updated.\n\n```cpp\nauto& clipboard = Clipboard::GetInstance();\nClipboardData data;\ndata.text = \"Hello\";\ndata.html = \"<b>Hello</b>\";\nclipboard.Write(data);\nclipboard.ReadText([](bool success, std::optional<std::string> text) {\n  if (success && text) { }\n});\n```",
         "notes": [
           {
             "kind": "note",
-            "text": "Platform availability:\n- macOS: ✅ Fully supported - NSPasteboard; changeCount sampled every 250 ms\n- Windows: ✅ Fully supported - Win32 clipboard and WM_CLIPBOARDUPDATE\n- Linux: ⚠️ GTK 3 - Access follows compositor policy; persistence is best effort\n- Android: ❌ Not supported - Reads immediately complete with false; writes fail\n- iOS: ❌ Not supported - Reads immediately complete with false; writes fail\n- OpenHarmony: ❌ Not supported - Reads immediately complete with false; writes fail"
+            "text": "Platform availability:\n- macOS: ✅ Fully supported - NSPasteboard; changeCount sampled every 100 ms\n- Windows: ✅ Fully supported - Win32 clipboard and WM_CLIPBOARDUPDATE\n- Linux: ⚠️ GTK 3 - Access follows compositor policy; persistence is best effort\n- Android: ⚠️ NativeActivity host initialization required - C++/JNI ClipboardManager; focused metadata polling every 100 ms, including focus restoration; text/HTML writes need explicit text, clear requires Android 9+; image/file publication is unsupported\n- iOS: ⚠️ Foreground only - UIPasteboard notifications and resume checks; reads follow system paste permission, file URLs remain subject to app sandbox access\n- OpenHarmony: ❌ Not supported - Reads immediately complete with false; writes fail"
           }
         ]
       },
@@ -431,7 +431,13 @@
           "key": "Clipboard::WriteHtml",
           "kind": "method",
           "doc": {
-            "summary": "Writes only HTML. @param html UTF-8 fragment. @return false on failure."
+            "summary": "Writes only HTML. Android requires Write with an explicit plain-text fallback.",
+            "params": [
+              {
+                "name": "html",
+                "text": "UTF-8 fragment. @return false on failure or unsupported HTML-only writes."
+              }
+            ]
           },
           "signatures": {
             "cpp": {

@@ -184,3 +184,23 @@ remote hosts receive them in one flat directory).
 
 Copy `.agents/skills/gui-test/templates/test_template.{py,ps1}` here and fill it in.
 Keep the `.ps1` files ASCII.
+
+### Clipboard regression tests
+
+`core/tests/clipboard_ios_test.mm` is a C++/UIKit host for a disposable iOS
+simulator. Require `NATIVEAPI_IOS_CLIPBOARD_PASS` in its console. The desktop
+macOS test `core/build/tests/clipboard_macos_test` snapshots/restores the host
+clipboard.
+
+For Linux, build the explicit `clipboard_linux_test` CMake target and run
+`GDK_BACKEND=x11 xvfb-run -a core/build/tests/clipboard_linux_test`. Force X11 so
+an inherited Wayland session cannot select the user's real clipboard. Require
+`NATIVEAPI_LINUX_CLIPBOARD_PASS`. Wayland needs a separate compositor check.
+
+Android uses the two C++ NativeActivity hosts in `core/tests/clipboard_android_test.cpp`.
+With a disposable arm64 emulator booted, run
+`bash core/tests/run_clipboard_android_test.sh "$ANDROID_HOME" "$ANDROID_NDK_HOME" emulator-5554 /tmp/nativeapi-cpp-clipboard`.
+The APKs contain native libraries and no application Java/dex. Require
+`NATIVEAPI_CPP_CLIPBOARD_PASS`; the runner uninstalls both hosts afterward. This
+covers asynchronous Unicode/empty reads, HTML, polling notifications, removal,
+re-subscription and a second application's write across focus restoration.
