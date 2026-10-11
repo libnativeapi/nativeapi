@@ -94,6 +94,7 @@ pub enum ShortcutEvent {
     Registered { shortcut_id: ShortcutId, accelerator: Option<String> },
     Unregistered { shortcut_id: ShortcutId, accelerator: Option<String> },
     RegistrationFailed { shortcut_id: ShortcutId, accelerator: Option<String>, error_message: Option<String> },
+    Released { shortcut_id: ShortcutId, accelerator: Option<String> },
 }
 
 impl ShortcutEvent {
@@ -103,6 +104,7 @@ impl ShortcutEvent {
             cnativeapi::NATIVE_SHORTCUT_EVENT_TYPE_REGISTERED => Self::Registered { shortcut_id: raw.shortcut_id, accelerator: if raw.accelerator.is_null() { None } else { Some(CStr::from_ptr(raw.accelerator).to_string_lossy().into_owned()) } },
             cnativeapi::NATIVE_SHORTCUT_EVENT_TYPE_UNREGISTERED => Self::Unregistered { shortcut_id: raw.shortcut_id, accelerator: if raw.accelerator.is_null() { None } else { Some(CStr::from_ptr(raw.accelerator).to_string_lossy().into_owned()) } },
             cnativeapi::NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED => Self::RegistrationFailed { shortcut_id: raw.shortcut_id, accelerator: if raw.accelerator.is_null() { None } else { Some(CStr::from_ptr(raw.accelerator).to_string_lossy().into_owned()) }, error_message: if raw.data.registration_failed.error_message.is_null() { None } else { Some(CStr::from_ptr(raw.data.registration_failed.error_message).to_string_lossy().into_owned()) } },
+            cnativeapi::NATIVE_SHORTCUT_EVENT_TYPE_RELEASED => Self::Released { shortcut_id: raw.shortcut_id, accelerator: if raw.accelerator.is_null() { None } else { Some(CStr::from_ptr(raw.accelerator).to_string_lossy().into_owned()) } },
             _ => return None,
         })
     }

@@ -111,6 +111,18 @@ final class ShortcutRegistrationFailedEvent extends ShortcutEvent {
   final String? errorMessage;
 }
 
+final class ShortcutReleasedEvent extends ShortcutEvent {
+  const ShortcutReleasedEvent({
+    required this.shortcutId,
+    required this.accelerator,
+  });
+
+  @override
+  final ShortcutId shortcutId;
+  @override
+  final String? accelerator;
+}
+
 class Shortcut {
   Shortcut.fromHandle(this.nativeHandle);
   Shortcut.borrowed(this.nativeHandle);

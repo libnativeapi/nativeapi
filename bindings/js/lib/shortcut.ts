@@ -23,7 +23,8 @@ export type ShortcutEvent =
   | { type: "activated"; shortcutId: ShortcutId; accelerator: string | null }
   | { type: "registered"; shortcutId: ShortcutId; accelerator: string | null }
   | { type: "unregistered"; shortcutId: ShortcutId; accelerator: string | null }
-  | { type: "registrationFailed"; shortcutId: ShortcutId; accelerator: string | null; errorMessage: string | null };
+  | { type: "registrationFailed"; shortcutId: ShortcutId; accelerator: string | null; errorMessage: string | null }
+  | { type: "released"; shortcutId: ShortcutId; accelerator: string | null };
 
 /** A native Shortcut, held through an owned handle. */
 export class Shortcut extends NativeObject {

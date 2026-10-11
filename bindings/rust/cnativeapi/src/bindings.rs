@@ -3261,6 +3261,7 @@ pub const NATIVE_SHORTCUT_EVENT_TYPE_ACTIVATED: native_shortcut_event_type_t = 0
 pub const NATIVE_SHORTCUT_EVENT_TYPE_REGISTERED: native_shortcut_event_type_t = 1;
 pub const NATIVE_SHORTCUT_EVENT_TYPE_UNREGISTERED: native_shortcut_event_type_t = 2;
 pub const NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED: native_shortcut_event_type_t = 3;
+pub const NATIVE_SHORTCUT_EVENT_TYPE_RELEASED: native_shortcut_event_type_t = 4;
 #[doc = " Which concrete ShortcutEvent arrived."]
 pub type native_shortcut_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One ShortcutEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]

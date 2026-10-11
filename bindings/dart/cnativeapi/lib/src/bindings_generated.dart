@@ -5132,7 +5132,8 @@ enum native_shortcut_event_type_t {
   NATIVE_SHORTCUT_EVENT_TYPE_ACTIVATED(0),
   NATIVE_SHORTCUT_EVENT_TYPE_REGISTERED(1),
   NATIVE_SHORTCUT_EVENT_TYPE_UNREGISTERED(2),
-  NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED(3);
+  NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED(3),
+  NATIVE_SHORTCUT_EVENT_TYPE_RELEASED(4);
 
   final int value;
   const native_shortcut_event_type_t(this.value);
@@ -5142,6 +5143,7 @@ enum native_shortcut_event_type_t {
     1 => NATIVE_SHORTCUT_EVENT_TYPE_REGISTERED,
     2 => NATIVE_SHORTCUT_EVENT_TYPE_UNREGISTERED,
     3 => NATIVE_SHORTCUT_EVENT_TYPE_REGISTRATION_FAILED,
+    4 => NATIVE_SHORTCUT_EVENT_TYPE_RELEASED,
     _ => throw ArgumentError(
       'Unknown value for native_shortcut_event_type_t: $value',
     ),

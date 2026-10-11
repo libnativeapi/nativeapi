@@ -569,7 +569,7 @@
           "kind": "field",
           "doc": {
             "summary": "The keyboard shortcut string (e.g., \"Ctrl+Shift+A\").",
-            "details": "Follows Electron-style accelerator format:\n- Modifiers: Ctrl, Alt, Shift, Cmd (macOS), Super (Linux), Meta\n- Keys: A-Z, 0-9, F1-F12, Space, Tab, Enter, Escape, etc.\n- Examples: \"Ctrl+C\", \"Cmd+Shift+4\", \"Alt+F4\""
+            "details": "Follows Electron-style accelerator format:\n- Modifiers: Ctrl, Alt, Shift, Cmd (macOS), Super (Linux), Meta\n- Keys: A-Z, 0-9, F1-F12, Space, Tab, Enter, Escape, etc.\n- Examples: \"Ctrl+C\", \"Cmd+Shift+4\", \"Alt+F4\"\n- macOS also accepts CapsLock and Fn modifiers. Registration fails on platforms that cannot represent those modifiers."
           },
           "signatures": {
             "cpp": {
@@ -1175,6 +1175,50 @@
             "rust": {
               "name": "error_message",
               "signature": "error_message: Option<String>"
+            }
+          }
+        },
+        {
+          "key": "ShortcutReleasedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "Emitted when the main key of an activated shortcut is released.",
+            "details": "Releasing modifiers before the main key does not prevent delivery. This event does not invoke the shortcut's activation callback.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Delivered by Carbon without keyboard-monitoring permissions.\n- Windows: ❌ Not emitted; global hotkeys report activation only.\n- Linux: ❌ Not emitted; global hotkeys report activation only.\n- Android: ❌ Global shortcuts are unsupported.\n- iOS: ❌ Global shortcuts are unsupported.\n- OHOS: ❌ Global shortcuts are unsupported."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ShortcutReleasedEvent",
+              "signature": "class ShortcutReleasedEvent : public ShortcutEvent"
+            },
+            "csharp": {
+              "name": "ShortcutEvent.Released",
+              "signature": "public sealed record Released(uint ShortcutId, string? Accelerator) : ShortcutEvent;"
+            },
+            "dart": {
+              "name": "ShortcutReleasedEvent",
+              "signature": "final class ShortcutReleasedEvent extends ShortcutEvent"
+            },
+            "go": {
+              "name": "ShortcutEventReleased",
+              "signature": "const ShortcutEventReleased ShortcutEventType = 4"
+            },
+            "js": {
+              "name": "Extract<ShortcutEvent, { type: \"released\" }>",
+              "signature": "| { type: \"released\"; shortcutId: ShortcutId; accelerator: string | null }"
+            },
+            "python": {
+              "name": "ShortcutReleasedEvent",
+              "signature": "@dataclass(frozen=True)\nclass ShortcutReleasedEvent(ShortcutEvent):"
+            },
+            "rust": {
+              "name": "ShortcutEvent::Released",
+              "signature": "Released { shortcut_id: ShortcutId, accelerator: Option<String> }"
             }
           }
         }

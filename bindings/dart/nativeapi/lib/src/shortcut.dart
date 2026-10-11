@@ -171,6 +171,18 @@ sealed class ShortcutEvent {
                   .toDartString(),
       );
     }
+    if (raw.typeAsInt ==
+        c
+            .native_shortcut_event_type_t
+            .NATIVE_SHORTCUT_EVENT_TYPE_RELEASED
+            .value) {
+      return ShortcutReleasedEvent(
+        shortcutId: raw.shortcut_id,
+        accelerator: raw.accelerator == ffi.nullptr
+            ? null
+            : raw.accelerator.cast<pkg_ffi.Utf8>().toDartString(),
+      );
+    }
     return null;
   }
 }
@@ -223,6 +235,18 @@ final class ShortcutRegistrationFailedEvent extends ShortcutEvent {
   @override
   final String? accelerator;
   final String? errorMessage;
+}
+
+final class ShortcutReleasedEvent extends ShortcutEvent {
+  const ShortcutReleasedEvent({
+    required this.shortcutId,
+    required this.accelerator,
+  });
+
+  @override
+  final ShortcutId shortcutId;
+  @override
+  final String? accelerator;
 }
 
 class Shortcut implements ffi.Finalizable {

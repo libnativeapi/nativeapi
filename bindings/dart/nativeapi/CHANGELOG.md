@@ -1,5 +1,6 @@
 ## 0.5.3
 
+- macOS: add `ShortcutReleasedEvent` for system key-up delivery and accept Fn / CapsLock accelerators (hotkey_manager migration).
 - Add desktop clipboard text, HTML, images, file paths, multi-format writes and change notifications.
 - macOS: the title bar's close button is a cancellable close request again.
   On macOS 26 it bypassed `WindowCloseRequestedEvent` and closed the window

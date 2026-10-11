@@ -5486,6 +5486,7 @@ const (
 	ShortcutEventRegistered         ShortcutEventType = 1
 	ShortcutEventUnregistered       ShortcutEventType = 2
 	ShortcutEventRegistrationFailed ShortcutEventType = 3
+	ShortcutEventReleased           ShortcutEventType = 4
 )
 
 // ShortcutEvent copies an event payload. Handle fields are borrowed until the callback returns.
@@ -5507,6 +5508,7 @@ func fromCShortcutEvent(raw *C.native_shortcut_event_t) ShortcutEvent {
 	case ShortcutEventUnregistered:
 	case ShortcutEventRegistrationFailed:
 		value.ErrorMessage = C.GoString(C.go_native_shortcut_event_t_registration_failed_ErrorMessage(raw))
+	case ShortcutEventReleased:
 	}
 	return value
 }

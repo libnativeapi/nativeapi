@@ -142,6 +142,7 @@ from .shortcut import (
     ShortcutOptions,
     ShortcutRegisteredEvent,
     ShortcutRegistrationFailedEvent,
+    ShortcutReleasedEvent,
     ShortcutScope,
     ShortcutUnregisteredEvent,
 )
@@ -318,6 +319,7 @@ __all__ = [
     "ShortcutOptions",
     "ShortcutRegisteredEvent",
     "ShortcutRegistrationFailedEvent",
+    "ShortcutReleasedEvent",
     "ShortcutScope",
     "ShortcutUnregisteredEvent",
     "Size",

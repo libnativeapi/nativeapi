@@ -78,6 +78,8 @@ class ShortcutEvent:
                 _rt.decode(raw.accelerator),
                 _rt.decode(raw.data.registration_failed.error_message),
             )
+        if raw.type == 4:
+            return ShortcutReleasedEvent(raw.shortcut_id, _rt.decode(raw.accelerator))
         return None
 
 
@@ -99,6 +101,11 @@ class ShortcutUnregisteredEvent(ShortcutEvent):
 @dataclass(frozen=True)
 class ShortcutRegistrationFailedEvent(ShortcutEvent):
     error_message: str
+
+
+@dataclass(frozen=True)
+class ShortcutReleasedEvent(ShortcutEvent):
+    pass
 
 
 class Shortcut(_rt.NativeObject):

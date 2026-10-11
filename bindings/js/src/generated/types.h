@@ -739,6 +739,9 @@ inline Value ToValue(const native_shortcut_event_t& event) {
       result.Set("type", Value::String("registrationFailed"));
       result.Set("errorMessage", Value::String(event.data.registration_failed.error_message));
       break;
+    case NATIVE_SHORTCUT_EVENT_TYPE_RELEASED:
+      result.Set("type", Value::String("released"));
+      break;
     default:
       return Value::Null();
   }

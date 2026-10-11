@@ -72,6 +72,7 @@ public abstract record ShortcutEvent
     public sealed record Registered(uint ShortcutId, string? Accelerator) : ShortcutEvent;
     public sealed record Unregistered(uint ShortcutId, string? Accelerator) : ShortcutEvent;
     public sealed record RegistrationFailed(uint ShortcutId, string? Accelerator, string? ErrorMessage) : ShortcutEvent;
+    public sealed record Released(uint ShortcutId, string? Accelerator) : ShortcutEvent;
 
     internal static ShortcutEvent? FromRaw(in native_shortcut_event_t raw)
     {
@@ -81,6 +82,7 @@ public abstract record ShortcutEvent
             case 1: return new Registered(raw.shortcut_id, Marshal.PtrToStringUTF8(raw.accelerator));
             case 2: return new Unregistered(raw.shortcut_id, Marshal.PtrToStringUTF8(raw.accelerator));
             case 3: return new RegistrationFailed(raw.shortcut_id, Marshal.PtrToStringUTF8(raw.accelerator), Marshal.PtrToStringUTF8(raw.data.registration_failed.error_message));
+            case 4: return new Released(raw.shortcut_id, Marshal.PtrToStringUTF8(raw.accelerator));
             default: return null;
         }
     }
