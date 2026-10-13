@@ -570,7 +570,7 @@
         {
           "key": "FileDialog",
           "kind": "class",
-          "summary": "System file picker. UI-thread only; Open pumps messages until dismissed. Windows: WinRT picker with WinUI3 enabled, IFileDialog otherwise. Other platforms currently return IsSupported() == false.",
+          "summary": "System file picker. UI-thread only; Open pumps messages until dismissed. Windows: WinRT picker with WinUI3 enabled, IFileDialog otherwise. Linux: GtkFileChooserNative (xdg-desktop-portal when GTK selects it), local files only. Other platforms currently return IsSupported() == false.",
           "languages": [
             "cpp",
             "csharp",
