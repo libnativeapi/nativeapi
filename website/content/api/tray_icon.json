@@ -12,6 +12,14 @@
         "notes": [
           {
             "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ Native status items\n- Windows: ✅ Native notification-area items\n- Linux: ⚠️ Requires a compatible tray host\n- Android: ❌ System tray API unavailable\n- iOS: ❌ System tray API unavailable\n- OpenHarmony: ⚠️ HMS desktop status service required; see the limits below"
+          },
+          {
+            "kind": "note",
+            "text": "HarmonyOS desktop uses public HMS StatusBarManager after the owning UI environment/context is attached. At most one item is visible per app. Visibility, icon, template and hover-text changes are asynchronous: getters change only after SDK success; setters issued while a request is pending are coalesced. SetVisible returns submission status and rejects a pending request. A missing service (including the phone profile) rejects registration. Destroying the last wrapper requests removal; HMS may refuse removal without a foreground window, in which case cleanup retries on actual owning-Ability activation. Only left-click events are available. Bounds are unavailable (empty rectangle). Right-click menus use the native SDK (20 top-level items, two levels, 20 children, grouped separators, icons and selected states). Disabled items, mixed states, accelerators, item tooltips and deeper/submenu separators cannot be represented: an initial incompatible menu rejects registration; an incompatible live update clears the native menu. The SDK may append its own Exit command. Clicked/DoubleClicked triggers are ignored. Native menu lifecycle/right/double-click events and programmatic Open/Close are unavailable. Title/size/position/content view are configuration metadata only on HarmonyOS."
+          },
+          {
+            "kind": "note",
             "text": "This class uses the PIMPL idiom to hide platform-specific implementation details and ensure binary compatibility across different platforms."
           }
         ]
@@ -100,7 +108,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSStatusItem.autosaveName; empty leaves it unset\n- Windows: ⚠️ Recorded only - The notification area uses its own identity\n- Linux: ✅ Fully supported - Maps to the immutable StatusNotifierItem Id\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSStatusItem.autosaveName; empty leaves it unset\n- Windows: ⚠️ Recorded only - The notification area uses its own identity\n- Linux: ✅ Fully supported - Maps to the immutable StatusNotifierItem Id\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Recorded only - HarmonyOS status items use the application identity"
               }
             ]
           },
@@ -392,7 +400,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSImage.template\n- Windows: ✅ Uses the taskbar light/dark setting or high-contrast text colour\n- Linux: ⚠️ Uses the desktop portal colour scheme, GTK fallback, or Omarchy foreground; independently themed panels may differ\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSImage.template\n- Windows: ✅ Uses the taskbar light/dark setting or high-contrast text colour\n- Linux: ⚠️ Uses the desktop portal colour scheme, GTK fallback, or Omarchy foreground; independently themed panels may differ\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ HarmonyOS desktop - HMS selects white/black alpha masks; updates are asynchronous"
               }
             ]
           },
@@ -486,7 +494,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ⚠️ Recorded only - The notification area dictates the icon size\n- Linux: ⚠️ Recorded only - The panel dictates the icon size\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ⚠️ Recorded only - The notification area dictates the icon size\n- Linux: ⚠️ Recorded only - The panel dictates the icon size\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Recorded only - HMS controls size; non-finite/non-positive requests are ignored"
               }
             ]
           },
@@ -579,7 +587,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSButton.imagePosition\n- Windows: ⚠️ Recorded only - Tray icons have no title\n- Linux: ⚠️ Recorded only - The panel decides the layout\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSButton.imagePosition\n- Windows: ⚠️ Recorded only - Tray icons have no title\n- Linux: ⚠️ Recorded only - The panel decides the layout\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Recorded only - HMS controls layout and has no inline tray title"
               }
             ]
           },
@@ -843,7 +851,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Fills the NSStatusItem's whole window, padding included\n- Windows: ⚠️ Recorded only - The notification area shows only an icon\n- Linux: ⚠️ Recorded only - StatusNotifierItem shows only an icon\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Fills the NSStatusItem's whole window, padding included\n- Windows: ⚠️ Recorded only - The notification area shows only an icon\n- Linux: ⚠️ Recorded only - StatusNotifierItem shows only an icon\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Recorded only - HMS status items do not host custom views"
               }
             ]
           },

@@ -8,7 +8,7 @@
       "kind": "class",
       "doc": {
         "summary": "Drags files and text out of a window, into other windows and other applications (a file manager, an editor, a mail composer).",
-        "details": "Describe the data with SetFilePaths() and / or SetText(), then call StartDragging() while the primary mouse button is held down — typically from a mouse-down or drag-start handler. The platform's drag loop takes over the mouse from there; a DragSourceEndedEvent reports how the drag ended.\n\n```cpp\nauto source = std::make_shared<DragSource>();\nsource->SetFilePaths({\"/Users/me/report.pdf\"});\nsource->AddListener<DragSourceEndedEvent>([](const DragSourceEndedEvent& event) {\n  if (event.GetOperation() == DragOperation::None) {\n    // Nothing was dropped.\n  }\n});\n// In a mouse-down / drag-start handler:\nsource->StartDragging(window);\n```\n\nEvents are emitted on the main thread. The data may be changed between drags; changing it during a drag has no effect on that drag.\n\nPlatform notes:\n- macOS (AppKit dragging session), Windows (OLE DoDragDrop) and Linux (GTK 3) are supported.\n- Android, iOS and OpenHarmony do not support dragging; IsSupported() returns false and StartDragging() returns false.\n- The platform drag loop consumes the mouse-up that ends the drag. So that the window's content does not keep treating the button as held, the window the drag started from receives a synthesized mouse-up when the drag ends (macOS, Windows)."
+        "details": "Describe the data with SetFilePaths() and / or SetText(), then call StartDragging() while the primary pointer is held down — typically from a mouse-down or drag-start handler. The platform's drag loop takes over the mouse from there; a DragSourceEndedEvent reports how the drag ended.\n\n```cpp\nauto source = std::make_shared<DragSource>();\nsource->SetFilePaths({\"/Users/me/report.pdf\"});\nsource->AddListener<DragSourceEndedEvent>([](const DragSourceEndedEvent& event) {\n  if (event.GetOperation() == DragOperation::None) {\n    // Nothing was dropped.\n  }\n});\n// In a mouse-down / drag-start handler:\nsource->StartDragging(window);\n```\n\nEvents are emitted on the main thread. The data may be changed between drags; changing it during a drag has no effect on that drag.\n\nPlatform notes:\n- macOS (AppKit dragging session), Windows (OLE DoDragDrop) and Linux (GTK 3) are supported.\n- OpenHarmony supports SDK-default public native ArkUI drag actions through an initialized ArkTS UI host, including ArkTS-only content. Start from an active primary pointer event. Explicit Move/Link preferences are refused; the SDK can still select Move at the receiver because a source-offer mask is unavailable. Ended events report the actual Copy/Move/None outcome. End notifications carry result/operation but no coordinates: IsPositionSupported() is false and event positions use the origin as an unavailable-value fallback.\n- Android and iOS return false from IsSupported() and StartDragging().\n- The platform drag loop consumes the mouse-up that ends the drag. So that the window's content does not keep treating the button as held, the window the drag started from receives a synthesized mouse-up when the drag ends (macOS, Windows)."
       },
       "signatures": {
         "cpp": {
@@ -113,7 +113,13 @@
           "key": "DragSource::IsSupported",
           "kind": "static",
           "doc": {
-            "summary": "Checks if dragging data out of a window is available on this platform."
+            "summary": "Checks if dragging data out of a window is available on this platform.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - AppKit source sessions\n- Windows: ✅ Fully supported - OLE source sessions\n- Linux: ✅ Fully supported - GTK source sessions\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ⚠️ Partial support - Initialized ArkTS UI host; SDK-default drag actions"
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -143,6 +149,94 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            }
+          }
+        },
+        {
+          "key": "DragSource::IsPositionSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks whether native drag-ended events report a screen position.",
+            "details": "When false, DragSourceEvent::GetPosition() returns the origin as a fallback. This query describes native source notifications, not user-constructed events.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns true\n- Windows: ✅ Fully supported - Returns true\n- Linux: ✅ Fully supported - Returns true\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not applicable - Public drag-action notifications omit coordinates"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsPositionSupported",
+              "signature": "static bool IsPositionSupported()"
+            },
+            "csharp": {
+              "name": "IsPositionSupported",
+              "signature": "public static bool IsPositionSupported()"
+            },
+            "dart": {
+              "name": "isPositionSupported",
+              "signature": "static bool isPositionSupported()"
+            },
+            "go": {
+              "name": "DragSourceIsPositionSupported",
+              "signature": "func DragSourceIsPositionSupported() bool"
+            },
+            "js": {
+              "name": "isPositionSupported",
+              "signature": "static isPositionSupported(): boolean"
+            },
+            "python": {
+              "name": "is_position_supported",
+              "signature": "@staticmethod\ndef is_position_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_position_supported",
+              "signature": "pub fn is_position_supported() -> bool"
+            }
+          }
+        },
+        {
+          "key": "DragSource::IsOperationSelectionSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks whether a source can constrain the operation offered to targets.",
+            "details": "When false, the SDK receiver chooses the operation and the ended event reports its actual choice. Only the default Copy preference can start an OHOS source; that SDK cannot enforce a Copy-only offer and may report a Move completion. The backend never deletes the source files itself.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns true\n- Windows: ✅ Fully supported - Returns true\n- Linux: ✅ Fully supported - Returns true\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not applicable - No public source-offer mask operation"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsOperationSelectionSupported",
+              "signature": "static bool IsOperationSelectionSupported()"
+            },
+            "csharp": {
+              "name": "IsOperationSelectionSupported",
+              "signature": "public static bool IsOperationSelectionSupported()"
+            },
+            "dart": {
+              "name": "isOperationSelectionSupported",
+              "signature": "static bool isOperationSelectionSupported()"
+            },
+            "go": {
+              "name": "DragSourceIsOperationSelectionSupported",
+              "signature": "func DragSourceIsOperationSelectionSupported() bool"
+            },
+            "js": {
+              "name": "isOperationSelectionSupported",
+              "signature": "static isOperationSelectionSupported(): boolean"
+            },
+            "python": {
+              "name": "is_operation_selection_supported",
+              "signature": "@staticmethod\ndef is_operation_selection_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_operation_selection_supported",
+              "signature": "pub fn is_operation_selection_supported() -> bool"
             }
           }
         },
@@ -320,7 +414,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - The image replaces the file icons\n- Windows: ✅ Fully supported - Shown through the shell drag image helper\n- Linux: ✅ Fully supported - Set as the drag icon\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - The image replaces the file icons\n- Windows: ✅ Fully supported - Shown through the shell drag image helper\n- Linux: ✅ Fully supported - Set as the drag icon\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ✅ Fully supported - PixelMap preview; nullptr uses a compact default tile"
               }
             ]
           },
@@ -402,11 +496,17 @@
           "key": "DragSource::SetDragOperation",
           "kind": "method",
           "doc": {
-            "summary": "Sets the operation offered to drop targets.",
+            "summary": "Sets the requested operation offered to drop targets.",
             "params": [
               {
                 "name": "operation",
                 "text": "The operation to offer; defaults to DragOperation::Copy. DragOperation::Move tells file managers they may move the files away, so only offer it when that is intended."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Constrains the native source operation mask\n- Windows: ✅ Fully supported - Constrains the native source operation mask\n- Linux: ✅ Fully supported - Constrains the native source operation mask\n- Android: ❌ Not applicable - No native drag source\n- iOS: ❌ Not applicable - No native drag source\n- OpenHarmony: ⚠️ Partial support - Only default Copy may start; the SDK receiver can choose Copy or Move; see IsOperationSelectionSupported()"
               }
             ]
           },
@@ -445,7 +545,13 @@
           "key": "DragSource::GetDragOperation",
           "kind": "method",
           "doc": {
-            "summary": "The operation offered to drop targets."
+            "summary": "The requested operation offered to drop targets.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetDragOperation() for platform availability."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -490,11 +596,11 @@
                 "text": "The window the drag starts from. The drag image appears under the cursor."
               }
             ],
-            "returns": "false if the platform does not support dragging, the window is gone, there is no data to drag (no files and no text), the operation is DragOperation::None, the primary mouse button is not held down, or a drag is already in progress.",
+            "returns": "false if the platform does not support dragging, the window is gone, there is no data to drag (no files and no text), the operation is DragOperation::None, the primary pointer is not held down, a drag is already in progress, or the platform SDK rejects the data or request.",
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Starts an NSDraggingSession from the content view\n- Windows: ✅ Fully supported - Runs DoDragDrop on the next turn of the message loop\n- Linux: ✅ Fully supported - Starts a GTK drag on the window\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not applicable - Returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Starts an NSDraggingSession from the content view\n- Windows: ✅ Fully supported - Runs DoDragDrop on the next turn of the message loop\n- Linux: ✅ Fully supported - Starts a GTK drag on the window\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ⚠️ Partial support - Initialized ArkTS UI host; SDK receiver chooses operation, no end coordinates"
               }
             ]
           },
@@ -573,7 +679,7 @@
       "kind": "enum",
       "doc": {
         "summary": "What happens to dragged data when it is dropped.",
-        "details": "A DragSource offers one operation and a DropTarget accepts one; a drop only happens when the two agree."
+        "details": "A DragSource offers one operation and a DropTarget accepts one; a drop only happens when the two agree. Some SDKs cannot constrain the source offer; check DragSource::IsOperationSelectionSupported() for that capability."
       },
       "signatures": {
         "cpp": {
@@ -761,7 +867,7 @@
       "kind": "event",
       "doc": {
         "summary": "Base class for events emitted by a DragSource.",
-        "details": "Every event carries the global cursor position at the moment it was produced, in the same screen coordinate space as Window::GetPosition() (top-left origin, logical pixels)."
+        "details": "Reported positions use the screen coordinate space of Window::GetPosition() (top-left origin, logical pixels). Sources that cannot report coordinates use the origin fallback; check DragSource::IsPositionSupported() first."
       },
       "signatures": {
         "cpp": {
@@ -835,7 +941,14 @@
           "key": "DragSourceEvent::Position",
           "kind": "field",
           "doc": {
-            "summary": "The global cursor position in screen coordinates."
+            "summary": "The global cursor position in screen coordinates.",
+            "details": "Returns the origin when the native source cannot report an end position. Check DragSource::IsPositionSupported() before interpreting this value.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Native drag-ended screen point\n- Windows: ✅ Fully supported - Native cursor point when the drag ends\n- Linux: ✅ Fully supported - Native cursor point when the drag ends\n- Android: ❌ Not applicable - No native drag source events\n- iOS: ❌ Not applicable - No native drag source events\n- OpenHarmony: ❌ Not applicable - Origin fallback; end coordinates unavailable"
+              }
+            ]
           },
           "signatures": {
             "cpp": {

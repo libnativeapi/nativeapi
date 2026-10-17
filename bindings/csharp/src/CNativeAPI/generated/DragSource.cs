@@ -40,6 +40,14 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_drag_source_is_operation_selection_supported();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_drag_source_is_position_supported();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_drag_source_is_supported();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]

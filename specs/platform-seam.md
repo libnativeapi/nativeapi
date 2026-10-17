@@ -35,14 +35,19 @@
 struct NativeDisplayInfo { std::string key; /* ... */ };
 
 /// Enumerate the platform's current displays. Implemented per platform.
-std::vector<NativeDisplayInfo> EnumerateNativeDisplays();
+bool EnumerateNativeDisplays(std::vector<NativeDisplayInfo>& natives);
 
 std::vector<std::shared_ptr<Display>> Reconcile(...);   // 共享
 void HandleDisplaysChanged();                            // 共享
 ```
 
-平台文件只实现 `EnumerateNativeDisplays()`；缓存、diff、事件发射三件事各平台完全
-共用（`display_manager.cpp`）。
+枚举失败返回 false；共享查询返回空结果但保留身份缓存，事件处理也不得将失败解释为
+全部显示器断开。成功但结果为空才表示空拓扑。
+
+平台文件实现 `EnumerateNativeDisplays()` 与监听启停；基础缓存与增删 diff 在
+`display_manager.cpp` 共用。OHOS 的 SDK 回调在主线程交付，并保留独立的已通知快照：
+普通 GetAll 查询可以更新身份缓存，但不能吞掉尚在队列中的增删通知。退订会使旧观察
+周期的已排队工作失效。
 
 **什么时候选它**：平台差异集中在「取一份数据」或「触发一个动作」，其余是纯逻辑。
 好处是 diff/缓存/事件这类最容易写出平台间行为不一致的代码只有一份。

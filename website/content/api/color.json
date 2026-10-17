@@ -450,7 +450,7 @@
                 "text": "Hexadecimal color string (with or without '#' prefix)"
               }
             ],
-            "returns": "Color instance parsed from the hex string"
+            "returns": "Color instance parsed from the hex string, or Transparent for null, malformed length or non-hexadecimal characters. This method never throws."
           },
           "signatures": {
             "cpp": {

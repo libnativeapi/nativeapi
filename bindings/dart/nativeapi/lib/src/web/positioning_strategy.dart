@@ -41,7 +41,7 @@ class PositioningStrategy {
   ) => unsupported();
 
   static PositioningStrategy? relativeWithWindowAndOffset(
-    Window window,
+    Window? window,
     Point offset,
   ) => unsupported();
 
@@ -52,4 +52,6 @@ class PositioningStrategy {
   Rectangle get relativeRectangle => unsupported();
 
   Point get relativeOffset => unsupported();
+
+  Window? get relativeWindow => unsupported();
 }

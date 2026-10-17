@@ -8,7 +8,7 @@
       "kind": "class",
       "doc": {
         "summary": "Manage launching the application at user login (cross-platform).",
-        "details": "LaunchAtLogin provides a unified API to enable or disable starting your application automatically when the user logs in. The actual mechanism is platform-specific, but this class abstracts away those differences.\n\nPlatform implementations:\n- Windows: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run registry key, and the matching Explorer\\StartupApproved\\Run flag so that an entry the user switched off in Task Manager reads as disabled. An app running from an MSIX package sees a virtualized registry instead, so there it is a shortcut in the user's Startup folder.\n- macOS: ServiceManagement SMAppService for the main app or bundled login item helpers\n- Linux (XDG): ~/.config/autostart/[app_id].desktop\n- Android/iOS/OHOS: Not supported (returns false from IsSupported/operations)\n\nNotes:\n- This API is intended for desktop environments. On mobile platforms this API is typically unsupported by design. Methods will fail gracefully.\n- You can let the implementation determine the current executable path, or call SetProgram() to customize the target binary and arguments recorded in the OS where the platform supports arbitrary launch commands. On macOS, SMAppService can only register the main app or a bundled helper, so a custom executable path is not supported and arguments are never delivered.\n- Some platforms may require application-specific permissions or entitlements (e.g., sandbox restrictions on macOS). In such cases, operations may fail.\n\nTypical usage:\n\n```cpp\nusing namespace nativeapi;\n\nif (LaunchAtLogin::IsSupported()) {\n  LaunchAtLogin launch_at_login(\"com.example.myapp\", \"MyApp\");\n  // Optionally override the program and arguments where supported:\n  launch_at_login.SetProgram(\"/usr/local/bin/myapp\", {\"--minimized\"});\n\n  launch_at_login.Enable();\n  bool enabled = launch_at_login.IsEnabled(); // should be true\n}\n```"
+        "details": "LaunchAtLogin provides a unified API to enable or disable starting your application automatically when the user logs in. The actual mechanism is platform-specific, but this class abstracts away those differences.\n\nPlatform implementations:\n- Windows: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run registry key, and the matching Explorer\\StartupApproved\\Run flag so that an entry the user switched off in Task Manager reads as disabled. An app running from an MSIX package sees a virtualized registry instead, so there it is a shortcut in the user's Startup folder.\n- macOS: ServiceManagement SMAppService for the main app or bundled login item helpers\n- Linux (XDG): ~/.config/autostart/[app_id].desktop\n- Android/iOS: Not supported (returns false from IsSupported/operations)\n- OpenHarmony: Current-bundle startup status through the public API 21+ SDK. Programmatic registration is unavailable: IsSupported/Enable/Disable return false. Metadata can be recorded; arbitrary executables are unsupported.\n\nNotes:\n- This API is intended for desktop environments. On mobile platforms this API is typically unsupported by design. Methods will fail gracefully.\n- You can let the implementation determine the current executable path, or call SetProgram() to customize the target binary and arguments recorded in the OS where the platform supports arbitrary launch commands. On macOS, SMAppService can only register the main app or a bundled helper, so a custom executable path is not supported and arguments are never delivered.\n- Some platforms may require application-specific permissions or entitlements (e.g., sandbox restrictions on macOS). In such cases, operations may fail.\n\nTypical usage:\n\n```cpp\nusing namespace nativeapi;\n\nif (LaunchAtLogin::IsSupported()) {\n  LaunchAtLogin launch_at_login(\"com.example.myapp\", \"MyApp\");\n  // Optionally override the program and arguments where supported:\n  launch_at_login.SetProgram(\"/usr/local/bin/myapp\", {\"--minimized\"});\n\n  launch_at_login.Enable();\n  bool enabled = launch_at_login.IsEnabled(); // should be true\n}\n```"
       },
       "signatures": {
         "cpp": {
@@ -175,7 +175,7 @@
           "kind": "static",
           "doc": {
             "summary": "Check whether launch-at-login is supported on this platform.",
-            "returns": "true if supported; false for unsupported platforms (e.g., mobile)."
+            "returns": "true if programmatic startup registration is supported; false otherwise. OpenHarmony can still query the current bundle status through IsEnabled(), but its public SDK has no registration controls, so this method returns false."
           },
           "signatures": {
             "cpp": {
@@ -296,7 +296,13 @@
                 "text": "The human-readable name."
               }
             ],
-            "returns": "true if the value was stored locally; does not change OS registration until Enable()."
+            "returns": "true if the value was stored locally; does not change OS registration until Enable().",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ⚠️ Metadata only; ServiceManagement uses the bundle label.\n- Windows: ✅ Stored locally; used for packaged-app startup shortcuts.\n- Linux: ✅ Stored locally; written to the XDG entry by Enable().\n- Android: ❌ Always returns false.\n- iOS: ❌ Always returns false.\n- OpenHarmony: ⚠️ Metadata only; Settings continues to use the bundle label."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -554,8 +560,8 @@
             "returns": "true if currently enabled; false otherwise.",
             "notes": [
               {
-                "kind": "see",
-                "text": "Enable() for platform availability."
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Reads the main app or bundled helper registration status.\n- Windows: ✅ Reads the registration and applicable user-disabled state.\n- Linux: ✅ Reads the XDG autostart registration.\n- Android: ❌ Always returns false.\n- iOS: ❌ Always returns false.\n- OpenHarmony: ⚠️ Reads only the current bundle through the initialized UI environment. Worker calls await the actual SDK Promise; UI calls request a refresh and return the last completed value for that environment, initially false. Missing host, invalid/foreign identifier and SDK failure return false. Enable/Disable remain unavailable; the user controls startup in Settings."
               }
             ]
           },

@@ -8,7 +8,7 @@
       "kind": "class",
       "doc": {
         "summary": "A rectangle inside a window that can hold other views.",
-        "details": "View on its own is a plain container. The controls (Label, Button, TextField, ImageView) derive from it and add their own methods; everything here — the subview tree, geometry, layout, visibility, focus — applies to all of them. A window hands out its root view through Window::GetContentView(); views are only ever shown by adding them, directly or through parents, to such a root.\n\nCoordinates are logical points with the origin at the parent's top-left corner and y growing downwards, like Window::SetBounds(). A parent whose layout is Row or Column positions its subviews itself; SetFrame() then only matters until the next layout pass.\n\nOwnership follows the tree: a parent keeps its subviews alive, a subview refers to its parent weakly. Destroying a view created by this library destroys its native control; a root view wraps the window's own content view and leaves it alone.\n\n**Example**\n\n```cpp\nauto window = std::make_shared<Window>();\nauto root = window->GetContentView();\nroot->SetLayout(ViewLayout::Column);\nroot->SetPadding(EdgeInsets::All(16));\nroot->SetSpacing(8);\n\nauto name = std::make_shared<TextField>();\nname->SetPlaceholder(\"Username\");\nauto status = std::make_shared<Label>();\nauto button = std::make_shared<Button>(\"Sign in\");\nbutton->AddListener<ButtonClickedEvent>([=](const ButtonClickedEvent&) {\n  status->SetText(\"Signing in as \" + name->GetText() + \"...\");\n});\n\nroot->AddSubview(name);\nroot->AddSubview(status);\nroot->AddSubview(button);\nwindow->Show();\n```",
+        "details": "View on its own is a plain container. The controls (Label, Button, TextField, ImageView) derive from it and add their own methods; everything here — the subview tree, geometry, layout, visibility, focus — applies to all of them. A window hands out its root view through Window::GetContentView(); views are only ever shown by adding them, directly or through parents, to such a root.\n\nCoordinates are logical points with the origin at the parent's top-left corner and y growing downwards, like Window::SetBounds(). A parent whose layout is Row or Column positions its subviews itself; SetFrame() then only matters until the next layout pass.\n\nOwnership follows the tree: a parent keeps its subviews alive, a subview refers to its parent weakly. Destroying a view created by this library destroys its native control. A window's root view preserves the host-owned content view; OpenHarmony mounts its own native tree inside a host-owned slot.\n\n**Example**\n\n```cpp\nauto window = std::make_shared<Window>();\nauto root = window->GetContentView();\nroot->SetLayout(ViewLayout::Column);\nroot->SetPadding(EdgeInsets::All(16));\nroot->SetSpacing(8);\n\nauto name = std::make_shared<TextField>();\nname->SetPlaceholder(\"Username\");\nauto status = std::make_shared<Label>();\nauto button = std::make_shared<Button>(\"Sign in\");\nbutton->AddListener<ButtonClickedEvent>([=](const ButtonClickedEvent&) {\n  status->SetText(\"Signing in as \" + name->GetText() + \"...\");\n});\n\nroot->AddSubview(name);\nroot->AddSubview(status);\nroot->AddSubview(button);\nwindow->Show();\n```",
         "notes": [
           {
             "kind": "note",
@@ -16,7 +16,7 @@
           },
           {
             "kind": "note",
-            "text": "Platform availability:\n- macOS: ✅ Fully supported - AppKit views and controls\n- Windows: ✅ Fully supported - Win32 common controls\n- Linux: ✅ Fully supported - GTK 3 widgets\n- Android: ❌ Not applicable - IsSupported() is false, every call is ignored\n- iOS: ❌ Not applicable - IsSupported() is false, every call is ignored\n- OpenHarmony: ❌ Not applicable - IsSupported() is false, every call is ignored"
+            "text": "Platform availability:\n- macOS: ✅ Fully supported - AppKit views and controls\n- Windows: ✅ Fully supported - Win32 common controls\n- Linux: ✅ Fully supported - GTK 3 widgets\n- Android: ❌ Not applicable - IsSupported() is false, every call is ignored\n- iOS: ❌ Not applicable - IsSupported() is false, every call is ignored\n- OpenHarmony: ⚠️ Native ArkUI controls on the initialized ArkTS UI thread; the host must attach a ContentSlot to its window. Tooltips are stored only. Password input is single-line; secure and multiline cannot be combined."
           }
         ]
       },
@@ -96,7 +96,7 @@
             "params": [
               {
                 "name": "native_view",
-                "text": "NSView* on macOS, HWND on Windows, GtkWidget* on Linux. Used by Window for its root view."
+                "text": "NSView* on macOS, HWND on Windows, GtkWidget* on Linux, ArkUI_NodeHandle on OpenHarmony (owning ArkTS UI thread only). Used by Window for its root view."
               }
             ]
           },
@@ -170,7 +170,7 @@
           "kind": "static",
           "doc": {
             "summary": "Checks if views are available on this platform.",
-            "returns": "false on Android, iOS and OpenHarmony, where every View method is a no-op and Window::GetContentView() returns nullptr."
+            "returns": "false on Android and iOS. On OpenHarmony, requires the initialized ArkTS UI thread and the native ArkUI node API; creating views also requires an attached host window and its UI context."
           },
           "signatures": {
             "cpp": {
@@ -1590,7 +1590,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Drawn by the view's layer\n- Windows: ⚠️ Containers and labels only - Other controls keep the theme colour\n- Linux: ⚠️ Applied through a CSS provider - The theme may override it\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Drawn by the view's layer\n- Windows: ⚠️ Containers and labels only - Other controls keep the theme colour\n- Linux: ⚠️ Applied through a CSS provider - The theme may override it\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ✅ Native ArkUI background colour; zero alpha resets the attribute."
               }
             ]
           },
@@ -1672,6 +1672,12 @@
               {
                 "name": "tooltip",
                 "text": "The text, or std::nullopt for none."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native view tooltip.\n- Windows: ✅ Native tooltip for the selected view backend.\n- Linux: ✅ GTK tooltip.\n- Android: ❌ Stores the value without displaying it.\n- iOS: ❌ Stores the value without displaying it.\n- OpenHarmony: ⚠️ Native hover events and an API 18+ nonmodal SDK popup. The ContentSlot host must supply the companion NativeTooltipHost adapter. Empty text or std::nullopt clears the display. Calls require the owning UI thread. Hidden/disabled/detached views do not show pending tips."
               }
             ]
           },
@@ -3021,6 +3027,12 @@
                 "name": "is_secure",
                 "text": "true to mask the text."
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony ignores this call on a multi-line field; its public TextArea input types do not include password entry."
+              }
             ]
           },
           "signatures": {
@@ -3101,6 +3113,12 @@
               {
                 "name": "is_multiline",
                 "text": "true for a multi-line field."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony ignores enabling multi-line while secure input is active. Otherwise it replaces the native input node, preserving the View id, text, appearance and tree position. Native focus and selection reset."
               }
             ]
           },

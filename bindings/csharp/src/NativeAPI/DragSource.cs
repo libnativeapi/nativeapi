@@ -76,6 +76,18 @@ public sealed partial class DragSource : IDisposable
         return rawResult;
     }
 
+    public static bool IsPositionSupported()
+    {
+        var rawResult = Interop.native_drag_source_is_position_supported();
+        return rawResult;
+    }
+
+    public static bool IsOperationSelectionSupported()
+    {
+        var rawResult = Interop.native_drag_source_is_operation_selection_supported();
+        return rawResult;
+    }
+
     public void SetFilePaths(IReadOnlyList<string> filePaths)
     {
         var itemsFilePaths = Interop.AllocUtf8Array(filePaths);

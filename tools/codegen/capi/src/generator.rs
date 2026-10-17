@@ -1348,7 +1348,23 @@ fn render_c_enum_converter(out: &mut String, item: &Enum, prefix: &str) {
         .first()
         .map(|variant| c_enum_variant(prefix, item, &variant.name))
         .unwrap_or_else(|| "0".to_string());
-    writeln!(out, "      return {};", fallback).unwrap();
+    // A flags enum also has valid combinations without a named variant.
+    // Mirror the binding generators' power-of-two test, preserving every bit.
+    let is_flags = item
+        .variants
+        .iter()
+        .all(|v| v.value == 0 || (v.value > 0 && v.value & (v.value - 1) == 0))
+        && item.variants.iter().any(|v| v.value >= 4);
+    if is_flags {
+        writeln!(
+            out,
+            "      return static_cast<{}>(value);",
+            c_type_name(prefix, &item.name)
+        )
+        .unwrap();
+    } else {
+        writeln!(out, "      return {};", fallback).unwrap();
+    }
     writeln!(out, "  }}").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -2732,6 +2748,43 @@ mod tests {
             "const native_format_list_t*"
         );
         assert_eq!(cpp_payload_type(&list), "std::vector<nativeapi::Format>");
+    }
+
+    #[test]
+    fn flags_output_conversion_keeps_combinations_without_changing_plain_enum_fallback() {
+        let mut item = Enum {
+            name: "ModifierKey".into(),
+            qualified_name: "nativeapi::ModifierKey".into(),
+            variants: vec![
+                EnumVariant {
+                    name: "None".into(),
+                    value: 0,
+                },
+                EnumVariant {
+                    name: "Shift".into(),
+                    value: 1,
+                },
+                EnumVariant {
+                    name: "Ctrl".into(),
+                    value: 2,
+                },
+                EnumVariant {
+                    name: "Alt".into(),
+                    value: 4,
+                },
+            ],
+        };
+        let mut out = String::new();
+        render_c_enum_converter(&mut out, &item, "native_");
+        assert!(out.contains("return static_cast<native_modifier_key_t>(value);"));
+        item.variants.push(EnumVariant {
+            name: "PlainThird".into(),
+            value: 3,
+        });
+        out.clear();
+        render_c_enum_converter(&mut out, &item, "native_");
+        assert!(!out.contains("static_cast<native_modifier_key_t>"));
+        assert!(out.contains("default:\n      return NATIVE_MODIFIER_KEY_NONE;"));
     }
 
     #[test]

@@ -91,6 +91,18 @@ impl DragSource {
         }
     }
 
+    pub fn is_position_supported() -> bool {
+        unsafe {
+            cnativeapi::native_drag_source_is_position_supported()
+        }
+    }
+
+    pub fn is_operation_selection_supported() -> bool {
+        unsafe {
+            cnativeapi::native_drag_source_is_operation_selection_supported()
+        }
+    }
+
     pub fn set_file_paths(&self, file_paths: &[String]) {
         let file_paths_owned: Vec<CString> = file_paths
             .iter()

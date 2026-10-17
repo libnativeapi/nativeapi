@@ -1187,7 +1187,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Delivered by Carbon without keyboard-monitoring permissions.\n- Windows: ❌ Not emitted; global hotkeys report activation only.\n- Linux: ❌ Not emitted; global hotkeys report activation only.\n- Android: ❌ Global shortcuts are unsupported.\n- iOS: ❌ Global shortcuts are unsupported.\n- OHOS: ❌ Global shortcuts are unsupported."
+                "text": "Platform availability:\n- macOS: ✅ Delivered by Carbon without keyboard-monitoring permissions.\n- Windows: ❌ Not emitted; global hotkeys report activation only.\n- Linux: ❌ Not emitted; global hotkeys report activation only.\n- Android: ❌ Global shortcuts are unsupported.\n- iOS: ❌ Global shortcuts are unsupported.\n- OHOS: ❌ Public global hotkeys report activation only."
               }
             ]
           },

@@ -51,11 +51,11 @@ class PositioningStrategy(_rt.NativeObject):
 
     @staticmethod
     def relative_with_window_and_offset(
-        window: _window.Window,
+        window: _window.Window | None,
         offset: _geometry.Point,
     ) -> PositioningStrategy | None:
         raw = _C.native_positioning_strategy_relative_with_window_and_offset(
-            window._handle,
+            _rt.handle_of(window),
             offset._to_c(),
         )
         return PositioningStrategy._owned(raw)
@@ -79,3 +79,8 @@ class PositioningStrategy(_rt.NativeObject):
     def relative_offset(self) -> _geometry.Point:
         raw = _C.native_positioning_strategy_get_relative_offset(self._handle)
         return _geometry.Point._from_c(raw)
+
+    @property
+    def relative_window(self) -> _window.Window | None:
+        raw = _C.native_positioning_strategy_get_relative_window(self._handle)
+        return _window.Window._owned(raw)

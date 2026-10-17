@@ -6,6 +6,15 @@
     {
       "key": "UrlOpener",
       "kind": "singleton",
+      "doc": {
+        "summary": "Opens HTTP/HTTPS links with the system's registered handler.",
+        "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ NSWorkspace URL dispatch.\n- Windows: ✅ ShellExecute URL dispatch.\n- Linux: ✅ GIO desktop URI dispatch.\n- Android: ❌ Not implemented in this native layer.\n- iOS: ✅ UIApplication URL dispatch.\n- OpenHarmony: ✅ Public UIAbilityContext dispatch after host/context attachment."
+          }
+        ]
+      },
       "signatures": {
         "cpp": {
           "name": "UrlOpener",
@@ -74,6 +83,9 @@
         {
           "key": "UrlOpener::CanOpen",
           "kind": "method",
+          "doc": {
+            "summary": "Checks the link's scheme and platform handler. OpenHarmony queries the public bundle manager; declare http/https in the host module's querySchemes. A missing declaration, invalid link or unavailable handler returns false."
+          },
           "signatures": {
             "cpp": {
               "name": "CanOpen",
@@ -108,6 +120,9 @@
         {
           "key": "UrlOpener::Open",
           "kind": "method",
+          "doc": {
+            "summary": "Requests system URL dispatch. OpenHarmony requires a worker while the ArkTS UI thread processes the actual SDK completion callback. UI-thread calls fail explicitly. SDK foreground/permission rules apply; launch failure is returned as kInvocationFailed with its SDK diagnostic. Success acknowledges system dispatch, not network loading of the destination page."
+          },
           "signatures": {
             "cpp": {
               "name": "Open",

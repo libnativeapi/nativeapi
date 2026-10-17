@@ -7,7 +7,13 @@
       "key": "FileDialog",
       "kind": "class",
       "doc": {
-        "summary": "System file picker. UI-thread only; Open pumps messages until dismissed. Windows: WinRT picker with WinUI3 enabled, IFileDialog otherwise. Linux: GtkFileChooserNative (xdg-desktop-portal when GTK selects it), local files only. Other platforms currently return IsSupported() == false."
+        "summary": "System file picker. Open blocks until the native picker is dismissed. Windows and Linux require the UI thread and pump their native message loop. OpenHarmony requires a worker while the ArkTS UI thread keeps processing events.",
+        "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ❌ Not implemented.\n- Windows: ✅ WinRT picker with WinUI3 enabled, IFileDialog otherwise.\n- Linux: ✅ GtkFileChooserNative (portal when GTK selects it), local files only.\n- Android: ❌ Not implemented.\n- iOS: ❌ Not implemented.\n- OpenHarmony: ✅ Public DocumentViewPicker after host/context initialization; attached visible parent required, current window used when unset. Results are authorized document URIs; programmatic Close is unavailable in the public SDK."
+          }
+        ]
       },
       "signatures": {
         "cpp": {
@@ -149,7 +155,7 @@
           "key": "FileDialog::SetFileTypes",
           "kind": "method",
           "doc": {
-            "summary": "Extensions such as .txt or .png; * allowed for Open, not Save."
+            "summary": "Extensions such as .txt or .png; * allowed for Open, not Save. OpenHarmony cannot represent a literal comma within one extension; Open fails explicitly for that configuration."
           },
           "signatures": {
             "cpp": {
@@ -295,7 +301,7 @@
           "key": "FileDialog::Open",
           "kind": "method",
           "doc": {
-            "summary": "True on acceptance or cancellation; false on failure. Inspect GetResult(). WinRT SaveFile may create an empty selected file as part of the system picker."
+            "summary": "True on acceptance or cancellation; false on failure. Inspect GetResult(). WinRT SaveFile may create an empty selected file as part of the system picker. OpenHarmony SaveFile uses the SDK default that pre-creates an empty selected document."
           },
           "signatures": {
             "cpp": {
@@ -332,9 +338,7 @@
           "key": "FileDialog::Close",
           "kind": "method",
           "doc": {
-            "summary": "Close the dialog programmatically.",
-            "details": "Dismisses the dialog as if the user had closed it.",
-            "returns": "true if the dialog was successfully closed, false otherwise"
+            "summary": "Request native cancellation. OpenHarmony returns false: the SDK exposes no close operation; the user can still cancel in the system picker UI."
           },
           "signatures": {
             "cpp": {
@@ -370,6 +374,9 @@
         {
           "key": "FileDialog::GetResult",
           "kind": "method",
+          "doc": {
+            "summary": "None while Open is pending; final native result after Open returns."
+          },
           "signatures": {
             "cpp": {
               "name": "GetResult",
@@ -404,6 +411,9 @@
         {
           "key": "FileDialog::GetPaths",
           "kind": "method",
+          "doc": {
+            "summary": "Empty while pending or after cancellation/failure. OpenHarmony returns the exact authorized document URIs from the system, for use with @ohos.file.fs; do not strip their scheme or treat them as accessible POSIX paths."
+          },
           "signatures": {
             "cpp": {
               "name": "GetPaths",

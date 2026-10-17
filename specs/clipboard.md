@@ -9,7 +9,7 @@
 成功，使用 nullopt / nullptr / 空列表；存在的空文本保持 optional("")。
 
 每次写入替换整个剪贴板，返回 bool。提交前校验 UTF-8（拒绝非法编码及内嵌 NUL）、
-绝对路径，并完成平台转换；桌面不检查文件存在性。HTML 不自动转换为纯文本；需要同时
+绝对路径，并完成平台转换；macOS/Windows/Linux 不检查文件存在性，OpenHarmony 仍遵守沙箱可读性要求。HTML 不自动转换为纯文本；需要同时
 提供时使用 Write。空包、空图片、空文件列表清空内容。发布持有独立副本；提交失败
 不保证恢复旧内容。读取文件路径忽略非本地 URI；Android 图片可以从有授权的 content URI 解码，文件路径只返回本地 file URL。没有自定义格式、PRIMARY、历史或文件剪切。
 
@@ -32,7 +32,15 @@ API 28+；有授权的图片 URI 可读取，本地 file URL 可读取路径。�
 iOS 使用 UIPasteboardChangedNotification 和 UIApplicationDidBecomeActiveNotification
 检查 changeCount，不因事件自动读取内容或触发粘贴提示；读取遵循 iOS 的权限策略，
 后台变化在恢复前台时合并通知。图片持有独立所有权，支持 ARC 和 MRC 编译。
-OpenHarmony 保留符号但能力探测 / 写入 false，无事件，读取立即失败。
+OpenHarmony 使用公开 NDK Pasteboard / UDMF，支持文本、HTML、独立 PixelMap 图片、本地文件 / 目录、多格式写入、清空和本地变化通知。
+UIAbility 的 N-API 模块初始化时须在 ArkTS UI 线程调用平台内部接缝
+`ohos::Initialize(env)`；它注册 N-API thread-safe function，并在环境清理时停止投递。
+读取延后到 UI 事件循环，工作线程写入同步转交 UI 线程；读取遵循
+`ohos.permission.READ_PASTEBOARD` 和系统粘贴授权策略。图片通过公开 Image NDK 转为独立像素副本。
+文件写入先检查当前沙箱访问权限，再由公开 FileUri NDK 转换；权限仍由系统 Pasteboard 管理。
+文件读取只返回实际可用的本地路径；其他应用的私有 URI 不能被当作本应用同名沙箱路径，无法
+映射的非本地 URI 被忽略。跨应用文件授权与互操作仍需独立接收应用验证。
+初始化前能力探测 / 写入 false、读取立即失败。最后一个监听器移除时解绑原生 observer。
 
 C ABI 的复杂读取负载使用交付 lease；高级绑定在确认前复制值并 retain 图片。
 Dart / JS / Python / C# 提供 Future / Promise / awaitable / Task 便利方法，失败抛出
@@ -46,3 +54,4 @@ Dart / JS / Python / C# 提供 Future / Promise / awaitable / Task 便利方法�
 多格式、图片、文件 URL 与监听生命周期；Android 使用 NativeActivity C++ 宿主，验证初始化、
 异步文本读取、焦点恢复和监听生命周期。测试只在独立模拟器/仿真器中运行，不向真实设备
 或用户桌面注入输入。缺失最终 PASS 标记、构建成功但未运行、系统拒绝访问均不算通过。
+鸿蒙集成宿主位于 `core/tests/ohos_smoke/`，同时验证设备、显示、偏好存储和剪贴板。

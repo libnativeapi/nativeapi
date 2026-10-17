@@ -160,8 +160,8 @@ C 没有重载，codegen 给重载方法加参数后缀：`Run(window)` →
    `Color` 3 处）。最近新增的 `GetWindowAtPoint`、`WindowDragSession::Start` 都按值。
    两种写法过 C ABI 结果相同，改到时顺手统一，不必专门 sweep。
 3. **身份对象绝不以 `const T&` 或 `T*` 进出公共 API**——那绕开了 `shared_ptr` 生命周期
-   （[object-model.md](object-model.md) §2）。`PositioningStrategy::Relative(const Window&)`
-   及其 `GetRelativeWindow()` 是已知违规，后者已因此被 codegen 跳过。
+   （[object-model.md](object-model.md) §2）。`PositioningStrategy::Relative` 与
+   `GetRelativeWindow()` 已改用共享窗口引用；getter 已能导出全部绑定。
 4. **`std::optional` 只包字符串。** C ABI 用空指针表示缺席，所以只有 C 形态是指针的类型
    能包（`TypeRef::Optional`）；`optional<double>`、`optional<Point>`、`optional<枚举>`
    过不了桥。句柄的「无」用 `nullptr`，不写 `optional<shared_ptr<T>>`。
@@ -290,9 +290,9 @@ class Foo : public EventEmitter<FooEvent>, public NativeObjectProvider {
 | 底层资源已消失 | getter 返回类型默认值（[object-model.md](object-model.md) §2 规则 4） |
 | 异步才知道的失败 | 失败事件（`ShortcutRegistrationFailedEvent`） |
 
-- **公共 API 不抛异常。** 异常过不了 C ABI。`Color::FromHex` 抛
-  `std::invalid_argument` 是目前唯一的违规。平台实现内部用异常
-  可以，但必须在到达公共方法返回之前接住。
+- **公共 API 不抛异常。** 异常过不了 C ABI。平台实现内部用异常可以，但必须在
+  到达公共方法返回之前接住。`Color::FromHex` 的存量异常缺口已修复：空值、非法
+  长度或非十六进制字符统一返回透明色，与 C ABI 的既有默认值一致。
 - 最近新增的可失败调用全部返回 `bool`：`Application::SetProgressBar` / `SetBadgeLabel` /
   `SetBrightness`、`Window::SetTitleBarColors`、`Menu::SetBackend`、
   `WindowDragSession::Start`、`MessageDialog::SetXxx`。`Window` 早期 setter 全是 `void`，

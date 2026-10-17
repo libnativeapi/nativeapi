@@ -33,6 +33,14 @@ export class DragSource extends NativeObject {
     return native.native_drag_source_is_supported();
   }
 
+  static isPositionSupported(): boolean {
+    return native.native_drag_source_is_position_supported();
+  }
+
+  static isOperationSelectionSupported(): boolean {
+    return native.native_drag_source_is_operation_selection_supported();
+  }
+
   setFilePaths(filePaths: string[]): void {
     native.native_drag_source_set_file_paths(this.nativeHandle, filePaths);
   }

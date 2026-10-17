@@ -3025,6 +3025,18 @@ native_drag_source_is_supported = function(
     [
     ],
 )
+native_drag_source_is_position_supported = function(
+    "native_drag_source_is_position_supported",
+    c_bool,
+    [
+    ],
+)
+native_drag_source_is_operation_selection_supported = function(
+    "native_drag_source_is_operation_selection_supported",
+    c_bool,
+    [
+    ],
+)
 native_drag_source_set_file_paths = function(
     "native_drag_source_set_file_paths",
     None,
@@ -3239,6 +3251,13 @@ native_positioning_strategy_get_relative_rectangle = function(
 native_positioning_strategy_get_relative_offset = function(
     "native_positioning_strategy_get_relative_offset",
     native_point_t,
+    [
+        c_uint64,
+    ],
+)
+native_positioning_strategy_get_relative_window = function(
+    "native_positioning_strategy_get_relative_window",
+    c_uint64,
     [
         c_uint64,
     ],

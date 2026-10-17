@@ -43,6 +43,28 @@ napi_value Js_native_drag_source_is_supported(napi_env env, napi_callback_info i
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_drag_source_is_position_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_drag_source_is_position_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_drag_source_is_operation_selection_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_drag_source_is_operation_selection_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_drag_source_set_file_paths(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -262,6 +284,8 @@ void RegisterDragSource(napi_env env, napi_value exports) {
   Export(env, exports, "native_drag_source_create", Js_native_drag_source_create);
   Export(env, exports, "native_drag_source_free", Js_native_drag_source_free);
   Export(env, exports, "native_drag_source_is_supported", Js_native_drag_source_is_supported);
+  Export(env, exports, "native_drag_source_is_position_supported", Js_native_drag_source_is_position_supported);
+  Export(env, exports, "native_drag_source_is_operation_selection_supported", Js_native_drag_source_is_operation_selection_supported);
   Export(env, exports, "native_drag_source_set_file_paths", Js_native_drag_source_set_file_paths);
   Export(env, exports, "native_drag_source_get_file_paths", Js_native_drag_source_get_file_paths);
   Export(env, exports, "native_drag_source_set_text", Js_native_drag_source_set_text);

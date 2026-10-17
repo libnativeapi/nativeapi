@@ -391,6 +391,7 @@
         {
           "key": "UrlOpener",
           "kind": "singleton",
+          "summary": "Opens HTTP/HTTPS links with the system's registered handler.",
           "languages": [
             "cpp",
             "csharp",
@@ -570,7 +571,7 @@
         {
           "key": "FileDialog",
           "kind": "class",
-          "summary": "System file picker. UI-thread only; Open pumps messages until dismissed. Windows: WinRT picker with WinUI3 enabled, IFileDialog otherwise. Linux: GtkFileChooserNative (xdg-desktop-portal when GTK selects it), local files only. Other platforms currently return IsSupported() == false.",
+          "summary": "System file picker. Open blocks until the native picker is dismissed. Windows and Linux require the UI thread and pump their native message loop. OpenHarmony requires a worker while the ArkTS UI thread keeps processing events.",
           "languages": [
             "cpp",
             "csharp",
@@ -616,7 +617,7 @@
         {
           "key": "NotificationManager",
           "kind": "singleton",
-          "summary": "System notifications. Windows App SDK backend requires NATIVEAPI_ENABLE_WINUI3. Subscribe before Initialize(), including on notification-triggered app launches. Methods run on the main STA; activation events are delivered on the main dispatcher. IsSupported reports build support, not runtime installation or notification settings.",
+          "summary": "System notifications. Subscribe before Initialize(), including cold launches. Activation events are delivered on the main dispatcher. Capability does not imply that notification settings allow delivery or that banners will appear.",
           "languages": [
             "cpp",
             "csharp",
@@ -1483,6 +1484,7 @@
         {
           "key": "KeyboardMonitor",
           "kind": "class",
+          "summary": "Observes native keyboard press and release events.",
           "languages": [
             "cpp",
             "csharp",

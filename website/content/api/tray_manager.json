@@ -56,7 +56,7 @@
           "kind": "method",
           "doc": {
             "summary": "Check if the system tray is supported on the current platform.",
-            "details": "Some platforms or desktop environments may not support system tray functionality. This method allows checking for availability before attempting to create tray icons.",
+            "details": "Some platforms or desktop environments may not support system tray functionality. This method allows checking for availability before attempting to create tray icons.\n\nOn HarmonyOS this requires the attached UIAbilityContext and the public HMS StatusBarManager system capability. It reports service availability, while registration can still be refused by the SDK. Phone profiles return false. Get/GetAll enumerate this library's live tray identities, including hidden ones; they do not enumerate another application's system icons.",
             "returns": "true if system tray is supported, false otherwise"
           },
           "signatures": {

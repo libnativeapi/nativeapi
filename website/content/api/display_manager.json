@@ -8,7 +8,13 @@
       "kind": "singleton",
       "doc": {
         "summary": "DisplayManager is a singleton that manages all displays on the system.",
-        "details": "This class provides functionality to:\n- Query all connected displays\n- Get primary display information\n- Monitor display changes (addition/removal)\n- Get cursor position across displays\n\nDisplay is an identity object: the manager keeps one live Display instance per connected physical display and returns the same std::shared_ptr on every query, so a display's DisplayId stays stable for as long as it remains connected.\n\nThread Safety: This class is not thread-safe. External synchronization is required if accessed from multiple threads.\n\nExample usage:\n\n```cpp\nDisplayManager& manager = DisplayManager::GetInstance();\nstd::vector<std::shared_ptr<Display>> displays = manager.GetAll();\nstd::shared_ptr<Display> primary = manager.GetPrimary();\n```"
+        "details": "This class provides functionality to:\n- Query all connected displays\n- Get primary display information\n- Monitor display changes (addition/removal)\n- Get cursor position across displays\n\nDisplay is an identity object: the manager keeps one live Display instance per connected physical display and returns the same std::shared_ptr on every query, so a display's DisplayId stays stable for as long as it remains connected.\n\nThread Safety: This class is not thread-safe. External synchronization is required if accessed from multiple threads.\n\nExample usage:\n\n```cpp\nDisplayManager& manager = DisplayManager::GetInstance();\nstd::vector<std::shared_ptr<Display>> displays = manager.GetAll();\nstd::shared_ptr<Display> primary = manager.GetPrimary();\n```",
+        "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability (display event monitoring):\n- macOS: ⚠️ Display addition/removal notifications\n- Windows: ❌ Native display event monitoring is not implemented\n- Linux: ❌ Native display event monitoring is not implemented\n- Android: ❌ Native display event monitoring is not implemented\n- iOS: ❌ Native display event monitoring is not implemented\n- OpenHarmony: ✅ Addition/removal, configuration and work-area notifications through public SDK listeners while subscribed. Delivery requires an active main-thread dispatcher. Removing the last subscriber invalidates queued work."
+          }
+        ]
       },
       "signatures": {
         "cpp": {
@@ -163,6 +169,10 @@
               {
                 "kind": "note",
                 "text": "The position is captured at the time of the function call"
+              },
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Live logical desktop coordinates\n- Windows: ✅ Live logical desktop coordinates\n- Linux: ✅ Live desktop coordinates from the active GDK pointer\n- Android: ❌ Returns (0, 0)\n- iOS: ❌ Returns (0, 0)\n- OpenHarmony: ⚠️ Requires a pointer and SDK query authorization (normally a focused application). Returns logical coordinates, or (0, 0) on SDK refusal, unavailable display geometry or no pointer. Secondary-display desktop origins require API 26; older releases support the primary only."
               }
             ]
           },

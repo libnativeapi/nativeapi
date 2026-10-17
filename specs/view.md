@@ -27,7 +27,7 @@ Rust / C# 直接调库、想要「一个按钮、一个输入框、一个回调�
 | 挂到托盘 | `TrayIcon::SetContentView(view)` 把一棵游离的树整棵交给托盘项，托盘项跟着根的首选 / 固有尺寸变宽；传 `nullptr` 回到图标和标题 | 托盘项没有可包装的既有内容区，尺寸由内容决定而不是反过来，所以是 set 而不是 `GetContentView()` 懒创建。宿主经 `View::Impl::host_layout` 在每次布局前给根定尺寸 |
 | 线程 | 只在主线程调用；事件同步 `Emit` | 与 `Window` 相同 |
 | 失败表达 | 纯状态 setter 返回 `void`；只有 `IsSupported()` 和 `RemoveSubview*` 返回 `bool` | [api-style.md](api-style.md) §4 |
-| 移动端 | Android / iOS / OHOS `IsSupported()` 返回 false，所有方法为 no-op | 桌面优先；接口层保持六平台都有符号 |
+| 移动端 / OHOS | Android / iOS 仍为 no-op；OHOS 在已初始化 ArkTS UI 线程使用公开 native ArkUI 节点和显式 ContentSlot 宿主 | 六平台符号一致；OHOS 的提示文字另需 NativeTooltipHost 伴随适配器 |
 
 ## 2. 用法
 
@@ -303,7 +303,8 @@ class TextFieldSubmittedEvent : public ViewEvent {
  * - Linux: ✅ Fully supported - GTK 3 widgets
  * - Android: ❌ Not applicable - IsSupported() is false, every call is ignored
  * - iOS: ❌ Not applicable - IsSupported() is false, every call is ignored
- * - OpenHarmony: ❌ Not applicable - IsSupported() is false, every call is ignored
+ * - OpenHarmony: ⚠️ Public native ArkUI nodes on the initialized owning UI thread;
+ *   mount the root through the explicit ContentSlot host seam.
  */
 class View : public EventEmitter<ViewEvent>,
              public NativeObjectProvider,
@@ -515,7 +516,12 @@ src/platform/<os>/view_internal_<os>.h       两个平台文件共享的 Impl �
                                              字体、文本属性、事件登记的 helper
 ```
 
-Android / iOS / OHOS 各只要一个 `view_<os>` 桩，所有类的桩写在一起。
+Android / iOS 各用一个 `view_<os>` 桩。OHOS 的 `view_ohos.cpp` 实现公开 native
+ArkUI 节点；`ohos_views.h` 是私有 ContentSlot 挂载接缝。悬停提示通过原生
+`NODE_ON_HOVER` 与伴随 `ets/NativeTooltipHost.ets` 的公开 popup 实现，目标直接
+使用原生节点 unique ID，不增加拦截控件输入的覆盖层。挂载时可传该宿主对象；
+卸载、替换宿主、移除或销毁节点会取消待显示提示。跨环境、旧 SDK、完整主题和
+借用节点互操作仍保留在验证清单中。
 
 为什么这样切：
 
@@ -611,14 +617,15 @@ HWND 容器，反之亦然。所以 `InsertSubview` 在共享代码里直接拒�
 已实施：`View` + 四个控件、Absolute / Row / Column、`Window::GetContentView`、五个绑定、
 `core/examples/view_example`（登录框）、`tools/gui/core_view_test.py`。
 
-平台验证状态（2026-09-25）：
+平台验证状态（桌面 2026-09-25，OHOS 更新于 2026-10-16）：
 
 | 平台 | 状态 |
 |---|---|
 | macOS | `tools/gui/core_view_test.py` 在本机桌面全过（布局、点击、焦点事件、缩放后重排再点击）；运行它的终端需要辅助功能权限 |
 | Windows | MSVC 编译；`tools/gui/core_view_test.ps1` 在 Windows 主机桌面全过，Win32 与 WinUI 3（`NATIVEAPI_ENABLE_WINUI3`）两种构建都是 |
 | Linux | Ubuntu 24.04 / GNOME Wayland，应用走 Xwayland（`GDK_BACKEND=x11`）；`tools/gui/core_view_test_linux.py` 全过。GTK 原生 Wayland 后端只能从内部断言，未测 |
-| Android / iOS / OHOS | 桩：`IsSupported()` 为 false |
+| Android / iOS | 桩：`IsSupported()` 为 false |
+| OHOS | native ArkUI 基础控件已在手机/电脑模拟器验证；详细边界与提示文字验收见 `tools/tests/ohos_view_validation.md` 与 `tools/tests/ohos_tooltip_validation.md` |
 
 未决：
 
@@ -657,7 +664,7 @@ HWND 容器，反之亦然。所以 `InsertSubview` 在共享代码里直接拒�
 - [ ] 父强持子、子弱引用父；`AddSubview` 已有父的 View 先移除。
 - [ ] 根 View 析构不销毁原生对象；非根 View 析构销毁。
 - [ ] 布局算法只在 `view.cpp`；平台只实现设 frame、读固有尺寸、尺寸变化回调。
-- [ ] 六个平台文件都存在；移动端 `IsSupported()` 为 false 且所有方法 no-op。
+- [ ] 六个平台文件都存在；Android / iOS 仍为 no-op；OHOS 通过真实 ContentSlot / 原生节点验证。
 - [ ] `./codegen` 对 `view.h` 无 `skipped`；C 函数名没有 `_with_`。
 - [ ] 五个绑定里 `Button` 都是 `View` 的子类型，能直接传给 `add_subview`。
 - [ ] `nativeapi_flutter` 的导出 `hide` 了与 Flutter 撞名的类。

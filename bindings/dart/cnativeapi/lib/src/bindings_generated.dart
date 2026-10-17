@@ -544,6 +544,12 @@ external ffi.Pointer<ffi.Char> native_drag_source_get_text(int drag_source);
 external bool native_drag_source_is_dragging(int drag_source);
 
 @ffi.Native<ffi.Bool Function()>()
+external bool native_drag_source_is_operation_selection_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_drag_source_is_position_supported();
+
+@ffi.Native<ffi.Bool Function()>()
 external bool native_drag_source_is_supported();
 
 /// Unregisters a listener. Returns false if unknown.
@@ -1685,6 +1691,12 @@ external native_point_t native_positioning_strategy_get_relative_offset(
 
 @ffi.Native<native_rectangle_t Function(native_positioning_strategy_t)>()
 external native_rectangle_t native_positioning_strategy_get_relative_rectangle(
+  int positioning_strategy,
+);
+
+/// Caller owns the returned handle; release it with native_window_free().
+@ffi.Native<native_window_t Function(native_positioning_strategy_t)>()
+external int native_positioning_strategy_get_relative_window(
   int positioning_strategy,
 );
 

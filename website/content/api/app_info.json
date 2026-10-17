@@ -8,7 +8,7 @@
       "kind": "singleton",
       "doc": {
         "summary": "Read-only metadata about the running application.",
-        "details": "AppInfo exposes what the platform packaging system records about the current process. Values are constant for the lifetime of the process; a getter whose value the platform cannot provide returns an empty string.\n\nPlatform sources:\n- macOS / iOS: the main bundle's Info.plist\n- Windows: the executable's version resource; the MSIX package identity when the app is packaged\n- Linux: the executable path (there is no standard metadata source)\n- Android / OHOS: not available from this native layer\n\nTypical usage:\n\n```cpp\nauto& info = nativeapi::AppInfo::GetInstance();\nstd::string version = info.GetVersion();  // e.g. \"1.2.3\"\n```"
+        "details": "AppInfo exposes what the platform packaging system records about the current process. Values are constant for the lifetime of the process; a getter whose value the platform cannot provide returns an empty string.\n\nPlatform sources:\n- macOS / iOS: the main bundle's Info.plist\n- Windows: the executable's version resource; the MSIX package identity when the app is packaged\n- Linux: the executable path (there is no standard metadata source)\n- Android: not available from this native layer\n- OpenHarmony: current bundle through the initialized ArkTS UI environment; the localized name uses the attached UIAbilityContext resource manager. Calls from workers marshal to that UI environment.\n\nTypical usage:\n\n```cpp\nauto& info = nativeapi::AppInfo::GetInstance();\nstd::string version = info.GetVersion();  // e.g. \"1.2.3\"\n```"
       },
       "signatures": {
         "cpp": {
@@ -85,7 +85,7 @@
           "kind": "method",
           "doc": {
             "summary": "Get the stable application identifier.",
-            "details": "The reverse-DNS style identifier the platform knows the app by (what package_info_plus calls the package name):\n- macOS / iOS: the bundle identifier, e.g. \"com.example.myapp\"\n- Windows: the MSIX package family name; \"\" for unpackaged apps\n- Linux: \"\" (no standard identifier source)",
+            "details": "The reverse-DNS style identifier the platform knows the app by (what package_info_plus calls the package name):\n- macOS / iOS: the bundle identifier, e.g. \"com.example.myapp\"\n- Windows: the MSIX package family name; \"\" for unpackaged apps\n- Linux: \"\" (no standard identifier source)\n- OpenHarmony: the installed bundle name",
             "returns": "The identifier, or \"\" if unavailable."
           },
           "signatures": {
@@ -124,7 +124,7 @@
           "kind": "method",
           "doc": {
             "summary": "Get the user-visible version string, e.g. \"1.2.3\".",
-            "details": "- macOS / iOS: CFBundleShortVersionString\n- Windows: version resource ProductVersion",
+            "details": "- macOS / iOS: CFBundleShortVersionString\n- Windows: version resource ProductVersion\n- OpenHarmony: bundle versionName",
             "returns": "The version, or \"\" if unavailable."
           },
           "signatures": {
@@ -163,7 +163,7 @@
           "kind": "method",
           "doc": {
             "summary": "Get the build number string, e.g. \"42\".",
-            "details": "- macOS / iOS: CFBundleVersion\n- Windows: the fourth component of the fixed file version",
+            "details": "- macOS / iOS: CFBundleVersion\n- Windows: the fourth component of the fixed file version\n- OpenHarmony: bundle versionCode as decimal text",
             "returns": "The build number, or \"\" if unavailable."
           },
           "signatures": {

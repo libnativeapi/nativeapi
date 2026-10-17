@@ -13,6 +13,10 @@
           {
             "kind": "note",
             "text": "This class is thread-safe for singleton access, but individual operations may require additional synchronization depending on the platform implementation."
+          },
+          {
+            "kind": "note",
+            "text": "OpenHarmony hosts initialize the ArkTS UI environment, attach their owning UIAbilityContext and forward actual onCreate/onForeground/onBackground/onDestroy callbacks through the platform-internal application bridge. One owning UIAbility is tracked per linked core/UI environment; this does not manage other Abilities or forcibly kill the application's processes. Subscribe before onCreate to observe ApplicationStartedEvent. State queries and appearance calls marshal worker calls to the initialized UI environment."
           }
         ]
       },
@@ -87,7 +91,13 @@
           "doc": {
             "summary": "Run the application main event loop",
             "details": "Starts the main event loop and blocks until Quit() stops it. This method handles platform-specific event processing and coordination between different managers.\n\n```cpp\nauto& app = Application::GetInstance();\nint exit_code = app.Run();\n```",
-            "returns": "The exit code passed to Quit()"
+            "returns": "The exit code passed to Quit()",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony's UIAbility owns the event loop. This method returns -1 without starting a nested loop; use the host lifecycle bridge instead."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -132,7 +142,13 @@
                 "text": "The window to run the application with"
               }
             ],
-            "returns": "The exit code passed to Quit(), or -1 when `window` is null"
+            "returns": "The exit code passed to Quit(), or -1 when `window` is null",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "On OpenHarmony the host owns the event loop: always returns -1, without changing the primary window or starting another loop."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -180,7 +196,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: Supported - cancelable programmatic and native quit queries, then the host decision\n- Windows: Supported - cancelable Quit(), then the native loop stops\n- Linux: Supported - cancelable Quit(), then the native loop stops\n- Android: Not applicable - ignored; the Activity owns its lifecycle\n- iOS: Not applicable - ignored; UIApplication owns its lifecycle\n- OpenHarmony: Not applicable - ignored; the Ability owns its lifecycle"
+                "text": "Platform availability:\n- macOS: Supported - cancelable programmatic and native quit queries, then the host decision\n- Windows: Supported - cancelable Quit(), then the native loop stops\n- Linux: Supported - cancelable Quit(), then the native loop stops\n- Android: Not applicable - ignored; the Activity owns its lifecycle\n- iOS: Not applicable - ignored; UIApplication owns its lifecycle\n- OpenHarmony: Supported - cancelable programmatic Quit(), then public UIAbilityContext.terminateSelf() for the attached owning Ability. Actual onDestroy emits ApplicationExitingEvent; the requested code is event data, not a process exit status. Required host destruction cannot be vetoed."
               }
             ]
           },
@@ -220,7 +236,13 @@
           "kind": "method",
           "doc": {
             "summary": "Check if the application is currently running",
-            "returns": "true if the application is running, false otherwise"
+            "returns": "true if the application is running, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony reports the attached owning UIAbility's actual creation / destruction state. Before lifecycle attachment or after environment cleanup it returns false; a background Ability remains running."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -258,7 +280,13 @@
           "kind": "method",
           "doc": {
             "summary": "Check if this is a single instance application",
-            "returns": "true if only one instance is allowed, false otherwise"
+            "returns": "true if only one instance is allowed, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony reads ApplicationInfo.multiAppMode from the actual owning context. Multi-instance/clone modes, missing context or failed queries return false. A singleton Ability launch type alone is not treated as proof."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -346,7 +374,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - -[NSApplication hide:], for an application without a Dock icon (SetDockIconVisible(false)) as well.\n- Windows: ❌ Not applicable - No application-level hiding; always returns false. Hide the windows with Window::Hide().\n- Linux: ❌ Not applicable - No application-level hiding; always returns false. Hide the windows with Window::Hide().\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - -[NSApplication hide:], for an application without a Dock icon (SetDockIconVisible(false)) as well.\n- Windows: ❌ Not applicable - No application-level hiding; always returns false. Hide the windows with Window::Hide().\n- Linux: ❌ Not applicable - No application-level hiding; always returns false. Hide the windows with Window::Hide().\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ The attached owning UIAbility uses public showAbility / hideAbility on a desktop with the status-bar capability. Add the application to the status bar first. The system hides/restores the Ability's window group; no per-window hide loop is substituted. The SDK removes the running Dock item while hidden; restore through Show, a status-icon action or a normal launcher activation. UI calls return submission status; workers wait for the SDK result. Pending requests, absent lifecycle/context, phone profiles, synchronous SDK errors and rejected worker requests return false. Actual visibility changes update IsVisible and activation events."
               }
             ]
           },
@@ -389,6 +417,10 @@
             "details": "An application without any window on screen is still visible; only Hide(), or the user hiding the application through the system (Cmd+H, the Dock menu), makes this false.",
             "returns": "false while the application is hidden; always true where the platform has no application-level hiding",
             "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony combines owning-Ability foreground/background state with actual SDK application hiding. Native primary-window restoration (including an external launcher restore) clears that hidden state. An ordinary per-window Hide does not mark the application hidden. State changes precede activation events. Before lifecycle attachment or after destruction it returns false."
+              },
               {
                 "kind": "see",
                 "text": "Hide() for platform availability."
@@ -442,7 +474,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - The Dock icon, from any image file NSImage reads.\n- Windows: ⚠️ Current windows - An .ico file, set as the big (taskbar, Alt+Tab) and small (title bar) icon of every top-level window the application has now; windows created later keep the executable's icon. False when the file is no icon or there is no window yet.\n- Linux: ✅ Supported - GTK's default icon for every window without its own.\n- Android: ❌ Not supported - Always returns false\n- iOS: ❌ Not supported - Always returns false; the icon comes from Info.plist\n- OpenHarmony: ❌ Not supported - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Supported - The Dock icon, from any image file NSImage reads.\n- Windows: ⚠️ Current windows - An .ico file, set as the big (taskbar, Alt+Tab) and small (title bar) icon of every top-level window the application has now; windows created later keep the executable's icon. False when the file is no icon or there is no window yet.\n- Linux: ✅ Supported - GTK's default icon for every window without its own.\n- Android: ❌ Not supported - Always returns false\n- iOS: ❌ Not supported - Always returns false; the icon comes from Info.plist\n- OpenHarmony: ⚠️ Desktop UIAbilityContext.setMissionWindowIcon updates the owning Ability's window, mission card and shortcut-bar snapshot icon. It does not change the installed launcher icon or another Ability's icon. Requires an initialized owning context and loaded main window. Images must be square, decodable and at most 128 MB as RGBA. Invalid paths/images and phone profiles return false. UI calls report submission; workers wait for SDK success. The original Image data is isolated from SDK ownership."
               }
             ]
           },
@@ -587,7 +619,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - The Dock tile badge; any text is allowed.\n- Windows: ✅ Fully supported - Rendered as a taskbar overlay icon on the primary window (or the first window when no primary window is set); only the first three characters fit.\n- Linux: ⚠️ Partial - Sent as a LauncherEntry count, so the label must be an integer; other text returns false. See SetProgressBar() for which desktops honor it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - The Dock tile badge; any text is allowed.\n- Windows: ✅ Fully supported - Rendered as a taskbar overlay icon on the primary window (or the first window when no primary window is set); only the first three characters fit.\n- Linux: ⚠️ Partial - Sent as a LauncherEntry count, so the label must be an integer; other text returns false. See SetProgressBar() for which desktops honor it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Public notificationManager.setBadgeNumber updates this application's numeric launcher badge. Accepts nonnegative ASCII decimal counts through INT32_MAX and the label \"99+\" (count 100). Empty or \"0\" clears the badge; counts above 99 render as \"99+\". Other text returns false. UI calls report submission; workers wait for SDK success. Notification / badge settings control actual display. No notification is published and notification authorization is not requested automatically."
               }
             ]
           },
@@ -637,7 +669,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Sets the NSApplication appearance, which all windows and menus inherit.\n- Windows: ⚠️ Partial - Toggles the dark title bar and frame on every window that exists at the time of the call; windows created later are not updated. Application content is unaffected.\n- Linux: ✅ Fully supported - Sets the GTK prefer-dark-theme setting; when switching to light while a \"-dark\" theme variant is active, the light variant of that theme is selected. Brightness::System restores both.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Sets the NSApplication appearance, which all windows and menus inherit.\n- Windows: ⚠️ Partial - Toggles the dark title bar and frame on every window that exists at the time of the call; windows created later are not updated. Application content is unaffected.\n- Linux: ✅ Fully supported - Sets the GTK prefer-dark-theme setting; when switching to light while a \"-dark\" theme variant is active, the light variant of that theme is selected. Brightness::System restores both.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ✅ ApplicationContext.setColorMode() updates application resources. System restores the system mode. Requires the owning Ability's window/content to be loaded; a UIAbility-specific override takes precedence. Invalid values, missing initialized context or SDK exceptions return false."
               }
             ]
           },
@@ -723,7 +755,13 @@
           "doc": {
             "summary": "Get the primary window of the application",
             "details": "Returns the main window of the application, if one exists.",
-            "returns": "Shared pointer to the primary window, or nullptr if none exists"
+            "returns": "Shared pointer to the primary window, or nullptr if none exists",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony initially discovers the attached stage's main window. An explicit selection overrides it. A cleared or destroyed selection returns nullptr; destruction of the owning Ability clears this primary selection."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -766,6 +804,12 @@
               {
                 "name": "window",
                 "text": "Shared pointer to the window to set as primary"
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "On OpenHarmony nullptr explicitly clears selection; invalid native wrappers are ignored. This changes application selection, not WindowStage ownership or the system window type."
               }
             ]
           },

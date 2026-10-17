@@ -6,6 +6,10 @@
     {
       "key": "KeyboardMonitor",
       "kind": "class",
+      "doc": {
+        "summary": "Observes native keyboard press and release events.",
+        "details": "Key codes use the platform's native keyboard code space. Register listeners before Start(), and call Stop() when observation is no longer needed.\n\n```cpp\nKeyboardMonitor monitor;\nmonitor.AddListener<KeyPressedEvent>([](const KeyPressedEvent& event) {\n  const auto native_key = event.GetKeycode();\n  (void)native_key;\n});\nmonitor.Start();\n```"
+      },
       "signatures": {
         "cpp": {
           "name": "KeyboardMonitor",
@@ -108,6 +112,16 @@
         {
           "key": "KeyboardMonitor::Start",
           "kind": "method",
+          "doc": {
+            "summary": "Starts observing keyboard events; repeated calls are idempotent.",
+            "details": "Check IsMonitoring() after this call. Permission or service failures leave the monitor inactive. Adding a listener alone does not call Start().",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: Requires permission for the native session event tap.\n- Windows: Uses a low-level native keyboard hook.\n- Linux: Requires an accessible X11 display with XInput2.\n- Android: Not implemented; remains inactive.\n- iOS: Not implemented; remains inactive.\n- OHOS: Requires the initialized UI host and INPUT_MONITORING permission (restricted system grant, eligible for ACL provisioning). Multiple library monitors share the process's one public NDK key-monitor slot; unrelated callers must not register that slot independently. Press/release events, including modifier key codes, arrive on UI. On the tested HarmonyOS 7 emulator, a system-app debug profile is additionally needed; a normal app profile with the ACL alone remains denied. ModifierKeysChangedEvent is not emitted because the NDK event provides no modifier-state snapshot."
+              }
+            ]
+          },
           "signatures": {
             "cpp": {
               "name": "Start",
@@ -142,6 +156,16 @@
         {
           "key": "KeyboardMonitor::Stop",
           "kind": "method",
+          "doc": {
+            "summary": "Stops keyboard observation for this monitor.",
+            "details": "On OHOS other library monitors remain active, and queued deliveries from this monitor's previous Start() are invalidated.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Start() for platform availability."
+              }
+            ]
+          },
           "signatures": {
             "cpp": {
               "name": "Stop",
@@ -176,6 +200,16 @@
         {
           "key": "KeyboardMonitor::IsMonitoring",
           "kind": "method",
+          "doc": {
+            "summary": "Checks whether this monitor has an active native registration.",
+            "returns": "False before a successful Start(), after Stop(), or after OHOS host environment cleanup. True does not imply that a listener is installed.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Start() for platform availability."
+              }
+            ]
+          },
           "signatures": {
             "cpp": {
               "name": "IsMonitoring",

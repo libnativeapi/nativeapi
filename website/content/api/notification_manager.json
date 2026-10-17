@@ -7,7 +7,13 @@
       "key": "NotificationManager",
       "kind": "singleton",
       "doc": {
-        "summary": "System notifications. Windows App SDK backend requires NATIVEAPI_ENABLE_WINUI3. Subscribe before Initialize(), including on notification-triggered app launches. Methods run on the main STA; activation events are delivered on the main dispatcher. IsSupported reports build support, not runtime installation or notification settings."
+        "summary": "System notifications. Subscribe before Initialize(), including cold launches. Activation events are delivered on the main dispatcher. Capability does not imply that notification settings allow delivery or that banners will appear.",
+        "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ❌ Not implemented.\n- Windows: ✅ Windows App SDK with NATIVEAPI_ENABLE_WINUI3; main STA calls.\n- Linux: ❌ Not implemented.\n- Android: ❌ Not implemented in this native layer.\n- iOS: ❌ Not implemented.\n- OpenHarmony: ✅ Public notificationManager and WantAgent APIs after host initialization/context attachment. Forward onCreate/onNewWant through the private OHOS bridge. Initialize/Show/Remove require a worker and the running ArkTS UI loop. Initialize requests user authorization when necessary."
+          }
+        ]
       },
       "signatures": {
         "cpp": {
@@ -112,7 +118,7 @@
           "key": "NotificationManager::Initialize",
           "kind": "method",
           "doc": {
-            "summary": "Registers this process with Windows. Call once at application startup."
+            "summary": "Registers activation delivery. Call at application startup, after subscribing. OpenHarmony waits for actual authorization completion; denial returns false."
           },
           "signatures": {
             "cpp": {
@@ -186,7 +192,7 @@
           "key": "NotificationManager::Show",
           "kind": "method",
           "doc": {
-            "summary": "Uses tag to replace an existing notification. Optional button emits action=button. True means accepted by the OS; notification settings may suppress the banner."
+            "summary": "Uses tag to replace an existing notification. Activation argument is tag=<encoded tag>&action=open or action=button. The optional button uses the latter. OpenHarmony tags contain 1-192 UTF-8 bytes without NUL; title/message must be nonempty. SDK display-length limits apply. True means accepted by the OS; notification settings may suppress the banner."
           },
           "signatures": {
             "cpp": {

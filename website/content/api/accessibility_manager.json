@@ -8,7 +8,13 @@
       "kind": "singleton",
       "doc": {
         "summary": "A singleton class that manages system accessibility features",
-        "details": "The AccessibilityManager provides a centralized interface for managing accessibility functionality across the system. It follows the singleton pattern to ensure only one instance exists throughout the application lifecycle, providing consistent state management for accessibility features.\n\nKey responsibilities:\n- Enable/disable system accessibility features\n- Query accessibility state\n- Provide thread-safe access to accessibility functionality\n\nUsage example:\n\n```cpp\nAccessibilityManager& manager = AccessibilityManager::GetInstance();\nmanager.Enable();\nbool enabled = manager.IsEnabled();\n```"
+        "details": "The AccessibilityManager provides a centralized interface for managing accessibility functionality across the system. It follows the singleton pattern to ensure only one instance exists throughout the application lifecycle, providing consistent state management for accessibility features.\n\nKey responsibilities:\n- Enable/disable system accessibility features\n- Query accessibility state\n- Provide thread-safe access to accessibility functionality\n\nUsage example:\n\n```cpp\nAccessibilityManager& manager = AccessibilityManager::GetInstance();\nmanager.Enable();\nbool enabled = manager.IsEnabled();\n```",
+        "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ Requests and queries this process's Accessibility trust.\n- Windows: ⚠️ Enable is a no-op; IsEnabled currently reports true.\n- Linux: ⚠️ Initializes GTK; queries AT-SPI/environment/Orca heuristics.\n- Android: ❌ Legacy local flag only; does not enable a system service.\n- iOS: ❌ Legacy local flag only; does not enable a system service.\n- OpenHarmony: ⚠️ Queries enabled system accessibility extensions; Enable is unavailable to normal applications and is a no-op."
+          }
+        ]
       },
       "signatures": {
         "cpp": {
@@ -51,6 +57,10 @@
               {
                 "kind": "note",
                 "text": "This operation may require system permissions depending on the platform implementation."
+              },
+              {
+                "kind": "note",
+                "text": "On OpenHarmony this is a no-op: enabling an accessibility extension requires a system-only API and WRITE_ACCESSIBILITY_CONFIG. Calling this method does not change the state reported by IsEnabled()."
               }
             ]
           },
@@ -91,7 +101,13 @@
           "doc": {
             "summary": "Checks if accessibility features are currently enabled",
             "details": "This method provides a quick way to query the current state of accessibility features without modifying the system state.",
-            "returns": "true if accessibility is enabled, false otherwise"
+            "returns": "true if accessibility is enabled, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "On OpenHarmony this queries whether any accessibility extension is enabled in the system, through isOpenAccessibilitySync. It requires the initialized ArkTS UI environment; worker calls marshal to that environment. Before initialization or if the SDK query fails, it returns false. This is distinct from screen-reader, touch-guide or application trust status."
+              }
+            ]
           },
           "signatures": {
             "cpp": {

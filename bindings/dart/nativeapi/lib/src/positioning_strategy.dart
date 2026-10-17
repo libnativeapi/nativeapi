@@ -90,13 +90,13 @@ class PositioningStrategy implements ffi.Finalizable {
   }
 
   static PositioningStrategy? relativeWithWindowAndOffset(
-    Window window,
+    Window? window,
     Point offset,
   ) {
     final offsetPointer = offset.allocNative();
     final handle = c
         .native_positioning_strategy_relative_with_window_and_offset(
-          window.nativeHandle,
+          window?.nativeHandle ?? 0,
           offsetPointer.ref,
         );
     Point.freeNative(offsetPointer);
@@ -126,5 +126,13 @@ class PositioningStrategy implements ffi.Finalizable {
   Point get relativeOffset {
     final raw = c.native_positioning_strategy_get_relative_offset(nativeHandle);
     return Point.fromNative(raw);
+  }
+
+  Window? get relativeWindow {
+    final handle = c.native_positioning_strategy_get_relative_window(
+      nativeHandle,
+    );
+    if (handle == 0) return null;
+    return Window.fromHandle(handle);
   }
 }

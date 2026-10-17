@@ -8,8 +8,12 @@
       "kind": "class",
       "doc": {
         "summary": "General-purpose key-value storage for application preferences.",
-        "details": "Similar to Web Storage's localStorage, this provides persistent storage for non-sensitive application data. Data is stored in plain text.\n\nPlatform implementations:\n- Windows: Registry (HKEY_CURRENT_USER) or INI files\n- macOS: NSUserDefaults\n- Linux: Configuration files (XDG Base Directory)",
+        "details": "Similar to Web Storage's localStorage, this provides persistent storage for non-sensitive application data. Data is stored in plain text.",
         "notes": [
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ NSUserDefaults\n- Windows: ✅ Registry (HKEY_CURRENT_USER) or INI files\n- Linux: ✅ Configuration files (XDG Base Directory)\n- Android: ❌ Not implemented - Mutations fail and getters return defaults\n- iOS: ❌ Not implemented - Mutations fail and getters return defaults\n- OHOS: NDK Preferences in the application sandbox (API 23+); writes, removals and clearing flush before returning. Instances with the same exact scope share a synchronized SDK store until the final nativeapi owner closes. SDK key/value/filename limits apply; embedded NUL keys/values are rejected."
+          },
           {
             "kind": "warning",
             "text": "Do not store sensitive data (passwords, tokens) here. Use SecureStorage for sensitive data."
@@ -52,7 +56,7 @@
           "kind": "constructor",
           "doc": {
             "summary": "Create preferences storage with default scope.",
-            "details": "Uses application name as scope if available."
+            "details": "Uses the fixed scope \"default\" on every platform."
           },
           "signatures": {
             "cpp": {

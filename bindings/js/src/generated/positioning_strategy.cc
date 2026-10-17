@@ -148,6 +148,21 @@ napi_value Js_native_positioning_strategy_get_relative_offset(napi_env env, napi
   return value.ToJs(env);
 }
 
+napi_value Js_native_positioning_strategy_get_relative_window(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_positioning_strategy_get_relative_window(self); });
+  return Value::BigInt(result).ToJs(env);
+}
+
 }  // namespace
 
 void RegisterPositioningStrategy(napi_env env, napi_value exports) {
@@ -160,6 +175,7 @@ void RegisterPositioningStrategy(napi_env env, napi_value exports) {
   Export(env, exports, "native_positioning_strategy_get_absolute_position", Js_native_positioning_strategy_get_absolute_position);
   Export(env, exports, "native_positioning_strategy_get_relative_rectangle", Js_native_positioning_strategy_get_relative_rectangle);
   Export(env, exports, "native_positioning_strategy_get_relative_offset", Js_native_positioning_strategy_get_relative_offset);
+  Export(env, exports, "native_positioning_strategy_get_relative_window", Js_native_positioning_strategy_get_relative_window);
 }
 
 }  // namespace nativeapi_js

@@ -78,10 +78,10 @@ impl PositioningStrategy {
         }
     }
 
-    pub fn relative_with_window_and_offset(window: &Window, offset: &Point) -> Option<PositioningStrategy> {
+    pub fn relative_with_window_and_offset(window: Option<&Window>, offset: &Point) -> Option<PositioningStrategy> {
         let offset_raw = offset.to_raw();
         unsafe {
-            PositioningStrategy::from_raw(cnativeapi::native_positioning_strategy_relative_with_window_and_offset(window.as_raw(), offset_raw.raw))
+            PositioningStrategy::from_raw(cnativeapi::native_positioning_strategy_relative_with_window_and_offset(window.map_or(0, |value| value.as_raw()), offset_raw.raw))
         }
     }
 
@@ -109,6 +109,12 @@ impl PositioningStrategy {
         unsafe {
             let raw = cnativeapi::native_positioning_strategy_get_relative_offset(self.handle);
             Point::from_raw(&raw)
+        }
+    }
+
+    pub fn relative_window(&self) -> Option<Window> {
+        unsafe {
+            Window::from_raw(cnativeapi::native_positioning_strategy_get_relative_window(self.handle))
         }
     }
 

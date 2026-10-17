@@ -91,11 +91,12 @@ class MyEvent : public Event {
 `EmitAsync` 「即使已在主线程也延后」是刻意的：调用点的同步/异步语义不随线程变化，
 避免出现「只在某些线程上才重入」的时序 bug。
 
-**Android / OHOS 例外**：这两个平台尚无主线程投递机制，`EmitAsync` 会退化为
+**移动宿主未初始化时的例外**：Android 的 NativeActivity / OHOS 的 N-API UI 宿主
+初始化后分别经 ALooper / N-API thread-safe function 投递；初始化前 `EmitAsync` 会退化为
 **在调用线程上同步投递**——静默丢事件比线程错更糟。跨平台代码不得假设
 `EmitAsync` 的回调一定落在主线程。
 
-当前只有 `ShortcutManager` 使用 `EmitAsync`。
+`ShortcutManager` 和剪贴板等平台事件使用 `EmitAsync`。
 
 ### 3.1 用了 `EmitAsync` 就必须处理析构竞态
 
@@ -114,7 +115,7 @@ class MyEvent : public Event {
   主线程。假设不成立时（比如从工作线程加载的插件），在使用任何 dispatcher 功能
   之前调 `SetMainThread()`。Windows 上启动时调一次还会顺带初始化派发用的
   message-only 窗口。
-- **能力探测**：`IsMainThreadDispatchSupported()` 在 Android / OHOS 返回 false；
+- **能力探测**：`IsMainThreadDispatchSupported()` 在 Android / OHOS 宿主初始化前返回 false；
   `RunOnMainThread()` 排不进队列时返回 false 且**不执行**传入的函数（本节开头
   `EmitAsync` 的退化行为即源于此）。
 - **自带主循环的宿主**：Qt、游戏引擎等用 `SetMainThreadDispatcher()` 把投递接进
@@ -240,7 +241,12 @@ Python listener 异常先否决可取消请求再上报；async def listener 被
 只发不可取消请求，继续原始操作并使旧投票失效。GTK 保留原有 delete handler 的
 顺序和 block count，不接管全局 GDK 事件分发。WindowManager 继续只发观察事件；
 对象的观察事件复用现有监控，并保持原有“未显示过的窗口不发 Closed”语义。
-Android / iOS / OpenHarmony 的 Close 暂不支持，返回 false。
+Android / iOS 的 Close 暂不支持，返回 false。OpenHarmony 的程序 Close 支持已附着
+子窗口，主窗口的程序 Close 仍返回 false；公开 SDK 的 windowWillClose 把系统标题栏
+关闭接入同一按原生身份共享的请求。批准以 false 恢复原 SDK Promise 关闭路径，否决
+以 true 保留窗口；重复点击和程序请求共用投票。监听器全移除后仍保留已装的关闭拦截，
+避免绕过未决投票；销毁原生窗口和环境会使旧请求失效。无监听器时立即允许 SDK 原关闭。
+手机配置可能没有系统关闭按钮，宿主自行替换同名 SDK 回调的兼容性仍待验证。
 
 真实 Flutter 3.47.6 多窗口 + Dart FFI 回归验证 `nativeWindowOf`、对象监听器及显式投票：
 批准后继续原 `RegularWindowControllerDelegate`，宿主拒绝仍保留窗口，宿主批准自行

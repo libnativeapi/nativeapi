@@ -64,7 +64,7 @@ src/
 | `linux/` | `CMAKE_SYSTEM_NAME STREQUAL "Linux"` | `.cpp` | GTK 3.0、X11、XI、pthread |
 | `android/` | `ANDROID` | `.cpp` | log、android |
 | `ios/` | `CMAKE_SYSTEM_NAME STREQUAL "iOS"` | `.mm` | UIKit、Foundation、CoreGraphics |
-| `ohos/` | `CMAKE_SYSTEM_NAME STREQUAL "OHOS"` | `.cpp` | hilog_ndk |
+| `ohos/` | `CMAKE_SYSTEM_NAME STREQUAL "OHOS"` | `.cpp` | hilog_ndk、deviceinfo_ndk、native_display_manager、ohpreferences、pasteboard、udmf、ace_napi |
 
 分支顺序有讲究：`ANDROID` 和 `iOS` 判断必须排在 `APPLE` / 通用分支之前，否则会落到
 桌面实现上。最后的 `else()` 分支**不编译任何平台源码**——新平台在接上之前，整个库

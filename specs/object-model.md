@@ -106,8 +106,10 @@ manager 集合，因此不定义 `XxxId` 别名、不调用 `IdAllocator::Alloca
 `SetCustomShadow` 和 `GetCustomShadow` 都复制配置，不共享可变对象。
 这些类型是「值对象不进 handle 表」的例外；
 新类型遇到同样处境（带工厂 API / 私有状态的纯数据）按此先例处理，不再各开新形态。
-注意它的 `Relative(const Window&)` 内部存裸指针，C 侧跨调用持有 strategy 句柄会
-放大悬垂风险——已知缺陷，修复方向是改收 `std::shared_ptr<Window>`。
+`PositioningStrategy::Relative` 的窗口参数使用 `std::shared_ptr<Window>`，配置与副本
+保留同一包装对象；`GetRelativeWindow()` 返回共享引用，生成的 C ABI 返回独立拥有的
+窗口句柄。释放原窗口句柄不会留下悬垂指针；显式原生关闭仍会使窗口几何失效。
+空窗口参数是无窗口引用、空矩形的相对配置；不再允许按栈上 Window 引用构造配置。
 
 ### 3.2 不参与归类的抽象基类
 

@@ -8,11 +8,15 @@
       "kind": "class",
       "doc": {
         "summary": "MenuItem represents a single item in a menu.",
-        "details": "This class provides a cross-platform interface for creating and managing menu items. Menu items can be simple clickable items, checkboxes, radio buttons, separators, or submenu containers.\n\nThe class supports:\n- Different item types (normal, checkbox, radio, separator, submenu)\n- Custom text, icons, and tooltips\n- Keyboard shortcuts/accelerators\n- Enable/disable state\n- Event emission for user interaction\n- Submenu nesting\n\n**Example**\n\n```cpp\n// Create a normal menu item\nauto item = std::make_shared<MenuItem>(\"Open File\", MenuItemType::Normal);\nitem->SetIcon(\"data:image/png;base64,...\");\nitem->SetAccelerator(KeyboardAccelerator(\"O\", ModifierKey::Ctrl));\nitem->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event)\n{\n    // Handle menu item click\n    std::cout << \"Opening file...\" << std::endl;\n});\n\n// Create a checkbox item\nauto checkbox = std::make_shared<MenuItem>(\"Show Toolbar\", MenuItemType::Checkbox);\ncheckbox->SetState(MenuItemState::Checked);\ncheckbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent&\nevent) { std::cout << \"Toolbar clicked, handle state change manually\" <<\nstd::endl;\n});\n```",
+        "details": "This class provides a cross-platform interface for creating and managing menu items. Menu items can be simple clickable items, checkboxes, radio buttons, separators, or submenu containers.\n\nThe class supports:\n- Different item types (normal, checkbox, radio, separator, submenu)\n- Custom text, icons, and tooltips\n- Keyboard shortcuts/accelerators\n- Enable/disable state\n- Event emission for user interaction\n- Submenu nesting\n\n**Example**\n\n```cpp\n// Create a normal menu item\nauto item = std::make_shared<MenuItem>(\"Open File\", MenuItemType::Normal);\nitem->SetIcon(Image::FromBase64(\"data:image/png;base64,...\"));\nitem->SetAccelerator(KeyboardAccelerator(\"O\", ModifierKey::Ctrl));\nitem->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent& event)\n{\n    // Handle menu item click\n    std::cout << \"Opening file...\" << std::endl;\n});\n\n// Create a checkbox item\nauto checkbox = std::make_shared<MenuItem>(\"Show Toolbar\", MenuItemType::Checkbox);\ncheckbox->SetState(MenuItemState::Checked);\ncheckbox->AddListener<MenuItemClickedEvent>([](const MenuItemClickedEvent&\nevent) { std::cout << \"Toolbar clicked, handle state change manually\" <<\nstd::endl;\n});\n```",
         "notes": [
           {
             "kind": "note",
             "text": "This class uses the PIMPL idiom to hide platform-specific implementation details and ensure binary compatibility across different platforms. It also inherits from EventEmitter to provide event-driven interaction handling."
+          },
+          {
+            "kind": "note",
+            "text": "On OpenHarmony, use on the initialized ArkTS UI thread. Presentation requires the companion NativeMenuHost attached to the owning window. State changes are application-controlled; native clicks do not toggle the model. Ctrl/Shift/Alt accelerators are bound while the menu exists; other modifier combinations are displayed without binding. Mixed state displays a dash. Native object tokens are opaque bridge identities, not ArkUI_NodeHandles."
           }
         ]
       },
@@ -337,7 +341,7 @@
           "kind": "method",
           "doc": {
             "summary": "Set the icon for the menu item using an Image object.",
-            "details": "This is the preferred method for setting the menu item icon as it provides type safety and better control over image handling.\n\n**Example**\n\n```cpp\n// Using file path\nauto icon = Image::FromFile(\"/path/to/icon.png\");\nitem->SetIcon(icon);\n\n// Using base64 data\nauto icon = Image::FromBase64(\"data:image/png;base64,iVBORw0KGgo...\");\nitem->SetIcon(icon);\n\n// Using system icon\nauto icon = Image::FromSystemIcon(\"folder\");\nitem->SetIcon(icon);\n\n// Clear icon\nitem->SetIcon(nullptr);\n```",
+            "details": "This is the preferred method for setting the menu item icon as it provides type safety and better control over image handling.\n\n**Example**\n\n```cpp\n// Using file path\nauto icon = Image::FromFile(\"/path/to/icon.png\");\nitem->SetIcon(icon);\n\n// Using base64 data\nauto icon = Image::FromBase64(\"data:image/png;base64,iVBORw0KGgo...\");\nitem->SetIcon(icon);\n\n// Clear icon\nitem->SetIcon(nullptr);\n```",
             "params": [
               {
                 "name": "image",
@@ -913,11 +917,15 @@
       "kind": "class",
       "doc": {
         "summary": "Menu represents a collection of menu items.",
-        "details": "This class provides a cross-platform interface for creating and managing menus. Menus can contain various types of items including normal items, checkboxes, radio buttons, separators, and submenus.\n\nThe class supports:\n- Adding, removing, and organizing menu items\n- Displaying as context menus or application menus\n- Event emission for menu interactions\n- Hierarchical submenu structures\n- Dynamic menu modification\n\n**Example**\n\n```cpp\n// Create a file menu\nauto file_menu = std::make_shared<Menu>();\n\n// Add items to the menu\nauto new_item = std::make_shared<MenuItem>(\"New\", MenuItemType::Normal);\nnew_item->SetAccelerator(KeyboardAccelerator(\"N\", ModifierKey::Ctrl));\nfile_menu->AddItem(new_item);\n\nauto open_item = std::make_shared<MenuItem>(\"Open\", MenuItemType::Normal);\nopen_item->SetAccelerator(KeyboardAccelerator(\"O\",\nModifierKey::Ctrl)); file_menu->AddItem(open_item);\n\nfile_menu->AddSeparator();\n\nauto exit_item = std::make_shared<MenuItem>(\"Exit\", MenuItemType::Normal);\nfile_menu->AddItem(exit_item);\n\n// Listen to menu events\nfile_menu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {\n    std::cout << \"Menu opened\" << std::endl;\n});\n\n// Open as context menu\nfile_menu->Open(100, 100);\n```",
+        "details": "This class provides a cross-platform interface for creating and managing menus. Menus can contain various types of items including normal items, checkboxes, radio buttons, separators, and submenus.\n\nThe class supports:\n- Adding, removing, and organizing menu items\n- Displaying as context menus or application menus\n- Event emission for menu interactions\n- Hierarchical submenu structures\n- Dynamic menu modification\n\n**Example**\n\n```cpp\n// Create a file menu\nauto file_menu = std::make_shared<Menu>();\n\n// Add items to the menu\nauto new_item = std::make_shared<MenuItem>(\"New\", MenuItemType::Normal);\nnew_item->SetAccelerator(KeyboardAccelerator(\"N\", ModifierKey::Ctrl));\nfile_menu->AddItem(new_item);\n\nauto open_item = std::make_shared<MenuItem>(\"Open\", MenuItemType::Normal);\nopen_item->SetAccelerator(KeyboardAccelerator(\"O\",\nModifierKey::Ctrl)); file_menu->AddItem(open_item);\n\nfile_menu->AddSeparator();\n\nauto exit_item = std::make_shared<MenuItem>(\"Exit\", MenuItemType::Normal);\nfile_menu->AddItem(exit_item);\n\n// Listen to menu events\nfile_menu->AddListener<MenuOpenedEvent>([](const MenuOpenedEvent& event) {\n    std::cout << \"Menu opened\" << std::endl;\n});\n\n// Open as context menu\nfile_menu->Open(PositioningStrategy::Absolute({100, 100}));\n```",
         "notes": [
           {
             "kind": "note",
             "text": "This class uses the PIMPL idiom to hide platform-specific implementation details and ensure binary compatibility across different platforms. It also inherits from EventEmitter to provide event-driven interaction handling."
+          },
+          {
+            "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ Native AppKit menus.\n- Windows: ✅ Native Win32 menus or the optional WinUI3 backend.\n- Linux: ✅ Native GTK menus.\n- Android: ❌ Menu presentation is not implemented.\n- iOS: ❌ Menu presentation is not implemented.\n- OpenHarmony: ⚠️ Native ArkUI Menu/MenuItem components through the companion host adapter, on the initialized ArkTS UI thread. Absolute and rectangle / window-relative anchors are supported. Cursor-position queries remain open."
           }
         ]
       },
@@ -1744,7 +1752,13 @@
                 "text": "The placement option determining how the menu is positioned relative to the reference point (default: BottomStart)"
               }
             ],
-            "returns": "true if the menu was successfully opened, false otherwise"
+            "returns": "true if the menu was successfully opened, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony returns true when presentation is submitted; it does not block the UI thread. MenuOpenedEvent reports actual native appearance. Missing host attachment, invalid anchors, cursor positioning and duplicate presentation return false. Placement may flip or clamp at native bounds."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -1782,7 +1796,13 @@
           "kind": "method",
           "doc": {
             "summary": "Programmatically close the menu if it's currently showing.",
-            "returns": "true if the menu was successfully closed, false otherwise"
+            "returns": "true if the menu was successfully closed, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony returns true when closure is submitted. Native disappearance produces MenuClosedEvent; an already closed/closing menu returns false. Closing a visible submenu closes its native popup hierarchy."
+              }
+            ]
           },
           "signatures": {
             "cpp": {

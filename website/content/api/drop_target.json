@@ -8,7 +8,7 @@
       "kind": "class",
       "doc": {
         "summary": "Makes a window accept files and text dragged onto it — from a file manager, another application, or another window of this one.",
-        "details": "The target is live while it has listeners: adding the first listener registers the window as a drop destination, removing the last one (or destroying the target) unregisters it. A window without a live target refuses drops.\n\nA drag produces DropTargetEnteredEvent, any number of DropTargetMovedEvent, and then either DropTargetExitedEvent or DropTargetDroppedEvent. The dropped data is only delivered with DropTargetDroppedEvent; platforms do not reliably expose it earlier.\n\n```cpp\nauto target = std::make_shared<DropTarget>(window);\ntarget->AddListener<DropTargetDroppedEvent>([](const DropTargetDroppedEvent& event) {\n  for (const auto& path : event.GetFilePaths()) {\n    std::cout << \"Dropped \" << path << std::endl;\n  }\n});\n```\n\nEvents are emitted on the main thread.\n\nPlatform notes:\n- macOS: a transparent view is layered over the content view; it takes no mouse events.\n- Windows: the top-level window is registered with OLE (RegisterDragDrop), which also covers child windows such as a Flutter view. Registration fails if another component already registered the same window.\n- Linux: the GTK window is made a drag destination; child widgets that are drag destinations themselves take precedence.\n- Android, iOS and OpenHarmony: IsSupported() returns false and no events are emitted."
+        "details": "The target is live while it has listeners: adding the first listener registers the window as a drop destination, removing the last one (or destroying the target) unregisters it. A window without a live target refuses drops.\n\nA drag produces DropTargetEnteredEvent, any number of DropTargetMovedEvent, and then either DropTargetExitedEvent or DropTargetDroppedEvent. The dropped data is only delivered with DropTargetDroppedEvent; platforms do not reliably expose it earlier.\n\n```cpp\nauto target = std::make_shared<DropTarget>(window);\ntarget->AddListener<DropTargetDroppedEvent>([](const DropTargetDroppedEvent& event) {\n  for (const auto& path : event.GetFilePaths()) {\n    std::cout << \"Dropped \" << path << std::endl;\n  }\n});\n```\n\nEvents are emitted on the main thread.\n\nPlatform notes:\n- macOS: a transparent view is layered over the content view; it takes no mouse events.\n- Windows: the top-level window is registered with OLE (RegisterDragDrop), which also covers child windows such as a Flutter view. Registration fails if another component already registered the same window.\n- Linux: the GTK window is made a drag destination; child widgets that are drag destinations themselves take precedence.\n- OpenHarmony: public native ArkUI events accept Copy drops on a mounted NativeAPI content root (ContentSlot); children with their own destination handlers take precedence. Create the listener after mounting the root. Arbitrary ArkTS-only/Flutter content is not automatically wrapped. Move and Link are refused. Files require a locally readable SDK-granted URI.\n- Android and iOS: IsSupported() returns false and no events are emitted."
       },
       "signatures": {
         "cpp": {
@@ -122,7 +122,13 @@
           "key": "DropTarget::IsSupported",
           "kind": "static",
           "doc": {
-            "summary": "Checks if windows can accept drops on this platform."
+            "summary": "Checks if windows can accept drops on this platform.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - AppKit content-view drop destination\n- Windows: ✅ Fully supported - OLE window drop destination\n- Linux: ✅ Fully supported - GTK window drop destination\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ⚠️ Partial support - Initialized ArkUI host; registration additionally requires a mounted NativeAPI content root; Copy only"
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -201,6 +207,12 @@
               {
                 "name": "operation",
                 "text": "The operation to accept; defaults to DragOperation::Copy. A drag is only accepted when its source offers this operation. DragOperation::None refuses every drag."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Copy, Move and Link\n- Windows: ✅ Fully supported - Copy, Move and Link\n- Linux: ✅ Fully supported - Copy, Move and Link\n- Android: ❌ Not applicable - Destination never activates\n- iOS: ❌ Not applicable - Destination never activates\n- OpenHarmony: ⚠️ Partial support - Only Copy accepts drops; None, Move and Link retain their requested value but refuse all incoming drags"
               }
             ]
           },

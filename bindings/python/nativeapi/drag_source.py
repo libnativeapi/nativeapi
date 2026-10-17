@@ -66,6 +66,16 @@ class DragSource(_rt.NativeObject):
         raw = _C.native_drag_source_is_supported()
         return raw
 
+    @staticmethod
+    def is_position_supported() -> bool:
+        raw = _C.native_drag_source_is_position_supported()
+        return raw
+
+    @staticmethod
+    def is_operation_selection_supported() -> bool:
+        raw = _C.native_drag_source_is_operation_selection_supported()
+        return raw
+
     def set_file_paths(self, file_paths: list[str]) -> None:
         _C.native_drag_source_set_file_paths(self._handle, _rt.str_list(file_paths))
 

@@ -99,7 +99,13 @@
           "key": "MessageDialog::IsExtendedSupported",
           "kind": "static",
           "doc": {
-            "summary": "Extended controls currently require the Windows WinUI3 backend."
+            "summary": "Whether the native backend supports the extended dialog controls.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ❌ Not supported.\n- Windows: ✅ WinUI3 backend.\n- Linux: ❌ Not supported.\n- Android: ❌ Not supported.\n- iOS: ❌ Not supported.\n- OpenHarmony: ✅ Native ArkUI controls after UI host initialization; API 23+."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -770,7 +776,13 @@
           "doc": {
             "summary": "Open the dialog.",
             "details": "Displays the dialog according to the current modality setting.",
-            "returns": "true if the dialog was successfully opened, false otherwise"
+            "returns": "true if the dialog was successfully opened, false otherwise",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony requires an initialized UI host and an attached, visible parent window (the current window is used when no parent is set). Non-modal Open returns immediately. Modal Open blocks its calling worker until native dismissal; calling it on the ArkTS UI thread returns false because that thread must keep processing events. Application modality covers windows attached to this nativeapi instance, including windows attached while the dialog is open."
+              }
+            ]
           },
           "signatures": {
             "cpp": {

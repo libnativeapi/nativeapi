@@ -179,7 +179,7 @@
           "kind": "static",
           "doc": {
             "summary": "Create a strategy for positioning relative to a window.",
-            "details": "This method stores a reference to the window and will obtain its bounds dynamically when GetRelativeRectangle() is called, ensuring the position reflects the window's current state.\n\n**Example**\n\n```cpp\nauto window = std::make_shared<Window>();\n// Position menu at bottom of window (no offset)\nauto strategy = PositioningStrategy::Relative(*window, {0, 0});\nmenu->Open(strategy);\n\n// Position menu at bottom of window with 10px vertical offset\nauto strategy2 = PositioningStrategy::Relative(*window, {0, 10});\nmenu->Open(strategy2);\n```",
+            "details": "This method retains the shared window and obtains its content bounds dynamically when GetRelativeRectangle() is called. Copies retain the same wrapper. Explicit native window closure still invalidates the bounds. A nullptr window produces an empty relative rectangle and no window reference.\n\n**Example**\n\n```cpp\nauto window = std::make_shared<Window>();\n// Position menu at bottom of window (no offset)\nauto strategy = PositioningStrategy::Relative(window, {0, 0});\nmenu->Open(strategy);\n\n// Position menu at bottom of window with 10px vertical offset\nauto strategy2 = PositioningStrategy::Relative(window, {0, 10});\nmenu->Open(strategy2);\n```",
             "params": [
               {
                 "name": "window",
@@ -195,15 +195,15 @@
           "signatures": {
             "cpp": {
               "name": "Relative",
-              "signature": "static PositioningStrategy Relative(Window window, Point offset)"
+              "signature": "static PositioningStrategy Relative(std::shared_ptr<Window> window, Point offset)"
             },
             "csharp": {
               "name": "RelativeWithWindowAndOffset",
-              "signature": "public static PositioningStrategy? RelativeWithWindowAndOffset(Window window, Point offset)"
+              "signature": "public static PositioningStrategy? RelativeWithWindowAndOffset(Window? window, Point offset)"
             },
             "dart": {
               "name": "relativeWithWindowAndOffset",
-              "signature": "static PositioningStrategy? relativeWithWindowAndOffset(Window window, Point offset)"
+              "signature": "static PositioningStrategy? relativeWithWindowAndOffset(Window? window, Point offset)"
             },
             "go": {
               "name": "PositioningStrategyRelativeToWindow",
@@ -211,15 +211,15 @@
             },
             "js": {
               "name": "relativeWithWindowAndOffset",
-              "signature": "static relativeWithWindowAndOffset(window: Window, offset: Point): PositioningStrategy | null"
+              "signature": "static relativeWithWindowAndOffset(window: Window | null, offset: Point): PositioningStrategy | null"
             },
             "python": {
               "name": "relative_with_window_and_offset",
-              "signature": "@staticmethod\ndef relative_with_window_and_offset(\n    window: _window.Window,\n    offset: _geometry.Point,\n) -> PositioningStrategy | None:"
+              "signature": "@staticmethod\ndef relative_with_window_and_offset(\n    window: _window.Window | None,\n    offset: _geometry.Point,\n) -> PositioningStrategy | None:"
             },
             "rust": {
               "name": "relative_with_window_and_offset",
-              "signature": "pub fn relative_with_window_and_offset(window: &Window, offset: &Point) -> Option<PositioningStrategy>"
+              "signature": "pub fn relative_with_window_and_offset(window: Option<&Window>, offset: &Point) -> Option<PositioningStrategy>"
             }
           }
         },
@@ -394,6 +394,50 @@
             "rust": {
               "name": "relative_offset",
               "signature": "pub fn relative_offset(&self) -> Point"
+            }
+          }
+        },
+        {
+          "key": "PositioningStrategy::GetRelativeWindow",
+          "kind": "method",
+          "doc": {
+            "summary": "Get the relative window (for Relative type created with Window).",
+            "returns": "Shared window wrapper, or nullptr if not set",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Only valid when GetType() == Type::Relative and strategy was created with a Window"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetRelativeWindow",
+              "signature": "std::shared_ptr<Window> GetRelativeWindow() const"
+            },
+            "csharp": {
+              "name": "RelativeWindow",
+              "signature": "public Window? RelativeWindow"
+            },
+            "dart": {
+              "name": "relativeWindow",
+              "signature": "Window? get relativeWindow"
+            },
+            "go": {
+              "name": "RelativeWindow",
+              "signature": "func (ps *PositioningStrategy) RelativeWindow() *Window"
+            },
+            "js": {
+              "name": "relativeWindow",
+              "signature": "get relativeWindow(): Window | null"
+            },
+            "python": {
+              "name": "relative_window",
+              "signature": "@property\ndef relative_window(self) -> _window.Window | None:"
+            },
+            "rust": {
+              "name": "relative_window",
+              "signature": "pub fn relative_window(&self) -> Option<Window>"
             }
           }
         }

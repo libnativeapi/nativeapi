@@ -4269,6 +4269,18 @@ func DragSourceIsSupported() bool {
 	return bool(result)
 }
 
+// DragSourceIsPositionSupported invokes the native IsPositionSupported operation.
+func DragSourceIsPositionSupported() bool {
+	result := C.native_drag_source_is_position_supported()
+	return bool(result)
+}
+
+// DragSourceIsOperationSelectionSupported invokes the native IsOperationSelectionSupported operation.
+func DragSourceIsOperationSelectionSupported() bool {
+	result := C.native_drag_source_is_operation_selection_supported()
+	return bool(result)
+}
+
 // SetFilePaths invokes the native SetFilePaths operation.
 func (ds *DragSource) SetFilePaths(filePaths []string) {
 	cArg0, cArg0Cleanup := stringsToC(filePaths)
@@ -4599,6 +4611,13 @@ func (ps *PositioningStrategy) RelativeRectangle() Rectangle {
 func (ps *PositioningStrategy) RelativeOffset() Point {
 	result := C.native_positioning_strategy_get_relative_offset(C.native_positioning_strategy_t(ps.nativeHandleValue()))
 	return fromCPoint(result)
+}
+
+// RelativeWindow invokes the native GetRelativeWindow operation.
+// The returned reference is owned; nil means no object is available.
+func (ps *PositioningStrategy) RelativeWindow() *Window {
+	result := C.native_positioning_strategy_get_relative_window(C.native_positioning_strategy_t(ps.nativeHandleValue()))
+	return wrapWindow(uint64(result), false)
 }
 
 // MenuID identifies a native object.

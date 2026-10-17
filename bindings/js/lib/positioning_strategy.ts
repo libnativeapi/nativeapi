@@ -31,8 +31,8 @@ export class PositioningStrategy extends NativeObject {
     return wrapHandle(PositioningStrategy, native.native_positioning_strategy_relative_with_rect_and_offset(rect, offset));
   }
 
-  static relativeWithWindowAndOffset(window: Window, offset: Point): PositioningStrategy | null {
-    return wrapHandle(PositioningStrategy, native.native_positioning_strategy_relative_with_window_and_offset(window.nativeHandle, offset));
+  static relativeWithWindowAndOffset(window: Window | null, offset: Point): PositioningStrategy | null {
+    return wrapHandle(PositioningStrategy, native.native_positioning_strategy_relative_with_window_and_offset(window?.nativeHandle ?? 0n, offset));
   }
 
   get type(): PositioningStrategyType {
@@ -49,5 +49,9 @@ export class PositioningStrategy extends NativeObject {
 
   get relativeOffset(): Point {
     return native.native_positioning_strategy_get_relative_offset(this.nativeHandle);
+  }
+
+  get relativeWindow(): Window | null {
+    return wrapHandle(Window, native.native_positioning_strategy_get_relative_window(this.nativeHandle));
   }
 }

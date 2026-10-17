@@ -29,6 +29,9 @@ public static partial class Interop
     public static extern ulong native_positioning_strategy_cursor_position();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern ulong native_positioning_strategy_get_relative_window(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_positioning_strategy_relative_with_rect_and_offset(native_rectangle_t rect, native_point_t offset);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]

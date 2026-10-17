@@ -12,6 +12,10 @@
         "notes": [
           {
             "kind": "note",
+            "text": "OpenHarmony: the ArkTS host must attach its WindowStage or existing windows through platform/ohos/ohos_window.h. The host owns creation, content and Ability lifecycle. Geometry is in logical units, converted with the current display density. Asynchronous native operations take effect later; getters read the actual native state. Unsupported device or window operations leave that state unchanged. GetTitle() and policy getters without an SDK query remember only successful nativeapi changes."
+          },
+          {
+            "kind": "note",
             "text": "This class is not thread-safe. All window operations should be performed on the main UI thread."
           }
         ]
@@ -52,7 +56,13 @@
           "kind": "constructor",
           "doc": {
             "summary": "Default constructor creates a new window with default settings.",
-            "details": "Creates a new window with platform-default size, position, and properties. The window is initially hidden and must be explicitly shown. The window is automatically registered in the WindowRegistry."
+            "details": "Creates a new window with platform-default size, position, and properties. The window is initially hidden and must be explicitly shown. The window is automatically registered in the WindowRegistry.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony: creation is asynchronous and belongs to WindowStage. Use the platform host's CreateSubWindow completion instead. This constructor leaves an unattached, invalid wrapper on OpenHarmony."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -99,7 +109,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "The Window instance takes ownership of the native window object"
+                "text": "The Window instance takes ownership of the native window object. On OpenHarmony the argument is a borrowed opaque token returned by an attached Window's GetNativeObject(), not an OHNativeWindow surface or a napi_value. The host retains native ownership."
               }
             ]
           },
@@ -173,7 +183,7 @@
           "kind": "static",
           "doc": {
             "summary": "Whether cancellable close requests are supported on this platform.",
-            "returns": "True on desktop platforms, false on mobile platforms."
+            "returns": "True on desktop platforms and an initialized OpenHarmony host. OpenHarmony accepts requests only for attached child windows; Ability-owned main windows cannot be destroyed with Close()."
           },
           "signatures": {
             "cpp": {
@@ -220,7 +230,7 @@
               },
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - Continues performClose and the host delegate.\n- Windows: ✅ Supported - Continues the host WM_CLOSE handler.\n- Linux: ✅ Supported - Continues GTK delete-event handling, X11 or Wayland.\n- Android: ❌ Unsupported - Returns false.\n- iOS: ❌ Unsupported - Returns false.\n- OpenHarmony: ❌ Unsupported - Returns false."
+                "text": "Platform availability:\n- macOS: ✅ Supported - Continues performClose and the host delegate.\n- Windows: ✅ Supported - Continues the host WM_CLOSE handler.\n- Linux: ✅ Supported - Continues GTK delete-event handling, X11 or Wayland.\n- Android: ❌ Unsupported - Returns false.\n- iOS: ❌ Unsupported - Returns false.\n- OpenHarmony: ⚠️ Close() accepts attached child windows only; main windows return false. Public SDK title-button closes on attached main/child windows also emit this object's cancellable/deferred request. Approval resumes the original SDK close; nativeapi does not terminate the Ability itself."
               }
             ]
           },
@@ -298,7 +308,7 @@
           "kind": "method",
           "doc": {
             "summary": "Gets the view filling the window's content area.",
-            "details": "Created on first call and cached: the same instance is returned for the life of the window. It wraps the window's existing content view (a Flutter or GPUI view when a host framework owns the window), so subviews added to it sit on top of that content. Its frame follows the content area; View::SetFrame() on it is ignored.",
+            "details": "Created on first call and cached: the same instance is returned for the life of the window. It wraps the window's existing content view (a Flutter or GPUI view when a host framework owns the window), so subviews added to it sit on top of that content. Its frame follows the content area; View::SetFrame() on it is ignored.\n\nOn OpenHarmony, the host attaches a native ContentSlot first. The root fills that slot, is cached across slot reattachment and leaves surrounding ArkTS content alone. Without a slot this method returns nullptr.",
             "returns": "The root view, or nullptr when View::IsSupported() is false or the native window is gone."
           },
           "signatures": {
@@ -341,7 +351,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - Activates the application unless IsNonActivating(). macOS 14+ activation is cooperative, so the system can still decline it.\n- Windows: ⚠️ Best effort - When the foreground lock refuses the request it is retried with the foreground thread's input state attached; the system may still only flash the taskbar button.\n- Linux: ⚠️ Best effort - Presents with the current event or X server time; the window manager or compositor (Wayland: activation tokens) decides.\n- Android: ❌ Not applicable - Focus follows the Activity lifecycle\n- iOS: ⚠️ Partial - Makes the window the key window\n- OpenHarmony: ❌ Not applicable - Focus follows the Ability lifecycle"
+                "text": "Platform availability:\n- macOS: ✅ Supported - Activates the application unless IsNonActivating(). macOS 14+ activation is cooperative, so the system can still decline it.\n- Windows: ⚠️ Best effort - When the foreground lock refuses the request it is retried with the foreground thread's input state attached; the system may still only flash the taskbar button.\n- Linux: ⚠️ Best effort - Presents with the current event or X server time; the window manager or compositor (Wayland: activation tokens) decides.\n- Android: ❌ Not applicable - Focus follows the Activity lifecycle\n- iOS: ⚠️ Partial - Makes the window the key window\n- OpenHarmony: ⚠️ Attached main/child windows only; asynchronous focus transfer within the application."
               }
             ]
           },
@@ -385,7 +395,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - Another app is activated after yielding activation to it; with no target, the app this one last took the focus from.\n- Windows: ✅ Supported - Without a usable target, the next window down the Z order gets the foreground.\n- Linux: ⚠️ Partial - X11 asks the window manager to activate the previous window, else the next one down its stacking order. Wayland can only return focus to another window of this application; otherwise the window is lowered and the compositor decides.\n- Android: ❌ Not applicable - Focus follows the Activity lifecycle\n- iOS: ⚠️ Partial - Resigns the key window\n- OpenHarmony: ❌ Not applicable - Focus follows the Ability lifecycle"
+                "text": "Platform availability:\n- macOS: ✅ Supported - Another app is activated after yielding activation to it; with no target, the app this one last took the focus from.\n- Windows: ✅ Supported - Without a usable target, the next window down the Z order gets the foreground.\n- Linux: ⚠️ Partial - X11 asks the window manager to activate the previous window, else the next one down its stacking order. Wayland can only return focus to another window of this application; otherwise the window is lowered and the compositor decides.\n- Android: ❌ Not applicable - Focus follows the Activity lifecycle\n- iOS: ⚠️ Partial - Resigns the key window\n- OpenHarmony: ⚠️ Returns focus to a visible attached window of the same application."
               }
             ]
           },
@@ -463,7 +473,13 @@
           "kind": "method",
           "doc": {
             "summary": "Shows the window and brings it to the front.",
-            "details": "Makes the window visible and typically gives it focus. If the window was minimized, it will be restored to its previous state."
+            "details": "Makes the window visible and typically gives it focus. If the window was minimized, it will be restored to its previous state.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony also restores the owning Ability's SDK application-hidden window group for an activating show. A non-activating show keeps the SDK's focusOnShow=false behavior; restoration from application hiding may require an explicit Application::Show()."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -577,7 +593,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window is currently visible.",
-            "returns": "true if the window is visible, false if hidden or minimized"
+            "returns": "true if the window is visible, false if hidden or minimized",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "OpenHarmony includes successful SDK application hiding for the owning stage's main window and registered descendants. The SDK's per-window showing flag alone remains true while the Ability's whole window group is hidden."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -620,7 +642,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - NSWindow.occlusionState, as the system computes it.\n- Windows: ⚠️ Approximated - Hidden, minimized and cloaked (another virtual desktop) windows are occluded; otherwise the window is occluded when the opaque windows above it in the Z order, clipped to the screens, cover it entirely. Click-through and translucent layered windows do not count as covering.\n- Linux: ⚠️ Partial - Hidden and minimized windows are occluded; whether other windows cover a shown one is not known, so it is Unknown (X11 visibility is meaningless under a compositing manager, and Wayland does not tell).\n- Android: ❌ Not applicable - Always Unknown\n- iOS: ❌ Not applicable - Always Unknown\n- OpenHarmony: ❌ Not applicable - Always Unknown"
+                "text": "Platform availability:\n- macOS: ✅ Supported - NSWindow.occlusionState, as the system computes it.\n- Windows: ⚠️ Approximated - Hidden, minimized and cloaked (another virtual desktop) windows are occluded; otherwise the window is occluded when the opaque windows above it in the Z order, clipped to the screens, cover it entirely. Click-through and translucent layered windows do not count as covering.\n- Linux: ⚠️ Partial - Hidden and minimized windows are occluded; whether other windows cover a shown one is not known, so it is Unknown (X11 visibility is meaningless under a compositing manager, and Wayland does not tell).\n- Android: ❌ Not applicable - Always Unknown\n- iOS: ❌ Not applicable - Always Unknown\n- OpenHarmony: ✅ Supported on an initialized Window.SessionManager host. Public SDK occlusionStateChanged (or windowVisibilityChange fallback) observations distinguish a visible portion from full occlusion. Before the first observation a shown window is Unknown; hidden windows are Occluded. Partial/absent occlusion both mean Visible. SDK rules for transparent, animated and masked windows apply; no screen-geometry approximation is used. Closed/foreign windows return Unknown. Workers marshal queries to UI."
               }
             ]
           },
@@ -937,6 +959,12 @@
                 "name": "is_full_screen",
                 "text": "true to enter fullscreen mode, false to exit"
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native fullscreen, completed asynchronously.\n- Windows: ✅ Borderless screen-sized window.\n- Linux: ⚠️ Window-manager controlled; completion is asynchronous.\n- Android: ❌ The current backend does not change fullscreen state.\n- iOS: ⚠️ Sets the root controller's modal presentation style; it does not present or dismiss the controller.\n- OpenHarmony: ⚠️ Supported freeform main/child windows use public SDK immersive maximize and recover, restoring a previous maximized state. The SDK may reject unsupported children or supported-mode restrictions. Outside a freeform workspace, content layout/system-bar requests retain their SDK restrictions. A phone child's SDK fullscreen flag can be true while its floating frame is unchanged. Calls submit asynchronously; queries and events report confirmed SDK state, not request submission."
+              }
             ]
           },
           "signatures": {
@@ -975,7 +1003,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window is currently in fullscreen mode.",
-            "returns": "true if the window is fullscreen, false otherwise"
+            "returns": "true if the window is fullscreen, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetFullScreen() for platform availability and confirmed-state semantics."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -1521,7 +1555,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ Partial - Applied via GDK aspect geometry hints, which the window manager may honor loosely. GTK also applies them to programmatic resizes, so SetSize(), SetContentSize() and SetBounds() are adjusted to the ratio while one is set. With client-side decorations the content ratio can be off by a pixel after a resize.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ Partial - Applied via GDK aspect geometry hints, which the window manager may honor loosely. GTK also applies them to programmatic resizes, so SetSize(), SetContentSize() and SetBounds() are adjusted to the ratio while one is set. With client-side decorations the content ratio can be off by a pixel after a resize.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ API 21+ uses a nonpersistent content-ratio constraint on supported main windows, effective during floating-window edge drags. SDK rejection leaves the last successful constraint unchanged. UI calls submit without blocking; workers wait for SDK completion. Nonfinite inputs are ignored. Programmatic resizing remains unconstrained. Clearing uses resetAspectRatio(), which also clears a saved SDK ratio."
               }
             ]
           },
@@ -1561,7 +1595,8 @@
           "kind": "method",
           "doc": {
             "summary": "Gets the aspect ratio constraint set by SetAspectRatio().",
-            "returns": "Width divided by height, or 0 when no constraint is set"
+            "details": "On OpenHarmony this is the last successfully applied nativeapi constraint, shared by aliases of the same live window. The SDK exposes no ratio getter; changes made directly by the ArkTS host are not reflected here.",
+            "returns": "Width divided by height, or 0 when no constraint is set."
           },
           "signatures": {
             "cpp": {
@@ -1769,6 +1804,12 @@
                 "name": "is_minimizable",
                 "text": "true to allow minimizing, false to disable"
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native caption policy\n- Windows: ✅ Native caption policy\n- Linux: ⚠️ GTK controls and window-manager policy hints\n- Android: ❌ Setter ignored\n- iOS: ❌ Setter ignored\n- OpenHarmony: ⚠️ Public SDK caption buttons on supported decorated windows. These are caption-only policies; other system gestures are unaffected. Independent policies survive collective button hiding and title-bar style changes; programmatic Minimize/Maximize remain available, while Close() retains its documented child-only restriction. SDK refusal preserves the last applied policies. Desktop main windows start with enabled policies; other window profiles return false until a button request succeeds. Native destruction returns false. There is no individual SDK getter; external button edits do not rewrite these independent policies."
+              }
             ]
           },
           "signatures": {
@@ -1807,7 +1848,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window can be minimized by the user.",
-            "returns": "true if user can minimize the window, false otherwise"
+            "returns": "true if user can minimize the window, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetMinimizable() for platform availability and policy semantics."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -1851,6 +1898,12 @@
                 "name": "is_maximizable",
                 "text": "true to allow maximizing, false to disable"
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native caption policy\n- Windows: ✅ Native caption policy\n- Linux: ⚠️ GTK controls and window-manager policy hints\n- Android: ❌ Setter ignored\n- iOS: ❌ Setter ignored\n- OpenHarmony: ⚠️ Public SDK caption buttons on supported decorated windows. These are caption-only policies; native title-bar double-click still maximizes even when the maximize button is hidden. Independent policies survive collective button hiding and title-bar style changes; programmatic Minimize/Maximize remain available, while Close() retains its documented child-only restriction. SDK refusal preserves the last applied policies. Desktop main windows start with enabled policies; other window profiles return false until a button request succeeds. Native destruction returns false. There is no individual SDK getter; external button edits do not rewrite these independent policies."
+              }
             ]
           },
           "signatures": {
@@ -1889,7 +1942,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window can be maximized by the user.",
-            "returns": "true if user can maximize the window, false otherwise"
+            "returns": "true if user can maximize the window, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetMaximizable() for platform availability and policy semantics."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -1933,6 +1992,12 @@
                 "name": "is_full_screenable",
                 "text": "true to allow fullscreen, false to disable"
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ❌ The current setter is not implemented.\n- Windows: ❌ Setter ignored; live native windows can enter borderless fullscreen.\n- Linux: ❌ The current setter is not implemented.\n- Android: ❌ Setter ignored.\n- iOS: ❌ Setter ignored.\n- OpenHarmony: ⚠️ Changes the public supported-mode mask (Window API 26+, or the primary WindowStage API 15+ fallback). The SDK couples fullscreen and nonimmersive maximize, so disabling this mode blocks both. Other mode bits are preserved. Main windows start from the attached Ability's declared modes; a floating child can establish its floating baseline. Hosts must publish known higher-priority StartOptions/direct-SDK overrides through the OHOS host seam, since there is no public live mask getter. Requests that would leave an invalid/empty mode set are ignored. UI requests are queued asynchronously; workers wait for their own SDK completion. SDK refusal preserves the preceding policy, and destruction cancels pending requests. This policy does not control phone content-layout/system-bar flags."
+              }
             ]
           },
           "signatures": {
@@ -1971,7 +2036,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window supports fullscreen mode.",
-            "returns": "true if fullscreen is supported, false otherwise"
+            "returns": "true if fullscreen is supported, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetFullScreenable() for platform policy semantics. On OpenHarmony the getter reports a host-published/successfully applied mask or the declared primary baseline; an unknown child baseline and destroyed windows return false. Unreported host SDK changes are not reflected."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -2015,6 +2086,12 @@
                 "name": "is_closable",
                 "text": "true to allow closing, false to disable"
               }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native caption policy\n- Windows: ✅ Native caption policy\n- Linux: ⚠️ GTK controls and window-manager policy hints\n- Android: ❌ Setter ignored\n- iOS: ❌ Setter ignored\n- OpenHarmony: ⚠️ Public SDK caption buttons on supported decorated windows. These are caption-only policies; other system gestures are unaffected. Independent policies survive collective button hiding and title-bar style changes; programmatic Minimize/Maximize remain available, while Close() retains its documented child-only restriction. SDK refusal preserves the last applied policies. Desktop main windows start with enabled policies; other window profiles return false until a button request succeeds. Native destruction returns false. There is no individual SDK getter; external button edits do not rewrite these independent policies."
+              }
             ]
           },
           "signatures": {
@@ -2053,7 +2130,13 @@
           "kind": "method",
           "doc": {
             "summary": "Checks if the window can be closed by the user.",
-            "returns": "true if user can close the window, false otherwise"
+            "returns": "true if user can close the window, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetClosable() for platform availability and policy semantics."
+              }
+            ]
           },
           "signatures": {
             "cpp": {
@@ -2101,7 +2184,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hides/shows the traffic light buttons (red, yellow, green)\n- Windows: ❌ Not implemented - Returns default value (visible)\n- Linux: ❌ Not implemented - Returns default value (visible)\n- Android: ❌ Not applicable - Mobile apps don't have window control buttons\n- iOS: ❌ Not applicable - Mobile apps don't have window control buttons\n- OpenHarmony: ❌ Not applicable - Mobile apps don't have window control buttons"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hides/shows the traffic light buttons (red, yellow, green)\n- Windows: ❌ Not implemented - Returns default value (visible)\n- Linux: ❌ Not implemented - Returns default value (visible)\n- Android: ❌ Not applicable - Mobile apps don't have window control buttons\n- iOS: ❌ Not applicable - Mobile apps don't have window control buttons\n- OpenHarmony: ⚠️ Uses public SDK title-button visibility on supported decorated windows (normally a freeform main window). Unsupported phone/child requests are ignored. The getter reads the live SDK button-area size, so an externally configured nonempty subset also counts as visible. Layout updates and full-screen hover behavior are managed by the system."
               }
             ]
           },
@@ -2145,7 +2228,11 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns actual visibility state\n- Windows: ❌ Not implemented - Always returns true\n- Linux: ❌ Not implemented - Always returns true\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns actual visibility state\n- Windows: ❌ Not implemented - Always returns true\n- Linux: ❌ Not implemented - Always returns true\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Reads the live SDK title-button area, including controls explicitly shown over a hidden title bar. False for unavailable/closed windows, empty areas or SDK errors."
+              },
+              {
+                "kind": "see",
+                "text": "SetWindowControlButtonsVisible() for details."
               }
             ]
           },
@@ -2366,7 +2453,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - The child also moves with its parent. A hidden child is attached when it is shown, because AppKit shows a window that is attached to a visible parent.\n- Windows: ⚠️ Owned window - Stays above its parent and is hidden with it, but does not move with it, and is destroyed when its parent is.\n- Linux: ⚠️ Transient window - Stays above its parent; does not move with it, and minimizing with the parent is up to the window manager. On Wayland nothing an application does can make it follow: a client neither places its toplevels nor learns where they are.\n- Android: ❌ Not applicable - Always ignored, returns false\n- iOS: ❌ Not applicable - Always ignored, returns false\n- OpenHarmony: ❌ Not applicable - Always ignored, returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - The child also moves with its parent. A hidden child is attached when it is shown, because AppKit shows a window that is attached to a visible parent.\n- Windows: ⚠️ Owned window - Stays above its parent and is hidden with it, but does not move with it, and is destroyed when its parent is.\n- Linux: ⚠️ Transient window - Stays above its parent; does not move with it, and minimizing with the parent is up to the window manager. On Wayland nothing an application does can make it follow: a client neither places its toplevels nor learns where they are.\n- Android: ❌ Not applicable - Always ignored, returns false\n- iOS: ❌ Not applicable - Always ignored, returns false\n- OpenHarmony: ⚠️ API 19+ public SDK reparenting for attached application subwindows and parents in the same UI environment, subject to device/freeform window support. nullptr, main-window receivers and overlapping requests are rejected. UI callers receive submission status; workers wait for SDK completion."
               }
             ]
           },
@@ -2406,7 +2493,7 @@
           "kind": "method",
           "doc": {
             "summary": "Gets the window this window belongs to.",
-            "details": "Read from the native window, so it also reports a parent the embedding framework has set.",
+            "details": "Read from the native window, so it also reports a parent the embedding framework has set. On OpenHarmony only attached parents can be returned; API 19+ reads the live SDK relationship, while older SDKs use the creation relationship. SDK query failure returns nullptr.",
             "returns": "The parent window, or nullptr if this window has none",
             "notes": [
               {
@@ -2461,7 +2548,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - The window becomes a non-activating NSPanel that can become key but never main.\n- Windows: ✅ Supported - Uses WS_EX_NOACTIVATE and declines mouse activation; Show() and Focus() do not take keyboard focus while this flag is set.\n- Linux: ⚠️ Window-manager dependent - Sets GTK/GDK accept-focus and focus-on-map hints; Show() and Focus() do not request activation. X11 window managers normally honor these hints; Wayland compositors may ignore them.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - The window becomes a non-activating NSPanel that can become key but never main.\n- Windows: ✅ Supported - Uses WS_EX_NOACTIVATE and declines mouse activation; Show() and Focus() do not take keyboard focus while this flag is set.\n- Linux: ⚠️ Window-manager dependent - Sets GTK/GDK accept-focus and focus-on-map hints; Show() and Focus() do not request activation. X11 window managers normally honor these hints; Wayland compositors may ignore them.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ✅ Show and Focus honor the non-activating policy for attached windows."
               }
             ]
           },
@@ -2827,7 +2914,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported - Hides the window's header bar\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported - Hides the window's header bar\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Changes native decorations where the device and window type support them."
               }
             ]
           },
@@ -2922,7 +3009,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ❌ Not supported - Always returns false\n- Windows: ✅ Supported on Windows 11 build 22000 and later - DWM corner preference\n- Linux: ❌ Not supported - Always returns false\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ❌ Not supported - Always returns false\n- Windows: ✅ Supported on Windows 11 build 22000 and later - DWM corner preference\n- Linux: ❌ Not supported - Always returns false\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Child windows use public SDK corner radii: square 0, RoundSmall 4 vp and Round 8 vp. Default restores the radius read before this library's first request; it does not re-enter changing system policy. Main windows and invalid/dead wrappers return false. UI calls report submission; workers wait for SDK success. The shared preference record changes only on successful completion. An overlapping request returns false."
               }
             ]
           },
@@ -2962,7 +3049,7 @@
           "kind": "method",
           "doc": {
             "summary": "Gets the last corner preference successfully applied by this library.",
-            "details": "DWM exposes this attribute for setting only. This reads the library's record on the native window, not the radius currently drawn by DWM.",
+            "details": "This reads the library's successful preference record on the native window, not a live radius or changes made directly through another native API.",
             "returns": "The shared native window's preference, or Default when unset, unsupported or the native window no longer exists.",
             "notes": [
               {
@@ -3007,7 +3094,7 @@
           "kind": "static",
           "doc": {
             "summary": "Checks if this platform supports window corner preferences.",
-            "returns": "true on Windows 11 build 22000 and later; false elsewhere.",
+            "returns": "true on supported Windows versions or an initialized OpenHarmony Window.SessionManager host; false elsewhere.",
             "notes": [
               {
                 "kind": "see",
@@ -3062,7 +3149,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - NSWindowStyleMaskFullSizeContentView with a transparent title bar; the traffic lights stay over the content.\n- Windows: ❌ Not supported - Always returns false. The client area can be given the caption band, but the caption buttons DWM draws there stop hit-testing (they answer HTCLIENT), so they would have to be drawn and hit-tested by hand. Use TitleBarStyle::Hidden and draw the chrome.\n- Linux: ❌ Not supported - Always returns false. A GTK header bar is a sibling above the content, not an overlay over it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - NSWindowStyleMaskFullSizeContentView with a transparent title bar; the traffic lights stay over the content.\n- Windows: ❌ Not supported - Always returns false. The client area can be given the caption band, but the caption buttons DWM draws there stop hit-testing (they answer HTCLIENT), so they would have to be drawn and hit-tested by hand. Use TitleBarStyle::Hidden and draw the chrome.\n- Linux: ❌ Not supported - Always returns false. A GTK header bar is a sibling above the content, not an overlay over it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Uses public immersive content layout, including phone system-bar insets. UI calls report asynchronous submission; workers wait for SDK completion and confirm the actual layout flag. SDK no-op success is false on a worker when the live flag does not match the request. A pending layout request, invalid/destroyed window or SDK invocation failure returns false. Observe IsContentUnderTitleBar() for the actual layout; this does not change the native window mode or frame. On the tested API 26 computer, floating-main requests leave the live layout flag unchanged; child flags can change while the decorated content inset remains. This is not a transparent native-caption overlay. Native destruction cancels pending requests, and late completions do not publish fullscreen events."
               }
             ]
           },
@@ -3201,7 +3288,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ⚠️ Sets NSWindowSharingNone, or NSWindowSharingReadOnly when disabled. Recent ScreenCaptureKit capture ignores this legacy sharing policy.\n- Windows: ✅ Uses WDA_EXCLUDEFROMCAPTURE on Windows 10 version 2004 and later; older systems use WDA_MONITOR (blank content). Requires DWM composition and a top-level window belonging to this process.\n- Linux: ❌ Not supported - Always returns false\n- Android: ❌ Not supported - Always returns false\n- iOS: ❌ Not supported - Always returns false\n- OpenHarmony: ❌ Not supported - Always returns false"
+                "text": "Platform availability:\n- macOS: ⚠️ Sets NSWindowSharingNone, or NSWindowSharingReadOnly when disabled. Recent ScreenCaptureKit capture ignores this legacy sharing policy.\n- Windows: ✅ Uses WDA_EXCLUDEFROMCAPTURE on Windows 10 version 2004 and later; older systems use WDA_MONITOR (blank content). Requires DWM composition and a top-level window belonging to this process.\n- Linux: ❌ Not supported - Always returns false\n- Android: ❌ Not supported - Always returns false\n- iOS: ❌ Not supported - Always returns false\n- OpenHarmony: ⚠️ Native privacy mode requires ohos.permission.PRIVACY_WINDOW; false on denial."
               }
             ]
           },
@@ -3339,7 +3426,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Drops the shadow of any window\n- Windows: ⚠️ Hidden-title-bar windows keep the desktop compositor's shadow, or use a core-managed click-through shadow once a custom shadow or a shape is applied. Without a shadow a hidden-title-bar window has no frame; its content stays in place. System-decorated windows retain the desktop compositor's restrictions.\n- Linux: ⚠️ Hidden-title-bar GtkWindows use a core-rendered shadow with an internal non-interactive margin; content coordinates and sizes exclude it. SetInputShape() supplies its contour, or nullptr restores a rectangle. Native X11 visual regions still clip the shadow; use independent input shaping and transparent renderer clipping for a soft exterior shadow. Decorated GTK windows use their theme shadow; server-side X11 decorations remain controlled by the window manager.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Drops the shadow of any window\n- Windows: ⚠️ Hidden-title-bar windows keep the desktop compositor's shadow, or use a core-managed click-through shadow once a custom shadow or a shape is applied. Without a shadow a hidden-title-bar window has no frame; its content stays in place. System-decorated windows retain the desktop compositor's restrictions.\n- Linux: ⚠️ Hidden-title-bar GtkWindows use a core-rendered shadow with an internal non-interactive margin; content coordinates and sizes exclude it. SetInputShape() supplies its contour, or nullptr restores a rectangle. Native X11 visual regions still clip the shadow; use independent input shaping and transparent renderer clipping for a soft exterior shadow. Decorated GTK windows use their theme shadow; server-side X11 decorations remain controlled by the window manager.\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Child windows use public setWindowShadowRadius: zero disables, 18 logical pixels enables. Main windows use the permission-gated setWindowShadowEnabled SDK, requiring the normal system_grant permission ohos.permission.SET_WINDOW_TRANSPARENT on PCs/tablets; rejection preserves the last applied record. HasShadow reports this library's last successful request (false until configured); the SDK has no public getter for existing shadow state. Native color/offset/blur defaults remain system-controlled."
               }
             ]
           },
@@ -3428,7 +3515,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Hidden-title-bar windows; core draws a non-interactive child window\n- Windows: ✅ Hidden-title-bar windows; core draws a layered helper window\n- Linux: ✅ Hidden-title-bar GtkWindows; core draws in the same surface\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ❌ Unsupported, returns false"
+                "text": "Platform availability:\n- macOS: ✅ Hidden-title-bar windows; core draws a non-interactive child window\n- Windows: ✅ Hidden-title-bar windows; core draws a layered helper window\n- Linux: ✅ Hidden-title-bar GtkWindows; core draws in the same surface\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ⚠️ Attached hidden-title-bar windows with the optional NativeWindowShadowHost Stage companion and a registered transparent surface page. Core rasterizes the clipped contour on a worker; a private public-SDK helper is non-focusable and passes all pointer input through. UI calls report submission; workers wait for SDK completion. Overlapping configuration changes return false; visibility changes are serialized. Main-window native shadow suppression also needs SET_WINDOW_TRANSPARENT on supported devices."
               }
             ]
           },
@@ -3744,7 +3831,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ⚠️ Content-layer mask; requires a transparent background and hidden title bar\n- Windows: ✅ Native window region clips rendering and mouse input; the window drops its frame, keeping its content in place\n- Linux: ⚠️ GDK visual and input regions, only on backends supporting both (X11)\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ❌ Unsupported, returns false"
+                "text": "Platform availability:\n- macOS: ⚠️ Content-layer mask; requires a transparent background and hidden title bar\n- Windows: ✅ Native window region clips rendering and mouse input; the window drops its frame, keeping its content in place\n- Linux: ⚠️ GDK visual and input regions, only on backends supporting both (X11)\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ⚠️ API 24+ child-window compositor mask with hidden decorations. Maximum 16 Mi physical pixels with the API 26 alpha-mask method, or 1 Mi with the API 24/25 nested-array method; each dimension is at most 16384 pixels. Main windows are rejected. UI calls report submission; worker calls wait for SDK completion. IsShaped() records the last successful library request; external SDK mask changes are not tracked. A failed request keeps that state. Clearing a window with no SDK mask may fail. Wait for the new rectangle after resizing before reapplying; a resize promise alone may precede it."
               }
             ]
           },
@@ -3869,7 +3956,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ❌ Unsupported, returns false; use SetShape() for a content mask\n- Windows: ❌ Unsupported, returns false; use SetShape() for a native region\n- Linux: ✅ GDK input regions, including X11 and Wayland\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ❌ Unsupported, returns false"
+                "text": "Platform availability:\n- macOS: ❌ Unsupported, returns false; use SetShape() for a content mask\n- Windows: ❌ Unsupported, returns false; use SetShape() for a native region\n- Linux: ✅ GDK input regions, including X11 and Wayland\n- Android: ❌ Unsupported, returns false\n- iOS: ❌ Unsupported, returns false\n- OpenHarmony: ❌ Unsupported for ordinary applications without restricted SET_WINDOW_TOUCH_AREAS permission (system_basic, PCs/API 26+). The SDK accepts at most ten rectangles, not a general independent polygon mask."
               }
             ]
           },
@@ -4269,7 +4356,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Pass-through and movement forwarding\n- Windows: ✅ Pass-through and movement forwarding to child content HWNDs\n- Linux: ✅ Input-region pass-through; movement forwarding on X11 only. Wayland cannot report global pointer movement outside the input region. Disabling pass-through restores the latest explicit input shape.\n- Android, iOS, OpenHarmony: ❌ Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Pass-through and movement forwarding\n- Windows: ✅ Pass-through and movement forwarding to child content HWNDs\n- Linux: ✅ Input-region pass-through; movement forwarding on X11 only. Wayland cannot report global pointer movement outside the input region. Disabling pass-through restores the latest explicit input shape.\n- Android, iOS: ❌ Always returns false\n- OpenHarmony: ✅ Native touchability; forwarding is unsupported and returns false without changing the window."
               }
             ]
           },
@@ -4432,7 +4519,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Overrides the window's ability to become key\n- Windows: ✅ Supported - Declines mouse activation without disabling clicks\n- Linux: ⚠️ Window-manager dependent - Sets GTK/GDK focus hints; Wayland compositors may ignore them\n- Android: ❌ Not applicable - Focus is managed by the system\n- iOS: ❌ Not applicable - Focus is managed by the system\n- OpenHarmony: ❌ Not applicable - Focus is managed by the system"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Overrides the window's ability to become key\n- Windows: ✅ Supported - Declines mouse activation without disabling clicks\n- Linux: ⚠️ Window-manager dependent - Sets GTK/GDK focus hints; Wayland compositors may ignore them\n- Android: ❌ Not applicable - Focus is managed by the system\n- iOS: ❌ Not applicable - Focus is managed by the system\n- OpenHarmony: ✅ Updates native window focusability for attached windows."
               }
             ]
           },
@@ -4748,7 +4835,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Uses the user's AppleActionOnDoubleClick preference: Maximize (or unset) zooms, Minimize miniaturizes, None deliberately does nothing. Legacy Zoom is also accepted. Fill requests the OS native Fill action when available; this currently requires a runtime-checked private AppKit action. Unsupported or unknown actions return false.\n- Windows: ✅ Toggles maximize/restore using the native system command.\n- Linux: ⚠️ Requests maximize/unmaximize; the window manager may ignore it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ❌ Not applicable - Always returns false"
+                "text": "Platform availability:\n- macOS: ✅ Uses the user's AppleActionOnDoubleClick preference: Maximize (or unset) zooms, Minimize miniaturizes, None deliberately does nothing. Legacy Zoom is also accepted. Fill requests the OS native Fill action when available; this currently requires a runtime-checked private AppKit action. Unsupported or unknown actions return false.\n- Windows: ✅ Toggles maximize/restore using the native system command.\n- Linux: ⚠️ Requests maximize/unmaximize; the window manager may ignore it.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Public SDK maximize in floating mode; recover in maximized or split-screen mode. A live API 22+ free-window query must confirm support; only older SDKs without that query use a 2in1 fallback. An applied disabled maximize caption policy rejects this action; missing individual caption-button support does not disable otherwise valid SDK actions. Fullscreen, minimized, unknown, destroyed and pending windows reject requests. UI callers report SDK promise submission without blocking; workers wait for its result. The SDK may reject an unsupported window asynchronously after a UI caller returns. Hosts forward their custom title-bar gesture explicitly; the native system gesture is unchanged."
               }
             ]
           },
@@ -4792,7 +4879,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hands the drag to the window server.\n- Windows: ✅ Fully supported - Hands the drag to the system frame.\n- Linux: ✅ Fully supported - Starts a window-manager move drag (X11 and Wayland).\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hands the drag to the window server.\n- Windows: ✅ Fully supported - Hands the drag to the system frame.\n- Linux: ✅ Fully supported - Starts a window-manager move drag (X11 and Wayland).\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ⚠️ Calls public startMoving from an active ArkTS onTouch down or move handler. Supports child/floating windows and freeform main windows; full-screen phone main windows are rejected by the SDK."
               }
             ]
           },
@@ -6635,7 +6722,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ X11 only - A Wayland compositor does not tell a client that it was minimized.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ X11 only - A Wayland compositor does not tell a client that it was minimized.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Native window mode changes; hiding a child does not imply minimization."
               }
             ]
           },
@@ -6679,7 +6766,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - A zoom counts as maximizing; emitted while the zoom animation is still settling.\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - A zoom counts as maximizing; emitted while the zoom animation is still settling.\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Native window mode changes where the device supports maximization."
               }
             ]
           },
@@ -6723,7 +6810,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ Leaving the maximized state everywhere; leaving the minimized state on X11 only.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ Leaving the maximized state everywhere; leaving the minimized state on X11 only.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Native transitions out of maximized/minimized mode."
               }
             ]
           },
@@ -6767,7 +6854,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ X11 only - A Wayland client never learns where its window is.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ⚠️ X11 only - A Wayland client never learns where its window is.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ✅ Native rectangle-change notifications on attached windows, in logical coordinates."
               }
             ]
           },
@@ -6850,7 +6937,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ✅ Native rectangle-change notifications on attached windows, in logical coordinates."
               }
             ]
           },
@@ -6933,7 +7020,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ✅ Emitted once when the host attaches the native window."
               }
             ]
           },
@@ -6977,7 +7064,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported\n- Windows: ✅ Fully supported\n- Linux: ✅ Fully supported\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ✅ Native destruction invalidates all wrappers and removes the registry entry."
               }
             ]
           },
@@ -7021,7 +7108,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - The green button, the View menu and SetFullScreen() alike; emitted once the full-screen animation has finished.\n- Windows: ⚠️ SetFullScreen() only - Windows has no full-screen window state, so a window another component makes borderless and monitor-sized is not reported.\n- Linux: ✅ Fully supported - Whatever the window manager reports, SetFullScreen() and its own shortcuts (F11 in many) alike; emitted when the window manager confirms it.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - The green button, the View menu and SetFullScreen() alike; emitted once the full-screen animation has finished.\n- Windows: ⚠️ SetFullScreen() only - Windows has no full-screen window state, so a window another component makes borderless and monitor-sized is not reported.\n- Linux: ✅ Fully supported - Whatever the window manager reports, SetFullScreen() and its own shortcuts (F11 in many) alike; emitted when the window manager confirms it.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Confirmed SDK fullscreen changes. Freeform windows use native window mode; phone/non-freeform windows use the SDK fullscreen property, which can change with content layout without enlarging a child frame."
               }
             ]
           },
@@ -7065,7 +7152,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Emitted once the animation back has finished.\n- Windows: ⚠️ SetFullScreen() only - See WindowEnteredFullScreenEvent.\n- Linux: ✅ Fully supported - Emitted when the window manager confirms it.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Emitted once the animation back has finished.\n- Windows: ⚠️ SetFullScreen() only - See WindowEnteredFullScreenEvent.\n- Linux: ✅ Fully supported - Emitted when the window manager confirms it.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Confirmed SDK fullscreen exits; see WindowEnteredFullScreenEvent for freeform mode versus phone content-layout semantics."
               }
             ]
           },
@@ -7181,7 +7268,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Supported - Setters, and direct changes to the NSWindow's title, style mask (resizable, minimizable, closable, title bar) and level.\n- Windows: ✅ Supported - Setters, and direct changes to the window text, styles and topmost state.\n- Linux: ✅ Supported - Setters, and direct changes to the GtkWindow's title, resizable and deletable properties and the window manager's above/below state.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ❌ Not applicable - Never emitted"
+                "text": "Platform availability:\n- macOS: ✅ Supported - Setters, and direct changes to the NSWindow's title, style mask (resizable, minimizable, closable, title bar) and level.\n- Windows: ✅ Supported - Setters, and direct changes to the window text, styles and topmost state.\n- Linux: ✅ Supported - Setters, and direct changes to the GtkWindow's title, resizable and deletable properties and the window manager's above/below state.\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ⚠️ Successful nativeapi property changes; external title/policy changes have no public SDK query."
               }
             ]
           },

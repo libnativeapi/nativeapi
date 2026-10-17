@@ -117,6 +117,14 @@ class DragSource implements ffi.Finalizable {
     return c.native_drag_source_is_supported();
   }
 
+  static bool isPositionSupported() {
+    return c.native_drag_source_is_position_supported();
+  }
+
+  static bool isOperationSelectionSupported() {
+    return c.native_drag_source_is_operation_selection_supported();
+  }
+
   set filePaths(List<String> value) {
     final valueItems = pkg_ffi.calloc<ffi.Pointer<ffi.Char>>(value.length);
     for (var i = 0; i < value.length; i++) {

@@ -1480,6 +1480,12 @@ unsafe extern "C" {
     ) -> native_point_t;
 }
 unsafe extern "C" {
+    #[doc = " Caller owns the returned handle; release it with native_window_free()."]
+    pub fn native_positioning_strategy_get_relative_window(
+        positioning_strategy: native_positioning_strategy_t,
+    ) -> native_window_t;
+}
+unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
     pub fn native_positioning_strategy_free(positioning_strategy: native_positioning_strategy_t);
 }
@@ -2454,6 +2460,12 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_drag_source_is_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_drag_source_is_position_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_drag_source_is_operation_selection_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_drag_source_set_file_paths(

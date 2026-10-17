@@ -63,6 +63,10 @@ class DragSource {
 
   static bool isSupported() => unsupported();
 
+  static bool isPositionSupported() => unsupported();
+
+  static bool isOperationSelectionSupported() => unsupported();
+
   set filePaths(List<String> value) => unsupported();
 
   List<String> get filePaths => unsupported();

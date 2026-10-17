@@ -66,10 +66,10 @@ public sealed partial class PositioningStrategy : IDisposable
         return rawResult == 0 ? null : new PositioningStrategy(rawResult);
     }
 
-    public static PositioningStrategy? RelativeWithWindowAndOffset(Window window, Point offset)
+    public static PositioningStrategy? RelativeWithWindowAndOffset(Window? window, Point offset)
     {
         var rawOffset = offset.ToRaw();
-        var rawResult = Interop.native_positioning_strategy_relative_with_window_and_offset(window.NativeHandle, rawOffset);
+        var rawResult = Interop.native_positioning_strategy_relative_with_window_and_offset(window?.NativeHandle ?? 0, rawOffset);
         return rawResult == 0 ? null : new PositioningStrategy(rawResult);
     }
 
@@ -106,6 +106,15 @@ public sealed partial class PositioningStrategy : IDisposable
         {
             var rawResult = Interop.native_positioning_strategy_get_relative_offset(NativeHandle);
             return Point.FromRaw(in rawResult);
+        }
+    }
+
+    public Window? RelativeWindow
+    {
+        get
+        {
+            var rawResult = Interop.native_positioning_strategy_get_relative_window(NativeHandle);
+            return rawResult == 0 ? null : new Window(rawResult);
         }
     }
 

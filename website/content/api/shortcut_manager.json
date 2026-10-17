@@ -12,6 +12,10 @@
         "notes": [
           {
             "kind": "note",
+            "text": "Platform availability:\n- macOS: ✅ Carbon global hotkeys, including activation/release events.\n- Windows: ✅ Win32 global hotkeys; activation events only.\n- Linux: ⚠️ X11 hotkeys when an X display is available.\n- Android: ❌ Native shortcut registration is not implemented.\n- iOS: ❌ Native shortcut registration is not implemented.\n- OpenHarmony: ⚠️ API 14+ public NDK global hotkeys, with Ctrl/Alt/Shift modifiers and an active main dispatcher. Meta/Fn/lock modifiers, release events are not implemented. Application scope uses a mounted companion NativeShortcutHost forwarding normal component key events, without reserving global hotkeys. It requires an initialized UI host and at least one attached key host; only the focused host receives unconsumed input. Global SDK conflicts fail registration. IsAvailable checks global availability by briefly probing native reservations; a competing application may still race a later Register call."
+          },
+          {
+            "kind": "note",
             "text": "This class is thread-safe for singleton access and shortcut operations."
           },
           {
