@@ -10,6 +10,7 @@ runner) lives in [`.agents/skills/`](../../.agents/skills); read
 
 | Script | Example | Platform | Covers |
 | --- | --- | --- | --- |
+| `flutter_hotkey_manager_smoke.py` | hotkey_manager submodule's own example | macOS / Windows / Linux (X11 or XWayland) | No input: real native registration and removal, asynchronous activation reflected in the Flutter counter, stale-event filtering, and reclaiming the native example registration with startup cleanup. Windows/Linux independently check OS ownership through a second client. Invokes actions through the debug VM service; activation is injected through the native manager, so physical keyboard delivery and OS key-up delivery are not covered. `verify_hotkey_manager.py` prepares local dependency overrides, analyzes/tests/builds, and imports the Linux desktop environment; `verify_hotkey_manager_windows.ps1` runs all 17 tests and the smoke check in the logged-on Windows desktop. |
 | `core_application_exit_flutter_macos.py` | headless Flutter exit regression | macOS | Creates no windows and sends no input. A real Dart `AppLifecycleListener` asynchronously cancels quit with and without nativeapi listeners, then approves quit. Requires Flutter, CMake and the installed debug FlutterMacOS framework; substitutes only the final process termination. |
 | `core_application_exit_flutter_linux.py` | real Flutter secondary-window exit regression | Linux X11 / Wayland | No input; private Xvfb and Weston displays. Two realized secondary views exercise controller destruction, nativeapi close, GTK show/hide hooks, implicit-view preservation and normal process exit. Tests both listener removal and a manager that stays alive through process exit (18 checks per mode per backend). Flutter-only controls contain no nativeapi native assets; SDK diagnostics stay in the logs and any additional nativeapi warnings fail the test. Requires Flutter, clang, GTK3 development files, Xvfb, Weston and `dbus-run-session`. |
 | `core_window_close_flutter_macos.py` | Flutter window/controller ownership regression | macOS | Real FlutterEngine, multi-window controllers and bundled nativeapi Dart FFI: 19 checks for veto, explicit votes, native/public coalescing, host refusal, native close and Flutter-owned destruction, expired wrappers and handles. Test windows remain unshown and no input is sent. Requires Flutter, CMake and the matching debug framework; runs `window_close_flutter.dart`. |
@@ -62,6 +63,50 @@ runner) lives in [`.agents/skills/`](../../.agents/skills); read
 (`examples/flutter_*`; the scripts name them without the prefix). The Linux scripts import `guiapp` straight from the flat
 kit the `remote-hosts` skill pushes, and find the example through `$REMOTE_SCRATCH`.
 
+## hotkey_manager verification
+
+Initialize `bindings/dart/hotkey_manager` and `core` before syncing the workspace.
+The verification runner writes ignored nativeapi/cnativeapi dependency overrides in
+the package and its example, so nativeapi 0.5.3 need not be published yet.
+
+```bash
+# Windows: build through SSH, then test/run in the logged-on desktop (session 1).
+fastforge --no-version-check host exec windows-laptop -- python tools/gui/verify_hotkey_manager.py --build-only
+fastforge --no-version-check host exec windows-laptop -- powershell -NoProfile -ExecutionPolicy Bypass -File tools/gui/verify_hotkey_manager_windows.ps1
+
+# Linux: use the logged-on desktop's display and authentication for native tests.
+fastforge --no-version-check host exec ubuntu-nuc -- 'PATH=$HOME/development/flutter/bin:$PATH python3 tools/gui/verify_hotkey_manager.py'
+fastforge --no-version-check host exec ubuntu-nuc --no-sync -- 'PATH=$HOME/development/flutter/bin:$PATH python3 tools/gui/verify_hotkey_manager.py --desktop'
+
+# If the desktop has no usable X11 server, isolate the test in rootful XWayland.
+fastforge --no-version-check host exec omarchy -- python3 tools/gui/verify_hotkey_manager.py --isolated-x11
+fastforge --no-version-check host exec omarchy --no-sync -- python3 tools/gui/verify_hotkey_manager.py --isolated-x11 --desktop
+```
+
+Windows native package tests opt in with `HOTKEY_MANAGER_NATIVE_TESTS=1` (the desktop
+runner sets it). SSH session 0 cannot register these global shortcuts. On Linux the
+native tests run when `DISPLAY` is set; the runner imports X11 authentication from
+the user's desktop session. Headless tests explicitly pump the GTK/Win32 event loop;
+macOS uses Flutter's existing AppKit loop.
+
+The smoke check launches the actual bundled example, including its FFI library,
+and verifies the rendered counter, native registry, and OS ownership before/after
+unregistration. Activation is injected through the native manager; no keyboard or
+mouse input is sent. Windows/Linux do not produce system key-up events. Native
+Wayland global shortcuts remain unsupported; Linux registration uses X11/XWayland.
+
+Verified on 2026-10-15 against the local nativeapi 0.5.3 packages:
+
+| Host | Native package tests | Debug example build | Desktop smoke |
+| --- | --- | --- | --- |
+| windows-laptop (Windows x64, logged-on session 1) | 17 passed | Passed | 4 passed, including independent OS ownership checks |
+| ubuntu-nuc (GNOME Wayland, XWayland shortcut registration) | 17 passed | Passed | 4 passed, including independent OS ownership checks |
+| omarchy (Hyprland, private rootful XWayland display `:99`) | 17 passed | Passed | 4 passed, including independent OS ownership checks |
+
+The Linux runtime check caught the old example CMake configuration omitting Dart
+native assets from the bundle; the example now installs `libcnativeapi.so` alongside
+the Flutter engine. macOS tests and the smoke check were also rerun successfully.
+
 ## Running
 
 Scripts that drive input take over the mouse. They refuse to start while the mouse
@@ -77,6 +122,7 @@ tools/gui/gpui_window_drag_areas_test.py --build
 tools/gui/gpui_floating_toolbar_test.py --build
 tools/gui/gpui_browser_tabs_test.py --build
 tools/gui/flutter_menu_test.py
+uv run tools/gui/flutter_hotkey_manager_smoke.py # hotkey_manager submodule example; no input
 tools/gui/flutter_window_events_test.py
 tools/gui/flutter_floating_toolbar_test.py          # --no-input: only the part that needs no mouse
 tools/gui/core_window_drag_session_test.py --build   # builds the example into core/build
