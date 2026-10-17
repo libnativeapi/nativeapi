@@ -175,11 +175,12 @@ class _AnimateTabState extends State<AnimateTab>
               for (final MapEntry(:key, :value) in _colors.entries)
                 OptionChip(
                   label: key,
-                  selected: animator.color == (value ?? controller.autoColor),
-                  onTap: () =>
-                      controller.setColor(value ?? controller.autoColor),
+                  selected: entry.selectedColor == value,
+                  onTap: () => controller.setColor(value),
                 ),
-              if (Platform.isMacOS) const Hint('macOS tints it itself'),
+              Hint(
+                Platform.isMacOS ? 'Auto: menu bar tint' : 'Auto: system theme',
+              ),
             ],
           ),
         ],

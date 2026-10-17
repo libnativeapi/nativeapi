@@ -1,5 +1,6 @@
 ## 0.5.3
 
+- `TrayIcon.isIconTemplate` now follows system tray colours on Windows and Linux as well as macOS, without changing the source image.
 - macOS: add `ShortcutReleasedEvent` for system key-up delivery and accept Fn / CapsLock accelerators (hotkey_manager migration).
 - Add core clipboard text, HTML, images, file paths and change notifications on desktop and iOS; Android native hosts support monitoring and text/HTML through C++/JNI (no Flutter auto-initialization).
 - macOS: the title bar's close button is a cancellable close request again.

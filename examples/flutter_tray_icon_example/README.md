@@ -71,11 +71,15 @@ What a platform cannot do is not offered, and its checklist items step aside:
   Frames also cost far more there (GPU read-back, PNG, D-Bus): the preview's numbers
   tell what rate a machine really holds.
 
-macOS shows tray images as 18 pt templates, so there the colour row only changes the
-preview's alpha shape and the menu bar picks the tint; resolution still matters (1x / 2x
-/ 3x pixels for the same 18 pt). On Omarchy the *Auto* colour is the desktop theme's
-foreground, like the bar's own icons, and follows a theme switch; since the asset
-still is a fixed white image, an icon showing it switches to the drawn star there.
+The *Auto* colour enables `TrayIcon.isIconTemplate` on every desktop: macOS uses
+an 18 pt template image that the menu bar tints; Windows follows the taskbar's
+light/dark setting or high-contrast foreground; Linux uses Omarchy's foreground,
+the desktop portal's colour scheme, or GTK as a fallback. A separately themed Linux
+panel may differ. The library updates static assets, base64 images and animations,
+including paused frames, when the theme changes. Static images retain their shape
+and alpha mask. Picking Blue, Amber or
+Red disables automatic tinting, including on macOS. Resolution still matters:
+1x / 2x / 3x pixels for the same 18 pt.
 
 ## Popup mode
 

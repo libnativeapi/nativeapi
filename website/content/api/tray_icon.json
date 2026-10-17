@@ -382,7 +382,7 @@
           "kind": "method",
           "doc": {
             "summary": "Sets whether the icon is drawn as a template image.",
-            "details": "A template image contributes only its alpha channel; the system paints it in whatever colour suits the menu bar (dark on a light bar, light on a dark one, highlighted while the menu is open). Turn it on for monochrome glyphs, leave it off for icons that carry their own colours. Off by default.\n\nTakes effect immediately, also for an icon that is already set. The Image passed to SetIcon() is never modified.",
+            "details": "A template image contributes only its alpha channel; the system paints it in the system tray's foreground colour, following appearance changes. macOS also handles highlighting while the menu is open. Turn it on for monochrome glyphs, leave it off for icons that carry their own colours. Off by default.\n\nTakes effect immediately, also for an icon that is already set. The Image passed to SetIcon() is never modified.",
             "params": [
               {
                 "name": "is_icon_template",
@@ -392,7 +392,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSImage.template\n- Windows: ⚠️ Recorded only - The icon is always drawn with its own colours\n- Linux: ⚠️ Recorded only - The icon is always drawn with its own colours\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Maps to NSImage.template\n- Windows: ✅ Uses the taskbar light/dark setting or high-contrast text colour\n- Linux: ⚠️ Uses the desktop portal colour scheme, GTK fallback, or Omarchy foreground; independently themed panels may differ\n- Android: ❌ Not applicable - Always ignored\n- iOS: ❌ Not applicable - Always ignored\n- OpenHarmony: ❌ Not applicable - Always ignored"
               }
             ]
           },

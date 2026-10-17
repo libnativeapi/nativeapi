@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:dazzui_host/dazzui_host.dart' show OmarchyTheme;
 import 'package:flutter/widgets.dart';
 import 'package:nativeapi/nativeapi.dart' as na;
 import 'package:flutter/services.dart';
@@ -15,6 +14,7 @@ import 'icon_animations.dart';
 import 'icon_animator.dart';
 import 'signs/sign_controller.dart';
 import 'signs/sign_style.dart';
+import 'icon_tint.dart';
 
 const String kAssetIcon = 'images/tray_icon.png';
 const String kDefaultTooltip = 'nativeapi tray icon';
@@ -57,6 +57,10 @@ class TrayEntry {
   int doubleClicks = 0;
   StillIcon? still = StillIcon.asset;
   Scene? scene;
+
+  /// Null means Auto; a fixed colour must never become Auto by coincidence.
+  Color? selectedColor;
+  int imageRevision = 0;
 }
 
 /// Owns the tray icons and is the only place that calls the tray API.
@@ -71,8 +75,6 @@ class TrayController extends ChangeNotifier {
     } else {
       checklist.fail(Checklist.supported, 'false');
     }
-    _omarchy = OmarchyTheme.start();
-    _omarchy?.addListener(_onThemeChanged);
     addIcon();
     _windowListener = WindowManager.instance.addListener(_onWindowEvent);
     // The Flutter host window may not be current until its first frame.
@@ -140,15 +142,8 @@ class TrayController extends ChangeNotifier {
   static bool get boundsSupported => !Platform.isLinux;
   static bool get openMenuSupported => !Platform.isLinux;
 
-  /// Icon colour when the user picks "Auto". On macOS that means a template
-  /// image, which the menu bar tints itself. On Omarchy it is the desktop
-  /// theme's foreground, light or dark, like the bar's own icons; elsewhere the
-  /// tray is usually dark, so white.
-  Color get autoColor => _autoColor;
-  Color _autoColor = Platform.isMacOS
-      ? const Color(0xFF000000)
-      : const Color(0xFFFFFFFF);
-  OmarchyTheme? _omarchy;
+  /// Auto follows the shell; macOS delegates the final tint to the menu bar.
+  Color get autoColor => const Color(0xFF000000);
 
   // ---------------------------------------------------------------------
   // Icons
@@ -162,7 +157,7 @@ class TrayController extends ChangeNotifier {
       _log('TrayIcon.create() returned null');
       return null;
     }
-    trayIcon.isIconTemplate = Platform.isMacOS;
+    trayIcon.isIconTemplate = true;
     final entry = TrayEntry(_nextNumber++, trayIcon, isSign: signStyle != null);
     entry.animator = IconAnimator(
       onFrame: (image) => trayIcon.icon = image,
@@ -343,31 +338,8 @@ class TrayController extends ChangeNotifier {
       _settingsWindow?.removeListener(listener);
     }
     _settingsWindow?.dispose();
-    _omarchy?.dispose();
     disposeIcons();
     super.dispose();
-  }
-
-  /// The desktop theme changed (or was first read): icons on the "Auto" colour
-  /// take its foreground. The asset still is a fixed white image, which a
-  /// light bar would swallow, so an icon showing it switches to the drawn one.
-  void _onThemeChanged() {
-    final foreground = _omarchy?.data?.vars.colorContent;
-    if (foreground == null || foreground == _autoColor) return;
-    final previous = _autoColor;
-    _autoColor = foreground;
-    for (final entry in entries) {
-      if (entry.isSign || entry.animator.color != previous) continue;
-      entry.animator.setColor(foreground);
-      final still = entry.still;
-      if (still == StillIcon.asset) {
-        setStill(StillIcon.drawn, entry, true);
-      } else if (still != null) {
-        setStill(still, entry, true);
-      }
-    }
-    _log('auto colour ← ${_omarchy?.name ?? 'theme'} foreground');
-    notifyListeners();
   }
 
   void _refreshManager() {
@@ -381,6 +353,7 @@ class TrayController extends ChangeNotifier {
   void play(IconAnimation animation, [TrayEntry? target, bool quiet = false]) {
     final entry = target ?? _selected;
     if (entry == null || entry.isSign) return;
+    entry.imageRevision++;
     if (!quiet) entry.scene = null;
     entry.still = null;
     entry.animator.play(animation);
@@ -399,38 +372,45 @@ class TrayController extends ChangeNotifier {
   ]) async {
     final entry = target ?? _selected;
     if (entry == null || entry.isSign) return;
+    final revision = ++entry.imageRevision;
     if (!quiet) entry.scene = null;
     entry.animator.stop();
     entry.still = kind;
     notifyListeners();
 
-    final na.Image? native;
-    final Uint8List png;
+    Uint8List png;
     switch (kind) {
       case StillIcon.asset:
-        native = ImageAsset.fromAsset(kAssetIcon);
         png = (await rootBundle.load(kAssetIcon)).buffer.asUint8List();
       case StillIcon.drawn:
         png = await _renderStar(entry);
-        native = na.Image.fromBase64(
-          'data:image/png;base64,${base64Encode(png)}',
-        );
       case StillIcon.base64:
         png = base64Decode(kDiamondPngBase64);
-        native = na.Image.fromBase64(
-          'data:image/png;base64,$kDiamondPngBase64',
-        );
     }
-    if (entry.still != kind || !entries.contains(entry)) return;
+    if (kind != StillIcon.drawn) {
+      png = await tintIcon(png, entry.animator.color);
+    }
+    if (entry.still != kind ||
+        revision != entry.imageRevision ||
+        !entries.contains(entry)) {
+      return;
+    }
+    final native = na.Image.fromBase64(
+      'data:image/png;base64,${base64Encode(png)}',
+    );
     if (native == null) {
       _log('icon #${entry.number} ${kind.name}: image failed to load');
       return;
     }
     entry.trayIcon.icon = native;
+    native.dispose();
 
     final codec = await ui.instantiateImageCodec(png);
     final preview = (await codec.getNextFrame()).image;
-    if (entry.still != kind || !entries.contains(entry)) {
+    codec.dispose();
+    if (entry.still != kind ||
+        revision != entry.imageRevision ||
+        !entries.contains(entry)) {
       preview.dispose();
       return;
     }
@@ -464,14 +444,16 @@ class TrayController extends ChangeNotifier {
     if (still != null) setStill(still, entry, true);
   }
 
-  void setColor(Color color) {
+  void setColor(Color? color) {
     final entry = _selected;
     if (entry == null || entry.isSign) return;
     // A picked colour only shows on macOS once the icon stops being a template.
-    entry.trayIcon.isIconTemplate = Platform.isMacOS && color == autoColor;
-    entry.animator.setColor(color);
+    entry.selectedColor = color;
+    entry.trayIcon.isIconTemplate = color == null;
+    entry.animator.setColor(color ?? autoColor);
     final still = entry.still;
     if (still != null) setStill(still, entry, true);
+    notifyListeners();
   }
 
   void _onFrameMilestone(TrayEntry entry, IconAnimator animator) {

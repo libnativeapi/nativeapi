@@ -67,6 +67,7 @@ class IconAnimator extends ChangeNotifier {
 
   Timer? _timer;
   bool _busy = false;
+  bool _refreshColor = false;
   int _run = 0;
   bool _milestoneReported = false;
   na.Image? _lastNative;
@@ -102,8 +103,13 @@ class IconAnimator extends ChangeNotifier {
   }
 
   void setColor(Color value) {
+    if (_color == value) return;
     _color = value;
     notifyListeners();
+    if (isPlaying && _paused) {
+      _refreshColor = true;
+      if (!_busy) _renderFrame(_run, advanceTime: false);
+    }
   }
 
   void togglePaused() {
@@ -152,13 +158,14 @@ class IconAnimator extends ChangeNotifier {
     _renderFrame(_run);
   }
 
-  Future<void> _renderFrame(int run) async {
+  Future<void> _renderFrame(int run, {bool advanceTime = true}) async {
     final animation = _animation;
     if (animation == null || _busy) return;
     _busy = true;
+    _refreshColor = false;
     final started = _clock.elapsedMicroseconds;
     try {
-      time.value += 1.0 / _fps;
+      if (advanceTime) time.value += 1.0 / _fps;
 
       final ui.Image frame;
       if (animation == IconAnimation.widget) {
@@ -214,6 +221,9 @@ class IconAnimator extends ChangeNotifier {
       notifyListeners();
     } finally {
       _busy = false;
+      if (_refreshColor && isPlaying && _paused) {
+        scheduleMicrotask(() => _renderFrame(_run, advanceTime: false));
+      }
     }
   }
 
@@ -231,6 +241,7 @@ class IconAnimator extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     _run++;
+    _animation = null;
     _lastNative?.dispose();
     super.dispose();
   }

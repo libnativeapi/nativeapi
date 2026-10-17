@@ -1,5 +1,6 @@
 ## Unreleased
 
+* `TrayIcon::set_icon_template` now follows system tray colours on Windows and Linux as well as macOS, preserving the source image.
 * macOS: the title bar's close button is a cancellable close request again.
   On macOS 26 it bypassed `WindowEvent::CloseRequested` and closed the window
   even when a listener cancelled.

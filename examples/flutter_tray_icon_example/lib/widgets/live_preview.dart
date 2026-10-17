@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dazzui_host/dazzui_host.dart';
 
 import '../icon_animator.dart';
@@ -34,7 +32,7 @@ class LivePreview extends StatelessWidget {
               listenable: entry.animator,
               builder: (context, _) => Row(
                 children: [
-                  _frameBox(entry.animator, vars),
+                  _frameBox(entry, vars),
                   SizedBox(width: vars.spacing25),
                   Expanded(child: _details(entry, vars)),
                 ],
@@ -43,12 +41,12 @@ class LivePreview extends StatelessWidget {
     );
   }
 
-  Widget _frameBox(IconAnimator animator, ThemeVariables vars) {
+  Widget _frameBox(TrayEntry entry, ThemeVariables vars) {
+    final animator = entry.animator;
     final frame = animator.lastFrame;
-    // macOS uses the image as a template: only alpha counts and the menu bar
-    // picks the tint, so here the ink does. Other platforms show the pixels
-    // as they are.
-    final tint = Platform.isMacOS ? vars.colorContent : null;
+    // The shell picks a template's tint; the preview uses this window's ink
+    // so its alpha mask remains visible in either application theme.
+    final tint = entry.trayIcon.isIconTemplate ? vars.colorContent : null;
     return SizedBox(
       width: 84,
       height: 84,
