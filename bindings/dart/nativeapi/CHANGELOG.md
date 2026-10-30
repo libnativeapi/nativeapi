@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Windows: an elevated application's tray icon now receives clicks (#110). The shell posts the icon's callback message from a lower integrity level, so User Interface Privilege Isolation dropped it at an elevated window; the icon's host window now allows that message. An elevated application also lets the theme-change broadcasts through now, so template icons follow a theme change.
+
 - Confirm HarmonyOS immersive-layout requests against the real SDK result and live layout flag on workers, reject overlapping alias requests, and cancel pending work on native destruction. Keep computer floating-main no-op and native-caption inset limits explicit.
 
 - Implement HarmonyOS fullscreen-mode policy with preserved floating/split bits, an explicit host override baseline and primary Stage fallback. Serialize UI/worker requests, keep policies on SDK refusal, and cancel pending requests on native destruction. The SDK couples fullscreen and maximize; unknown child policy queries return false.
