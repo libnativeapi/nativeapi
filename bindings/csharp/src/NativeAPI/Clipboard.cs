@@ -173,37 +173,49 @@ public sealed partial class Clipboard
         return rawResult;
     }
 
-    private static bool ValidText(string? value) {
+    private static bool ValidText(string? value)
+    {
         if (value is null) return true;
         if (value.IndexOf((char)0) >= 0) return false;
         try { new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }
         catch (System.Text.EncoderFallbackException) { return false; }
     }
-    public System.Threading.Tasks.Task<ClipboardData> ReadAsync() {
+
+    public System.Threading.Tasks.Task<ClipboardData> ReadAsync()
+    {
         var completion = new System.Threading.Tasks.TaskCompletionSource<ClipboardData>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         Read((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
-    public System.Threading.Tasks.Task<string?> ReadTextAsync() {
+
+    public System.Threading.Tasks.Task<string?> ReadTextAsync()
+    {
         var completion = new System.Threading.Tasks.TaskCompletionSource<string?>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         ReadText((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
-    public System.Threading.Tasks.Task<string?> ReadHtmlAsync() {
+
+    public System.Threading.Tasks.Task<string?> ReadHtmlAsync()
+    {
         var completion = new System.Threading.Tasks.TaskCompletionSource<string?>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         ReadHtml((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
-    public System.Threading.Tasks.Task<Image?> ReadImageAsync() {
+
+    public System.Threading.Tasks.Task<Image?> ReadImageAsync()
+    {
         var completion = new System.Threading.Tasks.TaskCompletionSource<Image?>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         ReadImage((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
-    public System.Threading.Tasks.Task<string[]> ReadFilePathsAsync() {
+
+    public System.Threading.Tasks.Task<string[]> ReadFilePathsAsync()
+    {
         var completion = new System.Threading.Tasks.TaskCompletionSource<string[]>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         ReadFilePaths((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
+
     /// <summary>Registers <paramref name="callback"/> for every ClipboardEvent this Clipboard emits.</summary>
     /// <remarks>
     /// The delegate is kept alive until the listener is removed or its emitter

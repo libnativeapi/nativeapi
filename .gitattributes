@@ -18,6 +18,12 @@
 *.ps1     text
 *.cmake   text
 
+# Go tooling compares the working tree byte for byte: gofmt rewrites CRLF to LF
+# and `gofmt -l` then reports every file on a checkout that converted them
+# (Windows runners default core.autocrlf to true). Pin LF so the check is about
+# formatting, not line endings.
+*.go      text eol=lf
+
 # Binary files should remain untouched
 *.png     binary
 *.jpg     binary
