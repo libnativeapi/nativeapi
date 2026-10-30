@@ -111,10 +111,12 @@ class MyEvent : public Event {
 
 `EmitAsync` 底下是一层可插拔的主线程投递机制，绑定作者与嵌入方需要知道四件事：
 
-- **主线程的认定**：Apple 平台由 OS 判定；其余平台默认认定「加载本库的线程」为
-  主线程。假设不成立时（比如从工作线程加载的插件），在使用任何 dispatcher 功能
-  之前调 `SetMainThread()`。Windows 上启动时调一次还会顺带初始化派发用的
-  message-only 窗口。
+- **主线程的认定**：Apple 平台由 OS 判定；Windows 认定为「拥有本进程窗口、并在读 Win32 消息的
+  那个线程」。加载本库的线程不一定是它：Flutter 默认线程策略下动态库由 UI isolate 加载，而 UI
+  isolate 从不读 Win32 消息，`WINEVENT_OUTOFCONTEXT` 钩子和窗口消息都投递不到那里。进程尚无窗口时
+  退回加载线程，`SetMainThread()` 的显式声明优先。其余平台默认认定「加载本库的线程」为主线程。
+  假设不成立时（比如从工作线程加载的插件），在使用任何 dispatcher 功能之前调 `SetMainThread()`。
+  Windows 上启动时调一次还会顺带初始化派发用的 message-only 窗口。
 - **能力探测**：`IsMainThreadDispatchSupported()` 在 Android / OHOS 宿主初始化前返回 false；
   `RunOnMainThread()` 排不进队列时返回 false 且**不执行**传入的函数（本节开头
   `EmitAsync` 的退化行为即源于此）。
@@ -158,6 +160,12 @@ UI 后的 IsRunning 查询和 Run 入口也会完成尚未执行的初始化，�
 
 平台层的启停实现同样要幂等——`RemoveAllListeners()` 之后再 `AddListener` 会走第二轮
 启动。
+
+Windows 的 `WindowManager` 把这套监控装到「窗口所属线程」上，是从哪条线程调用 API 不影响结果：
+`WINEVENT_OUTOFCONTEXT` 只在安装线程读消息时才投递，而 Win32 只允许窗口所属线程为窗口加子类，
+两者都发生在同一个线程上。因此从 UI isolate 调用时，安装（以及停止）被投递到该线程执行，而
+`WindowCreated` / `WindowClosed` / focus / occlusion 与几何事件都在那里产生。代价是首次安装
+晚一条消息的距离：安装完成之前发生的事件不会补发。进程还没有任何窗口时退回在调用线程上安装。
 
 
 ## 5. 监听器生命周期
