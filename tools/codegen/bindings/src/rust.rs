@@ -126,6 +126,16 @@ fn render_rust_wrapper(api: &Api, header: &Header, origins: &TypeOrigins, prefix
         .into_iter()
         .filter_map(|name| origins.get(&name).map(|stem| (stem.clone(), name)))
         .collect();
+    // Nested value structs keep their conversion buffers alive in RawOf<T>.
+    for item in &header.structs {
+        for field in &item.fields {
+            if let TypeRef::Struct { name, .. } = &field.ty {
+                if let Some(module) = origins.get(name).filter(|module| *module != &header.stem) {
+                    imports.push((module.clone(), format!("RawOf{name}")));
+                }
+            }
+        }
+    }
     // Event handles use the non-owning Ref wrapper, which is a distinct Rust
     // type even though the IR names only the underlying C++ class.
     for group in &header.events {
@@ -182,7 +192,7 @@ fn render_rust_wrapper(api: &Api, header: &Header, origins: &TypeOrigins, prefix
     }
 
     for item in &header.structs {
-        render_rust_struct(&mut out, item, prefix);
+        render_rust_struct(&mut out, api, item, prefix);
     }
 
     for group in &header.events {
@@ -281,23 +291,15 @@ fn c_enum_variant_const(prefix: &str, item: &codegen_shared::ir::Enum, variant: 
     codegen_shared::naming::c_enum_variant(prefix, item, variant)
 }
 
-fn render_rust_struct(out: &mut String, item: &Struct, prefix: &str) {
-    // A callback field holds a closure, which is neither printable nor
-    // comparable, so those derives have to go when one is present.
-    let derives = if item
-        .fields
-        .iter()
-        .any(|field| matches!(field.ty, TypeRef::Object { .. }))
-    {
-        "#[derive(Debug)]"
-    } else if item.fields.iter().any(|field| is_callback(&field.ty)) {
-        "#[derive(Clone)]"
-    } else if struct_has_float_fields(item) {
-        "#[derive(Debug, Clone, PartialEq)]"
-    } else {
-        "#[derive(Debug, Clone, PartialEq, Eq)]"
-    };
-    writeln!(out, "{derives}").unwrap();
+fn render_rust_struct(out: &mut String, api: &Api, item: &Struct, prefix: &str) {
+    // Trait support is transitive: a nested Rectangle is not Eq, and a
+    // nested handle/callback cannot gain traits its fields don't implement.
+    let traits = struct_traits(api, item);
+    let names: Vec<_> = [(1, "Debug"), (2, "Clone"), (4, "PartialEq"), (8, "Eq")]
+        .into_iter().filter_map(|(bit, name)| (traits & bit != 0).then_some(name)).collect();
+    if !names.is_empty() {
+        writeln!(out, "#[derive({})]", names.join(", ")).unwrap();
+    }
     writeln!(out, "{} {{", struct_decl(item)).unwrap();
     for field in &item.fields {
         writeln!(out, "    {},", struct_field_decl(field).1).unwrap();
@@ -471,10 +473,57 @@ fn owned_tuple_type(item: &Struct) -> String {
     parts.join(", ")
 }
 
-fn struct_has_float_fields(item: &Struct) -> bool {
-    item.fields
-        .iter()
-        .any(|field| matches!(field.ty, TypeRef::Float { .. }))
+fn struct_traits(api: &Api, item: &Struct) -> u8 {
+    item.fields.iter().fold(15, |traits, field| traits & type_traits(api, &field.ty))
+}
+
+fn type_traits(api: &Api, ty: &TypeRef) -> u8 {
+    match ty {
+        TypeRef::Float { .. } => 7,
+        TypeRef::Object { .. } => 1,
+        TypeRef::Callback { .. } => 2,
+        TypeRef::Optional { inner } => type_traits(api, inner),
+        TypeRef::Vector { element } => type_traits(api, element),
+        TypeRef::Struct { name, .. } => api.headers.iter()
+            .flat_map(|header| &header.structs).find(|item| item.name == *name)
+            .map_or(0, |item| struct_traits(api, item)),
+        _ => 15,
+    }
+}
+
+#[cfg(test)]
+mod struct_tests {
+    use super::*;
+
+    #[test]
+    fn nested_cross_module_values_import_raw_storage_and_preserve_trait_limits() {
+        let rectangle = Struct {
+            name: "Rectangle".into(), qualified_name: "nativeapi::Rectangle".into(),
+            fields: vec![Field { name: "width".into(), ty: TypeRef::Float { name: "double".into() } }],
+            methods: vec![], constants: vec![],
+        };
+        let capture = Struct {
+            name: "CaptureOptions".into(), qualified_name: "nativeapi::CaptureOptions".into(),
+            fields: vec![Field { name: "crop".into(), ty: TypeRef::Struct {
+                name: "Rectangle".into(), qualified_name: "nativeapi::Rectangle".into(),
+            } }], methods: vec![], constants: vec![],
+        };
+        let header = |stem: &str, item| Header {
+            path: format!("{stem}.h").into(), stem: stem.into(), namespace: "nativeapi".into(),
+            enums: vec![], structs: vec![item], classes: vec![], aliases: vec![], events: vec![],
+        };
+        let api = Api { headers: vec![header("geometry", rectangle), header("capture", capture)],
+            diagnostics: vec![], docs: Default::default() };
+        let origins = codegen_shared::naming::type_origins(&api);
+        let text = render_rust_wrapper(&api, &api.headers[1], &origins, "native_");
+        assert!(text.contains("RawOfRectangle"));
+        assert!(text.contains("use crate::geometry::{RawOfRectangle, Rectangle}"));
+        assert!(text.contains("#[derive(Debug, Clone, PartialEq)]"));
+        assert!(!text.contains("PartialEq, Eq"));
+        assert_eq!(type_traits(&api, &TypeRef::Object {
+            name: "Window".into(), qualified_name: "nativeapi::Window".into(), shared: true,
+        }), 1);
+    }
 }
 
 // ---------------------------------------------------------------------------

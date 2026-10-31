@@ -16,6 +16,7 @@ workspace:
   - examples/flutter_display_example
   - examples/flutter_menu_example
   - examples/flutter_multiple_window_example
+  - examples/flutter_screen_capture_example
   - examples/flutter_storage_example
   - examples/flutter_tray_icon_example
   - examples/flutter_url_opener_example

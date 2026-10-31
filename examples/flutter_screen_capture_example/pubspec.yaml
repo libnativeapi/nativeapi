@@ -1,0 +1,29 @@
+name: screen_capture_example
+description: Screenshots and silent screen recordings using nativeapi on macOS and Windows.
+publish_to: none
+version: 1.0.0+1
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dazzui_host:
+    path: ../flutter_dazzui_host
+  nativeapi:
+    path: ../../bindings/dart/nativeapi
+  nativeapi_flutter:
+    path: ../../bindings/dart/nativeapi_flutter
+  file_selector: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: false

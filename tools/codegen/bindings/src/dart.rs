@@ -1102,6 +1102,8 @@ fn render_dart_class(out: &mut String, api: &Api, header: &Header, class: &Class
         .unwrap();
         writeln!(out, "  }}").unwrap();
         writeln!(out).unwrap();
+    } else if class.is_static() {
+        writeln!(out, "  {}._();", class.name).unwrap();
     } else {
         // Singletons surface as `.instance` rather than static namespaces so
         // they can implement interfaces and be swapped in tests.
@@ -1223,7 +1225,7 @@ fn dart_method_decl(class: &Class, method: &Method) -> (String, String) {
     } else {
         // Singleton methods are instance methods on `.instance`; only a static
         // method of a handle class stays static.
-        let prefix_kw = if class.is_instance() && method.is_static {
+        let prefix_kw = if !class.is_singleton() && method.is_static {
             "  static "
         } else {
             "  "

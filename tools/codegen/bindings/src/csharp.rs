@@ -869,6 +869,7 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
         let out = &mut ctx.public;
         writeln!(out, "{}", class_decl(api, class)).unwrap();
         writeln!(out, "{{").unwrap();
+        if !class.is_static() {
         writeln!(
             out,
             "    /// <summary>The shared instance backed by the native singleton.</summary>"
@@ -883,6 +884,7 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
         writeln!(out).unwrap();
         writeln!(out, "    private {}() {{ }}", class.name).unwrap();
         writeln!(out).unwrap();
+        }
     }
 
     for method in &class.methods {
@@ -890,7 +892,7 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
     }
 
     if class.name == "Clipboard" {
-        writeln!(ctx.public, "    private static bool ValidText(string? value) {{\n        if (value is null) return true;\n        if (value.IndexOf((char)0) >= 0) return false;\n        try {{ new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }}\n        catch (System.Text.EncoderFallbackException) {{ return false; }}\n    }}").unwrap();
+        writeln!(ctx.public, "    private static bool ValidText(string? value)\n    {{\n        if (value is null) return true;\n        if (value.IndexOf((char)0) >= 0) return false;\n        try {{ new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }}\n        catch (System.Text.EncoderFallbackException) {{ return false; }}\n    }}\n").unwrap();
     }
     generate_async_methods(ctx, class);
     generate_listener(ctx, api, class, prefix);
@@ -2010,7 +2012,7 @@ fn generate_async_methods(ctx: &mut Ctx, class: &Class) {
             declaration,
         }) = async_decl(method)
         {
-            writeln!(ctx.public, "    {declaration} {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
+            writeln!(ctx.public, "    {declaration}\n    {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}\n").unwrap();
         }
     }
 }
@@ -2077,6 +2079,9 @@ fn event_variant_decl(group: &EventGroup, variant: &codegen_shared::ir::EventVar
 }
 
 fn class_decl(api: &Api, class: &Class) -> String {
+    if class.is_static() {
+        return format!("public static partial class {}", class.name);
+    }
     if !class.is_instance() {
         return format!("public sealed partial class {}", class.name);
     }
@@ -2140,7 +2145,7 @@ fn method_decl(class: &Class, method: &Method) -> MethodDecl {
     let declaration = if property {
         format!("public {return_type} {name}")
     } else {
-        let keyword = if class.is_instance() && method.is_static {
+        let keyword = if !class.is_singleton() && method.is_static {
             "public static"
         } else {
             "public"

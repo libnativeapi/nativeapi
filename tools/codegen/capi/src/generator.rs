@@ -15,7 +15,7 @@ use codegen_shared::naming::{
     c_params, c_release_user_data_param, c_remove_listener_symbol, c_return_type, c_self_param,
     c_to_cpp_fn, c_type_name, cpp_argument_expr, cpp_event_converter, cpp_event_releaser,
     cpp_to_c_fn, foreign_types, header_dependencies, is_callback, listed_classes, relative_include,
-    struct_has_owned_fields, TypeOrigins, COMMON_HEADER, LISTENER_ID_TYPE, RELEASE_USER_DATA_TYPE,
+    TypeOrigins, COMMON_HEADER, LISTENER_ID_TYPE, RELEASE_USER_DATA_TYPE,
     STRING_DUP_FN, STRING_FREE_FN, STRING_LIST_DUP_FN, STRING_LIST_FREE_FN, STRING_LIST_TYPE,
     STRING_MAP_DUP_FN, STRING_MAP_TYPE, USER_DATA_HEADER,
 };
@@ -925,7 +925,10 @@ fn render_struct_api_decl(out: &mut String, item: &Struct, prefix: &str) {
         writeln!(out).unwrap();
     }
 
-    if struct_has_owned_fields(item) {
+    // Every value struct has a releaser, including PODs (a no-op). Nested
+    // structs and callback payloads can then compose cleanup without needing
+    // the definition of a struct owned by another header at the call site.
+    {
         writeln!(out, "/// Frees everything the struct owns.").unwrap();
         writeln!(out, "FFI_PLUGIN_EXPORT").unwrap();
         writeln!(
@@ -2251,9 +2254,7 @@ fn render_struct_api(out: &mut String, item: &Struct, prefix: &str) {
         writeln!(out).unwrap();
     }
 
-    if struct_has_owned_fields(item) {
-        render_c_free(out, item, prefix);
-    }
+    render_c_free(out, item, prefix);
 }
 
 fn render_c_free(out: &mut String, item: &Struct, prefix: &str) {
@@ -2650,6 +2651,29 @@ mod tests {
     use codegen_shared::ir::EnumVariant;
 
     #[test]
+    fn nested_pod_cleanup_has_a_declared_noop_releaser() {
+        let rectangle = Struct {
+            name: "Rectangle".into(), qualified_name: "nativeapi::Rectangle".into(),
+            fields: vec![Field { name: "width".into(), ty: TypeRef::Float { name: "double".into() } }],
+            methods: vec![], constants: vec![],
+        };
+        let options = Struct {
+            name: "CaptureOptions".into(), qualified_name: "nativeapi::CaptureOptions".into(),
+            fields: vec![Field { name: "crop".into(), ty: TypeRef::Struct {
+                name: "Rectangle".into(), qualified_name: "nativeapi::Rectangle".into(),
+            } }], methods: vec![], constants: vec![],
+        };
+        let mut declaration = String::new();
+        render_struct_api_decl(&mut declaration, &rectangle, "native_");
+        assert!(declaration.contains("void native_rectangle_free(native_rectangle_t* value)"));
+        let mut implementation = String::new();
+        render_struct_api(&mut implementation, &rectangle, "native_");
+        render_struct_api(&mut implementation, &options, "native_");
+        assert!(implementation.contains("void native_rectangle_free(native_rectangle_t* value)"));
+        assert!(implementation.contains("native_rectangle_free(&value->crop)"));
+    }
+
+    #[test]
     fn complex_callbacks_lease_copied_payload_and_preserve_empty_optional_strings() {
         let params = vec![
             TypeRef::Bool,
@@ -2706,7 +2730,7 @@ mod tests {
             methods: vec![],
             constants: vec![],
         };
-        assert!(struct_has_owned_fields(&item));
+        assert!(codegen_shared::naming::struct_has_owned_fields(&item));
         let mut out = String::new();
         render_c_struct_converter(&mut out, &item, "native_");
         render_cpp_struct_converter(&mut out, &item, "native_");
