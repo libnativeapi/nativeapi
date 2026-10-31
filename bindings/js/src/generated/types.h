@@ -25,6 +25,9 @@
 #include "capi/file_dialog_c.h"
 #include "capi/notification_manager_c.h"
 #include "capi/image_c.h"
+#include "capi/capture_source_c.h"
+#include "capi/screen_capturer_c.h"
+#include "capi/screen_recorder_c.h"
 #include "capi/window_shape_c.h"
 #include "capi/window_shadow_c.h"
 #include "capi/view_c.h"
@@ -64,6 +67,13 @@ inline Value ToValue(const native_display_event_t& event);
 inline Value ToValue(const native_url_open_result_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_url_open_result_t* out, Arena& arena);
 inline Value ToValue(const native_notification_event_t& event);
+inline Value ToValue(const native_capture_source_selection_options_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_capture_source_selection_options_t* out, Arena& arena);
+inline Value ToValue(const native_screen_capture_options_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_screen_capture_options_t* out, Arena& arena);
+inline Value ToValue(const native_screen_recording_options_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_screen_recording_options_t* out, Arena& arena);
+inline Value ToValue(const native_screen_recording_event_t& event);
 inline Value ToValue(const native_view_event_t& event);
 inline Value ToValue(const native_window_event_t& event);
 inline Value ToValue(const native_window_drag_event_t& event);
@@ -462,6 +472,150 @@ inline Value ToValue(const native_notification_event_t& event) {
     case NATIVE_NOTIFICATION_EVENT_TYPE_ACTIVATED:
       result.Set("type", Value::String("activated"));
       result.Set("argument", Value::String(event.data.activated.argument));
+      break;
+    default:
+      return Value::Null();
+  }
+  return result;
+}
+
+inline Value ToValue(const native_capture_source_selection_options_t& value) {
+  Value result = Value::Object();
+  result.Set("allowDisplays", Value::Bool(value.allow_displays));
+  result.Set("allowWindows", Value::Bool(value.allow_windows));
+  result.Set("parentWindow", Value::BigInt(value.parent_window));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_capture_source_selection_options_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "CaptureSourceSelectionOptions")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "allowDisplays", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetBool(env, field, &out->allow_displays)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "allowWindows", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetBool(env, field, &out->allow_windows)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "parentWindow", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetHandle(env, field, &out->parent_window)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline Value ToValue(const native_screen_capture_options_t& value) {
+  Value result = Value::Object();
+  result.Set("includeCursor", Value::Bool(value.include_cursor));
+  result.Set("cropEnabled", Value::Bool(value.crop_enabled));
+  result.Set("crop", ToValue(value.crop));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_screen_capture_options_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "ScreenCaptureOptions")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "includeCursor", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetBool(env, field, &out->include_cursor)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "cropEnabled", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetBool(env, field, &out->crop_enabled)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "crop", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!FromJs(env, field, &out->crop, arena)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline Value ToValue(const native_screen_recording_options_t& value) {
+  Value result = Value::Object();
+  result.Set("capture", ToValue(value.capture));
+  result.Set("frameRate", Value::Number(static_cast<double>(value.frame_rate)));
+  result.Set("videoBitrate", Value::Number(static_cast<double>(value.video_bitrate)));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_screen_recording_options_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "ScreenRecordingOptions")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "capture", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!FromJs(env, field, &out->capture, arena)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "frameRate", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->frame_rate)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "videoBitrate", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->video_bitrate)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline Value ToValue(const native_screen_recording_event_t& event) {
+  Value result = Value::Object();
+  switch (event.type) {
+    case NATIVE_SCREEN_RECORDING_EVENT_TYPE_STARTED:
+      result.Set("type", Value::String("started"));
+      break;
+    case NATIVE_SCREEN_RECORDING_EVENT_TYPE_COMPLETED:
+      result.Set("type", Value::String("completed"));
+      result.Set("filePath", Value::String(event.data.completed.file_path));
+      result.Set("duration", Value::Number(static_cast<double>(event.data.completed.duration)));
+      break;
+    case NATIVE_SCREEN_RECORDING_EVENT_TYPE_CANCELLED:
+      result.Set("type", Value::String("cancelled"));
+      break;
+    case NATIVE_SCREEN_RECORDING_EVENT_TYPE_FAILED:
+      result.Set("type", Value::String("failed"));
+      result.Set("message", Value::String(event.data.failed.message));
       break;
     default:
       return Value::Null();

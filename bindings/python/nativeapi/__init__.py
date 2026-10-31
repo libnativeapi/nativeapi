@@ -24,6 +24,10 @@ from .application import (
     ApplicationStartedEvent,
     Brightness,
 )
+from .capture_source import (
+    CaptureSource,
+    CaptureSourceType,
+)
 from .clipboard import (
     Clipboard,
     ClipboardChangedEvent,
@@ -130,6 +134,21 @@ from .positioning_strategy import (
 )
 from .preferences import (
     Preferences,
+)
+from .screen_capturer import (
+    CaptureSourceSelectionOptions,
+    ScreenCaptureOptions,
+    ScreenCapturer,
+)
+from .screen_recorder import (
+    ScreenRecorder,
+    ScreenRecordingCancelledEvent,
+    ScreenRecordingCompletedEvent,
+    ScreenRecordingEvent,
+    ScreenRecordingFailedEvent,
+    ScreenRecordingOptions,
+    ScreenRecordingStartedEvent,
+    ScreenRecordingState,
 )
 from .secure_storage import (
     SecureStorage,
@@ -240,6 +259,9 @@ __all__ = [
     "Brightness",
     "Button",
     "ButtonClickedEvent",
+    "CaptureSource",
+    "CaptureSourceSelectionOptions",
+    "CaptureSourceType",
     "Clipboard",
     "ClipboardChangedEvent",
     "ClipboardData",
@@ -310,6 +332,16 @@ __all__ = [
     "Preferences",
     "Rectangle",
     "ResizeEdge",
+    "ScreenCaptureOptions",
+    "ScreenCapturer",
+    "ScreenRecorder",
+    "ScreenRecordingCancelledEvent",
+    "ScreenRecordingCompletedEvent",
+    "ScreenRecordingEvent",
+    "ScreenRecordingFailedEvent",
+    "ScreenRecordingOptions",
+    "ScreenRecordingStartedEvent",
+    "ScreenRecordingState",
     "SecureStorage",
     "Shortcut",
     "ShortcutActivatedEvent",

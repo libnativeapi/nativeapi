@@ -121,6 +121,34 @@ class native_notification_event_t(Structure):
     pass
 
 
+class native_capture_source_selection_options_t(Structure):
+    pass
+
+
+class native_screen_capture_options_t(Structure):
+    pass
+
+
+class native_screen_recording_options_t(Structure):
+    pass
+
+
+class native_screen_recording_event_completed_t(Structure):
+    pass
+
+
+class native_screen_recording_event_failed_t(Structure):
+    pass
+
+
+class native_screen_recording_event_data_t(Union):
+    pass
+
+
+class native_screen_recording_event_t(Structure):
+    pass
+
+
 class native_view_event_text_field_changed_t(Structure):
     pass
 
@@ -300,6 +328,13 @@ native_application_event_callback_t = CFUNCTYPE(
     POINTER(native_application_event_t),
     c_void_p,
 )
+native_callback_bool_capture_source_payload_t = CFUNCTYPE(
+    None,
+    c_bool,
+    c_uint64,
+    c_uint64,
+    c_void_p,
+)
 native_callback_bool_clipboard_data_payload_t = CFUNCTYPE(
     None,
     c_bool,
@@ -360,6 +395,11 @@ native_notification_event_callback_t = CFUNCTYPE(
     c_void_p,
 )
 native_release_user_data_t = CFUNCTYPE(None, c_void_p)
+native_screen_recording_event_callback_t = CFUNCTYPE(
+    None,
+    POINTER(native_screen_recording_event_t),
+    c_void_p,
+)
 native_shortcut_event_callback_t = CFUNCTYPE(
     None,
     POINTER(native_shortcut_event_t),
@@ -454,6 +494,36 @@ native_notification_event_data_t._fields_ = [
 native_notification_event_t._fields_ = [
     ("type", c_int),
     ("data", native_notification_event_data_t),
+]
+native_capture_source_selection_options_t._fields_ = [
+    ("allow_displays", c_bool),
+    ("allow_windows", c_bool),
+    ("parent_window", c_uint64),
+]
+native_screen_capture_options_t._fields_ = [
+    ("include_cursor", c_bool),
+    ("crop_enabled", c_bool),
+    ("crop", native_rectangle_t),
+]
+native_screen_recording_options_t._fields_ = [
+    ("capture", native_screen_capture_options_t),
+    ("frame_rate", c_double),
+    ("video_bitrate", c_ulong),
+]
+native_screen_recording_event_completed_t._fields_ = [
+    ("file_path", c_char_p),
+    ("duration", c_double),
+]
+native_screen_recording_event_failed_t._fields_ = [
+    ("message", c_char_p),
+]
+native_screen_recording_event_data_t._fields_ = [
+    ("completed", native_screen_recording_event_completed_t),
+    ("failed", native_screen_recording_event_failed_t),
+]
+native_screen_recording_event_t._fields_ = [
+    ("type", c_int),
+    ("data", native_screen_recording_event_data_t),
 ]
 native_view_event_text_field_changed_t._fields_ = [
     ("text", c_char_p),
@@ -1636,6 +1706,183 @@ native_image_save_to_file = function(
     [
         c_uint64,
         c_char_p,
+    ],
+)
+
+# capture_source.h
+
+native_capture_source_free = function("native_capture_source_free", None, [c_uint64])
+native_capture_source_from_display = function(
+    "native_capture_source_from_display",
+    c_uint64,
+    [
+        c_uint64,
+    ],
+)
+native_capture_source_from_window = function(
+    "native_capture_source_from_window",
+    c_uint64,
+    [
+        c_uint64,
+    ],
+)
+native_capture_source_get_type = function(
+    "native_capture_source_get_type",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
+native_capture_source_get_name = function(
+    "native_capture_source_get_name",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+
+# screen_capturer.h
+
+native_capture_source_selection_options_free = function(
+    "native_capture_source_selection_options_free",
+    None,
+    [
+        POINTER(native_capture_source_selection_options_t),
+    ],
+)
+native_screen_capture_options_free = function(
+    "native_screen_capture_options_free",
+    None,
+    [
+        POINTER(native_screen_capture_options_t),
+    ],
+)
+native_screen_capturer_is_supported = function(
+    "native_screen_capturer_is_supported",
+    c_bool,
+    [
+    ],
+)
+native_screen_capturer_is_source_selection_supported = function(
+    "native_screen_capturer_is_source_selection_supported",
+    c_bool,
+    [
+    ],
+)
+native_screen_capturer_is_direct_capture_supported = function(
+    "native_screen_capturer_is_direct_capture_supported",
+    c_bool,
+    [
+        c_int,
+    ],
+)
+native_screen_capturer_select_source = function(
+    "native_screen_capturer_select_source",
+    None,
+    [
+        native_capture_source_selection_options_t,
+        native_callback_bool_capture_source_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_screen_capturer_capture = function(
+    "native_screen_capturer_capture",
+    None,
+    [
+        c_uint64,
+        native_screen_capture_options_t,
+        native_callback_bool_image_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+
+# screen_recorder.h
+
+native_screen_recording_options_free = function(
+    "native_screen_recording_options_free",
+    None,
+    [
+        POINTER(native_screen_recording_options_t),
+    ],
+)
+native_screen_recorder_free = function("native_screen_recorder_free", None, [c_uint64])
+native_screen_recorder_create = function("native_screen_recorder_create", c_uint64, [])
+native_screen_recorder_is_supported = function(
+    "native_screen_recorder_is_supported",
+    c_bool,
+    [
+    ],
+)
+native_screen_recorder_start = function(
+    "native_screen_recorder_start",
+    c_bool,
+    [
+        c_uint64,
+        c_uint64,
+        c_char_p,
+        native_screen_recording_options_t,
+    ],
+)
+native_screen_recorder_stop = function(
+    "native_screen_recorder_stop",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_cancel = function(
+    "native_screen_recorder_cancel",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_get_state = function(
+    "native_screen_recorder_get_state",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_is_active = function(
+    "native_screen_recorder_is_active",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_get_duration = function(
+    "native_screen_recorder_get_duration",
+    c_double,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_get_file_path = function(
+    "native_screen_recorder_get_file_path",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+native_screen_recorder_add_listener = function(
+    "native_screen_recorder_add_listener",
+    c_uint64,
+    [
+        c_uint64,
+        native_screen_recording_event_callback_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_screen_recorder_remove_listener = function(
+    "native_screen_recorder_remove_listener",
+    c_bool,
+    [
+        c_uint64,
+        c_uint64,
     ],
 )
 

@@ -4,6 +4,7 @@
 export 'accessibility_manager.dart';
 export 'app_info.dart';
 export 'application.dart';
+export 'capture_source.dart';
 export 'clipboard.dart';
 export 'device_info.dart';
 export 'dialog.dart';
@@ -25,6 +26,8 @@ export 'notification_manager.dart';
 export 'placement.dart';
 export 'positioning_strategy.dart';
 export 'preferences.dart';
+export 'screen_capturer.dart';
+export 'screen_recorder.dart';
 export 'secure_storage.dart';
 export 'shortcut.dart';
 export 'shortcut_manager.dart';

@@ -174,6 +174,46 @@ external ffi.Pointer<ffi.Char> native_button_get_text(int button);
 @ffi.Native<ffi.Void Function(native_button_t, ffi.Pointer<ffi.Char>)>()
 external void native_button_set_text(int button, ffi.Pointer<ffi.Char> text);
 
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+@ffi.Native<ffi.Void Function(native_capture_source_t)>()
+external void native_capture_source_free(int capture_source);
+
+/// Caller owns the returned handle; release it with native_capture_source_free().
+@ffi.Native<native_capture_source_t Function(native_display_t)>()
+external int native_capture_source_from_display(int display);
+
+/// Caller owns the returned handle; release it with native_capture_source_free().
+@ffi.Native<native_capture_source_t Function(native_window_t$1)>()
+external int native_capture_source_from_window(int window);
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_capture_source_t)>()
+external ffi.Pointer<ffi.Char> native_capture_source_get_name(
+  int capture_source,
+);
+
+@ffi.Native<ffi.UnsignedInt Function(native_capture_source_t)>(
+  symbol: 'native_capture_source_get_type',
+)
+external int _native_capture_source_get_type(int capture_source);
+
+native_capture_source_type_t native_capture_source_get_type(
+  Dartnative_capture_source_t capture_source,
+) {
+  return native_capture_source_type_t.fromValue(
+    _native_capture_source_get_type(capture_source),
+  );
+}
+
+/// Frees everything the struct owns.
+@ffi.Native<
+  ffi.Void Function(ffi.Pointer<native_capture_source_selection_options_t>)
+>()
+external void native_capture_source_selection_options_free(
+  ffi.Pointer<native_capture_source_selection_options_t> value,
+);
+
 /// Registers @p callback for every ClipboardEvent this Clipboard emits.
 /// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
 @ffi.Native<
@@ -308,6 +348,10 @@ external bool native_clipboard_write_image(int image);
 
 @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
 external bool native_clipboard_write_text(ffi.Pointer<ffi.Char> text);
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_color_t>)>()
+external void native_color_free(ffi.Pointer<native_color_t> value);
 
 @ffi.Native<native_color_t Function(ffi.Pointer<ffi.Char>)>()
 external native_color_t native_color_from_hex(ffi.Pointer<ffi.Char> hex);
@@ -589,7 +633,7 @@ external void native_drag_source_set_text(
   ffi.Pointer<ffi.Char> text,
 );
 
-@ffi.Native<ffi.Bool Function(native_drag_source_t, native_window_t$1)>()
+@ffi.Native<ffi.Bool Function(native_drag_source_t, native_window_t$3)>()
 external bool native_drag_source_start_dragging(int drag_source, int window);
 
 /// Registers @p callback for every DropTargetEvent this DropTarget emits.
@@ -628,7 +672,7 @@ external int native_drop_target_add_listener_async(
 );
 
 /// Creates a DropTarget instance; release it with native_drop_target_free().
-@ffi.Native<native_drop_target_t Function(native_window_t$2)>()
+@ffi.Native<native_drop_target_t Function(native_window_t$4)>()
 external int native_drop_target_create(int window);
 
 /// Releases the caller's reference. Safe to call with an invalid or
@@ -682,6 +726,10 @@ void native_drop_target_set_drop_operation(
 
 @ffi.Native<native_edge_insets_t Function(ffi.Double)>()
 external native_edge_insets_t native_edge_insets_all(double value);
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_edge_insets_t>)>()
+external void native_edge_insets_free(ffi.Pointer<native_edge_insets_t> value);
 
 @ffi.Native<native_edge_insets_t Function(ffi.Double, ffi.Double)>()
 external native_edge_insets_t native_edge_insets_symmetric(
@@ -812,7 +860,7 @@ void native_file_dialog_set_modality(
   return _native_file_dialog_set_modality(file_dialog, modality.value);
 }
 
-@ffi.Native<ffi.Bool Function(native_file_dialog_t, native_window_t$3)>()
+@ffi.Native<ffi.Bool Function(native_file_dialog_t, native_window_t$5)>()
 external bool native_file_dialog_set_parent_window(int file_dialog, int window);
 
 @ffi.Native<ffi.Bool Function(native_file_dialog_t, ffi.Pointer<ffi.Char>)>()
@@ -1582,7 +1630,7 @@ void native_message_dialog_set_modality(
   return _native_message_dialog_set_modality(message_dialog, modality.value);
 }
 
-@ffi.Native<ffi.Bool Function(native_message_dialog_t, native_window_t$4)>()
+@ffi.Native<ffi.Bool Function(native_message_dialog_t, native_window_t$6)>()
 external bool native_message_dialog_set_parent_window(
   int message_dialog,
   int window,
@@ -1665,6 +1713,10 @@ external bool native_notification_manager_show(
 
 @ffi.Native<ffi.Void Function()>()
 external void native_notification_manager_shutdown();
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_point_t>)>()
+external void native_point_free(ffi.Pointer<native_point_t> value);
 
 /// Caller owns the returned handle; release it with native_positioning_strategy_free().
 @ffi.Native<native_positioning_strategy_t Function(native_point_t)>()
@@ -1797,6 +1849,171 @@ external bool native_preferences_set(
   int preferences,
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Char> value,
+);
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_rectangle_t>)>()
+external void native_rectangle_free(ffi.Pointer<native_rectangle_t> value);
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_screen_capture_options_t>)>()
+external void native_screen_capture_options_free(
+  ffi.Pointer<native_screen_capture_options_t> value,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_capture_source_t$1,
+    native_screen_capture_options_t,
+    native_screen_capturer_capture_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_screen_capturer_capture(
+  int source,
+  native_screen_capture_options_t options,
+  native_screen_capturer_capture_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<ffi.Bool Function(ffi.UnsignedInt)>(
+  symbol: 'native_screen_capturer_is_direct_capture_supported',
+)
+external bool _native_screen_capturer_is_direct_capture_supported(int type);
+
+bool native_screen_capturer_is_direct_capture_supported(
+  native_capture_source_type_t type,
+) {
+  return _native_screen_capturer_is_direct_capture_supported(type.value);
+}
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_screen_capturer_is_source_selection_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_screen_capturer_is_supported();
+
+@ffi.Native<
+  ffi.Void Function(
+    native_capture_source_selection_options_t,
+    native_screen_capturer_select_source_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_screen_capturer_select_source(
+  native_capture_source_selection_options_t options,
+  native_screen_capturer_select_source_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+/// Registers @p callback for every ScreenRecordingEvent this ScreenRecorder emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_screen_recorder_t,
+    native_screen_recording_event_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_screen_recorder_add_listener(
+  int screen_recorder,
+  native_screen_recording_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_screen_recorder_t,
+    native_screen_recording_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_screen_recorder_add_listener_async(
+  int screen_recorder,
+  native_screen_recording_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+@ffi.Native<ffi.Bool Function(native_screen_recorder_t)>()
+external bool native_screen_recorder_cancel(int screen_recorder);
+
+/// Creates a ScreenRecorder instance; release it with native_screen_recorder_free().
+@ffi.Native<native_screen_recorder_t Function()>()
+external int native_screen_recorder_create();
+
+/// Releases the caller's reference. Safe to call with an invalid or
+/// already-released handle.
+@ffi.Native<ffi.Void Function(native_screen_recorder_t)>()
+external void native_screen_recorder_free(int screen_recorder);
+
+@ffi.Native<ffi.Double Function(native_screen_recorder_t)>()
+external double native_screen_recorder_get_duration(int screen_recorder);
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_screen_recorder_t)>()
+external ffi.Pointer<ffi.Char> native_screen_recorder_get_file_path(
+  int screen_recorder,
+);
+
+@ffi.Native<ffi.UnsignedInt Function(native_screen_recorder_t)>(
+  symbol: 'native_screen_recorder_get_state',
+)
+external int _native_screen_recorder_get_state(int screen_recorder);
+
+native_screen_recording_state_t native_screen_recorder_get_state(
+  Dartnative_screen_recorder_t screen_recorder,
+) {
+  return native_screen_recording_state_t.fromValue(
+    _native_screen_recorder_get_state(screen_recorder),
+  );
+}
+
+@ffi.Native<ffi.Bool Function(native_screen_recorder_t)>()
+external bool native_screen_recorder_is_active(int screen_recorder);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_screen_recorder_is_supported();
+
+/// Unregisters a listener. Returns false if unknown.
+@ffi.Native<ffi.Bool Function(native_screen_recorder_t, native_listener_id_t)>()
+external bool native_screen_recorder_remove_listener(
+  int screen_recorder,
+  int listener_id,
+);
+
+@ffi.Native<
+  ffi.Bool Function(
+    native_screen_recorder_t,
+    native_capture_source_t$2,
+    ffi.Pointer<ffi.Char>,
+    native_screen_recording_options_t,
+  )
+>()
+external bool native_screen_recorder_start(
+  int screen_recorder,
+  int source,
+  ffi.Pointer<ffi.Char> file_path,
+  native_screen_recording_options_t options,
+);
+
+@ffi.Native<ffi.Bool Function(native_screen_recorder_t)>()
+external bool native_screen_recorder_stop(int screen_recorder);
+
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_screen_recording_options_t>)>()
+external void native_screen_recording_options_free(
+  ffi.Pointer<native_screen_recording_options_t> value,
 );
 
 @ffi.Native<ffi.Bool Function(native_secure_storage_t)>()
@@ -2099,6 +2316,10 @@ external void native_shortcut_set_description(
 @ffi.Native<ffi.Void Function(native_shortcut_t, ffi.Bool)>()
 external void native_shortcut_set_enabled(int shortcut, bool enabled);
 
+/// Frees everything the struct owns.
+@ffi.Native<ffi.Void Function(ffi.Pointer<native_size_t>)>()
+external void native_size_free(ffi.Pointer<native_size_t> value);
+
 /// Free a string list allocated by to_c_string_list
 /// @param list The list to free (can be nullptr)
 @ffi.Native<ffi.Void Function(ffi.Pointer<native_string_list_t>)>()
@@ -2286,7 +2507,7 @@ native_context_menu_trigger_t native_tray_icon_get_context_menu_trigger(
 }
 
 /// Caller owns the returned handle; release it with native_image_free().
-@ffi.Native<native_image_t$3 Function(native_tray_icon_t)>()
+@ffi.Native<native_image_t$4 Function(native_tray_icon_t)>()
 external int native_tray_icon_get_icon(int tray_icon);
 
 @ffi.Native<ffi.UnsignedInt Function(native_tray_icon_t)>(
@@ -2372,7 +2593,7 @@ void native_tray_icon_set_context_menu_trigger(
   return _native_tray_icon_set_context_menu_trigger(tray_icon, trigger.value);
 }
 
-@ffi.Native<ffi.Void Function(native_tray_icon_t, native_image_t$3)>()
+@ffi.Native<ffi.Void Function(native_tray_icon_t, native_image_t$4)>()
 external void native_tray_icon_set_icon(int tray_icon, int image);
 
 @ffi.Native<ffi.Void Function(native_tray_icon_t, ffi.UnsignedInt)>(
@@ -2821,7 +3042,7 @@ external bool native_window_drag_session_remove_listener(
 @ffi.Native<
   ffi.Bool Function(
     native_window_drag_session_t,
-    native_window_t$5,
+    native_window_t$7,
     native_point_t,
   )
 >()
@@ -3114,18 +3335,18 @@ external bool native_window_manager_call_original_hide(int id);
 external bool native_window_manager_call_original_show(int id);
 
 /// Caller owns the returned handle; release it with native_window_free().
-@ffi.Native<native_window_t$6 Function(native_window_id_t)>()
+@ffi.Native<native_window_t$8 Function(native_window_id_t)>()
 external int native_window_manager_get(int id);
 
 @ffi.Native<native_window_list_t Function()>()
 external native_window_list_t native_window_manager_get_all();
 
 /// Caller owns the returned handle; release it with native_window_free().
-@ffi.Native<native_window_t$6 Function()>()
+@ffi.Native<native_window_t$8 Function()>()
 external int native_window_manager_get_current();
 
 /// Caller owns the returned handle; release it with native_window_free().
-@ffi.Native<native_window_t$6 Function(native_point_t, native_window_id_t)>()
+@ffi.Native<native_window_t$8 Function(native_point_t, native_window_id_t)>()
 external int native_window_manager_get_window_at_point(
   native_point_t point,
   int excluded_window_id,
@@ -3478,6 +3699,8 @@ external void native_window_unmaximize(int window);
 
 const int NATIVE_INVALID_BUTTON = 0;
 
+const int NATIVE_INVALID_CAPTURE_SOURCE = 0;
+
 const int NATIVE_INVALID_DISPLAY = 0;
 
 const int NATIVE_INVALID_DRAG_SOURCE = 0;
@@ -3511,6 +3734,8 @@ const int NATIVE_INVALID_MESSAGE_DIALOG = 0;
 const int NATIVE_INVALID_POSITIONING_STRATEGY = 0;
 
 const int NATIVE_INVALID_PREFERENCES = 0;
+
+const int NATIVE_INVALID_SCREEN_RECORDER = 0;
 
 const int NATIVE_INVALID_SECURE_STORAGE = 0;
 
@@ -3560,32 +3785,36 @@ final class UnnamedStruct$10 extends ffi.Struct {
 }
 
 final class UnnamedStruct$11 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> error_message;
+  external ffi.Pointer<ffi.Char> file_path;
+
+  @ffi.Double()
+  external double duration;
 
   static ffi.Pointer<UnnamedStruct$11> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> error_message,
-  }) => $allocator<UnnamedStruct$11>()..ref.error_message = error_message;
+    required ffi.Pointer<ffi.Char> file_path,
+    required double duration,
+  }) => $allocator<UnnamedStruct$11>()
+    ..ref.file_path = file_path
+    ..ref.duration = duration;
 }
 
 final class UnnamedStruct$12 extends ffi.Struct {
-  @native_tray_icon_id_t()
-  external int tray_icon_id;
+  external ffi.Pointer<ffi.Char> message;
 
   static ffi.Pointer<UnnamedStruct$12> $allocate(
     ffi.Allocator $allocator, {
-    required int tray_icon_id,
-  }) => $allocator<UnnamedStruct$12>()..ref.tray_icon_id = tray_icon_id;
+    required ffi.Pointer<ffi.Char> message,
+  }) => $allocator<UnnamedStruct$12>()..ref.message = message;
 }
 
 final class UnnamedStruct$13 extends ffi.Struct {
-  @native_tray_icon_id_t()
-  external int tray_icon_id;
+  external ffi.Pointer<ffi.Char> error_message;
 
   static ffi.Pointer<UnnamedStruct$13> $allocate(
     ffi.Allocator $allocator, {
-    required int tray_icon_id,
-  }) => $allocator<UnnamedStruct$13>()..ref.tray_icon_id = tray_icon_id;
+    required ffi.Pointer<ffi.Char> error_message,
+  }) => $allocator<UnnamedStruct$13>()..ref.error_message = error_message;
 }
 
 final class UnnamedStruct$14 extends ffi.Struct {
@@ -3599,44 +3828,40 @@ final class UnnamedStruct$14 extends ffi.Struct {
 }
 
 final class UnnamedStruct$15 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> text;
+  @native_tray_icon_id_t()
+  external int tray_icon_id;
 
   static ffi.Pointer<UnnamedStruct$15> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> text,
-  }) => $allocator<UnnamedStruct$15>()..ref.text = text;
+    required int tray_icon_id,
+  }) => $allocator<UnnamedStruct$15>()..ref.tray_icon_id = tray_icon_id;
 }
 
 final class UnnamedStruct$16 extends ffi.Struct {
-  external native_point_t new_position;
+  @native_tray_icon_id_t()
+  external int tray_icon_id;
+
+  static ffi.Pointer<UnnamedStruct$16> $allocate(
+    ffi.Allocator $allocator, {
+    required int tray_icon_id,
+  }) => $allocator<UnnamedStruct$16>()..ref.tray_icon_id = tray_icon_id;
 }
 
 final class UnnamedStruct$17 extends ffi.Struct {
-  external native_size_t new_size;
+  external ffi.Pointer<ffi.Char> text;
+
+  static ffi.Pointer<UnnamedStruct$17> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Char> text,
+  }) => $allocator<UnnamedStruct$17>()..ref.text = text;
 }
 
 final class UnnamedStruct$18 extends ffi.Struct {
-  @native_event_request_t()
-  external int request;
-
-  static ffi.Pointer<UnnamedStruct$18> $allocate(
-    ffi.Allocator $allocator, {
-    required int request,
-  }) => $allocator<UnnamedStruct$18>()..ref.request = request;
+  external native_point_t new_position;
 }
 
 final class UnnamedStruct$19 extends ffi.Struct {
-  @ffi.UnsignedInt()
-  external int propertyAsInt;
-
-  native_window_property_t get property =>
-      native_window_property_t.fromValue(propertyAsInt);
-  set property(native_window_property_t value) => propertyAsInt = value.value;
-
-  static ffi.Pointer<UnnamedStruct$19> $allocate(
-    ffi.Allocator $allocator, {
-    required native_window_property_t property,
-  }) => $allocator<UnnamedStruct$19>()..ref.property = property;
+  external native_size_t new_size;
 }
 
 final class UnnamedStruct$2 extends ffi.Struct {
@@ -3654,6 +3879,30 @@ final class UnnamedStruct$2 extends ffi.Struct {
 }
 
 final class UnnamedStruct$20 extends ffi.Struct {
+  @native_event_request_t()
+  external int request;
+
+  static ffi.Pointer<UnnamedStruct$20> $allocate(
+    ffi.Allocator $allocator, {
+    required int request,
+  }) => $allocator<UnnamedStruct$20>()..ref.request = request;
+}
+
+final class UnnamedStruct$21 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int propertyAsInt;
+
+  native_window_property_t get property =>
+      native_window_property_t.fromValue(propertyAsInt);
+  set property(native_window_property_t value) => propertyAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$21> $allocate(
+    ffi.Allocator $allocator, {
+    required native_window_property_t property,
+  }) => $allocator<UnnamedStruct$21>()..ref.property = property;
+}
+
+final class UnnamedStruct$22 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int occlusion_stateAsInt;
 
@@ -3662,10 +3911,10 @@ final class UnnamedStruct$20 extends ffi.Struct {
   set occlusion_state(native_window_occlusion_state_t value) =>
       occlusion_stateAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$20> $allocate(
+  static ffi.Pointer<UnnamedStruct$22> $allocate(
     ffi.Allocator $allocator, {
     required native_window_occlusion_state_t occlusion_state,
-  }) => $allocator<UnnamedStruct$20>()..ref.occlusion_state = occlusion_state;
+  }) => $allocator<UnnamedStruct$22>()..ref.occlusion_state = occlusion_state;
 }
 
 final class UnnamedStruct$3 extends ffi.Struct {
@@ -3744,6 +3993,18 @@ final class UnnamedUnion$1 extends ffi.Union {
   external UnnamedStruct$2 ended;
 }
 
+final class UnnamedUnion$10 extends ffi.Union {
+  external UnnamedStruct$18 moved;
+
+  external UnnamedStruct$19 resized;
+
+  external UnnamedStruct$20 close_requested;
+
+  external UnnamedStruct$21 property_changed;
+
+  external UnnamedStruct$22 occlusion_changed;
+}
+
 final class UnnamedUnion$2 extends ffi.Union {
   external UnnamedStruct$3 dropped;
 }
@@ -3769,31 +4030,25 @@ final class UnnamedUnion$5 extends ffi.Union {
 }
 
 final class UnnamedUnion$6 extends ffi.Union {
-  external UnnamedStruct$11 registration_failed;
+  external UnnamedStruct$11 completed;
+
+  external UnnamedStruct$12 failed;
 }
 
 final class UnnamedUnion$7 extends ffi.Union {
-  external UnnamedStruct$12 clicked;
-
-  external UnnamedStruct$13 right_clicked;
-
-  external UnnamedStruct$14 double_clicked;
+  external UnnamedStruct$13 registration_failed;
 }
 
 final class UnnamedUnion$8 extends ffi.Union {
-  external UnnamedStruct$15 text_field_changed;
+  external UnnamedStruct$14 clicked;
+
+  external UnnamedStruct$15 right_clicked;
+
+  external UnnamedStruct$16 double_clicked;
 }
 
 final class UnnamedUnion$9 extends ffi.Union {
-  external UnnamedStruct$16 moved;
-
-  external UnnamedStruct$17 resized;
-
-  external UnnamedStruct$18 close_requested;
-
-  external UnnamedStruct$19 property_changed;
-
-  external UnnamedStruct$20 occlusion_changed;
+  external UnnamedStruct$17 text_field_changed;
 }
 
 typedef native_application_event_callback_t =
@@ -3889,6 +4144,60 @@ enum native_brightness_t {
 /// including its listener registration.
 typedef native_button_t = ffi.Uint64;
 typedef Dartnative_button_t = int;
+
+final class native_capture_source_selection_options_t extends ffi.Struct {
+  @ffi.Bool()
+  external bool allow_displays;
+
+  @ffi.Bool()
+  external bool allow_windows;
+
+  @native_window_t$2()
+  external int parent_window;
+
+  static ffi.Pointer<native_capture_source_selection_options_t> $allocate(
+    ffi.Allocator $allocator, {
+    required bool allow_displays,
+    required bool allow_windows,
+    required int parent_window,
+  }) => $allocator<native_capture_source_selection_options_t>()
+    ..ref.allow_displays = allow_displays
+    ..ref.allow_windows = allow_windows
+    ..ref.parent_window = parent_window;
+}
+
+/// Opaque CaptureSource handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_CAPTURE_SOURCE rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef native_capture_source_t = ffi.Uint64;
+typedef Dartnative_capture_source_t = int;
+typedef native_capture_source_t$1 = ffi.Uint64;
+typedef Dartnative_capture_source_t$1 = int;
+typedef native_capture_source_t$2 = ffi.Uint64;
+typedef Dartnative_capture_source_t$2 = int;
+
+enum native_capture_source_type_t {
+  NATIVE_CAPTURE_SOURCE_TYPE_NONE(0),
+  NATIVE_CAPTURE_SOURCE_TYPE_DISPLAY(1),
+  NATIVE_CAPTURE_SOURCE_TYPE_WINDOW(2),
+  NATIVE_CAPTURE_SOURCE_TYPE_UNKNOWN(3);
+
+  final int value;
+  const native_capture_source_type_t(this.value);
+
+  static native_capture_source_type_t fromValue(int value) => switch (value) {
+    0 => NATIVE_CAPTURE_SOURCE_TYPE_NONE,
+    1 => NATIVE_CAPTURE_SOURCE_TYPE_DISPLAY,
+    2 => NATIVE_CAPTURE_SOURCE_TYPE_WINDOW,
+    3 => NATIVE_CAPTURE_SOURCE_TYPE_UNKNOWN,
+    _ => throw ArgumentError(
+      'Unknown value for native_capture_source_type_t: $value',
+    ),
+  };
+}
 
 final class native_clipboard_data_t extends ffi.Struct {
   external ffi.Pointer<ffi.Char> text;
@@ -4228,6 +4537,8 @@ typedef native_display_t = ffi.Uint64;
 typedef Dartnative_display_t = int;
 typedef native_display_t$1 = ffi.Uint64;
 typedef Dartnative_display_t$1 = int;
+typedef native_display_t$2 = ffi.Uint64;
+typedef Dartnative_display_t$2 = int;
 
 enum native_drag_operation_t {
   NATIVE_DRAG_OPERATION_NONE(0),
@@ -4517,6 +4828,8 @@ typedef native_image_t$4 = ffi.Uint64;
 typedef Dartnative_image_t$4 = int;
 typedef native_image_t$5 = ffi.Uint64;
 typedef Dartnative_image_t$5 = int;
+typedef native_image_t$6 = ffi.Uint64;
+typedef Dartnative_image_t$6 = int;
 
 /// Opaque ImageView handle.
 ///
@@ -5076,6 +5389,168 @@ enum native_resize_edge_t {
   };
 }
 
+final class native_screen_capture_options_t extends ffi.Struct {
+  @ffi.Bool()
+  external bool include_cursor;
+
+  @ffi.Bool()
+  external bool crop_enabled;
+
+  external native_rectangle_t crop;
+}
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_screen_capturer_capture_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_screen_capturer_capture_callback_tFunction>
+    >;
+typedef native_screen_capturer_capture_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  native_image_t$3 arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_screen_capturer_capture_callback_tFunction = void Function(
+  bool arg0,
+  Dartnative_image_t$3 arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_screen_capturer_select_source_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<
+        native_screen_capturer_select_source_callback_tFunction
+      >
+    >;
+typedef native_screen_capturer_select_source_callback_tFunction =
+    ffi.Void Function(
+      ffi.Bool arg0,
+      native_capture_source_t$1 arg1,
+      native_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+typedef Dartnative_screen_capturer_select_source_callback_tFunction =
+    void Function(
+      bool arg0,
+      Dartnative_capture_source_t$1 arg1,
+      Dartnative_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+
+/// Opaque ScreenRecorder handle.
+///
+/// A generational index into the library's handle table, NOT a pointer:
+/// never dereference it, and compare it against NATIVE_INVALID_SCREEN_RECORDER rather than NULL.
+/// Releasing a handle invalidates it; later calls fail safely instead of
+/// touching freed memory.
+typedef native_screen_recorder_t = ffi.Uint64;
+typedef Dartnative_screen_recorder_t = int;
+typedef native_screen_recording_event_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_screen_recording_event_callback_tFunction>
+    >;
+typedef native_screen_recording_event_callback_tFunction = ffi.Void Function(
+  ffi.Pointer<native_screen_recording_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_screen_recording_event_callback_tFunction = void Function(
+  ffi.Pointer<native_screen_recording_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef native_screen_recording_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_screen_recording_event_callback_t_asyncFunction>
+    >;
+typedef native_screen_recording_event_callback_t_asyncFunction =
+    ffi.Void Function(
+      ffi.Pointer<native_screen_recording_event_t> event,
+      native_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+typedef Dartnative_screen_recording_event_callback_t_asyncFunction =
+    void Function(
+      ffi.Pointer<native_screen_recording_event_t> event,
+      Dartnative_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+
+/// One ScreenRecordingEvent, tagged by its concrete type.
+///
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
+final class native_screen_recording_event_t extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int typeAsInt;
+
+  native_screen_recording_event_type_t get type =>
+      native_screen_recording_event_type_t.fromValue(typeAsInt);
+  set type(native_screen_recording_event_type_t value) =>
+      typeAsInt = value.value;
+
+  external UnnamedUnion$6 data;
+}
+
+/// Which concrete ScreenRecordingEvent arrived.
+enum native_screen_recording_event_type_t {
+  NATIVE_SCREEN_RECORDING_EVENT_TYPE_STARTED(0),
+  NATIVE_SCREEN_RECORDING_EVENT_TYPE_COMPLETED(1),
+  NATIVE_SCREEN_RECORDING_EVENT_TYPE_CANCELLED(2),
+  NATIVE_SCREEN_RECORDING_EVENT_TYPE_FAILED(3);
+
+  final int value;
+  const native_screen_recording_event_type_t(this.value);
+
+  static native_screen_recording_event_type_t fromValue(int value) =>
+      switch (value) {
+        0 => NATIVE_SCREEN_RECORDING_EVENT_TYPE_STARTED,
+        1 => NATIVE_SCREEN_RECORDING_EVENT_TYPE_COMPLETED,
+        2 => NATIVE_SCREEN_RECORDING_EVENT_TYPE_CANCELLED,
+        3 => NATIVE_SCREEN_RECORDING_EVENT_TYPE_FAILED,
+        _ => throw ArgumentError(
+          'Unknown value for native_screen_recording_event_type_t: $value',
+        ),
+      };
+}
+
+final class native_screen_recording_options_t extends ffi.Struct {
+  external native_screen_capture_options_t capture;
+
+  @ffi.Double()
+  external double frame_rate;
+
+  @ffi.UnsignedLong()
+  external int video_bitrate;
+}
+
+enum native_screen_recording_state_t {
+  NATIVE_SCREEN_RECORDING_STATE_IDLE(0),
+  NATIVE_SCREEN_RECORDING_STATE_STARTING(1),
+  NATIVE_SCREEN_RECORDING_STATE_RECORDING(2),
+  NATIVE_SCREEN_RECORDING_STATE_STOPPING(3),
+  NATIVE_SCREEN_RECORDING_STATE_COMPLETED(4),
+  NATIVE_SCREEN_RECORDING_STATE_CANCELLED(5),
+  NATIVE_SCREEN_RECORDING_STATE_FAILED(6);
+
+  final int value;
+  const native_screen_recording_state_t(this.value);
+
+  static native_screen_recording_state_t fromValue(int value) =>
+      switch (value) {
+        0 => NATIVE_SCREEN_RECORDING_STATE_IDLE,
+        1 => NATIVE_SCREEN_RECORDING_STATE_STARTING,
+        2 => NATIVE_SCREEN_RECORDING_STATE_RECORDING,
+        3 => NATIVE_SCREEN_RECORDING_STATE_STOPPING,
+        4 => NATIVE_SCREEN_RECORDING_STATE_COMPLETED,
+        5 => NATIVE_SCREEN_RECORDING_STATE_CANCELLED,
+        6 => NATIVE_SCREEN_RECORDING_STATE_FAILED,
+        _ => throw ArgumentError(
+          'Unknown value for native_screen_recording_state_t: $value',
+        ),
+      };
+}
+
 /// Opaque SecureStorage handle.
 ///
 /// A generational index into the library's handle table, NOT a pointer:
@@ -5136,7 +5611,7 @@ final class native_shortcut_event_t extends ffi.Struct {
 
   external ffi.Pointer<ffi.Char> accelerator;
 
-  external UnnamedUnion$6 data;
+  external UnnamedUnion$7 data;
 }
 
 /// Which concrete ShortcutEvent arrived.
@@ -5416,7 +5891,7 @@ final class native_tray_icon_event_t extends ffi.Struct {
       native_tray_icon_event_type_t.fromValue(typeAsInt);
   set type(native_tray_icon_event_type_t value) => typeAsInt = value.value;
 
-  external UnnamedUnion$7 data;
+  external UnnamedUnion$8 data;
 }
 
 /// Which concrete TrayIconEvent arrived.
@@ -5605,7 +6080,7 @@ final class native_view_event_t extends ffi.Struct {
   @native_view_id_t()
   external int view_id;
 
-  external UnnamedUnion$8 data;
+  external UnnamedUnion$9 data;
 }
 
 /// Which concrete ViewEvent arrived.
@@ -5840,7 +6315,7 @@ final class native_window_event_t extends ffi.Struct {
   @native_window_id_t()
   external int window_id;
 
-  external UnnamedUnion$9 data;
+  external UnnamedUnion$10 data;
 }
 
 /// Which concrete WindowEvent arrived.
@@ -6009,6 +6484,8 @@ typedef native_window_t = ffi.Uint64;
 typedef Dartnative_window_t = int;
 typedef native_window_t$1 = ffi.Uint64;
 typedef Dartnative_window_t$1 = int;
+typedef native_window_t$10 = ffi.Uint64;
+typedef Dartnative_window_t$10 = int;
 typedef native_window_t$2 = ffi.Uint64;
 typedef Dartnative_window_t$2 = int;
 typedef native_window_t$3 = ffi.Uint64;
@@ -6023,3 +6500,5 @@ typedef native_window_t$7 = ffi.Uint64;
 typedef Dartnative_window_t$7 = int;
 typedef native_window_t$8 = ffi.Uint64;
 typedef Dartnative_window_t$8 = int;
+typedef native_window_t$9 = ffi.Uint64;
+typedef Dartnative_window_t$9 = int;

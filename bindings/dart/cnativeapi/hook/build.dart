@@ -59,6 +59,7 @@ void main(List<String> args) async {
     switch (targetOS) {
       case OS.macOS:
         flags.addAll(_objectiveCpp);
+        flags.addAll(['-weak_framework', 'ScreenCaptureKit']);
         frameworks = [
           'Cocoa',
           'QuartzCore',
@@ -66,6 +67,10 @@ void main(List<String> args) async {
           'CoreGraphics',
           'ApplicationServices',
           'ServiceManagement',
+          'AVFoundation',
+          'CoreMedia',
+          'CoreVideo',
+          'VideoToolbox',
         ];
       case OS.iOS:
         flags.addAll(_objectiveCpp);
@@ -99,6 +104,14 @@ void main(List<String> args) async {
           'advapi32',
           'version',
           'gdi32',
+          'd3d11',
+          'dxgi',
+          'windowsapp',
+          'runtimeobject',
+          'mfplat',
+          'mfreadwrite',
+          'mfuuid',
+          'windowscodecs',
         ]);
     }
 

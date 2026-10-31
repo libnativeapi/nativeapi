@@ -2091,6 +2091,388 @@ func (i *Image) NativeObject() unsafe.Pointer {
 	return C.native_image_get_native_object(C.native_image_t(i.nativeHandleValue()))
 }
 
+// CaptureSourceType represents native CaptureSourceType values.
+type CaptureSourceType int32
+
+const (
+	CaptureSourceTypeNone    CaptureSourceType = 0
+	CaptureSourceTypeDisplay CaptureSourceType = 1
+	CaptureSourceTypeWindow  CaptureSourceType = 2
+	CaptureSourceTypeUnknown CaptureSourceType = 3
+)
+
+// CaptureSource owns a native handle. Call Release on the UI thread when done.
+// Copies share ownership state; borrowed event handles must not outlive their callback.
+type CaptureSource struct{ *nativeHandle }
+
+func wrapCaptureSource(value uint64, borrowed bool) *CaptureSource {
+	if value == 0 {
+		return nil
+	}
+	return wrapCaptureSourceState(&nativeHandle{value: value, borrowed: borrowed})
+}
+func wrapCaptureSourceState(state *nativeHandle) *CaptureSource {
+	return &CaptureSource{state}
+}
+func (cs *CaptureSource) nativeHandleValue() uint64 {
+	if cs == nil || cs.nativeHandle == nil {
+		return 0
+	}
+	return cs.nativeHandle.nativeHandleValue()
+}
+
+// Release drops this owned reference. Repeated calls and nil receivers are safe.
+func (cs *CaptureSource) Release() {
+	if cs.nativeHandleValue() == 0 || cs.borrowed {
+		return
+	}
+	C.native_capture_source_free(C.native_capture_source_t(cs.value))
+	cs.value = 0
+}
+
+// CaptureSourceFromDisplay invokes the native FromDisplay operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func CaptureSourceFromDisplay(display *Display) (*CaptureSource, error) {
+	result := C.native_capture_source_from_display(C.native_display_t(display.nativeHandleValue()))
+	if result == 0 {
+		return nil, nativeError("CaptureSourceFromDisplay")
+	}
+	return wrapCaptureSource(uint64(result), false), nil
+}
+
+// CaptureSourceFromWindow invokes the native FromWindow operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func CaptureSourceFromWindow(window *Window) (*CaptureSource, error) {
+	result := C.native_capture_source_from_window(C.native_window_t(window.nativeHandleValue()))
+	if result == 0 {
+		return nil, nativeError("CaptureSourceFromWindow")
+	}
+	return wrapCaptureSource(uint64(result), false), nil
+}
+
+// Type invokes the native GetType operation.
+func (cs *CaptureSource) Type() CaptureSourceType {
+	result := C.native_capture_source_get_type(C.native_capture_source_t(cs.nativeHandleValue()))
+	return CaptureSourceType(result)
+}
+
+// Name invokes the native GetName operation.
+func (cs *CaptureSource) Name() string {
+	result := C.native_capture_source_get_name(C.native_capture_source_t(cs.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return C.GoString(result)
+}
+
+// CaptureSourceSelectionOptions holds the native CaptureSourceSelectionOptions value.
+type CaptureSourceSelectionOptions struct {
+	AllowDisplays bool
+	AllowWindows  bool
+	ParentWindow  *Window
+}
+
+func fromCCaptureSourceSelectionOptions(raw C.native_capture_source_selection_options_t) CaptureSourceSelectionOptions {
+	return CaptureSourceSelectionOptions{
+		AllowDisplays: bool(raw.allow_displays),
+		AllowWindows:  bool(raw.allow_windows),
+		ParentWindow:  wrapWindow(uint64(C.native_handle_retain(raw.parent_window)), false),
+	}
+}
+func toCCaptureSourceSelectionOptions(value CaptureSourceSelectionOptions) (C.native_capture_source_selection_options_t, func()) {
+	var raw C.native_capture_source_selection_options_t
+	var cleanup []func()
+	raw.allow_displays = C.bool(value.AllowDisplays)
+	raw.allow_windows = C.bool(value.AllowWindows)
+	raw.parent_window = C.native_window_t(value.ParentWindow.nativeHandleValue())
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
+// ScreenCaptureOptions holds the native ScreenCaptureOptions value.
+type ScreenCaptureOptions struct {
+	IncludeCursor bool
+	CropEnabled   bool
+	Crop          Rectangle
+}
+
+func fromCScreenCaptureOptions(raw C.native_screen_capture_options_t) ScreenCaptureOptions {
+	return ScreenCaptureOptions{
+		IncludeCursor: bool(raw.include_cursor),
+		CropEnabled:   bool(raw.crop_enabled),
+		Crop:          fromCRectangle(raw.crop),
+	}
+}
+func toCScreenCaptureOptions(value ScreenCaptureOptions) (C.native_screen_capture_options_t, func()) {
+	var raw C.native_screen_capture_options_t
+	var cleanup []func()
+	raw.include_cursor = C.bool(value.IncludeCursor)
+	raw.crop_enabled = C.bool(value.CropEnabled)
+	cField2, cField2Cleanup := toCRectangle(value.Crop)
+	cleanup = append(cleanup, func() { cField2Cleanup() })
+	raw.crop = cField2
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
+// ScreenCapturerIsSupported invokes the native IsSupported operation.
+func ScreenCapturerIsSupported() bool {
+	result := C.native_screen_capturer_is_supported()
+	return bool(result)
+}
+
+// ScreenCapturerIsSourceSelectionSupported invokes the native IsSourceSelectionSupported operation.
+func ScreenCapturerIsSourceSelectionSupported() bool {
+	result := C.native_screen_capturer_is_source_selection_supported()
+	return bool(result)
+}
+
+// ScreenCapturerIsDirectCaptureSupported invokes the native IsDirectCaptureSupported operation.
+func ScreenCapturerIsDirectCaptureSupported(kind CaptureSourceType) bool {
+	result := C.native_screen_capturer_is_direct_capture_supported(C.native_capture_source_type_t(kind))
+	return bool(result)
+}
+
+// ScreenCapturerSelectSource invokes the native SelectSource operation.
+func ScreenCapturerSelectSource(options CaptureSourceSelectionOptions, callback func(bool, *CaptureSource)) {
+	cArg0, cArg0Cleanup := toCCaptureSourceSelectionOptions(options)
+	defer cArg0Cleanup()
+	var cArg1Fn C.native_screen_capturer_select_source_callback_t
+	var cArg1Data unsafe.Pointer
+	var cArg1Release C.native_release_user_data_t
+	if callback != nil {
+		cArg1Data = newCallback(callback)
+		cArg1Fn = C.native_screen_capturer_select_source_callback_t(C.go_get_native_screen_capturer_select_source_callback_t())
+		cArg1Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_screen_capturer_select_source(cArg0, cArg1Fn, cArg1Data, cArg1Release)
+}
+
+// ScreenCapturerCapture invokes the native Capture operation.
+func ScreenCapturerCapture(source *CaptureSource, options ScreenCaptureOptions, callback func(bool, *Image)) {
+	cArg1, cArg1Cleanup := toCScreenCaptureOptions(options)
+	defer cArg1Cleanup()
+	var cArg2Fn C.native_screen_capturer_capture_callback_t
+	var cArg2Data unsafe.Pointer
+	var cArg2Release C.native_release_user_data_t
+	if callback != nil {
+		cArg2Data = newCallback(callback)
+		cArg2Fn = C.native_screen_capturer_capture_callback_t(C.go_get_native_screen_capturer_capture_callback_t())
+		cArg2Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_screen_capturer_capture(C.native_capture_source_t(source.nativeHandleValue()), cArg1, cArg2Fn, cArg2Data, cArg2Release)
+}
+
+// ScreenRecordingState represents native ScreenRecordingState values.
+type ScreenRecordingState int32
+
+const (
+	ScreenRecordingStateIdle      ScreenRecordingState = 0
+	ScreenRecordingStateStarting  ScreenRecordingState = 1
+	ScreenRecordingStateRecording ScreenRecordingState = 2
+	ScreenRecordingStateStopping  ScreenRecordingState = 3
+	ScreenRecordingStateCompleted ScreenRecordingState = 4
+	ScreenRecordingStateCancelled ScreenRecordingState = 5
+	ScreenRecordingStateFailed    ScreenRecordingState = 6
+)
+
+// ScreenRecordingOptions holds the native ScreenRecordingOptions value.
+type ScreenRecordingOptions struct {
+	Capture      ScreenCaptureOptions
+	FrameRate    float64
+	VideoBitrate uint64
+}
+
+func fromCScreenRecordingOptions(raw C.native_screen_recording_options_t) ScreenRecordingOptions {
+	return ScreenRecordingOptions{
+		Capture:      fromCScreenCaptureOptions(raw.capture),
+		FrameRate:    float64(raw.frame_rate),
+		VideoBitrate: uint64(raw.video_bitrate),
+	}
+}
+func toCScreenRecordingOptions(value ScreenRecordingOptions) (C.native_screen_recording_options_t, func()) {
+	var raw C.native_screen_recording_options_t
+	var cleanup []func()
+	cField0, cField0Cleanup := toCScreenCaptureOptions(value.Capture)
+	cleanup = append(cleanup, func() { cField0Cleanup() })
+	raw.capture = cField0
+	raw.frame_rate = C.double(value.FrameRate)
+	raw.video_bitrate = C.ulong(value.VideoBitrate)
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
+// ScreenRecordingEventType identifies the active event variant.
+type ScreenRecordingEventType int32
+
+const (
+	ScreenRecordingEventStarted   ScreenRecordingEventType = 0
+	ScreenRecordingEventCompleted ScreenRecordingEventType = 1
+	ScreenRecordingEventCancelled ScreenRecordingEventType = 2
+	ScreenRecordingEventFailed    ScreenRecordingEventType = 3
+)
+
+// ScreenRecordingEvent copies an event payload. Handle fields are borrowed until the callback returns.
+// Only fields belonging to Type are populated.
+type ScreenRecordingEvent struct {
+	Type     ScreenRecordingEventType
+	FilePath string
+	Duration float64
+	Message  string
+}
+
+func fromCScreenRecordingEvent(raw *C.native_screen_recording_event_t) ScreenRecordingEvent {
+	value := ScreenRecordingEvent{Type: ScreenRecordingEventType(raw._type)}
+	switch value.Type {
+	case ScreenRecordingEventStarted:
+	case ScreenRecordingEventCompleted:
+		value.FilePath = C.GoString(C.go_native_screen_recording_event_t_completed_FilePath(raw))
+		value.Duration = float64(C.go_native_screen_recording_event_t_completed_Duration(raw))
+	case ScreenRecordingEventCancelled:
+	case ScreenRecordingEventFailed:
+		value.Message = C.GoString(C.go_native_screen_recording_event_t_failed_Message(raw))
+	}
+	return value
+}
+
+//export goEvent_native_screen_recording_event_t
+func goEvent_native_screen_recording_event_t(handle C.uintptr_t, event *C.native_screen_recording_event_t) {
+	cgo.Handle(handle).Value().(func(ScreenRecordingEvent))(fromCScreenRecordingEvent(event))
+}
+
+// ScreenRecorder owns a native handle. Call Release on the UI thread when done.
+// Copies share ownership state; borrowed event handles must not outlive their callback.
+type ScreenRecorder struct{ *nativeHandle }
+
+func wrapScreenRecorder(value uint64, borrowed bool) *ScreenRecorder {
+	if value == 0 {
+		return nil
+	}
+	return wrapScreenRecorderState(&nativeHandle{value: value, borrowed: borrowed})
+}
+func wrapScreenRecorderState(state *nativeHandle) *ScreenRecorder {
+	return &ScreenRecorder{state}
+}
+func (sr *ScreenRecorder) nativeHandleValue() uint64 {
+	if sr == nil || sr.nativeHandle == nil {
+		return 0
+	}
+	return sr.nativeHandle.nativeHandleValue()
+}
+
+// Release drops this owned reference. Repeated calls and nil receivers are safe.
+func (sr *ScreenRecorder) Release() {
+	if sr.nativeHandleValue() == 0 || sr.borrowed {
+		return
+	}
+	C.native_screen_recorder_free(C.native_screen_recorder_t(sr.value))
+	sr.value = 0
+}
+
+// NewScreenRecorder creates an owned ScreenRecorder.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func NewScreenRecorder() (*ScreenRecorder, error) {
+	result := C.native_screen_recorder_create()
+	if result == 0 {
+		return nil, nativeError("NewScreenRecorder")
+	}
+	return wrapScreenRecorder(uint64(result), false), nil
+}
+
+// ScreenRecorderIsSupported invokes the native IsSupported operation.
+func ScreenRecorderIsSupported() bool {
+	result := C.native_screen_recorder_is_supported()
+	return bool(result)
+}
+
+// Start invokes the native Start operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (sr *ScreenRecorder) Start(source *CaptureSource, filePath string, options ScreenRecordingOptions) error {
+	cArg1 := C.CString(filePath)
+	defer C.free(unsafe.Pointer(cArg1))
+	cArg2, cArg2Cleanup := toCScreenRecordingOptions(options)
+	defer cArg2Cleanup()
+	result := C.native_screen_recorder_start(C.native_screen_recorder_t(sr.nativeHandleValue()), C.native_capture_source_t(source.nativeHandleValue()), cArg1, cArg2)
+	if !bool(result) {
+		return nativeError("ScreenRecorder.Start")
+	}
+	return nil
+}
+
+// Stop invokes the native Stop operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (sr *ScreenRecorder) Stop() error {
+	result := C.native_screen_recorder_stop(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("ScreenRecorder.Stop")
+	}
+	return nil
+}
+
+// Cancel invokes the native Cancel operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (sr *ScreenRecorder) Cancel() error {
+	result := C.native_screen_recorder_cancel(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("ScreenRecorder.Cancel")
+	}
+	return nil
+}
+
+// State invokes the native GetState operation.
+func (sr *ScreenRecorder) State() ScreenRecordingState {
+	result := C.native_screen_recorder_get_state(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	return ScreenRecordingState(result)
+}
+
+// IsActive invokes the native IsActive operation.
+func (sr *ScreenRecorder) IsActive() bool {
+	result := C.native_screen_recorder_is_active(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	return bool(result)
+}
+
+// Duration invokes the native GetDuration operation.
+func (sr *ScreenRecorder) Duration() float64 {
+	result := C.native_screen_recorder_get_duration(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	return float64(result)
+}
+
+// FilePath invokes the native GetFilePath operation.
+func (sr *ScreenRecorder) FilePath() string {
+	result := C.native_screen_recorder_get_file_path(C.native_screen_recorder_t(sr.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return C.GoString(result)
+}
+
+// AddListener invokes callback synchronously on the native UI thread.
+// Remove the listener before releasing its owner. A nil callback is invalid.
+func (sr *ScreenRecorder) AddListener(callback func(ScreenRecordingEvent)) (ListenerID, error) {
+	if callback == nil {
+		return 0, invalidArgument("ScreenRecorder.AddListener")
+	}
+	data := newCallback(callback)
+	id := C.native_screen_recorder_add_listener(C.native_screen_recorder_t(sr.nativeHandleValue()), C.native_screen_recording_event_callback_t(C.go_get_native_screen_recording_event_callback_t()), data, C.native_release_user_data_t(C.go_get_release_callback()))
+	if id == 0 {
+		return 0, nativeError("ScreenRecorder.AddListener")
+	}
+	return ListenerID(id), nil
+}
+
+// RemoveListener unregisters id; an unknown id returns an error.
+func (sr *ScreenRecorder) RemoveListener(id ListenerID) error {
+	if !bool(C.native_screen_recorder_remove_listener(C.native_screen_recorder_t(sr.nativeHandleValue()), C.native_listener_id_t(id))) {
+		return nativeError("ScreenRecorder.RemoveListener")
+	}
+	return nil
+}
+
 // WindowShape owns a native handle. Call Release on the UI thread when done.
 // Copies share ownership state; borrowed event handles must not outlive their callback.
 type WindowShape struct{ *nativeHandle }
@@ -6193,6 +6575,24 @@ func goCall_native_clipboard_read_text_callback_t(handle C.uintptr_t, arg0 C.boo
 		return
 	}
 	cgo.Handle(handle).Value().(func(bool, *string))(bool(arg0), optionalStringFromC((*C.char)(arg1)))
+}
+
+//export goCall_native_screen_capturer_capture_callback_t
+func goCall_native_screen_capturer_capture_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 C.native_image_t, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *Image))(bool(arg0), wrapImage(uint64(C.native_handle_retain(arg1)), false))
+}
+
+//export goCall_native_screen_capturer_select_source_callback_t
+func goCall_native_screen_capturer_select_source_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 C.native_capture_source_t, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *CaptureSource))(bool(arg0), wrapCaptureSource(uint64(C.native_handle_retain(arg1)), false))
 }
 
 //export goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t
