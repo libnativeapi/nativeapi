@@ -41,6 +41,7 @@ fn main() {
             println!("cargo:rustc-link-lib=framework=Cocoa");
             println!("cargo:rustc-link-lib=framework=QuartzCore");
             println!("cargo:rustc-link-lib=framework=Carbon");
+            println!("cargo:rustc-link-lib=framework=IOKit");
             println!("cargo:rustc-link-lib=framework=ServiceManagement");
         }
         "ios" => {

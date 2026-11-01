@@ -63,6 +63,7 @@ void main(List<String> args) async {
           'Cocoa',
           'QuartzCore',
           'Carbon',
+          'IOKit',
           'CoreGraphics',
           'ApplicationServices',
           'ServiceManagement',
