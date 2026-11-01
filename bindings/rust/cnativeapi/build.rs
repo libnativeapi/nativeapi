@@ -34,6 +34,39 @@ fn main() {
     match target_os.as_str() {
         "macos" => {
             cmake_config.define("CMAKE_SYSTEM_NAME", "Darwin");
+            // Match Rust's deployment target so availability-annotated native
+            // APIs remain weak imports on older macOS versions.
+            println!("cargo:rerun-if-env-changed=MACOSX_DEPLOYMENT_TARGET");
+            let deployment_target = env::var("MACOSX_DEPLOYMENT_TARGET")
+                .ok()
+                .or_else(|| {
+                    let output = std::process::Command::new(env::var("RUSTC").ok()?)
+                        .args([
+                            "--print",
+                            "deployment-target",
+                            "--target",
+                            &env::var("TARGET").ok()?,
+                        ])
+                        .output()
+                        .ok()?;
+                    if !output.status.success() {
+                        return None;
+                    }
+                    String::from_utf8(output.stdout)
+                        .ok()?
+                        .trim()
+                        .split_once('=')
+                        .map(|(_, value)| value.to_owned())
+                })
+                .unwrap_or_else(|| {
+                    if _target_arch == "aarch64" {
+                        "11.0"
+                    } else {
+                        "10.12"
+                    }
+                    .into()
+                });
+            cmake_config.define("CMAKE_OSX_DEPLOYMENT_TARGET", deployment_target);
             // Mirrors src/CMakeLists.txt. Cocoa alone leaves the global
             // shortcut and launch-at-login implementations unresolved: hotkeys
             // go through Carbon's RegisterEventHotKey, and login items through
@@ -42,6 +75,11 @@ fn main() {
             println!("cargo:rustc-link-lib=framework=QuartzCore");
             println!("cargo:rustc-link-lib=framework=Carbon");
             println!("cargo:rustc-link-lib=framework=ServiceManagement");
+            // SCK is autolinked by the capture object, so an application not
+            // using capture does not acquire an unconditional SCK dependency.
+            for framework in ["AVFoundation", "CoreMedia", "CoreVideo", "VideoToolbox"] {
+                println!("cargo:rustc-link-lib=framework={framework}");
+            }
         }
         "ios" => {
             cmake_config.define("CMAKE_SYSTEM_NAME", "iOS");
@@ -63,7 +101,22 @@ fn main() {
             println!("cargo:rustc-link-lib=dwmapi");
             println!("cargo:rustc-link-lib=gdiplus");
             println!("cargo:rustc-link-lib=crypt32");
-            for library in ["comctl32", "advapi32", "version", "ole32", "uuid", "gdi32"] {
+            for library in [
+                "comctl32",
+                "advapi32",
+                "version",
+                "ole32",
+                "uuid",
+                "gdi32",
+                "d3d11",
+                "dxgi",
+                "windowsapp",
+                "runtimeobject",
+                "mfplat",
+                "mfreadwrite",
+                "mfuuid",
+                "windowscodecs",
+            ] {
                 println!("cargo:rustc-link-lib={library}");
             }
         }

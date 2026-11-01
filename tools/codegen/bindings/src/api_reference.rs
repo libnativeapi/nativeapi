@@ -215,7 +215,7 @@ fn module_items(
             members.push(member(symbols::listener(class), "listener", None, cpp));
         }
         for (key, method) in symbols::class_methods(class).into_iter().zip(&class.methods) {
-            let kind = if method.is_static && class.is_instance() {
+            let kind = if method.is_static && !class.is_singleton() {
                 "static"
             } else {
                 "method"

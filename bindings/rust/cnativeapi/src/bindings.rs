@@ -129,10 +129,26 @@ pub struct native_edge_insets_t {
     pub left: f64,
 }
 unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_point_free(value: *mut native_point_t);
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_size_free(value: *mut native_size_t);
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_rectangle_free(value: *mut native_rectangle_t);
+}
+unsafe extern "C" {
     pub fn native_edge_insets_all(value: f64) -> native_edge_insets_t;
 }
 unsafe extern "C" {
     pub fn native_edge_insets_symmetric(vertical: f64, horizontal: f64) -> native_edge_insets_t;
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_edge_insets_free(value: *mut native_edge_insets_t);
 }
 unsafe extern "C" {
     #[doc = " Caller owns the returned handle; release it with native_image_free()."]
@@ -331,6 +347,10 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_color_to_argb(color: native_color_t) -> ::std::os::raw::c_uint;
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_color_free(value: *mut native_color_t);
 }
 pub type native_view_id_t = ::std::os::raw::c_uint;
 pub const NATIVE_VIEW_LAYOUT_ABSOLUTE: native_view_layout_t = 0;
@@ -1986,6 +2006,150 @@ unsafe extern "C" {
     #[doc = " Unregisters a listener. Returns false if unknown."]
     pub fn native_application_remove_listener(listener_id: native_listener_id_t) -> bool;
 }
+#[doc = " Opaque Display handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_DISPLAY rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
+pub type native_display_t = u64;
+pub type native_display_id_t = ::std::os::raw::c_uint;
+pub const NATIVE_DISPLAY_ORIENTATION_PORTRAIT: native_display_orientation_t = 0;
+pub const NATIVE_DISPLAY_ORIENTATION_LANDSCAPE: native_display_orientation_t = 90;
+pub const NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED: native_display_orientation_t = 180;
+pub const NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED: native_display_orientation_t = 270;
+pub type native_display_orientation_t = ::std::os::raw::c_uint;
+#[doc = " Owning list of Display handles."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_display_list_t {
+    pub displays: *mut native_display_t,
+    pub count: ::std::os::raw::c_long,
+}
+impl Default for native_display_list_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub const NATIVE_DISPLAY_EVENT_TYPE_ADDED: native_display_event_type_t = 0;
+pub const NATIVE_DISPLAY_EVENT_TYPE_REMOVED: native_display_event_type_t = 1;
+pub const NATIVE_DISPLAY_EVENT_TYPE_CHANGED: native_display_event_type_t = 2;
+#[doc = " Which concrete DisplayEvent arrived."]
+pub type native_display_event_type_t = ::std::os::raw::c_uint;
+#[doc = " One DisplayEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_display_event_t {
+    pub type_: native_display_event_type_t,
+    pub display: native_display_t,
+}
+impl Default for native_display_event_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type native_display_event_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_display_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_display_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_display_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+unsafe extern "C" {
+    #[doc = " Creates a Display instance; release it with native_display_free()."]
+    pub fn native_display_create(display: *mut ::std::os::raw::c_void) -> native_display_t;
+}
+unsafe extern "C" {
+    pub fn native_display_get_id(display: native_display_t) -> native_display_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_display_get_name(display: native_display_t) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    pub fn native_display_get_position(display: native_display_t) -> native_point_t;
+}
+unsafe extern "C" {
+    pub fn native_display_get_size(display: native_display_t) -> native_size_t;
+}
+unsafe extern "C" {
+    pub fn native_display_get_work_area(display: native_display_t) -> native_rectangle_t;
+}
+unsafe extern "C" {
+    pub fn native_display_get_scale_factor(display: native_display_t) -> f64;
+}
+unsafe extern "C" {
+    pub fn native_display_is_primary(display: native_display_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_display_get_orientation(
+        display: native_display_t,
+    ) -> native_display_orientation_t;
+}
+unsafe extern "C" {
+    pub fn native_display_get_refresh_rate(display: native_display_t) -> ::std::os::raw::c_int;
+}
+unsafe extern "C" {
+    pub fn native_display_get_bit_depth(display: native_display_t) -> ::std::os::raw::c_int;
+}
+unsafe extern "C" {
+    #[doc = " Platform-specific native object (NSScreen*, HMONITOR, ...)."]
+    pub fn native_display_get_native_object(
+        display: native_display_t,
+    ) -> *mut ::std::os::raw::c_void;
+}
+unsafe extern "C" {
+    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
+    pub fn native_display_free(display: native_display_t);
+}
+unsafe extern "C" {
+    #[doc = " Frees the array and releases every handle it contains."]
+    pub fn native_display_list_free(list: *mut native_display_list_t);
+}
+unsafe extern "C" {
+    #[doc = " Frees only the array; the caller takes over the handles."]
+    pub fn native_display_list_release(list: *mut native_display_list_t);
+}
+pub const NATIVE_CAPTURE_SOURCE_TYPE_NONE: native_capture_source_type_t = 0;
+pub const NATIVE_CAPTURE_SOURCE_TYPE_DISPLAY: native_capture_source_type_t = 1;
+pub const NATIVE_CAPTURE_SOURCE_TYPE_WINDOW: native_capture_source_type_t = 2;
+pub const NATIVE_CAPTURE_SOURCE_TYPE_UNKNOWN: native_capture_source_type_t = 3;
+pub type native_capture_source_type_t = ::std::os::raw::c_uint;
+#[doc = " Opaque CaptureSource handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_CAPTURE_SOURCE rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
+pub type native_capture_source_t = u64;
+unsafe extern "C" {
+    #[doc = " Caller owns the returned handle; release it with native_capture_source_free()."]
+    pub fn native_capture_source_from_display(display: native_display_t)
+        -> native_capture_source_t;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned handle; release it with native_capture_source_free()."]
+    pub fn native_capture_source_from_window(window: native_window_t) -> native_capture_source_t;
+}
+unsafe extern "C" {
+    pub fn native_capture_source_get_type(
+        capture_source: native_capture_source_t,
+    ) -> native_capture_source_type_t;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_capture_source_get_name(
+        capture_source: native_capture_source_t,
+    ) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
+    pub fn native_capture_source_free(capture_source: native_capture_source_t);
+}
 #[doc = " An owning list of strings.\n\n Free with native_string_list_free(); it releases every item and the array."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2242,119 +2406,6 @@ pub const NATIVE_DIALOG_MODALITY_NONE: native_dialog_modality_t = 0;
 pub const NATIVE_DIALOG_MODALITY_APPLICATION: native_dialog_modality_t = 1;
 pub const NATIVE_DIALOG_MODALITY_WINDOW: native_dialog_modality_t = 2;
 pub type native_dialog_modality_t = ::std::os::raw::c_uint;
-pub type native_display_id_t = ::std::os::raw::c_uint;
-pub const NATIVE_DISPLAY_ORIENTATION_PORTRAIT: native_display_orientation_t = 0;
-pub const NATIVE_DISPLAY_ORIENTATION_LANDSCAPE: native_display_orientation_t = 90;
-pub const NATIVE_DISPLAY_ORIENTATION_PORTRAIT_FLIPPED: native_display_orientation_t = 180;
-pub const NATIVE_DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED: native_display_orientation_t = 270;
-pub type native_display_orientation_t = ::std::os::raw::c_uint;
-#[doc = " Opaque Display handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_DISPLAY rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
-pub type native_display_t = u64;
-#[doc = " Owning list of Display handles."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct native_display_list_t {
-    pub displays: *mut native_display_t,
-    pub count: ::std::os::raw::c_long,
-}
-impl Default for native_display_list_t {
-    fn default() -> Self {
-        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
-        unsafe {
-            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
-            s.assume_init()
-        }
-    }
-}
-pub const NATIVE_DISPLAY_EVENT_TYPE_ADDED: native_display_event_type_t = 0;
-pub const NATIVE_DISPLAY_EVENT_TYPE_REMOVED: native_display_event_type_t = 1;
-pub const NATIVE_DISPLAY_EVENT_TYPE_CHANGED: native_display_event_type_t = 2;
-#[doc = " Which concrete DisplayEvent arrived."]
-pub type native_display_event_type_t = ::std::os::raw::c_uint;
-#[doc = " One DisplayEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct native_display_event_t {
-    pub type_: native_display_event_type_t,
-    pub display: native_display_t,
-}
-impl Default for native_display_event_t {
-    fn default() -> Self {
-        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
-        unsafe {
-            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
-            s.assume_init()
-        }
-    }
-}
-pub type native_display_event_callback_t = ::std::option::Option<
-    unsafe extern "C" fn(
-        event: *const native_display_event_t,
-        user_data: *mut ::std::os::raw::c_void,
-    ),
->;
-pub type native_display_event_callback_t_async = ::std::option::Option<
-    unsafe extern "C" fn(
-        event: *const native_display_event_t,
-        delivery: native_event_delivery_t,
-        user_data: *mut ::std::os::raw::c_void,
-    ),
->;
-unsafe extern "C" {
-    #[doc = " Creates a Display instance; release it with native_display_free()."]
-    pub fn native_display_create(display: *mut ::std::os::raw::c_void) -> native_display_t;
-}
-unsafe extern "C" {
-    pub fn native_display_get_id(display: native_display_t) -> native_display_id_t;
-}
-unsafe extern "C" {
-    #[doc = " Caller owns the returned string; free it with free_c_str()."]
-    pub fn native_display_get_name(display: native_display_t) -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn native_display_get_position(display: native_display_t) -> native_point_t;
-}
-unsafe extern "C" {
-    pub fn native_display_get_size(display: native_display_t) -> native_size_t;
-}
-unsafe extern "C" {
-    pub fn native_display_get_work_area(display: native_display_t) -> native_rectangle_t;
-}
-unsafe extern "C" {
-    pub fn native_display_get_scale_factor(display: native_display_t) -> f64;
-}
-unsafe extern "C" {
-    pub fn native_display_is_primary(display: native_display_t) -> bool;
-}
-unsafe extern "C" {
-    pub fn native_display_get_orientation(
-        display: native_display_t,
-    ) -> native_display_orientation_t;
-}
-unsafe extern "C" {
-    pub fn native_display_get_refresh_rate(display: native_display_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn native_display_get_bit_depth(display: native_display_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    #[doc = " Platform-specific native object (NSScreen*, HMONITOR, ...)."]
-    pub fn native_display_get_native_object(
-        display: native_display_t,
-    ) -> *mut ::std::os::raw::c_void;
-}
-unsafe extern "C" {
-    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
-    pub fn native_display_free(display: native_display_t);
-}
-unsafe extern "C" {
-    #[doc = " Frees the array and releases every handle it contains."]
-    pub fn native_display_list_free(list: *mut native_display_list_t);
-}
-unsafe extern "C" {
-    #[doc = " Frees only the array; the caller takes over the handles."]
-    pub fn native_display_list_release(list: *mut native_display_list_t);
-}
 unsafe extern "C" {
     pub fn native_display_manager_get_all() -> native_display_list_t;
 }
@@ -3150,6 +3201,243 @@ unsafe extern "C" {
 unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
     pub fn native_preferences_free(preferences: native_preferences_t);
+}
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_screen_capturer_select_source_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: native_capture_source_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_screen_capturer_capture_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: native_image_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_capture_source_selection_options_t {
+    pub allow_displays: bool,
+    pub allow_windows: bool,
+    pub parent_window: native_window_t,
+}
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_screen_capture_options_t {
+    pub include_cursor: bool,
+    pub crop_enabled: bool,
+    pub crop: native_rectangle_t,
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_capture_source_selection_options_free(
+        value: *mut native_capture_source_selection_options_t,
+    );
+}
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_screen_capture_options_free(value: *mut native_screen_capture_options_t);
+}
+unsafe extern "C" {
+    pub fn native_screen_capturer_is_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_capturer_is_source_selection_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_capturer_is_direct_capture_supported(
+        type_: native_capture_source_type_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_capturer_select_source(
+        options: native_capture_source_selection_options_t,
+        callback: native_screen_capturer_select_source_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_screen_capturer_capture(
+        source: native_capture_source_t,
+        options: native_screen_capture_options_t,
+        callback: native_screen_capturer_capture_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+pub const NATIVE_SCREEN_RECORDING_STATE_IDLE: native_screen_recording_state_t = 0;
+pub const NATIVE_SCREEN_RECORDING_STATE_STARTING: native_screen_recording_state_t = 1;
+pub const NATIVE_SCREEN_RECORDING_STATE_RECORDING: native_screen_recording_state_t = 2;
+pub const NATIVE_SCREEN_RECORDING_STATE_STOPPING: native_screen_recording_state_t = 3;
+pub const NATIVE_SCREEN_RECORDING_STATE_COMPLETED: native_screen_recording_state_t = 4;
+pub const NATIVE_SCREEN_RECORDING_STATE_CANCELLED: native_screen_recording_state_t = 5;
+pub const NATIVE_SCREEN_RECORDING_STATE_FAILED: native_screen_recording_state_t = 6;
+pub type native_screen_recording_state_t = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_screen_recording_options_t {
+    pub capture: native_screen_capture_options_t,
+    pub frame_rate: f64,
+    pub video_bitrate: ::std::os::raw::c_ulong,
+}
+#[doc = " Opaque ScreenRecorder handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_SCREEN_RECORDER rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
+pub type native_screen_recorder_t = u64;
+pub const NATIVE_SCREEN_RECORDING_EVENT_TYPE_STARTED: native_screen_recording_event_type_t = 0;
+pub const NATIVE_SCREEN_RECORDING_EVENT_TYPE_COMPLETED: native_screen_recording_event_type_t = 1;
+pub const NATIVE_SCREEN_RECORDING_EVENT_TYPE_CANCELLED: native_screen_recording_event_type_t = 2;
+pub const NATIVE_SCREEN_RECORDING_EVENT_TYPE_FAILED: native_screen_recording_event_type_t = 3;
+#[doc = " Which concrete ScreenRecordingEvent arrived."]
+pub type native_screen_recording_event_type_t = ::std::os::raw::c_uint;
+#[doc = " One ScreenRecordingEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct native_screen_recording_event_t {
+    pub type_: native_screen_recording_event_type_t,
+    pub data: native_screen_recording_event_t__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union native_screen_recording_event_t__bindgen_ty_1 {
+    pub completed: native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_1,
+    pub failed: native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_2,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_1 {
+    pub file_path: *mut ::std::os::raw::c_char,
+    pub duration: f64,
+}
+impl Default for native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_2 {
+    pub message: *mut ::std::os::raw::c_char,
+}
+impl Default for native_screen_recording_event_t__bindgen_ty_1__bindgen_ty_2 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for native_screen_recording_event_t__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for native_screen_recording_event_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type native_screen_recording_event_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_screen_recording_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_screen_recording_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_screen_recording_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+unsafe extern "C" {
+    #[doc = " Frees everything the struct owns."]
+    pub fn native_screen_recording_options_free(value: *mut native_screen_recording_options_t);
+}
+unsafe extern "C" {
+    #[doc = " Creates a ScreenRecorder instance; release it with native_screen_recorder_free()."]
+    pub fn native_screen_recorder_create() -> native_screen_recorder_t;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_is_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_start(
+        screen_recorder: native_screen_recorder_t,
+        source: native_capture_source_t,
+        file_path: *const ::std::os::raw::c_char,
+        options: native_screen_recording_options_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_stop(screen_recorder: native_screen_recorder_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_cancel(screen_recorder: native_screen_recorder_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_get_state(
+        screen_recorder: native_screen_recorder_t,
+    ) -> native_screen_recording_state_t;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_is_active(screen_recorder: native_screen_recorder_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_screen_recorder_get_duration(screen_recorder: native_screen_recorder_t) -> f64;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_screen_recorder_get_file_path(
+        screen_recorder: native_screen_recorder_t,
+    ) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
+    pub fn native_screen_recorder_free(screen_recorder: native_screen_recorder_t);
+}
+unsafe extern "C" {
+    #[doc = " Registers @p callback for every ScreenRecordingEvent this ScreenRecorder emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
+    pub fn native_screen_recorder_add_listener(
+        screen_recorder: native_screen_recorder_t,
+        callback: native_screen_recording_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_screen_recorder_add_listener_async(
+        screen_recorder: native_screen_recorder_t,
+        callback: native_screen_recording_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Unregisters a listener. Returns false if unknown."]
+    pub fn native_screen_recorder_remove_listener(
+        screen_recorder: native_screen_recorder_t,
+        listener_id: native_listener_id_t,
+    ) -> bool;
 }
 #[doc = " Opaque SecureStorage handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_SECURE_STORAGE rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
 pub type native_secure_storage_t = u64;

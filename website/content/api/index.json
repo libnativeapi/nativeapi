@@ -664,6 +664,150 @@
       ]
     },
     {
+      "id": "capture_source",
+      "header": "capture_source.h",
+      "items": [
+        {
+          "key": "CaptureSource",
+          "kind": "class",
+          "summary": "A capture target and its optional system authorization session.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "CaptureSourceType",
+          "kind": "enum",
+          "summary": "The kind of content bound to a capture source.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "screen_capturer",
+      "header": "screen_capturer.h",
+      "items": [
+        {
+          "key": "ScreenCapturer",
+          "kind": "class",
+          "summary": "Asynchronously selects capture targets and obtains independent SDR images.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "CaptureSourceSelectionOptions",
+          "kind": "struct",
+          "summary": "Allowed source types and the owner of the system selection UI.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "ScreenCaptureOptions",
+          "kind": "struct",
+          "summary": "Shared screenshot and recording configuration, copied when submitted.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "screen_recorder",
+      "header": "screen_recorder.h",
+      "items": [
+        {
+          "key": "ScreenRecorder",
+          "kind": "class",
+          "summary": "Records one source as silent SDR H.264/MP4 using a native capture backend.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "ScreenRecordingOptions",
+          "kind": "struct",
+          "summary": "Configuration for silent SDR H.264 video in an MP4 file.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "ScreenRecordingState",
+          "kind": "enum",
+          "summary": "State of one recording attempt; terminal recorders cannot restart.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "ScreenRecordingEvent",
+          "kind": "event",
+          "summary": "Base of recording notifications, emitted by the individual recorder.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        }
+      ]
+    },
+    {
       "id": "window_shape",
       "header": "window_shape.h",
       "items": [

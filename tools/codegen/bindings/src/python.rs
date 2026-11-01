@@ -947,7 +947,7 @@ fn render_struct(out: &mut String, module: &mut Module, item: &Struct) {
 
     // _from_c: copies a C value out; the caller frees it if it owns it.
     writeln!(out, "    @classmethod").unwrap();
-    writeln!(out, "    def _from_c(cls, raw: {c_ty}) -> {}:", item.name).unwrap();
+    write_indented(out, &def_decl_raw("_from_c", &["cls".into(), format!("raw: {c_ty}")], &item.name));
     let values: Vec<String> = item
         .fields
         .iter()
@@ -1046,7 +1046,12 @@ fn struct_field_decl(module: &mut Module, field: &Field) -> String {
         other => annotation(module, other, Position::Field),
     };
     let default = field_default(module, &field.ty);
-    format!("{}: {ty} = {default}", py_field_name(field))
+    let line = format!("{}: {ty} = {default}", py_field_name(field));
+    if line.len() + MEMBER_INDENT.len() <= 88 {
+        line
+    } else {
+        format!("{}: {ty} = (\n    {default}\n)", py_field_name(field))
+    }
 }
 
 fn struct_constant_name(constant: &str) -> String {
@@ -1199,6 +1204,14 @@ fn event_value(module: &mut Module, field: &Field, base: &str) -> String {
 // --- classes ---
 
 fn render_class(out: &mut String, module: &mut Module, class: &Class) {
+    if class.is_static() {
+        writeln!(out, "{}", class_decl(class)).unwrap();
+        writeln!(out, "    def __init__(self) -> None:").unwrap();
+        writeln!(out, "        raise TypeError(\"{} contains only static methods\")", class.name).unwrap();
+        render_methods(out, module, class);
+        writeln!(out, "\n").unwrap();
+        return;
+    }
     match class.kind {
         ClassKind::Instance => render_instance_class(out, module, class),
         ClassKind::Singleton => render_singleton_class(out, module, class),
@@ -1310,6 +1323,9 @@ fn property_setters<'a>(module: &mut Module, class: &'a Class) -> Vec<(&'a Metho
 
 /// `class Window(_rt.NativeObject):`, `class Application:`.
 fn class_decl(class: &Class) -> String {
+    if class.is_static() {
+        return format!("class {}:", class.name);
+    }
     match class.kind {
         ClassKind::Instance => {
             // A derived class inherits the base's handle plumbing (and

@@ -193,7 +193,18 @@ impl Class {
     }
 
     pub fn is_instance(&self) -> bool {
+        matches!(self.kind, ClassKind::Instance) && !self.is_static()
+    }
+
+    /// A non-constructible namespace of static operations has no native identity.
+    pub fn is_static(&self) -> bool {
         matches!(self.kind, ClassKind::Instance)
+            && self.constructors.is_empty()
+            && !self.methods.is_empty()
+            && self.methods.iter().all(|method| method.is_static)
+            && self.event.is_none()
+            && self.base.is_none()
+            && !self.native_object
     }
 }
 

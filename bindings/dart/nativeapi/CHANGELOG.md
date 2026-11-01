@@ -1,5 +1,7 @@
 ## 0.5.3
 
+- Add `ScreenCapturer`, `CaptureSource` and `ScreenRecorder` for screenshots and silent H.264 MP4 recordings on macOS 14+ and Windows 10 version 2004+. Include system source selection, physical-pixel crops, cursor options and recording lifecycle events, plus a Flutter desktop example. Other platforms report unsupported.
+
 - Windows: window observation now runs on the thread that owns the windows, not the thread that first called the API (#18). `WindowManager` installs its WinEvent hooks and window subclassing there, and deferred main-thread work is delivered there, so a Flutter app keeping the default thread policy (UI isolate on its own thread) still gets focus, lifetime, occlusion and geometry events. Out-of-context WinEvents and window subclassing only work on the window-owning thread.
 
 - Windows: an elevated application's tray icon now receives clicks (#110). The shell posts the icon's callback message from a lower integrity level, so User Interface Privilege Isolation dropped it at an elevated window; the icon's host window now allows that message. An elevated application also lets the theme-change broadcasts through now, so template icons follow a theme change.

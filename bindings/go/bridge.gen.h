@@ -25,6 +25,12 @@ static inline char* go_native_notification_event_t_activated_Argument(const nati
 extern void goEvent_native_notification_event_t(uintptr_t handle, native_notification_event_t* event);
 static inline void go_native_notification_event_callback_t(const native_notification_event_t* event, void* data) { goEvent_native_notification_event_t(*(uintptr_t*)data, (native_notification_event_t*)event); }
 static inline native_notification_event_callback_t go_get_native_notification_event_callback_t(void) { return go_native_notification_event_callback_t; }
+static inline char* go_native_screen_recording_event_t_completed_FilePath(const native_screen_recording_event_t* event) { return event->data.completed.file_path; }
+static inline double go_native_screen_recording_event_t_completed_Duration(const native_screen_recording_event_t* event) { return event->data.completed.duration; }
+static inline char* go_native_screen_recording_event_t_failed_Message(const native_screen_recording_event_t* event) { return event->data.failed.message; }
+extern void goEvent_native_screen_recording_event_t(uintptr_t handle, native_screen_recording_event_t* event);
+static inline void go_native_screen_recording_event_callback_t(const native_screen_recording_event_t* event, void* data) { goEvent_native_screen_recording_event_t(*(uintptr_t*)data, (native_screen_recording_event_t*)event); }
+static inline native_screen_recording_event_callback_t go_get_native_screen_recording_event_callback_t(void) { return go_native_screen_recording_event_callback_t; }
 static inline char* go_native_view_event_t_text_field_changed_Text(const native_view_event_t* event) { return event->data.text_field_changed.text; }
 extern void goEvent_native_view_event_t(uintptr_t handle, native_view_event_t* event);
 static inline void go_native_view_event_callback_t(const native_view_event_t* event, void* data) { goEvent_native_view_event_t(*(uintptr_t*)data, (native_view_event_t*)event); }
@@ -87,6 +93,12 @@ static inline native_clipboard_read_image_callback_t go_get_native_clipboard_rea
 extern void goCall_native_clipboard_read_text_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
 static inline void go_native_clipboard_read_text_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_text_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
 static inline native_clipboard_read_text_callback_t go_get_native_clipboard_read_text_callback_t(void) { return go_native_clipboard_read_text_callback_t; }
+extern void goCall_native_screen_capturer_capture_callback_t(uintptr_t handle, bool arg0, native_image_t arg1, native_event_delivery_t delivery);
+static inline void go_native_screen_capturer_capture_callback_t(bool arg0, native_image_t arg1, native_event_delivery_t delivery, void* data) { goCall_native_screen_capturer_capture_callback_t(*(uintptr_t*)data, arg0, arg1, delivery); }
+static inline native_screen_capturer_capture_callback_t go_get_native_screen_capturer_capture_callback_t(void) { return go_native_screen_capturer_capture_callback_t; }
+extern void goCall_native_screen_capturer_select_source_callback_t(uintptr_t handle, bool arg0, native_capture_source_t arg1, native_event_delivery_t delivery);
+static inline void go_native_screen_capturer_select_source_callback_t(bool arg0, native_capture_source_t arg1, native_event_delivery_t delivery, void* data) { goCall_native_screen_capturer_select_source_callback_t(*(uintptr_t*)data, arg0, arg1, delivery); }
+static inline native_screen_capturer_select_source_callback_t go_get_native_screen_capturer_select_source_callback_t(void) { return go_native_screen_capturer_select_source_callback_t; }
 extern void goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t(uintptr_t handle);
 static inline void go_native_shortcut_create_with_id_and_accelerator_and_callback_t(void* data) { goCall_native_shortcut_create_with_id_and_accelerator_and_callback_t(*(uintptr_t*)data); }
 static inline native_shortcut_create_with_id_and_accelerator_and_callback_t go_get_native_shortcut_create_with_id_and_accelerator_and_callback_t(void) { return go_native_shortcut_create_with_id_and_accelerator_and_callback_t; }
