@@ -1,5 +1,7 @@
 ## 0.5.4
 
+- Preserve desktop native shortcut keycodes, Windows native repeat behavior and Linux CapsLock modifiers. Reject conflicting X11 grabs safely and retain overlapping lock-state registrations.
+
 - Allow a new close request after a completed veto while its native rejection reply is queued, preserving `onWindowClose` callbacks that call `destroy()`.
 - Add native Windows desktop-toolbar docking with shared state, dock/undock events and automatic reservation cleanup, plus reversible vertical maximization.
 - Add Linux X11 exclusive keyboard grabs with ownership checks and release on hide or native destruction; Wayland reports the capability as unsupported.
