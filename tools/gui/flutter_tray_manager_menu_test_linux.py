@@ -60,6 +60,11 @@ def build(output, baseline):
 
 
 def desktop_environment():
+    # A virtual desktop supplies a complete private session; do not import the
+    # console's user-manager environment or try to activate systemd on its bus.
+    has_display = os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')
+    if has_display and os.environ.get('DBUS_SESSION_BUS_ADDRESS'):
+        return
     result = subprocess.run(['systemctl', '--user', 'show-environment'],
                             capture_output=True, text=True, check=True)
     keys = {'DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'XDG_RUNTIME_DIR',
@@ -119,6 +124,7 @@ def verify(output):
     app = App(output / 'app.log')
     passed = []
     report = {'host': socket.gethostname(), 'desktop': os.environ.get('XDG_CURRENT_DESKTOP'),
+              'virtual_display': os.environ.get('GUI_TEST_HEADLESS_GNOME') == '1',
               'mode': output.name,
               'readme_sha256': hashlib.sha256((PACKAGE / 'README.md').read_bytes()).hexdigest()}
     if output.name == 'fixed':

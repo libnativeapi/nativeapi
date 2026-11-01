@@ -1,6 +1,7 @@
 ---
 name: gui-test
-description: End-to-end test a desktop app (Flutter desktop apps and plain native executables such as C++ examples) by launching the real app, driving it with guarded synthetic mouse input — eased moves, clicks, multi-leg drags, wheel, on macOS (CGEvent), Windows (SendInput) and Linux/GNOME (Mutter RemoteDesktop) — and asserting on real window geometry and on-screen state, locally on macOS and remotely on Windows and Linux. Use this whenever a change touches window behaviour that unit/widget tests cannot see — dragging, tear-off and docking, title bars, hit testing, z-order, focus, multi-window, DPI — or when the user asks "does it actually work", "test it for real", "verify on Windows/macOS", or reports a bug that only shows with a real mouse. Also read it before posting ANY synthetic input or querying which app owns a screen point, even outside a test: it carries the safety rules that keep a script from clicking on the user's other apps. Prefer it over declaring a windowing change done after only compiling it.
+description: >-
+  End-to-end test a desktop app (Flutter desktop apps and plain native executables such as C++ examples) by launching the real app, driving it with guarded synthetic mouse input — eased moves, clicks, multi-leg drags, wheel, on macOS (CGEvent), Windows (SendInput) and Linux/GNOME (Mutter RemoteDesktop) — and asserting on real window geometry and on-screen state, locally on macOS and remotely on Windows and Linux. Use this whenever a change touches window behaviour that unit/widget tests cannot see — dragging, tear-off and docking, title bars, hit testing, z-order, focus, multi-window, DPI — or when the user asks "does it actually work", "test it for real", "verify on Windows/macOS", or reports a bug that only shows with a real mouse. Also read it before posting ANY synthetic input or querying which app owns a screen point, even outside a test: it carries the safety rules that keep a script from clicking on the user's other apps. Prefer it over declaring a windowing change done after only compiling it.
 ---
 
 # gui-test
@@ -174,6 +175,18 @@ geometry and writes physical pixels. The bar is a layer surface (`hyprctl -j lay
 a tray icon has no geometry anywhere, diff two `grim` captures of the bar before and
 after the app registers its item to find it. Example:
 `tools/gui/flutter_tray_popup_test_hyprland.py`.
+
+**Linux without a monitor or console login (GNOME)** —
+`scripts/linux/gnome_headless.py --size 1280x720 -- <command>` runs an installed
+GNOME Shell with a virtual monitor and software rendering in a private Wayland
+display, D-Bus session, runtime directory and settings profile. The desktop lasts
+for the command and is cleaned up afterwards; `--output-dir` retains logs and the
+actual monitor state. No sudo or changes to login configuration are needed.
+For tray tests on Ubuntu, add `--extension ubuntu-appindicators@ubuntu.com
+--wait-name org.kde.StatusNotifierWatcher`. Commands must support native Wayland:
+this session does not start Xwayland, whereas `GuiApp` normally defaults to X11.
+This verifies desktop behavior and protocols using software rendering; physical
+monitor topology and hardware GPU rendering require separate coverage.
 
 **All three**
 

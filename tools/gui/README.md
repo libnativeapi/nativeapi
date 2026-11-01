@@ -172,6 +172,25 @@ $R linux desktop tools/gui/flutter_window_shape_demo_linux.py 240   # dry run: n
     tools/gui/flutter_window_shape_demo_linux.py tools/gui/output   # the take
 ```
 
+Without a monitor or console login, the installed GNOME Shell can run on a private
+Wayland virtual display with software rendering. From the workspace on the Linux
+host (or through `fastforge host exec <host> -- '<command>'`), reuse a built tray
+regression bundle with:
+
+```bash
+python3 .agents/skills/gui-test/scripts/linux/gnome_headless.py \
+  --size 1280x720 \
+  --extension ubuntu-appindicators@ubuntu.com \
+  --wait-name org.kde.StatusNotifierWatcher \
+  --output-dir tools/gui/output/headless-gnome \
+  -- python3 tools/gui/flutter_tray_manager_menu_test_linux.py --run-only
+```
+
+The runner keeps monitor metadata and logs, and removes its private display,
+session bus, settings and runtime files when the command exits. It requires no
+sudo. This path passed all 14 tray menu checks on Ubuntu NUC with GNOME 46;
+published tray_manager 0.8.1 still reproduces the missing legacy menu.
+
 Run the Linux Flutter exit regression on a Linux host with
 `python3 tools/gui/core_application_exit_flutter_linux.py --flutter /path/to/flutter/bin/flutter`.
 It saves both apps, native assets and logs in an isolated work directory. Flutter 3.47.6
