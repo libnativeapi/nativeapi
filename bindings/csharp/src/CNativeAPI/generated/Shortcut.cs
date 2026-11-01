@@ -73,6 +73,12 @@ public static partial class Interop
     public static extern IntPtr native_shortcut_get_description(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_shortcut_get_registration_key(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_shortcut_get_trigger_description(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_shortcut_get_scope(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]

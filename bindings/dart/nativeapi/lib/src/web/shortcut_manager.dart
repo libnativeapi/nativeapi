@@ -23,6 +23,17 @@ class ShortcutManager {
 
   Shortcut? registerWithOptions(ShortcutOptions options) => unsupported();
 
+  ShortcutId requestRegistration(
+    ShortcutOptions options,
+    String registrationKey,
+  ) => unsupported();
+
+  bool cancelRegistration(ShortcutId requestId) => unsupported();
+
+  int cancelPendingRegistrations(String registrationKeyPrefix) => unsupported();
+
+  bool isRegistrationPending(ShortcutId requestId) => unsupported();
+
   bool unregisterWithId(ShortcutId id) => unsupported();
 
   bool unregisterWithAccelerator(String accelerator) => unsupported();

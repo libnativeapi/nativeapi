@@ -3460,6 +3460,18 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_shortcut_get_registration_key(
+        shortcut: native_shortcut_t,
+    ) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_shortcut_get_trigger_description(
+        shortcut: native_shortcut_t,
+    ) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
     pub fn native_shortcut_get_description(
         shortcut: native_shortcut_t,
     ) -> *mut ::std::os::raw::c_char;
@@ -3521,6 +3533,25 @@ unsafe extern "C" {
     pub fn native_shortcut_manager_register_with_options(
         options: native_shortcut_options_t,
     ) -> native_shortcut_t;
+}
+unsafe extern "C" {
+    pub fn native_shortcut_manager_request_registration(
+        options: native_shortcut_options_t,
+        registration_key: *const ::std::os::raw::c_char,
+    ) -> native_shortcut_id_t;
+}
+unsafe extern "C" {
+    pub fn native_shortcut_manager_cancel_registration(request_id: native_shortcut_id_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_shortcut_manager_cancel_pending_registrations(
+        registration_key_prefix: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_ulong;
+}
+unsafe extern "C" {
+    pub fn native_shortcut_manager_is_registration_pending(
+        request_id: native_shortcut_id_t,
+    ) -> bool;
 }
 unsafe extern "C" {
     pub fn native_shortcut_manager_unregister_with_id(id: native_shortcut_id_t) -> bool;

@@ -146,6 +146,10 @@ class Shortcut {
 
   String? get accelerator => unsupported();
 
+  String? get registrationKey => unsupported();
+
+  String? get triggerDescription => unsupported();
+
   String? get description => unsupported();
 
   set description(String value) => unsupported();

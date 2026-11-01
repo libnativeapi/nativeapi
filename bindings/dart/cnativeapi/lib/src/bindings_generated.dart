@@ -1919,6 +1919,12 @@ external ffi.Pointer<ffi.Char> native_shortcut_get_description(int shortcut);
 @ffi.Native<native_shortcut_id_t Function(native_shortcut_t)>()
 external int native_shortcut_get_id(int shortcut);
 
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_shortcut_t)>()
+external ffi.Pointer<ffi.Char> native_shortcut_get_registration_key(
+  int shortcut,
+);
+
 @ffi.Native<ffi.UnsignedInt Function(native_shortcut_t)>(
   symbol: 'native_shortcut_get_scope',
 )
@@ -1931,6 +1937,12 @@ native_shortcut_scope_t native_shortcut_get_scope(
     _native_shortcut_get_scope(shortcut),
   );
 }
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_shortcut_t)>()
+external ffi.Pointer<ffi.Char> native_shortcut_get_trigger_description(
+  int shortcut,
+);
 
 @ffi.Native<ffi.Void Function(native_shortcut_t)>()
 external void native_shortcut_invoke(int shortcut);
@@ -1981,6 +1993,14 @@ external int native_shortcut_manager_add_listener_async(
   native_release_user_data_t release_user_data,
 );
 
+@ffi.Native<ffi.UnsignedLong Function(ffi.Pointer<ffi.Char>)>()
+external int native_shortcut_manager_cancel_pending_registrations(
+  ffi.Pointer<ffi.Char> registration_key_prefix,
+);
+
+@ffi.Native<ffi.Bool Function(native_shortcut_id_t)>()
+external bool native_shortcut_manager_cancel_registration(int request_id);
+
 @ffi.Native<ffi.Void Function(native_shortcut_id_t, ffi.Pointer<ffi.Char>)>()
 external void native_shortcut_manager_emit_shortcut_activated(
   int id,
@@ -2021,6 +2041,9 @@ external bool native_shortcut_manager_is_available(
 @ffi.Native<ffi.Bool Function()>()
 external bool native_shortcut_manager_is_enabled();
 
+@ffi.Native<ffi.Bool Function(native_shortcut_id_t)>()
+external bool native_shortcut_manager_is_registration_pending(int request_id);
+
 @ffi.Native<ffi.Bool Function()>()
 external bool native_shortcut_manager_is_supported();
 
@@ -2054,6 +2077,17 @@ external int native_shortcut_manager_register_with_options(
 /// Unregisters a listener. Returns false if unknown.
 @ffi.Native<ffi.Bool Function(native_listener_id_t)>()
 external bool native_shortcut_manager_remove_listener(int listener_id);
+
+@ffi.Native<
+  native_shortcut_id_t Function(
+    native_shortcut_options_t,
+    ffi.Pointer<ffi.Char>,
+  )
+>()
+external int native_shortcut_manager_request_registration(
+  native_shortcut_options_t options,
+  ffi.Pointer<ffi.Char> registration_key,
+);
 
 @ffi.Native<ffi.Void Function(ffi.Bool)>()
 external void native_shortcut_manager_set_enabled(bool enabled);

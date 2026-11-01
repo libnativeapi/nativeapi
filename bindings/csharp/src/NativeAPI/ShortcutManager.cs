@@ -37,6 +37,32 @@ public sealed partial class ShortcutManager
         return rawResult == 0 ? null : new Shortcut(rawResult);
     }
 
+    public uint RequestRegistration(ShortcutOptions options, string registrationKey)
+    {
+        var rawOptions = options.ToRaw();
+        var rawResult = Interop.native_shortcut_manager_request_registration(rawOptions, registrationKey);
+        ShortcutOptions.ReleaseRaw(ref rawOptions);
+        return rawResult;
+    }
+
+    public bool CancelRegistration(uint requestId)
+    {
+        var rawResult = Interop.native_shortcut_manager_cancel_registration(requestId);
+        return rawResult;
+    }
+
+    public ulong CancelPendingRegistrations(string registrationKeyPrefix)
+    {
+        var rawResult = Interop.native_shortcut_manager_cancel_pending_registrations(registrationKeyPrefix);
+        return (ulong)rawResult.Value;
+    }
+
+    public bool IsRegistrationPending(uint requestId)
+    {
+        var rawResult = Interop.native_shortcut_manager_is_registration_pending(requestId);
+        return rawResult;
+    }
+
     public bool UnregisterWithId(uint id)
     {
         var rawResult = Interop.native_shortcut_manager_unregister_with_id(id);

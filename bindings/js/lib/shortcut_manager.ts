@@ -19,6 +19,22 @@ export class ShortcutManager {
     return wrapHandle(Shortcut, native.native_shortcut_manager_register_with_options(options));
   }
 
+  static requestRegistration(options: ShortcutOptions, registrationKey: string): ShortcutId {
+    return native.native_shortcut_manager_request_registration(options, registrationKey);
+  }
+
+  static cancelRegistration(requestId: ShortcutId): boolean {
+    return native.native_shortcut_manager_cancel_registration(requestId);
+  }
+
+  static cancelPendingRegistrations(registrationKeyPrefix: string): number {
+    return native.native_shortcut_manager_cancel_pending_registrations(registrationKeyPrefix);
+  }
+
+  static isRegistrationPending(requestId: ShortcutId): boolean {
+    return native.native_shortcut_manager_is_registration_pending(requestId);
+  }
+
   static unregisterWithId(id: ShortcutId): boolean {
     return native.native_shortcut_manager_unregister_with_id(id);
   }

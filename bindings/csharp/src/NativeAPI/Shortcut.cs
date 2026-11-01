@@ -152,6 +152,24 @@ public sealed partial class Shortcut : IDisposable
         }
     }
 
+    public string? RegistrationKey
+    {
+        get
+        {
+            var rawResult = Interop.native_shortcut_get_registration_key(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
+    public string? TriggerDescription
+    {
+        get
+        {
+            var rawResult = Interop.native_shortcut_get_trigger_description(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
     public string? Description
     {
         get

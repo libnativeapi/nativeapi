@@ -185,6 +185,30 @@ impl Shortcut {
         }
     }
 
+    pub fn registration_key(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_shortcut_get_registration_key(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
+    pub fn trigger_description(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_shortcut_get_trigger_description(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
     pub fn description(&self) -> Option<String> {
         unsafe {
             let ptr = cnativeapi::native_shortcut_get_description(self.handle);

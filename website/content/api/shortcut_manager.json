@@ -12,7 +12,7 @@
         "notes": [
           {
             "kind": "note",
-            "text": "Platform availability:\n- macOS: ✅ Carbon global hotkeys, including activation/release events.\n- Windows: ✅ Win32 global hotkeys; activation events only.\n- Linux: ⚠️ X11 hotkeys when an X display is available.\n- Android: ❌ Native shortcut registration is not implemented.\n- iOS: ❌ Native shortcut registration is not implemented.\n- OpenHarmony: ⚠️ API 14+ public NDK global hotkeys, with Ctrl/Alt/Shift modifiers and an active main dispatcher. Meta/Fn/lock modifiers, release events are not implemented. Application scope uses a mounted companion NativeShortcutHost forwarding normal component key events, without reserving global hotkeys. It requires an initialized UI host and at least one attached key host; only the focused host receives unconsumed input. Global SDK conflicts fail registration. IsAvailable checks global availability by briefly probing native reservations; a competing application may still race a later Register call."
+            "text": "Platform availability:\n- macOS: ✅ Carbon global hotkeys, including activation/release events.\n- Windows: ✅ Win32 global hotkeys; activation events only.\n- Linux: ⚠️ X11 registration, or asynchronous Wayland GlobalShortcuts Portal registration through RequestRegistration. Portal support requires a desktop provider and valid application identity; the user controls the final binding.\n- Android: ❌ Native shortcut registration is not implemented.\n- iOS: ❌ Native shortcut registration is not implemented.\n- OpenHarmony: ⚠️ API 14+ public NDK global hotkeys, with Ctrl/Alt/Shift modifiers and an active main dispatcher. Meta/Fn/lock modifiers, release events are not implemented. Application scope uses a mounted companion NativeShortcutHost forwarding normal component key events, without reserving global hotkeys. It requires an initialized UI host and at least one attached key host; only the focused host receives unconsumed input. Global SDK conflicts fail registration. IsAvailable checks global availability by briefly probing native reservations; a competing application may still race a later Register call."
           },
           {
             "kind": "note",
@@ -239,6 +239,200 @@
           }
         },
         {
+          "key": "ShortcutManager::RequestRegistration",
+          "kind": "method",
+          "doc": {
+            "summary": "Requests registration without waiting for interactive approval.",
+            "details": "Subscribe before requesting. A nonzero return value identifies this request and its eventual ShortcutRegisteredEvent or ShortcutRegistrationFailedEvent. The shortcut is available through Get only after successful registration. Completion may occur before this method returns; listeners must retain the event's ID rather than assume the caller has already stored the return value.",
+            "params": [
+              {
+                "name": "options",
+                "text": "The requested shortcut configuration."
+              },
+              {
+                "name": "registration_key",
+                "text": "Stable, nonempty application-defined action key. Reuse it across launches; description remains human-readable display text."
+              }
+            ],
+            "returns": "A nonzero request/shortcut ID if accepted, or 0 for invalid options, an unsupported immediate global backend, or an accelerator/key already pending or active. Deferred providers report unavailable services through the failure event, without synchronously contacting the desktop in this call. Rejected requests emit no completion event. Accepted requests complete once, including cancellation, and failure events always carry this request's ID.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Carbon registration; completion uses shortcut events.\n- Windows: ✅ Win32 registration; completion uses shortcut events.\n- Linux: ⚠️ X11 registration or asynchronous Wayland Portal approval. Requires a GlobalShortcuts desktop provider. A portal accelerator is a preference; GetTriggerDescription reports the desktop's binding label. Unregister stops the session but does not erase the desktop's saved binding configuration.\n- Android: ❌ Global requests return 0; application registration is unsupported.\n- iOS: ❌ Global requests return 0; application registration is unsupported.\n- OpenHarmony: ⚠️ Same host and scope requirements as Register."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "RequestRegistration",
+              "signature": "ShortcutId RequestRegistration(ShortcutOptions options, std::string registration_key)"
+            },
+            "csharp": {
+              "name": "RequestRegistration",
+              "signature": "public uint RequestRegistration(ShortcutOptions options, string registrationKey)"
+            },
+            "dart": {
+              "name": "requestRegistration",
+              "signature": "ShortcutId requestRegistration(ShortcutOptions options, String registrationKey)"
+            },
+            "go": {
+              "name": "RequestRegistration",
+              "signature": "func (sm shortcutManager) RequestRegistration(options ShortcutOptions, registrationKey string) ShortcutID"
+            },
+            "js": {
+              "name": "requestRegistration",
+              "signature": "static requestRegistration(options: ShortcutOptions, registrationKey: string): ShortcutId"
+            },
+            "python": {
+              "name": "request_registration",
+              "signature": "@staticmethod\ndef request_registration(\n    options: _shortcut.ShortcutOptions,\n    registration_key: str,\n) -> _shortcut.ShortcutId:"
+            },
+            "rust": {
+              "name": "request_registration",
+              "signature": "pub fn request_registration(options: &ShortcutOptions, registration_key: &str) -> ShortcutId"
+            }
+          }
+        },
+        {
+          "key": "ShortcutManager::CancelRegistration",
+          "kind": "method",
+          "doc": {
+            "summary": "Cancels a pending registration request.",
+            "params": [
+              {
+                "name": "request_id",
+                "text": "The nonzero ID returned by RequestRegistration."
+              }
+            ],
+            "returns": "true if the request was pending and is now cancelled, false if it already completed or does not exist. Use Unregister for active shortcuts. Cancellation produces one ShortcutRegistrationFailedEvent with this ID."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "CancelRegistration",
+              "signature": "bool CancelRegistration(ShortcutId request_id)"
+            },
+            "csharp": {
+              "name": "CancelRegistration",
+              "signature": "public bool CancelRegistration(uint requestId)"
+            },
+            "dart": {
+              "name": "cancelRegistration",
+              "signature": "bool cancelRegistration(ShortcutId requestId)"
+            },
+            "go": {
+              "name": "CancelRegistration",
+              "signature": "func (sm shortcutManager) CancelRegistration(requestID ShortcutID) error"
+            },
+            "js": {
+              "name": "cancelRegistration",
+              "signature": "static cancelRegistration(requestId: ShortcutId): boolean"
+            },
+            "python": {
+              "name": "cancel_registration",
+              "signature": "@staticmethod\ndef cancel_registration(request_id: _shortcut.ShortcutId) -> bool:"
+            },
+            "rust": {
+              "name": "cancel_registration",
+              "signature": "pub fn cancel_registration(request_id: ShortcutId) -> bool"
+            }
+          }
+        },
+        {
+          "key": "ShortcutManager::CancelPendingRegistrations",
+          "kind": "method",
+          "doc": {
+            "summary": "Cancels pending requests belonging to an application-defined key namespace.",
+            "details": "Useful after an interpreter or Flutter isolate restarts while the native manager survives. Active shortcuts present before this call are unaffected. A matching pending request approved during cancellation is unregistered. Completion callbacks and resource cleanup run outside the registry lock.",
+            "params": [
+              {
+                "name": "registration_key_prefix",
+                "text": "Nonempty prefix of registration keys to reclaim. An empty prefix does nothing, protecting other modules in the same process."
+              }
+            ],
+            "returns": "Number of matching pending requests cancelled or concurrently approved shortcuts unregistered. Returns 0 if none match or the prefix is empty.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "RequestRegistration for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "CancelPendingRegistrations",
+              "signature": "unsigned long CancelPendingRegistrations(std::string registration_key_prefix)"
+            },
+            "csharp": {
+              "name": "CancelPendingRegistrations",
+              "signature": "public ulong CancelPendingRegistrations(string registrationKeyPrefix)"
+            },
+            "dart": {
+              "name": "cancelPendingRegistrations",
+              "signature": "int cancelPendingRegistrations(String registrationKeyPrefix)"
+            },
+            "go": {
+              "name": "CancelPendingRegistrations",
+              "signature": "func (sm shortcutManager) CancelPendingRegistrations(registrationKeyPrefix string) uint64"
+            },
+            "js": {
+              "name": "cancelPendingRegistrations",
+              "signature": "static cancelPendingRegistrations(registrationKeyPrefix: string): number"
+            },
+            "python": {
+              "name": "cancel_pending_registrations",
+              "signature": "@staticmethod\ndef cancel_pending_registrations(registration_key_prefix: str) -> int:"
+            },
+            "rust": {
+              "name": "cancel_pending_registrations",
+              "signature": "pub fn cancel_pending_registrations(registration_key_prefix: &str) -> std::os::raw::c_ulong"
+            }
+          }
+        },
+        {
+          "key": "ShortcutManager::IsRegistrationPending",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if a registration request is still pending.",
+            "params": [
+              {
+                "name": "request_id",
+                "text": "The ID returned by RequestRegistration."
+              }
+            ],
+            "returns": "true until completion or cancellation, false for unknown IDs."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsRegistrationPending",
+              "signature": "bool IsRegistrationPending(ShortcutId request_id) const"
+            },
+            "csharp": {
+              "name": "IsRegistrationPending",
+              "signature": "public bool IsRegistrationPending(uint requestId)"
+            },
+            "dart": {
+              "name": "isRegistrationPending",
+              "signature": "bool isRegistrationPending(ShortcutId requestId)"
+            },
+            "go": {
+              "name": "IsRegistrationPending",
+              "signature": "func (sm shortcutManager) IsRegistrationPending(requestID ShortcutID) bool"
+            },
+            "js": {
+              "name": "isRegistrationPending",
+              "signature": "static isRegistrationPending(requestId: ShortcutId): boolean"
+            },
+            "python": {
+              "name": "is_registration_pending",
+              "signature": "@staticmethod\ndef is_registration_pending(request_id: _shortcut.ShortcutId) -> bool:"
+            },
+            "rust": {
+              "name": "is_registration_pending",
+              "signature": "pub fn is_registration_pending(request_id: ShortcutId) -> bool"
+            }
+          }
+        },
+        {
           "key": "ShortcutManager::Unregister",
           "kind": "method",
           "doc": {
@@ -346,7 +540,7 @@
           "doc": {
             "summary": "Unregister all keyboard shortcuts.",
             "details": "Removes all currently registered shortcuts from the system. This is useful for cleanup or when switching shortcut profiles.\n\n**Example**\n\n```cpp\nint count = manager.UnregisterAll();\nstd::cout << \"Unregistered \" << count << \" shortcuts\" << std::endl;\n```",
-            "returns": "Number of shortcuts that were unregistered",
+            "returns": "Number of shortcuts unregistered and pending requests cancelled",
             "notes": [
               {
                 "kind": "thread_safety",

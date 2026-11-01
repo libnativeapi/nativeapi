@@ -5778,6 +5778,20 @@ func (s *Shortcut) Accelerator() string {
 	return C.GoString(result)
 }
 
+// RegistrationKey invokes the native GetRegistrationKey operation.
+func (s *Shortcut) RegistrationKey() string {
+	result := C.native_shortcut_get_registration_key(C.native_shortcut_t(s.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return C.GoString(result)
+}
+
+// TriggerDescription invokes the native GetTriggerDescription operation.
+func (s *Shortcut) TriggerDescription() string {
+	result := C.native_shortcut_get_trigger_description(C.native_shortcut_t(s.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return C.GoString(result)
+}
+
 // Description invokes the native GetDescription operation.
 func (s *Shortcut) Description() string {
 	result := C.native_shortcut_get_description(C.native_shortcut_t(s.nativeHandleValue()))
@@ -5869,6 +5883,40 @@ func (sm shortcutManager) Register(options ShortcutOptions) (*Shortcut, error) {
 		return nil, nativeError("ShortcutManager.Register")
 	}
 	return wrapShortcut(uint64(result), false), nil
+}
+
+// RequestRegistration invokes the native RequestRegistration operation.
+func (sm shortcutManager) RequestRegistration(options ShortcutOptions, registrationKey string) ShortcutID {
+	cArg0, cArg0Cleanup := toCShortcutOptions(options)
+	defer cArg0Cleanup()
+	cArg1 := C.CString(registrationKey)
+	defer C.free(unsafe.Pointer(cArg1))
+	result := C.native_shortcut_manager_request_registration(cArg0, cArg1)
+	return ShortcutID(result)
+}
+
+// CancelRegistration invokes the native CancelRegistration operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (sm shortcutManager) CancelRegistration(requestID ShortcutID) error {
+	result := C.native_shortcut_manager_cancel_registration(C.native_shortcut_id_t(requestID))
+	if !bool(result) {
+		return nativeError("ShortcutManager.CancelRegistration")
+	}
+	return nil
+}
+
+// CancelPendingRegistrations invokes the native CancelPendingRegistrations operation.
+func (sm shortcutManager) CancelPendingRegistrations(registrationKeyPrefix string) uint64 {
+	cArg0 := C.CString(registrationKeyPrefix)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_shortcut_manager_cancel_pending_registrations(cArg0)
+	return uint64(result)
+}
+
+// IsRegistrationPending invokes the native IsRegistrationPending operation.
+func (sm shortcutManager) IsRegistrationPending(requestID ShortcutID) bool {
+	result := C.native_shortcut_manager_is_registration_pending(C.native_shortcut_id_t(requestID))
+	return bool(result)
 }
 
 // UnregisterByID invokes the native Unregister operation.

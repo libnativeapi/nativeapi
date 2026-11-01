@@ -331,6 +331,24 @@ class Shortcut implements ffi.Finalizable {
     return result;
   }
 
+  String? get registrationKey {
+    final resultPointer = c.native_shortcut_get_registration_key(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
+  String? get triggerDescription {
+    final resultPointer = c.native_shortcut_get_trigger_description(
+      nativeHandle,
+    );
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
   String? get description {
     final resultPointer = c.native_shortcut_get_description(nativeHandle);
     if (resultPointer == ffi.nullptr) return null;

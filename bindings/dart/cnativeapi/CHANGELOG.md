@@ -1,3 +1,8 @@
+## Unreleased
+
+- Add asynchronous shortcut registration requests with request IDs, cancellation and scoped pending-request cleanup across interpreter restarts.
+- Support native Wayland GlobalShortcuts Portal sessions, desktop-selected binding descriptions, activation/release notifications and resource cleanup on denial, cancellation or service loss. Host application identity and a working desktop provider are required.
+
 ## 0.5.5
 
 - Add explicit frameless window mode with alias-shared state and property events; title-bar changes restore the frame while shadow preferences stay independent.

@@ -124,6 +124,33 @@ Manager 不该做的：
 
 ## 5. 未决
 
+- **异步快捷键注册（待发布依赖回归）**：`ShortcutManager::Register` 同步返回已注册对象，
+  不能表达 Wayland GlobalShortcuts Portal 等待用户授权的流程。不得通过阻塞 Flutter
+  UI isolate 或先返回一个实际未注册的 `Shortcut` 来伪装完成。
+  新增的 `RequestRegistration(options, registration_key) -> ShortcutId` 返回非零请求 ID，
+  最终结果复用 `ShortcutRegisteredEvent` / `ShortcutRegistrationFailedEvent` 并携带同一 ID；
+  重复或无效请求同步返回 0，不冒充另一个同组合请求的完成事件。请求 ID 同时是注册
+  成功后的 ShortcutId，调用方必须按 ID 关联结果，不按 accelerator 字符串猜测。
+  `registration_key` 是调用方提供、应用内稳定的语义键；`Shortcut` 提供只读
+  `GetRegistrationKey()`，与运行期 `ShortcutId` 分开。人类可读的 `description`
+  保留为授权界面的动作说明，不承载内部所有权前缀。
+  `CancelRegistration(request_id) -> bool` 取消该次请求；
+  `IsRegistrationPending(request_id) const` 查询待决状态。Portal 后端应关闭尚未完成的请求，
+  `UnregisterAll` 和析构必须回收待决请求及已生效会话。延后完成回调使用
+  `CreateGuardedCallback`，管理器析构先执行 `ShutdownEmitter()`；平台完成回调和
+  资源释放均不得在 manager 锁内重入用户代码。Portal 的绑定由桌面确认和保存，
+  accelerator 只是偏好值，不能承诺绕过权限或覆盖桌面保存的选择。
+  协议依据：[GlobalShortcuts](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html)。
+  通用生命周期、Portal 传输及六种绑定现已实现；隔离 D-Bus 服务覆盖了提前响应、
+  取消、拒绝、桌面修改绑定、服务断开和真实 manager 的激活/抬键分发。
+  能力查询也由 Portal 工作线程执行，交互式注册入口不能同步等待失联的桌面服务。
+  `CancelPendingRegistrations(nonempty_key_prefix)` 可按模块回收热重启遗留的待决请求，
+  不影响其他模块和调用前已生效的注册；取消期间刚批准的匹配请求也必须释放。
+  Omarchy 已通过纯 Wayland 的 Flutter Release 端到端测试：两轮稳定动作键注册、
+  Hyprland 目标动作 IPC 到 Dart 回调、AOT 标签和 SDK 句柄清理，不使用键盘输入。
+  Ubuntu NUC 和 Omarchy 的 X11 回归均通过。Hyprland Portal 1.4.1 会保留动作目录，
+  不能将目录条目等同于仍存活的客户端会话；隔离服务另行验证 Close 报文确实发出。
+  上层取消、拒绝、热重启、服务失效及失败后重试已覆盖；仍需完成发布依赖后的跨平台回归。
 - **能力型 API 形态分裂**：`UrlOpener` 是单例，`LaunchAtLogin` 是多实例，
   `AccessibilityManager` 是单例但只有两个方法（有 `Enable()` 无 `Disable()`，
   `IsEnabled()` 只读本地 flag 而不查系统授权状态）。无状态能力型 API 该统一成 static

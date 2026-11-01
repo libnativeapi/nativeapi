@@ -50,6 +50,33 @@ impl ShortcutManager {
         }
     }
 
+    pub fn request_registration(options: &ShortcutOptions, registration_key: &str) -> ShortcutId {
+        let options_raw = options.to_raw();
+        let registration_key_native = CString::new(registration_key).expect("string argument contains interior nul byte");
+        unsafe {
+            cnativeapi::native_shortcut_manager_request_registration(options_raw.raw, registration_key_native.as_ptr())
+        }
+    }
+
+    pub fn cancel_registration(request_id: ShortcutId) -> bool {
+        unsafe {
+            cnativeapi::native_shortcut_manager_cancel_registration(request_id)
+        }
+    }
+
+    pub fn cancel_pending_registrations(registration_key_prefix: &str) -> std::os::raw::c_ulong {
+        let registration_key_prefix_native = CString::new(registration_key_prefix).expect("string argument contains interior nul byte");
+        unsafe {
+            cnativeapi::native_shortcut_manager_cancel_pending_registrations(registration_key_prefix_native.as_ptr())
+        }
+    }
+
+    pub fn is_registration_pending(request_id: ShortcutId) -> bool {
+        unsafe {
+            cnativeapi::native_shortcut_manager_is_registration_pending(request_id)
+        }
+    }
+
     pub fn unregister_with_id(id: ShortcutId) -> bool {
         unsafe {
             cnativeapi::native_shortcut_manager_unregister_with_id(id)

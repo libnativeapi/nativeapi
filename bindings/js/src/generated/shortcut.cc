@@ -95,6 +95,40 @@ napi_value Js_native_shortcut_get_accelerator(napi_env env, napi_callback_info i
   return value.ToJs(env);
 }
 
+napi_value Js_native_shortcut_get_registration_key(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_get_registration_key(self); });
+  Value value = Value::String(result ? result : "");
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_shortcut_get_trigger_description(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_get_trigger_description(self); });
+  Value value = Value::String(result ? result : "");
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
 napi_value Js_native_shortcut_get_description(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -222,6 +256,8 @@ void RegisterShortcut(napi_env env, napi_value exports) {
   Export(env, exports, "native_shortcut_free", Js_native_shortcut_free);
   Export(env, exports, "native_shortcut_get_id", Js_native_shortcut_get_id);
   Export(env, exports, "native_shortcut_get_accelerator", Js_native_shortcut_get_accelerator);
+  Export(env, exports, "native_shortcut_get_registration_key", Js_native_shortcut_get_registration_key);
+  Export(env, exports, "native_shortcut_get_trigger_description", Js_native_shortcut_get_trigger_description);
   Export(env, exports, "native_shortcut_get_description", Js_native_shortcut_get_description);
   Export(env, exports, "native_shortcut_set_description", Js_native_shortcut_set_description);
   Export(env, exports, "native_shortcut_get_scope", Js_native_shortcut_get_scope);

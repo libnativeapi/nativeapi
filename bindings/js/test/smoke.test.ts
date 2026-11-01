@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { Color, NativeObject, Preferences } from "../lib/index.ts";
+import { Color, NativeObject, Preferences, Shortcut, ShortcutManager, ShortcutScope } from "../lib/index.ts";
 
 test("structs round-trip through the C ABI", () => {
   assert.deepEqual(Color.fromHex("#ff8000"), { r: 255, g: 128, b: 0, a: 255 });
@@ -14,6 +14,21 @@ test("structs round-trip through the C ABI", () => {
 
 test("argument type errors throw instead of crashing", () => {
   assert.throws(() => Color.fromHex(42 as unknown as string), TypeError);
+});
+
+test("shortcut request and metadata ABI calls reserve no system keys", () => {
+  const options = { accelerator: "", description: "ABI probe", scope: ShortcutScope.Global, enabled: true };
+  assert.equal(ShortcutManager.requestRegistration(options, "abi-probe"), 0);
+  assert.equal(ShortcutManager.isRegistrationPending(0), false);
+  assert.equal(ShortcutManager.cancelRegistration(0), false);
+  assert.equal(ShortcutManager.cancelPendingRegistrations(""), 0);
+  const shortcut = Shortcut.createWithIdAndOptions(42, { ...options, accelerator: "Ctrl+F19" })!;
+  try {
+    assert.equal(shortcut.registrationKey, "");
+    assert.equal(shortcut.triggerDescription, "Ctrl+F19");
+  } finally {
+    shortcut.dispose();
+  }
 });
 
 test("owned handles are released exactly once", () => {

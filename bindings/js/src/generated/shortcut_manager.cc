@@ -51,6 +51,70 @@ napi_value Js_native_shortcut_manager_register_with_options(napi_env env, napi_c
   return Value::BigInt(result).ToJs(env);
 }
 
+napi_value Js_native_shortcut_manager_request_registration(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  native_shortcut_options_t p0 = {};
+  if (!FromJs(env, args[0], &p0, arena)) {
+    return nullptr;
+  }
+  const char* p1 = {};
+  if (!GetString(env, args[1], arena, &p1)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_manager_request_registration(p0, p1); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_shortcut_manager_cancel_registration(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  native_shortcut_id_t p0 = {};
+  if (!GetNumber(env, args[0], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_manager_cancel_registration(p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_shortcut_manager_cancel_pending_registrations(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_manager_cancel_pending_registrations(p0); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_shortcut_manager_is_registration_pending(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  native_shortcut_id_t p0 = {};
+  if (!GetNumber(env, args[0], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_shortcut_manager_is_registration_pending(p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_shortcut_manager_unregister_with_id(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -274,6 +338,10 @@ void RegisterShortcutManager(napi_env env, napi_value exports) {
   Export(env, exports, "native_shortcut_manager_is_supported", Js_native_shortcut_manager_is_supported);
   Export(env, exports, "native_shortcut_manager_register_with_accelerator_and_callback", Js_native_shortcut_manager_register_with_accelerator_and_callback);
   Export(env, exports, "native_shortcut_manager_register_with_options", Js_native_shortcut_manager_register_with_options);
+  Export(env, exports, "native_shortcut_manager_request_registration", Js_native_shortcut_manager_request_registration);
+  Export(env, exports, "native_shortcut_manager_cancel_registration", Js_native_shortcut_manager_cancel_registration);
+  Export(env, exports, "native_shortcut_manager_cancel_pending_registrations", Js_native_shortcut_manager_cancel_pending_registrations);
+  Export(env, exports, "native_shortcut_manager_is_registration_pending", Js_native_shortcut_manager_is_registration_pending);
   Export(env, exports, "native_shortcut_manager_unregister_with_id", Js_native_shortcut_manager_unregister_with_id);
   Export(env, exports, "native_shortcut_manager_unregister_with_accelerator", Js_native_shortcut_manager_unregister_with_accelerator);
   Export(env, exports, "native_shortcut_manager_unregister_all", Js_native_shortcut_manager_unregister_all);

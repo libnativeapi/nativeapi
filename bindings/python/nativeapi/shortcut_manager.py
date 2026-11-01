@@ -49,6 +49,34 @@ class ShortcutManager:
         return _shortcut.Shortcut._owned(raw)
 
     @staticmethod
+    def request_registration(
+        options: _shortcut.ShortcutOptions,
+        registration_key: str,
+    ) -> _shortcut.ShortcutId:
+        raw = _C.native_shortcut_manager_request_registration(
+            options._to_c(),
+            _rt.encode(registration_key),
+        )
+        return raw
+
+    @staticmethod
+    def cancel_registration(request_id: _shortcut.ShortcutId) -> bool:
+        raw = _C.native_shortcut_manager_cancel_registration(request_id)
+        return raw
+
+    @staticmethod
+    def cancel_pending_registrations(registration_key_prefix: str) -> int:
+        raw = _C.native_shortcut_manager_cancel_pending_registrations(
+            _rt.encode(registration_key_prefix),
+        )
+        return raw
+
+    @staticmethod
+    def is_registration_pending(request_id: _shortcut.ShortcutId) -> bool:
+        raw = _C.native_shortcut_manager_is_registration_pending(request_id)
+        return raw
+
+    @staticmethod
     def unregister_with_id(id: _shortcut.ShortcutId) -> bool:
         raw = _C.native_shortcut_manager_unregister_with_id(id)
         return raw

@@ -229,6 +229,82 @@
           }
         },
         {
+          "key": "Shortcut::GetRegistrationKey",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the stable application-defined registration key.",
+            "returns": "The key passed to RequestRegistration, or an empty string for a synchronously registered shortcut. This is separate from the runtime ID."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetRegistrationKey",
+              "signature": "std::string GetRegistrationKey() const"
+            },
+            "csharp": {
+              "name": "RegistrationKey",
+              "signature": "public string? RegistrationKey"
+            },
+            "dart": {
+              "name": "registrationKey",
+              "signature": "String? get registrationKey"
+            },
+            "go": {
+              "name": "RegistrationKey",
+              "signature": "func (s *Shortcut) RegistrationKey() string"
+            },
+            "js": {
+              "name": "registrationKey",
+              "signature": "get registrationKey(): string"
+            },
+            "python": {
+              "name": "registration_key",
+              "signature": "@property\ndef registration_key(self) -> str:"
+            },
+            "rust": {
+              "name": "registration_key",
+              "signature": "pub fn registration_key(&self) -> Option<String>"
+            }
+          }
+        },
+        {
+          "key": "Shortcut::GetTriggerDescription",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the desktop's current human-readable shortcut binding.",
+            "returns": "The desktop-reported trigger description, or the requested accelerator on platforms that bind that exact accelerator, or an empty string when a desktop portal provides no binding label. With a Wayland portal the user may choose a different combination; GetAccelerator remains the original preference. This getter is safe during desktop binding updates."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetTriggerDescription",
+              "signature": "std::string GetTriggerDescription() const"
+            },
+            "csharp": {
+              "name": "TriggerDescription",
+              "signature": "public string? TriggerDescription"
+            },
+            "dart": {
+              "name": "triggerDescription",
+              "signature": "String? get triggerDescription"
+            },
+            "go": {
+              "name": "TriggerDescription",
+              "signature": "func (s *Shortcut) TriggerDescription() string"
+            },
+            "js": {
+              "name": "triggerDescription",
+              "signature": "get triggerDescription(): string"
+            },
+            "python": {
+              "name": "trigger_description",
+              "signature": "@property\ndef trigger_description(self) -> str:"
+            },
+            "rust": {
+              "name": "trigger_description",
+              "signature": "pub fn trigger_description(&self) -> Option<String>"
+            }
+          }
+        },
+        {
           "key": "Shortcut::GetDescription",
           "kind": "method",
           "doc": {

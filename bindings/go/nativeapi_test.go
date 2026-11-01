@@ -16,6 +16,30 @@ import (
 // on Go worker goroutines and marshal every native operation through Dispatch.
 func init() { runtime.LockOSThread() }
 
+func TestShortcutRequestMetadataABI(t *testing.T) {
+	onUI(t, func() {
+		// Invalid requests and standalone handles never reserve OS shortcuts.
+		if id := ShortcutManager.RequestRegistration(ShortcutOptions{}, "abi-probe"); id != 0 {
+			t.Errorf("invalid request accepted: %v", id)
+		}
+		if ShortcutManager.IsRegistrationPending(0) || ShortcutManager.CancelRegistration(0) == nil {
+			t.Error("unknown request treated as pending")
+		}
+		if n := ShortcutManager.CancelPendingRegistrations(""); n != 0 {
+			t.Errorf("empty prefix cancelled %d requests", n)
+		}
+		shortcut, err := NewShortcut(42, ShortcutOptions{Accelerator: "Ctrl+F19", Enabled: true})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer shortcut.Release()
+		if shortcut.RegistrationKey() != "" || shortcut.TriggerDescription() != "Ctrl+F19" {
+			t.Error("shortcut metadata did not round-trip")
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	Init()
 	done := make(chan int, 1)

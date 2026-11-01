@@ -33,6 +33,18 @@ def test_structs_round_trip_through_the_c_abi():
     assert Size(width=3) == Size(3.0, 0.0)
 
 
+def test_shortcut_requests_and_metadata_cross_the_abi_without_reserving_keys():
+    manager = nativeapi.ShortcutManager
+    assert manager.request_registration(nativeapi.ShortcutOptions(), "abi-probe") == 0
+    assert not manager.is_registration_pending(0)
+    assert not manager.cancel_registration(0)
+    assert manager.cancel_pending_registrations("") == 0
+    options = nativeapi.ShortcutOptions(accelerator="Ctrl+F19", enabled=True)
+    with nativeapi.Shortcut.with_id_and_options(42, options) as shortcut:
+        assert shortcut.registration_key == ""
+        assert shortcut.trigger_description == "Ctrl+F19"
+
+
 def test_owned_strings_in_structs():
     accelerator = KeyboardAccelerator(ModifierKey.SHIFT, "A")
     assert accelerator.to_string() == "Shift+A"

@@ -51,6 +51,14 @@ export class Shortcut extends NativeObject {
     return native.native_shortcut_get_accelerator(this.nativeHandle);
   }
 
+  get registrationKey(): string {
+    return native.native_shortcut_get_registration_key(this.nativeHandle);
+  }
+
+  get triggerDescription(): string {
+    return native.native_shortcut_get_trigger_description(this.nativeHandle);
+  }
+
   get description(): string {
     return native.native_shortcut_get_description(this.nativeHandle);
   }

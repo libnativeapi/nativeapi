@@ -3960,6 +3960,20 @@ native_shortcut_get_accelerator = function(
         c_uint64,
     ],
 )
+native_shortcut_get_registration_key = function(
+    "native_shortcut_get_registration_key",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+native_shortcut_get_trigger_description = function(
+    "native_shortcut_get_trigger_description",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
 native_shortcut_get_description = function(
     "native_shortcut_get_description",
     c_void_p,
@@ -4020,6 +4034,35 @@ native_shortcut_manager_register_with_options = function(
     c_uint64,
     [
         native_shortcut_options_t,
+    ],
+)
+native_shortcut_manager_request_registration = function(
+    "native_shortcut_manager_request_registration",
+    c_uint,
+    [
+        native_shortcut_options_t,
+        c_char_p,
+    ],
+)
+native_shortcut_manager_cancel_registration = function(
+    "native_shortcut_manager_cancel_registration",
+    c_bool,
+    [
+        c_uint,
+    ],
+)
+native_shortcut_manager_cancel_pending_registrations = function(
+    "native_shortcut_manager_cancel_pending_registrations",
+    c_ulong,
+    [
+        c_char_p,
+    ],
+)
+native_shortcut_manager_is_registration_pending = function(
+    "native_shortcut_manager_is_registration_pending",
+    c_bool,
+    [
+        c_uint,
     ],
 )
 native_shortcut_manager_unregister_with_id = function(

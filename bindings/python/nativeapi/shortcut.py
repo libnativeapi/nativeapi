@@ -158,6 +158,16 @@ class Shortcut(_rt.NativeObject):
         return _rt.take_str(raw)
 
     @property
+    def registration_key(self) -> str:
+        raw = _C.native_shortcut_get_registration_key(self._handle)
+        return _rt.take_str(raw)
+
+    @property
+    def trigger_description(self) -> str:
+        raw = _C.native_shortcut_get_trigger_description(self._handle)
+        return _rt.take_str(raw)
+
+    @property
     def description(self) -> str:
         raw = _C.native_shortcut_get_description(self._handle)
         return _rt.take_str(raw)

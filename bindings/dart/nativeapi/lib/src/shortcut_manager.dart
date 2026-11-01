@@ -58,6 +58,42 @@ class ShortcutManager {
     return Shortcut.fromHandle(handle);
   }
 
+  ShortcutId requestRegistration(
+    ShortcutOptions options,
+    String registrationKey,
+  ) {
+    final optionsPointer = options.allocNative();
+    final registrationKeyNative = registrationKey
+        .toNativeUtf8()
+        .cast<ffi.Char>();
+    final result = c.native_shortcut_manager_request_registration(
+      optionsPointer.ref,
+      registrationKeyNative,
+    );
+    ShortcutOptions.freeNative(optionsPointer);
+    pkg_ffi.calloc.free(registrationKeyNative);
+    return result;
+  }
+
+  bool cancelRegistration(ShortcutId requestId) {
+    return c.native_shortcut_manager_cancel_registration(requestId);
+  }
+
+  int cancelPendingRegistrations(String registrationKeyPrefix) {
+    final registrationKeyPrefixNative = registrationKeyPrefix
+        .toNativeUtf8()
+        .cast<ffi.Char>();
+    final result = c.native_shortcut_manager_cancel_pending_registrations(
+      registrationKeyPrefixNative,
+    );
+    pkg_ffi.calloc.free(registrationKeyPrefixNative);
+    return result;
+  }
+
+  bool isRegistrationPending(ShortcutId requestId) {
+    return c.native_shortcut_manager_is_registration_pending(requestId);
+  }
+
   bool unregisterWithId(ShortcutId id) {
     return c.native_shortcut_manager_unregister_with_id(id);
   }
