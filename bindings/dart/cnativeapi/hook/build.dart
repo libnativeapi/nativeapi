@@ -59,6 +59,10 @@ void main(List<String> args) async {
     switch (targetOS) {
       case OS.macOS:
         flags.addAll(_objectiveCpp);
+        // SMAppService is macOS 13+, so link ServiceManagement weakly. With a
+        // normal link dyld refuses to load the whole library on macOS 12,
+        // even when the app never calls launch-at-login.
+        flags.addAll(['-weak_framework', 'ServiceManagement']);
         frameworks = [
           'Cocoa',
           'QuartzCore',
@@ -66,7 +70,6 @@ void main(List<String> args) async {
           'IOKit',
           'CoreGraphics',
           'ApplicationServices',
-          'ServiceManagement',
         ];
       case OS.iOS:
         flags.addAll(_objectiveCpp);
