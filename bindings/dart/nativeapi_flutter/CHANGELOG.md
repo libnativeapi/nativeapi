@@ -1,3 +1,9 @@
+## 0.5.5
+
+- Add explicit frameless window mode with alias-shared state and property events; title-bar changes restore the frame while shadow preferences stay independent.
+- Expose the macOS native window-server number for interoperability. Keep nativeapi window IDs unchanged.
+- Separate macOS zoom policy from resizability and preserve explicit programmatic maximize/restore. Ignore Windows frame dragging/resizing in fullscreen and dispatch it on the native owner thread.
+
 ## 0.5.4
 
 - Preserve desktop native shortcut keycodes, Windows native repeat behavior and Linux CapsLock modifiers. Reject conflicting X11 grabs safely and retain overlapping lock-state registrations.

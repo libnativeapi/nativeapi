@@ -22,6 +22,8 @@ import 'callbacks.dart';
 
 typedef WindowId = int;
 
+typedef WindowNumber = int;
+
 enum TitleBarStyle {
   normal(0),
   hidden(1);
@@ -90,7 +92,8 @@ enum WindowProperty {
   windowControlButtonsVisible(7),
   alwaysOnTop(8),
   alwaysOnBottom(9),
-  titleBarStyle(10);
+  titleBarStyle(10),
+  frameless(11);
 
   const WindowProperty(this.value);
   final int value;
@@ -107,6 +110,7 @@ enum WindowProperty {
     8 => WindowProperty.alwaysOnTop,
     9 => WindowProperty.alwaysOnBottom,
     10 => WindowProperty.titleBarStyle,
+    11 => WindowProperty.frameless,
     _ => WindowProperty.title,
   };
 
@@ -485,6 +489,10 @@ class Window implements ffi.Finalizable {
     return c.native_window_get_id(nativeHandle);
   }
 
+  WindowNumber get nativeNumber {
+    return c.native_window_get_native_number(nativeHandle);
+  }
+
   View? get contentView {
     final handle = c.native_window_get_content_view(nativeHandle);
     if (handle == 0) return null;
@@ -817,6 +825,14 @@ class Window implements ffi.Finalizable {
 
   bool resetTitleBarColors() {
     return c.native_window_reset_title_bar_colors(nativeHandle);
+  }
+
+  bool setFrameless(bool isFrameless) {
+    return c.native_window_set_frameless(nativeHandle, isFrameless);
+  }
+
+  bool get isFrameless {
+    return c.native_window_is_frameless(nativeHandle);
   }
 
   set titleBarStyle(TitleBarStyle value) {

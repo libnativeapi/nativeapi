@@ -304,6 +304,51 @@
           }
         },
         {
+          "key": "Window::GetNativeNumber",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the native window-server number for platform interoperability.",
+            "details": "This number is assigned by the OS and can change with the native window's lifetime. Continue using GetId() for nativeapi lookups and events. Native pointers/handles are exposed through GetNativeObject().",
+            "returns": "The native number, or 0 when unsupported. On macOS -1 indicates that AppKit has not assigned a window-server number.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ NSWindow windowNumber (CGWindowID when assigned).\n- Windows: ❌ Returns 0; use GetNativeObject() for the HWND.\n- Linux: ❌ Returns 0.\n- Android: ❌ Returns 0.\n- iOS: ❌ Returns 0.\n- OpenHarmony: ❌ Returns 0."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetNativeNumber",
+              "signature": "WindowNumber GetNativeNumber() const"
+            },
+            "csharp": {
+              "name": "NativeNumber",
+              "signature": "public long NativeNumber"
+            },
+            "dart": {
+              "name": "nativeNumber",
+              "signature": "WindowNumber get nativeNumber"
+            },
+            "go": {
+              "name": "NativeNumber",
+              "signature": "func (w *Window) NativeNumber() WindowNumber"
+            },
+            "js": {
+              "name": "nativeNumber",
+              "signature": "get nativeNumber(): WindowNumber"
+            },
+            "python": {
+              "name": "native_number",
+              "signature": "@property\ndef native_number(self) -> WindowNumber:"
+            },
+            "rust": {
+              "name": "native_number",
+              "signature": "pub fn native_number(&self) -> WindowNumber"
+            }
+          }
+        },
+        {
           "key": "Window::GetContentView",
           "kind": "method",
           "doc": {
@@ -2305,7 +2350,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Native caption policy\n- Windows: ✅ Native caption policy\n- Linux: ⚠️ GTK controls and window-manager policy hints\n- Android: ❌ Setter ignored\n- iOS: ❌ Setter ignored\n- OpenHarmony: ⚠️ Public SDK caption buttons on supported decorated windows. These are caption-only policies; native title-bar double-click still maximizes even when the maximize button is hidden. Independent policies survive collective button hiding and title-bar style changes; programmatic Minimize/Maximize remain available, while Close() retains its documented child-only restriction. SDK refusal preserves the last applied policies. Desktop main windows start with enabled policies; other window profiles return false until a button request succeeds. Native destruction returns false. There is no individual SDK getter; external button edits do not rewrite these independent policies."
+                "text": "Platform availability:\n- macOS: ✅ Independent zoom policy; does not change resizability or fullscreen. Native zoom actions obey it; explicit Maximize()/Unmaximize() remain available.\n- Windows: ✅ Native caption policy\n- Linux: ⚠️ GTK controls and window-manager policy hints\n- Android: ❌ Setter ignored\n- iOS: ❌ Setter ignored\n- OpenHarmony: ⚠️ Public SDK caption buttons on supported decorated windows. These are caption-only policies; native title-bar double-click still maximizes even when the maximize button is hidden. Independent policies survive collective button hiding and title-bar style changes; programmatic Minimize/Maximize remain available, while Close() retains its documented child-only restriction. SDK refusal preserves the last applied policies. Desktop main windows start with enabled policies; other window profiles return false until a button request succeeds. Native destruction returns false. There is no individual SDK getter; external button edits do not rewrite these independent policies."
               }
             ]
           },
@@ -3299,6 +3344,102 @@
             "rust": {
               "name": "reset_title_bar_colors",
               "signature": "pub fn reset_title_bar_colors(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::SetFrameless",
+          "kind": "method",
+          "doc": {
+            "summary": "Removes the native title bar and frame around the content.",
+            "details": "Enabling this mode also selects Hidden title-bar style and hides native caption buttons. Unlike Hidden alone, it gives the entire frame area to the content. Shadows and independent button policies are preserved. Disabling restores Normal title-bar style. Explicitly setting either title-bar style exits frameless mode; shapes remain independent.",
+            "params": [
+              {
+                "name": "is_frameless",
+                "text": "true for a frameless window, false for a normal frame"
+              }
+            ],
+            "returns": "true when accepted (including an unchanged policy); false for an unsupported backend, invalid native window or native refusal.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Hides the native title-bar container with full-size content.\n- Windows: ✅ Full client frame with resize hit testing and core shadows.\n- Linux: ⚠️ Removes GTK decorations; server-side hints depend on the WM.\n- Android: ❌ No-op.\n- iOS: ❌ No-op.\n- OpenHarmony: ❌ No distinct frameless policy; no-op."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFrameless",
+              "signature": "bool SetFrameless(bool is_frameless)"
+            },
+            "csharp": {
+              "name": "SetFrameless",
+              "signature": "public bool SetFrameless(bool isFrameless)"
+            },
+            "dart": {
+              "name": "setFrameless",
+              "signature": "bool setFrameless(bool isFrameless)"
+            },
+            "go": {
+              "name": "SetFrameless",
+              "signature": "func (w *Window) SetFrameless(isFrameless bool) error"
+            },
+            "js": {
+              "name": "setFrameless",
+              "signature": "setFrameless(isFrameless: boolean): boolean"
+            },
+            "python": {
+              "name": "set_frameless",
+              "signature": "def set_frameless(self, is_frameless: bool) -> bool:"
+            },
+            "rust": {
+              "name": "set_frameless",
+              "signature": "pub fn set_frameless(&self, is_frameless: bool) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsFrameless",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the explicit frameless policy set through SetFrameless().",
+            "details": "This does not infer the policy from host-side decoration or shape changes.",
+            "returns": "true when frameless mode is requested, false otherwise",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetFrameless() for platform availability and reset semantics."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsFrameless",
+              "signature": "bool IsFrameless() const"
+            },
+            "csharp": {
+              "name": "IsFrameless",
+              "signature": "public bool IsFrameless"
+            },
+            "dart": {
+              "name": "isFrameless",
+              "signature": "bool get isFrameless"
+            },
+            "go": {
+              "name": "IsFrameless",
+              "signature": "func (w *Window) IsFrameless() bool"
+            },
+            "js": {
+              "name": "isFrameless",
+              "signature": "get isFrameless(): boolean"
+            },
+            "python": {
+              "name": "is_frameless",
+              "signature": "@property\ndef is_frameless(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_frameless",
+              "signature": "pub fn is_frameless(&self) -> bool"
             }
           }
         },
@@ -6587,6 +6728,43 @@
               "signature": "TitleBarStyle = 10"
             }
           }
+        },
+        {
+          "key": "WindowProperty::Frameless",
+          "kind": "variant",
+          "doc": {
+            "summary": "Window::IsFrameless()"
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Frameless",
+              "signature": "Frameless = 11"
+            },
+            "csharp": {
+              "name": "WindowProperty.Frameless",
+              "signature": "Frameless = 11"
+            },
+            "dart": {
+              "name": "WindowProperty.frameless",
+              "signature": "frameless(11)"
+            },
+            "go": {
+              "name": "WindowPropertyFrameless",
+              "signature": "const WindowPropertyFrameless WindowProperty = 11"
+            },
+            "js": {
+              "name": "WindowProperty.Frameless",
+              "signature": "Frameless: 11"
+            },
+            "python": {
+              "name": "FRAMELESS",
+              "signature": "FRAMELESS = 11"
+            },
+            "rust": {
+              "name": "WindowProperty::Frameless",
+              "signature": "Frameless = 11"
+            }
+          }
         }
       ]
     },
@@ -8443,6 +8621,39 @@
         "rust": {
           "name": "WindowId",
           "signature": "pub type WindowId = u32;"
+        }
+      }
+    },
+    {
+      "key": "WindowNumber",
+      "kind": "alias",
+      "doc": {
+        "summary": "Native window-server number; distinct from nativeapi's WindowId."
+      },
+      "signatures": {
+        "cpp": {
+          "name": "WindowNumber",
+          "signature": "using WindowNumber = long long"
+        },
+        "dart": {
+          "name": "WindowNumber",
+          "signature": "typedef WindowNumber = int"
+        },
+        "go": {
+          "name": "WindowNumber",
+          "signature": "type WindowNumber int64"
+        },
+        "js": {
+          "name": "WindowNumber",
+          "signature": "export type WindowNumber = number"
+        },
+        "python": {
+          "name": "WindowNumber",
+          "signature": "WindowNumber = int"
+        },
+        "rust": {
+          "name": "WindowNumber",
+          "signature": "pub type WindowNumber = i64;"
         }
       }
     }

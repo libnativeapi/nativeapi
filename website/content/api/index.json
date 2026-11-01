@@ -1004,6 +1004,19 @@
             "python",
             "rust"
           ]
+        },
+        {
+          "key": "WindowNumber",
+          "kind": "alias",
+          "summary": "Native window-server number; distinct from nativeapi's WindowId.",
+          "languages": [
+            "cpp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
         }
       ]
     },

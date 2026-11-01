@@ -18,6 +18,8 @@ pub type ListenerId = cnativeapi::native_listener_id_t;
 
 pub type WindowId = u32;
 
+pub type WindowNumber = i64;
+
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TitleBarStyle {
@@ -101,6 +103,7 @@ pub enum WindowProperty {
     AlwaysOnTop = 8,
     AlwaysOnBottom = 9,
     TitleBarStyle = 10,
+    Frameless = 11,
 }
 
 impl WindowProperty {
@@ -117,6 +120,7 @@ impl WindowProperty {
             cnativeapi::NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP => Self::AlwaysOnTop,
             cnativeapi::NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM => Self::AlwaysOnBottom,
             cnativeapi::NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE => Self::TitleBarStyle,
+            cnativeapi::NATIVE_WINDOW_PROPERTY_FRAMELESS => Self::Frameless,
             _ => Self::Title,
         }
     }
@@ -319,6 +323,12 @@ impl Window {
     pub fn id(&self) -> WindowId {
         unsafe {
             cnativeapi::native_window_get_id(self.handle)
+        }
+    }
+
+    pub fn native_number(&self) -> WindowNumber {
+        unsafe {
+            cnativeapi::native_window_get_native_number(self.handle)
         }
     }
 
@@ -763,6 +773,18 @@ impl Window {
     pub fn reset_title_bar_colors(&self) -> bool {
         unsafe {
             cnativeapi::native_window_reset_title_bar_colors(self.handle)
+        }
+    }
+
+    pub fn set_frameless(&self, is_frameless: bool) -> bool {
+        unsafe {
+            cnativeapi::native_window_set_frameless(self.handle, is_frameless)
+        }
+    }
+
+    pub fn is_frameless(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_frameless(self.handle)
         }
     }
 

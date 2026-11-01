@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Add explicit frameless window mode with alias-shared state and property events; title-bar changes restore the frame while shadow preferences stay independent.
+- Expose the macOS native window-server number for interoperability. Keep nativeapi window IDs unchanged.
+- Separate macOS zoom policy from resizability and preserve explicit programmatic maximize/restore. Ignore Windows frame dragging/resizing in fullscreen and dispatch it on the native owner thread.
+
 - Confirm HarmonyOS immersive-layout requests against the real SDK result and live layout flag on workers, reject overlapping alias requests, and cancel pending work on native destruction. Keep computer floating-main no-op and native-caption inset limits explicit.
 
 - Implement HarmonyOS fullscreen-mode policy with preserved floating/split bits, an explicit host override baseline and primary Stage fallback. Serialize UI/worker requests, keep policies on SDK refusal, and cancel pending requests on native destruction. The SDK couples fullscreen and maximize; unknown child policy queries return false.

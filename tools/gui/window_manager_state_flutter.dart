@@ -38,6 +38,15 @@ Future<void> tests() async {
   final reports = Reports();
   windowManager.addListener(reports);
   try {
+    if (Platform.isWindows || Platform.isMacOS) {
+      check(
+        await windowManager.getId() ==
+            (Platform.isWindows
+                ? window.nativeObject.address
+                : window.nativeNumber),
+        'legacy id preserves the platform window identifier',
+      );
+    }
     await windowManager.setTitle('nativeapi migration regression');
     check(
       window.title == 'nativeapi migration regression',
@@ -83,6 +92,49 @@ Future<void> tests() async {
       'normal title bar restores caption buttons',
     );
     check(true, 'normal title bars restore the native caption group');
+
+    await windowManager.setAsFrameless();
+    check(
+      window.isFrameless && !window.isWindowControlButtonsVisible,
+      'legacy frameless reaches the native frame policy',
+    );
+    await windowManager.setHasShadow(true);
+    check(window.isFrameless, 'legacy shadow changes preserve frameless mode');
+    reports.events.clear();
+    await windowManager.setFullScreen(true);
+    await until(
+      () => reports.events.contains('enter-full-screen'),
+      'frameless fullscreen enters',
+    );
+    check(window.isFrameless, 'fullscreen preserves the frameless policy');
+    reports.events.clear();
+    await windowManager.setFullScreen(false);
+    await until(
+      () => reports.events.contains('leave-full-screen'),
+      'frameless fullscreen exits',
+    );
+    check(
+      window.isFrameless && !window.isWindowControlButtonsVisible,
+      'leaving fullscreen restores frameless chrome',
+    );
+    await windowManager.setTitleBarStyle(native.TitleBarStyle.hidden);
+    check(!window.isFrameless, 'legacy hidden style restores the frame policy');
+    await windowManager.setAsFrameless();
+    await windowManager.setTitleBarStyle(native.TitleBarStyle.normal);
+    check(
+      !window.isFrameless && window.isWindowControlButtonsVisible,
+      'legacy normal style exits frameless mode',
+    );
+    if (Platform.isMacOS) {
+      await windowManager.setResizable(true);
+      await windowManager.setMaximizable(false);
+      check(
+        await windowManager.isResizable() &&
+            !await windowManager.isMaximizable(),
+        'legacy macOS maximize policy preserves resizing',
+      );
+      await windowManager.setMaximizable(true);
+    }
 
     if (Platform.isWindows) {
       final before = window.bounds;

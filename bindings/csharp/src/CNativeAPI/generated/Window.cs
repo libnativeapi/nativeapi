@@ -149,6 +149,10 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_is_frameless(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_is_full_screen(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -297,6 +301,10 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_window_set_frameless(ulong self, [MarshalAs(UnmanagedType.I1)] bool isFrameless);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_window_set_ignore_mouse_events(ulong self, [MarshalAs(UnmanagedType.I1)] bool isIgnoreMouseEvents, [MarshalAs(UnmanagedType.I1)] bool forward);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -369,6 +377,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_window_get_visual_effect(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern long native_window_get_native_number(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern native_color_t native_window_get_background_color(ulong self);

@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--local-nativeapi', action='store_true',
                         help='Temporarily use the nativeapi packages in this workspace')
     parser.add_argument('--build-only', action='store_true')
+    parser.add_argument('--release', action='store_true', help='Build and verify a release fixture')
     args = parser.parse_args()
     executable = args.executable
     if executable is None:
@@ -35,6 +36,7 @@ def main():
         system = {'Darwin': 'macos', 'Windows': 'windows', 'Linux': 'linux'}[platform.system()]
         if not args.flutter:
             parser.error('Flutter was not found; specify --flutter')
+        configuration = 'Release' if args.release else 'Debug'
         with ExitStack() as cleanup:
             if args.local_nativeapi:
                 content = 'dependency_overrides:\n' + ''.join(
@@ -52,13 +54,13 @@ def main():
                     override.write_text(content)
             shutil.copy2(Path(__file__).with_name('window_manager_state_flutter.dart'), target)
             cleanup.callback(target.unlink, missing_ok=True)
-            subprocess.run([args.flutter, 'build', system, '--debug', '-t',
+            subprocess.run([args.flutter, 'build', system, '--release' if args.release else '--debug', '-t',
                             'build/native_state_test.dart'], cwd=project, check=True, timeout=900)
         name = 'window_manager_example'
         executable = project / {
-            'macos': f'build/macos/Build/Products/Debug/{name}.app/Contents/MacOS/{name}',
-            'windows': f'build/windows/x64/runner/Debug/{name}.exe',
-            'linux': f'build/linux/x64/debug/bundle/{name}',
+            'macos': f'build/macos/Build/Products/{configuration}/{name}.app/Contents/MacOS/{name}',
+            'windows': f'build/windows/x64/runner/{configuration}/{name}.exe',
+            'linux': f'build/linux/x64/{configuration.lower()}/bundle/{name}',
         }[system]
     executable = executable.resolve()
     if args.build_only:

@@ -43,6 +43,7 @@ public enum WindowProperty
     AlwaysOnTop = 8,
     AlwaysOnBottom = 9,
     TitleBarStyle = 10,
+    Frameless = 11,
 }
 
 public enum WindowOcclusionState
@@ -183,6 +184,15 @@ public sealed partial class Window : IDisposable
         get
         {
             var rawResult = Interop.native_window_get_id(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public long NativeNumber
+    {
+        get
+        {
+            var rawResult = Interop.native_window_get_native_number(NativeHandle);
             return rawResult;
         }
     }
@@ -672,6 +682,21 @@ public sealed partial class Window : IDisposable
     {
         var rawResult = Interop.native_window_reset_title_bar_colors(NativeHandle);
         return rawResult;
+    }
+
+    public bool SetFrameless(bool isFrameless)
+    {
+        var rawResult = Interop.native_window_set_frameless(NativeHandle, isFrameless);
+        return rawResult;
+    }
+
+    public bool IsFrameless
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_frameless(NativeHandle);
+            return rawResult;
+        }
     }
 
     public void SetTitleBarStyle(TitleBarStyle style)

@@ -830,6 +830,7 @@ unsafe extern "C" {
     pub fn native_window_shape_free(window_shape: native_window_shape_t);
 }
 pub type native_window_id_t = ::std::os::raw::c_uint;
+pub type native_window_number_t = ::std::os::raw::c_longlong;
 pub const NATIVE_TITLE_BAR_STYLE_NORMAL: native_title_bar_style_t = 0;
 pub const NATIVE_TITLE_BAR_STYLE_HIDDEN: native_title_bar_style_t = 1;
 pub type native_title_bar_style_t = ::std::os::raw::c_uint;
@@ -853,6 +854,7 @@ pub const NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE: native_window_p
 pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP: native_window_property_t = 8;
 pub const NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM: native_window_property_t = 9;
 pub const NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE: native_window_property_t = 10;
+pub const NATIVE_WINDOW_PROPERTY_FRAMELESS: native_window_property_t = 11;
 pub type native_window_property_t = ::std::os::raw::c_uint;
 pub const NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN: native_window_occlusion_state_t = 0;
 pub const NATIVE_WINDOW_OCCLUSION_STATE_VISIBLE: native_window_occlusion_state_t = 1;
@@ -1034,6 +1036,9 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_get_id(window: native_window_t) -> native_window_id_t;
+}
+unsafe extern "C" {
+    pub fn native_window_get_native_number(window: native_window_t) -> native_window_number_t;
 }
 unsafe extern "C" {
     #[doc = " Caller owns the returned handle; release it with native_view_free()."]
@@ -1269,6 +1274,12 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_reset_title_bar_colors(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_set_frameless(window: native_window_t, is_frameless: bool) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_frameless(window: native_window_t) -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_set_title_bar_style(

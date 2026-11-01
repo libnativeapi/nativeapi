@@ -103,6 +103,21 @@ napi_value Js_native_window_get_id(napi_env env, napi_callback_info info) {
   return Value::Number(static_cast<double>(result)).ToJs(env);
 }
 
+napi_value Js_native_window_get_native_number(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_get_native_number(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
 napi_value Js_native_window_get_content_view(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1258,6 +1273,40 @@ napi_value Js_native_window_reset_title_bar_colors(napi_env env, napi_callback_i
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_set_frameless(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  bool p0 = {};
+  if (!GetBool(env, args[1], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_frameless(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_frameless(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_frameless(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_set_title_bar_style(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -2144,6 +2193,7 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_is_close_supported", Js_native_window_is_close_supported);
   Export(env, exports, "native_window_close", Js_native_window_close);
   Export(env, exports, "native_window_get_id", Js_native_window_get_id);
+  Export(env, exports, "native_window_get_native_number", Js_native_window_get_native_number);
   Export(env, exports, "native_window_get_content_view", Js_native_window_get_content_view);
   Export(env, exports, "native_window_focus", Js_native_window_focus);
   Export(env, exports, "native_window_blur", Js_native_window_blur);
@@ -2214,6 +2264,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_get_title", Js_native_window_get_title);
   Export(env, exports, "native_window_set_title_bar_colors", Js_native_window_set_title_bar_colors);
   Export(env, exports, "native_window_reset_title_bar_colors", Js_native_window_reset_title_bar_colors);
+  Export(env, exports, "native_window_set_frameless", Js_native_window_set_frameless);
+  Export(env, exports, "native_window_is_frameless", Js_native_window_is_frameless);
   Export(env, exports, "native_window_set_title_bar_style", Js_native_window_set_title_bar_style);
   Export(env, exports, "native_window_get_title_bar_style", Js_native_window_get_title_bar_style);
   Export(env, exports, "native_window_set_corner_preference", Js_native_window_set_corner_preference);

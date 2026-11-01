@@ -2921,6 +2921,9 @@ external native_size_t native_window_get_maximum_size(int window);
 @ffi.Native<native_size_t Function(native_window_t)>()
 external native_size_t native_window_get_minimum_size(int window);
 
+@ffi.Native<native_window_number_t Function(native_window_t)>()
+external int native_window_get_native_number(int window);
+
 /// Platform-specific native object (NSScreen*, HMONITOR, ...).
 @ffi.Native<ffi.Pointer<ffi.Void> Function(native_window_t)>()
 external ffi.Pointer<ffi.Void> native_window_get_native_object(int window);
@@ -3028,6 +3031,9 @@ external bool native_window_is_focusable(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_focused(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_frameless(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_full_screen(int window);
@@ -3316,6 +3322,9 @@ external bool native_window_set_custom_shadow(int window, int shadow);
 
 @ffi.Native<ffi.Void Function(native_window_t, ffi.Bool)>()
 external void native_window_set_focusable(int window, bool is_focusable);
+
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.Bool)>()
+external bool native_window_set_frameless(int window, bool is_frameless);
 
 @ffi.Native<ffi.Void Function(native_window_t, ffi.Bool)>()
 external void native_window_set_full_screen(int window, bool is_full_screen);
@@ -6038,6 +6047,8 @@ typedef native_window_manager_set_will_show_hook_callback_tFunction =
     ffi.Void Function(ffi.UnsignedInt arg0, ffi.Pointer<ffi.Void> user_data);
 typedef Dartnative_window_manager_set_will_show_hook_callback_tFunction =
     void Function(int arg0, ffi.Pointer<ffi.Void> user_data);
+typedef native_window_number_t = ffi.LongLong;
+typedef Dartnative_window_number_t = int;
 
 enum native_window_occlusion_state_t {
   NATIVE_WINDOW_OCCLUSION_STATE_UNKNOWN(0),
@@ -6069,7 +6080,8 @@ enum native_window_property_t {
   NATIVE_WINDOW_PROPERTY_WINDOW_CONTROL_BUTTONS_VISIBLE(7),
   NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP(8),
   NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM(9),
-  NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE(10);
+  NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE(10),
+  NATIVE_WINDOW_PROPERTY_FRAMELESS(11);
 
   final int value;
   const native_window_property_t(this.value);
@@ -6086,6 +6098,7 @@ enum native_window_property_t {
     8 => NATIVE_WINDOW_PROPERTY_ALWAYS_ON_TOP,
     9 => NATIVE_WINDOW_PROPERTY_ALWAYS_ON_BOTTOM,
     10 => NATIVE_WINDOW_PROPERTY_TITLE_BAR_STYLE,
+    11 => NATIVE_WINDOW_PROPERTY_FRAMELESS,
     _ => throw ArgumentError(
       'Unknown value for native_window_property_t: $value',
     ),

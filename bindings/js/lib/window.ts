@@ -11,6 +11,8 @@ import { WindowShape } from "./window_shape.ts";
 
 export type WindowId = number;
 
+export type WindowNumber = number;
+
 export const TitleBarStyle = {
   Normal: 0,
   Hidden: 1,
@@ -44,6 +46,7 @@ export const WindowProperty = {
   AlwaysOnTop: 8,
   AlwaysOnBottom: 9,
   TitleBarStyle: 10,
+  Frameless: 11,
 } as const;
 export type WindowProperty = (typeof WindowProperty)[keyof typeof WindowProperty];
 
@@ -123,6 +126,10 @@ export class Window extends NativeObject {
 
   get id(): WindowId {
     return native.native_window_get_id(this.nativeHandle);
+  }
+
+  get nativeNumber(): WindowNumber {
+    return native.native_window_get_native_number(this.nativeHandle);
   }
 
   get contentView(): View | null {
@@ -403,6 +410,14 @@ export class Window extends NativeObject {
 
   resetTitleBarColors(): boolean {
     return native.native_window_reset_title_bar_colors(this.nativeHandle);
+  }
+
+  setFrameless(isFrameless: boolean): boolean {
+    return native.native_window_set_frameless(this.nativeHandle, isFrameless);
+  }
+
+  get isFrameless(): boolean {
+    return native.native_window_is_frameless(this.nativeHandle);
   }
 
   setTitleBarStyle(style: TitleBarStyle): void {

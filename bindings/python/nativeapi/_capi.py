@@ -14,6 +14,7 @@ from ctypes import (
     c_float,
     c_int,
     c_long,
+    c_longlong,
     c_ubyte,
     c_uint,
     c_uint64,
@@ -2190,6 +2191,13 @@ native_window_is_close_supported = function(
 )
 native_window_close = function("native_window_close", c_bool, [c_uint64])
 native_window_get_id = function("native_window_get_id", c_uint, [c_uint64])
+native_window_get_native_number = function(
+    "native_window_get_native_number",
+    c_longlong,
+    [
+        c_uint64,
+    ],
+)
 native_window_get_content_view = function(
     "native_window_get_content_view",
     c_uint64,
@@ -2570,6 +2578,15 @@ native_window_reset_title_bar_colors = function(
         c_uint64,
     ],
 )
+native_window_set_frameless = function(
+    "native_window_set_frameless",
+    c_bool,
+    [
+        c_uint64,
+        c_bool,
+    ],
+)
+native_window_is_frameless = function("native_window_is_frameless", c_bool, [c_uint64])
 native_window_set_title_bar_style = function(
     "native_window_set_title_bar_style",
     None,

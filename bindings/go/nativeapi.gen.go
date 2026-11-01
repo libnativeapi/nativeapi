@@ -3003,6 +3003,9 @@ func (iv *ImageView) Image() *Image {
 // WindowID identifies a native object.
 type WindowID uint32
 
+// WindowNumber identifies a native object.
+type WindowNumber int64
+
 // TitleBarStyle represents native TitleBarStyle values.
 type TitleBarStyle int32
 
@@ -3045,6 +3048,7 @@ const (
 	WindowPropertyAlwaysOnTop                 WindowProperty = 8
 	WindowPropertyAlwaysOnBottom              WindowProperty = 9
 	WindowPropertyTitleBarStyle               WindowProperty = 10
+	WindowPropertyFrameless                   WindowProperty = 11
 )
 
 // WindowOcclusionState represents native WindowOcclusionState values.
@@ -3223,6 +3227,12 @@ func (w *Window) Close() error {
 func (w *Window) ID() WindowID {
 	result := C.native_window_get_id(C.native_window_t(w.nativeHandleValue()))
 	return WindowID(result)
+}
+
+// NativeNumber invokes the native GetNativeNumber operation.
+func (w *Window) NativeNumber() WindowNumber {
+	result := C.native_window_get_native_number(C.native_window_t(w.nativeHandleValue()))
+	return WindowNumber(result)
 }
 
 // ContentView invokes the native GetContentView operation.
@@ -3666,6 +3676,22 @@ func (w *Window) ResetTitleBarColors() error {
 		return nativeError("Window.ResetTitleBarColors")
 	}
 	return nil
+}
+
+// SetFrameless invokes the native SetFrameless operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) SetFrameless(isFrameless bool) error {
+	result := C.native_window_set_frameless(C.native_window_t(w.nativeHandleValue()), C.bool(isFrameless))
+	if !bool(result) {
+		return nativeError("Window.SetFrameless")
+	}
+	return nil
+}
+
+// IsFrameless invokes the native IsFrameless operation.
+func (w *Window) IsFrameless() bool {
+	result := C.native_window_is_frameless(C.native_window_t(w.nativeHandleValue()))
+	return bool(result)
 }
 
 // SetTitleBarStyle invokes the native SetTitleBarStyle operation.

@@ -1,12 +1,13 @@
 # No-input window_manager migration regression in the logged-on desktop.
 # SSH runs in session 0, where the Windows shell's appbar service is absent.
-param([switch]$Desktop, [switch]$ControlsOnly)
+param([switch]$Desktop, [switch]$ControlsOnly, [switch]$Release)
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $scratch = Join-Path $workspace 'build\window_manager_migration'
 New-Item -ItemType Directory -Force $scratch | Out-Null
 $result = Join-Path $scratch 'result.txt'
 $fixture = Join-Path $workspace 'bindings\dart\window_manager\example\build\windows\x64\runner\Debug\window_manager_example.exe'
+if ($Release) { $fixture = $fixture.Replace('runner\Debug\', 'runner\Release\') }
 $native = Join-Path $workspace 'core\build-wm\tests\Debug\window_migration_test.exe'
 $executables = @($native, $fixture)
 if ($ControlsOnly) {
@@ -62,6 +63,7 @@ Remove-Item $result -ErrorAction SilentlyContinue
 $taskName = 'NativeAPIWindowMigration-' + [Guid]::NewGuid().ToString('N')
 try {
     $options = if ($ControlsOnly) { ' -ControlsOnly' } else { '' }
+    if ($Release) { $options += ' -Release' }
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
         -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Desktop$options"
     $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited

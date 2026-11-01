@@ -16,6 +16,8 @@ import 'unsupported.dart';
 
 typedef WindowId = int;
 
+typedef WindowNumber = int;
+
 enum TitleBarStyle {
   normal(0),
   hidden(1);
@@ -75,7 +77,8 @@ enum WindowProperty {
   windowControlButtonsVisible(7),
   alwaysOnTop(8),
   alwaysOnBottom(9),
-  titleBarStyle(10);
+  titleBarStyle(10),
+  frameless(11);
 
   const WindowProperty(this.value);
   final int value;
@@ -92,6 +95,7 @@ enum WindowProperty {
     8 => WindowProperty.alwaysOnTop,
     9 => WindowProperty.alwaysOnBottom,
     10 => WindowProperty.titleBarStyle,
+    11 => WindowProperty.frameless,
     _ => WindowProperty.title,
   };
 }
@@ -314,6 +318,8 @@ class Window {
 
   WindowId get id => unsupported();
 
+  WindowNumber get nativeNumber => unsupported();
+
   View? get contentView => unsupported();
 
   void focus() => unsupported();
@@ -453,6 +459,10 @@ class Window {
   bool setTitleBarColors(Color background, Color foreground) => unsupported();
 
   bool resetTitleBarColors() => unsupported();
+
+  bool setFrameless(bool isFrameless) => unsupported();
+
+  bool get isFrameless => unsupported();
 
   set titleBarStyle(TitleBarStyle value) => unsupported();
 

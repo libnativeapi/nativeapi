@@ -19,6 +19,8 @@ from . import window_shape as _window_shape
 
 WindowId = int
 
+WindowNumber = int
+
 
 class TitleBarStyle(enum.IntEnum):
     NORMAL = 0
@@ -50,6 +52,7 @@ class WindowProperty(enum.IntEnum):
     ALWAYS_ON_TOP = 8
     ALWAYS_ON_BOTTOM = 9
     TITLE_BAR_STYLE = 10
+    FRAMELESS = 11
 
 
 class WindowOcclusionState(enum.IntEnum):
@@ -257,6 +260,11 @@ class Window(_rt.NativeObject):
     @property
     def id(self) -> WindowId:
         raw = _C.native_window_get_id(self._handle)
+        return raw
+
+    @property
+    def native_number(self) -> WindowNumber:
+        raw = _C.native_window_get_native_number(self._handle)
         return raw
 
     @property
@@ -551,6 +559,15 @@ class Window(_rt.NativeObject):
 
     def reset_title_bar_colors(self) -> bool:
         raw = _C.native_window_reset_title_bar_colors(self._handle)
+        return raw
+
+    def set_frameless(self, is_frameless: bool) -> bool:
+        raw = _C.native_window_set_frameless(self._handle, is_frameless)
+        return raw
+
+    @property
+    def is_frameless(self) -> bool:
+        raw = _C.native_window_is_frameless(self._handle)
         return raw
 
     def set_title_bar_style(self, style: TitleBarStyle) -> None:
