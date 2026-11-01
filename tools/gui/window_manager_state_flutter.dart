@@ -50,6 +50,40 @@ Future<void> tests() async {
       'legacy geometry reads the native window',
     );
 
+    await windowManager.setTitleBarStyle(
+      native.TitleBarStyle.normal,
+      windowButtonVisibility: false,
+    );
+    check(
+      !window.isWindowControlButtonsVisible,
+      'legacy windowButtonVisibility hides the native caption group',
+    );
+    await windowManager.setMinimizable(false);
+    await windowManager.setMaximizable(false);
+    await windowManager.setClosable(false);
+    window.isWindowControlButtonsVisible = true;
+    check(
+      !window.isMinimizable && !window.isMaximizable && !window.isClosable,
+      'showing caption buttons preserves independent legacy policies',
+    );
+    await windowManager.setClosable(true);
+    await windowManager.setMinimizable(true);
+    await windowManager.setMaximizable(true);
+    await windowManager.setTitleBarStyle(
+      native.TitleBarStyle.hidden,
+      windowButtonVisibility: false,
+    );
+    check(
+      !window.isWindowControlButtonsVisible,
+      'hidden title bars keep native buttons hidden',
+    );
+    await windowManager.setTitleBarStyle(native.TitleBarStyle.normal);
+    await until(
+      () => window.isWindowControlButtonsVisible,
+      'normal title bar restores caption buttons',
+    );
+    check(true, 'normal title bars restore the native caption group');
+
     if (Platform.isWindows) {
       final before = window.bounds;
       await windowManager.maximize(vertically: true);

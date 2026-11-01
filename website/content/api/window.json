@@ -2577,7 +2577,7 @@
           "kind": "method",
           "doc": {
             "summary": "Sets the visibility of window control buttons.",
-            "details": "Controls the visibility of window control buttons (minimize, maximize, close) in the title bar. When hidden, the buttons are not visible but the window can still be controlled programmatically.",
+            "details": "Controls the visibility of window control buttons (minimize, maximize, close) in the title bar. When hidden, the buttons are not visible but the window can still be controlled programmatically. Independent minimize, maximize and close policies survive hiding/showing the group. Changing the title-bar style resets group visibility to the style's default. A hidden title bar on Windows or Linux cannot display native buttons; restore Normal first.",
             "params": [
               {
                 "name": "is_visible",
@@ -2587,7 +2587,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hides/shows the traffic light buttons (red, yellow, green)\n- Windows: ❌ Not implemented - Returns default value (visible)\n- Linux: ❌ Not implemented - Returns default value (visible)\n- Android: ❌ Not applicable - Mobile apps don't have window control buttons\n- iOS: ❌ Not applicable - Mobile apps don't have window control buttons\n- OpenHarmony: ⚠️ Uses public SDK title-button visibility on supported decorated windows (normally a freeform main window). Unsupported phone/child requests are ignored. The getter reads the live SDK button-area size, so an externally configured nonempty subset also counts as visible. Layout updates and full-screen hover behavior are managed by the system."
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Hides/shows the traffic light buttons (red, yellow, green)\n- Windows: ✅ Native caption styles. The close policy disables SC_CLOSE independently, preserving minimize/maximize buttons.\n- Linux: ⚠️ GTK standard header controls; X11 server-side decoration hints depend on the window manager. Application-drawn buttons are unaffected.\n- Android: ❌ Not applicable - Mobile apps don't have window control buttons\n- iOS: ❌ Not applicable - Mobile apps don't have window control buttons\n- OpenHarmony: ⚠️ Uses public SDK title-button visibility on supported decorated windows (normally a freeform main window). Unsupported phone/child requests are ignored. The getter reads the live SDK button-area size, so an externally configured nonempty subset also counts as visible. Layout updates and full-screen hover behavior are managed by the system."
               }
             ]
           },
@@ -2631,7 +2631,7 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns actual visibility state\n- Windows: ❌ Not implemented - Always returns true\n- Linux: ❌ Not implemented - Always returns true\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Reads the live SDK title-button area, including controls explicitly shown over a hidden title bar. False for unavailable/closed windows, empty areas or SDK errors."
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Returns actual visibility state\n- Windows: ✅ Reads native caption styles; false with a hidden title bar, in fullscreen or after native destruction.\n- Linux: ⚠️ Reads the GTK header control-group flag; for server-side decorations reads the requested policy. False with a hidden title bar, in fullscreen or after native destruction.\n- Android: ❌ Not applicable - Always returns false\n- iOS: ❌ Not applicable - Always returns false\n- OpenHarmony: ⚠️ Reads the live SDK title-button area, including controls explicitly shown over a hidden title bar. False for unavailable/closed windows, empty areas or SDK errors."
               },
               {
                 "kind": "see",

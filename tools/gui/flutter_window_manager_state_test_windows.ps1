@@ -1,6 +1,6 @@
 # No-input window_manager migration regression in the logged-on desktop.
 # SSH runs in session 0, where the Windows shell's appbar service is absent.
-param([switch]$Desktop)
+param([switch]$Desktop, [switch]$ControlsOnly)
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $scratch = Join-Path $workspace 'build\window_manager_migration'
@@ -8,12 +8,19 @@ New-Item -ItemType Directory -Force $scratch | Out-Null
 $result = Join-Path $scratch 'result.txt'
 $fixture = Join-Path $workspace 'bindings\dart\window_manager\example\build\windows\x64\runner\Debug\window_manager_example.exe'
 $native = Join-Path $workspace 'core\build-wm\tests\Debug\window_migration_test.exe'
+$executables = @($native, $fixture)
+if ($ControlsOnly) {
+    $scratch = Join-Path $workspace 'build\window_controls'
+    New-Item -ItemType Directory -Force $scratch | Out-Null
+    $result = Join-Path $scratch 'result.txt'
+    $executables = @(Join-Path $workspace 'core\build-wm\tests\Debug\window_controls_test.exe')
+}
 
 if ($Desktop) {
     $lines = [System.Collections.Generic.List[string]]::new()
     $exitCode = 0
     try {
-        foreach ($executable in @($native, $fixture)) {
+        foreach ($executable in $executables) {
             if (!(Test-Path $executable)) { throw "Missing executable: $executable" }
             $tag = [IO.Path]::GetFileNameWithoutExtension($executable)
             $outLog = Join-Path $scratch "$tag.stdout.log"
@@ -54,8 +61,9 @@ if ($Desktop) {
 Remove-Item $result -ErrorAction SilentlyContinue
 $taskName = 'NativeAPIWindowMigration-' + [Guid]::NewGuid().ToString('N')
 try {
+    $options = if ($ControlsOnly) { ' -ControlsOnly' } else { '' }
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
-        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Desktop"
+        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Desktop$options"
     $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
     Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal | Out-Null
     Start-ScheduledTask -TaskName $taskName
