@@ -1,0 +1,142 @@
+// Built by flutter_tray_manager_menu_test_linux.py with the README's actual
+// native API example inserted below. Uses published nativeapi dependencies.
+// ignore_for_file: deprecated_member_use, deprecated_member_use_from_same_package
+
+import 'dart:convert';
+import 'dart:developer';
+
+import 'package:flutter/widgets.dart';
+import 'package:tray_manager/legacy.dart' as legacy;
+import 'package:tray_manager/tray_manager.dart';
+
+final state = MenuRegression();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await state.start();
+  registerExtension('ext.tray_manager.menuRegression', (_, parameters) async {
+    switch (parameters['action']) {
+      case 'replace':
+        await state.replace();
+      case 'recreate':
+        await legacy.trayManager.destroy();
+        await state.createLegacy();
+      case 'dispose':
+        await legacy.trayManager.destroy();
+        legacy.trayManager.removeListener(state);
+        state.nativeIcon?.dispose();
+        state.disposed = true;
+        state.changed();
+    }
+    return ServiceExtensionResponse.result(jsonEncode(state.snapshot));
+  });
+  runApp(
+    WidgetsApp(
+      color: const Color(0xff202020),
+      builder: (_, _) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: const Color(0xff202020),
+          child: Center(
+            child: ValueListenableBuilder<int>(
+              valueListenable: state.updates,
+              builder: (_, _, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Tray menu regression'),
+                  Text('Legacy callbacks: ${state.legacyClicks}'),
+                  Text('Native callbacks: ${state.nativeClicks}'),
+                  Text('Legacy listener calls: ${state.listenerCalls}'),
+                  Text('Menu revision: ${state.revision}'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class MenuRegression with legacy.TrayListener {
+  final updates = ValueNotifier<int>(0);
+  final retained = <Object>[];
+  TrayIcon? nativeIcon;
+  int legacyClicks = 0;
+  int nativeClicks = 0;
+  int listenerCalls = 0;
+  int revision = 0;
+  bool checked = false;
+  bool disposed = false;
+
+  Map<String, Object> get snapshot => {
+    'legacyClicks': legacyClicks,
+    'nativeClicks': nativeClicks,
+    'listenerCalls': listenerCalls,
+    'revision': revision,
+    'checked': checked,
+    'disposed': disposed,
+    'legacyTrigger': legacy.trayManager.trayIcon?.getContextMenuTrigger().name ?? 'disposed',
+  };
+
+  void changed() => updates.value++;
+
+  Future<void> start() async {
+    legacy.trayManager.addListener(this);
+    await createLegacy();
+    createReadmeIcon();
+  }
+
+  Future<void> createLegacy() async {
+    await legacy.trayManager.setIcon('images/tray_icon.png');
+    await legacy.trayManager.setToolTip('tray-menu-regression-legacy');
+    await replace();
+  }
+
+  Future<void> replace() async {
+    revision++;
+    await legacy.trayManager.setContextMenu(
+      legacy.Menu(items: [
+        legacy.MenuItem(
+          key: 'action',
+          label: 'Legacy action $revision',
+          onClick: (_) {
+            legacyClicks++;
+            changed();
+          },
+        ),
+        legacy.MenuItem.checkbox(
+          key: 'check',
+          label: 'Legacy checkbox',
+          checked: checked,
+          onClick: (item) {
+            checked = !checked;
+            item.checked = checked;
+            changed();
+          },
+        ),
+      ]),
+    );
+    changed();
+  }
+
+  @override
+  void onTrayMenuItemClick(legacy.MenuItem menuItem) {
+    listenerCalls++;
+    changed();
+  }
+
+  void createReadmeIcon() {
+    // The build script inserts the README example verbatim, minus its import.
+    {{README_NATIVE_EXAMPLE}}
+    nativeIcon = trayIcon;
+    retained.addAll([menu, showWindowItem]);
+    trayIcon.setTooltip('tray-menu-regression-native');
+    showWindowItem.addListener((event) {
+      if (event is MenuItemClickedEvent) {
+        nativeClicks++;
+        changed();
+      }
+    });
+  }
+}
