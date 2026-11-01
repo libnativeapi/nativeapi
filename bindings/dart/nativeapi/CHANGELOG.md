@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.3
 
 - Windows: window observation now runs on the thread that owns the windows, not the thread that first called the API (#18). `WindowManager` installs its WinEvent hooks and window subclassing there, and deferred main-thread work is delivered there, so a Flutter app keeping the default thread policy (UI isolate on its own thread) still gets focus, lifetime, occlusion and geometry events. Out-of-context WinEvents and window subclassing only work on the window-owning thread.
 
@@ -18,7 +18,9 @@
 
 - Implement HarmonyOS custom window shadows through an optional Stage companion: core-rendered colors, blur and offset, copied C++/C configuration, click-through helpers, live geometry and visibility, clipped shapes and native closure cleanup.
 
-- Return transparent colors for malformed hexadecimal input without throwing; preserve combined keyboard modifiers across the C ABI. Retain shared windows in relative positioning strategies and expose the owning relative-window getter in all bindings. C++ callers must pass `Relative(window)` instead of `Relative(*window)`.
+- Return transparent colors for malformed hexadecimal input without throwing; preserve combined keyboard modifiers across the C ABI.
+
+- **Breaking (C++):** retain shared windows in relative positioning strategies and expose the owning relative-window getter in all bindings. C++ callers must pass `Relative(window)` instead of `Relative(*window)`.
 
 - Display HarmonyOS native-view tooltips from real hover events through the optional NativeTooltipHost companion. Public SDK popups preserve focus and underlying clicks; updates, clearing, hidden/disabled ancestors, removal, node replacement and ContentSlot lifecycle cancel stale presentations.
 
@@ -73,8 +75,6 @@
 - Implement HarmonyOS application metadata, native image codecs, ASSET encrypted storage and clipboard image/local-file formats. ArkTS hosts initialize nativeapi and attach UIAbilityContext explicitly.
 
 - Add HarmonyOS window management for initialized ArkTS hosts: main/child window lookup, asynchronous child creation, geometry, focus, visibility, full screen, native events and cancellable child closing. Host integration is explicit; Flutter does not attach WindowStage automatically.
-
-## 0.5.3
 
 - `TrayIcon.isIconTemplate` now follows system tray colours on Windows and Linux as well as macOS, without changing the source image.
 - macOS: add `ShortcutReleasedEvent` for system key-up delivery and accept Fn / CapsLock accelerators (hotkey_manager migration).
