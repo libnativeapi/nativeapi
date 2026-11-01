@@ -895,6 +895,20 @@
           ]
         },
         {
+          "key": "WindowDockSide",
+          "kind": "enum",
+          "summary": "Screen edge reserved by a window docked as a desktop toolbar.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
           "key": "WindowCornerPreference",
           "kind": "enum",
           "summary": "Preferred rounding of the corners drawn by the window compositor.",

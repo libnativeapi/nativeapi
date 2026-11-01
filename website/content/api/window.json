@@ -759,6 +759,320 @@
           }
         },
         {
+          "key": "Window::SetMaximizedVertically",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets whether the window fills its monitor's work area vertically.",
+            "details": "Preserves horizontal position and width. Disabling restores the vertical position and height saved by the first successful enable. Native resizing away from that geometry ends this state. The state belongs to the native window and is shared by wrappers. This is not full maximization and emits ordinary move/resize events, not WindowMaximizedEvent.",
+            "params": [
+              {
+                "name": "is_maximized_vertically",
+                "text": "true to stretch vertically, false to restore."
+              }
+            ],
+            "returns": "true if applied; false if unsupported, invalid, minimized, fully maximized, full screen, docked, or rejected by the window system.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ❌ Not supported - Returns false\n- Windows: ✅ Supported - Uses the nearest monitor's work area\n- Linux: ❌ Not supported - Returns false\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetMaximizedVertically",
+              "signature": "bool SetMaximizedVertically(bool is_maximized_vertically)"
+            },
+            "csharp": {
+              "name": "SetMaximizedVertically",
+              "signature": "public bool SetMaximizedVertically(bool isMaximizedVertically)"
+            },
+            "dart": {
+              "name": "setMaximizedVertically",
+              "signature": "bool setMaximizedVertically(bool isMaximizedVertically)"
+            },
+            "go": {
+              "name": "SetMaximizedVertically",
+              "signature": "func (w *Window) SetMaximizedVertically(isMaximizedVertically bool) error"
+            },
+            "js": {
+              "name": "setMaximizedVertically",
+              "signature": "setMaximizedVertically(isMaximizedVertically: boolean): boolean"
+            },
+            "python": {
+              "name": "set_maximized_vertically",
+              "signature": "def set_maximized_vertically(self, is_maximized_vertically: bool) -> bool:"
+            },
+            "rust": {
+              "name": "set_maximized_vertically",
+              "signature": "pub fn set_maximized_vertically(&self, is_maximized_vertically: bool) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsMaximizedVertically",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if this window is vertically maximized by this library.",
+            "returns": "true while the applied geometry remains; false otherwise.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetMaximizedVertically() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsMaximizedVertically",
+              "signature": "bool IsMaximizedVertically() const"
+            },
+            "csharp": {
+              "name": "IsMaximizedVertically",
+              "signature": "public bool IsMaximizedVertically"
+            },
+            "dart": {
+              "name": "isMaximizedVertically",
+              "signature": "bool get isMaximizedVertically"
+            },
+            "go": {
+              "name": "IsMaximizedVertically",
+              "signature": "func (w *Window) IsMaximizedVertically() bool"
+            },
+            "js": {
+              "name": "isMaximizedVertically",
+              "signature": "get isMaximizedVertically(): boolean"
+            },
+            "python": {
+              "name": "is_maximized_vertically",
+              "signature": "@property\ndef is_maximized_vertically(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_maximized_vertically",
+              "signature": "pub fn is_maximized_vertically(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsVerticalMaximizeSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if vertical maximization is available on this platform.",
+            "returns": "true on Windows, false elsewhere."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsVerticalMaximizeSupported",
+              "signature": "static bool IsVerticalMaximizeSupported()"
+            },
+            "csharp": {
+              "name": "IsVerticalMaximizeSupported",
+              "signature": "public static bool IsVerticalMaximizeSupported()"
+            },
+            "dart": {
+              "name": "isVerticalMaximizeSupported",
+              "signature": "static bool isVerticalMaximizeSupported()"
+            },
+            "go": {
+              "name": "WindowIsVerticalMaximizeSupported",
+              "signature": "func WindowIsVerticalMaximizeSupported() bool"
+            },
+            "js": {
+              "name": "isVerticalMaximizeSupported",
+              "signature": "static isVerticalMaximizeSupported(): boolean"
+            },
+            "python": {
+              "name": "is_vertical_maximize_supported",
+              "signature": "@staticmethod\ndef is_vertical_maximize_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_vertical_maximize_supported",
+              "signature": "pub fn is_vertical_maximize_supported() -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::Dock",
+          "kind": "method",
+          "doc": {
+            "summary": "Docks the window as a desktop toolbar, reserving screen space.",
+            "details": "Uses the nearest monitor and the space left by other desktop toolbars. Repeated calls update the same reservation. Changes to other toolbars or display geometry reposition it. Undock() restores the original bounds; native destruction releases the reservation. All wrappers share the state. Successful changes emit WindowDockedEvent; Undock() emits WindowUndockedEvent. This is a desktop toolbar reservation, not Windows Snap Layouts.",
+            "params": [
+              {
+                "name": "side",
+                "text": "Left or Right; None is invalid (use Undock())."
+              },
+              {
+                "name": "width",
+                "text": "Desired outer width in logical pixels, finite and positive."
+              }
+            ],
+            "returns": "true if registered and positioned; false if unsupported, invalid, minimized, maximized, full screen, too wide, or rejected by the shell.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ❌ Not supported - Returns false\n- Windows: ✅ Supported - Shell application desktop toolbar (appbar)\n- Linux: ❌ Not supported - Returns false\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Dock",
+              "signature": "bool Dock(WindowDockSide side, double width)"
+            },
+            "csharp": {
+              "name": "Dock",
+              "signature": "public bool Dock(WindowDockSide side, double width)"
+            },
+            "dart": {
+              "name": "dock",
+              "signature": "bool dock(WindowDockSide side, double width)"
+            },
+            "go": {
+              "name": "Dock",
+              "signature": "func (w *Window) Dock(side WindowDockSide, width float64) error"
+            },
+            "js": {
+              "name": "dock",
+              "signature": "dock(side: WindowDockSide, width: number): boolean"
+            },
+            "python": {
+              "name": "dock",
+              "signature": "def dock(self, side: WindowDockSide, width: float) -> bool:"
+            },
+            "rust": {
+              "name": "dock",
+              "signature": "pub fn dock(&self, side: WindowDockSide, width: f64) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::Undock",
+          "kind": "method",
+          "doc": {
+            "summary": "Removes this window's desktop space reservation and restores its bounds.",
+            "returns": "true if undocked or already undocked on a supported platform; false if unsupported, invalid, or the shell rejects removal.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Dock() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Undock",
+              "signature": "bool Undock()"
+            },
+            "csharp": {
+              "name": "Undock",
+              "signature": "public bool Undock()"
+            },
+            "dart": {
+              "name": "undock",
+              "signature": "bool undock()"
+            },
+            "go": {
+              "name": "Undock",
+              "signature": "func (w *Window) Undock() error"
+            },
+            "js": {
+              "name": "undock",
+              "signature": "undock(): boolean"
+            },
+            "python": {
+              "name": "undock",
+              "signature": "def undock(self) -> bool:"
+            },
+            "rust": {
+              "name": "undock",
+              "signature": "pub fn undock(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::GetDockSide",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the screen edge this window reserves through Dock().",
+            "returns": "The reserved edge, or None when undocked, unsupported or invalid.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Dock() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetDockSide",
+              "signature": "WindowDockSide GetDockSide() const"
+            },
+            "csharp": {
+              "name": "DockSide",
+              "signature": "public WindowDockSide DockSide"
+            },
+            "dart": {
+              "name": "dockSide",
+              "signature": "WindowDockSide get dockSide"
+            },
+            "go": {
+              "name": "DockSide",
+              "signature": "func (w *Window) DockSide() WindowDockSide"
+            },
+            "js": {
+              "name": "dockSide",
+              "signature": "get dockSide(): WindowDockSide"
+            },
+            "python": {
+              "name": "dock_side",
+              "signature": "@property\ndef dock_side(self) -> WindowDockSide:"
+            },
+            "rust": {
+              "name": "dock_side",
+              "signature": "pub fn dock_side(&self) -> WindowDockSide"
+            }
+          }
+        },
+        {
+          "key": "Window::IsDockingSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if desktop toolbar docking is available on this platform.",
+            "returns": "true on Windows with a running shell, false elsewhere."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsDockingSupported",
+              "signature": "static bool IsDockingSupported()"
+            },
+            "csharp": {
+              "name": "IsDockingSupported",
+              "signature": "public static bool IsDockingSupported()"
+            },
+            "dart": {
+              "name": "isDockingSupported",
+              "signature": "static bool isDockingSupported()"
+            },
+            "go": {
+              "name": "WindowIsDockingSupported",
+              "signature": "func WindowIsDockingSupported() bool"
+            },
+            "js": {
+              "name": "isDockingSupported",
+              "signature": "static isDockingSupported(): boolean"
+            },
+            "python": {
+              "name": "is_docking_supported",
+              "signature": "@staticmethod\ndef is_docking_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_docking_supported",
+              "signature": "pub fn is_docking_supported() -> bool"
+            }
+          }
+        },
+        {
           "key": "Window::Unmaximize",
           "kind": "method",
           "doc": {
@@ -1083,6 +1397,95 @@
             "rust": {
               "name": "set_bounds",
               "signature": "pub fn set_bounds(&self, bounds: &Rectangle)"
+            }
+          }
+        },
+        {
+          "key": "Window::AnimateBounds",
+          "kind": "method",
+          "doc": {
+            "summary": "Animates the window to the supplied outer bounds.",
+            "details": "Completion is asynchronous. Observe move/resize events or GetBounds() for the result. For an immediate fallback after false, call SetBounds().",
+            "params": [
+              {
+                "name": "bounds",
+                "text": "Outer bounds in logical screen coordinates, with a top-left origin and finite positive width and height."
+              }
+            ],
+            "returns": "true if the native animation was submitted; false if unsupported, invalid or full screen. False leaves the window unchanged.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Supported - Uses the NSWindow frame animator\n- Windows: ❌ Not supported - Returns false\n- Linux: ❌ Not supported - Returns false\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "AnimateBounds",
+              "signature": "bool AnimateBounds(Rectangle bounds)"
+            },
+            "csharp": {
+              "name": "AnimateBounds",
+              "signature": "public bool AnimateBounds(Rectangle bounds)"
+            },
+            "dart": {
+              "name": "animateBounds",
+              "signature": "bool animateBounds(Rectangle bounds)"
+            },
+            "go": {
+              "name": "AnimateBounds",
+              "signature": "func (w *Window) AnimateBounds(bounds Rectangle) error"
+            },
+            "js": {
+              "name": "animateBounds",
+              "signature": "animateBounds(bounds: Rectangle): boolean"
+            },
+            "python": {
+              "name": "animate_bounds",
+              "signature": "def animate_bounds(self, bounds: _geometry.Rectangle) -> bool:"
+            },
+            "rust": {
+              "name": "animate_bounds",
+              "signature": "pub fn animate_bounds(&self, bounds: &Rectangle) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsBoundsAnimationSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if native window frame animations are available.",
+            "returns": "true on macOS, false elsewhere."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsBoundsAnimationSupported",
+              "signature": "static bool IsBoundsAnimationSupported()"
+            },
+            "csharp": {
+              "name": "IsBoundsAnimationSupported",
+              "signature": "public static bool IsBoundsAnimationSupported()"
+            },
+            "dart": {
+              "name": "isBoundsAnimationSupported",
+              "signature": "static bool isBoundsAnimationSupported()"
+            },
+            "go": {
+              "name": "WindowIsBoundsAnimationSupported",
+              "signature": "func WindowIsBoundsAnimationSupported() bool"
+            },
+            "js": {
+              "name": "isBoundsAnimationSupported",
+              "signature": "static isBoundsAnimationSupported(): boolean"
+            },
+            "python": {
+              "name": "is_bounds_animation_supported",
+              "signature": "@staticmethod\ndef is_bounds_animation_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_bounds_animation_supported",
+              "signature": "pub fn is_bounds_animation_supported() -> bool"
             }
           }
         },
@@ -4243,6 +4646,310 @@
           }
         },
         {
+          "key": "Window::SetVisibleOnFullScreen",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets whether this window may join another window's full-screen space.",
+            "details": "Independent of SetVisibleOnAllWorkspaces() and this window's own full-screen state. Both setters preserve unrelated native collection-behavior flags. On macOS, conflicting flags in the same collection-behavior group are displaced while enabled and restored when disabled by any wrapper.",
+            "params": [
+              {
+                "name": "is_visible_on_full_screen",
+                "text": "true to allow joining, false to disable."
+              }
+            ],
+            "returns": "true if applied; false if unsupported or the window is invalid.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Supported - NSWindowCollectionBehaviorFullScreenAuxiliary\n- Windows: ❌ Not supported - Returns false\n- Linux: ❌ Not supported - Returns false\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetVisibleOnFullScreen",
+              "signature": "bool SetVisibleOnFullScreen(bool is_visible_on_full_screen)"
+            },
+            "csharp": {
+              "name": "SetVisibleOnFullScreen",
+              "signature": "public bool SetVisibleOnFullScreen(bool isVisibleOnFullScreen)"
+            },
+            "dart": {
+              "name": "setVisibleOnFullScreen",
+              "signature": "bool setVisibleOnFullScreen(bool isVisibleOnFullScreen)"
+            },
+            "go": {
+              "name": "SetVisibleOnFullScreen",
+              "signature": "func (w *Window) SetVisibleOnFullScreen(isVisibleOnFullScreen bool) error"
+            },
+            "js": {
+              "name": "setVisibleOnFullScreen",
+              "signature": "setVisibleOnFullScreen(isVisibleOnFullScreen: boolean): boolean"
+            },
+            "python": {
+              "name": "set_visible_on_full_screen",
+              "signature": "def set_visible_on_full_screen(self, is_visible_on_full_screen: bool) -> bool:"
+            },
+            "rust": {
+              "name": "set_visible_on_full_screen",
+              "signature": "pub fn set_visible_on_full_screen(&self, is_visible_on_full_screen: bool) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsVisibleOnFullScreen",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if this window may join full-screen spaces.",
+            "returns": "true if enabled; false if unset, unsupported or invalid.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetVisibleOnFullScreen() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsVisibleOnFullScreen",
+              "signature": "bool IsVisibleOnFullScreen() const"
+            },
+            "csharp": {
+              "name": "IsVisibleOnFullScreen",
+              "signature": "public bool IsVisibleOnFullScreen"
+            },
+            "dart": {
+              "name": "isVisibleOnFullScreen",
+              "signature": "bool get isVisibleOnFullScreen"
+            },
+            "go": {
+              "name": "IsVisibleOnFullScreen",
+              "signature": "func (w *Window) IsVisibleOnFullScreen() bool"
+            },
+            "js": {
+              "name": "isVisibleOnFullScreen",
+              "signature": "get isVisibleOnFullScreen(): boolean"
+            },
+            "python": {
+              "name": "is_visible_on_full_screen",
+              "signature": "@property\ndef is_visible_on_full_screen(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_visible_on_full_screen",
+              "signature": "pub fn is_visible_on_full_screen(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsVisibleOnFullScreenSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if joining full-screen spaces is available.",
+            "returns": "true on macOS, false elsewhere."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsVisibleOnFullScreenSupported",
+              "signature": "static bool IsVisibleOnFullScreenSupported()"
+            },
+            "csharp": {
+              "name": "IsVisibleOnFullScreenSupported",
+              "signature": "public static bool IsVisibleOnFullScreenSupported()"
+            },
+            "dart": {
+              "name": "isVisibleOnFullScreenSupported",
+              "signature": "static bool isVisibleOnFullScreenSupported()"
+            },
+            "go": {
+              "name": "WindowIsVisibleOnFullScreenSupported",
+              "signature": "func WindowIsVisibleOnFullScreenSupported() bool"
+            },
+            "js": {
+              "name": "isVisibleOnFullScreenSupported",
+              "signature": "static isVisibleOnFullScreenSupported(): boolean"
+            },
+            "python": {
+              "name": "is_visible_on_full_screen_supported",
+              "signature": "@staticmethod\ndef is_visible_on_full_screen_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_visible_on_full_screen_supported",
+              "signature": "pub fn is_visible_on_full_screen_supported() -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::GrabKeyboard",
+          "kind": "method",
+          "doc": {
+            "summary": "Grabs the keyboard exclusively for this window until released or hidden.",
+            "details": "Grabs only the keyboard, leaving pointer input unchanged. The native window owns the grab; wrappers share it. Hiding or destroying the native surface releases it. UngrabKeyboard() never releases another window's grab.",
+            "returns": "true if acquired or already held by this window; false if unsupported, not viewable, invalid, or another client/window holds a grab.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ❌ Not supported - Returns false\n- Windows: ❌ Not supported - Returns false\n- Linux: ⚠️ X11 only - Uses the GDK seat keyboard grab; Wayland returns false\n- Android: ❌ Not applicable - Returns false\n- iOS: ❌ Not applicable - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GrabKeyboard",
+              "signature": "bool GrabKeyboard()"
+            },
+            "csharp": {
+              "name": "GrabKeyboard",
+              "signature": "public bool GrabKeyboard()"
+            },
+            "dart": {
+              "name": "grabKeyboard",
+              "signature": "bool grabKeyboard()"
+            },
+            "go": {
+              "name": "GrabKeyboard",
+              "signature": "func (w *Window) GrabKeyboard() error"
+            },
+            "js": {
+              "name": "grabKeyboard",
+              "signature": "grabKeyboard(): boolean"
+            },
+            "python": {
+              "name": "grab_keyboard",
+              "signature": "def grab_keyboard(self) -> bool:"
+            },
+            "rust": {
+              "name": "grab_keyboard",
+              "signature": "pub fn grab_keyboard(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::UngrabKeyboard",
+          "kind": "method",
+          "doc": {
+            "summary": "Releases the keyboard grab belonging to this native window.",
+            "returns": "true if released or already released on a supported platform; false if unsupported or invalid.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "GrabKeyboard() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "UngrabKeyboard",
+              "signature": "bool UngrabKeyboard()"
+            },
+            "csharp": {
+              "name": "UngrabKeyboard",
+              "signature": "public bool UngrabKeyboard()"
+            },
+            "dart": {
+              "name": "ungrabKeyboard",
+              "signature": "bool ungrabKeyboard()"
+            },
+            "go": {
+              "name": "UngrabKeyboard",
+              "signature": "func (w *Window) UngrabKeyboard() error"
+            },
+            "js": {
+              "name": "ungrabKeyboard",
+              "signature": "ungrabKeyboard(): boolean"
+            },
+            "python": {
+              "name": "ungrab_keyboard",
+              "signature": "def ungrab_keyboard(self) -> bool:"
+            },
+            "rust": {
+              "name": "ungrab_keyboard",
+              "signature": "pub fn ungrab_keyboard(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsKeyboardGrabbed",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if this native window still holds its keyboard grab.",
+            "returns": "true if held; false if released, hidden, destroyed or unsupported.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "GrabKeyboard() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsKeyboardGrabbed",
+              "signature": "bool IsKeyboardGrabbed() const"
+            },
+            "csharp": {
+              "name": "IsKeyboardGrabbed",
+              "signature": "public bool IsKeyboardGrabbed"
+            },
+            "dart": {
+              "name": "isKeyboardGrabbed",
+              "signature": "bool get isKeyboardGrabbed"
+            },
+            "go": {
+              "name": "IsKeyboardGrabbed",
+              "signature": "func (w *Window) IsKeyboardGrabbed() bool"
+            },
+            "js": {
+              "name": "isKeyboardGrabbed",
+              "signature": "get isKeyboardGrabbed(): boolean"
+            },
+            "python": {
+              "name": "is_keyboard_grabbed",
+              "signature": "@property\ndef is_keyboard_grabbed(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_keyboard_grabbed",
+              "signature": "pub fn is_keyboard_grabbed(&self) -> bool"
+            }
+          }
+        },
+        {
+          "key": "Window::IsKeyboardGrabSupported",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if the current display supports exclusive keyboard grabs.",
+            "returns": "true on Linux X11, false on Wayland and other platforms."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsKeyboardGrabSupported",
+              "signature": "static bool IsKeyboardGrabSupported()"
+            },
+            "csharp": {
+              "name": "IsKeyboardGrabSupported",
+              "signature": "public static bool IsKeyboardGrabSupported()"
+            },
+            "dart": {
+              "name": "isKeyboardGrabSupported",
+              "signature": "static bool isKeyboardGrabSupported()"
+            },
+            "go": {
+              "name": "WindowIsKeyboardGrabSupported",
+              "signature": "func WindowIsKeyboardGrabSupported() bool"
+            },
+            "js": {
+              "name": "isKeyboardGrabSupported",
+              "signature": "static isKeyboardGrabSupported(): boolean"
+            },
+            "python": {
+              "name": "is_keyboard_grab_supported",
+              "signature": "@staticmethod\ndef is_keyboard_grab_supported() -> bool:"
+            },
+            "rust": {
+              "name": "is_keyboard_grab_supported",
+              "signature": "pub fn is_keyboard_grab_supported() -> bool"
+            }
+          }
+        },
+        {
           "key": "Window::SetVisibleInTaskbar",
           "kind": "method",
           "doc": {
@@ -5082,6 +5789,162 @@
             "rust": {
               "name": "TitleBarStyle::Hidden",
               "signature": "Hidden = 1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "WindowDockSide",
+      "kind": "enum",
+      "doc": {
+        "summary": "Screen edge reserved by a window docked as a desktop toolbar.",
+        "notes": [
+          {
+            "kind": "see",
+            "text": "Window::Dock() for platform availability."
+          }
+        ]
+      },
+      "signatures": {
+        "cpp": {
+          "name": "WindowDockSide",
+          "signature": "enum class WindowDockSide"
+        },
+        "csharp": {
+          "name": "WindowDockSide",
+          "signature": "public enum WindowDockSide"
+        },
+        "dart": {
+          "name": "WindowDockSide",
+          "signature": "enum WindowDockSide"
+        },
+        "go": {
+          "name": "WindowDockSide",
+          "signature": "type WindowDockSide int32"
+        },
+        "js": {
+          "name": "WindowDockSide",
+          "signature": "export const WindowDockSide =\nexport type WindowDockSide = (typeof WindowDockSide)[keyof typeof WindowDockSide]"
+        },
+        "python": {
+          "name": "WindowDockSide",
+          "signature": "class WindowDockSide(enum.IntEnum):"
+        },
+        "rust": {
+          "name": "WindowDockSide",
+          "signature": "pub enum WindowDockSide"
+        }
+      },
+      "members": [
+        {
+          "key": "WindowDockSide::None",
+          "kind": "variant",
+          "doc": {
+            "summary": "No desktop space is reserved."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "None",
+              "signature": "None = 0"
+            },
+            "csharp": {
+              "name": "WindowDockSide.None",
+              "signature": "None = 0"
+            },
+            "dart": {
+              "name": "WindowDockSide.none",
+              "signature": "none(0)"
+            },
+            "go": {
+              "name": "WindowDockSideNone",
+              "signature": "const WindowDockSideNone WindowDockSide = 0"
+            },
+            "js": {
+              "name": "WindowDockSide.None",
+              "signature": "None: 0"
+            },
+            "python": {
+              "name": "NONE",
+              "signature": "NONE = 0"
+            },
+            "rust": {
+              "name": "WindowDockSide::None",
+              "signature": "None = 0"
+            }
+          }
+        },
+        {
+          "key": "WindowDockSide::Left",
+          "kind": "variant",
+          "doc": {
+            "summary": "Reserve space at the left edge of the window's monitor."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Left",
+              "signature": "Left = 1"
+            },
+            "csharp": {
+              "name": "WindowDockSide.Left",
+              "signature": "Left = 1"
+            },
+            "dart": {
+              "name": "WindowDockSide.left",
+              "signature": "left(1)"
+            },
+            "go": {
+              "name": "WindowDockSideLeft",
+              "signature": "const WindowDockSideLeft WindowDockSide = 1"
+            },
+            "js": {
+              "name": "WindowDockSide.Left",
+              "signature": "Left: 1"
+            },
+            "python": {
+              "name": "LEFT",
+              "signature": "LEFT = 1"
+            },
+            "rust": {
+              "name": "WindowDockSide::Left",
+              "signature": "Left = 1"
+            }
+          }
+        },
+        {
+          "key": "WindowDockSide::Right",
+          "kind": "variant",
+          "doc": {
+            "summary": "Reserve space at the right edge of the window's monitor."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Right",
+              "signature": "Right = 2"
+            },
+            "csharp": {
+              "name": "WindowDockSide.Right",
+              "signature": "Right = 2"
+            },
+            "dart": {
+              "name": "WindowDockSide.right",
+              "signature": "right(2)"
+            },
+            "go": {
+              "name": "WindowDockSideRight",
+              "signature": "const WindowDockSideRight WindowDockSide = 2"
+            },
+            "js": {
+              "name": "WindowDockSide.Right",
+              "signature": "Right: 2"
+            },
+            "python": {
+              "name": "RIGHT",
+              "signature": "RIGHT = 2"
+            },
+            "rust": {
+              "name": "WindowDockSide::Right",
+              "signature": "Right = 2"
             }
           }
         }
@@ -7420,6 +8283,130 @@
             "rust": {
               "name": "occlusion_state",
               "signature": "occlusion_state: WindowOcclusionState"
+            }
+          }
+        },
+        {
+          "key": "WindowDockedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "Emitted after a desktop toolbar reservation is created or changed.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Window::Dock() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "WindowDockedEvent",
+              "signature": "class WindowDockedEvent : public WindowEvent"
+            },
+            "csharp": {
+              "name": "WindowEvent.Docked",
+              "signature": "public sealed record Docked(uint WindowId, WindowDockSide Side) : WindowEvent;"
+            },
+            "dart": {
+              "name": "WindowDockedEvent",
+              "signature": "final class WindowDockedEvent extends WindowEvent"
+            },
+            "go": {
+              "name": "WindowEventDocked",
+              "signature": "const WindowEventDocked WindowEventType = 14"
+            },
+            "js": {
+              "name": "Extract<WindowEvent, { type: \"docked\" }>",
+              "signature": "| { type: \"docked\"; windowId: WindowId; side: WindowDockSide }"
+            },
+            "python": {
+              "name": "WindowDockedEvent",
+              "signature": "@dataclass(frozen=True)\nclass WindowDockedEvent(WindowEvent):"
+            },
+            "rust": {
+              "name": "WindowEvent::Docked",
+              "signature": "Docked { window_id: WindowId, side: WindowDockSide }"
+            }
+          }
+        },
+        {
+          "key": "WindowDockedEvent::Side",
+          "kind": "field",
+          "parent": "WindowDockedEvent",
+          "doc": {
+            "summary": "Gets the reserved screen edge. @return Left or Right."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Side",
+              "signature": "WindowDockSide GetSide() const"
+            },
+            "csharp": {
+              "name": "Side",
+              "signature": "WindowDockSide Side"
+            },
+            "dart": {
+              "name": "side",
+              "signature": "final WindowDockSide side"
+            },
+            "go": {
+              "name": "Side",
+              "signature": "Side WindowDockSide"
+            },
+            "js": {
+              "name": "side",
+              "signature": "side: WindowDockSide"
+            },
+            "python": {
+              "name": "side",
+              "signature": "side: WindowDockSide"
+            },
+            "rust": {
+              "name": "side",
+              "signature": "side: WindowDockSide"
+            }
+          }
+        },
+        {
+          "key": "WindowUndockedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "Emitted after this window's desktop toolbar reservation is removed.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "Window::Undock() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "WindowUndockedEvent",
+              "signature": "class WindowUndockedEvent : public WindowEvent"
+            },
+            "csharp": {
+              "name": "WindowEvent.Undocked",
+              "signature": "public sealed record Undocked(uint WindowId) : WindowEvent;"
+            },
+            "dart": {
+              "name": "WindowUndockedEvent",
+              "signature": "final class WindowUndockedEvent extends WindowEvent"
+            },
+            "go": {
+              "name": "WindowEventUndocked",
+              "signature": "const WindowEventUndocked WindowEventType = 15"
+            },
+            "js": {
+              "name": "Extract<WindowEvent, { type: \"undocked\" }>",
+              "signature": "| { type: \"undocked\"; windowId: WindowId }"
+            },
+            "python": {
+              "name": "WindowUndockedEvent",
+              "signature": "@dataclass(frozen=True)\nclass WindowUndockedEvent(WindowEvent):"
+            },
+            "rust": {
+              "name": "WindowEvent::Undocked",
+              "signature": "Undocked { window_id: WindowId }"
             }
           }
         }

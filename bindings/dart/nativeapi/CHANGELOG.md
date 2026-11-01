@@ -1,3 +1,11 @@
+## 0.5.4
+
+- Allow a new close request after a completed veto while its native rejection reply is queued, preserving `onWindowClose` callbacks that call `destroy()`.
+- Add native Windows desktop-toolbar docking with shared state, dock/undock events and automatic reservation cleanup, plus reversible vertical maximization.
+- Add Linux X11 exclusive keyboard grabs with ownership checks and release on hide or native destruction; Wayland reports the capability as unsupported.
+- Add macOS window-frame animation and independent full-screen-space visibility. Preserve other collection-behavior flags when changing workspace visibility.
+- Fix macOS restored events after re-subscribing while a window is maximized. Preserve Linux maximize requests made before a GTK window is first mapped.
+
 ## 0.5.3
 
 - Windows: window observation now runs on the thread that owns the windows, not the thread that first called the API (#18). `WindowManager` installs its WinEvent hooks and window subclassing there, and deferred main-thread work is delivered there, so a Flutter app keeping the default thread policy (UI isolate on its own thread) still gets focus, lifetime, occlusion and geometry events. Out-of-context WinEvents and window subclassing only work on the window-owning thread.

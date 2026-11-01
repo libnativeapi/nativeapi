@@ -245,7 +245,10 @@ Python listener 异常先否决可取消请求再上报；async def listener 被
 `Window` 继承 `EventEmitter<WindowEvent>`，每个原生身份共享关闭请求；多个包装对象的
 显式 / 隐式投票必须全部同意。`Close()`、macOS `performClose:`、Windows `SC_CLOSE`
 和 GTK `delete-event` 接同一 producer，批准后在原生窗口所属 UI 线程继续宿主处理，
-宿主仍可拒绝。强制的 `close` / `WM_CLOSE` / GTK destroy 与 Windows session 通知
+宿主仍可拒绝。仍在等待投票或已批准但尚未执行的请求合并重复关闭；已完成否决的
+请求即使原生拒绝回调尚未执行，也允许新的关闭请求。新请求排在原来的拒绝回调之后，
+保留拒绝回复且不把新请求合并进一个已不可能获批的旧请求。强制的 `close` / `WM_CLOSE` /
+GTK destroy 与 Windows session 通知
 只发不可取消请求，继续原始操作并使旧投票失效。GTK 保留原有 delete handler 的
 顺序和 block count，不接管全局 GDK 事件分发。WindowManager 继续只发观察事件；
 对象的观察事件复用现有监控，并保持原有“未显示过的窗口不发 Closed”语义。

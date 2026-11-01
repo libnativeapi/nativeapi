@@ -30,6 +30,22 @@ enum TitleBarStyle {
   };
 }
 
+enum WindowDockSide {
+  none(0),
+  left(1),
+  right(2);
+
+  const WindowDockSide(this.value);
+  final int value;
+
+  static WindowDockSide fromValue(int value) => switch (value) {
+    0 => WindowDockSide.none,
+    1 => WindowDockSide.left,
+    2 => WindowDockSide.right,
+    _ => WindowDockSide.none,
+  };
+}
+
 enum WindowCornerPreference {
   default_(0),
   doNotRound(1),
@@ -267,6 +283,21 @@ final class WindowOcclusionChangedEvent extends WindowEvent {
   final WindowOcclusionState occlusionState;
 }
 
+final class WindowDockedEvent extends WindowEvent {
+  const WindowDockedEvent({required this.windowId, required this.side});
+
+  @override
+  final WindowId windowId;
+  final WindowDockSide side;
+}
+
+final class WindowUndockedEvent extends WindowEvent {
+  const WindowUndockedEvent({required this.windowId});
+
+  @override
+  final WindowId windowId;
+}
+
 class Window {
   Window.fromHandle(this.nativeHandle);
   Window.borrowed(this.nativeHandle);
@@ -305,6 +336,20 @@ class Window {
 
   void maximize() => unsupported();
 
+  bool setMaximizedVertically(bool isMaximizedVertically) => unsupported();
+
+  bool get isMaximizedVertically => unsupported();
+
+  static bool isVerticalMaximizeSupported() => unsupported();
+
+  bool dock(WindowDockSide side, double width) => unsupported();
+
+  bool undock() => unsupported();
+
+  WindowDockSide get dockSide => unsupported();
+
+  static bool isDockingSupported() => unsupported();
+
   void unmaximize() => unsupported();
 
   bool get isMaximized => unsupported();
@@ -320,6 +365,10 @@ class Window {
   bool get isFullScreen => unsupported();
 
   set bounds(Rectangle value) => unsupported();
+
+  bool animateBounds(Rectangle bounds) => unsupported();
+
+  static bool isBoundsAnimationSupported() => unsupported();
 
   Rectangle get bounds => unsupported();
 
@@ -464,6 +513,20 @@ class Window {
   set isVisibleOnAllWorkspaces(bool value) => unsupported();
 
   bool get isVisibleOnAllWorkspaces => unsupported();
+
+  bool setVisibleOnFullScreen(bool isVisibleOnFullScreen) => unsupported();
+
+  bool get isVisibleOnFullScreen => unsupported();
+
+  static bool isVisibleOnFullScreenSupported() => unsupported();
+
+  bool grabKeyboard() => unsupported();
+
+  bool ungrabKeyboard() => unsupported();
+
+  bool get isKeyboardGrabbed => unsupported();
+
+  static bool isKeyboardGrabSupported() => unsupported();
 
   set isVisibleInTaskbar(bool value) => unsupported();
 

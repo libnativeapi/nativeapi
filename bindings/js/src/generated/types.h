@@ -545,6 +545,13 @@ inline Value ToValue(const native_window_event_t& event) {
       result.Set("type", Value::String("occlusionChanged"));
       result.Set("occlusionState", Value::Number(static_cast<double>(event.data.occlusion_changed.occlusion_state)));
       break;
+    case NATIVE_WINDOW_EVENT_TYPE_DOCKED:
+      result.Set("type", Value::String("docked"));
+      result.Set("side", Value::Number(static_cast<double>(event.data.docked.side)));
+      break;
+    case NATIVE_WINDOW_EVENT_TYPE_UNDOCKED:
+      result.Set("type", Value::String("undocked"));
+      break;
     default:
       return Value::Null();
   }

@@ -18,7 +18,8 @@ import 'package:nativeapi/nativeapi.dart'
 ///
 /// The child determines the size of the area. The center and disabled handles
 /// allow pointer events to reach the child. Native platform support determines
-/// whether resizing is available; double-tap vertical maximization is unsupported.
+/// whether resizing is available. Double-tapping the top or bottom edge toggles
+/// vertical maximization where supported (Windows).
 class DragToResizeArea extends StatelessWidget {
   const DragToResizeArea({
     super.key,
@@ -81,6 +82,19 @@ class DragToResizeArea extends StatelessWidget {
                             cursor: _cursorFor(entry.key),
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
+                              onDoubleTap:
+                                  entry.key == ResizeEdge.top ||
+                                      entry.key == ResizeEdge.bottom
+                                  ? () {
+                                      final target =
+                                          window ??
+                                          WindowManager.instance.getCurrent();
+                                      if (target == null) return;
+                                      target.setMaximizedVertically(
+                                        !target.isMaximizedVertically,
+                                      );
+                                    }
+                                  : null,
                               onPanStart: (_) {
                                 (window ?? WindowManager.instance.getCurrent())
                                     ?.startResizing(entry.key);

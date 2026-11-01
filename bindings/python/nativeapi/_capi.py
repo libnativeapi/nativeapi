@@ -153,6 +153,10 @@ class native_window_event_occlusion_changed_t(Structure):
     pass
 
 
+class native_window_event_docked_t(Structure):
+    pass
+
+
 class native_window_event_data_t(Union):
     pass
 
@@ -481,12 +485,16 @@ native_window_event_property_changed_t._fields_ = [
 native_window_event_occlusion_changed_t._fields_ = [
     ("occlusion_state", c_int),
 ]
+native_window_event_docked_t._fields_ = [
+    ("side", c_int),
+]
 native_window_event_data_t._fields_ = [
     ("moved", native_window_event_moved_t),
     ("resized", native_window_event_resized_t),
     ("close_requested", native_window_event_close_requested_t),
     ("property_changed", native_window_event_property_changed_t),
     ("occlusion_changed", native_window_event_occlusion_changed_t),
+    ("docked", native_window_event_docked_t),
 ]
 native_window_event_t._fields_ = [
     ("type", c_int),
@@ -2210,6 +2218,36 @@ native_window_is_occlusion_state_supported = function(
     ],
 )
 native_window_maximize = function("native_window_maximize", None, [c_uint64])
+native_window_set_maximized_vertically = function(
+    "native_window_set_maximized_vertically",
+    c_bool,
+    [
+        c_uint64,
+        c_bool,
+    ],
+)
+native_window_is_maximized_vertically = function(
+    "native_window_is_maximized_vertically",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_vertical_maximize_supported = function(
+    "native_window_is_vertical_maximize_supported",
+    c_bool,
+    [
+    ],
+)
+native_window_dock = function("native_window_dock", c_bool, [c_uint64, c_int, c_double])
+native_window_undock = function("native_window_undock", c_bool, [c_uint64])
+native_window_get_dock_side = function("native_window_get_dock_side", c_int, [c_uint64])
+native_window_is_docking_supported = function(
+    "native_window_is_docking_supported",
+    c_bool,
+    [
+    ],
+)
 native_window_unmaximize = function("native_window_unmaximize", None, [c_uint64])
 native_window_is_maximized = function("native_window_is_maximized", c_bool, [c_uint64])
 native_window_minimize = function("native_window_minimize", None, [c_uint64])
@@ -2236,6 +2274,20 @@ native_window_set_bounds = function(
     [
         c_uint64,
         native_rectangle_t,
+    ],
+)
+native_window_animate_bounds = function(
+    "native_window_animate_bounds",
+    c_bool,
+    [
+        c_uint64,
+        native_rectangle_t,
+    ],
+)
+native_window_is_bounds_animation_supported = function(
+    "native_window_is_bounds_animation_supported",
+    c_bool,
+    [
     ],
 )
 native_window_get_bounds = function(
@@ -2715,6 +2767,54 @@ native_window_is_visible_on_all_workspaces = function(
     c_bool,
     [
         c_uint64,
+    ],
+)
+native_window_set_visible_on_full_screen = function(
+    "native_window_set_visible_on_full_screen",
+    c_bool,
+    [
+        c_uint64,
+        c_bool,
+    ],
+)
+native_window_is_visible_on_full_screen = function(
+    "native_window_is_visible_on_full_screen",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_visible_on_full_screen_supported = function(
+    "native_window_is_visible_on_full_screen_supported",
+    c_bool,
+    [
+    ],
+)
+native_window_grab_keyboard = function(
+    "native_window_grab_keyboard",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_ungrab_keyboard = function(
+    "native_window_ungrab_keyboard",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_keyboard_grabbed = function(
+    "native_window_is_keyboard_grabbed",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_window_is_keyboard_grab_supported = function(
+    "native_window_is_keyboard_grab_supported",
+    c_bool,
+    [
     ],
 )
 native_window_set_visible_in_taskbar = function(

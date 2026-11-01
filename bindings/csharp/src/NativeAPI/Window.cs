@@ -15,6 +15,13 @@ public enum TitleBarStyle
     Hidden = 1,
 }
 
+public enum WindowDockSide
+{
+    None = 0,
+    Left = 1,
+    Right = 2,
+}
+
 public enum WindowCornerPreference
 {
     Default = 0,
@@ -88,6 +95,8 @@ public abstract record WindowEvent
     public sealed record CloseRequested(uint WindowId, EventRequest Request) : WindowEvent;
     public sealed record PropertyChanged(uint WindowId, WindowProperty Property) : WindowEvent;
     public sealed record OcclusionChanged(uint WindowId, WindowOcclusionState OcclusionState) : WindowEvent;
+    public sealed record Docked(uint WindowId, WindowDockSide Side) : WindowEvent;
+    public sealed record Undocked(uint WindowId) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -107,6 +116,8 @@ public abstract record WindowEvent
             case 11: return new CloseRequested(raw.window_id, new EventRequest(raw.data.close_requested.request, ownsHandle: false));
             case 12: return new PropertyChanged(raw.window_id, (WindowProperty)raw.data.property_changed.property);
             case 13: return new OcclusionChanged(raw.window_id, (WindowOcclusionState)raw.data.occlusion_changed.occlusion_state);
+            case 14: return new Docked(raw.window_id, (WindowDockSide)raw.data.docked.side);
+            case 15: return new Undocked(raw.window_id);
             default: return null;
         }
     }
@@ -248,6 +259,54 @@ public sealed partial class Window : IDisposable
         Interop.native_window_maximize(NativeHandle);
     }
 
+    public bool SetMaximizedVertically(bool isMaximizedVertically)
+    {
+        var rawResult = Interop.native_window_set_maximized_vertically(NativeHandle, isMaximizedVertically);
+        return rawResult;
+    }
+
+    public bool IsMaximizedVertically
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_maximized_vertically(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public static bool IsVerticalMaximizeSupported()
+    {
+        var rawResult = Interop.native_window_is_vertical_maximize_supported();
+        return rawResult;
+    }
+
+    public bool Dock(WindowDockSide side, double width)
+    {
+        var rawResult = Interop.native_window_dock(NativeHandle, (int)side, width);
+        return rawResult;
+    }
+
+    public bool Undock()
+    {
+        var rawResult = Interop.native_window_undock(NativeHandle);
+        return rawResult;
+    }
+
+    public WindowDockSide DockSide
+    {
+        get
+        {
+            var rawResult = Interop.native_window_get_dock_side(NativeHandle);
+            return (WindowDockSide)rawResult;
+        }
+    }
+
+    public static bool IsDockingSupported()
+    {
+        var rawResult = Interop.native_window_is_docking_supported();
+        return rawResult;
+    }
+
     public void Unmaximize()
     {
         Interop.native_window_unmaximize(NativeHandle);
@@ -299,6 +358,19 @@ public sealed partial class Window : IDisposable
     {
         var rawBounds = bounds.ToRaw();
         Interop.native_window_set_bounds(NativeHandle, rawBounds);
+    }
+
+    public bool AnimateBounds(Rectangle bounds)
+    {
+        var rawBounds = bounds.ToRaw();
+        var rawResult = Interop.native_window_animate_bounds(NativeHandle, rawBounds);
+        return rawResult;
+    }
+
+    public static bool IsBoundsAnimationSupported()
+    {
+        var rawResult = Interop.native_window_is_bounds_animation_supported();
+        return rawResult;
     }
 
     public Rectangle Bounds
@@ -812,6 +884,54 @@ public sealed partial class Window : IDisposable
             var rawResult = Interop.native_window_is_visible_on_all_workspaces(NativeHandle);
             return rawResult;
         }
+    }
+
+    public bool SetVisibleOnFullScreen(bool isVisibleOnFullScreen)
+    {
+        var rawResult = Interop.native_window_set_visible_on_full_screen(NativeHandle, isVisibleOnFullScreen);
+        return rawResult;
+    }
+
+    public bool IsVisibleOnFullScreen
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_visible_on_full_screen(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public static bool IsVisibleOnFullScreenSupported()
+    {
+        var rawResult = Interop.native_window_is_visible_on_full_screen_supported();
+        return rawResult;
+    }
+
+    public bool GrabKeyboard()
+    {
+        var rawResult = Interop.native_window_grab_keyboard(NativeHandle);
+        return rawResult;
+    }
+
+    public bool UngrabKeyboard()
+    {
+        var rawResult = Interop.native_window_ungrab_keyboard(NativeHandle);
+        return rawResult;
+    }
+
+    public bool IsKeyboardGrabbed
+    {
+        get
+        {
+            var rawResult = Interop.native_window_is_keyboard_grabbed(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public static bool IsKeyboardGrabSupported()
+    {
+        var rawResult = Interop.native_window_is_keyboard_grab_supported();
+        return rawResult;
     }
 
     public void SetVisibleInTaskbar(bool isVisibleInTaskbar)

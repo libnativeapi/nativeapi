@@ -41,6 +41,29 @@ impl TitleBarStyle {
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum WindowDockSide {
+    None = 0,
+    Left = 1,
+    Right = 2,
+}
+
+impl WindowDockSide {
+    pub(crate) fn from_raw(raw: cnativeapi::native_window_dock_side_t) -> Self {
+        match raw {
+            cnativeapi::NATIVE_WINDOW_DOCK_SIDE_NONE => Self::None,
+            cnativeapi::NATIVE_WINDOW_DOCK_SIDE_LEFT => Self::Left,
+            cnativeapi::NATIVE_WINDOW_DOCK_SIDE_RIGHT => Self::Right,
+            _ => Self::None,
+        }
+    }
+
+    pub(crate) fn to_raw(self) -> cnativeapi::native_window_dock_side_t {
+        self as cnativeapi::native_window_dock_side_t
+    }
+}
+
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum WindowCornerPreference {
     Default = 0,
     DoNotRound = 1,
@@ -209,6 +232,8 @@ pub enum WindowEvent {
     CloseRequested { window_id: WindowId, request: EventRequestRef },
     PropertyChanged { window_id: WindowId, property: WindowProperty },
     OcclusionChanged { window_id: WindowId, occlusion_state: WindowOcclusionState },
+    Docked { window_id: WindowId, side: WindowDockSide },
+    Undocked { window_id: WindowId },
 }
 
 impl WindowEvent {
@@ -228,6 +253,8 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED => Self::CloseRequested { window_id: raw.window_id, request: EventRequestRef::from_raw(raw.data.close_requested.request) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED => Self::PropertyChanged { window_id: raw.window_id, property: WindowProperty::from_raw(raw.data.property_changed.property) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED => Self::OcclusionChanged { window_id: raw.window_id, occlusion_state: WindowOcclusionState::from_raw(raw.data.occlusion_changed.occlusion_state) },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_DOCKED => Self::Docked { window_id: raw.window_id, side: WindowDockSide::from_raw(raw.data.docked.side) },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_UNDOCKED => Self::Undocked { window_id: raw.window_id },
             _ => return None,
         })
     }
@@ -361,6 +388,48 @@ impl Window {
         }
     }
 
+    pub fn set_maximized_vertically(&self, is_maximized_vertically: bool) -> bool {
+        unsafe {
+            cnativeapi::native_window_set_maximized_vertically(self.handle, is_maximized_vertically)
+        }
+    }
+
+    pub fn is_maximized_vertically(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_maximized_vertically(self.handle)
+        }
+    }
+
+    pub fn is_vertical_maximize_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_vertical_maximize_supported()
+        }
+    }
+
+    pub fn dock(&self, side: WindowDockSide, width: f64) -> bool {
+        unsafe {
+            cnativeapi::native_window_dock(self.handle, side.to_raw(), width)
+        }
+    }
+
+    pub fn undock(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_undock(self.handle)
+        }
+    }
+
+    pub fn dock_side(&self) -> WindowDockSide {
+        unsafe {
+            WindowDockSide::from_raw(cnativeapi::native_window_get_dock_side(self.handle))
+        }
+    }
+
+    pub fn is_docking_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_docking_supported()
+        }
+    }
+
     pub fn unmaximize(&self) {
         unsafe {
             cnativeapi::native_window_unmaximize(self.handle);
@@ -407,6 +476,19 @@ impl Window {
         let bounds_raw = bounds.to_raw();
         unsafe {
             cnativeapi::native_window_set_bounds(self.handle, bounds_raw.raw);
+        }
+    }
+
+    pub fn animate_bounds(&self, bounds: &Rectangle) -> bool {
+        let bounds_raw = bounds.to_raw();
+        unsafe {
+            cnativeapi::native_window_animate_bounds(self.handle, bounds_raw.raw)
+        }
+    }
+
+    pub fn is_bounds_animation_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_bounds_animation_supported()
         }
     }
 
@@ -863,6 +945,48 @@ impl Window {
     pub fn is_visible_on_all_workspaces(&self) -> bool {
         unsafe {
             cnativeapi::native_window_is_visible_on_all_workspaces(self.handle)
+        }
+    }
+
+    pub fn set_visible_on_full_screen(&self, is_visible_on_full_screen: bool) -> bool {
+        unsafe {
+            cnativeapi::native_window_set_visible_on_full_screen(self.handle, is_visible_on_full_screen)
+        }
+    }
+
+    pub fn is_visible_on_full_screen(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_visible_on_full_screen(self.handle)
+        }
+    }
+
+    pub fn is_visible_on_full_screen_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_visible_on_full_screen_supported()
+        }
+    }
+
+    pub fn grab_keyboard(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_grab_keyboard(self.handle)
+        }
+    }
+
+    pub fn ungrab_keyboard(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_ungrab_keyboard(self.handle)
+        }
+    }
+
+    pub fn is_keyboard_grabbed(&self) -> bool {
+        unsafe {
+            cnativeapi::native_window_is_keyboard_grabbed(self.handle)
+        }
+    }
+
+    pub fn is_keyboard_grab_supported() -> bool {
+        unsafe {
+            cnativeapi::native_window_is_keyboard_grab_supported()
         }
     }
 

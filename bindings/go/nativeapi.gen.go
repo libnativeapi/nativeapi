@@ -3011,6 +3011,15 @@ const (
 	TitleBarStyleHidden TitleBarStyle = 1
 )
 
+// WindowDockSide represents native WindowDockSide values.
+type WindowDockSide int32
+
+const (
+	WindowDockSideNone  WindowDockSide = 0
+	WindowDockSideLeft  WindowDockSide = 1
+	WindowDockSideRight WindowDockSide = 2
+)
+
 // WindowCornerPreference represents native WindowCornerPreference values.
 type WindowCornerPreference int32
 
@@ -3093,6 +3102,8 @@ const (
 	WindowEventCloseRequested    WindowEventType = 11
 	WindowEventPropertyChanged   WindowEventType = 12
 	WindowEventOcclusionChanged  WindowEventType = 13
+	WindowEventDocked            WindowEventType = 14
+	WindowEventUndocked          WindowEventType = 15
 )
 
 // WindowEvent copies an event payload. Handle fields are borrowed until the callback returns.
@@ -3105,6 +3116,7 @@ type WindowEvent struct {
 	Request        *EventRequest
 	Property       WindowProperty
 	OcclusionState WindowOcclusionState
+	Side           WindowDockSide
 }
 
 func fromCWindowEvent(raw *C.native_window_event_t) WindowEvent {
@@ -3130,6 +3142,9 @@ func fromCWindowEvent(raw *C.native_window_event_t) WindowEvent {
 		value.Property = WindowProperty(C.go_native_window_event_t_property_changed_Property(raw))
 	case WindowEventOcclusionChanged:
 		value.OcclusionState = WindowOcclusionState(C.go_native_window_event_t_occlusion_changed_OcclusionState(raw))
+	case WindowEventDocked:
+		value.Side = WindowDockSide(C.go_native_window_event_t_docked_Side(raw))
+	case WindowEventUndocked:
 	}
 	return value
 }
@@ -3271,6 +3286,60 @@ func (w *Window) Maximize() {
 	C.native_window_maximize(C.native_window_t(w.nativeHandleValue()))
 }
 
+// SetMaximizedVertically invokes the native SetMaximizedVertically operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) SetMaximizedVertically(isMaximizedVertically bool) error {
+	result := C.native_window_set_maximized_vertically(C.native_window_t(w.nativeHandleValue()), C.bool(isMaximizedVertically))
+	if !bool(result) {
+		return nativeError("Window.SetMaximizedVertically")
+	}
+	return nil
+}
+
+// IsMaximizedVertically invokes the native IsMaximizedVertically operation.
+func (w *Window) IsMaximizedVertically() bool {
+	result := C.native_window_is_maximized_vertically(C.native_window_t(w.nativeHandleValue()))
+	return bool(result)
+}
+
+// WindowIsVerticalMaximizeSupported invokes the native IsVerticalMaximizeSupported operation.
+func WindowIsVerticalMaximizeSupported() bool {
+	result := C.native_window_is_vertical_maximize_supported()
+	return bool(result)
+}
+
+// Dock invokes the native Dock operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) Dock(side WindowDockSide, width float64) error {
+	result := C.native_window_dock(C.native_window_t(w.nativeHandleValue()), C.native_window_dock_side_t(side), C.double(width))
+	if !bool(result) {
+		return nativeError("Window.Dock")
+	}
+	return nil
+}
+
+// Undock invokes the native Undock operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) Undock() error {
+	result := C.native_window_undock(C.native_window_t(w.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("Window.Undock")
+	}
+	return nil
+}
+
+// DockSide invokes the native GetDockSide operation.
+func (w *Window) DockSide() WindowDockSide {
+	result := C.native_window_get_dock_side(C.native_window_t(w.nativeHandleValue()))
+	return WindowDockSide(result)
+}
+
+// WindowIsDockingSupported invokes the native IsDockingSupported operation.
+func WindowIsDockingSupported() bool {
+	result := C.native_window_is_docking_supported()
+	return bool(result)
+}
+
 // Unmaximize invokes the native Unmaximize operation.
 func (w *Window) Unmaximize() {
 	C.native_window_unmaximize(C.native_window_t(w.nativeHandleValue()))
@@ -3314,6 +3383,24 @@ func (w *Window) SetBounds(bounds Rectangle) {
 	cArg0, cArg0Cleanup := toCRectangle(bounds)
 	defer cArg0Cleanup()
 	C.native_window_set_bounds(C.native_window_t(w.nativeHandleValue()), cArg0)
+}
+
+// AnimateBounds invokes the native AnimateBounds operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) AnimateBounds(bounds Rectangle) error {
+	cArg0, cArg0Cleanup := toCRectangle(bounds)
+	defer cArg0Cleanup()
+	result := C.native_window_animate_bounds(C.native_window_t(w.nativeHandleValue()), cArg0)
+	if !bool(result) {
+		return nativeError("Window.AnimateBounds")
+	}
+	return nil
+}
+
+// WindowIsBoundsAnimationSupported invokes the native IsBoundsAnimationSupported operation.
+func WindowIsBoundsAnimationSupported() bool {
+	result := C.native_window_is_bounds_animation_supported()
+	return bool(result)
 }
 
 // Bounds invokes the native GetBounds operation.
@@ -3784,6 +3871,60 @@ func (w *Window) SetVisibleOnAllWorkspaces(isVisibleOnAllWorkspaces bool) {
 // IsVisibleOnAllWorkspaces invokes the native IsVisibleOnAllWorkspaces operation.
 func (w *Window) IsVisibleOnAllWorkspaces() bool {
 	result := C.native_window_is_visible_on_all_workspaces(C.native_window_t(w.nativeHandleValue()))
+	return bool(result)
+}
+
+// SetVisibleOnFullScreen invokes the native SetVisibleOnFullScreen operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) SetVisibleOnFullScreen(isVisibleOnFullScreen bool) error {
+	result := C.native_window_set_visible_on_full_screen(C.native_window_t(w.nativeHandleValue()), C.bool(isVisibleOnFullScreen))
+	if !bool(result) {
+		return nativeError("Window.SetVisibleOnFullScreen")
+	}
+	return nil
+}
+
+// IsVisibleOnFullScreen invokes the native IsVisibleOnFullScreen operation.
+func (w *Window) IsVisibleOnFullScreen() bool {
+	result := C.native_window_is_visible_on_full_screen(C.native_window_t(w.nativeHandleValue()))
+	return bool(result)
+}
+
+// WindowIsVisibleOnFullScreenSupported invokes the native IsVisibleOnFullScreenSupported operation.
+func WindowIsVisibleOnFullScreenSupported() bool {
+	result := C.native_window_is_visible_on_full_screen_supported()
+	return bool(result)
+}
+
+// GrabKeyboard invokes the native GrabKeyboard operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) GrabKeyboard() error {
+	result := C.native_window_grab_keyboard(C.native_window_t(w.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("Window.GrabKeyboard")
+	}
+	return nil
+}
+
+// UngrabKeyboard invokes the native UngrabKeyboard operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (w *Window) UngrabKeyboard() error {
+	result := C.native_window_ungrab_keyboard(C.native_window_t(w.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("Window.UngrabKeyboard")
+	}
+	return nil
+}
+
+// IsKeyboardGrabbed invokes the native IsKeyboardGrabbed operation.
+func (w *Window) IsKeyboardGrabbed() bool {
+	result := C.native_window_is_keyboard_grabbed(C.native_window_t(w.nativeHandleValue()))
+	return bool(result)
+}
+
+// WindowIsKeyboardGrabSupported invokes the native IsKeyboardGrabSupported operation.
+func WindowIsKeyboardGrabSupported() bool {
+	result := C.native_window_is_keyboard_grab_supported()
 	return bool(result)
 }
 

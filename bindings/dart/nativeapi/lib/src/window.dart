@@ -39,6 +39,25 @@ enum TitleBarStyle {
       c.native_title_bar_style_t.fromValue(value);
 }
 
+enum WindowDockSide {
+  none(0),
+  left(1),
+  right(2);
+
+  const WindowDockSide(this.value);
+  final int value;
+
+  static WindowDockSide fromValue(int value) => switch (value) {
+    0 => WindowDockSide.none,
+    1 => WindowDockSide.left,
+    2 => WindowDockSide.right,
+    _ => WindowDockSide.none,
+  };
+
+  c.native_window_dock_side_t get raw =>
+      c.native_window_dock_side_t.fromValue(value);
+}
+
 enum WindowCornerPreference {
   default_(0),
   doNotRound(1),
@@ -269,6 +288,17 @@ sealed class WindowEvent {
         ),
       );
     }
+    if (raw.typeAsInt ==
+        c.native_window_event_type_t.NATIVE_WINDOW_EVENT_TYPE_DOCKED.value) {
+      return WindowDockedEvent(
+        windowId: raw.window_id,
+        side: WindowDockSide.fromValue(raw.data.docked.sideAsInt),
+      );
+    }
+    if (raw.typeAsInt ==
+        c.native_window_event_type_t.NATIVE_WINDOW_EVENT_TYPE_UNDOCKED.value) {
+      return WindowUndockedEvent(windowId: raw.window_id);
+    }
     return null;
   }
 }
@@ -385,6 +415,21 @@ final class WindowOcclusionChangedEvent extends WindowEvent {
   final WindowOcclusionState occlusionState;
 }
 
+final class WindowDockedEvent extends WindowEvent {
+  const WindowDockedEvent({required this.windowId, required this.side});
+
+  @override
+  final WindowId windowId;
+  final WindowDockSide side;
+}
+
+final class WindowUndockedEvent extends WindowEvent {
+  const WindowUndockedEvent({required this.windowId});
+
+  @override
+  final WindowId windowId;
+}
+
 class Window implements ffi.Finalizable {
   /// Adopts a handle returned by the C API and releases it when this
   /// object becomes unreachable.
@@ -487,6 +532,38 @@ class Window implements ffi.Finalizable {
     c.native_window_maximize(nativeHandle);
   }
 
+  bool setMaximizedVertically(bool isMaximizedVertically) {
+    return c.native_window_set_maximized_vertically(
+      nativeHandle,
+      isMaximizedVertically,
+    );
+  }
+
+  bool get isMaximizedVertically {
+    return c.native_window_is_maximized_vertically(nativeHandle);
+  }
+
+  static bool isVerticalMaximizeSupported() {
+    return c.native_window_is_vertical_maximize_supported();
+  }
+
+  bool dock(WindowDockSide side, double width) {
+    return c.native_window_dock(nativeHandle, side.raw, width);
+  }
+
+  bool undock() {
+    return c.native_window_undock(nativeHandle);
+  }
+
+  WindowDockSide get dockSide {
+    final raw = c.native_window_get_dock_side(nativeHandle);
+    return WindowDockSide.fromValue(raw.value);
+  }
+
+  static bool isDockingSupported() {
+    return c.native_window_is_docking_supported();
+  }
+
   void unmaximize() {
     c.native_window_unmaximize(nativeHandle);
   }
@@ -519,6 +596,20 @@ class Window implements ffi.Finalizable {
     final valuePointer = value.allocNative();
     c.native_window_set_bounds(nativeHandle, valuePointer.ref);
     Rectangle.freeNative(valuePointer);
+  }
+
+  bool animateBounds(Rectangle bounds) {
+    final boundsPointer = bounds.allocNative();
+    final result = c.native_window_animate_bounds(
+      nativeHandle,
+      boundsPointer.ref,
+    );
+    Rectangle.freeNative(boundsPointer);
+    return result;
+  }
+
+  static bool isBoundsAnimationSupported() {
+    return c.native_window_is_bounds_animation_supported();
   }
 
   Rectangle get bounds {
@@ -866,6 +957,37 @@ class Window implements ffi.Finalizable {
 
   bool get isVisibleOnAllWorkspaces {
     return c.native_window_is_visible_on_all_workspaces(nativeHandle);
+  }
+
+  bool setVisibleOnFullScreen(bool isVisibleOnFullScreen) {
+    return c.native_window_set_visible_on_full_screen(
+      nativeHandle,
+      isVisibleOnFullScreen,
+    );
+  }
+
+  bool get isVisibleOnFullScreen {
+    return c.native_window_is_visible_on_full_screen(nativeHandle);
+  }
+
+  static bool isVisibleOnFullScreenSupported() {
+    return c.native_window_is_visible_on_full_screen_supported();
+  }
+
+  bool grabKeyboard() {
+    return c.native_window_grab_keyboard(nativeHandle);
+  }
+
+  bool ungrabKeyboard() {
+    return c.native_window_ungrab_keyboard(nativeHandle);
+  }
+
+  bool get isKeyboardGrabbed {
+    return c.native_window_is_keyboard_grabbed(nativeHandle);
+  }
+
+  static bool isKeyboardGrabSupported() {
+    return c.native_window_is_keyboard_grab_supported();
   }
 
   set isVisibleInTaskbar(bool value) {

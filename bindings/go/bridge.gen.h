@@ -34,6 +34,7 @@ static inline native_size_t go_native_window_event_t_resized_NewSize(const nativ
 static inline native_event_request_t go_native_window_event_t_close_requested_Request(const native_window_event_t* event) { return event->data.close_requested.request; }
 static inline native_window_property_t go_native_window_event_t_property_changed_Property(const native_window_event_t* event) { return event->data.property_changed.property; }
 static inline native_window_occlusion_state_t go_native_window_event_t_occlusion_changed_OcclusionState(const native_window_event_t* event) { return event->data.occlusion_changed.occlusion_state; }
+static inline native_window_dock_side_t go_native_window_event_t_docked_Side(const native_window_event_t* event) { return event->data.docked.side; }
 extern void goEvent_native_window_event_t(uintptr_t handle, native_window_event_t* event);
 static inline void go_native_window_event_callback_t(const native_window_event_t* event, void* data) { goEvent_native_window_event_t(*(uintptr_t*)data, (native_window_event_t*)event); }
 static inline native_window_event_callback_t go_get_native_window_event_callback_t(void) { return go_native_window_event_callback_t; }

@@ -50,6 +50,108 @@ Future<void> tests() async {
       'legacy geometry reads the native window',
     );
 
+    if (Platform.isWindows) {
+      final before = window.bounds;
+      await windowManager.maximize(vertically: true);
+      check(
+        window.isMaximizedVertically &&
+            !window.isMaximized &&
+            (window.bounds.x - before.x).abs() < 2 &&
+            (window.bounds.width - before.width).abs() < 2,
+        'vertical maximize preserves horizontal geometry',
+      );
+      await windowManager.unmaximize();
+      check(
+        !window.isMaximizedVertically &&
+            (window.bounds.y - before.y).abs() < 2 &&
+            (window.bounds.height - before.height).abs() < 2,
+        'unmaximize restores vertical geometry',
+      );
+      check(await windowManager.isDockable(), 'shell docking is available');
+      try {
+        reports.events.clear();
+        await windowManager.dock(side: DockSide.left, width: 220);
+        await until(
+          () => reports.events.contains('docked'),
+          'left docking event',
+        );
+        check(
+          await windowManager.isDocked() == DockSide.left &&
+              window.dockSide == native.WindowDockSide.left &&
+              (window.size.width - 220).abs() < 2,
+          'legacy left docking reserves logical width through core',
+        );
+        check(
+          !window.dock(native.WindowDockSide.right, double.nan) &&
+              window.dockSide == native.WindowDockSide.left,
+          'invalid docking leaves the reservation unchanged',
+        );
+        reports.events.clear();
+        await windowManager.dock(side: DockSide.right, width: 240);
+        await until(
+          () => reports.events.contains('docked'),
+          'right docking event',
+        );
+        check(
+          await windowManager.isDocked() == DockSide.right &&
+              (window.size.width - 240).abs() < 2,
+          'docking can switch edges without a second reservation',
+        );
+        reports.events.clear();
+        check(await windowManager.undock(), 'undock succeeds');
+        await until(
+          () => reports.events.contains('undocked'),
+          'undocking event',
+        );
+        check(
+          await windowManager.isDocked() == null &&
+              (window.bounds.width - before.width).abs() < 2 &&
+              (window.bounds.height - before.height).abs() < 2,
+          'undock releases space and restores original bounds',
+        );
+      } finally {
+        await windowManager.undock();
+      }
+    }
+
+    if (Platform.isLinux) {
+      if (native.Window.isKeyboardGrabSupported()) {
+        try {
+          check(
+            await windowManager.grabKeyboard() && window.isKeyboardGrabbed,
+            'legacy keyboard grab reaches X11',
+          );
+          check(
+            await windowManager.grabKeyboard(),
+            'grabbing twice is idempotent',
+          );
+          check(
+            await windowManager.ungrabKeyboard() && !window.isKeyboardGrabbed,
+            'legacy ungrab releases the X11 keyboard',
+          );
+          check(
+            await windowManager.grabKeyboard(),
+            'keyboard can be grabbed again',
+          );
+          window.hide();
+          await until(
+            () => !window.isKeyboardGrabbed,
+            'hide releases the grab',
+          );
+          check(!window.isKeyboardGrabbed, 'hiding releases the keyboard grab');
+        } finally {
+          window.ungrabKeyboard();
+          window.show();
+        }
+      } else {
+        check(
+          !await windowManager.grabKeyboard() &&
+              !await windowManager.ungrabKeyboard(),
+          'Wayland reports unsupported keyboard grabs',
+        );
+      }
+    }
+
     // Leave the compatibility layer unsubscribed while the window changes.
     windowManager.removeListener(reports);
     window.maximize();
@@ -81,6 +183,48 @@ Future<void> tests() async {
     );
     check(true, 'late listener reports leaving full screen');
     await Future<void>.delayed(const Duration(seconds: 2));
+
+    if (Platform.isMacOS) {
+      final before = window.bounds;
+      final target = Rect.fromLTWH(before.x + 30, before.y + 20, 680, 500);
+      await windowManager.setBounds(target, animate: true);
+      await until(
+        () =>
+            (window.bounds.x - target.left).abs() < 2 &&
+            (window.bounds.width - target.width).abs() < 2,
+        'animated bounds settle',
+      );
+      await windowManager.setPosition(
+        target.topLeft + const Offset(20, 20),
+        animate: true,
+      );
+      await until(
+        () => (window.bounds.y - target.top - 20).abs() < 2,
+        'animated position settles',
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      check(true, 'legacy bounds and position animate through core');
+      await windowManager.setVisibleOnAllWorkspaces(
+        true,
+        visibleOnFullScreen: true,
+      );
+      check(
+        window.isVisibleOnAllWorkspaces && window.isVisibleOnFullScreen,
+        'all-workspace and full-screen visibility are independent flags',
+      );
+      window.isVisibleOnAllWorkspaces = false;
+      check(
+        window.isVisibleOnFullScreen,
+        'changing workspace visibility preserves full-screen visibility',
+      );
+      await windowManager.setVisibleOnAllWorkspaces(true);
+      check(
+        window.isVisibleOnAllWorkspaces && !window.isVisibleOnFullScreen,
+        'omitted visibleOnFullScreen keeps the legacy false default',
+      );
+      await windowManager.setVisibleOnAllWorkspaces(false);
+      window.bounds = before;
+    }
 
     // Another native listener holds the window open, independently of legacy.
     // This lets us verify ordinary close notifications without ending the app.

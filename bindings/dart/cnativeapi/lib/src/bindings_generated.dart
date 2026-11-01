@@ -2732,6 +2732,12 @@ external int native_window_add_listener_async(
   native_release_user_data_t release_user_data,
 );
 
+@ffi.Native<ffi.Bool Function(native_window_t, native_rectangle_t)>()
+external bool native_window_animate_bounds(
+  int window,
+  native_rectangle_t bounds,
+);
+
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_blur(int window);
 
@@ -2750,6 +2756,19 @@ external int native_window_create();
 external int native_window_create_with_native_window(
   ffi.Pointer<ffi.Void> native_window,
 );
+
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.UnsignedInt, ffi.Double)>(
+  symbol: 'native_window_dock',
+)
+external bool _native_window_dock(int window, int side, double width);
+
+bool native_window_dock(
+  Dartnative_window_t window,
+  native_window_dock_side_t side,
+  double width,
+) {
+  return _native_window_dock(window, side.value, width);
+}
 
 /// Registers @p callback for every WindowDragEvent this WindowDragSession emits.
 /// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
@@ -2875,6 +2894,19 @@ native_window_corner_preference_t native_window_get_corner_preference(
 @ffi.Native<native_window_shadow_t Function(native_window_t)>()
 external int native_window_get_custom_shadow(int window);
 
+@ffi.Native<ffi.UnsignedInt Function(native_window_t)>(
+  symbol: 'native_window_get_dock_side',
+)
+external int _native_window_get_dock_side(int window);
+
+native_window_dock_side_t native_window_get_dock_side(
+  Dartnative_window_t window,
+) {
+  return native_window_dock_side_t.fromValue(
+    _native_window_get_dock_side(window),
+  );
+}
+
 @ffi.Native<native_window_id_t Function(native_window_t)>()
 external int native_window_get_id(int window);
 
@@ -2950,6 +2982,9 @@ native_visual_effect_t native_window_get_visual_effect(
 }
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_grab_keyboard(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_has_shadow(int window);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
@@ -2960,6 +2995,9 @@ external bool native_window_is_always_on_bottom(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_always_on_top(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_bounds_animation_supported();
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_closable(int window);
@@ -2982,6 +3020,9 @@ external bool native_window_is_content_under_title_bar_supported();
 @ffi.Native<ffi.Bool Function()>()
 external bool native_window_is_corner_preference_supported();
 
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_docking_supported();
+
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_focusable(int window);
 
@@ -3003,6 +3044,12 @@ external bool native_window_is_input_shape_supported();
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_input_shaped(int window);
 
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_keyboard_grab_supported();
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_keyboard_grabbed(int window);
+
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_maximizable(int window);
 
@@ -3011,6 +3058,9 @@ external bool native_window_is_maximize_button_bounds_supported();
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_maximized(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_maximized_vertically(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_minimizable(int window);
@@ -3045,6 +3095,9 @@ external bool native_window_is_shaped(int window);
 @ffi.Native<ffi.Bool Function()>()
 external bool native_window_is_system_menu_supported();
 
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_vertical_maximize_supported();
+
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_visible(int window);
 
@@ -3053,6 +3106,12 @@ external bool native_window_is_visible_in_taskbar(int window);
 
 @ffi.Native<ffi.Bool Function(native_window_t)>()
 external bool native_window_is_visible_on_all_workspaces(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_is_visible_on_full_screen(int window);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_window_is_visible_on_full_screen_supported();
 
 @ffi.Native<ffi.Bool Function(ffi.UnsignedInt)>(
   symbol: 'native_window_is_visual_effect_supported',
@@ -3289,6 +3348,12 @@ external bool native_window_set_maximize_button_bounds(
   native_rectangle_t bounds,
 );
 
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.Bool)>()
+external bool native_window_set_maximized_vertically(
+  int window,
+  bool is_maximized_vertically,
+);
+
 @ffi.Native<ffi.Void Function(native_window_t, native_size_t)>()
 external void native_window_set_maximum_size(int window, native_size_t size);
 
@@ -3363,6 +3428,12 @@ external void native_window_set_visible_in_taskbar(
 external void native_window_set_visible_on_all_workspaces(
   int window,
   bool is_visible_on_all_workspaces,
+);
+
+@ffi.Native<ffi.Bool Function(native_window_t, ffi.Bool)>()
+external bool native_window_set_visible_on_full_screen(
+  int window,
+  bool is_visible_on_full_screen,
 );
 
 @ffi.Native<ffi.Bool Function(native_window_t, ffi.UnsignedInt)>(
@@ -3472,6 +3543,12 @@ void native_window_start_resizing(
 ) {
   return _native_window_start_resizing(window, edge.value);
 }
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_undock(int window);
+
+@ffi.Native<ffi.Bool Function(native_window_t)>()
+external bool native_window_ungrab_keyboard(int window);
 
 @ffi.Native<ffi.Void Function(native_window_t)>()
 external void native_window_unmaximize(int window);
@@ -3668,6 +3745,20 @@ final class UnnamedStruct$20 extends ffi.Struct {
   }) => $allocator<UnnamedStruct$20>()..ref.occlusion_state = occlusion_state;
 }
 
+final class UnnamedStruct$21 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int sideAsInt;
+
+  native_window_dock_side_t get side =>
+      native_window_dock_side_t.fromValue(sideAsInt);
+  set side(native_window_dock_side_t value) => sideAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$21> $allocate(
+    ffi.Allocator $allocator, {
+    required native_window_dock_side_t side,
+  }) => $allocator<UnnamedStruct$21>()..ref.side = side;
+}
+
 final class UnnamedStruct$3 extends ffi.Struct {
   external native_string_list_t file_paths;
 
@@ -3794,6 +3885,8 @@ final class UnnamedUnion$9 extends ffi.Union {
   external UnnamedStruct$19 property_changed;
 
   external UnnamedStruct$20 occlusion_changed;
+
+  external UnnamedStruct$21 docked;
 }
 
 typedef native_application_event_callback_t =
@@ -5727,6 +5820,24 @@ enum native_window_corner_preference_t {
       };
 }
 
+enum native_window_dock_side_t {
+  NATIVE_WINDOW_DOCK_SIDE_NONE(0),
+  NATIVE_WINDOW_DOCK_SIDE_LEFT(1),
+  NATIVE_WINDOW_DOCK_SIDE_RIGHT(2);
+
+  final int value;
+  const native_window_dock_side_t(this.value);
+
+  static native_window_dock_side_t fromValue(int value) => switch (value) {
+    0 => NATIVE_WINDOW_DOCK_SIDE_NONE,
+    1 => NATIVE_WINDOW_DOCK_SIDE_LEFT,
+    2 => NATIVE_WINDOW_DOCK_SIDE_RIGHT,
+    _ => throw ArgumentError(
+      'Unknown value for native_window_dock_side_t: $value',
+    ),
+  };
+}
+
 typedef native_window_drag_event_callback_t =
     ffi.Pointer<
       ffi.NativeFunction<native_window_drag_event_callback_tFunction>
@@ -5858,7 +5969,9 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN(10),
   NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED(11),
   NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED(12),
-  NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED(13);
+  NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED(13),
+  NATIVE_WINDOW_EVENT_TYPE_DOCKED(14),
+  NATIVE_WINDOW_EVENT_TYPE_UNDOCKED(15);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -5878,6 +5991,8 @@ enum native_window_event_type_t {
     11 => NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED,
     12 => NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED,
     13 => NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED,
+    14 => NATIVE_WINDOW_EVENT_TYPE_DOCKED,
+    15 => NATIVE_WINDOW_EVENT_TYPE_UNDOCKED,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),

@@ -25,6 +25,12 @@ class TitleBarStyle(enum.IntEnum):
     HIDDEN = 1
 
 
+class WindowDockSide(enum.IntEnum):
+    NONE = 0
+    LEFT = 1
+    RIGHT = 2
+
+
 class WindowCornerPreference(enum.IntEnum):
     DEFAULT = 0
     DO_NOT_ROUND = 1
@@ -126,6 +132,13 @@ class WindowEvent:
                 raw.window_id,
                 _rt.to_enum(WindowOcclusionState, data.occlusion_state),
             )
+        if raw.type == 14:
+            return WindowDockedEvent(
+                raw.window_id,
+                _rt.to_enum(WindowDockSide, raw.data.docked.side),
+            )
+        if raw.type == 15:
+            return WindowUndockedEvent(raw.window_id)
         return None
 
 
@@ -197,6 +210,16 @@ class WindowPropertyChangedEvent(WindowEvent):
 @dataclass(frozen=True)
 class WindowOcclusionChangedEvent(WindowEvent):
     occlusion_state: WindowOcclusionState
+
+
+@dataclass(frozen=True)
+class WindowDockedEvent(WindowEvent):
+    side: WindowDockSide
+
+
+@dataclass(frozen=True)
+class WindowUndockedEvent(WindowEvent):
+    pass
 
 
 class Window(_rt.NativeObject):
@@ -279,6 +302,41 @@ class Window(_rt.NativeObject):
     def maximize(self) -> None:
         _C.native_window_maximize(self._handle)
 
+    def set_maximized_vertically(self, is_maximized_vertically: bool) -> bool:
+        raw = _C.native_window_set_maximized_vertically(
+            self._handle,
+            is_maximized_vertically,
+        )
+        return raw
+
+    @property
+    def is_maximized_vertically(self) -> bool:
+        raw = _C.native_window_is_maximized_vertically(self._handle)
+        return raw
+
+    @staticmethod
+    def is_vertical_maximize_supported() -> bool:
+        raw = _C.native_window_is_vertical_maximize_supported()
+        return raw
+
+    def dock(self, side: WindowDockSide, width: float) -> bool:
+        raw = _C.native_window_dock(self._handle, int(side), width)
+        return raw
+
+    def undock(self) -> bool:
+        raw = _C.native_window_undock(self._handle)
+        return raw
+
+    @property
+    def dock_side(self) -> WindowDockSide:
+        raw = _C.native_window_get_dock_side(self._handle)
+        return _rt.to_enum(WindowDockSide, raw)
+
+    @staticmethod
+    def is_docking_supported() -> bool:
+        raw = _C.native_window_is_docking_supported()
+        return raw
+
     def unmaximize(self) -> None:
         _C.native_window_unmaximize(self._handle)
 
@@ -308,6 +366,15 @@ class Window(_rt.NativeObject):
 
     def set_bounds(self, bounds: _geometry.Rectangle) -> None:
         _C.native_window_set_bounds(self._handle, bounds._to_c())
+
+    def animate_bounds(self, bounds: _geometry.Rectangle) -> bool:
+        raw = _C.native_window_animate_bounds(self._handle, bounds._to_c())
+        return raw
+
+    @staticmethod
+    def is_bounds_animation_supported() -> bool:
+        raw = _C.native_window_is_bounds_animation_supported()
+        return raw
 
     @property
     def bounds(self) -> _geometry.Rectangle:
@@ -626,6 +693,41 @@ class Window(_rt.NativeObject):
     @property
     def is_visible_on_all_workspaces(self) -> bool:
         raw = _C.native_window_is_visible_on_all_workspaces(self._handle)
+        return raw
+
+    def set_visible_on_full_screen(self, is_visible_on_full_screen: bool) -> bool:
+        raw = _C.native_window_set_visible_on_full_screen(
+            self._handle,
+            is_visible_on_full_screen,
+        )
+        return raw
+
+    @property
+    def is_visible_on_full_screen(self) -> bool:
+        raw = _C.native_window_is_visible_on_full_screen(self._handle)
+        return raw
+
+    @staticmethod
+    def is_visible_on_full_screen_supported() -> bool:
+        raw = _C.native_window_is_visible_on_full_screen_supported()
+        return raw
+
+    def grab_keyboard(self) -> bool:
+        raw = _C.native_window_grab_keyboard(self._handle)
+        return raw
+
+    def ungrab_keyboard(self) -> bool:
+        raw = _C.native_window_ungrab_keyboard(self._handle)
+        return raw
+
+    @property
+    def is_keyboard_grabbed(self) -> bool:
+        raw = _C.native_window_is_keyboard_grabbed(self._handle)
+        return raw
+
+    @staticmethod
+    def is_keyboard_grab_supported() -> bool:
+        raw = _C.native_window_is_keyboard_grab_supported()
         return raw
 
     def set_visible_in_taskbar(self, is_visible_in_taskbar: bool) -> None:

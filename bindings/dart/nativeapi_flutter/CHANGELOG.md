@@ -1,3 +1,12 @@
+## 0.5.4
+
+- Allow a new close request after a completed veto while its native rejection reply is queued, preserving `onWindowClose` callbacks that call `destroy()`.
+- Add native Windows desktop-toolbar docking with shared state, dock/undock events and automatic reservation cleanup, plus reversible vertical maximization.
+- Add Linux X11 exclusive keyboard grabs with ownership checks and release on hide or native destruction; Wayland reports the capability as unsupported.
+- Add macOS window-frame animation and independent full-screen-space visibility. Preserve other collection-behavior flags when changing workspace visibility.
+- Fix macOS restored events after re-subscribing while a window is maximized. Preserve Linux maximize requests made before a GTK window is first mapped.
+- Restore top/bottom resize-handle double-click vertical maximization in `DragToResizeArea`.
+
 ## 0.5.3
 
 - Windows: an elevated application's tray icon receives clicks again (leanflutter/tray_manager#110); template icons also follow system theme changes while elevated. Window events are delivered on the thread that owns the windows (libnativeapi/nativeapi#18).

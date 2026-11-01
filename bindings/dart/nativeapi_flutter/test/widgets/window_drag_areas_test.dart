@@ -6,6 +6,19 @@ import 'package:nativeapi_flutter/nativeapi_flutter.dart';
 class _Window extends Window {
   _Window() : super.borrowed(0);
 
+  bool verticallyMaximized = false;
+  final verticalChanges = <bool>[];
+
+  @override
+  bool get isMaximizedVertically => verticallyMaximized;
+
+  @override
+  bool setMaximizedVertically(bool value) {
+    verticalChanges.add(value);
+    verticallyMaximized = value;
+    return true;
+  }
+
   int dragCount = 0;
   final edges = <ResizeEdge>[];
   int doubleClickCount = 0;
@@ -54,6 +67,34 @@ Future<void> _drag(WidgetTester tester, Offset position) async {
 }
 
 void main() {
+  testWidgets('top and bottom double taps toggle vertical maximize only', (
+    tester,
+  ) async {
+    final window = _Window();
+    await tester.pumpWidget(
+      _host(
+        DragToResizeArea(
+          window: window,
+          child: const SizedBox(width: 240, height: 160),
+        ),
+      ),
+    );
+    final bounds = tester.getRect(find.byType(DragToResizeArea));
+    Future<void> doubleTap(Offset point) async {
+      await tester.tapAt(point);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tapAt(point);
+      await tester.pumpAndSettle();
+    }
+
+    await doubleTap(Offset(bounds.center.dx, bounds.top + 3));
+    expect(window.verticalChanges, [true]);
+    await doubleTap(Offset(bounds.center.dx, bounds.bottom - 3));
+    expect(window.verticalChanges, [true, false]);
+    await doubleTap(Offset(bounds.left + 3, bounds.center.dy));
+    expect(window.verticalChanges, [true, false]);
+  });
+
   testWidgets(
     'move area opens system menu on secondary down at content coordinates',
     (tester) async {

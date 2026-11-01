@@ -17,6 +17,13 @@ export const TitleBarStyle = {
 } as const;
 export type TitleBarStyle = (typeof TitleBarStyle)[keyof typeof TitleBarStyle];
 
+export const WindowDockSide = {
+  None: 0,
+  Left: 1,
+  Right: 2,
+} as const;
+export type WindowDockSide = (typeof WindowDockSide)[keyof typeof WindowDockSide];
+
 export const WindowCornerPreference = {
   Default: 0,
   DoNotRound: 1,
@@ -85,7 +92,9 @@ export type WindowEvent =
   | { type: "exitedFullScreen"; windowId: WindowId }
   | { type: "closeRequested"; windowId: WindowId; request: EventRequest | null }
   | { type: "propertyChanged"; windowId: WindowId; property: WindowProperty }
-  | { type: "occlusionChanged"; windowId: WindowId; occlusionState: WindowOcclusionState };
+  | { type: "occlusionChanged"; windowId: WindowId; occlusionState: WindowOcclusionState }
+  | { type: "docked"; windowId: WindowId; side: WindowDockSide }
+  | { type: "undocked"; windowId: WindowId };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {
@@ -160,6 +169,34 @@ export class Window extends NativeObject {
     native.native_window_maximize(this.nativeHandle);
   }
 
+  setMaximizedVertically(isMaximizedVertically: boolean): boolean {
+    return native.native_window_set_maximized_vertically(this.nativeHandle, isMaximizedVertically);
+  }
+
+  get isMaximizedVertically(): boolean {
+    return native.native_window_is_maximized_vertically(this.nativeHandle);
+  }
+
+  static isVerticalMaximizeSupported(): boolean {
+    return native.native_window_is_vertical_maximize_supported();
+  }
+
+  dock(side: WindowDockSide, width: number): boolean {
+    return native.native_window_dock(this.nativeHandle, side, width);
+  }
+
+  undock(): boolean {
+    return native.native_window_undock(this.nativeHandle);
+  }
+
+  get dockSide(): WindowDockSide {
+    return native.native_window_get_dock_side(this.nativeHandle);
+  }
+
+  static isDockingSupported(): boolean {
+    return native.native_window_is_docking_supported();
+  }
+
   unmaximize(): void {
     native.native_window_unmaximize(this.nativeHandle);
   }
@@ -190,6 +227,14 @@ export class Window extends NativeObject {
 
   setBounds(bounds: Rectangle): void {
     native.native_window_set_bounds(this.nativeHandle, bounds);
+  }
+
+  animateBounds(bounds: Rectangle): boolean {
+    return native.native_window_animate_bounds(this.nativeHandle, bounds);
+  }
+
+  static isBoundsAnimationSupported(): boolean {
+    return native.native_window_is_bounds_animation_supported();
   }
 
   get bounds(): Rectangle {
@@ -478,6 +523,34 @@ export class Window extends NativeObject {
 
   get isVisibleOnAllWorkspaces(): boolean {
     return native.native_window_is_visible_on_all_workspaces(this.nativeHandle);
+  }
+
+  setVisibleOnFullScreen(isVisibleOnFullScreen: boolean): boolean {
+    return native.native_window_set_visible_on_full_screen(this.nativeHandle, isVisibleOnFullScreen);
+  }
+
+  get isVisibleOnFullScreen(): boolean {
+    return native.native_window_is_visible_on_full_screen(this.nativeHandle);
+  }
+
+  static isVisibleOnFullScreenSupported(): boolean {
+    return native.native_window_is_visible_on_full_screen_supported();
+  }
+
+  grabKeyboard(): boolean {
+    return native.native_window_grab_keyboard(this.nativeHandle);
+  }
+
+  ungrabKeyboard(): boolean {
+    return native.native_window_ungrab_keyboard(this.nativeHandle);
+  }
+
+  get isKeyboardGrabbed(): boolean {
+    return native.native_window_is_keyboard_grabbed(this.nativeHandle);
+  }
+
+  static isKeyboardGrabSupported(): boolean {
+    return native.native_window_is_keyboard_grab_supported();
   }
 
   setVisibleInTaskbar(isVisibleInTaskbar: boolean): void {

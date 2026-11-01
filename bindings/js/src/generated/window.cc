@@ -264,6 +264,115 @@ napi_value Js_native_window_maximize(napi_env env, napi_callback_info info) {
   return Undefined(env);
 }
 
+napi_value Js_native_window_set_maximized_vertically(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  bool p0 = {};
+  if (!GetBool(env, args[1], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_maximized_vertically(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_maximized_vertically(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_maximized_vertically(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_vertical_maximize_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_vertical_maximize_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_dock(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_window_dock_side_t p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  double p1 = {};
+  if (!GetNumber(env, args[2], &p1)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_dock(self, p0, p1); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_undock(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_undock(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_get_dock_side(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_get_dock_side(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_window_is_docking_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_docking_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_unmaximize(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -390,6 +499,36 @@ napi_value Js_native_window_set_bounds(napi_env env, napi_callback_info info) {
   }
   OnMainThread([&] { return native_window_set_bounds(self, p0); });
   return Undefined(env);
+}
+
+napi_value Js_native_window_animate_bounds(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_rectangle_t p0 = {};
+  if (!FromJs(env, args[1], &p0, arena)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_animate_bounds(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_bounds_animation_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_bounds_animation_supported(); });
+  return Value::Bool(result).ToJs(env);
 }
 
 napi_value Js_native_window_get_bounds(napi_env env, napi_callback_info info) {
@@ -1598,6 +1737,107 @@ napi_value Js_native_window_is_visible_on_all_workspaces(napi_env env, napi_call
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_window_set_visible_on_full_screen(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  bool p0 = {};
+  if (!GetBool(env, args[1], &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_set_visible_on_full_screen(self, p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_visible_on_full_screen(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_visible_on_full_screen(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_visible_on_full_screen_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_visible_on_full_screen_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_grab_keyboard(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_grab_keyboard(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_ungrab_keyboard(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_ungrab_keyboard(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_keyboard_grabbed(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_window_is_keyboard_grabbed(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_window_is_keyboard_grab_supported(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_window_is_keyboard_grab_supported(); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_window_set_visible_in_taskbar(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1915,6 +2155,13 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_get_occlusion_state", Js_native_window_get_occlusion_state);
   Export(env, exports, "native_window_is_occlusion_state_supported", Js_native_window_is_occlusion_state_supported);
   Export(env, exports, "native_window_maximize", Js_native_window_maximize);
+  Export(env, exports, "native_window_set_maximized_vertically", Js_native_window_set_maximized_vertically);
+  Export(env, exports, "native_window_is_maximized_vertically", Js_native_window_is_maximized_vertically);
+  Export(env, exports, "native_window_is_vertical_maximize_supported", Js_native_window_is_vertical_maximize_supported);
+  Export(env, exports, "native_window_dock", Js_native_window_dock);
+  Export(env, exports, "native_window_undock", Js_native_window_undock);
+  Export(env, exports, "native_window_get_dock_side", Js_native_window_get_dock_side);
+  Export(env, exports, "native_window_is_docking_supported", Js_native_window_is_docking_supported);
   Export(env, exports, "native_window_unmaximize", Js_native_window_unmaximize);
   Export(env, exports, "native_window_is_maximized", Js_native_window_is_maximized);
   Export(env, exports, "native_window_minimize", Js_native_window_minimize);
@@ -1923,6 +2170,8 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_set_full_screen", Js_native_window_set_full_screen);
   Export(env, exports, "native_window_is_full_screen", Js_native_window_is_full_screen);
   Export(env, exports, "native_window_set_bounds", Js_native_window_set_bounds);
+  Export(env, exports, "native_window_animate_bounds", Js_native_window_animate_bounds);
+  Export(env, exports, "native_window_is_bounds_animation_supported", Js_native_window_is_bounds_animation_supported);
   Export(env, exports, "native_window_get_bounds", Js_native_window_get_bounds);
   Export(env, exports, "native_window_set_content_bounds", Js_native_window_set_content_bounds);
   Export(env, exports, "native_window_get_content_bounds", Js_native_window_get_content_bounds);
@@ -1995,6 +2244,13 @@ void RegisterWindow(napi_env env, napi_value exports) {
   Export(env, exports, "native_window_get_background_color", Js_native_window_get_background_color);
   Export(env, exports, "native_window_set_visible_on_all_workspaces", Js_native_window_set_visible_on_all_workspaces);
   Export(env, exports, "native_window_is_visible_on_all_workspaces", Js_native_window_is_visible_on_all_workspaces);
+  Export(env, exports, "native_window_set_visible_on_full_screen", Js_native_window_set_visible_on_full_screen);
+  Export(env, exports, "native_window_is_visible_on_full_screen", Js_native_window_is_visible_on_full_screen);
+  Export(env, exports, "native_window_is_visible_on_full_screen_supported", Js_native_window_is_visible_on_full_screen_supported);
+  Export(env, exports, "native_window_grab_keyboard", Js_native_window_grab_keyboard);
+  Export(env, exports, "native_window_ungrab_keyboard", Js_native_window_ungrab_keyboard);
+  Export(env, exports, "native_window_is_keyboard_grabbed", Js_native_window_is_keyboard_grabbed);
+  Export(env, exports, "native_window_is_keyboard_grab_supported", Js_native_window_is_keyboard_grab_supported);
   Export(env, exports, "native_window_set_visible_in_taskbar", Js_native_window_set_visible_in_taskbar);
   Export(env, exports, "native_window_is_visible_in_taskbar", Js_native_window_is_visible_in_taskbar);
   Export(env, exports, "native_window_set_ignore_mouse_events", Js_native_window_set_ignore_mouse_events);

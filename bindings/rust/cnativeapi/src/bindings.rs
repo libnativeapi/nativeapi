@@ -833,6 +833,10 @@ pub type native_window_id_t = ::std::os::raw::c_uint;
 pub const NATIVE_TITLE_BAR_STYLE_NORMAL: native_title_bar_style_t = 0;
 pub const NATIVE_TITLE_BAR_STYLE_HIDDEN: native_title_bar_style_t = 1;
 pub type native_title_bar_style_t = ::std::os::raw::c_uint;
+pub const NATIVE_WINDOW_DOCK_SIDE_NONE: native_window_dock_side_t = 0;
+pub const NATIVE_WINDOW_DOCK_SIDE_LEFT: native_window_dock_side_t = 1;
+pub const NATIVE_WINDOW_DOCK_SIDE_RIGHT: native_window_dock_side_t = 2;
+pub type native_window_dock_side_t = ::std::os::raw::c_uint;
 pub const NATIVE_WINDOW_CORNER_PREFERENCE_DEFAULT: native_window_corner_preference_t = 0;
 pub const NATIVE_WINDOW_CORNER_PREFERENCE_DO_NOT_ROUND: native_window_corner_preference_t = 1;
 pub const NATIVE_WINDOW_CORNER_PREFERENCE_ROUND: native_window_corner_preference_t = 2;
@@ -902,6 +906,8 @@ pub const NATIVE_WINDOW_EVENT_TYPE_EXITED_FULL_SCREEN: native_window_event_type_
 pub const NATIVE_WINDOW_EVENT_TYPE_CLOSE_REQUESTED: native_window_event_type_t = 11;
 pub const NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED: native_window_event_type_t = 12;
 pub const NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED: native_window_event_type_t = 13;
+pub const NATIVE_WINDOW_EVENT_TYPE_DOCKED: native_window_event_type_t = 14;
+pub const NATIVE_WINDOW_EVENT_TYPE_UNDOCKED: native_window_event_type_t = 15;
 #[doc = " Which concrete WindowEvent arrived."]
 pub type native_window_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One WindowEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -920,6 +926,7 @@ pub union native_window_event_t__bindgen_ty_1 {
     pub close_requested: native_window_event_t__bindgen_ty_1__bindgen_ty_3,
     pub property_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_4,
     pub occlusion_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_5,
+    pub docked: native_window_event_t__bindgen_ty_1__bindgen_ty_6,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -956,6 +963,20 @@ pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_5 {
     pub occlusion_state: native_window_occlusion_state_t,
 }
 impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_5 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_6 {
+    pub side: native_window_dock_side_t,
+}
+impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_6 {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -1051,6 +1072,34 @@ unsafe extern "C" {
     pub fn native_window_maximize(window: native_window_t);
 }
 unsafe extern "C" {
+    pub fn native_window_set_maximized_vertically(
+        window: native_window_t,
+        is_maximized_vertically: bool,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_maximized_vertically(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_vertical_maximize_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_dock(
+        window: native_window_t,
+        side: native_window_dock_side_t,
+        width: f64,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_undock(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_get_dock_side(window: native_window_t) -> native_window_dock_side_t;
+}
+unsafe extern "C" {
+    pub fn native_window_is_docking_supported() -> bool;
+}
+unsafe extern "C" {
     pub fn native_window_unmaximize(window: native_window_t);
 }
 unsafe extern "C" {
@@ -1073,6 +1122,15 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_set_bounds(window: native_window_t, bounds: native_rectangle_t);
+}
+unsafe extern "C" {
+    pub fn native_window_animate_bounds(
+        window: native_window_t,
+        bounds: native_rectangle_t,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_bounds_animation_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_get_bounds(window: native_window_t) -> native_rectangle_t;
@@ -1328,6 +1386,30 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_window_is_visible_on_all_workspaces(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_set_visible_on_full_screen(
+        window: native_window_t,
+        is_visible_on_full_screen: bool,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_visible_on_full_screen(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_visible_on_full_screen_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_grab_keyboard(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_ungrab_keyboard(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_keyboard_grabbed(window: native_window_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_window_is_keyboard_grab_supported() -> bool;
 }
 unsafe extern "C" {
     pub fn native_window_set_visible_in_taskbar(

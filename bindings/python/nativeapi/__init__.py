@@ -195,6 +195,8 @@ from .window import (
     WindowCloseRequestedEvent,
     WindowCornerPreference,
     WindowCreatedEvent,
+    WindowDockedEvent,
+    WindowDockSide,
     WindowEnteredFullScreenEvent,
     WindowEvent,
     WindowExitedFullScreenEvent,
@@ -209,6 +211,7 @@ from .window import (
     WindowPropertyChangedEvent,
     WindowResizedEvent,
     WindowRestoredEvent,
+    WindowUndockedEvent,
 )
 from .window_drag_session import (
     WindowDragCancelledEvent,
@@ -354,6 +357,8 @@ __all__ = [
     "WindowClosedEvent",
     "WindowCornerPreference",
     "WindowCreatedEvent",
+    "WindowDockSide",
+    "WindowDockedEvent",
     "WindowDragCancelledEvent",
     "WindowDragEndedEvent",
     "WindowDragEvent",
@@ -376,5 +381,6 @@ __all__ = [
     "WindowRestoredEvent",
     "WindowShadow",
     "WindowShape",
+    "WindowUndockedEvent",
     "is_event_loop_running",
 ]
