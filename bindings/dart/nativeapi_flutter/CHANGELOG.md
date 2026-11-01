@@ -1,7 +1,9 @@
-## Unreleased
+## 0.5.6
 
 - Add asynchronous shortcut registration requests with request IDs, cancellation and scoped pending-request cleanup across interpreter restarts.
 - Support native Wayland GlobalShortcuts Portal sessions, desktop-selected binding descriptions, activation/release notifications and resource cleanup on denial, cancellation or service loss. Host application identity and a working desktop provider are required.
+
+- Support macOS Play/Pause and other media shortcuts in global and application scope, with down/up delivery, autorepeat handling, independent scope cleanup, focus recovery and permission-loss cleanup. Global media taps require OS authorization; ordinary Carbon shortcuts retain their existing permission behavior.
 
 ## 0.5.5
 
