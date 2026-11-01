@@ -1000,13 +1000,19 @@ fn map_type(ty: Type, types: &TypeIndex) -> TypeRef {
     // spelling rather than on TypeKind::Typedef, because clang hands back an
     // elaborated type here and the typedef kind never surfaces.
     if let Some(entry) = alias_entry(&ty, types) {
-        let underlying = map_type(ty.get_canonical_type(), types);
+        let underlying = fixed_width_int_spelling(ty)
+            .map(|name| TypeRef::Int { name: name.into() })
+            .unwrap_or_else(|| map_type(ty.get_canonical_type(), types));
         if matches!(underlying, TypeRef::Int { .. }) {
             return TypeRef::Alias {
                 name: entry.name.clone(),
                 underlying: Box::new(underlying),
             };
         }
+    }
+
+    if let Some(name) = fixed_width_int_spelling(ty) {
+        return TypeRef::Int { name: name.into() };
     }
 
     // A `using` alias hides the template behind its own name, so resolve
@@ -1212,6 +1218,37 @@ fn map_type(ty: Type, types: &TypeIndex) -> TypeRef {
     }
 }
 
+/// Keep the published integer spelling independent of the generator host.
+/// For example, int64_t is long on LP64 Linux and long long on macOS/LLP64.
+/// Preserve named API aliases above, but normalize their fixed-width base types.
+/// Deliberately leave size_t's legacy ABI policy separate from fixed-width ints.
+fn fixed_width_int_spelling(mut ty: Type) -> Option<&'static str> {
+    for _ in 0..8 {
+        let name = normalize_type_name(&ty.get_display_name());
+        let base = name.rsplit("::").next().unwrap_or(&name);
+        let spelling = match base {
+            "int8_t" => "signed char",
+            "uint8_t" => "unsigned char",
+            "int16_t" => "short",
+            "uint16_t" => "unsigned short",
+            "int32_t" => "int",
+            "uint32_t" => "unsigned int",
+            "int64_t" => "long long",
+            "uint64_t" => "unsigned long long",
+            _ => {
+                let next = ty.get_declaration()?.get_typedef_underlying_type()?;
+                if next.get_display_name() == ty.get_display_name() {
+                    return None;
+                }
+                ty = next;
+                continue;
+            }
+        };
+        return Some(spelling);
+    }
+    None
+}
+
 /// The alias entry this type names, if the headers declared one for it.
 fn alias_entry<'a>(ty: &Type, types: &'a TypeIndex) -> Option<&'a TypeEntry> {
     let spelling = normalize_type_name(&ty.get_display_name());
@@ -1374,7 +1411,40 @@ fn entity_tokens_contain_std_string(entity: &Entity) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_type_name;
+    use super::{fixed_width_int_spelling, normalize_type_name};
+    use clang::{Clang, Index, Unsaved};
+
+    #[test]
+    fn fixed_width_aliases_keep_one_abi_spelling_across_host_integer_models() {
+        let clang = Clang::new().unwrap();
+        let index = Index::new(&clang, false, false);
+        // Model libc's LP64 typedef spelling without depending on system headers.
+        let file = Unsaved::new("fixed_integer_aliases.cpp", "typedef long int64_t; typedef unsigned long uint64_t; using WindowNumber = int64_t; using Ticket = uint64_t;");
+        let tu = index
+            .parser("fixed_integer_aliases.cpp")
+            .arguments(&["-x", "c++", "-std=c++17"])
+            .unsaved(&[file])
+            .parse()
+            .unwrap();
+        let declarations = tu.get_entity().get_children();
+        for (name, expected) in [
+            ("WindowNumber", "long long"),
+            ("Ticket", "unsigned long long"),
+        ] {
+            let declaration = declarations
+                .iter()
+                .find(|e| e.get_name().as_deref() == Some(name))
+                .unwrap();
+            assert_eq!(
+                fixed_width_int_spelling(declaration.get_type().unwrap()),
+                Some(expected)
+            );
+            assert_eq!(
+                fixed_width_int_spelling(declaration.get_typedef_underlying_type().unwrap()),
+                Some(expected)
+            );
+        }
+    }
 
     #[test]
     fn normalizes_const_reference_type_names() {

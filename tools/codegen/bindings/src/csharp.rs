@@ -890,7 +890,7 @@ fn generate_singleton_class(ctx: &mut Ctx, api: &Api, class: &Class, prefix: &st
     }
 
     if class.name == "Clipboard" {
-        writeln!(ctx.public, "    private static bool ValidText(string? value) {{\n        if (value is null) return true;\n        if (value.IndexOf((char)0) >= 0) return false;\n        try {{ new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }}\n        catch (System.Text.EncoderFallbackException) {{ return false; }}\n    }}").unwrap();
+        writeln!(ctx.public, "    private static bool ValidText(string? value)\n    {{\n        if (value is null) return true;\n        if (value.IndexOf((char)0) >= 0) return false;\n        try {{ new System.Text.UTF8Encoding(false, true).GetByteCount(value); return true; }}\n        catch (System.Text.EncoderFallbackException) {{ return false; }}\n    }}").unwrap();
     }
     generate_async_methods(ctx, class);
     generate_listener(ctx, api, class, prefix);
@@ -2010,7 +2010,7 @@ fn generate_async_methods(ctx: &mut Ctx, class: &Class) {
             declaration,
         }) = async_decl(method)
         {
-            writeln!(ctx.public, "    {declaration} {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
+            writeln!(ctx.public, "    {declaration}\n    {{\n        var completion = new System.Threading.Tasks.TaskCompletionSource<{ty}>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);\n        {name}((success, value) => {{ if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException(\"Clipboard operation failed\")); }});\n        return completion.Task;\n    }}").unwrap();
         }
     }
 }
