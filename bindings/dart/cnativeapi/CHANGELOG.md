@@ -1,3 +1,7 @@
+## 0.5.7
+
+- Weak-link ServiceManagement on macOS so loading the native library does not require the macOS 13+ `SMAppService` class ([#20](https://github.com/libnativeapi/nativeapi/pull/20), [nativeapi-core#87](https://github.com/libnativeapi/nativeapi-core/pull/87)).
+
 ## 0.5.6
 
 - Add asynchronous shortcut registration requests with request IDs, cancellation and scoped pending-request cleanup across interpreter restarts.
