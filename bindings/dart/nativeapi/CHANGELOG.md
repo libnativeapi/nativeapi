@@ -1,3 +1,7 @@
+## 0.5.8
+
+- Include the Linux build fix for GLib older than 2.74, including Ubuntu 22.04 ([nativeapi-core#89](https://github.com/libnativeapi/nativeapi-core/pull/89)).
+
 ## 0.5.7
 
 - Include the macOS 12 native-library loading fix by weak-linking ServiceManagement ([#20](https://github.com/libnativeapi/nativeapi/pull/20), [nativeapi-core#87](https://github.com/libnativeapi/nativeapi-core/pull/87)).

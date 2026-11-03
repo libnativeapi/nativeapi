@@ -1,3 +1,7 @@
+## 0.5.8
+
+- Fix Linux builds with GLib older than 2.74, including Ubuntu 22.04, by avoiding the newer `G_CONNECT_DEFAULT` enum name ([nativeapi-core#89](https://github.com/libnativeapi/nativeapi-core/pull/89)).
+
 ## 0.5.7
 
 - Weak-link ServiceManagement on macOS so loading the native library does not require the macOS 13+ `SMAppService` class ([#20](https://github.com/libnativeapi/nativeapi/pull/20), [nativeapi-core#87](https://github.com/libnativeapi/nativeapi-core/pull/87)).
