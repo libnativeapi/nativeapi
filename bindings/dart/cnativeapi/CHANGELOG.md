@@ -1,3 +1,7 @@
+## 0.5.10
+
+- Linux: clear the automatically generated shadow input region when restoring the title bar, so enlarged windows receive input beyond their former picture-in-picture bounds. Preserve explicit input shapes and mouse pass-through policies ([nativeapi-core#90](https://github.com/libnativeapi/nativeapi-core/pull/90)).
+
 ## 0.5.9
 
 - Windows: keep every tray icon registered with the shell and toggle it with `NIS_HIDDEN` instead of removing and re-adding the entry. An icon added after another one was removed could stay visible but deaf to clicks in an elevated application ([tray_manager#110](https://github.com/leanflutter/tray_manager/issues/110)).

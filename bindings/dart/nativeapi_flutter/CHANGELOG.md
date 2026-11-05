@@ -1,3 +1,8 @@
+## 0.5.10
+
+- Linux: fix mouse input remaining limited to the old shadow rectangle after restoring the title bar and enlarging a window ([nativeapi-core#90](https://github.com/libnativeapi/nativeapi-core/pull/90)).
+- Document Flutter size conversions with `toNative()` and `toSize()`.
+
 ## 0.5.9
 
 - Windows: switching between tray icons keeps working when the application runs elevated, because every icon stays registered with the shell and visibility is toggled with `NIS_HIDDEN` ([tray_manager#110](https://github.com/leanflutter/tray_manager/issues/110)).
