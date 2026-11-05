@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 128 128">
+  <!-- nativeapi brand mark from website/src/components/brand-icon.tsx. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D4ED8"/>
+      <stop offset=".5" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 34a18 18 0 0 1 18-18h68a18 18 0 0 1 18 18v12H12Z" fill="url(#g)"/>
+  <path d="M17 46v48a13 13 0 0 0 13 13h68a13 13 0 0 0 13-13V46" fill="none" stroke="url(#g)" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M52 62 38 76l14 14M76 62l14 14-14 14" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

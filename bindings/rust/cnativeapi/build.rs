@@ -34,6 +34,9 @@ fn main() {
     match target_os.as_str() {
         "macos" => {
             cmake_config.define("CMAKE_SYSTEM_NAME", "Darwin");
+            // The Objective-C++ implementations rely on ARC to retain native
+            // objects across the host's autorelease pools (notably tray items).
+            cmake_config.define("CMAKE_OBJCXX_FLAGS", "-fobjc-arc");
             // Mirrors src/CMakeLists.txt. Cocoa alone leaves the global
             // shortcut and launch-at-login implementations unresolved: hotkeys
             // go through Carbon's RegisterEventHotKey, and login items through

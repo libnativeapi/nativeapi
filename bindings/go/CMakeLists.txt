@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../core/src" nativeapi_core)
+if(APPLE)
+  # The macOS implementations keep Objective-C objects in C++ instance fields
+  # and rely on ARC to retain them beyond the host's current autorelease pool.
+  target_compile_options(nativeapi PRIVATE $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+endif()
 
 # Whole-archive keeps every C ABI symbol, including APIs Go hasn't called yet.
 add_library(nativeapi_go SHARED src/runtime.cpp)
