@@ -23,6 +23,9 @@ This repository is the home of every binding: the Dart, Rust, C#, JS, Python and
 
 Each binding's README covers installation and usage.
 
+[Native Shell examples](examples/nsh_shared) demonstrate using nativeapi from NSH
+Rust apps: tray icons with native menus, global shortcuts and message dialogs.
+
 ## History
 
 This repository was `nativeapi-flutter`, then `nativeapi-workspace`, and is now `nativeapi`; the old names redirect here, and its history, issues and stars carry over. The histories of the former `workspace`, `nativeapi-rust` and `nativeapi-csharp` repositories are merged in, so the Rust and C# bindings keep their full history under `bindings/`. The old `nativeapi-rust` and `nativeapi-csharp` repositories are archived.

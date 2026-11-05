@@ -51,6 +51,15 @@ cargo run -p tray_icon_example
 
 [`nativeapi_gpui`](nativeapi_gpui) integrates nativeapi with [GPUI](https://www.gpui.rs): the nativeapi `Window` behind a GPUI window, event delivery to GPUI entities, geometry and color conversions, and `DragToMoveArea` / `DragToResizeArea` elements. The `gpui_*` directories in [`examples/`](../../examples) are built on it; each is its own cargo workspace (`cd examples/gpui_window_example && cargo run`).
 
+## Native Shell
+
+The [NSH examples](../../examples/nsh_shared) combine [Native Shell](https://nsh.dev/)
+0.4.0 Rust components with nativeapi tray icons, global shortcuts and message
+dialogs on macOS and Windows. They share a separate Cargo workspace; start with
+`cargo run --manifest-path examples/nsh_tray_icon_example/Cargo.toml` from the
+repository root. The shared host dispatches native UI calls to the platform
+thread and delivers callbacks to the NSH engine through channels.
+
 ## Contributing
 
 Development happens in [nativeapi](https://github.com/libnativeapi/nativeapi), which holds every binding and the code generator and checks out the core library as a submodule:

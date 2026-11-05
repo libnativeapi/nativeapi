@@ -7,6 +7,7 @@ on:
       - "bindings/rust/**"
       - "core"
       - "examples/rust_*/**"
+      - "examples/nsh_*/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - ".github/workflows/rust-ci.yml"
@@ -16,6 +17,7 @@ on:
       - "bindings/rust/**"
       - "core"
       - "examples/rust_*/**"
+      - "examples/nsh_*/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - ".github/workflows/rust-ci.yml"
@@ -74,3 +76,28 @@ jobs:
         run: cargo test --workspace --all-targets --release --locked
       - name: Run documentation tests
         run: cargo test --workspace --doc --release --locked
+
+  nsh-examples:
+    name: NSH examples (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout core
+        run: git submodule update --init core
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: examples/nsh_shared
+      - name: Check formatting
+        run: cargo fmt --manifest-path examples/nsh_shared/Cargo.toml --all -- --check
+      - name: Clippy
+        run: cargo clippy --manifest-path examples/nsh_shared/Cargo.toml --workspace --all-targets --locked -- -D warnings
+      - name: Build NSH examples
+        run: cargo build --manifest-path examples/nsh_shared/Cargo.toml --workspace --locked

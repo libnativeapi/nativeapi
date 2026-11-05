@@ -1,0 +1,12 @@
+[package]
+name = "nsh_message_dialog_example"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+publish = false
+workspace = "../nsh_shared"
+
+[dependencies]
+nativeapi.workspace = true
+nsh-core.workspace = true
+nsh_example_shared.workspace = true

@@ -1,0 +1,41 @@
+[package]
+name = "nsh_example_shared"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+publish = false
+
+[workspace]
+resolver = "2"
+members = [
+    "../nsh_tray_icon_example",
+    "../nsh_shortcut_example",
+    "../nsh_message_dialog_example",
+]
+
+[workspace.package]
+rust-version = "1.98"
+
+[workspace.dependencies]
+nativeapi = { path = "../../bindings/rust/nativeapi" }
+nsh-core = "=0.4.0"
+nsh_example_shared = { path = "." }
+
+[dependencies]
+async-channel = "2"
+nsh-core.workspace = true
+nsh-base = "=0.4.0"
+env_logger = "0.11"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nsh-platform-macos = { version = "=0.4.0", default-features = false }
+dispatch2 = "0.3"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+nsh-platform-windows = { version = "=0.4.0", default-features = false }
+windows = { version = "0.61", features = [
+    "Win32_System_Threading",
+    "Win32_System_Ole",
+    "Win32_UI_HiDpi",
+    "Win32_UI_WindowsAndMessaging",
+] }
