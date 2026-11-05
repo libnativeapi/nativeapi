@@ -1,4 +1,4 @@
-## Unreleased
+## 0.5.9
 
 - Windows: switching between tray icons keeps working when the application runs elevated. Each icon is registered with the shell as soon as it has an image, and visibility is toggled with `NIS_HIDDEN` instead of removing and re-adding the entry, which could leave the newly shown icon visible but deaf to clicks ([tray_manager#110](https://github.com/leanflutter/tray_manager/issues/110)).
 
