@@ -141,7 +141,7 @@ when an asynchronous decision is needed.
 
 ## Examples and generation
 
-After building the shared library, run either example from its own directory:
+After building the shared library, run an example from its own directory:
 
 ```bash
 cd examples/go_display_example
@@ -149,6 +149,29 @@ go run .
 # Or: cd examples/go_window_example && go run .
 # The window example also accepts --smoke for a self-closing runtime check.
 ```
+
+The [MyGo](https://mygo.egoist.dev/) examples use MyGo's Go UI toolkit for the
+interface and nativeapi for the desktop features. They require Go 1.27.3+ and
+pin MyGo v0.7.4; the binding itself still supports Go 1.22+.
+
+| Example | nativeapi features |
+| --- | --- |
+| [Tray icon](../../examples/go_mygo_tray_icon_example) | Tray icon, native context menu, checkbox and counter; restore a hidden MyGo window. |
+| [Displays](../../examples/go_mygo_display_example) | Display geometry, work areas, scale, primary display, cursor position and display events. |
+| [Clipboard](../../examples/go_mygo_clipboard_example) | Copy text and HTML, asynchronous reads and clipboard change events. |
+
+```bash
+cd examples/go_mygo_tray_icon_example
+go run .
+# Each MyGo example also accepts: go run . --smoke
+```
+
+MyGo owns the native event loop. Initialize nativeapi in `mygo.App.WhenReady`,
+call native APIs on that main thread, and use `mygo.RunOnMain` when returning
+from a goroutine. Its AppKit / Win32 / GTK 3 loop also delivers nativeapi events;
+these examples do not start a second `Application.Run` or call `PollEvents`.
+Adding nativeapi requires cgo and shipping its shared library, including when
+the MyGo interface itself uses no webview.
 
 From the workspace root:
 

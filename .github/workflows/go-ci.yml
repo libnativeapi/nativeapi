@@ -81,7 +81,19 @@ jobs:
         shell: bash
         run: |
           for example in examples/go_*_example; do
+            case "$example" in examples/go_mygo_*) continue ;; esac
             (cd "$example" && go build -o "$RUNNER_TEMP/$(basename "$example").exe" .)
+          done
+      - name: Set up Go for MyGo examples
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.3"
+          cache: false
+      - name: Vet and build MyGo examples
+        shell: bash
+        run: |
+          for example in examples/go_mygo_*_example; do
+            (cd "$example" && go vet ./... && go build -o "$RUNNER_TEMP/$(basename "$example").exe" .)
           done
 
   generated:
