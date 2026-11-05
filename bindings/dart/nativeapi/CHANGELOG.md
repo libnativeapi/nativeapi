@@ -1,3 +1,8 @@
+## Unreleased
+
+- **Breaking (Dart):** move the experimental `runNativeApp()` helper to `package:nativeapi/standalone.dart`. Plain Dart apps using the helper must change their import; the standalone entrypoint also exports the ordinary nativeapi API. The helper still requires Dart 3.13's experimental VM APIs and is not supported on Dart 3.14.
+- Keep the ordinary `nativeapi.dart` import independent of the experimental runner, fixing compilation on Dart 3.14 when the helper is unused ([#22](https://github.com/libnativeapi/nativeapi/issues/22)).
+
 ## 0.5.10
 
 - Linux: fix mouse input remaining limited to the old shadow rectangle after restoring the title bar and enlarging a window ([nativeapi-core#90](https://github.com/libnativeapi/nativeapi-core/pull/90)).

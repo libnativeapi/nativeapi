@@ -57,6 +57,17 @@ jobs:
       - name: Analyze code
         run: dart pub global run melos run analyze
 
+      - name: Check public Dart entrypoints on stable
+        run: python3 bindings/dart/nativeapi/tool/check_entrypoints.py --web --standalone
+
+      - name: Set up Dart beta
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
+        with:
+          sdk: 3.14.0-315.3.beta
+
+      - name: Check ordinary Dart and web entrypoints on beta
+        run: python3 bindings/dart/nativeapi/tool/check_entrypoints.py --web
+
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

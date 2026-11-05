@@ -20,8 +20,9 @@
 /// window.contentView?.addSubview(field);
 /// ```
 ///
-/// `runNativeApp` is left out too: it is for plain Dart programs, and a
-/// Flutter app's engine already runs the event loop.
+/// Flutter's engine already runs its event loop. The experimental plain-Dart
+/// `runNativeApp` helper belongs to `package:nativeapi/standalone.dart` and is
+/// not imported by this library.
 library;
 
 export 'package:nativeapi/nativeapi.dart'
@@ -34,7 +35,6 @@ export 'package:nativeapi/nativeapi.dart'
         EdgeInsets,
         Image,
         ModifierKey,
-        runNativeApp,
         ShortcutManager,
         Size,
         TextField,

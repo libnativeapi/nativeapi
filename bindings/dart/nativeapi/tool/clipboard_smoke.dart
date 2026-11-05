@@ -1,7 +1,7 @@
 // Runs on the UI isolate. Wrap with core/build/tests/clipboard_macos_test on macOS.
 import 'dart:async';
 
-import 'package:nativeapi/nativeapi.dart';
+import 'package:nativeapi/standalone.dart';
 
 void check(bool value) {
   if (!value) throw StateError('clipboard assertion failed');

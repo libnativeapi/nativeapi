@@ -15,6 +15,10 @@ const _idleWaitMs = 8;
 
 /// Runs a desktop app from a plain Dart program (`dart run`), without Flutter.
 ///
+/// Import this helper through `package:nativeapi/standalone.dart`. It requires
+/// experimental VM APIs available in Dart 3.13 and is not supported on Dart
+/// 3.14. The ordinary nativeapi and Flutter entrypoints do not import it.
+///
 /// [main] builds the app: it creates windows and views and registers
 /// listeners. It runs in a new isolate that lives on the platform's UI thread,
 /// where every call into nativeapi and every event callback then happens,

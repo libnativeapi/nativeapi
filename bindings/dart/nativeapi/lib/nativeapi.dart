@@ -1,3 +1,8 @@
+/// Cross-platform native system APIs for Dart and Flutter.
+///
+/// The experimental plain-Dart event loop is available separately through
+/// `package:nativeapi/standalone.dart`, so ordinary imports do not depend on
+/// its SDK-specific VM APIs.
 library;
 
 // Every generated module. The list itself is generated too, so adding a header
@@ -9,7 +14,3 @@ library;
 // still depend on nativeapi and guard its calls with `kIsWeb`.
 export 'src/generated.dart'
     if (dart.library.js_interop) 'src/web/generated.dart';
-
-// Hand-written.
-export 'src/run_native_app.dart'
-    if (dart.library.js_interop) 'src/run_native_app_web.dart';

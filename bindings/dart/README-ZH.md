@@ -96,8 +96,10 @@ window?.isAlwaysOnTop = true;
 
 不依赖 Flutter 的 Dart 程序也能开窗口。把应用交给 `runNativeApp()`：它让应用跑在平台的 UI 线程上，并在 Dart 的定时器和 future 之间持续驱动平台事件循环：
 
+这个实验性运行器有独立入口 `package:nativeapi/standalone.dart`，同时导出普通 nativeapi API。它目前依赖 Dart 3.13 的实验性 VM API，不支持 Dart 3.14。Flutter 应用及仅导入 `package:nativeapi/nativeapi.dart` 的程序不依赖这个运行器。
+
 ```dart
-import 'package:nativeapi/nativeapi.dart';
+import 'package:nativeapi/standalone.dart';
 
 void app() {
   final window = Window.create()!..title = 'Hello';
