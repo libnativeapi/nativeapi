@@ -4,6 +4,11 @@ A workbench of native views driven from a plain Dart program: no Flutter, just
 `dart run`. Everything on screen is a platform control (AppKit on macOS, Win32
 on Windows, GTK 3 on Linux) created through `package:nativeapi`.
 
+The standalone runner currently requires Dart 3.13's experimental VM APIs and
+is not supported on Dart 3.14. This restriction applies to
+`package:nativeapi/standalone.dart`; ordinary nativeapi and Flutter imports
+do not depend on the runner.
+
 ```bash
 dart run bin/main.dart
 ```
@@ -39,9 +44,11 @@ Enter to flash that view.
 
 ## How it runs without Flutter
 
-`main()` hands the app to `runNativeApp()`:
+`main()` imports the standalone entrypoint and hands the app to `runNativeApp()`:
 
 ```dart
+import 'package:nativeapi/standalone.dart';
+
 void main() => runNativeApp(app);
 ```
 
@@ -51,7 +58,7 @@ keep working while the platform loop is pumped between them. On macOS that
 thread is the process's first thread, which AppKit insists on. The standalone
 Dart VM keeps it parked while `main()` runs elsewhere, so `runNativeApp()`
 takes it over. On Windows and Linux the app gets a thread of its own. See
-`runNativeApp()` in `package:nativeapi` for the details.
+`runNativeApp()` in `package:nativeapi/standalone.dart` for the details.
 
 ## Code
 

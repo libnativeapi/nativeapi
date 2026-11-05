@@ -96,8 +96,10 @@ All windows share one engine and one isolate, so they talk to each other through
 
 A Dart program without Flutter can open windows too. Hand the app to `runNativeApp()`, which runs it on the platform's UI thread and keeps the platform loop turning between Dart's timers and futures:
 
+The experimental runner has its own entrypoint, `package:nativeapi/standalone.dart`, which also exports the ordinary nativeapi API. It currently requires Dart 3.13's experimental VM APIs and is not supported on Dart 3.14. Flutter apps and programs importing only `package:nativeapi/nativeapi.dart` do not depend on this runner.
+
 ```dart
-import 'package:nativeapi/nativeapi.dart';
+import 'package:nativeapi/standalone.dart';
 
 void app() {
   final window = Window.create()!..title = 'Hello';

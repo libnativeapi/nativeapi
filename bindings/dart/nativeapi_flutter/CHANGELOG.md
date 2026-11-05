@@ -1,3 +1,7 @@
+## Unreleased
+
+- Stop importing the experimental plain-Dart event-loop helper so Flutter apps compile on Dart 3.14 without the removed isolate APIs or experimental flags ([#22](https://github.com/libnativeapi/nativeapi/issues/22)).
+
 ## 0.5.10
 
 - Linux: fix mouse input remaining limited to the old shadow rectangle after restoring the title bar and enlarging a window ([nativeapi-core#90](https://github.com/libnativeapi/nativeapi-core/pull/90)).
