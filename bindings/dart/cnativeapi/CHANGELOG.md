@@ -1,3 +1,7 @@
+## Unreleased
+
+- Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).
+
 ## 0.5.10
 
 - Linux: clear the automatically generated shadow input region when restoring the title bar, so enlarged windows receive input beyond their former picture-in-picture bounds. Preserve explicit input shapes and mouse pass-through policies ([nativeapi-core#90](https://github.com/libnativeapi/nativeapi-core/pull/90)).

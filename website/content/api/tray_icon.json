@@ -1023,7 +1023,7 @@
           "kind": "method",
           "doc": {
             "summary": "Set the context menu trigger behavior.",
-            "details": "Determines which mouse interactions will automatically display the context menu. By default, the trigger is set to None, requiring explicit control via OpenContextMenu() or by setting a trigger mode.\n\n**Example**\n\n```cpp\n// Right click shows menu (common on Windows/Linux)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);\n\n// Left click shows menu (common on some Linux environments and macOS)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::Clicked);\n\n// Double click shows menu\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::DoubleClicked);\n\n// Manual control (default) - handle events yourself\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::None);\ntray_icon->AddListener<TrayIconRightClickedEvent>([&](const auto& e) {\n  // Custom logic before showing menu\n  tray_icon->OpenContextMenu();\n});\n```",
+            "details": "Determines which mouse interactions will automatically display the context menu. By default, the trigger is set to None, requiring explicit control via OpenContextMenu() or by setting a trigger mode.\n\nOn Linux, Clicked and RightClicked export a menu for the tray host to render. None and DoubleClicked use a local popup and require X11. Native Wayland applications must use Clicked or RightClicked. GNOME AppIndicators reserves single clicks for host menus and sends activation only on a double click.\n\n**Example**\n\n```cpp\n// Right click shows menu (common on Windows/Linux)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);\n\n// Left click shows menu (common on some Linux environments and macOS)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::Clicked);\n\n// Double click shows menu\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::DoubleClicked);\n\n// Manual control (default) - handle events yourself\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::None);\ntray_icon->AddListener<TrayIconRightClickedEvent>([&](const auto& e) {\n  // Custom logic before showing menu\n  tray_icon->OpenContextMenu();\n});\n```",
             "params": [
               {
                 "name": "trigger",
@@ -1250,7 +1250,11 @@
             "notes": [
               {
                 "kind": "note",
-                "text": "The exact positioning behavior may vary by platform:\n- macOS: Menu appears below the status item\n- Windows: Menu appears near the notification area\n- Linux: Menu appears at cursor position or near tray area"
+                "text": "The exact positioning behavior may vary by platform:\n- macOS: Menu appears below the status item\n- Windows: Menu appears near the notification area\n- Linux: X11 menus appear at the cursor. Native Wayland returns false with a warning; use Clicked or RightClicked for a host-rendered menu."
+              },
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Supported - Appears below the status item\n- Windows: ✅ Supported - Appears near the notification area\n- Linux: ⚠️ X11 only - No parent surface/input serial is available on Wayland\n- Android: ❌ Not supported - Returns false\n- iOS: ❌ Not supported - Returns false\n- OpenHarmony: ❌ Not supported - Returns false"
               }
             ]
           },
@@ -1290,7 +1294,7 @@
           "kind": "method",
           "doc": {
             "summary": "Close the currently displayed context menu.",
-            "details": "Closes the tray icon's context menu if it is currently visible. This allows for programmatic dismissal of the menu.\n\n**Example**\n\n```cpp\n// Close the context menu programmatically\ntray_icon->CloseContextMenu();\n```",
+            "details": "Closes the tray icon's context menu if it is currently visible. This allows for programmatic dismissal of the menu. On Linux, only a local X11 popup can be dismissed; returns false while a host-rendered dbusmenu is reported open because SNI has no close operation.\n\n**Example**\n\n```cpp\n// Close the context menu programmatically\ntray_icon->CloseContextMenu();\n```",
             "returns": "true if the menu was successfully closed or wasn't visible, false on error",
             "notes": [
               {
@@ -1375,7 +1379,7 @@
           "kind": "variant",
           "doc": {
             "summary": "Context menu is not automatically triggered by mouse events.",
-            "details": "The application must call OpenContextMenu() explicitly to display the menu. Use this when you want full control over when the menu appears."
+            "details": "The application must call OpenContextMenu() explicitly to display the menu. Use this when you want full control over when the menu appears. On Linux this requires X11; native Wayland apps must use Clicked or RightClicked."
           },
           "signatures": {
             "cpp": {
@@ -1489,7 +1493,7 @@
           "kind": "variant",
           "doc": {
             "summary": "Context menu is triggered on TrayIconDoubleClickedEvent.",
-            "details": "Automatically opens the context menu when the tray icon is double-clicked. Less common but useful for applications that use single-click for another action."
+            "details": "Automatically opens the context menu when the tray icon is double-clicked. Less common but useful for applications that use single-click for another action. On Linux this requires X11 and a host that delivers activation events."
           },
           "signatures": {
             "cpp": {

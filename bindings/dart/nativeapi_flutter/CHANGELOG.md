@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).
 - Stop importing the experimental plain-Dart event-loop helper so Flutter apps compile on Dart 3.14 without the removed isolate APIs or experimental flags ([#22](https://github.com/libnativeapi/nativeapi/issues/22)).
 
 ## 0.5.10
