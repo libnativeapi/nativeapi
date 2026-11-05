@@ -1,3 +1,7 @@
+## 0.5.9
+
+- Windows: keep every tray icon registered with the shell and toggle it with `NIS_HIDDEN` instead of removing and re-adding the entry. An icon added after another one was removed could stay visible but deaf to clicks in an elevated application ([tray_manager#110](https://github.com/leanflutter/tray_manager/issues/110)).
+
 ## 0.5.8
 
 - Fix Linux builds with GLib older than 2.74, including Ubuntu 22.04, by avoiding the newer `G_CONNECT_DEFAULT` enum name ([nativeapi-core#89](https://github.com/libnativeapi/nativeapi-core/pull/89)).

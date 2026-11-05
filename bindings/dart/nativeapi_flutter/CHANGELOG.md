@@ -1,3 +1,7 @@
+## 0.5.9
+
+- Windows: switching between tray icons keeps working when the application runs elevated, because every icon stays registered with the shell and visibility is toggled with `NIS_HIDDEN` ([tray_manager#110](https://github.com/leanflutter/tray_manager/issues/110)).
+
 ## 0.5.8
 
 - Include the Linux build fix for GLib older than 2.74, including Ubuntu 22.04 ([nativeapi-core#89](https://github.com/libnativeapi/nativeapi-core/pull/89)).
