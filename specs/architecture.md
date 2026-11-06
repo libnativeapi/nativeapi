@@ -55,7 +55,7 @@ src/
 
 ## 2. 平台矩阵
 
-六个平台，`src/CMakeLists.txt` 每次构建**只选一个**目录：
+六个原生平台和一个 WebAssembly 编译后端，`src/CMakeLists.txt` 每次构建**只选一个**目录：
 
 | 目录 | 选择条件 | 扩展名 | 链接 |
 |---|---|---|---|
@@ -65,6 +65,12 @@ src/
 | `android/` | `ANDROID` | `.cpp` | log、android |
 | `ios/` | `CMAKE_SYSTEM_NAME STREQUAL "iOS"` | `.mm` | UIKit、Foundation、CoreGraphics |
 | `ohos/` | `CMAKE_SYSTEM_NAME STREQUAL "OHOS"` | `.cpp` | hilog_ndk、deviceinfo_ndk、native_display_manager、ohpreferences、pasteboard、udmf、ace_napi |
+| `wasm/` | `EMSCRIPTEN` | `.cpp` | 无宿主系统库；编译和链接传播 `-fexceptions` |
+
+`wasm/` 是编译兼容后端：完整 C++ / C ABI 可链接，共享算法可用，原生桌面服务显式
+返回不支持。它不提供浏览器 UI、持久化存储或原生事件循环。构建、运行语义与限制见
+[core/docs/wasm.md](../core/docs/wasm.md)。新增平台接缝时也必须补齐此目录；WASM
+全库链接测试会验证平台符号完整性。
 
 分支顺序有讲究：`ANDROID` 和 `iOS` 判断必须排在 `APPLE` / 通用分支之前，否则会落到
 桌面实现上。最后的 `else()` 分支**不编译任何平台源码**——新平台在接上之前，整个库
