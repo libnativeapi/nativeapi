@@ -72,12 +72,12 @@ class KeyboardMonitor implements ffi.Finalizable {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_keyboard_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_keyboard_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -86,14 +86,16 @@ class KeyboardMonitor implements ffi.Finalizable {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : KeyboardEvent.fromNative(event.ref),
+                  : KeyboardEvent.fromNative(
+                      event.cast<c.native_keyboard_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_keyboard_monitor_add_listener_async(
       nativeHandle,
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

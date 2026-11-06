@@ -451,27 +451,30 @@ class View implements ffi.Finalizable {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_view_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_view_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
           unawaited(
             NativeCallbacks.deliverEvent(
               delivery,
-              () =>
-                  event == ffi.nullptr ? null : ViewEvent.fromNative(event.ref),
+              () => event == ffi.nullptr
+                  ? null
+                  : ViewEvent.fromNative(
+                      event.cast<c.native_view_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_view_add_listener_async(
       nativeHandle,
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

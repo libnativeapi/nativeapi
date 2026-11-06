@@ -3,6 +3,7 @@
 - Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).
 - **Breaking (Dart):** move the experimental `runNativeApp()` helper to `package:nativeapi/standalone.dart`. Plain Dart apps using the helper must change their import; the standalone entrypoint also exports the ordinary nativeapi API. The helper still requires Dart 3.13's experimental VM APIs and is not supported on Dart 3.14.
 - Keep the ordinary `nativeapi.dart` import independent of the experimental runner, fixing compilation on Dart 3.14 when the helper is unused ([#22](https://github.com/libnativeapi/nativeapi/issues/22)).
+- Fix iOS and Android release builds failing in gen_snapshot with `Class with illegal cid` for an event struct such as `native_window_event_t`, when an app registers listeners only on desktop platforms. Native callbacks now receive their struct payloads as `Pointer<Void>`, working around [dart-lang/sdk#50540](https://github.com/dart-lang/sdk/issues/50540) ([#26](https://github.com/libnativeapi/nativeapi/issues/26)).
 
 ## 0.5.10
 

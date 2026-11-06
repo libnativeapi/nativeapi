@@ -143,26 +143,31 @@ class Clipboard {
         ffi.NativeCallable<
           ffi.Void Function(
             ffi.Bool,
-            ffi.Pointer<c.native_clipboard_data_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
           bool arg0,
-          ffi.Pointer<c.native_clipboard_data_t> arg1,
+          ffi.Pointer<ffi.Void> arg1,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
           try {
             if (c.native_event_delivery_is_active(delivery)) {
-              callback(arg0, ClipboardData.fromNative(arg1.ref));
+              callback(
+                arg0,
+                ClipboardData.fromNative(
+                  arg1.cast<c.native_clipboard_data_t>().ref,
+                ),
+              );
             }
           } finally {
             c.native_event_delivery_complete(delivery, true);
           }
         });
     c.native_clipboard_read(
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );
@@ -197,7 +202,7 @@ class Clipboard {
           }
         });
     c.native_clipboard_read_text(
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );
@@ -232,7 +237,7 @@ class Clipboard {
           }
         });
     c.native_clipboard_read_html(
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );
@@ -267,7 +272,7 @@ class Clipboard {
           }
         });
     c.native_clipboard_read_image(
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );
@@ -278,22 +283,32 @@ class Clipboard {
         ffi.NativeCallable<
           ffi.Void Function(
             ffi.Bool,
-            ffi.Pointer<c.native_string_list_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
           bool arg0,
-          ffi.Pointer<c.native_string_list_t> arg1,
+          ffi.Pointer<ffi.Void> arg1,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
           try {
             if (c.native_event_delivery_is_active(delivery)) {
               callback(arg0, [
-                for (var i = 0; i < arg1.ref.count; i++)
-                  if (arg1.ref.items[i] != ffi.nullptr)
-                    arg1.ref.items[i].cast<pkg_ffi.Utf8>().toDartString(),
+                for (
+                  var i = 0;
+                  i < arg1.cast<c.native_string_list_t>().ref.count;
+                  i++
+                )
+                  if (arg1.cast<c.native_string_list_t>().ref.items[i] !=
+                      ffi.nullptr)
+                    arg1
+                        .cast<c.native_string_list_t>()
+                        .ref
+                        .items[i]
+                        .cast<pkg_ffi.Utf8>()
+                        .toDartString(),
               ]);
             }
           } finally {
@@ -301,7 +316,7 @@ class Clipboard {
           }
         });
     c.native_clipboard_read_file_paths(
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );
@@ -459,12 +474,12 @@ class Clipboard {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_clipboard_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_clipboard_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -473,13 +488,15 @@ class Clipboard {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : ClipboardEvent.fromNative(event.ref),
+                  : ClipboardEvent.fromNative(
+                      event.cast<c.native_clipboard_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_clipboard_add_listener_async(
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

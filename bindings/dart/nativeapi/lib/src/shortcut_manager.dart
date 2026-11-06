@@ -39,7 +39,7 @@ class ShortcutManager {
     final handle = c
         .native_shortcut_manager_register_with_accelerator_and_callback(
           acceleratorNative,
-          callbackCallable.nativeFunction,
+          callbackCallable.nativeFunction.cast(),
           NativeCallbacks.userData(callbackCallable),
           NativeCallbacks.release,
         );
@@ -194,12 +194,12 @@ class ShortcutManager {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_shortcut_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_shortcut_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -208,13 +208,15 @@ class ShortcutManager {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : ShortcutEvent.fromNative(event.ref),
+                  : ShortcutEvent.fromNative(
+                      event.cast<c.native_shortcut_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_shortcut_manager_add_listener_async(
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

@@ -1342,17 +1342,21 @@ fn render_dart_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
     )
     .unwrap();
     writeln!(out, "{keyword}{} {{", dart_add_listener_signature(group)).unwrap();
-    writeln!(out, "    final callable = ffi.NativeCallable<\n        ffi.Void Function(ffi.Pointer<{c_event}>, ffi.Uint64, ffi.Pointer<ffi.Void>)>.listener(").unwrap();
+    // The event arrives as `Pointer<Void>` and is cast back in the body: a
+    // struct named in a NativeCallable signature crashes gen_snapshot when
+    // the registration is dead code after `Platform.isX` folding
+    // (dart-lang/sdk#50540, libnativeapi/nativeapi#26).
+    writeln!(out, "    final callable = ffi.NativeCallable<\n        ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Uint64, ffi.Pointer<ffi.Void>)>.listener(").unwrap();
     writeln!(
         out,
-        "      (ffi.Pointer<{c_event}> event, int delivery, ffi.Pointer<ffi.Void> _) {{"
+        "      (ffi.Pointer<ffi.Void> event, int delivery, ffi.Pointer<ffi.Void> _) {{"
     )
     .unwrap();
     writeln!(out, "        unawaited(NativeCallbacks.deliverEvent(").unwrap();
     writeln!(out, "          delivery,").unwrap();
     writeln!(
         out,
-        "          () => event == ffi.nullptr ? null : {}.fromNative(event.ref),",
+        "          () => event == ffi.nullptr ? null : {}.fromNative(event.cast<{c_event}>().ref),",
         group.name
     )
     .unwrap();
@@ -1360,7 +1364,7 @@ fn render_dart_listener(out: &mut String, api: &Api, class: &Class, prefix: &str
     writeln!(out, "        ));").unwrap();
     writeln!(out, "      }},").unwrap();
     writeln!(out, "    );").unwrap();
-    writeln!(out, "    return {C}.{}_async({self_arg}callable.nativeFunction, NativeCallbacks.userData(callable), NativeCallbacks.release);", c_add_listener_symbol(prefix, &class.name)).unwrap();
+    writeln!(out, "    return {C}.{}_async({self_arg}callable.nativeFunction.cast(), NativeCallbacks.userData(callable), NativeCallbacks.release);", c_add_listener_symbol(prefix, &class.name)).unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
 
@@ -1721,7 +1725,7 @@ fn call_args(params: &[Param], receiver: Option<String>) -> String {
             TypeRef::Vector { .. } => args.push(format!("{name}List.ref")),
             TypeRef::Map { .. } => args.push(format!("{name}Map.ref")),
             TypeRef::Callback { .. } => {
-                args.push(format!("{name}Callable.nativeFunction"));
+                args.push(format!("{name}Callable.nativeFunction.cast()"));
                 args.push(format!("NativeCallbacks.userData({name}Callable)"));
                 args.push("NativeCallbacks.release".to_string());
             }
@@ -1730,7 +1734,7 @@ fn call_args(params: &[Param], receiver: Option<String>) -> String {
                 TypeRef::Object { .. } => args.push(format!("{name}?.nativeHandle ?? 0")),
                 TypeRef::Struct { .. } => args.push(format!("{name}Pointer.cast()")),
                 TypeRef::Callback { .. } => {
-                    args.push(format!("{name}Callable?.nativeFunction ?? ffi.nullptr"));
+                    args.push(format!("{name}Callable?.nativeFunction.cast() ?? ffi.nullptr"));
                     args.push(format!("NativeCallbacks.userData({name}Callable)"));
                     args.push("NativeCallbacks.release".to_string());
                 }
@@ -2100,9 +2104,9 @@ fn render_dart_payload_callback(
                 "ffi.Pointer<ffi.Char>".into()
             }
             TypeRef::Object { .. } => "ffi.Uint64".into(),
-            TypeRef::Struct { .. } | TypeRef::Vector { .. } => {
-                format!("ffi.Pointer<{C}.{}>", c_field_type(ty, "native_"))
-            }
+            // Struct payloads cross as `Pointer<Void>`, as in
+            // `render_dart_listener` (dart-lang/sdk#50540).
+            TypeRef::Struct { .. } | TypeRef::Vector { .. } => "ffi.Pointer<ffi.Void>".into(),
             _ => dart_native_type(ty),
         };
         let dart = match ty {
@@ -2113,7 +2117,7 @@ fn render_dart_payload_callback(
         native_args.push(native);
         args.push(format!("{dart} arg{i}"));
         let access = if matches!(ty, TypeRef::Struct { .. } | TypeRef::Vector { .. }) {
-            format!("arg{i}.ref")
+            format!("arg{i}.cast<{C}.{}>().ref", c_field_type(ty, "native_"))
         } else {
             format!("arg{i}")
         };

@@ -193,12 +193,12 @@ class DropTarget implements ffi.Finalizable {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_drop_target_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_drop_target_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -207,14 +207,16 @@ class DropTarget implements ffi.Finalizable {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : DropTargetEvent.fromNative(event.ref),
+                  : DropTargetEvent.fromNative(
+                      event.cast<c.native_drop_target_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_drop_target_add_listener_async(
       nativeHandle,
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

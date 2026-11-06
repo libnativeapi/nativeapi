@@ -68,7 +68,7 @@ class WindowManager {
             hook(arg0);
           });
     c.native_window_manager_set_will_show_hook(
-      hookCallable?.nativeFunction ?? ffi.nullptr,
+      hookCallable?.nativeFunction.cast() ?? ffi.nullptr,
       NativeCallbacks.userData(hookCallable),
       NativeCallbacks.release,
     );
@@ -83,7 +83,7 @@ class WindowManager {
             hook(arg0);
           });
     c.native_window_manager_set_will_hide_hook(
-      hookCallable?.nativeFunction ?? ffi.nullptr,
+      hookCallable?.nativeFunction.cast() ?? ffi.nullptr,
       NativeCallbacks.userData(hookCallable),
       NativeCallbacks.release,
     );
@@ -122,12 +122,12 @@ class WindowManager {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_window_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_window_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -136,13 +136,15 @@ class WindowManager {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : WindowEvent.fromNative(event.ref),
+                  : WindowEvent.fromNative(
+                      event.cast<c.native_window_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_window_manager_add_listener_async(
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

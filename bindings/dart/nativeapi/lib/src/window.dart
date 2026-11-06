@@ -1100,12 +1100,12 @@ class Window implements ffi.Finalizable {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_window_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_window_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -1114,14 +1114,16 @@ class Window implements ffi.Finalizable {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : WindowEvent.fromNative(event.ref),
+                  : WindowEvent.fromNative(
+                      event.cast<c.native_window_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_window_add_listener_async(
       nativeHandle,
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

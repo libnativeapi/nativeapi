@@ -211,12 +211,12 @@ class DragSource implements ffi.Finalizable {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_drag_source_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_drag_source_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -225,14 +225,16 @@ class DragSource implements ffi.Finalizable {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : DragSourceEvent.fromNative(event.ref),
+                  : DragSourceEvent.fromNative(
+                      event.cast<c.native_drag_source_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_drag_source_add_listener_async(
       nativeHandle,
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );

@@ -310,7 +310,7 @@ class Shortcut implements ffi.Finalizable {
         .native_shortcut_create_with_id_and_accelerator_and_callback(
           id,
           acceleratorNative,
-          callbackCallable.nativeFunction,
+          callbackCallable.nativeFunction.cast(),
           NativeCallbacks.userData(callbackCallable),
           NativeCallbacks.release,
         );
@@ -389,7 +389,7 @@ class Shortcut implements ffi.Finalizable {
         });
     c.native_shortcut_set_callback(
       nativeHandle,
-      callbackCallable.nativeFunction,
+      callbackCallable.nativeFunction.cast(),
       NativeCallbacks.userData(callbackCallable),
       NativeCallbacks.release,
     );

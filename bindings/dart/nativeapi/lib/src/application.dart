@@ -208,12 +208,12 @@ class Application {
     final callable =
         ffi.NativeCallable<
           ffi.Void Function(
-            ffi.Pointer<c.native_application_event_t>,
+            ffi.Pointer<ffi.Void>,
             ffi.Uint64,
             ffi.Pointer<ffi.Void>,
           )
         >.listener((
-          ffi.Pointer<c.native_application_event_t> event,
+          ffi.Pointer<ffi.Void> event,
           int delivery,
           ffi.Pointer<ffi.Void> _,
         ) {
@@ -222,13 +222,15 @@ class Application {
               delivery,
               () => event == ffi.nullptr
                   ? null
-                  : ApplicationEvent.fromNative(event.ref),
+                  : ApplicationEvent.fromNative(
+                      event.cast<c.native_application_event_t>().ref,
+                    ),
               callback,
             ),
           );
         });
     return c.native_application_add_listener_async(
-      callable.nativeFunction,
+      callable.nativeFunction.cast(),
       NativeCallbacks.userData(callable),
       NativeCallbacks.release,
     );
