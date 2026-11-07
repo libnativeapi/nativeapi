@@ -1,0 +1,61 @@
+// Real FlView layout regression, paired with the GTK/Wayland protocol fixture.
+// ignore_for_file: avoid_print
+import 'dart:convert';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final window = WindowManager.instance.getCurrent()!;
+  window.titleBarStyle = TitleBarStyle.hidden;
+  developer.registerExtension('ext.nativeapi.linuxReport', (_, params) async {
+    switch (params['action']) {
+      case 'resize':
+        window.contentSize = const Size(560, 360).toNative();
+      case 'shadow-off':
+        window.hasShadow = false;
+      case 'shadow-on':
+        window.hasShadow = true;
+      case 'maximize':
+        window.maximize();
+      case 'restore':
+        window.unmaximize();
+      case 'normal':
+        window.titleBarStyle = TitleBarStyle.normal;
+    }
+    final content = window.contentSize;
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final size = view.physicalSize / view.devicePixelRatio;
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode({
+        'nativeSize': [content.width, content.height],
+        'flutterSize': [size.width, size.height],
+        'shadow': window.hasShadow,
+        'titleBarStyle': window.titleBarStyle.name,
+      }),
+    );
+  });
+  runApp(
+    const MaterialApp(
+      home: Scaffold(
+        body: Column(
+          children: [
+            DragToMoveArea(
+              child: SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: Text('Linux shadow regression'),
+              ),
+            ),
+            Expanded(child: Placeholder()),
+          ],
+        ),
+      ),
+    ),
+  );
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => print('READY linux-shadow'),
+  );
+}

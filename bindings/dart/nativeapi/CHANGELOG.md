@@ -5,6 +5,9 @@
 - **Breaking (Dart):** move the experimental `runNativeApp()` helper to `package:nativeapi/standalone.dart`. Plain Dart apps using the helper must change their import; the standalone entrypoint also exports the ordinary nativeapi API. The helper still requires Dart 3.13's experimental VM APIs and is not supported on Dart 3.14.
 - Keep the ordinary `nativeapi.dart` import independent of the experimental runner, fixing compilation on Dart 3.14 when the helper is unused ([#22](https://github.com/libnativeapi/nativeapi/issues/22)).
 - Fix iOS and Android release builds failing in gen_snapshot with `Class with illegal cid` for an event struct such as `native_window_event_t`, when an app registers listeners only on desktop platforms. Native callbacks now receive their struct payloads as `Pointer<Void>`, working around [dart-lang/sdk#50540](https://github.com/dart-lang/sdk/issues/50540) ([#26](https://github.com/libnativeapi/nativeapi/issues/26)).
+- Windows: closing a window whose close request a listener approved asynchronously no longer crashes the Dart VM with `Dart_EnterIsolate expects there to be no current isolate`. Acknowledging an event now resolves its vote from the main loop, so the approved close no longer runs, and tears down the Flutter engine, inside `native_event_delivery_complete` ([window_manager#593](https://github.com/leanflutter/window_manager/issues/593)).
+- Linux: keep the hidden-title-bar shadow gutter transparent when KDE injects high-priority GTK styles ([window_manager#594](https://github.com/leanflutter/window_manager/issues/594)).
+- Linux: use the current GTK allocation when updating a shadow input region, so the right and bottom content edges remain clickable after resize ([window_manager#595](https://github.com/leanflutter/window_manager/issues/595)).
 
 ## 0.5.10
 

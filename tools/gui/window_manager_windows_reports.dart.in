@@ -1,0 +1,77 @@
+// Real window_manager/nativeapi regression fixture for #593 and #596.
+// Copied into window_manager/example/lib by build_window_manager_reports.py.
+// ignore_for_file: deprecated_member_use, avoid_print
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'dart:ffi';
+
+import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart' as native;
+import 'package:window_manager/legacy.dart' as legacy;
+
+int closes = 0;
+bool approve = false;
+int frames = 0;
+final buildTimes = <int>[];
+final rasterTimes = <int>[];
+
+class CloseListener with legacy.WindowListener {
+  @override
+  void onWindowClose() async {
+    closes++;
+    print('CLOSE_CALLBACK $closes approve=$approve');
+    if (!approve) return;
+    await legacy.windowManager.setPreventClose(false);
+    await legacy.windowManager.close();
+    print('LEGACY_CLOSE_RETURNED');
+  }
+}
+
+Future<void> main(List<String> args) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final threadId = DynamicLibrary.open(
+    'kernel32.dll',
+  ).lookupFunction<Uint32 Function(), int Function()>('GetCurrentThreadId')();
+  print('DART_THREAD $threadId');
+  final mode = args.isEmpty ? 'resize-native' : args.first;
+  if (mode == 'close') {
+    await legacy.windowManager.ensureInitialized();
+    await legacy.windowManager.setPreventClose(true);
+    legacy.windowManager.addListener(CloseListener());
+  } else if (mode != 'resize-control') {
+    final window = native.WindowManager.instance.getCurrent()!;
+    if (mode == 'resize-listener') window.addListener((_) {});
+  }
+  WidgetsBinding.instance.addTimingsCallback((timings) {
+    for (final timing in timings) {
+      frames++;
+      buildTimes.add(timing.buildDuration.inMicroseconds);
+      rasterTimes.add(timing.rasterDuration.inMicroseconds);
+    }
+  });
+  developer.registerExtension('ext.nativeapi.windowsReport', (
+    method,
+    params,
+  ) async {
+    switch (params['action']) {
+      case 'approve':
+        approve = true;
+      case 'reset':
+        frames = 0;
+        buildTimes.clear();
+        rasterTimes.clear();
+    }
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode({
+        'mode': mode,
+        'closes': closes,
+        'frames': frames,
+        'buildUs': buildTimes,
+        'rasterUs': rasterTimes,
+      }),
+    );
+  });
+  runApp(const MaterialApp(home: Scaffold(body: Placeholder())));
+  WidgetsBinding.instance.addPostFrameCallback((_) => print('READY $mode'));
+}

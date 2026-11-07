@@ -2,6 +2,9 @@
 
 - macOS: preserve a pending Flutter quit decision when AppKit acknowledges synchronous cancellation, so approving the later Dart response exits normally ([nativeapi-core#65](https://github.com/libnativeapi/nativeapi-core/issues/65)).
 - Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).
+- Windows: closing a window whose close request a listener approved asynchronously no longer crashes the Dart VM with `Dart_EnterIsolate expects there to be no current isolate`. Acknowledging an event now resolves its vote from the main loop, so the approved close no longer runs, and tears down the Flutter engine, inside `native_event_delivery_complete` ([window_manager#593](https://github.com/leanflutter/window_manager/issues/593)).
+- Linux: keep the hidden-title-bar shadow gutter transparent when KDE injects high-priority GTK styles ([window_manager#594](https://github.com/leanflutter/window_manager/issues/594)).
+- Linux: use the current GTK allocation when updating a shadow input region, so the right and bottom content edges remain clickable after resize ([window_manager#595](https://github.com/leanflutter/window_manager/issues/595)).
 
 ## 0.5.10
 
