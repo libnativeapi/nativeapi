@@ -10,6 +10,7 @@ runner) lives in [`.agents/skills/`](../../.agents/skills); read
 
 | Script | Example | Platform | Covers |
 | --- | --- | --- | --- |
+| `flutter_window_remaining_reports_test.ps1` | fixture `window_remaining_reports_flutter.dart` (#76/#78) | Windows | Hidden-title-bar border; real first/second Enter/Escape and TextField submission after hide/minimize; mixed-DPI native client size and Flutter layout/DPR with normal/hidden title bars and resizing on/off; optional guarded real dragging for hidden/fixed windows. Keyboard and drag input require separate explicit opt-ins. See the commands and verification below. |
 | `nsh_examples_test_macos.py` | NSH tray, shortcut and message-dialog examples | macOS | Application-scoped Accessibility actions, no mouse or keyboard events: tray hide/show across autorelease pools, native shortcut callback delivery and enable/unregister behavior, modal dialog dismissal and unsupported confirmation feedback, graceful shutdown. Run with `--build` to build first. Does not test physical hotkeys or tray-menu clicks. |
 | `flutter_hotkey_manager_smoke.py` | hotkey_manager submodule's own example | macOS / Windows / Linux (X11 or XWayland) | No input: real native registration and removal, asynchronous activation reflected in the Flutter counter, stale-event filtering, and reclaiming the native example registration with startup cleanup. Windows/Linux independently check OS ownership through a second client. Invokes actions through the debug VM service; activation is injected through the native manager, so physical keyboard delivery and OS key-up delivery are not covered. `verify_hotkey_manager.py` prepares local dependency overrides, analyzes/tests/builds, and imports the Linux desktop environment; `verify_hotkey_manager_windows.ps1` runs all 17 tests and the smoke check in the logged-on Windows desktop. |
 | `core_application_exit_flutter_macos.py` | headless Flutter exit regression | macOS | Creates no windows and sends no input. A real Dart `AppLifecycleListener` asynchronously cancels quit with and without nativeapi listeners, then approves quit. Requires Flutter, CMake and the installed debug FlutterMacOS framework; substitutes only the final process termination. |
@@ -117,7 +118,44 @@ the Flutter engine. macOS tests and the smoke check were also rerun successfully
 
 Scripts that drive input take over the mouse. They refuse to start while the mouse
 is moving and stop as soon as a press would land outside the example's own windows.
-No keyboard input is ever sent. The table identifies tests that need no input.
+The table identifies tests that need no input. The remaining Windows reports runner
+has an explicit `-AllowKeyboard` exception: use it only with the user's approval.
+It sends only Enter/Escape after verifying that both the foreground window and
+keyboard focus belong to its own fixture, and stops on input or focus changes.
+
+For core #76/#78, build the real TextField fixture and run it in the logged-on
+Windows desktop (the script dispatches an interactive scheduled task when called
+through SSH):
+
+```powershell
+# From examples/flutter_window_title_bar_example, using the absolute fixture path:
+flutter build windows --debug --target <workspace>/tools/gui/window_remaining_reports_flutter.dart
+# From the workspace root; omit -AllowKeyboard to send no keys:
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/gui/flutter_window_remaining_reports_test.ps1 -AllowKeyboard
+# With separate approval for mouse use, add -AllowPointer for real drags.
+```
+
+This checks hidden-title-bar border pixels; the first and second Enter/Escape
+after programmatic hide/minimize and show/focus under normal and hidden title bars;
+and Enter's real TextField submission callback. Mixed-DPI checks require two
+monitors with different scale factors, otherwise the result explicitly records a
+skip. They move a 320 x 460 logical client area twice through every monitor under
+both title-bar styles and with resizing enabled/disabled, checking native client
+size, Flutter layout size/DPR and framework errors. Logs and JSON results are kept
+under `core/build/reports76-78-*`. `-AllowPointer` additionally probes the Flutter
+drag handle and drags a hidden-title-bar, fixed-size window twice to the second
+monitor and back, guarding window ownership, foreground/focus and user activity,
+with mouse-up in a `finally` block. Windows 10 border verification remains a separate
+reporter check; passing on Windows 11 does not verify Windows 10.
+
+Verified on 2026-11-07 on windows-laptop, Windows 11 build 26200, Flutter 3.47.6
+stable (Dart 3.13.5): the keyboard/border run passed 42 checks, including balanced
+down/up delivery for both presses of both keys in all four style/visibility
+combinations. The mixed-DPI run used two 2560 x 1440 monitors at 150% and 100% and
+passed 58 checks: all four style/resizability combinations plus two real drag
+round trips for a hidden, fixed-size window. Client/layout deviations stayed within
+2 logical pixels without cumulative growth; both runs reported no Flutter errors.
+No additional production fix was needed for these previously unverified reports.
 
 ```bash
 # macOS (examples built with `flutter build macos --debug`, or pass --build)
