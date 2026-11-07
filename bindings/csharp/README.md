@@ -57,9 +57,7 @@ git clone --recursive https://github.com/libnativeapi/nativeapi.git
 
 Files marked `AUTO-GENERATED. DO NOT EDIT.` are generated from the C++ headers in [nativeapi](https://github.com/libnativeapi/nativeapi-core). To change the API, send a pull request there; maintainers regenerate the bindings.
 
-- API requests and native behavior bugs → [nativeapi-core issues](https://github.com/libnativeapi/nativeapi-core/issues)
-- Bugs specific to one binding → [nativeapi issues](https://github.com/libnativeapi/nativeapi/issues)
-- Not sure → [nativeapi-core issues](https://github.com/libnativeapi/nativeapi-core/issues)
+Report all bugs and feature requests in [nativeapi issues](https://github.com/libnativeapi/nativeapi/issues). Include the affected package or binding, its version, your operating system, and a minimal reproduction.
 
 ## License
 
