@@ -45,7 +45,11 @@ def main():
             elif action == 'None':
                 checks.check('None preference preserves geometry and state', app.window(TITLE) == before and not maximized and not minimized)
             elif 'FILL_SUPPORTED 1' in output:
-                checks.check('native Fill changes geometry', app.window(TITLE) != before and not minimized)
+                after = app.window(TITLE)
+                visible = app.visible_frame((before[0] + before[2] // 2,
+                                             before[1] + before[3] // 2))
+                checks.check('native Fill changes geometry', after != before and not minimized)
+                checks.near('native Fill covers the screen work area', after, visible)
             else:
                 checks.check('unavailable Fill does not fall back to zoom', app.window(TITLE) == before and not maximized)
         except Abort as error:
