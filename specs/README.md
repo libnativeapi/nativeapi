@@ -17,6 +17,7 @@
 | [c-abi.md](c-abi.md) | C ABI 长什么样、由谁产出、类型怎么过桥 | 生成管线已实施 |
 | [handle-ownership.md](handle-ownership.md) | C ABI 句柄的所有权与失效语义 | 已决策，实施中 |
 | [view.md](view.md) | 怎么在窗口里放原生控件（View）并响应它：类型、所有权、布局、事件 | 已实施 |
+| [protocol-handler.md](protocol-handler.md) | 应用自己的 scheme（深链接）怎么进入进程：启动 URL、排队、宿主接入约定 | 已实施 |
 
 新增一个跨平台模块，按顺序读 architecture → object-model → api-style → platform-seam；
 要过 C ABI 再读 c-abi + handle-ownership。

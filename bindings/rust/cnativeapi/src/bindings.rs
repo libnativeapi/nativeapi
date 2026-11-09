@@ -3244,6 +3244,97 @@ unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
     pub fn native_preferences_free(preferences: native_preferences_t);
 }
+pub const NATIVE_PROTOCOL_HANDLER_EVENT_TYPE_PROTOCOL_URL_RECEIVED:
+    native_protocol_handler_event_type_t = 0;
+#[doc = " Which concrete ProtocolHandlerEvent arrived."]
+pub type native_protocol_handler_event_type_t = ::std::os::raw::c_uint;
+#[doc = " One ProtocolHandlerEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct native_protocol_handler_event_t {
+    pub type_: native_protocol_handler_event_type_t,
+    pub data: native_protocol_handler_event_t__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union native_protocol_handler_event_t__bindgen_ty_1 {
+    pub protocol_url_received: native_protocol_handler_event_t__bindgen_ty_1__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_protocol_handler_event_t__bindgen_ty_1__bindgen_ty_1 {
+    pub url: *mut ::std::os::raw::c_char,
+}
+impl Default for native_protocol_handler_event_t__bindgen_ty_1__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for native_protocol_handler_event_t__bindgen_ty_1 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+impl Default for native_protocol_handler_event_t {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type native_protocol_handler_event_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_protocol_handler_event_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+pub type native_protocol_handler_event_callback_t_async = ::std::option::Option<
+    unsafe extern "C" fn(
+        event: *const native_protocol_handler_event_t,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+unsafe extern "C" {
+    pub fn native_protocol_handler_is_supported() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_protocol_handler_register(scheme: *const ::std::os::raw::c_char) -> bool;
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_protocol_handler_get_initial_url() -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    #[doc = " Registers @p callback for every ProtocolHandlerEvent this ProtocolHandler emits.\n @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure."]
+    pub fn native_protocol_handler_add_listener(
+        callback: native_protocol_handler_event_callback_t,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Registers an asynchronous callback. Its event, borrowed handles and user_data\n remain valid until event_delivery_complete is called, including after removal.\n Every delivered payload must be acknowledged. Check is_active before invoking a queued callback."]
+    pub fn native_protocol_handler_add_listener_async(
+        callback: native_protocol_handler_event_callback_t_async,
+        user_data: *mut ::std::os::raw::c_void,
+        release_user_data: native_release_user_data_t,
+    ) -> native_listener_id_t;
+}
+unsafe extern "C" {
+    #[doc = " Unregisters a listener. Returns false if unknown."]
+    pub fn native_protocol_handler_remove_listener(listener_id: native_listener_id_t) -> bool;
+}
 #[doc = " Opaque SecureStorage handle.\n\n A generational index into the library's handle table, NOT a pointer:\n never dereference it, and compare it against NATIVE_INVALID_SECURE_STORAGE rather than NULL.\n Releasing a handle invalidates it; later calls fail safely instead of\n touching freed memory."]
 pub type native_secure_storage_t = u64;
 unsafe extern "C" {

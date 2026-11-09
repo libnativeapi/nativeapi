@@ -131,6 +131,11 @@ from .positioning_strategy import (
 from .preferences import (
     Preferences,
 )
+from .protocol_handler import (
+    ProtocolHandler,
+    ProtocolHandlerEvent,
+    ProtocolUrlReceivedEvent,
+)
 from .secure_storage import (
     SecureStorage,
 )
@@ -312,6 +317,9 @@ __all__ = [
     "PositioningStrategy",
     "PositioningStrategyType",
     "Preferences",
+    "ProtocolHandler",
+    "ProtocolHandlerEvent",
+    "ProtocolUrlReceivedEvent",
     "Rectangle",
     "ResizeEdge",
     "SecureStorage",

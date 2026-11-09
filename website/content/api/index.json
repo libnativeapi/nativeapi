@@ -431,6 +431,40 @@
       ]
     },
     {
+      "id": "protocol_handler",
+      "header": "protocol_handler.h",
+      "items": [
+        {
+          "key": "ProtocolHandler",
+          "kind": "singleton",
+          "summary": "Receives URLs of the application's custom schemes (deep links).",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        },
+        {
+          "key": "ProtocolHandlerEvent",
+          "kind": "event",
+          "summary": "Base class for incoming custom protocol (deep link) notifications.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust"
+          ]
+        }
+      ]
+    },
+    {
       "id": "app_info",
       "header": "app_info.h",
       "items": [

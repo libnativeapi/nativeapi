@@ -110,6 +110,18 @@ class native_url_open_result_t(Structure):
     pass
 
 
+class native_protocol_handler_event_protocol_url_received_t(Structure):
+    pass
+
+
+class native_protocol_handler_event_data_t(Union):
+    pass
+
+
+class native_protocol_handler_event_t(Structure):
+    pass
+
+
 class native_notification_event_activated_t(Structure):
     pass
 
@@ -364,6 +376,11 @@ native_notification_event_callback_t = CFUNCTYPE(
     POINTER(native_notification_event_t),
     c_void_p,
 )
+native_protocol_handler_event_callback_t = CFUNCTYPE(
+    None,
+    POINTER(native_protocol_handler_event_t),
+    c_void_p,
+)
 native_release_user_data_t = CFUNCTYPE(None, c_void_p)
 native_shortcut_event_callback_t = CFUNCTYPE(
     None,
@@ -449,6 +466,16 @@ native_url_open_result_t._fields_ = [
     ("success", c_bool),
     ("error_code", c_int),
     ("error_message", c_char_p),
+]
+native_protocol_handler_event_protocol_url_received_t._fields_ = [
+    ("url", c_char_p),
+]
+native_protocol_handler_event_data_t._fields_ = [
+    ("protocol_url_received", native_protocol_handler_event_protocol_url_received_t),
+]
+native_protocol_handler_event_t._fields_ = [
+    ("type", c_int),
+    ("data", native_protocol_handler_event_data_t),
 ]
 native_notification_event_activated_t._fields_ = [
     ("argument", c_char_p),
@@ -1024,6 +1051,44 @@ native_url_opener_open = function(
     native_url_open_result_t,
     [
         c_char_p,
+    ],
+)
+
+# protocol_handler.h
+
+native_protocol_handler_is_supported = function(
+    "native_protocol_handler_is_supported",
+    c_bool,
+    [
+    ],
+)
+native_protocol_handler_register = function(
+    "native_protocol_handler_register",
+    c_bool,
+    [
+        c_char_p,
+    ],
+)
+native_protocol_handler_get_initial_url = function(
+    "native_protocol_handler_get_initial_url",
+    c_void_p,
+    [
+    ],
+)
+native_protocol_handler_add_listener = function(
+    "native_protocol_handler_add_listener",
+    c_uint64,
+    [
+        native_protocol_handler_event_callback_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_protocol_handler_remove_listener = function(
+    "native_protocol_handler_remove_listener",
+    c_bool,
+    [
+        c_uint64,
     ],
 )
 

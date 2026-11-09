@@ -12,6 +12,7 @@ export * from "./accessibility_manager.ts";
 export * from "./display.ts";
 export * from "./display_manager.ts";
 export * from "./url_opener.ts";
+export * from "./protocol_handler.ts";
 export * from "./app_info.ts";
 export * from "./device_info.ts";
 export * from "./preferences.ts";

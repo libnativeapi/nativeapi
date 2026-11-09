@@ -16,6 +16,7 @@
 #include "capi/display_c.h"
 #include "capi/display_manager_c.h"
 #include "capi/url_opener_c.h"
+#include "capi/protocol_handler_c.h"
 #include "capi/app_info_c.h"
 #include "capi/device_info_c.h"
 #include "capi/preferences_c.h"
@@ -63,6 +64,7 @@ inline Value ToValue(const native_keyboard_event_t& event);
 inline Value ToValue(const native_display_event_t& event);
 inline Value ToValue(const native_url_open_result_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_url_open_result_t* out, Arena& arena);
+inline Value ToValue(const native_protocol_handler_event_t& event);
 inline Value ToValue(const native_notification_event_t& event);
 inline Value ToValue(const native_view_event_t& event);
 inline Value ToValue(const native_window_event_t& event);
@@ -454,6 +456,19 @@ inline bool FromJs(napi_env env, napi_value value, native_url_open_result_t* out
     }
   }
   return true;
+}
+
+inline Value ToValue(const native_protocol_handler_event_t& event) {
+  Value result = Value::Object();
+  switch (event.type) {
+    case NATIVE_PROTOCOL_HANDLER_EVENT_TYPE_PROTOCOL_URL_RECEIVED:
+      result.Set("type", Value::String("protocolUrlReceived"));
+      result.Set("url", Value::String(event.data.protocol_url_received.url));
+      break;
+    default:
+      return Value::Null();
+  }
+  return result;
 }
 
 inline Value ToValue(const native_notification_event_t& event) {

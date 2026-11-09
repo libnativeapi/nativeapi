@@ -16,6 +16,7 @@ void RegisterAccessibilityManager(napi_env env, napi_value exports);
 void RegisterDisplay(napi_env env, napi_value exports);
 void RegisterDisplayManager(napi_env env, napi_value exports);
 void RegisterUrlOpener(napi_env env, napi_value exports);
+void RegisterProtocolHandler(napi_env env, napi_value exports);
 void RegisterAppInfo(napi_env env, napi_value exports);
 void RegisterDeviceInfo(napi_env env, napi_value exports);
 void RegisterPreferences(napi_env env, napi_value exports);
@@ -54,6 +55,7 @@ void RegisterGenerated(napi_env env, napi_value exports) {
   RegisterDisplay(env, exports);
   RegisterDisplayManager(env, exports);
   RegisterUrlOpener(env, exports);
+  RegisterProtocolHandler(env, exports);
   RegisterAppInfo(env, exports);
   RegisterDeviceInfo(env, exports);
   RegisterPreferences(env, exports);

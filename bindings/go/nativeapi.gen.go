@@ -1002,6 +1002,87 @@ func (uo urlOpener) Open(url string) URLOpenResult {
 	return fromCURLOpenResult(result)
 }
 
+// ProtocolHandlerEventType identifies the active event variant.
+type ProtocolHandlerEventType int32
+
+const (
+	ProtocolHandlerEventProtocolURLReceived ProtocolHandlerEventType = 0
+)
+
+// ProtocolHandlerEvent copies an event payload. Handle fields are borrowed until the callback returns.
+// Only fields belonging to Type are populated.
+type ProtocolHandlerEvent struct {
+	Type ProtocolHandlerEventType
+	URL  string
+}
+
+func fromCProtocolHandlerEvent(raw *C.native_protocol_handler_event_t) ProtocolHandlerEvent {
+	value := ProtocolHandlerEvent{Type: ProtocolHandlerEventType(raw._type)}
+	switch value.Type {
+	case ProtocolHandlerEventProtocolURLReceived:
+		value.URL = C.GoString(C.go_native_protocol_handler_event_t_protocol_url_received_Url(raw))
+	}
+	return value
+}
+
+//export goEvent_native_protocol_handler_event_t
+func goEvent_native_protocol_handler_event_t(handle C.uintptr_t, event *C.native_protocol_handler_event_t) {
+	cgo.Handle(handle).Value().(func(ProtocolHandlerEvent))(fromCProtocolHandlerEvent(event))
+}
+
+type protocolHandler struct{}
+
+// ProtocolHandler provides access to the native ProtocolHandler singleton.
+// It has no owned handle and does not need to be released.
+var ProtocolHandler = protocolHandler{}
+
+// IsSupported invokes the native IsSupported operation.
+func (ph protocolHandler) IsSupported() bool {
+	result := C.native_protocol_handler_is_supported()
+	return bool(result)
+}
+
+// Register invokes the native Register operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (ph protocolHandler) Register(scheme string) error {
+	cArg0 := C.CString(scheme)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_protocol_handler_register(cArg0)
+	if !bool(result) {
+		return nativeError("ProtocolHandler.Register")
+	}
+	return nil
+}
+
+// InitialURL invokes the native GetInitialUrl operation.
+func (ph protocolHandler) InitialURL() *string {
+	result := C.native_protocol_handler_get_initial_url()
+	defer C.free_c_str(result)
+	return optionalStringFromC(result)
+}
+
+// AddListener invokes callback synchronously on the native UI thread.
+// Remove the listener before releasing its owner. A nil callback is invalid.
+func (ph protocolHandler) AddListener(callback func(ProtocolHandlerEvent)) (ListenerID, error) {
+	if callback == nil {
+		return 0, invalidArgument("ProtocolHandler.AddListener")
+	}
+	data := newCallback(callback)
+	id := C.native_protocol_handler_add_listener(C.native_protocol_handler_event_callback_t(C.go_get_native_protocol_handler_event_callback_t()), data, C.native_release_user_data_t(C.go_get_release_callback()))
+	if id == 0 {
+		return 0, nativeError("ProtocolHandler.AddListener")
+	}
+	return ListenerID(id), nil
+}
+
+// RemoveListener unregisters id; an unknown id returns an error.
+func (ph protocolHandler) RemoveListener(id ListenerID) error {
+	if !bool(C.native_protocol_handler_remove_listener(C.native_listener_id_t(id))) {
+		return nativeError("ProtocolHandler.RemoveListener")
+	}
+	return nil
+}
+
 type appInfo struct{}
 
 // AppInfo provides access to the native AppInfo singleton.

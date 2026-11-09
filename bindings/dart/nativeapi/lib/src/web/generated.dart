@@ -25,6 +25,7 @@ export 'notification_manager.dart';
 export 'placement.dart';
 export 'positioning_strategy.dart';
 export 'preferences.dart';
+export 'protocol_handler.dart';
 export 'secure_storage.dart';
 export 'shortcut.dart';
 export 'shortcut_manager.dart';

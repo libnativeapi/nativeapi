@@ -21,6 +21,10 @@ static inline native_keyboard_event_callback_t go_get_native_keyboard_event_call
 extern void goEvent_native_display_event_t(uintptr_t handle, native_display_event_t* event);
 static inline void go_native_display_event_callback_t(const native_display_event_t* event, void* data) { goEvent_native_display_event_t(*(uintptr_t*)data, (native_display_event_t*)event); }
 static inline native_display_event_callback_t go_get_native_display_event_callback_t(void) { return go_native_display_event_callback_t; }
+static inline char* go_native_protocol_handler_event_t_protocol_url_received_Url(const native_protocol_handler_event_t* event) { return event->data.protocol_url_received.url; }
+extern void goEvent_native_protocol_handler_event_t(uintptr_t handle, native_protocol_handler_event_t* event);
+static inline void go_native_protocol_handler_event_callback_t(const native_protocol_handler_event_t* event, void* data) { goEvent_native_protocol_handler_event_t(*(uintptr_t*)data, (native_protocol_handler_event_t*)event); }
+static inline native_protocol_handler_event_callback_t go_get_native_protocol_handler_event_callback_t(void) { return go_native_protocol_handler_event_callback_t; }
 static inline char* go_native_notification_event_t_activated_Argument(const native_notification_event_t* event) { return event->data.activated.argument; }
 extern void goEvent_native_notification_event_t(uintptr_t handle, native_notification_event_t* event);
 static inline void go_native_notification_event_callback_t(const native_notification_event_t* event, void* data) { goEvent_native_notification_event_t(*(uintptr_t*)data, (native_notification_event_t*)event); }

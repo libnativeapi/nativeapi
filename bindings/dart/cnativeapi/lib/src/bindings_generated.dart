@@ -1799,6 +1799,51 @@ external bool native_preferences_set(
   ffi.Pointer<ffi.Char> value,
 );
 
+/// Registers @p callback for every ProtocolHandlerEvent this ProtocolHandler emits.
+/// @return the listener id, or NATIVE_INVALID_LISTENER_ID on failure.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_protocol_handler_event_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_protocol_handler_add_listener(
+  native_protocol_handler_event_callback_t callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Registers an asynchronous callback. Its event, borrowed handles and user_data
+/// remain valid until event_delivery_complete is called, including after removal.
+/// Every delivered payload must be acknowledged. Check is_active before invoking a queued callback.
+@ffi.Native<
+  native_listener_id_t Function(
+    native_protocol_handler_event_callback_t_async,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external int native_protocol_handler_add_listener_async(
+  native_protocol_handler_event_callback_t_async callback,
+  ffi.Pointer<ffi.Void> user_data,
+  native_release_user_data_t release_user_data,
+);
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
+external ffi.Pointer<ffi.Char> native_protocol_handler_get_initial_url();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_protocol_handler_is_supported();
+
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
+external bool native_protocol_handler_register(ffi.Pointer<ffi.Char> scheme);
+
+/// Unregisters a listener. Returns false if unknown.
+@ffi.Native<ffi.Bool Function(native_listener_id_t)>()
+external bool native_protocol_handler_remove_listener(int listener_id);
+
 @ffi.Native<ffi.Bool Function(native_secure_storage_t)>()
 external bool native_secure_storage_clear(int secure_storage);
 
@@ -3680,22 +3725,21 @@ final class UnnamedStruct$10 extends ffi.Struct {
 }
 
 final class UnnamedStruct$11 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> error_message;
+  external ffi.Pointer<ffi.Char> url;
 
   static ffi.Pointer<UnnamedStruct$11> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> error_message,
-  }) => $allocator<UnnamedStruct$11>()..ref.error_message = error_message;
+    required ffi.Pointer<ffi.Char> url,
+  }) => $allocator<UnnamedStruct$11>()..ref.url = url;
 }
 
 final class UnnamedStruct$12 extends ffi.Struct {
-  @native_tray_icon_id_t()
-  external int tray_icon_id;
+  external ffi.Pointer<ffi.Char> error_message;
 
   static ffi.Pointer<UnnamedStruct$12> $allocate(
     ffi.Allocator $allocator, {
-    required int tray_icon_id,
-  }) => $allocator<UnnamedStruct$12>()..ref.tray_icon_id = tray_icon_id;
+    required ffi.Pointer<ffi.Char> error_message,
+  }) => $allocator<UnnamedStruct$12>()..ref.error_message = error_message;
 }
 
 final class UnnamedStruct$13 extends ffi.Struct {
@@ -3719,44 +3763,40 @@ final class UnnamedStruct$14 extends ffi.Struct {
 }
 
 final class UnnamedStruct$15 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> text;
+  @native_tray_icon_id_t()
+  external int tray_icon_id;
 
   static ffi.Pointer<UnnamedStruct$15> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> text,
-  }) => $allocator<UnnamedStruct$15>()..ref.text = text;
+    required int tray_icon_id,
+  }) => $allocator<UnnamedStruct$15>()..ref.tray_icon_id = tray_icon_id;
 }
 
 final class UnnamedStruct$16 extends ffi.Struct {
-  external native_point_t new_position;
+  external ffi.Pointer<ffi.Char> text;
+
+  static ffi.Pointer<UnnamedStruct$16> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Char> text,
+  }) => $allocator<UnnamedStruct$16>()..ref.text = text;
 }
 
 final class UnnamedStruct$17 extends ffi.Struct {
-  external native_size_t new_size;
+  external native_point_t new_position;
 }
 
 final class UnnamedStruct$18 extends ffi.Struct {
-  @native_event_request_t()
-  external int request;
-
-  static ffi.Pointer<UnnamedStruct$18> $allocate(
-    ffi.Allocator $allocator, {
-    required int request,
-  }) => $allocator<UnnamedStruct$18>()..ref.request = request;
+  external native_size_t new_size;
 }
 
 final class UnnamedStruct$19 extends ffi.Struct {
-  @ffi.UnsignedInt()
-  external int propertyAsInt;
-
-  native_window_property_t get property =>
-      native_window_property_t.fromValue(propertyAsInt);
-  set property(native_window_property_t value) => propertyAsInt = value.value;
+  @native_event_request_t()
+  external int request;
 
   static ffi.Pointer<UnnamedStruct$19> $allocate(
     ffi.Allocator $allocator, {
-    required native_window_property_t property,
-  }) => $allocator<UnnamedStruct$19>()..ref.property = property;
+    required int request,
+  }) => $allocator<UnnamedStruct$19>()..ref.request = request;
 }
 
 final class UnnamedStruct$2 extends ffi.Struct {
@@ -3775,6 +3815,20 @@ final class UnnamedStruct$2 extends ffi.Struct {
 
 final class UnnamedStruct$20 extends ffi.Struct {
   @ffi.UnsignedInt()
+  external int propertyAsInt;
+
+  native_window_property_t get property =>
+      native_window_property_t.fromValue(propertyAsInt);
+  set property(native_window_property_t value) => propertyAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$20> $allocate(
+    ffi.Allocator $allocator, {
+    required native_window_property_t property,
+  }) => $allocator<UnnamedStruct$20>()..ref.property = property;
+}
+
+final class UnnamedStruct$21 extends ffi.Struct {
+  @ffi.UnsignedInt()
   external int occlusion_stateAsInt;
 
   native_window_occlusion_state_t get occlusion_state =>
@@ -3782,13 +3836,13 @@ final class UnnamedStruct$20 extends ffi.Struct {
   set occlusion_state(native_window_occlusion_state_t value) =>
       occlusion_stateAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$20> $allocate(
+  static ffi.Pointer<UnnamedStruct$21> $allocate(
     ffi.Allocator $allocator, {
     required native_window_occlusion_state_t occlusion_state,
-  }) => $allocator<UnnamedStruct$20>()..ref.occlusion_state = occlusion_state;
+  }) => $allocator<UnnamedStruct$21>()..ref.occlusion_state = occlusion_state;
 }
 
-final class UnnamedStruct$21 extends ffi.Struct {
+final class UnnamedStruct$22 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int sideAsInt;
 
@@ -3796,10 +3850,10 @@ final class UnnamedStruct$21 extends ffi.Struct {
       native_window_dock_side_t.fromValue(sideAsInt);
   set side(native_window_dock_side_t value) => sideAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$21> $allocate(
+  static ffi.Pointer<UnnamedStruct$22> $allocate(
     ffi.Allocator $allocator, {
     required native_window_dock_side_t side,
-  }) => $allocator<UnnamedStruct$21>()..ref.side = side;
+  }) => $allocator<UnnamedStruct$22>()..ref.side = side;
 }
 
 final class UnnamedStruct$3 extends ffi.Struct {
@@ -3878,6 +3932,20 @@ final class UnnamedUnion$1 extends ffi.Union {
   external UnnamedStruct$2 ended;
 }
 
+final class UnnamedUnion$10 extends ffi.Union {
+  external UnnamedStruct$17 moved;
+
+  external UnnamedStruct$18 resized;
+
+  external UnnamedStruct$19 close_requested;
+
+  external UnnamedStruct$20 property_changed;
+
+  external UnnamedStruct$21 occlusion_changed;
+
+  external UnnamedStruct$22 docked;
+}
+
 final class UnnamedUnion$2 extends ffi.Union {
   external UnnamedStruct$3 dropped;
 }
@@ -3903,33 +3971,23 @@ final class UnnamedUnion$5 extends ffi.Union {
 }
 
 final class UnnamedUnion$6 extends ffi.Union {
-  external UnnamedStruct$11 registration_failed;
+  external UnnamedStruct$11 protocol_url_received;
 }
 
 final class UnnamedUnion$7 extends ffi.Union {
-  external UnnamedStruct$12 clicked;
-
-  external UnnamedStruct$13 right_clicked;
-
-  external UnnamedStruct$14 double_clicked;
+  external UnnamedStruct$12 registration_failed;
 }
 
 final class UnnamedUnion$8 extends ffi.Union {
-  external UnnamedStruct$15 text_field_changed;
+  external UnnamedStruct$13 clicked;
+
+  external UnnamedStruct$14 right_clicked;
+
+  external UnnamedStruct$15 double_clicked;
 }
 
 final class UnnamedUnion$9 extends ffi.Union {
-  external UnnamedStruct$16 moved;
-
-  external UnnamedStruct$17 resized;
-
-  external UnnamedStruct$18 close_requested;
-
-  external UnnamedStruct$19 property_changed;
-
-  external UnnamedStruct$20 occlusion_changed;
-
-  external UnnamedStruct$21 docked;
+  external UnnamedStruct$16 text_field_changed;
 }
 
 typedef native_application_event_callback_t =
@@ -5142,6 +5200,66 @@ enum native_positioning_strategy_type_t {
 /// touching freed memory.
 typedef native_preferences_t = ffi.Uint64;
 typedef Dartnative_preferences_t = int;
+typedef native_protocol_handler_event_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_protocol_handler_event_callback_tFunction>
+    >;
+typedef native_protocol_handler_event_callback_tFunction = ffi.Void Function(
+  ffi.Pointer<native_protocol_handler_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_protocol_handler_event_callback_tFunction = void Function(
+  ffi.Pointer<native_protocol_handler_event_t> event,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef native_protocol_handler_event_callback_t_async =
+    ffi.Pointer<
+      ffi.NativeFunction<native_protocol_handler_event_callback_t_asyncFunction>
+    >;
+typedef native_protocol_handler_event_callback_t_asyncFunction =
+    ffi.Void Function(
+      ffi.Pointer<native_protocol_handler_event_t> event,
+      native_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+typedef Dartnative_protocol_handler_event_callback_t_asyncFunction =
+    void Function(
+      ffi.Pointer<native_protocol_handler_event_t> event,
+      Dartnative_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+
+/// One ProtocolHandlerEvent, tagged by its concrete type.
+///
+/// Synchronous callbacks borrow this payload until they return. Async callbacks
+/// borrow it until event_delivery_complete. Copy anything needed after that.
+final class native_protocol_handler_event_t extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int typeAsInt;
+
+  native_protocol_handler_event_type_t get type =>
+      native_protocol_handler_event_type_t.fromValue(typeAsInt);
+  set type(native_protocol_handler_event_type_t value) =>
+      typeAsInt = value.value;
+
+  external UnnamedUnion$6 data;
+}
+
+/// Which concrete ProtocolHandlerEvent arrived.
+enum native_protocol_handler_event_type_t {
+  NATIVE_PROTOCOL_HANDLER_EVENT_TYPE_PROTOCOL_URL_RECEIVED(0);
+
+  final int value;
+  const native_protocol_handler_event_type_t(this.value);
+
+  static native_protocol_handler_event_type_t fromValue(int value) =>
+      switch (value) {
+        0 => NATIVE_PROTOCOL_HANDLER_EVENT_TYPE_PROTOCOL_URL_RECEIVED,
+        _ => throw ArgumentError(
+          'Unknown value for native_protocol_handler_event_type_t: $value',
+        ),
+      };
+}
 
 final class native_rectangle_t extends ffi.Struct {
   @ffi.Double()
@@ -5272,7 +5390,7 @@ final class native_shortcut_event_t extends ffi.Struct {
 
   external ffi.Pointer<ffi.Char> accelerator;
 
-  external UnnamedUnion$6 data;
+  external UnnamedUnion$7 data;
 }
 
 /// Which concrete ShortcutEvent arrived.
@@ -5552,7 +5670,7 @@ final class native_tray_icon_event_t extends ffi.Struct {
       native_tray_icon_event_type_t.fromValue(typeAsInt);
   set type(native_tray_icon_event_type_t value) => typeAsInt = value.value;
 
-  external UnnamedUnion$7 data;
+  external UnnamedUnion$8 data;
 }
 
 /// Which concrete TrayIconEvent arrived.
@@ -5741,7 +5859,7 @@ final class native_view_event_t extends ffi.Struct {
   @native_view_id_t()
   external int view_id;
 
-  external UnnamedUnion$8 data;
+  external UnnamedUnion$9 data;
 }
 
 /// Which concrete ViewEvent arrived.
@@ -5994,7 +6112,7 @@ final class native_window_event_t extends ffi.Struct {
   @native_window_id_t()
   external int window_id;
 
-  external UnnamedUnion$9 data;
+  external UnnamedUnion$10 data;
 }
 
 /// Which concrete WindowEvent arrived.
