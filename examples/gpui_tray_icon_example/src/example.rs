@@ -455,10 +455,17 @@ fn sidebar(example: &mut TrayExample, this: &Entity<TrayExample>, cx: &App) -> i
                 .flex()
                 .flex_none()
                 .items_center()
+                .justify_between()
                 .h(px(t.frame_titlebar_size))
                 .px(px(t.spacing_4))
-                .type_style(t.title_small)
-                .child("Tray Icon"),
+                .child(div().type_style(t.title_small).child("Tray Icon"))
+                // Which toolkit draws this example, at a glance — the
+                // counterpart examples carry the same tag (Flutter, GPUI…).
+                .child(
+                    dazzui::Tag::new("stack-tag")
+                        .size(dazzui::Size::Small)
+                        .child("GPUI"),
+                ),
         )
         .child(
             div()
