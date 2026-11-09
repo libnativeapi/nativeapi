@@ -1,4 +1,5 @@
 .DS_Store
+/.zcode/
 tools/codegen/target/
 *.mp4
 __pycache__/
