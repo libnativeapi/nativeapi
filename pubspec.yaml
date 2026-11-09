@@ -42,6 +42,7 @@ melos:
     - "bindings/dart/screen_retriever/**"
     - "bindings/dart/window_manager/**"
     - "bindings/dart/hotkey_manager/**"
+    - "bindings/dart/protocol_handler/**"
     - "**/build/**"
     - "**/.dart_tool/**"
     - "**/.symlinks/**"

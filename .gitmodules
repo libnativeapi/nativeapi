@@ -18,3 +18,7 @@
 	path = bindings/dart/hotkey_manager
 	url = git@github.com:leanflutter/hotkey_manager.git
 	branch = main
+[submodule "bindings/dart/protocol_handler"]
+	path = bindings/dart/protocol_handler
+	url = git@github.com:leanflutter/protocol_handler.git
+	branch = main
