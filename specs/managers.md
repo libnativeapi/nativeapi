@@ -151,6 +151,14 @@ Manager 不该做的：
   Ubuntu NUC 和 Omarchy 的 X11 回归均通过。Hyprland Portal 1.4.1 会保留动作目录，
   不能将目录条目等同于仍存活的客户端会话；隔离服务另行验证 Close 报文确实发出。
   上层取消、拒绝、热重启、服务失效及失败后重试已覆盖；仍需完成发布依赖后的跨平台回归。
+  GNOME 的无沙箱 Wayland 应用仅在 Portal 明确缺少 GlobalShortcuts 能力时，回退到
+  `gsd-media-keys` 的 custom-keybinding；权限拒绝、取消、超时不触发回退。
+  临时绑定通过私有 D-Bus 连接投递激活，用户原有绑定和命令修改均保留；注销/退出
+  清理本进程绑定，崩溃租约在下一次注册时按总线存活状态和精确命令所有权清理。
+  GNOME 自定义命令只提供激活，不伪造 Released。隔离 D-Bus/GSettings 覆盖公共
+  manager 回退、冲突、取消、注销和崩溃恢复；Ubuntu NUC 的 GNOME 46 Wayland
+  已通过 Mutter 注入四组真实按键，并在另一个原生 Wayland 窗口持有焦点时收到
+  四个回调，正常退出恢复原始绑定列表。无物理显示器时使用临时 PipeWire 虚拟输出。
 - **能力型 API 形态分裂**：`UrlOpener` 是单例，`LaunchAtLogin` 是多实例，
   `AccessibilityManager` 是单例但只有两个方法（有 `Enable()` 无 `Disable()`，
   `IsEnabled()` 只读本地 flag 而不查系统授权状态）。无状态能力型 API 该统一成 static
