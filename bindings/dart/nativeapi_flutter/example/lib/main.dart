@@ -108,7 +108,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _trayIcon.addListener((event) {
       if (event is TrayIconClickedEvent) {
         print('Tray icon clicked, icon ${event.trayIconId}');
-        _trayIcon.openContextMenu();
       }
     });
 
@@ -134,6 +133,9 @@ class _MyHomePageState extends State<MyHomePage> {
       menu.addItem(item);
     }
     _trayIcon.setContextMenu(menu);
+    // A trigger, not openContextMenu() in a listener: on Linux the tray host
+    // renders the menu, and GNOME reports no single or right clicks without one.
+    _trayIcon.setContextMenuTrigger(ContextMenuTrigger.clicked);
     _trayIcon.setVisible(true);
   }
 

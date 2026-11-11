@@ -8,7 +8,7 @@
       "kind": "class",
       "doc": {
         "summary": "TrayIcon represents a system tray icon (notification area icon).",
-        "details": "This class provides a cross-platform interface for creating and managing system tray icons. System tray icons appear in the notification area of the desktop and provide quick access to application functionality through context menus and click events.\n\nThe class supports:\n- Setting custom icons (including base64-encoded images)\n- Displaying text titles and tooltips\n- Context menus for user interaction\n- Event emission for mouse clicks (TrayIconClickedEvent, TrayIconRightClickedEvent, TrayIconDoubleClickedEvent)\n- Visibility control\n\n**Example**\n\n```cpp\n// Create a tray icon\nauto tray_icon = std::make_shared<TrayIcon>();\ntray_icon->SetIcon(\"path/to/icon.png\");\ntray_icon->SetTooltip(\"My Application\");\n\n// Set up event listeners\ntray_icon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent&\nevent) {\n    // Handle left click - show/hide main window\n    main_window->IsVisible() ? main_window->Hide() : main_window->Show();\n});\n\ntray_icon->AddListener<TrayIconRightClickedEvent>([](const\nTrayIconRightClickedEvent& event) {\n    // Handle right click - open context menu\n    tray_icon->OpenContextMenu();\n});\n\n// Set up a context menu\nMenu menu;\nauto item = menu.CreateItem(\"Exit\");\nmenu.AddItem(item);\ntray_icon->SetContextMenu(menu);\n\n// Show the tray icon\ntray_icon->SetVisible(true);\n```",
+        "details": "This class provides a cross-platform interface for creating and managing system tray icons. System tray icons appear in the notification area of the desktop and provide quick access to application functionality through context menus and click events.\n\nThe class supports:\n- Setting custom icons (including base64-encoded images)\n- Displaying text titles and tooltips\n- Context menus for user interaction\n- Event emission for mouse clicks (TrayIconClickedEvent, TrayIconRightClickedEvent, TrayIconDoubleClickedEvent)\n- Visibility control\n\n**Example**\n\n```cpp\n// Create a tray icon\nauto tray_icon = std::make_shared<TrayIcon>();\ntray_icon->SetIcon(\"path/to/icon.png\");\ntray_icon->SetTooltip(\"My Application\");\n\n// Set up event listeners\ntray_icon->AddListener<TrayIconClickedEvent>([](const TrayIconClickedEvent&\nevent) {\n    // Handle left click - show/hide main window\n    main_window->IsVisible() ? main_window->Hide() : main_window->Show();\n});\n\n// Attach the context menu up front and let a trigger open it. Replace the\n// menu with SetContextMenu() when its contents change.\nauto menu = std::make_shared<Menu>();\nmenu->AddItem(std::make_shared<MenuItem>(\"Exit\"));\ntray_icon->SetContextMenu(menu);\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);\n\n// Show the tray icon\ntray_icon->SetVisible(true);\n```",
         "notes": [
           {
             "kind": "note",
@@ -21,6 +21,10 @@
           {
             "kind": "note",
             "text": "This class uses the PIMPL idiom to hide platform-specific implementation details and ensure binary compatibility across different platforms."
+          },
+          {
+            "kind": "note",
+            "text": "Do not attach the menu in a TrayIconRightClickedEvent listener and open it with OpenContextMenu(): on Linux the tray host renders the menu itself. GNOME's AppIndicator extension never reports a right click, and Wayland has no local popup, so such an icon does nothing when clicked."
           }
         ]
       },
@@ -1023,7 +1027,7 @@
           "kind": "method",
           "doc": {
             "summary": "Set the context menu trigger behavior.",
-            "details": "Determines which mouse interactions will automatically display the context menu. By default, the trigger is set to None, requiring explicit control via OpenContextMenu() or by setting a trigger mode.\n\nOn Linux, Clicked and RightClicked export a menu for the tray host to render. None and DoubleClicked use a local popup and require X11. Native Wayland applications must use Clicked or RightClicked. GNOME AppIndicators reserves single clicks for host menus and sends activation only on a double click.\n\n**Example**\n\n```cpp\n// Right click shows menu (common on Windows/Linux)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);\n\n// Left click shows menu (common on some Linux environments and macOS)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::Clicked);\n\n// Double click shows menu\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::DoubleClicked);\n\n// Manual control (default) - handle events yourself\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::None);\ntray_icon->AddListener<TrayIconRightClickedEvent>([&](const auto& e) {\n  // Custom logic before showing menu\n  tray_icon->OpenContextMenu();\n});\n```",
+            "details": "Determines which mouse interactions will automatically display the context menu. By default, the trigger is set to None, requiring explicit control via OpenContextMenu() or by setting a trigger mode.\n\nOn Linux, Clicked and RightClicked export a menu for the tray host to render. None and DoubleClicked use a local popup and require X11. Native Wayland applications must use Clicked or RightClicked. GNOME AppIndicators reserves single clicks for host menus and sends activation only on a double click. It never reports a right click either, so with None (or DoubleClicked) and no exported menu, single clicks and right clicks on GNOME do nothing.\n\n**Example**\n\n```cpp\n// Right click shows menu (common on Windows/Linux)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::RightClicked);\n\n// Left click shows menu (common on some Linux environments and macOS)\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::Clicked);\n\n// Double click shows menu\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::DoubleClicked);\n\n// Manual control (default) - handle events yourself. Not portable: on\n// Linux it needs X11 and a host that reports right clicks (not GNOME).\ntray_icon->SetContextMenuTrigger(ContextMenuTrigger::None);\ntray_icon->AddListener<TrayIconRightClickedEvent>([&](const auto& e) {\n  // Custom logic before showing menu\n  tray_icon->OpenContextMenu();\n});\n```",
             "params": [
               {
                 "name": "trigger",
@@ -1379,7 +1383,7 @@
           "kind": "variant",
           "doc": {
             "summary": "Context menu is not automatically triggered by mouse events.",
-            "details": "The application must call OpenContextMenu() explicitly to display the menu. Use this when you want full control over when the menu appears. On Linux this requires X11; native Wayland apps must use Clicked or RightClicked."
+            "details": "The application must call OpenContextMenu() explicitly to display the menu. Use this when you want full control over when the menu appears. On Linux this requires X11 and a host that reports right clicks (KDE); GNOME's AppIndicator extension never does. Native Wayland apps, and any app that wants its menu on GNOME, must use Clicked or RightClicked."
           },
           "signatures": {
             "cpp": {
