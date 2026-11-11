@@ -102,7 +102,7 @@ function Build-Fixture {
   Set-Content "$root\pubspec.yaml" -Encoding ascii -Value @"
 name: nativeapi_window_reports_workspace
 environment:
-  sdk: ^3.13.0
+  sdk: ^3.14.0
 workspace:
   - bindings/dart/cnativeapi
   - bindings/dart/nativeapi
@@ -113,7 +113,7 @@ workspace:
 name: window_reports
 publish_to: none
 environment:
-  sdk: ^3.13.0
+  sdk: ^3.14.0
 resolution: workspace
 dependencies:
   flutter:

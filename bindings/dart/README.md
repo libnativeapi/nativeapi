@@ -78,19 +78,19 @@ import 'package:nativeapi_flutter/windowing.dart';
 // `flutter config --enable-windowing`, so the app switches the API on itself.
 isWindowingEnabled = true;
 
-final controller = fw.RegularWindowController(
+final controller = fw.WindowController(
   size: const Size(320, 48),
   title: 'Toolbar',
 );
 
-// In the widget tree: fw.RegularWindow(controller: controller, child: ...)
+// In the widget tree: fw.Window(controller: controller, child: ...)
 
 final window = controller.nativeWindow; // a nativeapi Window, same id as WindowManager's
 window?.titleBarStyle = TitleBarStyle.hidden;
 window?.isAlwaysOnTop = true;
 ```
 
-All windows share one engine and one isolate, so they talk to each other through ordinary Dart objects — no runner changes, no message channels. Flutter's multi-window API is experimental and internal to the framework, which is why the bridge lives in its own library, `package:nativeapi_flutter/windowing.dart`. It is written against the **stable** channel (checked with 3.47.5); stable does not offer `flutter config --enable-windowing`, so the examples set Flutter's internal `isWindowingEnabled` in `main()`. See [`floating_toolbar_example`](../../examples/flutter_floating_toolbar_example) for a child window built this way, and [`browser_tabs_example`](../../examples/flutter_browser_tabs_example) and [`detachable_window_example`](../../examples/flutter_detachable_window_example).
+All windows share one engine and one isolate, so they talk to each other through ordinary Dart objects — no runner changes, no message channels. Flutter's multi-window API is experimental and internal to the framework, which is why the bridge lives in its own library, `package:nativeapi_flutter/windowing.dart`. It is written against the **stable** channel (checked with 3.50.0); stable does not offer `flutter config --enable-windowing`, so the examples set Flutter's internal `isWindowingEnabled` in `main()`. See [`floating_toolbar_example`](../../examples/flutter_floating_toolbar_example) for a child window built this way, and [`browser_tabs_example`](../../examples/flutter_browser_tabs_example) and [`detachable_window_example`](../../examples/flutter_detachable_window_example).
 
 ### Windows and native views from plain Dart
 

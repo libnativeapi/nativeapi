@@ -2,7 +2,7 @@
 
 import 'package:dazzui_host/dazzui_host.dart';
 import 'package:flutter/src/foundation/_features.dart' show isWindowingEnabled;
-import 'package:flutter/src/widgets/_window.dart' hide WindowManager;
+import 'package:flutter/src/widgets/_window.dart' as fw;
 import 'package:nativeapi/nativeapi.dart' as na;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart' hide Button;
 
@@ -121,14 +121,14 @@ class PrimaryWindow extends StatefulWidget {
 }
 
 class _PrimaryWindowState extends State<PrimaryWindow> {
-  final _windowController = RegularWindowController(
+  final _windowController = fw.WindowController(
     size: const Size(800, 600),
     title: 'Primary Window',
   );
 
   @override
   Widget build(BuildContext context) {
-    return RegularWindow(
+    return fw.Window(
       controller: _windowController,
       child: Host(
         title: 'Primary Window',
@@ -176,14 +176,14 @@ class SecondaryWindow extends StatefulWidget {
 }
 
 class _SecondaryWindowState extends State<SecondaryWindow> {
-  final _windowController = RegularWindowController(
+  final _windowController = fw.WindowController(
     size: const Size(800, 600),
     title: 'Secondary Window',
   );
 
   @override
   Widget build(BuildContext context) {
-    return RegularWindow(
+    return fw.Window(
       controller: _windowController,
       child: const Host(
         title: 'Secondary Window',
@@ -206,14 +206,14 @@ class TertiaryWindow extends StatefulWidget {
 }
 
 class _TertiaryWindowState extends State<TertiaryWindow> {
-  final _windowController = RegularWindowController(
+  final _windowController = fw.WindowController(
     size: const Size(800, 600),
     title: 'Tertiary Window',
   );
 
   @override
   Widget build(BuildContext context) {
-    return RegularWindow(
+    return fw.Window(
       controller: _windowController,
       child: const Host(
         title: 'Tertiary Window',

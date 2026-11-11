@@ -78,7 +78,7 @@ class _BrowserTabsAppState extends State<BrowserTabsApp> {
         builder: (context, _) => ViewCollection(
           views: [
             for (final window in _controller.windows)
-              fw.RegularWindow(
+              fw.Window(
                 key: ObjectKey(window.controller),
                 controller: window.controller,
                 // One DazzUI host per window: each view is its own app

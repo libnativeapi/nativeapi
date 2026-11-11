@@ -12,8 +12,7 @@ flutter run -d macos
 # Also: flutter run -d windows / linux
 ```
 
-Uses the experimental multi-window API on Flutter stable 3.47.5, enabled in `main`.
-As with the other multi-window examples, Flutter main may have renamed these APIs.
+Uses the experimental multi-window API on Flutter stable 3.50.0, enabled in `main`.
 
 The control window is drawn with the DazzUI design system through the shared
 `dazzui_host` package (light/dark by the system, or the Omarchy desktop's own

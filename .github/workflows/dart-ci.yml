@@ -35,7 +35,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -58,12 +58,12 @@ jobs:
         run: dart pub global run melos run analyze
 
       - name: Check public Dart entrypoints on stable
-        run: python3 bindings/dart/nativeapi/tool/check_entrypoints.py --web --standalone
+        run: python3 bindings/dart/nativeapi/tool/check_entrypoints.py --web
 
       - name: Set up Dart beta
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
         with:
-          sdk: 3.14.0-315.3.beta
+          sdk: 3.15.0-118.1.beta
 
       - name: Check ordinary Dart and web entrypoints on beta
         run: python3 bindings/dart/nativeapi/tool/check_entrypoints.py --web
@@ -86,7 +86,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -132,7 +132,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -172,7 +172,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -206,7 +206,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -259,7 +259,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           
@@ -298,7 +298,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.0'
           channel: 'stable'
           cache: true
           

@@ -90,18 +90,18 @@ def main():
          "--platforms=linux", "--empty", "--org=dev.nativeapi.test",
          "--project-name=nativeapi_linux_exit_control", control], work / "control-create.log", env=env)
     (work / "pubspec.yaml").write_text(
-        "name: nativeapi_linux_exit_workspace\nenvironment:\n  sdk: ^3.13.0\n"
+        "name: nativeapi_linux_exit_workspace\nenvironment:\n  sdk: ^3.14.0\n"
         "workspace:\n  - bindings/dart/cnativeapi\n  - bindings/dart/nativeapi\n"
         "  - bindings/dart/nativeapi_flutter\n  - app\n  - control\n")
     (app / "pubspec.yaml").write_text(
         "name: nativeapi_linux_exit\npublish_to: none\nresolution: workspace\n"
-        "environment:\n  sdk: ^3.13.0\ndependencies:\n"
+        "environment:\n  sdk: ^3.14.0\ndependencies:\n"
         "  flutter:\n    sdk: flutter\n  nativeapi: ^0.4.1\n"
         "  nativeapi_flutter: ^0.4.1\nflutter:\n  uses-material-design: true\n")
     shutil.copyfile(source / "tools/gui/application_exit_flutter_linux.dart", app / "lib/main.dart")
     (control / "pubspec.yaml").write_text(
         "name: nativeapi_linux_exit_control\npublish_to: none\nresolution: workspace\n"
-        "environment:\n  sdk: ^3.13.0\ndependencies:\n"
+        "environment:\n  sdk: ^3.14.0\ndependencies:\n"
         "  flutter:\n    sdk: flutter\n")
     shutil.copyfile(source / "tools/gui/application_exit_flutter_linux_control.dart",
                     control / "lib/main.dart")

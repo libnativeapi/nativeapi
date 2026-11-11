@@ -8,12 +8,9 @@ just before it is shown, sizes and positions it against
 ## Running
 
 Flutter's multi-window API is experimental. This example is written against the
-**stable** channel (checked with Flutter 3.47.5). Stable does not offer
+**stable** channel (checked with Flutter 3.50.0). Stable does not offer
 `flutter config --enable-windowing`, so `main()` turns the API on itself by setting
-Flutter's internal `isWindowingEnabled` before the binding starts. The main channel
-has since renamed parts of this API (`RegularWindowController` became
-`WindowController`, `RegularWindow` became `Window`), so the example does not compile
-there.
+Flutter's internal `isWindowingEnabled` before the binding starts.
 
 ```bash
 flutter channel stable && flutter upgrade
@@ -27,7 +24,7 @@ older stable release.
 
 The primary window takes the top row (60% of the work area, full width); the
 secondary and tertiary windows share the bottom row. Each window is a small
-[DazzUI](../flutter_dazzui_host) panel (one `Host` per `RegularWindow`) naming its
+[DazzUI](../flutter_dazzui_host) panel (one `Host` per `Window`) naming its
 slot and showing the frame nativeapi reads back for it (**Read frame** reads it
 again); the primary window's **Resize to 1000 × 1000** resizes and re-shows it
 through nativeapi.

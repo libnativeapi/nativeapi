@@ -9,12 +9,9 @@ survives every move.
 ## Running
 
 Flutter's multi-window API is experimental. This example is written against the
-**stable** channel (checked with Flutter 3.47.5). Stable does not offer
+**stable** channel (checked with Flutter 3.50.0). Stable does not offer
 `flutter config --enable-windowing`, so `main()` turns the API on itself by setting
-Flutter's internal `isWindowingEnabled` before the binding starts. The main channel
-has since renamed parts of this API (`RegularWindowController` became
-`WindowController`, `RegularWindow` became `Window`), so the example does not compile
-there.
+Flutter's internal `isWindowingEnabled` before the binding starts.
 
 ```bash
 flutter channel stable && flutter upgrade

@@ -12,11 +12,11 @@ import 'package:nativeapi_flutter/windowing.dart' as bridge;
 
 const channel = MethodChannel('nativeapi/test-window-close');
 
-class Host with fw.RegularWindowControllerDelegate {
+class Host with fw.WindowControllerDelegate {
   int requested = 0, destroyed = 0;
   bool allow = false;
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) {
+  void onWindowCloseRequested(fw.WindowController controller) {
     requested++;
     if (allow) controller.destroy();
   }
@@ -30,17 +30,15 @@ class Host with fw.RegularWindowControllerDelegate {
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 40));
 Future<void> check(bool ok, String label) =>
     channel.invokeMethod<void>('check', {'ok': ok, 'label': label});
-Future<bool?> perform(
-  fw.RegularWindowController controller, {
-  bool force = false,
-}) => channel.invokeMethod<bool>('perform', {
-  'handle': (controller as fm.WindowControllerMacOS).windowHandle.address,
-  'force': force,
-});
+Future<bool?> perform(fw.WindowController controller, {bool force = false}) =>
+    channel.invokeMethod<bool>('perform', {
+      'handle': (controller as fm.WindowControllerMacOS).windowHandle.address,
+      'force': force,
+    });
 
 Future<void> tests() async {
   final host = Host();
-  final controller = fw.RegularWindowController(
+  final controller = fw.WindowController(
     size: const Size(160, 100),
     delegate: host,
   );
@@ -144,7 +142,7 @@ Future<void> tests() async {
   alias.dispose();
 
   final forcedHost = Host();
-  final forcedController = fw.RegularWindowController(
+  final forcedController = fw.WindowController(
     size: const Size(160, 100),
     delegate: forcedHost,
   );
@@ -187,7 +185,7 @@ Future<void> tests() async {
   forced.dispose();
 
   final ownerHost = Host();
-  final ownerController = fw.RegularWindowController(
+  final ownerController = fw.WindowController(
     size: const Size(160, 100),
     delegate: ownerHost,
   );

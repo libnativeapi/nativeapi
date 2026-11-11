@@ -6,7 +6,7 @@ repository: https://github.com/libnativeapi/nativeapi/tree/main/bindings/dart/na
 resolution: workspace
 
 environment:
-  sdk: ^3.13.0
+  sdk: ^3.14.0
 
 platforms:
   android:

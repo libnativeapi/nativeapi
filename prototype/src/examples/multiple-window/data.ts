@@ -25,7 +25,7 @@ export const WINDOWS: Record<WindowKey, { id: number; title: string; slot: strin
 
 export const CREATION_ORDER: readonly WindowKey[] = ['tertiary', 'secondary', 'primary']
 
-/** The size every `RegularWindowController` asks for. */
+/** The size every `WindowController` asks for. */
 export const DEFAULT_SIZE = { width: 800, height: 600 }
 
 /** The size the primary window's button asks for, which the hook takes back. */

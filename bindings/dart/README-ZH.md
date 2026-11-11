@@ -78,19 +78,19 @@ import 'package:nativeapi_flutter/windowing.dart';
 // `flutter config --enable-windowing`，所以由应用自己打开这个开关。
 isWindowingEnabled = true;
 
-final controller = fw.RegularWindowController(
+final controller = fw.WindowController(
   size: const Size(320, 48),
   title: 'Toolbar',
 );
 
-// 在 widget 树中：fw.RegularWindow(controller: controller, child: ...)
+// 在 widget 树中：fw.Window(controller: controller, child: ...)
 
 final window = controller.nativeWindow; // nativeapi 的 Window，与 WindowManager 返回的 id 相同
 window?.titleBarStyle = TitleBarStyle.hidden;
 window?.isAlwaysOnTop = true;
 ```
 
-所有窗口共用一个 engine 和一个 isolate，窗口之间直接通过普通 Dart 对象通信——不需要改 runner，也不需要消息通道。Flutter 的多窗口 API 仍是实验性的、属于框架内部接口，因此这个桥接单独放在 `package:nativeapi_flutter/windowing.dart` 里。它针对 **stable** channel 编写（已在 3.47.5 上验证）；stable 不提供 `flutter config --enable-windowing`，所以示例在 `main()` 里直接打开 Flutter 内部的 `isWindowingEnabled`。子窗口的完整例子见 [`floating_toolbar_example`](../../examples/flutter_floating_toolbar_example)，另见 [`browser_tabs_example`](../../examples/flutter_browser_tabs_example) 和 [`detachable_window_example`](../../examples/flutter_detachable_window_example)。
+所有窗口共用一个 engine 和一个 isolate，窗口之间直接通过普通 Dart 对象通信——不需要改 runner，也不需要消息通道。Flutter 的多窗口 API 仍是实验性的、属于框架内部接口，因此这个桥接单独放在 `package:nativeapi_flutter/windowing.dart` 里。它针对 **stable** channel 编写（已在 3.50.0 上验证）；stable 不提供 `flutter config --enable-windowing`，所以示例在 `main()` 里直接打开 Flutter 内部的 `isWindowingEnabled`。子窗口的完整例子见 [`floating_toolbar_example`](../../examples/flutter_floating_toolbar_example)，另见 [`browser_tabs_example`](../../examples/flutter_browser_tabs_example) 和 [`detachable_window_example`](../../examples/flutter_detachable_window_example)。
 
 ### 在纯 Dart 程序里用窗口和原生视图
 

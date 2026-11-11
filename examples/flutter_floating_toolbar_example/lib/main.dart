@@ -90,13 +90,13 @@ class ToolbarModel extends ChangeNotifier {
   }
 }
 
-class _CloseDelegate with fw.RegularWindowControllerDelegate {
+class _CloseDelegate with fw.WindowControllerDelegate {
   _CloseDelegate(this.onCloseRequested);
 
   final VoidCallback onCloseRequested;
 
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) =>
+  void onWindowCloseRequested(fw.WindowController controller) =>
       onCloseRequested();
 }
 
@@ -110,21 +110,19 @@ class FloatingToolbarApp extends StatefulWidget {
 class _FloatingToolbarAppState extends State<FloatingToolbarApp> {
   final _model = ToolbarModel();
 
-  late final fw.RegularWindowController _mainController =
-      fw.RegularWindowController(
-        size: _mainWindowSize,
-        constraints: const BoxConstraints(minWidth: 480, minHeight: 360),
-        title: 'Floating toolbar',
-        delegate: _CloseDelegate(_closeEverything),
-      );
+  late final fw.WindowController _mainController = fw.WindowController(
+    size: _mainWindowSize,
+    constraints: const BoxConstraints(minWidth: 480, minHeight: 360),
+    title: 'Floating toolbar',
+    delegate: _CloseDelegate(_closeEverything),
+  );
 
-  late final fw.RegularWindowController _toolbarController =
-      fw.RegularWindowController(
-        size: _toolbarSize,
-        title: 'Toolbar',
-        // The toolbar has no close button; closing the main window closes it.
-        delegate: _CloseDelegate(() {}),
-      );
+  late final fw.WindowController _toolbarController = fw.WindowController(
+    size: _toolbarSize,
+    title: 'Toolbar',
+    // The toolbar has no close button; closing the main window closes it.
+    delegate: _CloseDelegate(() {}),
+  );
 
   na.Window? get _main => _mainController.nativeWindow;
   na.Window? get _toolbar => _toolbarController.nativeWindow;
@@ -258,7 +256,7 @@ class _FloatingToolbarAppState extends State<FloatingToolbarApp> {
     if (_closing) return const ViewCollection(views: []);
     return ViewCollection(
       views: [
-        fw.RegularWindow(
+        fw.Window(
           controller: _mainController,
           child: Host(
             title: 'Floating toolbar',
@@ -270,7 +268,7 @@ class _FloatingToolbarAppState extends State<FloatingToolbarApp> {
             ),
           ),
         ),
-        fw.RegularWindow(
+        fw.Window(
           controller: _toolbarController,
           // Not a Host: that paints the canvas under everything, and here
           // nothing opaque may sit between the pill and the desktop.

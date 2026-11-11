@@ -1,7 +1,7 @@
 name: nativeapi_workspace
 publish_to: none
 environment:
-  sdk: ^3.13.0
+  sdk: ^3.14.0
 
 workspace:
   - examples/dart_view_example

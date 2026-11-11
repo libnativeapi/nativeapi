@@ -85,13 +85,13 @@ class _DetachableWindowsState extends State<DetachableWindows> {
         builder: (context, _) => ViewCollection(
           views: [
             for (final host in widget.hosts)
-              fw.RegularWindow(
+              fw.Window(
                 key: ObjectKey(host.controller),
                 controller: host.controller,
                 child: Builder(builder: host.builder),
               ),
             for (final floating in widget.controller.floatingWindows)
-              fw.RegularWindow(
+              fw.Window(
                 key: ObjectKey(floating.controller),
                 controller: floating.controller,
                 child: Builder(

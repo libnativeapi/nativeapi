@@ -61,7 +61,7 @@ NAME = 'shaped_window_example'
 CONTROLS = 'Window shapes'
 PREVIEW = 'Shape preview'
 HEADER = 'Outside the box.'
-# The control window's content, from the example itself (RegularWindowController size).
+# The control window's content, from the example itself (WindowController size).
 CONTROL_SIZE = (480, 680)
 HEADER_HEIGHT = 48
 # The gradient in the control window's header starts at this colour.

@@ -23,11 +23,11 @@ Future<void> frames() async {
   }
 }
 
-class WindowHost with fw.RegularWindowControllerDelegate {
+class WindowHost with fw.WindowControllerDelegate {
   int requested = 0, destroyed = 0;
 
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) {
+  void onWindowCloseRequested(fw.WindowController controller) {
     requested++;
     controller.destroy();
   }
@@ -38,14 +38,14 @@ class WindowHost with fw.RegularWindowControllerDelegate {
   }
 }
 
-Widget scene([fw.RegularWindowController? controller]) => ViewCollection(
+Widget scene([fw.WindowController? controller]) => ViewCollection(
   views: [
     View(
       view: PlatformDispatcher.instance.implicitView!,
       child: const ColoredBox(color: Color(0xff234567)),
     ),
     if (controller != null)
-      fw.RegularWindow(
+      fw.Window(
         controller: controller,
         child: const ColoredBox(color: Color(0xffabcdef)),
       ),
@@ -77,7 +77,7 @@ Future<void> tests({required bool leaveManagerLive}) async {
   for (final throughNative in [false, true]) {
     final host = WindowHost();
     final shownBefore = shown, hiddenBefore = hidden;
-    final controller = fw.RegularWindowController(
+    final controller = fw.WindowController(
       size: const Size(320, 220),
       title: 'nativeapi Linux exit regression',
       delegate: host,

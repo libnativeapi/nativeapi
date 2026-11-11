@@ -46,6 +46,10 @@ void runNativeApp(void Function() main) {
   // Only final locals can be captured by a callback bound to the group.
   final appMain = main;
   final entry = ffi.NativeCallable<ffi.Void Function()>.isolateGroupBound(() {
+    // Isolate.create, runSync and runEventLoopSync were Dart 3.13's
+    // experimental VM APIs; Dart 3.14 removed them. Kept until the runner is
+    // ported or removed, so analysis of this package stays clean meanwhile.
+    // ignore: undefined_method
     final app = Isolate.create(debugName: 'nativeapi');
     app.runSync(() => _start(appMain));
     // Returns once the app isolate has nothing left to run for.

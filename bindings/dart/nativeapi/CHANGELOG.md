@@ -1,5 +1,6 @@
 ## Unreleased
 
+- **Breaking:** requires Flutter 3.50 / Dart 3.14. The experimental `runNativeApp()` in `package:nativeapi/standalone.dart` still depends on VM APIs that Dart 3.14 removed, so it cannot be compiled with this constraint until it is ported.
 - macOS: preserve a pending Flutter quit decision when AppKit acknowledges synchronous cancellation, so approving the later Dart response exits normally ([nativeapi-core#65](https://github.com/libnativeapi/nativeapi-core/issues/65)).
 - Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).
 - **Breaking (Dart):** move the experimental `runNativeApp()` helper to `package:nativeapi/standalone.dart`. Plain Dart apps using the helper must change their import; the standalone entrypoint also exports the ordinary nativeapi API. The helper still requires Dart 3.13's experimental VM APIs and is not supported on Dart 3.14.

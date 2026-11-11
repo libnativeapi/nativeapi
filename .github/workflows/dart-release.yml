@@ -27,7 +27,7 @@ jobs:
       - uses: flutter-actions/setup-flutter@18c66a64fb6f6d3338c63cabbc5cd6da395e7f1d
         with:
           channel: stable
-          version: 3.47.5
+          version: 3.50.0
 
       # The cnativeapi package must carry core's sources: its build hook
       # compiles cxx_impl/ when present (untracked, so the checkout stays clean

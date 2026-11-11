@@ -27,20 +27,20 @@ Future<void> frames() async {
   }
 }
 
-class Host with fw.RegularWindowControllerDelegate {
+class Host with fw.WindowControllerDelegate {
   int destroyed = 0;
   @override
   void onWindowDestroyed() => destroyed++;
 }
 
-Widget scene([fw.RegularWindowController? controller]) => ViewCollection(
+Widget scene([fw.WindowController? controller]) => ViewCollection(
   views: [
     View(
       view: PlatformDispatcher.instance.implicitView!,
       child: const ColoredBox(color: Color(0xff234567)),
     ),
     if (controller != null)
-      fw.RegularWindow(
+      fw.Window(
         controller: controller,
         child: const ColoredBox(color: Color(0xffabcdef)),
       ),
@@ -53,7 +53,7 @@ Future<void> tests() async {
   final implicitId = PlatformDispatcher.instance.implicitView!.viewId;
   for (final nativeClose in [false, true]) {
     final host = Host();
-    final controller = fw.RegularWindowController(
+    final controller = fw.WindowController(
       size: const Size(320, 220),
       delegate: host,
     );

@@ -21,11 +21,11 @@ void main() {
   runWidget(const ShapeDemo());
 }
 
-class _CloseDelegate with fw.RegularWindowControllerDelegate {
+class _CloseDelegate with fw.WindowControllerDelegate {
   _CloseDelegate(this.close);
   final VoidCallback close;
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) => close();
+  void onWindowCloseRequested(fw.WindowController controller) => close();
 }
 
 class ShapeDemo extends StatefulWidget {
@@ -36,7 +36,7 @@ class ShapeDemo extends StatefulWidget {
 
 class _ShapeDemoState extends State<ShapeDemo>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  late final _main = fw.RegularWindowController(
+  late final _main = fw.WindowController(
     size: const Size(480, 680),
     title: 'Window shapes',
     delegate: _CloseDelegate(_close),
@@ -46,7 +46,7 @@ class _ShapeDemoState extends State<ShapeDemo>
       defaultTargetPlatform == TargetPlatform.macOS ||
       defaultTargetPlatform == TargetPlatform.windows ||
       defaultTargetPlatform == TargetPlatform.linux;
-  late final fw.RegularWindowController _demo = fw.RegularWindowController(
+  late final fw.WindowController _demo = fw.WindowController(
     size: const Size(320, 320),
     title: 'Shape preview',
     delegate: _CloseDelegate(_hidePreview),
@@ -527,7 +527,7 @@ class _ShapeDemoState extends State<ShapeDemo>
   // outside the silhouette (Linux clips it in Flutter), and it has no pages,
   // toasts or text fields. It keeps a bare WidgetsApp with the host's theme.
   Widget _buildPreviewWindow() {
-    return fw.RegularWindow(
+    return fw.Window(
       controller: _demo,
       child: WidgetsApp(
         debugShowCheckedModeBanner: false,
@@ -630,7 +630,7 @@ class _ShapeDemoState extends State<ShapeDemo>
     _shadowError,
   );
 
-  late final Widget _controlsWindow = fw.RegularWindow(
+  late final Widget _controlsWindow = fw.Window(
     controller: _main,
     child: Host(
       title: 'Window shapes',

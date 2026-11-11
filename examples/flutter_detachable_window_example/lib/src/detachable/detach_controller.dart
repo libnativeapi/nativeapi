@@ -40,7 +40,7 @@ class DetachableItem {
 class HostWindow {
   HostWindow({required this.controller, required this.builder});
 
-  final fw.RegularWindowController controller;
+  final fw.WindowController controller;
   final WidgetBuilder builder;
 }
 
@@ -49,7 +49,7 @@ class FloatingWindow {
   FloatingWindow._(this.item, this.controller, this.nativeWindow);
 
   final DetachableItem item;
-  final fw.RegularWindowController controller;
+  final fw.WindowController controller;
 
   /// Null if the platform window could not be resolved; dragging the window
   /// by its content is unavailable then, but it still works as a window.
@@ -417,7 +417,7 @@ class DetachController extends ChangeNotifier {
 
   FloatingWindow _tearOff(DetachableItem item, Size size) {
     _dockedIn.remove(item.id);
-    final controller = fw.RegularWindowController(
+    final controller = fw.WindowController(
       size: size,
       title: item.title,
       constraints: BoxConstraints(
@@ -497,14 +497,14 @@ class DetachController extends ChangeNotifier {
   }
 }
 
-class _FloatingWindowDelegate with fw.RegularWindowControllerDelegate {
+class _FloatingWindowDelegate with fw.WindowControllerDelegate {
   _FloatingWindowDelegate(this._controller, this._itemId);
 
   final DetachController _controller;
   final String _itemId;
 
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) {
+  void onWindowCloseRequested(fw.WindowController controller) {
     _controller._handleFloatingWindowCloseRequested(_itemId);
   }
 }

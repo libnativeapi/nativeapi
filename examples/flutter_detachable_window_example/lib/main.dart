@@ -20,13 +20,13 @@ void main() {
   runWidget(const DetachableWindowApp());
 }
 
-class _MainWindowDelegate with fw.RegularWindowControllerDelegate {
+class _MainWindowDelegate with fw.WindowControllerDelegate {
   _MainWindowDelegate(this.onCloseRequested);
 
-  final void Function(fw.RegularWindowController controller) onCloseRequested;
+  final void Function(fw.WindowController controller) onCloseRequested;
 
   @override
-  void onWindowCloseRequested(fw.RegularWindowController controller) {
+  void onWindowCloseRequested(fw.WindowController controller) {
     onCloseRequested(controller);
   }
 }
@@ -62,7 +62,7 @@ class _DetachableWindowAppState extends State<DetachableWindowApp> {
   ];
 
   HostWindow _createMainWindow(String name) {
-    final controller = fw.RegularWindowController(
+    final controller = fw.WindowController(
       size: _mainWindowSize,
       constraints: const BoxConstraints(minWidth: 720, minHeight: 480),
       title: 'nativeapi · Window $name',
@@ -107,7 +107,7 @@ class _DetachableWindowAppState extends State<DetachableWindowApp> {
 
   /// Closing a main window pops its panels out instead of losing them; the
   /// app ends with the last main window.
-  void _closeMainWindow(fw.RegularWindowController controller) {
+  void _closeMainWindow(fw.WindowController controller) {
     _controller.floatItemsInView(controller.rootView.viewId);
     _controller.unregisterHostWindow(controller);
     setState(() {
