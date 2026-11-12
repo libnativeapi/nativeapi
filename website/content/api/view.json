@@ -48,6 +48,10 @@
         "rust": {
           "name": "View",
           "signature": "pub struct View"
+        },
+        "swift": {
+          "name": "View",
+          "signature": "class View"
         }
       },
       "members": [
@@ -85,6 +89,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> View?"
             }
           }
         },
@@ -128,6 +136,10 @@
             "rust": {
               "name": "with_native_view",
               "signature": "pub unsafe fn with_native_view(native_view: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithNativeView",
+              "signature": "class func createWithNativeView(_ nativeView: UnsafeMutableRawPointer?) -> View?"
             }
           }
         },
@@ -162,6 +174,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&ViewEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (ViewEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -200,6 +216,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "static func isSupported() -> Bool"
             }
           }
         },
@@ -238,6 +258,10 @@
             "rust": {
               "name": "is_backend_supported",
               "signature": "pub fn is_backend_supported(backend: ViewBackend) -> bool"
+            },
+            "swift": {
+              "name": "isBackendSupported",
+              "signature": "static func isBackendSupported(_ backend: ViewBackend) -> Bool"
             }
           }
         },
@@ -277,6 +301,10 @@
             "rust": {
               "name": "set_default_backend",
               "signature": "pub fn set_default_backend(backend: ViewBackend) -> bool"
+            },
+            "swift": {
+              "name": "setDefaultBackend",
+              "signature": "static func setDefaultBackend(_ backend: ViewBackend) -> Bool"
             }
           }
         },
@@ -315,6 +343,10 @@
             "rust": {
               "name": "get_default_backend",
               "signature": "pub fn get_default_backend() -> ViewBackend"
+            },
+            "swift": {
+              "name": "getDefaultBackend",
+              "signature": "static func getDefaultBackend() -> ViewBackend"
             }
           }
         },
@@ -353,6 +385,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> ViewId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: ViewId"
             }
           }
         },
@@ -391,6 +427,10 @@
             "rust": {
               "name": "backend",
               "signature": "pub fn backend(&self) -> ViewBackend"
+            },
+            "swift": {
+              "name": "backend",
+              "signature": "var backend: ViewBackend"
             }
           }
         },
@@ -435,6 +475,10 @@
             "rust": {
               "name": "add_subview",
               "signature": "pub fn add_subview(&self, subview: Option<&View>)"
+            },
+            "swift": {
+              "name": "addSubview",
+              "signature": "func addSubview(_ subview: View?) -> Void"
             }
           }
         },
@@ -482,6 +526,10 @@
             "rust": {
               "name": "insert_subview",
               "signature": "pub fn insert_subview(&self, index: std::os::raw::c_ulong, subview: Option<&View>)"
+            },
+            "swift": {
+              "name": "insertSubview",
+              "signature": "func insertSubview(_ index: CUnsignedLong, subview: View?) -> Void"
             }
           }
         },
@@ -526,6 +574,10 @@
             "rust": {
               "name": "remove_subview",
               "signature": "pub fn remove_subview(&self, subview: Option<&View>) -> bool"
+            },
+            "swift": {
+              "name": "removeSubview",
+              "signature": "func removeSubview(_ subview: View?) -> Bool"
             }
           }
         },
@@ -570,6 +622,10 @@
             "rust": {
               "name": "remove_subview_at",
               "signature": "pub fn remove_subview_at(&self, index: std::os::raw::c_ulong) -> bool"
+            },
+            "swift": {
+              "name": "removeSubviewAt",
+              "signature": "func removeSubviewAt(_ index: CUnsignedLong) -> Bool"
             }
           }
         },
@@ -607,6 +663,10 @@
             "rust": {
               "name": "clear_subviews",
               "signature": "pub fn clear_subviews(&self)"
+            },
+            "swift": {
+              "name": "clearSubviews",
+              "signature": "func clearSubviews() -> Void"
             }
           }
         },
@@ -645,6 +705,10 @@
             "rust": {
               "name": "subview_count",
               "signature": "pub fn subview_count(&self) -> std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "subviewCount",
+              "signature": "var subviewCount: CUnsignedLong"
             }
           }
         },
@@ -689,6 +753,10 @@
             "rust": {
               "name": "get_subview_at",
               "signature": "pub fn get_subview_at(&self, index: std::os::raw::c_ulong) -> Option<View>"
+            },
+            "swift": {
+              "name": "getSubviewAt",
+              "signature": "func getSubviewAt(_ index: CUnsignedLong) -> View?"
             }
           }
         },
@@ -727,6 +795,10 @@
             "rust": {
               "name": "subviews",
               "signature": "pub fn subviews(&self) -> Vec<View>"
+            },
+            "swift": {
+              "name": "subviews",
+              "signature": "var subviews: [View]"
             }
           }
         },
@@ -765,6 +837,10 @@
             "rust": {
               "name": "parent",
               "signature": "pub fn parent(&self) -> Option<View>"
+            },
+            "swift": {
+              "name": "parent",
+              "signature": "var parent: View?"
             }
           }
         },
@@ -803,6 +879,10 @@
             "rust": {
               "name": "window",
               "signature": "pub fn window(&self) -> Option<Window>"
+            },
+            "swift": {
+              "name": "window",
+              "signature": "var window: Window?"
             }
           }
         },
@@ -847,6 +927,10 @@
             "rust": {
               "name": "set_frame",
               "signature": "pub fn set_frame(&self, frame: &Rectangle)"
+            },
+            "swift": {
+              "name": "setFrame",
+              "signature": "func setFrame(_ frame: Rectangle) -> Void"
             }
           }
         },
@@ -885,6 +969,10 @@
             "rust": {
               "name": "frame",
               "signature": "pub fn frame(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "frame",
+              "signature": "var frame: Rectangle"
             }
           }
         },
@@ -929,6 +1017,10 @@
             "rust": {
               "name": "set_preferred_size",
               "signature": "pub fn set_preferred_size(&self, size: &Size)"
+            },
+            "swift": {
+              "name": "setPreferredSize",
+              "signature": "func setPreferredSize(_ size: Size) -> Void"
             }
           }
         },
@@ -967,6 +1059,10 @@
             "rust": {
               "name": "preferred_size",
               "signature": "pub fn preferred_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "preferredSize",
+              "signature": "var preferredSize: Size"
             }
           }
         },
@@ -1006,6 +1102,10 @@
             "rust": {
               "name": "intrinsic_size",
               "signature": "pub fn intrinsic_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "intrinsicSize",
+              "signature": "var intrinsicSize: Size"
             }
           }
         },
@@ -1049,6 +1149,10 @@
             "rust": {
               "name": "set_flex",
               "signature": "pub fn set_flex(&self, flex: f64)"
+            },
+            "swift": {
+              "name": "setFlex",
+              "signature": "func setFlex(_ flex: Double) -> Void"
             }
           }
         },
@@ -1087,6 +1191,10 @@
             "rust": {
               "name": "flex",
               "signature": "pub fn flex(&self) -> f64"
+            },
+            "swift": {
+              "name": "flex",
+              "signature": "var flex: Double"
             }
           }
         },
@@ -1130,6 +1238,10 @@
             "rust": {
               "name": "set_alignment",
               "signature": "pub fn set_alignment(&self, alignment: ViewAlignment)"
+            },
+            "swift": {
+              "name": "setAlignment",
+              "signature": "func setAlignment(_ alignment: ViewAlignment) -> Void"
             }
           }
         },
@@ -1168,6 +1280,10 @@
             "rust": {
               "name": "alignment",
               "signature": "pub fn alignment(&self) -> ViewAlignment"
+            },
+            "swift": {
+              "name": "alignment",
+              "signature": "var alignment: ViewAlignment"
             }
           }
         },
@@ -1211,6 +1327,10 @@
             "rust": {
               "name": "set_layout",
               "signature": "pub fn set_layout(&self, layout: ViewLayout)"
+            },
+            "swift": {
+              "name": "setLayout",
+              "signature": "func setLayout(_ layout: ViewLayout) -> Void"
             }
           }
         },
@@ -1249,6 +1369,10 @@
             "rust": {
               "name": "layout",
               "signature": "pub fn layout(&self) -> ViewLayout"
+            },
+            "swift": {
+              "name": "layout",
+              "signature": "var layout: ViewLayout"
             }
           }
         },
@@ -1292,6 +1416,10 @@
             "rust": {
               "name": "set_spacing",
               "signature": "pub fn set_spacing(&self, spacing: f64)"
+            },
+            "swift": {
+              "name": "setSpacing",
+              "signature": "func setSpacing(_ spacing: Double) -> Void"
             }
           }
         },
@@ -1330,6 +1458,10 @@
             "rust": {
               "name": "spacing",
               "signature": "pub fn spacing(&self) -> f64"
+            },
+            "swift": {
+              "name": "spacing",
+              "signature": "var spacing: Double"
             }
           }
         },
@@ -1373,6 +1505,10 @@
             "rust": {
               "name": "set_padding",
               "signature": "pub fn set_padding(&self, padding: &EdgeInsets)"
+            },
+            "swift": {
+              "name": "setPadding",
+              "signature": "func setPadding(_ padding: EdgeInsets) -> Void"
             }
           }
         },
@@ -1411,6 +1547,10 @@
             "rust": {
               "name": "padding",
               "signature": "pub fn padding(&self) -> EdgeInsets"
+            },
+            "swift": {
+              "name": "padding",
+              "signature": "var padding: EdgeInsets"
             }
           }
         },
@@ -1454,6 +1594,10 @@
             "rust": {
               "name": "set_visible",
               "signature": "pub fn set_visible(&self, is_visible: bool)"
+            },
+            "swift": {
+              "name": "setVisible",
+              "signature": "func setVisible(_ isVisible: Bool) -> Void"
             }
           }
         },
@@ -1492,6 +1636,10 @@
             "rust": {
               "name": "is_visible",
               "signature": "pub fn is_visible(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisible",
+              "signature": "var isVisible: Bool"
             }
           }
         },
@@ -1535,6 +1683,10 @@
             "rust": {
               "name": "set_enabled",
               "signature": "pub fn set_enabled(&self, is_enabled: bool)"
+            },
+            "swift": {
+              "name": "setEnabled",
+              "signature": "func setEnabled(_ isEnabled: Bool) -> Void"
             }
           }
         },
@@ -1573,6 +1725,10 @@
             "rust": {
               "name": "is_enabled",
               "signature": "pub fn is_enabled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isEnabled",
+              "signature": "var isEnabled: Bool"
             }
           }
         },
@@ -1622,6 +1778,10 @@
             "rust": {
               "name": "set_background_color",
               "signature": "pub fn set_background_color(&self, color: &Color)"
+            },
+            "swift": {
+              "name": "setBackgroundColor",
+              "signature": "func setBackgroundColor(_ color: Color) -> Void"
             }
           }
         },
@@ -1660,6 +1820,10 @@
             "rust": {
               "name": "background_color",
               "signature": "pub fn background_color(&self) -> Color"
+            },
+            "swift": {
+              "name": "backgroundColor",
+              "signature": "var backgroundColor: Color"
             }
           }
         },
@@ -1709,6 +1873,10 @@
             "rust": {
               "name": "set_tooltip",
               "signature": "pub fn set_tooltip(&self, tooltip: Option<&str>)"
+            },
+            "swift": {
+              "name": "setTooltip",
+              "signature": "func setTooltip(_ tooltip: String?) -> Void"
             }
           }
         },
@@ -1747,6 +1915,10 @@
             "rust": {
               "name": "tooltip",
               "signature": "pub fn tooltip(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "tooltip",
+              "signature": "var tooltip: String?"
             }
           }
         },
@@ -1784,6 +1956,10 @@
             "rust": {
               "name": "focus",
               "signature": "pub fn focus(&self)"
+            },
+            "swift": {
+              "name": "focus",
+              "signature": "func focus() -> Void"
             }
           }
         },
@@ -1821,6 +1997,10 @@
             "rust": {
               "name": "blur",
               "signature": "pub fn blur(&self)"
+            },
+            "swift": {
+              "name": "blur",
+              "signature": "func blur() -> Void"
             }
           }
         },
@@ -1859,6 +2039,10 @@
             "rust": {
               "name": "is_focused",
               "signature": "pub fn is_focused(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFocused",
+              "signature": "var isFocused: Bool"
             }
           }
         }
@@ -1904,6 +2088,10 @@
         "rust": {
           "name": "Label",
           "signature": "pub struct Label\nimpl std::ops::Deref for Label\ntype Target = View;"
+        },
+        "swift": {
+          "name": "Label",
+          "signature": "class Label: View"
         }
       },
       "members": [
@@ -1947,6 +2135,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new(text: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ text: String) -> Label?"
             }
           }
         },
@@ -1990,6 +2182,10 @@
             "rust": {
               "name": "set_text",
               "signature": "pub fn set_text(&self, text: &str)"
+            },
+            "swift": {
+              "name": "setText",
+              "signature": "func setText(_ text: String) -> Void"
             }
           }
         },
@@ -2028,6 +2224,10 @@
             "rust": {
               "name": "text",
               "signature": "pub fn text(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         },
@@ -2071,6 +2271,10 @@
             "rust": {
               "name": "set_text_color",
               "signature": "pub fn set_text_color(&self, color: &Color)"
+            },
+            "swift": {
+              "name": "setTextColor",
+              "signature": "func setTextColor(_ color: Color) -> Void"
             }
           }
         },
@@ -2109,6 +2313,10 @@
             "rust": {
               "name": "text_color",
               "signature": "pub fn text_color(&self) -> Color"
+            },
+            "swift": {
+              "name": "textColor",
+              "signature": "var textColor: Color"
             }
           }
         },
@@ -2152,6 +2360,10 @@
             "rust": {
               "name": "set_font_size",
               "signature": "pub fn set_font_size(&self, size: f64)"
+            },
+            "swift": {
+              "name": "setFontSize",
+              "signature": "func setFontSize(_ size: Double) -> Void"
             }
           }
         },
@@ -2190,6 +2402,10 @@
             "rust": {
               "name": "font_size",
               "signature": "pub fn font_size(&self) -> f64"
+            },
+            "swift": {
+              "name": "fontSize",
+              "signature": "var fontSize: Double"
             }
           }
         },
@@ -2233,6 +2449,10 @@
             "rust": {
               "name": "set_text_alignment",
               "signature": "pub fn set_text_alignment(&self, alignment: TextAlignment)"
+            },
+            "swift": {
+              "name": "setTextAlignment",
+              "signature": "func setTextAlignment(_ alignment: TextAlignment) -> Void"
             }
           }
         },
@@ -2271,6 +2491,10 @@
             "rust": {
               "name": "text_alignment",
               "signature": "pub fn text_alignment(&self) -> TextAlignment"
+            },
+            "swift": {
+              "name": "textAlignment",
+              "signature": "var textAlignment: TextAlignment"
             }
           }
         }
@@ -2316,6 +2540,10 @@
         "rust": {
           "name": "Button",
           "signature": "pub struct Button\nimpl std::ops::Deref for Button\ntype Target = View;"
+        },
+        "swift": {
+          "name": "Button",
+          "signature": "class Button: View"
         }
       },
       "members": [
@@ -2359,6 +2587,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new(text: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ text: String) -> Button?"
             }
           }
         },
@@ -2402,6 +2634,10 @@
             "rust": {
               "name": "set_text",
               "signature": "pub fn set_text(&self, text: &str)"
+            },
+            "swift": {
+              "name": "setText",
+              "signature": "func setText(_ text: String) -> Void"
             }
           }
         },
@@ -2440,6 +2676,10 @@
             "rust": {
               "name": "text",
               "signature": "pub fn text(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         }
@@ -2485,6 +2725,10 @@
         "rust": {
           "name": "TextField",
           "signature": "pub struct TextField\nimpl std::ops::Deref for TextField\ntype Target = View;"
+        },
+        "swift": {
+          "name": "TextField",
+          "signature": "class TextField: View"
         }
       },
       "members": [
@@ -2528,6 +2772,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new(text: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ text: String) -> TextField?"
             }
           }
         },
@@ -2571,6 +2819,10 @@
             "rust": {
               "name": "set_text",
               "signature": "pub fn set_text(&self, text: &str)"
+            },
+            "swift": {
+              "name": "setText",
+              "signature": "func setText(_ text: String) -> Void"
             }
           }
         },
@@ -2609,6 +2861,10 @@
             "rust": {
               "name": "text",
               "signature": "pub fn text(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         },
@@ -2652,6 +2908,10 @@
             "rust": {
               "name": "set_text_color",
               "signature": "pub fn set_text_color(&self, color: &Color)"
+            },
+            "swift": {
+              "name": "setTextColor",
+              "signature": "func setTextColor(_ color: Color) -> Void"
             }
           }
         },
@@ -2690,6 +2950,10 @@
             "rust": {
               "name": "text_color",
               "signature": "pub fn text_color(&self) -> Color"
+            },
+            "swift": {
+              "name": "textColor",
+              "signature": "var textColor: Color"
             }
           }
         },
@@ -2733,6 +2997,10 @@
             "rust": {
               "name": "set_font_size",
               "signature": "pub fn set_font_size(&self, size: f64)"
+            },
+            "swift": {
+              "name": "setFontSize",
+              "signature": "func setFontSize(_ size: Double) -> Void"
             }
           }
         },
@@ -2771,6 +3039,10 @@
             "rust": {
               "name": "font_size",
               "signature": "pub fn font_size(&self) -> f64"
+            },
+            "swift": {
+              "name": "fontSize",
+              "signature": "var fontSize: Double"
             }
           }
         },
@@ -2814,6 +3086,10 @@
             "rust": {
               "name": "set_text_alignment",
               "signature": "pub fn set_text_alignment(&self, alignment: TextAlignment)"
+            },
+            "swift": {
+              "name": "setTextAlignment",
+              "signature": "func setTextAlignment(_ alignment: TextAlignment) -> Void"
             }
           }
         },
@@ -2852,6 +3128,10 @@
             "rust": {
               "name": "text_alignment",
               "signature": "pub fn text_alignment(&self) -> TextAlignment"
+            },
+            "swift": {
+              "name": "textAlignment",
+              "signature": "var textAlignment: TextAlignment"
             }
           }
         },
@@ -2895,6 +3175,10 @@
             "rust": {
               "name": "set_placeholder",
               "signature": "pub fn set_placeholder(&self, placeholder: Option<&str>)"
+            },
+            "swift": {
+              "name": "setPlaceholder",
+              "signature": "func setPlaceholder(_ placeholder: String?) -> Void"
             }
           }
         },
@@ -2933,6 +3217,10 @@
             "rust": {
               "name": "placeholder",
               "signature": "pub fn placeholder(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "placeholder",
+              "signature": "var placeholder: String?"
             }
           }
         },
@@ -2976,6 +3264,10 @@
             "rust": {
               "name": "set_editable",
               "signature": "pub fn set_editable(&self, is_editable: bool)"
+            },
+            "swift": {
+              "name": "setEditable",
+              "signature": "func setEditable(_ isEditable: Bool) -> Void"
             }
           }
         },
@@ -3014,6 +3306,10 @@
             "rust": {
               "name": "is_editable",
               "signature": "pub fn is_editable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isEditable",
+              "signature": "var isEditable: Bool"
             }
           }
         },
@@ -3063,6 +3359,10 @@
             "rust": {
               "name": "set_secure",
               "signature": "pub fn set_secure(&self, is_secure: bool)"
+            },
+            "swift": {
+              "name": "setSecure",
+              "signature": "func setSecure(_ isSecure: Bool) -> Void"
             }
           }
         },
@@ -3101,6 +3401,10 @@
             "rust": {
               "name": "is_secure",
               "signature": "pub fn is_secure(&self) -> bool"
+            },
+            "swift": {
+              "name": "isSecure",
+              "signature": "var isSecure: Bool"
             }
           }
         },
@@ -3150,6 +3454,10 @@
             "rust": {
               "name": "set_multiline",
               "signature": "pub fn set_multiline(&self, is_multiline: bool)"
+            },
+            "swift": {
+              "name": "setMultiline",
+              "signature": "func setMultiline(_ isMultiline: Bool) -> Void"
             }
           }
         },
@@ -3188,6 +3496,10 @@
             "rust": {
               "name": "is_multiline",
               "signature": "pub fn is_multiline(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMultiline",
+              "signature": "var isMultiline: Bool"
             }
           }
         }
@@ -3233,6 +3545,10 @@
         "rust": {
           "name": "ImageView",
           "signature": "pub struct ImageView\nimpl std::ops::Deref for ImageView\ntype Target = View;"
+        },
+        "swift": {
+          "name": "ImageView",
+          "signature": "class ImageView: View"
         }
       },
       "members": [
@@ -3270,6 +3586,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "override class func create() -> ImageView?"
             }
           }
         },
@@ -3313,6 +3633,10 @@
             "rust": {
               "name": "set_image",
               "signature": "pub fn set_image(&self, image: Option<&Image>)"
+            },
+            "swift": {
+              "name": "setImage",
+              "signature": "func setImage(_ image: Image?) -> Void"
             }
           }
         },
@@ -3351,6 +3675,10 @@
             "rust": {
               "name": "image",
               "signature": "pub fn image(&self) -> Option<Image>"
+            },
+            "swift": {
+              "name": "image",
+              "signature": "var image: Image?"
             }
           }
         }
@@ -3390,6 +3718,10 @@
         "rust": {
           "name": "ViewLayout",
           "signature": "pub enum ViewLayout"
+        },
+        "swift": {
+          "name": "ViewLayout",
+          "signature": "enum ViewLayout: CInt"
         }
       },
       "members": [
@@ -3427,6 +3759,10 @@
             "rust": {
               "name": "ViewLayout::Absolute",
               "signature": "Absolute = 0"
+            },
+            "swift": {
+              "name": "absolute",
+              "signature": "case absolute = 0"
             }
           }
         },
@@ -3464,6 +3800,10 @@
             "rust": {
               "name": "ViewLayout::Row",
               "signature": "Row = 1"
+            },
+            "swift": {
+              "name": "row",
+              "signature": "case row = 1"
             }
           }
         },
@@ -3501,6 +3841,10 @@
             "rust": {
               "name": "ViewLayout::Column",
               "signature": "Column = 2"
+            },
+            "swift": {
+              "name": "column",
+              "signature": "case column = 2"
             }
           }
         }
@@ -3540,6 +3884,10 @@
         "rust": {
           "name": "ViewAlignment",
           "signature": "pub enum ViewAlignment"
+        },
+        "swift": {
+          "name": "ViewAlignment",
+          "signature": "enum ViewAlignment: CInt"
         }
       },
       "members": [
@@ -3577,6 +3925,10 @@
             "rust": {
               "name": "ViewAlignment::Stretch",
               "signature": "Stretch = 0"
+            },
+            "swift": {
+              "name": "stretch",
+              "signature": "case stretch = 0"
             }
           }
         },
@@ -3614,6 +3966,10 @@
             "rust": {
               "name": "ViewAlignment::Start",
               "signature": "Start = 1"
+            },
+            "swift": {
+              "name": "start",
+              "signature": "case start = 1"
             }
           }
         },
@@ -3651,6 +4007,10 @@
             "rust": {
               "name": "ViewAlignment::Center",
               "signature": "Center = 2"
+            },
+            "swift": {
+              "name": "center",
+              "signature": "case center = 2"
             }
           }
         },
@@ -3688,6 +4048,10 @@
             "rust": {
               "name": "ViewAlignment::End",
               "signature": "End = 3"
+            },
+            "swift": {
+              "name": "end",
+              "signature": "case end = 3"
             }
           }
         }
@@ -3727,6 +4091,10 @@
         "rust": {
           "name": "TextAlignment",
           "signature": "pub enum TextAlignment"
+        },
+        "swift": {
+          "name": "TextAlignment",
+          "signature": "enum TextAlignment: CInt"
         }
       },
       "members": [
@@ -3764,6 +4132,10 @@
             "rust": {
               "name": "TextAlignment::Start",
               "signature": "Start = 0"
+            },
+            "swift": {
+              "name": "start",
+              "signature": "case start = 0"
             }
           }
         },
@@ -3801,6 +4173,10 @@
             "rust": {
               "name": "TextAlignment::Center",
               "signature": "Center = 1"
+            },
+            "swift": {
+              "name": "center",
+              "signature": "case center = 1"
             }
           }
         },
@@ -3838,6 +4214,10 @@
             "rust": {
               "name": "TextAlignment::End",
               "signature": "End = 2"
+            },
+            "swift": {
+              "name": "end",
+              "signature": "case end = 2"
             }
           }
         }
@@ -3878,6 +4258,10 @@
         "rust": {
           "name": "ViewBackend",
           "signature": "pub enum ViewBackend"
+        },
+        "swift": {
+          "name": "ViewBackend",
+          "signature": "enum ViewBackend: CInt"
         }
       },
       "members": [
@@ -3915,6 +4299,10 @@
             "rust": {
               "name": "ViewBackend::Native",
               "signature": "Native = 0"
+            },
+            "swift": {
+              "name": "native",
+              "signature": "case native = 0"
             }
           }
         },
@@ -3952,6 +4340,10 @@
             "rust": {
               "name": "ViewBackend::WinUi3",
               "signature": "WinUi3 = 1"
+            },
+            "swift": {
+              "name": "winUi3",
+              "signature": "case winUi3 = 1"
             }
           }
         }
@@ -3991,6 +4383,10 @@
         "rust": {
           "name": "ViewEvent",
           "signature": "pub enum ViewEvent"
+        },
+        "swift": {
+          "name": "ViewEvent",
+          "signature": "enum ViewEvent"
         }
       },
       "members": [
@@ -4025,6 +4421,10 @@
             "rust": {
               "name": "view_id",
               "signature": "view_id: ViewId"
+            },
+            "swift": {
+              "name": "viewId",
+              "signature": "var viewId: ViewId"
             }
           }
         },
@@ -4062,6 +4462,10 @@
             "rust": {
               "name": "ViewEvent::Focused",
               "signature": "Focused { view_id: ViewId }"
+            },
+            "swift": {
+              "name": "focused",
+              "signature": "case focused(viewId: ViewId)"
             }
           }
         },
@@ -4099,6 +4503,10 @@
             "rust": {
               "name": "ViewEvent::Blurred",
               "signature": "Blurred { view_id: ViewId }"
+            },
+            "swift": {
+              "name": "blurred",
+              "signature": "case blurred(viewId: ViewId)"
             }
           }
         },
@@ -4136,6 +4544,10 @@
             "rust": {
               "name": "ViewEvent::ButtonClicked",
               "signature": "ButtonClicked { view_id: ViewId }"
+            },
+            "swift": {
+              "name": "buttonClicked",
+              "signature": "case buttonClicked(viewId: ViewId)"
             }
           }
         },
@@ -4174,6 +4586,10 @@
             "rust": {
               "name": "ViewEvent::TextFieldChanged",
               "signature": "TextFieldChanged { view_id: ViewId, text: Option<String> }"
+            },
+            "swift": {
+              "name": "textFieldChanged",
+              "signature": "case textFieldChanged(viewId: ViewId, text: String?)"
             }
           }
         },
@@ -4209,6 +4625,10 @@
             "rust": {
               "name": "text",
               "signature": "text: Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         },
@@ -4246,6 +4666,10 @@
             "rust": {
               "name": "ViewEvent::TextFieldSubmitted",
               "signature": "TextFieldSubmitted { view_id: ViewId }"
+            },
+            "swift": {
+              "name": "textFieldSubmitted",
+              "signature": "case textFieldSubmitted(viewId: ViewId)"
             }
           }
         }
@@ -4281,6 +4705,10 @@
         "rust": {
           "name": "ViewId",
           "signature": "pub type ViewId = u32;"
+        },
+        "swift": {
+          "name": "ViewId",
+          "signature": "typealias ViewId = UInt32"
         }
       }
     }

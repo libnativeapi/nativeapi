@@ -1,6 +1,6 @@
 # libnativeapi workspace
 
-This is the workspace repo (`libnativeapi/nativeapi`, formerly `nativeapi-flutter` and `nativeapi-workspace`) for the [libnativeapi](https://github.com/libnativeapi) project family. Every binding (`bindings/dart/`, `bindings/rust/`, `bindings/csharp/`, `bindings/js/`, `bindings/python/`, `bindings/go/`), the code generator (`tools/codegen/`), the `./codegen` script, the specs and the shared tooling live directly in this repo (the Rust and C# histories were merged in from `nativeapi-rust` and `nativeapi-csharp`); only `core/` and the leanflutter packages under `bindings/dart/` (`tray_manager/`, `screen_retriever/`, `window_manager/`, `hotkey_manager/`, `protocol_handler/`) are git submodules of independent repositories. Work inside a submodule is committed and pushed from that subdirectory; everything else is committed here.
+This is the workspace repo (`libnativeapi/nativeapi`, formerly `nativeapi-flutter` and `nativeapi-workspace`) for the [libnativeapi](https://github.com/libnativeapi) project family. Every binding (`bindings/dart/`, `bindings/rust/`, `bindings/csharp/`, `bindings/js/`, `bindings/python/`, `bindings/go/`, `bindings/swift/`), the code generator (`tools/codegen/`), the `./codegen` script, the specs and the shared tooling live directly in this repo (the Rust and C# histories were merged in from `nativeapi-rust` and `nativeapi-csharp`); only `core/` and the leanflutter packages under `bindings/dart/` (`tray_manager/`, `screen_retriever/`, `window_manager/`, `hotkey_manager/`, `protocol_handler/`) are git submodules of independent repositories. Work inside a submodule is committed and pushed from that subdirectory; everything else is committed here.
 
 ## Layout
 
@@ -12,8 +12,9 @@ bindings/
 ├── csharp/         # the C# binding: src/, tests/, NativeAPI.slnx
 ├── js/             # the JS/TS binding: a Node-API addon (src/) + TypeScript (lib/)
 ├── python/         # the Python binding: ctypes package (nativeapi/) + native shim (src/)
-└── go/             # the Go binding: generated cgo API + native shared library
-examples/           # every binding's example apps, prefixed dart_*, flutter_*, rust_*, csharp_*, js_*, python_*
+├── go/             # the Go binding: generated cgo API + native shared library
+└── swift/          # the Swift binding: SwiftPM package over the core submodule
+examples/           # every binding's example apps, prefixed dart_*, flutter_*, rust_*, csharp_*, js_*, python_*, go_*, swift_*
 prototype/          # interface prototypes for the examples (Storybook + DazzUI, pnpm), see prototype/docs/architecture.md
 pubspec.yaml        # pub workspace + melos root: Dart packages and Flutter examples
 Cargo.toml          # cargo workspace root: Rust crates and examples
@@ -28,8 +29,8 @@ codegen             # Python entry point orchestrating the generators
 ## Architecture
 
 - `core` — the C++ core library (repo: `nativeapi-core`). The source of truth for the native API surface (windows, tray icons, menus, displays, keyboard, dialogs, storage, etc.) with per-platform implementations (macOS/Windows/Linux).
-- `tools/codegen` — three crates: `shared` (libclang parser, IR, naming), `capi` (C ABI + umbrella header), `bindings` (Rust/Dart/C#/JS/Python/Go generators, consuming the IR JSON emitted by `capi`). Only `capi` depends on libclang. See tools/codegen/README.md.
-- `bindings/*` — language bindings wrapping the core library. All live in this repo and build against the `core/` submodule directly (Rust `build.rs`, the Dart `cnativeapi` package's build hook, the C# native CMake, the JS, Python and Go bindings' `CMakeLists.txt`). Only a published package carries its own copy of core, in `cxx_impl/`, which the release workflows vendor and never commit. The Rust binding layers `nativeapi` (safe API) over `cnativeapi` (FFI). The Python binding has no compiled extension: generated `ctypes` code (`nativeapi/_capi.py` plus one module per header) calls a shared library built from core and a small event loop shim, which `Application.run_async()` pumps from asyncio.
+- `tools/codegen` — three crates: `shared` (libclang parser, IR, naming), `capi` (C ABI + umbrella header), `bindings` (Rust/Dart/C#/JS/Python/Go/Swift generators, consuming the IR JSON emitted by `capi`). Only `capi` depends on libclang. See tools/codegen/README.md.
+- `bindings/*` — language bindings wrapping the core library. All live in this repo and build against the `core/` submodule directly (Rust `build.rs`, the Dart `cnativeapi` package's build hook, the C# native CMake, the JS, Python and Go bindings' `CMakeLists.txt`, and the Swift package's SwiftPM target that compiles core). Only a published package carries its own copy of core, in `cxx_impl/`, which the release workflows vendor and never commit. The Rust binding layers `nativeapi` (safe API) over `cnativeapi` (FFI). The Python binding has no compiled extension: generated `ctypes` code (`nativeapi/_capi.py` plus one module per header) calls a shared library built from core and a small event loop shim, which `Application.run_async()` pumps from asyncio.
 
 ## Design specs
 
@@ -53,7 +54,7 @@ breaks). When one is resolved, edit the spec text itself.
 Always drive the generators through `./codegen` at the workspace root:
 
 - `./codegen` — full run: C ABI, then all bindings
-- `./codegen capi` / `./codegen bindings [--lang rust,dart,csharp,js,python,go]`
+- `./codegen capi` / `./codegen bindings [--lang rust,dart,csharp,js,python,go,swift]`
 - `./codegen check` — read-only verification, non-zero exit when stale (CI mode)
 - `./codegen readme` — copy the shared README sections (`tools/readme/*.md`, e.g. Contributing) into core and every binding; `check` flags drift, `sync` runs it. Edit the snippet, never the copies.
 - `./codegen sync [-m "msg"] [--push]` — full downstream propagation, see below
@@ -72,6 +73,10 @@ Native singletons are exported values with methods (`DisplayManager.All()`,
 `Application.Run()`), backed by private stateless types.
 Object getters retain nil-for-absence semantics; native failures without detailed
 causes wrap `ErrOperationFailed`. Examples intentionally use dot imports as requested.
+Swift builds require Swift 5.9+ (Xcode 15+) on macOS 11+; the Swift package compiles
+the `core/` submodule directly, so it needs no CMake build or separate native library.
+The Swift generator mirrors `core/src/` into `Sources/NativeAPI/` (with camel-cased
+directories) and writes `Support.swift`; it has no formatter step.
 
 ## Changing the core API
 
@@ -112,8 +117,8 @@ scenarios for *this project's* examples live in [tools/gui/](tools/gui/README.md
 - The leanflutter packages built on nativeapi (`tray_manager`, `window_manager`, `launch_at_startup`, …) live in their own repos under github.com/leanflutter and depend on the published `nativeapi`. Some ride along as submodules under `bindings/dart/<package>` (tracking `main`): `tray_manager`, `screen_retriever`, `window_manager`, `hotkey_manager` and `protocol_handler` so far. They are not members of the root pub workspace, melos ignores them (add the path to `ignore` in the root `pubspec.yaml`), and CI does not check them out. To try one against local changes, point a `dependency_overrides` entry in that package at `bindings/dart/nativeapi_flutter` (and `nativeapi`, `cnativeapi`) and never commit the override.
 - Commit workspace submodule pointer updates only when the combination is compatible (a known-good snapshot).
 - The `hotkey_manager` and `protocol_handler` submodules are single packages: the package sits at the submodule root and the app in `example/`. For local verification, put nativeapi/cnativeapi overrides in both the root and `example/`; do not commit them. `protocol_handler` also carries a thin native plugin (Android/iOS/macOS/Windows) that hands URLs arriving before Dart runs to core through the host contract in [specs/protocol-handler.md](specs/protocol-handler.md); change both sides together.
-- Examples live in `examples/<binding>_<name>_example` (`dart_` for plain Dart programs, `flutter_`, `rust_`, `csharp_`, `js_`, `python_`, `go_`), not inside the bindings; a new Dart, Flutter or Rust example must also be listed in the root `pubspec.yaml` / `Cargo.toml`, a C# one in `bindings/csharp/NativeAPI.slnx`, a JS one in the root `package.json`. A Python example is a standalone uv project whose `pyproject.toml` points `nativeapi` at `../../bindings/python` (`uv run main.py` builds the wheel). A Go example is a standalone module whose `go.mod` replaces `github.com/libnativeapi/nativeapi/bindings/go` with `../../bindings/go`. Only the pub.dev package examples (`bindings/dart/*/example`) stay inside their package.
-- CI is one workflow per binding (`dart-ci.yml`, `rust-ci.yml`, `csharp-ci.yml`, `js-ci.yml`, `python-ci.yml`, `go-ci.yml`), each running only for changes under its `bindings/<lang>/` and its examples (`examples/dart_*` and `examples/flutter_*` for Dart, `examples/rust_*`, `examples/csharp_*`, `examples/js_*`, `examples/python_*`, `examples/go_*`). Release tags are per binding: `v*` publishes the Dart packages (`dart-release.yml`), `rust-v*` publishes the crates (`rust-release.yml`), `python-v*` publishes the Python package to PyPI (`python-release.yml`: an sdist carrying core in `cxx_impl/`, and wheels built from it with cibuildwheel; the tag must equal `python-v` + the version in `bindings/python/pyproject.toml`); never push a bare `v*` tag for anything but the Dart packages. Nothing has been published to PyPI yet: the first release needs `nativeapi` set up on PyPI with this workflow and the `pypi` environment as a trusted publisher.
+- Examples live in `examples/<binding>_<name>_example` (`dart_` for plain Dart programs, `flutter_`, `rust_`, `csharp_`, `js_`, `python_`, `go_`, `swift_`), not inside the bindings; a new Dart, Flutter or Rust example must also be listed in the root `pubspec.yaml` / `Cargo.toml`, a C# one in `bindings/csharp/NativeAPI.slnx`, a JS one in the root `package.json`. A Python example is a standalone uv project whose `pyproject.toml` points `nativeapi` at `../../bindings/python` (`uv run main.py` builds the wheel). A Go example is a standalone module whose `go.mod` replaces `github.com/libnativeapi/nativeapi/bindings/go` with `../../bindings/go`. A Swift example is a standalone SwiftPM package whose `Package.swift` declares a path dependency on `../../bindings/swift`. Only the pub.dev package examples (`bindings/dart/*/example`) stay inside their package.
+- CI is one workflow per binding (`dart-ci.yml`, `rust-ci.yml`, `csharp-ci.yml`, `js-ci.yml`, `python-ci.yml`, `go-ci.yml`, `swift-ci.yml`), each running only for changes under its `bindings/<lang>/` and its examples (`examples/dart_*` and `examples/flutter_*` for Dart, `examples/rust_*`, `examples/csharp_*`, `examples/js_*`, `examples/python_*`, `examples/go_*`, `examples/swift_*`). Release tags are per binding: `v*` publishes the Dart packages (`dart-release.yml`), `rust-v*` publishes the crates (`rust-release.yml`), `python-v*` publishes the Python package to PyPI (`python-release.yml`: an sdist carrying core in `cxx_impl/`, and wheels built from it with cibuildwheel; the tag must equal `python-v` + the version in `bindings/python/pyproject.toml`); never push a bare `v*` tag for anything but the Dart packages. Nothing has been published to PyPI yet: the first release needs `nativeapi` set up on PyPI with this workflow and the `pypi` environment as a trusted publisher.
 - A release of any package bumps only the last version number (0.5.0 → 0.5.1), unless the user asks for a minor or major bump. Breaking changes do not pick the number: mark them in the CHANGELOG instead.
 - The Dart packages `cnativeapi`, `nativeapi` and `nativeapi_flutter` share one version: a release bumps all three pubspecs and CHANGELOGs, because pub.dev's automated publishing matches the tag `v<version>` against each package's own version. `cnativeapi` and `nativeapi` are plain Dart (no Flutter dependency; a build hook compiles core); `nativeapi_flutter` is the Flutter-facing package, holding the widgets, the `dart:ui` conversions and `windowing.dart`, and re-exporting `nativeapi` minus the names that clash with Flutter's.
 - Never commit in a submodule while on a detached HEAD — check out `main` first (`./codegen sync` enforces this).

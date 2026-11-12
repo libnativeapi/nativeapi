@@ -43,6 +43,10 @@
         "rust": {
           "name": "NotificationManager",
           "signature": "pub struct NotificationManager"
+        },
+        "swift": {
+          "name": "NotificationManager",
+          "signature": "final class NotificationManager: Sendable"
         }
       },
       "members": [
@@ -77,6 +81,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&NotificationEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (NotificationEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -111,6 +119,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "func isSupported() -> Bool"
             }
           }
         },
@@ -148,6 +160,10 @@
             "rust": {
               "name": "initialize",
               "signature": "pub fn initialize() -> bool"
+            },
+            "swift": {
+              "name": "initialize",
+              "signature": "func initialize() -> Bool"
             }
           }
         },
@@ -185,6 +201,10 @@
             "rust": {
               "name": "shutdown",
               "signature": "pub fn shutdown()"
+            },
+            "swift": {
+              "name": "shutdown",
+              "signature": "func shutdown() -> Void"
             }
           }
         },
@@ -222,6 +242,10 @@
             "rust": {
               "name": "show",
               "signature": "pub fn show(title: &str, message: &str, tag: &str, button_label: &str) -> bool"
+            },
+            "swift": {
+              "name": "show",
+              "signature": "func show(_ title: String, message: String, tag: String, buttonLabel: String) -> Bool"
             }
           }
         },
@@ -256,6 +280,10 @@
             "rust": {
               "name": "remove",
               "signature": "pub fn remove(tag: &str) -> bool"
+            },
+            "swift": {
+              "name": "remove",
+              "signature": "func remove(_ tag: String) -> Bool"
             }
           }
         },
@@ -290,6 +318,10 @@
             "rust": {
               "name": "get_last_error",
               "signature": "pub fn get_last_error() -> Option<String>"
+            },
+            "swift": {
+              "name": "getLastError",
+              "signature": "func getLastError() -> String?"
             }
           }
         }
@@ -326,6 +358,10 @@
         "rust": {
           "name": "NotificationEvent",
           "signature": "pub enum NotificationEvent"
+        },
+        "swift": {
+          "name": "NotificationEvent",
+          "signature": "enum NotificationEvent"
         }
       },
       "members": [
@@ -360,6 +396,10 @@
             "rust": {
               "name": "NotificationEvent::Activated",
               "signature": "Activated { argument: Option<String> }"
+            },
+            "swift": {
+              "name": "activated",
+              "signature": "case activated(argument: String?)"
             }
           }
         },
@@ -395,6 +435,10 @@
             "rust": {
               "name": "argument",
               "signature": "argument: Option<String>"
+            },
+            "swift": {
+              "name": "argument",
+              "signature": "var argument: String?"
             }
           }
         }

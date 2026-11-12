@@ -38,6 +38,10 @@
         "rust": {
           "name": "DragSource",
           "signature": "pub struct DragSource"
+        },
+        "swift": {
+          "name": "DragSource",
+          "signature": "class DragSource"
         }
       },
       "members": [
@@ -72,6 +76,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> DragSource?"
             }
           }
         },
@@ -106,6 +114,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&DragSourceEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (DragSourceEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -149,6 +161,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "static func isSupported() -> Bool"
             }
           }
         },
@@ -193,6 +209,10 @@
             "rust": {
               "name": "is_position_supported",
               "signature": "pub fn is_position_supported() -> bool"
+            },
+            "swift": {
+              "name": "isPositionSupported",
+              "signature": "static func isPositionSupported() -> Bool"
             }
           }
         },
@@ -237,6 +257,10 @@
             "rust": {
               "name": "is_operation_selection_supported",
               "signature": "pub fn is_operation_selection_supported() -> bool"
+            },
+            "swift": {
+              "name": "isOperationSelectionSupported",
+              "signature": "static func isOperationSelectionSupported() -> Bool"
             }
           }
         },
@@ -280,6 +304,10 @@
             "rust": {
               "name": "set_file_paths",
               "signature": "pub fn set_file_paths(&self, file_paths: &[String])"
+            },
+            "swift": {
+              "name": "setFilePaths",
+              "signature": "func setFilePaths(_ filePaths: [String]) -> Void"
             }
           }
         },
@@ -317,6 +345,10 @@
             "rust": {
               "name": "file_paths",
               "signature": "pub fn file_paths(&self) -> Vec<String>"
+            },
+            "swift": {
+              "name": "filePaths",
+              "signature": "var filePaths: [String]"
             }
           }
         },
@@ -360,6 +392,10 @@
             "rust": {
               "name": "set_text",
               "signature": "pub fn set_text(&self, text: Option<&str>)"
+            },
+            "swift": {
+              "name": "setText",
+              "signature": "func setText(_ text: String?) -> Void"
             }
           }
         },
@@ -397,6 +433,10 @@
             "rust": {
               "name": "text",
               "signature": "pub fn text(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         },
@@ -446,6 +486,10 @@
             "rust": {
               "name": "set_image",
               "signature": "pub fn set_image(&self, image: Option<&Image>)"
+            },
+            "swift": {
+              "name": "setImage",
+              "signature": "func setImage(_ image: Image?) -> Void"
             }
           }
         },
@@ -489,6 +533,10 @@
             "rust": {
               "name": "image",
               "signature": "pub fn image(&self) -> Option<Image>"
+            },
+            "swift": {
+              "name": "image",
+              "signature": "var image: Image?"
             }
           }
         },
@@ -538,6 +586,10 @@
             "rust": {
               "name": "set_drag_operation",
               "signature": "pub fn set_drag_operation(&self, operation: DragOperation)"
+            },
+            "swift": {
+              "name": "setDragOperation",
+              "signature": "func setDragOperation(_ operation: DragOperation) -> Void"
             }
           }
         },
@@ -581,6 +633,10 @@
             "rust": {
               "name": "drag_operation",
               "signature": "pub fn drag_operation(&self) -> DragOperation"
+            },
+            "swift": {
+              "name": "dragOperation",
+              "signature": "var dragOperation: DragOperation"
             }
           }
         },
@@ -632,6 +688,10 @@
             "rust": {
               "name": "start_dragging",
               "signature": "pub fn start_dragging(&self, window: Option<&Window>) -> bool"
+            },
+            "swift": {
+              "name": "startDragging",
+              "signature": "func startDragging(_ window: Window?) -> Bool"
             }
           }
         },
@@ -669,6 +729,10 @@
             "rust": {
               "name": "is_dragging",
               "signature": "pub fn is_dragging(&self) -> bool"
+            },
+            "swift": {
+              "name": "isDragging",
+              "signature": "var isDragging: Bool"
             }
           }
         }
@@ -709,6 +773,10 @@
         "rust": {
           "name": "DragOperation",
           "signature": "pub enum DragOperation"
+        },
+        "swift": {
+          "name": "DragOperation",
+          "signature": "enum DragOperation: CInt"
         }
       },
       "members": [
@@ -746,6 +814,10 @@
             "rust": {
               "name": "DragOperation::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -783,6 +855,10 @@
             "rust": {
               "name": "DragOperation::Copy",
               "signature": "Copy = 1"
+            },
+            "swift": {
+              "name": "copy",
+              "signature": "case copy = 1"
             }
           }
         },
@@ -820,6 +896,10 @@
             "rust": {
               "name": "DragOperation::Move",
               "signature": "Move = 2"
+            },
+            "swift": {
+              "name": "move",
+              "signature": "case move = 2"
             }
           }
         },
@@ -857,6 +937,10 @@
             "rust": {
               "name": "DragOperation::Link",
               "signature": "Link = 3"
+            },
+            "swift": {
+              "name": "link",
+              "signature": "case link = 3"
             }
           }
         }
@@ -897,6 +981,10 @@
         "rust": {
           "name": "DragSourceEvent",
           "signature": "pub enum DragSourceEvent"
+        },
+        "swift": {
+          "name": "DragSourceEvent",
+          "signature": "enum DragSourceEvent"
         }
       },
       "members": [
@@ -934,6 +1022,10 @@
             "rust": {
               "name": "window_id",
               "signature": "window_id: WindowId"
+            },
+            "swift": {
+              "name": "windowId",
+              "signature": "var windowId: WindowId"
             }
           }
         },
@@ -978,6 +1070,10 @@
             "rust": {
               "name": "position",
               "signature": "position: Point"
+            },
+            "swift": {
+              "name": "position",
+              "signature": "var position: Point"
             }
           }
         },
@@ -1015,6 +1111,10 @@
             "rust": {
               "name": "DragSourceEvent::Ended",
               "signature": "Ended { window_id: WindowId, position: Point, operation: DragOperation }"
+            },
+            "swift": {
+              "name": "ended",
+              "signature": "case ended(windowId: WindowId, position: Point, operation: DragOperation)"
             }
           }
         },
@@ -1053,6 +1153,10 @@
             "rust": {
               "name": "operation",
               "signature": "operation: DragOperation"
+            },
+            "swift": {
+              "name": "operation",
+              "signature": "var operation: DragOperation"
             }
           }
         }

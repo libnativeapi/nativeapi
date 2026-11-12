@@ -30,6 +30,7 @@ pub const LANGUAGES: &[(&str, &str)] = &[
     ("js", "TypeScript"),
     ("python", "Python"),
     ("go", "Go"),
+    ("swift", "Swift"),
 ];
 
 #[derive(Serialize)]

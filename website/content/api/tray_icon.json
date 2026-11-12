@@ -56,6 +56,10 @@
         "rust": {
           "name": "TrayIcon",
           "signature": "pub struct TrayIcon"
+        },
+        "swift": {
+          "name": "TrayIcon",
+          "signature": "class TrayIcon"
         }
       },
       "members": [
@@ -94,6 +98,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> TrayIcon?"
             }
           }
         },
@@ -144,6 +152,10 @@
             "rust": {
               "name": "with_identifier",
               "signature": "pub fn with_identifier(identifier: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithIdentifier",
+              "signature": "class func createWithIdentifier(_ identifier: String) -> TrayIcon?"
             }
           }
         },
@@ -188,6 +200,10 @@
             "rust": {
               "name": "with_tray",
               "signature": "pub unsafe fn with_tray(tray: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithTray",
+              "signature": "class func createWithTray(_ tray: UnsafeMutableRawPointer?) -> TrayIcon?"
             }
           }
         },
@@ -222,6 +238,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&TrayIconEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (TrayIconEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -260,6 +280,10 @@
             "rust": {
               "name": "get_id",
               "signature": "pub fn get_id(&self) -> TrayIconId"
+            },
+            "swift": {
+              "name": "getId",
+              "signature": "func getId() -> TrayIconId"
             }
           }
         },
@@ -304,6 +328,10 @@
             "rust": {
               "name": "identifier",
               "signature": "pub fn identifier(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "identifier",
+              "signature": "var identifier: String?"
             }
           }
         },
@@ -348,6 +376,10 @@
             "rust": {
               "name": "set_icon",
               "signature": "pub fn set_icon(&self, image: Option<&Image>)"
+            },
+            "swift": {
+              "name": "setIcon",
+              "signature": "func setIcon(_ image: Image?) -> Void"
             }
           }
         },
@@ -386,6 +418,10 @@
             "rust": {
               "name": "icon",
               "signature": "pub fn icon(&self) -> Option<Image>"
+            },
+            "swift": {
+              "name": "icon",
+              "signature": "var icon: Image?"
             }
           }
         },
@@ -436,6 +472,10 @@
             "rust": {
               "name": "set_icon_template",
               "signature": "pub fn set_icon_template(&self, is_icon_template: bool)"
+            },
+            "swift": {
+              "name": "setIconTemplate",
+              "signature": "func setIconTemplate(_ isIconTemplate: Bool) -> Void"
             }
           }
         },
@@ -480,6 +520,10 @@
             "rust": {
               "name": "is_icon_template",
               "signature": "pub fn is_icon_template(&self) -> bool"
+            },
+            "swift": {
+              "name": "isIconTemplate",
+              "signature": "var isIconTemplate: Bool"
             }
           }
         },
@@ -530,6 +574,10 @@
             "rust": {
               "name": "set_icon_size",
               "signature": "pub fn set_icon_size(&self, size: &Size)"
+            },
+            "swift": {
+              "name": "setIconSize",
+              "signature": "func setIconSize(_ size: Size) -> Void"
             }
           }
         },
@@ -574,6 +622,10 @@
             "rust": {
               "name": "icon_size",
               "signature": "pub fn icon_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "iconSize",
+              "signature": "var iconSize: Size"
             }
           }
         },
@@ -623,6 +675,10 @@
             "rust": {
               "name": "set_icon_position",
               "signature": "pub fn set_icon_position(&self, position: TrayIconPosition)"
+            },
+            "swift": {
+              "name": "setIconPosition",
+              "signature": "func setIconPosition(_ position: TrayIconPosition) -> Void"
             }
           }
         },
@@ -667,6 +723,10 @@
             "rust": {
               "name": "icon_position",
               "signature": "pub fn icon_position(&self) -> TrayIconPosition"
+            },
+            "swift": {
+              "name": "iconPosition",
+              "signature": "var iconPosition: TrayIconPosition"
             }
           }
         },
@@ -717,6 +777,10 @@
             "rust": {
               "name": "set_title",
               "signature": "pub fn set_title(&self, title: Option<&str>)"
+            },
+            "swift": {
+              "name": "setTitle",
+              "signature": "func setTitle(_ title: String?) -> Void"
             }
           }
         },
@@ -755,6 +819,10 @@
             "rust": {
               "name": "get_title",
               "signature": "pub fn get_title(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "getTitle",
+              "signature": "func getTitle() -> String?"
             }
           }
         },
@@ -799,6 +867,10 @@
             "rust": {
               "name": "set_tooltip",
               "signature": "pub fn set_tooltip(&self, tooltip: Option<&str>)"
+            },
+            "swift": {
+              "name": "setTooltip",
+              "signature": "func setTooltip(_ tooltip: String?) -> Void"
             }
           }
         },
@@ -837,6 +909,10 @@
             "rust": {
               "name": "get_tooltip",
               "signature": "pub fn get_tooltip(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "getTooltip",
+              "signature": "func getTooltip() -> String?"
             }
           }
         },
@@ -887,6 +963,10 @@
             "rust": {
               "name": "set_content_view",
               "signature": "pub fn set_content_view(&self, view: Option<&View>)"
+            },
+            "swift": {
+              "name": "setContentView",
+              "signature": "func setContentView(_ view: View?) -> Void"
             }
           }
         },
@@ -931,6 +1011,10 @@
             "rust": {
               "name": "content_view",
               "signature": "pub fn content_view(&self) -> Option<View>"
+            },
+            "swift": {
+              "name": "contentView",
+              "signature": "var contentView: View?"
             }
           }
         },
@@ -981,6 +1065,10 @@
             "rust": {
               "name": "set_context_menu",
               "signature": "pub fn set_context_menu(&self, menu: Option<&Menu>)"
+            },
+            "swift": {
+              "name": "setContextMenu",
+              "signature": "func setContextMenu(_ menu: Menu?) -> Void"
             }
           }
         },
@@ -1019,6 +1107,10 @@
             "rust": {
               "name": "get_context_menu",
               "signature": "pub fn get_context_menu(&self) -> Option<Menu>"
+            },
+            "swift": {
+              "name": "getContextMenu",
+              "signature": "func getContextMenu() -> Menu?"
             }
           }
         },
@@ -1069,6 +1161,10 @@
             "rust": {
               "name": "set_context_menu_trigger",
               "signature": "pub fn set_context_menu_trigger(&self, trigger: ContextMenuTrigger)"
+            },
+            "swift": {
+              "name": "setContextMenuTrigger",
+              "signature": "func setContextMenuTrigger(_ trigger: ContextMenuTrigger) -> Void"
             }
           }
         },
@@ -1107,6 +1203,10 @@
             "rust": {
               "name": "get_context_menu_trigger",
               "signature": "pub fn get_context_menu_trigger(&self) -> ContextMenuTrigger"
+            },
+            "swift": {
+              "name": "getContextMenuTrigger",
+              "signature": "func getContextMenuTrigger() -> ContextMenuTrigger"
             }
           }
         },
@@ -1152,6 +1252,10 @@
             "rust": {
               "name": "get_bounds",
               "signature": "pub fn get_bounds(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "getBounds",
+              "signature": "func getBounds() -> Rectangle"
             }
           }
         },
@@ -1203,6 +1307,10 @@
             "rust": {
               "name": "set_visible",
               "signature": "pub fn set_visible(&self, visible: bool) -> bool"
+            },
+            "swift": {
+              "name": "setVisible",
+              "signature": "func setVisible(_ visible: Bool) -> Bool"
             }
           }
         },
@@ -1241,6 +1349,10 @@
             "rust": {
               "name": "is_visible",
               "signature": "pub fn is_visible(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisible",
+              "signature": "func isVisible() -> Bool"
             }
           }
         },
@@ -1290,6 +1402,10 @@
             "rust": {
               "name": "open_context_menu",
               "signature": "pub fn open_context_menu(&self) -> bool"
+            },
+            "swift": {
+              "name": "openContextMenu",
+              "signature": "func openContextMenu() -> Bool"
             }
           }
         },
@@ -1335,6 +1451,10 @@
             "rust": {
               "name": "close_context_menu",
               "signature": "pub fn close_context_menu(&self) -> bool"
+            },
+            "swift": {
+              "name": "closeContextMenu",
+              "signature": "func closeContextMenu() -> Bool"
             }
           }
         }
@@ -1375,6 +1495,10 @@
         "rust": {
           "name": "ContextMenuTrigger",
           "signature": "pub enum ContextMenuTrigger"
+        },
+        "swift": {
+          "name": "ContextMenuTrigger",
+          "signature": "enum ContextMenuTrigger: CInt"
         }
       },
       "members": [
@@ -1413,6 +1537,10 @@
             "rust": {
               "name": "ContextMenuTrigger::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -1451,6 +1579,10 @@
             "rust": {
               "name": "ContextMenuTrigger::Clicked",
               "signature": "Clicked = 1"
+            },
+            "swift": {
+              "name": "clicked",
+              "signature": "case clicked = 1"
             }
           }
         },
@@ -1489,6 +1621,10 @@
             "rust": {
               "name": "ContextMenuTrigger::RightClicked",
               "signature": "RightClicked = 2"
+            },
+            "swift": {
+              "name": "rightClicked",
+              "signature": "case rightClicked = 2"
             }
           }
         },
@@ -1527,6 +1663,10 @@
             "rust": {
               "name": "ContextMenuTrigger::DoubleClicked",
               "signature": "DoubleClicked = 3"
+            },
+            "swift": {
+              "name": "doubleClicked",
+              "signature": "case doubleClicked = 3"
             }
           }
         }
@@ -1567,6 +1707,10 @@
         "rust": {
           "name": "TrayIconPosition",
           "signature": "pub enum TrayIconPosition"
+        },
+        "swift": {
+          "name": "TrayIconPosition",
+          "signature": "enum TrayIconPosition: CInt"
         }
       },
       "members": [
@@ -1604,6 +1748,10 @@
             "rust": {
               "name": "TrayIconPosition::Left",
               "signature": "Left = 0"
+            },
+            "swift": {
+              "name": "left",
+              "signature": "case left = 0"
             }
           }
         },
@@ -1641,6 +1789,10 @@
             "rust": {
               "name": "TrayIconPosition::Right",
               "signature": "Right = 1"
+            },
+            "swift": {
+              "name": "right",
+              "signature": "case right = 1"
             }
           }
         }
@@ -1681,6 +1833,10 @@
         "rust": {
           "name": "TrayIconEvent",
           "signature": "pub enum TrayIconEvent"
+        },
+        "swift": {
+          "name": "TrayIconEvent",
+          "signature": "enum TrayIconEvent"
         }
       },
       "members": [
@@ -1719,6 +1875,10 @@
             "rust": {
               "name": "TrayIconEvent::Clicked",
               "signature": "Clicked { tray_icon_id: TrayIconId }"
+            },
+            "swift": {
+              "name": "clicked",
+              "signature": "case clicked(trayIconId: TrayIconId)"
             }
           }
         },
@@ -1754,6 +1914,10 @@
             "rust": {
               "name": "tray_icon_id",
               "signature": "tray_icon_id: TrayIconId"
+            },
+            "swift": {
+              "name": "trayIconId",
+              "signature": "var trayIconId: TrayIconId"
             }
           }
         },
@@ -1792,6 +1956,10 @@
             "rust": {
               "name": "TrayIconEvent::RightClicked",
               "signature": "RightClicked { tray_icon_id: TrayIconId }"
+            },
+            "swift": {
+              "name": "rightClicked",
+              "signature": "case rightClicked(trayIconId: TrayIconId)"
             }
           }
         },
@@ -1827,6 +1995,10 @@
             "rust": {
               "name": "tray_icon_id",
               "signature": "tray_icon_id: TrayIconId"
+            },
+            "swift": {
+              "name": "trayIconId",
+              "signature": "var trayIconId: TrayIconId"
             }
           }
         },
@@ -1865,6 +2037,10 @@
             "rust": {
               "name": "TrayIconEvent::DoubleClicked",
               "signature": "DoubleClicked { tray_icon_id: TrayIconId }"
+            },
+            "swift": {
+              "name": "doubleClicked",
+              "signature": "case doubleClicked(trayIconId: TrayIconId)"
             }
           }
         },
@@ -1900,6 +2076,10 @@
             "rust": {
               "name": "tray_icon_id",
               "signature": "tray_icon_id: TrayIconId"
+            },
+            "swift": {
+              "name": "trayIconId",
+              "signature": "var trayIconId: TrayIconId"
             }
           }
         }
@@ -1932,6 +2112,10 @@
         "rust": {
           "name": "TrayIconId",
           "signature": "pub type TrayIconId = u32;"
+        },
+        "swift": {
+          "name": "TrayIconId",
+          "signature": "typealias TrayIconId = UInt32"
         }
       }
     }

@@ -43,6 +43,10 @@
         "rust": {
           "name": "FileDialog",
           "signature": "pub struct FileDialog"
+        },
+        "swift": {
+          "name": "FileDialog",
+          "signature": "class FileDialog"
         }
       },
       "members": [
@@ -77,6 +81,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new(mode: FileDialogMode) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ mode: FileDialogMode) -> FileDialog?"
             }
           }
         },
@@ -111,6 +119,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "static func isSupported() -> Bool"
             }
           }
         },
@@ -148,6 +160,10 @@
             "rust": {
               "name": "set_parent_window",
               "signature": "pub fn set_parent_window(&self, window: Option<&Window>) -> bool"
+            },
+            "swift": {
+              "name": "setParentWindow",
+              "signature": "func setParentWindow(_ window: Window?) -> Bool"
             }
           }
         },
@@ -185,6 +201,10 @@
             "rust": {
               "name": "set_file_types",
               "signature": "pub fn set_file_types(&self, extensions: &[String]) -> bool"
+            },
+            "swift": {
+              "name": "setFileTypes",
+              "signature": "func setFileTypes(_ extensions: [String]) -> Bool"
             }
           }
         },
@@ -219,6 +239,10 @@
             "rust": {
               "name": "set_suggested_file_name",
               "signature": "pub fn set_suggested_file_name(&self, name: &str) -> bool"
+            },
+            "swift": {
+              "name": "setSuggestedFileName",
+              "signature": "func setSuggestedFileName(_ name: String) -> Bool"
             }
           }
         },
@@ -257,6 +281,10 @@
             "rust": {
               "name": "modality",
               "signature": "pub fn modality(&self) -> DialogModality"
+            },
+            "swift": {
+              "name": "modality",
+              "signature": "var modality: DialogModality"
             }
           }
         },
@@ -294,6 +322,10 @@
             "rust": {
               "name": "set_modality",
               "signature": "pub fn set_modality(&self, modality: DialogModality)"
+            },
+            "swift": {
+              "name": "setModality",
+              "signature": "func setModality(_ modality: DialogModality) -> Void"
             }
           }
         },
@@ -331,6 +363,10 @@
             "rust": {
               "name": "open",
               "signature": "pub fn open(&self) -> bool"
+            },
+            "swift": {
+              "name": "`open`",
+              "signature": "func `open`() -> Bool"
             }
           }
         },
@@ -368,6 +404,10 @@
             "rust": {
               "name": "close",
               "signature": "pub fn close(&self) -> bool"
+            },
+            "swift": {
+              "name": "close",
+              "signature": "func close() -> Bool"
             }
           }
         },
@@ -405,6 +445,10 @@
             "rust": {
               "name": "result",
               "signature": "pub fn result(&self) -> FileDialogResult"
+            },
+            "swift": {
+              "name": "result",
+              "signature": "var result: FileDialogResult"
             }
           }
         },
@@ -442,6 +486,10 @@
             "rust": {
               "name": "paths",
               "signature": "pub fn paths(&self) -> Vec<String>"
+            },
+            "swift": {
+              "name": "paths",
+              "signature": "var paths: [String]"
             }
           }
         },
@@ -476,6 +524,10 @@
             "rust": {
               "name": "last_error",
               "signature": "pub fn last_error(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "lastError",
+              "signature": "var lastError: String?"
             }
           }
         }
@@ -512,6 +564,10 @@
         "rust": {
           "name": "FileDialogMode",
           "signature": "pub enum FileDialogMode"
+        },
+        "swift": {
+          "name": "FileDialogMode",
+          "signature": "enum FileDialogMode: CInt"
         }
       },
       "members": [
@@ -546,6 +602,10 @@
             "rust": {
               "name": "FileDialogMode::OpenFile",
               "signature": "OpenFile = 0"
+            },
+            "swift": {
+              "name": "openFile",
+              "signature": "case openFile = 0"
             }
           }
         },
@@ -580,6 +640,10 @@
             "rust": {
               "name": "FileDialogMode::OpenFiles",
               "signature": "OpenFiles = 1"
+            },
+            "swift": {
+              "name": "openFiles",
+              "signature": "case openFiles = 1"
             }
           }
         },
@@ -614,6 +678,10 @@
             "rust": {
               "name": "FileDialogMode::SaveFile",
               "signature": "SaveFile = 2"
+            },
+            "swift": {
+              "name": "saveFile",
+              "signature": "case saveFile = 2"
             }
           }
         },
@@ -648,6 +716,10 @@
             "rust": {
               "name": "FileDialogMode::SelectFolder",
               "signature": "SelectFolder = 3"
+            },
+            "swift": {
+              "name": "selectFolder",
+              "signature": "case selectFolder = 3"
             }
           }
         }
@@ -684,6 +756,10 @@
         "rust": {
           "name": "FileDialogResult",
           "signature": "pub enum FileDialogResult"
+        },
+        "swift": {
+          "name": "FileDialogResult",
+          "signature": "enum FileDialogResult: CInt"
         }
       },
       "members": [
@@ -718,6 +794,10 @@
             "rust": {
               "name": "FileDialogResult::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -752,6 +832,10 @@
             "rust": {
               "name": "FileDialogResult::Accepted",
               "signature": "Accepted = 1"
+            },
+            "swift": {
+              "name": "accepted",
+              "signature": "case accepted = 1"
             }
           }
         },
@@ -786,6 +870,10 @@
             "rust": {
               "name": "FileDialogResult::Cancelled",
               "signature": "Cancelled = 2"
+            },
+            "swift": {
+              "name": "cancelled",
+              "signature": "case cancelled = 2"
             }
           }
         },
@@ -820,6 +908,10 @@
             "rust": {
               "name": "FileDialogResult::Failed",
               "signature": "Failed = 3"
+            },
+            "swift": {
+              "name": "failed",
+              "signature": "case failed = 3"
             }
           }
         }

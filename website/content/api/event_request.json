@@ -38,6 +38,10 @@
         "rust": {
           "name": "EventDecision",
           "signature": "pub struct EventDecision"
+        },
+        "swift": {
+          "name": "EventDecision",
+          "signature": "class EventDecision"
         }
       },
       "members": [
@@ -75,6 +79,10 @@
             "rust": {
               "name": "accept",
               "signature": "pub fn accept(&self) -> bool"
+            },
+            "swift": {
+              "name": "accept",
+              "signature": "func accept() -> Bool"
             }
           }
         },
@@ -112,6 +120,10 @@
             "rust": {
               "name": "cancel",
               "signature": "pub fn cancel(&self) -> bool"
+            },
+            "swift": {
+              "name": "cancel",
+              "signature": "func cancel() -> Bool"
             }
           }
         },
@@ -149,6 +161,10 @@
             "rust": {
               "name": "is_pending",
               "signature": "pub fn is_pending(&self) -> bool"
+            },
+            "swift": {
+              "name": "isPending",
+              "signature": "var isPending: Bool"
             }
           }
         }
@@ -189,6 +205,10 @@
         "rust": {
           "name": "EventRequest",
           "signature": "pub struct EventRequest"
+        },
+        "swift": {
+          "name": "EventRequest",
+          "signature": "class EventRequest"
         }
       },
       "members": [
@@ -226,6 +246,10 @@
             "rust": {
               "name": "is_cancelable",
               "signature": "pub fn is_cancelable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isCancelable",
+              "signature": "var isCancelable: Bool"
             }
           }
         },
@@ -263,6 +287,10 @@
             "rust": {
               "name": "is_cancelled",
               "signature": "pub fn is_cancelled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isCancelled",
+              "signature": "var isCancelled: Bool"
             }
           }
         },
@@ -300,6 +328,10 @@
             "rust": {
               "name": "is_pending",
               "signature": "pub fn is_pending(&self) -> bool"
+            },
+            "swift": {
+              "name": "isPending",
+              "signature": "var isPending: Bool"
             }
           }
         },
@@ -337,6 +369,10 @@
             "rust": {
               "name": "cancel",
               "signature": "pub fn cancel(&self) -> bool"
+            },
+            "swift": {
+              "name": "cancel",
+              "signature": "func cancel() -> Bool"
             }
           }
         },
@@ -376,6 +412,10 @@
             "rust": {
               "name": "defer",
               "signature": "pub fn defer(&self) -> Option<EventDecision>"
+            },
+            "swift": {
+              "name": "`defer`",
+              "signature": "func `defer`() -> EventDecision?"
             }
           }
         }

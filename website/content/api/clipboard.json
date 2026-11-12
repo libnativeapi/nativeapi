@@ -44,6 +44,10 @@
         "rust": {
           "name": "Clipboard",
           "signature": "pub struct Clipboard"
+        },
+        "swift": {
+          "name": "Clipboard",
+          "signature": "final class Clipboard: Sendable"
         }
       },
       "members": [
@@ -78,6 +82,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&ClipboardEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (ClipboardEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -115,6 +123,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "func isSupported() -> Bool"
             }
           }
         },
@@ -152,6 +164,10 @@
             "rust": {
               "name": "is_change_monitoring_supported",
               "signature": "pub fn is_change_monitoring_supported() -> bool"
+            },
+            "swift": {
+              "name": "isChangeMonitoringSupported",
+              "signature": "func isChangeMonitoringSupported() -> Bool"
             }
           }
         },
@@ -189,6 +205,10 @@
             "rust": {
               "name": "read",
               "signature": "pub fn read(callback: impl Fn(bool, ClipboardData) + 'static)"
+            },
+            "swift": {
+              "name": "read",
+              "signature": "func read(_ callback: @escaping (Bool, ClipboardData) -> Void) -> Void"
             }
           }
         },
@@ -226,6 +246,10 @@
             "rust": {
               "name": "read_text",
               "signature": "pub fn read_text(callback: impl Fn(bool, Option<String>) + 'static)"
+            },
+            "swift": {
+              "name": "readText",
+              "signature": "func readText(_ callback: @escaping (Bool, String?) -> Void) -> Void"
             }
           }
         },
@@ -263,6 +287,10 @@
             "rust": {
               "name": "read_html",
               "signature": "pub fn read_html(callback: impl Fn(bool, Option<String>) + 'static)"
+            },
+            "swift": {
+              "name": "readHtml",
+              "signature": "func readHtml(_ callback: @escaping (Bool, String?) -> Void) -> Void"
             }
           }
         },
@@ -300,6 +328,10 @@
             "rust": {
               "name": "read_image",
               "signature": "pub fn read_image(callback: impl Fn(bool, Option<Image>) + 'static)"
+            },
+            "swift": {
+              "name": "readImage",
+              "signature": "func readImage(_ callback: @escaping (Bool, Image?) -> Void) -> Void"
             }
           }
         },
@@ -337,6 +369,10 @@
             "rust": {
               "name": "read_file_paths",
               "signature": "pub fn read_file_paths(callback: impl Fn(bool, Vec<String>) + 'static)"
+            },
+            "swift": {
+              "name": "readFilePaths",
+              "signature": "func readFilePaths(_ callback: @escaping (Bool, [String]) -> Void) -> Void"
             }
           }
         },
@@ -387,6 +423,10 @@
             "rust": {
               "name": "write",
               "signature": "pub fn write(data: &ClipboardData) -> bool"
+            },
+            "swift": {
+              "name": "write",
+              "signature": "func write(_ data: ClipboardData) -> Bool"
             }
           }
         },
@@ -424,6 +464,10 @@
             "rust": {
               "name": "write_text",
               "signature": "pub fn write_text(text: &str) -> bool"
+            },
+            "swift": {
+              "name": "writeText",
+              "signature": "func writeText(_ text: String) -> Bool"
             }
           }
         },
@@ -467,6 +511,10 @@
             "rust": {
               "name": "write_html",
               "signature": "pub fn write_html(html: &str) -> bool"
+            },
+            "swift": {
+              "name": "writeHtml",
+              "signature": "func writeHtml(_ html: String) -> Bool"
             }
           }
         },
@@ -504,6 +552,10 @@
             "rust": {
               "name": "write_image",
               "signature": "pub fn write_image(image: Option<&Image>) -> bool"
+            },
+            "swift": {
+              "name": "writeImage",
+              "signature": "func writeImage(_ image: Image?) -> Bool"
             }
           }
         },
@@ -541,6 +593,10 @@
             "rust": {
               "name": "write_file_paths",
               "signature": "pub fn write_file_paths(file_paths: &[String]) -> bool"
+            },
+            "swift": {
+              "name": "writeFilePaths",
+              "signature": "func writeFilePaths(_ filePaths: [String]) -> Bool"
             }
           }
         },
@@ -578,6 +634,10 @@
             "rust": {
               "name": "clear",
               "signature": "pub fn clear() -> bool"
+            },
+            "swift": {
+              "name": "clear",
+              "signature": "func clear() -> Bool"
             }
           }
         },
@@ -615,6 +675,10 @@
             "rust": {
               "name": "is_monitoring",
               "signature": "pub fn is_monitoring() -> bool"
+            },
+            "swift": {
+              "name": "isMonitoring",
+              "signature": "func isMonitoring() -> Bool"
             }
           }
         }
@@ -654,6 +718,10 @@
         "rust": {
           "name": "ClipboardData",
           "signature": "pub struct ClipboardData"
+        },
+        "swift": {
+          "name": "ClipboardData",
+          "signature": "struct ClipboardData"
         }
       },
       "members": [
@@ -691,6 +759,10 @@
             "rust": {
               "name": "text",
               "signature": "pub text: Option<String>"
+            },
+            "swift": {
+              "name": "text",
+              "signature": "var text: String?"
             }
           }
         },
@@ -728,6 +800,10 @@
             "rust": {
               "name": "html",
               "signature": "pub html: Option<String>"
+            },
+            "swift": {
+              "name": "html",
+              "signature": "var html: String?"
             }
           }
         },
@@ -765,6 +841,10 @@
             "rust": {
               "name": "image",
               "signature": "pub image: Option<Image>"
+            },
+            "swift": {
+              "name": "image",
+              "signature": "var image: Image?"
             }
           }
         },
@@ -802,6 +882,10 @@
             "rust": {
               "name": "file_paths",
               "signature": "pub file_paths: Vec<String>"
+            },
+            "swift": {
+              "name": "filePaths",
+              "signature": "var filePaths: [String]"
             }
           }
         }
@@ -841,6 +925,10 @@
         "rust": {
           "name": "ClipboardEvent",
           "signature": "pub enum ClipboardEvent"
+        },
+        "swift": {
+          "name": "ClipboardEvent",
+          "signature": "enum ClipboardEvent"
         }
       },
       "members": [
@@ -878,6 +966,10 @@
             "rust": {
               "name": "ClipboardEvent::Changed",
               "signature": "Changed"
+            },
+            "swift": {
+              "name": "changed",
+              "signature": "case changed"
             }
           }
         }

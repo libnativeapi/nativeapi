@@ -37,6 +37,10 @@
         "rust": {
           "name": "Point",
           "signature": "pub struct Point"
+        },
+        "swift": {
+          "name": "Point",
+          "signature": "struct Point"
         }
       },
       "members": [
@@ -71,6 +75,10 @@
             "rust": {
               "name": "x",
               "signature": "pub x: f64"
+            },
+            "swift": {
+              "name": "x",
+              "signature": "var x: Double"
             }
           }
         },
@@ -105,6 +113,10 @@
             "rust": {
               "name": "y",
               "signature": "pub y: f64"
+            },
+            "swift": {
+              "name": "y",
+              "signature": "var y: Double"
             }
           }
         }
@@ -144,6 +156,10 @@
         "rust": {
           "name": "Size",
           "signature": "pub struct Size"
+        },
+        "swift": {
+          "name": "Size",
+          "signature": "struct Size"
         }
       },
       "members": [
@@ -178,6 +194,10 @@
             "rust": {
               "name": "width",
               "signature": "pub width: f64"
+            },
+            "swift": {
+              "name": "width",
+              "signature": "var width: Double"
             }
           }
         },
@@ -212,6 +232,10 @@
             "rust": {
               "name": "height",
               "signature": "pub height: f64"
+            },
+            "swift": {
+              "name": "height",
+              "signature": "var height: Double"
             }
           }
         }
@@ -251,6 +275,10 @@
         "rust": {
           "name": "Rectangle",
           "signature": "pub struct Rectangle"
+        },
+        "swift": {
+          "name": "Rectangle",
+          "signature": "struct Rectangle"
         }
       },
       "members": [
@@ -285,6 +313,10 @@
             "rust": {
               "name": "x",
               "signature": "pub x: f64"
+            },
+            "swift": {
+              "name": "x",
+              "signature": "var x: Double"
             }
           }
         },
@@ -319,6 +351,10 @@
             "rust": {
               "name": "y",
               "signature": "pub y: f64"
+            },
+            "swift": {
+              "name": "y",
+              "signature": "var y: Double"
             }
           }
         },
@@ -353,6 +389,10 @@
             "rust": {
               "name": "width",
               "signature": "pub width: f64"
+            },
+            "swift": {
+              "name": "width",
+              "signature": "var width: Double"
             }
           }
         },
@@ -387,6 +427,10 @@
             "rust": {
               "name": "height",
               "signature": "pub height: f64"
+            },
+            "swift": {
+              "name": "height",
+              "signature": "var height: Double"
             }
           }
         }
@@ -426,6 +470,10 @@
         "rust": {
           "name": "EdgeInsets",
           "signature": "pub struct EdgeInsets"
+        },
+        "swift": {
+          "name": "EdgeInsets",
+          "signature": "struct EdgeInsets"
         }
       },
       "members": [
@@ -460,6 +508,10 @@
             "rust": {
               "name": "top",
               "signature": "pub top: f64"
+            },
+            "swift": {
+              "name": "top",
+              "signature": "var top: Double"
             }
           }
         },
@@ -494,6 +546,10 @@
             "rust": {
               "name": "right",
               "signature": "pub right: f64"
+            },
+            "swift": {
+              "name": "right",
+              "signature": "var right: Double"
             }
           }
         },
@@ -528,6 +584,10 @@
             "rust": {
               "name": "bottom",
               "signature": "pub bottom: f64"
+            },
+            "swift": {
+              "name": "bottom",
+              "signature": "var bottom: Double"
             }
           }
         },
@@ -562,6 +622,10 @@
             "rust": {
               "name": "left",
               "signature": "pub left: f64"
+            },
+            "swift": {
+              "name": "left",
+              "signature": "var left: Double"
             }
           }
         },
@@ -587,6 +651,10 @@
             "python": {
               "name": "all",
               "signature": "@classmethod\ndef all(cls, value: float) -> EdgeInsets:"
+            },
+            "swift": {
+              "name": "all",
+              "signature": "static func all(_ value: Double) -> EdgeInsets"
             }
           }
         },
@@ -612,6 +680,10 @@
             "python": {
               "name": "symmetric",
               "signature": "@classmethod\ndef symmetric(cls, vertical: float, horizontal: float) -> EdgeInsets:"
+            },
+            "swift": {
+              "name": "symmetric",
+              "signature": "static func symmetric(_ vertical: Double, horizontal: Double) -> EdgeInsets"
             }
           }
         }

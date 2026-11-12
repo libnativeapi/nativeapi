@@ -38,6 +38,10 @@
         "rust": {
           "name": "PositioningStrategy",
           "signature": "pub struct PositioningStrategy"
+        },
+        "swift": {
+          "name": "PositioningStrategy",
+          "signature": "class PositioningStrategy"
         }
       },
       "members": [
@@ -83,6 +87,10 @@
             "rust": {
               "name": "absolute",
               "signature": "pub fn absolute(point: &Point) -> Option<PositioningStrategy>"
+            },
+            "swift": {
+              "name": "absolute",
+              "signature": "static func absolute(_ point: Point) -> PositioningStrategy?"
             }
           }
         },
@@ -122,6 +130,10 @@
             "rust": {
               "name": "cursor_position",
               "signature": "pub fn cursor_position() -> Option<PositioningStrategy>"
+            },
+            "swift": {
+              "name": "cursorPosition",
+              "signature": "static func cursorPosition() -> PositioningStrategy?"
             }
           }
         },
@@ -171,6 +183,10 @@
             "rust": {
               "name": "relative_with_rect_and_offset",
               "signature": "pub fn relative_with_rect_and_offset(rect: &Rectangle, offset: &Point) -> Option<PositioningStrategy>"
+            },
+            "swift": {
+              "name": "relativeWithRectAndOffset",
+              "signature": "static func relativeWithRectAndOffset(_ rect: Rectangle, offset: Point) -> PositioningStrategy?"
             }
           }
         },
@@ -220,6 +236,10 @@
             "rust": {
               "name": "relative_with_window_and_offset",
               "signature": "pub fn relative_with_window_and_offset(window: Option<&Window>, offset: &Point) -> Option<PositioningStrategy>"
+            },
+            "swift": {
+              "name": "relativeWithWindowAndOffset",
+              "signature": "static func relativeWithWindowAndOffset(_ window: Window?, offset: Point) -> PositioningStrategy?"
             }
           }
         },
@@ -258,6 +278,10 @@
             "rust": {
               "name": "r#type",
               "signature": "pub fn r#type(&self) -> PositioningStrategyType"
+            },
+            "swift": {
+              "name": "type",
+              "signature": "var type: PositioningStrategyType"
             }
           }
         },
@@ -302,6 +326,10 @@
             "rust": {
               "name": "absolute_position",
               "signature": "pub fn absolute_position(&self) -> Point"
+            },
+            "swift": {
+              "name": "absolutePosition",
+              "signature": "var absolutePosition: Point"
             }
           }
         },
@@ -350,6 +378,10 @@
             "rust": {
               "name": "relative_rectangle",
               "signature": "pub fn relative_rectangle(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "relativeRectangle",
+              "signature": "var relativeRectangle: Rectangle"
             }
           }
         },
@@ -394,6 +426,10 @@
             "rust": {
               "name": "relative_offset",
               "signature": "pub fn relative_offset(&self) -> Point"
+            },
+            "swift": {
+              "name": "relativeOffset",
+              "signature": "var relativeOffset: Point"
             }
           }
         },
@@ -438,6 +474,10 @@
             "rust": {
               "name": "relative_window",
               "signature": "pub fn relative_window(&self) -> Option<Window>"
+            },
+            "swift": {
+              "name": "relativeWindow",
+              "signature": "var relativeWindow: Window?"
             }
           }
         }
@@ -477,6 +517,10 @@
         "rust": {
           "name": "PositioningStrategyType",
           "signature": "pub enum PositioningStrategyType"
+        },
+        "swift": {
+          "name": "PositioningStrategyType",
+          "signature": "enum PositioningStrategyType: CInt"
         }
       },
       "members": [
@@ -514,6 +558,10 @@
             "rust": {
               "name": "PositioningStrategyType::Absolute",
               "signature": "Absolute = 0"
+            },
+            "swift": {
+              "name": "absolute",
+              "signature": "case absolute = 0"
             }
           }
         },
@@ -551,6 +599,10 @@
             "rust": {
               "name": "PositioningStrategyType::CursorPosition",
               "signature": "CursorPosition = 1"
+            },
+            "swift": {
+              "name": "cursorPosition",
+              "signature": "case cursorPosition = 1"
             }
           }
         },
@@ -588,6 +640,10 @@
             "rust": {
               "name": "PositioningStrategyType::Relative",
               "signature": "Relative = 2"
+            },
+            "swift": {
+              "name": "relative",
+              "signature": "case relative = 2"
             }
           }
         }

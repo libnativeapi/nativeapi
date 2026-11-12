@@ -44,6 +44,10 @@
         "rust": {
           "name": "MessageDialog",
           "signature": "pub struct MessageDialog"
+        },
+        "swift": {
+          "name": "MessageDialog",
+          "signature": "class MessageDialog"
         }
       },
       "members": [
@@ -92,6 +96,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new(title: &str, message: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ title: String, message: String) -> MessageDialog?"
             }
           }
         },
@@ -135,6 +143,10 @@
             "rust": {
               "name": "is_extended_supported",
               "signature": "pub fn is_extended_supported() -> bool"
+            },
+            "swift": {
+              "name": "isExtendedSupported",
+              "signature": "static func isExtendedSupported() -> Bool"
             }
           }
         },
@@ -172,6 +184,10 @@
             "rust": {
               "name": "set_buttons",
               "signature": "pub fn set_buttons(&self, primary: &str, secondary: &str, close: &str) -> bool"
+            },
+            "swift": {
+              "name": "setButtons",
+              "signature": "func setButtons(_ primary: String, secondary: String, close: String) -> Bool"
             }
           }
         },
@@ -206,6 +222,10 @@
             "rust": {
               "name": "set_default_button",
               "signature": "pub fn set_default_button(&self, button: MessageDialogResult) -> bool"
+            },
+            "swift": {
+              "name": "setDefaultButton",
+              "signature": "func setDefaultButton(_ button: MessageDialogResult) -> Bool"
             }
           }
         },
@@ -243,6 +263,10 @@
             "rust": {
               "name": "set_parent_window",
               "signature": "pub fn set_parent_window(&self, window: Option<&Window>) -> bool"
+            },
+            "swift": {
+              "name": "setParentWindow",
+              "signature": "func setParentWindow(_ window: Window?) -> Bool"
             }
           }
         },
@@ -277,6 +301,10 @@
             "rust": {
               "name": "result",
               "signature": "pub fn result(&self) -> MessageDialogResult"
+            },
+            "swift": {
+              "name": "result",
+              "signature": "var result: MessageDialogResult"
             }
           }
         },
@@ -314,6 +342,10 @@
             "rust": {
               "name": "is_open",
               "signature": "pub fn is_open(&self) -> bool"
+            },
+            "swift": {
+              "name": "isOpen",
+              "signature": "var isOpen: Bool"
             }
           }
         },
@@ -348,6 +380,10 @@
             "rust": {
               "name": "set_input_enabled",
               "signature": "pub fn set_input_enabled(&self, enabled: bool) -> bool"
+            },
+            "swift": {
+              "name": "setInputEnabled",
+              "signature": "func setInputEnabled(_ enabled: Bool) -> Bool"
             }
           }
         },
@@ -382,6 +418,10 @@
             "rust": {
               "name": "set_input_text",
               "signature": "pub fn set_input_text(&self, text: &str) -> bool"
+            },
+            "swift": {
+              "name": "setInputText",
+              "signature": "func setInputText(_ text: String) -> Bool"
             }
           }
         },
@@ -416,6 +456,10 @@
             "rust": {
               "name": "input_text",
               "signature": "pub fn input_text(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "inputText",
+              "signature": "var inputText: String?"
             }
           }
         },
@@ -453,6 +497,10 @@
             "rust": {
               "name": "set_checkbox",
               "signature": "pub fn set_checkbox(&self, label: &str, checked: bool) -> bool"
+            },
+            "swift": {
+              "name": "setCheckbox",
+              "signature": "func setCheckbox(_ label: String, checked: Bool) -> Bool"
             }
           }
         },
@@ -487,6 +535,10 @@
             "rust": {
               "name": "is_checkbox_checked",
               "signature": "pub fn is_checkbox_checked(&self) -> bool"
+            },
+            "swift": {
+              "name": "isCheckboxChecked",
+              "signature": "var isCheckboxChecked: Bool"
             }
           }
         },
@@ -524,6 +576,10 @@
             "rust": {
               "name": "set_progress",
               "signature": "pub fn set_progress(&self, value: f64) -> bool"
+            },
+            "swift": {
+              "name": "setProgress",
+              "signature": "func setProgress(_ value: Double) -> Bool"
             }
           }
         },
@@ -567,6 +623,10 @@
             "rust": {
               "name": "set_title",
               "signature": "pub fn set_title(&self, title: &str)"
+            },
+            "swift": {
+              "name": "setTitle",
+              "signature": "func setTitle(_ title: String) -> Void"
             }
           }
         },
@@ -605,6 +665,10 @@
             "rust": {
               "name": "title",
               "signature": "pub fn title(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "title",
+              "signature": "var title: String?"
             }
           }
         },
@@ -648,6 +712,10 @@
             "rust": {
               "name": "set_message",
               "signature": "pub fn set_message(&self, message: &str)"
+            },
+            "swift": {
+              "name": "setMessage",
+              "signature": "func setMessage(_ message: String) -> Void"
             }
           }
         },
@@ -686,6 +754,10 @@
             "rust": {
               "name": "message",
               "signature": "pub fn message(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "message",
+              "signature": "var message: String?"
             }
           }
         },
@@ -724,6 +796,10 @@
             "rust": {
               "name": "modality",
               "signature": "pub fn modality(&self) -> DialogModality"
+            },
+            "swift": {
+              "name": "modality",
+              "signature": "var modality: DialogModality"
             }
           }
         },
@@ -767,6 +843,10 @@
             "rust": {
               "name": "set_modality",
               "signature": "pub fn set_modality(&self, modality: DialogModality)"
+            },
+            "swift": {
+              "name": "setModality",
+              "signature": "func setModality(_ modality: DialogModality) -> Void"
             }
           }
         },
@@ -812,6 +892,10 @@
             "rust": {
               "name": "open",
               "signature": "pub fn open(&self) -> bool"
+            },
+            "swift": {
+              "name": "`open`",
+              "signature": "func `open`() -> Bool"
             }
           }
         },
@@ -851,6 +935,10 @@
             "rust": {
               "name": "close",
               "signature": "pub fn close(&self) -> bool"
+            },
+            "swift": {
+              "name": "close",
+              "signature": "func close() -> Bool"
             }
           }
         }
@@ -890,6 +978,10 @@
         "rust": {
           "name": "MessageDialogResult",
           "signature": "pub enum MessageDialogResult"
+        },
+        "swift": {
+          "name": "MessageDialogResult",
+          "signature": "enum MessageDialogResult: CInt"
         }
       },
       "members": [
@@ -924,6 +1016,10 @@
             "rust": {
               "name": "MessageDialogResult::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -958,6 +1054,10 @@
             "rust": {
               "name": "MessageDialogResult::Primary",
               "signature": "Primary = 1"
+            },
+            "swift": {
+              "name": "primary",
+              "signature": "case primary = 1"
             }
           }
         },
@@ -992,6 +1092,10 @@
             "rust": {
               "name": "MessageDialogResult::Secondary",
               "signature": "Secondary = 2"
+            },
+            "swift": {
+              "name": "secondary",
+              "signature": "case secondary = 2"
             }
           }
         },
@@ -1026,6 +1130,10 @@
             "rust": {
               "name": "MessageDialogResult::Close",
               "signature": "Close = 3"
+            },
+            "swift": {
+              "name": "close",
+              "signature": "case close = 3"
             }
           }
         }

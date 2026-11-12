@@ -44,6 +44,10 @@
         "rust": {
           "name": "SecureStorage",
           "signature": "pub struct SecureStorage"
+        },
+        "swift": {
+          "name": "SecureStorage",
+          "signature": "class SecureStorage"
         }
       },
       "members": [
@@ -82,6 +86,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> SecureStorage?"
             }
           }
         },
@@ -125,6 +133,10 @@
             "rust": {
               "name": "with_scope",
               "signature": "pub fn with_scope(scope: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithScope",
+              "signature": "class func createWithScope(_ scope: String) -> SecureStorage?"
             }
           }
         },
@@ -173,6 +185,10 @@
             "rust": {
               "name": "set",
               "signature": "pub fn set(&self, key: &str, value: &str) -> bool"
+            },
+            "swift": {
+              "name": "set",
+              "signature": "func set(_ key: String, value: String) -> Bool"
             }
           }
         },
@@ -221,6 +237,10 @@
             "rust": {
               "name": "get",
               "signature": "pub fn get(&self, key: &str, default_value: &str) -> Option<String>"
+            },
+            "swift": {
+              "name": "get",
+              "signature": "func get(_ key: String, defaultValue: String) -> String?"
             }
           }
         },
@@ -265,6 +285,10 @@
             "rust": {
               "name": "remove",
               "signature": "pub fn remove(&self, key: &str) -> bool"
+            },
+            "swift": {
+              "name": "remove",
+              "signature": "func remove(_ key: String) -> Bool"
             }
           }
         },
@@ -303,6 +327,10 @@
             "rust": {
               "name": "clear",
               "signature": "pub fn clear(&self) -> bool"
+            },
+            "swift": {
+              "name": "clear",
+              "signature": "func clear() -> Bool"
             }
           }
         },
@@ -347,6 +375,10 @@
             "rust": {
               "name": "contains",
               "signature": "pub fn contains(&self, key: &str) -> bool"
+            },
+            "swift": {
+              "name": "contains",
+              "signature": "func contains(_ key: String) -> Bool"
             }
           }
         },
@@ -385,6 +417,10 @@
             "rust": {
               "name": "keys",
               "signature": "pub fn keys(&self) -> Vec<String>"
+            },
+            "swift": {
+              "name": "keys",
+              "signature": "var keys: [String]"
             }
           }
         },
@@ -423,6 +459,10 @@
             "rust": {
               "name": "size",
               "signature": "pub fn size(&self) -> std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "size",
+              "signature": "var size: CUnsignedLong"
             }
           }
         },
@@ -461,6 +501,10 @@
             "rust": {
               "name": "all",
               "signature": "pub fn all(&self) -> std::collections::HashMap<String, String>"
+            },
+            "swift": {
+              "name": "all",
+              "signature": "var all: [String: String]"
             }
           }
         },
@@ -499,6 +543,10 @@
             "rust": {
               "name": "scope",
               "signature": "pub fn scope(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "scope",
+              "signature": "var scope: String?"
             }
           }
         },
@@ -537,6 +585,10 @@
             "rust": {
               "name": "is_available",
               "signature": "pub fn is_available() -> bool"
+            },
+            "swift": {
+              "name": "isAvailable",
+              "signature": "static func isAvailable() -> Bool"
             }
           }
         }

@@ -48,6 +48,10 @@
         "rust": {
           "name": "Shortcut",
           "signature": "pub struct Shortcut"
+        },
+        "swift": {
+          "name": "Shortcut",
+          "signature": "class Shortcut"
         }
       },
       "members": [
@@ -96,6 +100,10 @@
             "rust": {
               "name": "with_id_and_options",
               "signature": "pub fn with_id_and_options(id: ShortcutId, options: &ShortcutOptions) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithIdAndOptions",
+              "signature": "class func createWithIdAndOptions(_ id: ShortcutId, options: ShortcutOptions) -> Shortcut?"
             }
           }
         },
@@ -148,6 +156,10 @@
             "rust": {
               "name": "with_id_and_accelerator_and_callback",
               "signature": "pub fn with_id_and_accelerator_and_callback(id: ShortcutId, accelerator: &str, callback: impl Fn() + 'static) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithIdAndAcceleratorAndCallback",
+              "signature": "class func createWithIdAndAcceleratorAndCallback(_ id: ShortcutId, accelerator: String, callback: @escaping () -> Void) -> Shortcut?"
             }
           }
         },
@@ -186,6 +198,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> ShortcutId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: ShortcutId"
             }
           }
         },
@@ -225,6 +241,10 @@
             "rust": {
               "name": "accelerator",
               "signature": "pub fn accelerator(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "accelerator",
+              "signature": "var accelerator: String?"
             }
           }
         },
@@ -263,6 +283,10 @@
             "rust": {
               "name": "registration_key",
               "signature": "pub fn registration_key(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "registrationKey",
+              "signature": "var registrationKey: String?"
             }
           }
         },
@@ -301,6 +325,10 @@
             "rust": {
               "name": "trigger_description",
               "signature": "pub fn trigger_description(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "triggerDescription",
+              "signature": "var triggerDescription: String?"
             }
           }
         },
@@ -340,6 +368,10 @@
             "rust": {
               "name": "description",
               "signature": "pub fn description(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "description",
+              "signature": "var description: String?"
             }
           }
         },
@@ -384,6 +416,10 @@
             "rust": {
               "name": "set_description",
               "signature": "pub fn set_description(&self, description: &str)"
+            },
+            "swift": {
+              "name": "setDescription",
+              "signature": "func setDescription(_ description: String) -> Void"
             }
           }
         },
@@ -423,6 +459,10 @@
             "rust": {
               "name": "scope",
               "signature": "pub fn scope(&self) -> ShortcutScope"
+            },
+            "swift": {
+              "name": "scope",
+              "signature": "var scope: ShortcutScope"
             }
           }
         },
@@ -467,6 +507,10 @@
             "rust": {
               "name": "set_enabled",
               "signature": "pub fn set_enabled(&self, enabled: bool)"
+            },
+            "swift": {
+              "name": "setEnabled",
+              "signature": "func setEnabled(_ enabled: Bool) -> Void"
             }
           }
         },
@@ -505,6 +549,10 @@
             "rust": {
               "name": "is_enabled",
               "signature": "pub fn is_enabled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isEnabled",
+              "signature": "var isEnabled: Bool"
             }
           }
         },
@@ -553,6 +601,10 @@
             "rust": {
               "name": "invoke",
               "signature": "pub fn invoke(&self)"
+            },
+            "swift": {
+              "name": "invoke",
+              "signature": "func invoke() -> Void"
             }
           }
         },
@@ -597,6 +649,10 @@
             "rust": {
               "name": "set_callback",
               "signature": "pub fn set_callback(&self, callback: impl Fn() + 'static)"
+            },
+            "swift": {
+              "name": "setCallback",
+              "signature": "func setCallback(_ callback: @escaping () -> Void) -> Void"
             }
           }
         }
@@ -637,6 +693,10 @@
         "rust": {
           "name": "ShortcutOptions",
           "signature": "pub struct ShortcutOptions"
+        },
+        "swift": {
+          "name": "ShortcutOptions",
+          "signature": "struct ShortcutOptions"
         }
       },
       "members": [
@@ -675,6 +735,10 @@
             "rust": {
               "name": "accelerator",
               "signature": "pub accelerator: Option<String>"
+            },
+            "swift": {
+              "name": "accelerator",
+              "signature": "var accelerator: String?"
             }
           }
         },
@@ -713,6 +777,10 @@
             "rust": {
               "name": "callback",
               "signature": "pub callback: Option<std::sync::Arc<dyn Fn()>>"
+            },
+            "swift": {
+              "name": "callback",
+              "signature": "var callback: (() -> Void)?"
             }
           }
         },
@@ -751,6 +819,10 @@
             "rust": {
               "name": "description",
               "signature": "pub description: Option<String>"
+            },
+            "swift": {
+              "name": "description",
+              "signature": "var description: String?"
             }
           }
         },
@@ -789,6 +861,10 @@
             "rust": {
               "name": "scope",
               "signature": "pub scope: ShortcutScope"
+            },
+            "swift": {
+              "name": "scope",
+              "signature": "var scope: ShortcutScope"
             }
           }
         },
@@ -827,6 +903,10 @@
             "rust": {
               "name": "enabled",
               "signature": "pub enabled: bool"
+            },
+            "swift": {
+              "name": "enabled",
+              "signature": "var enabled: Bool"
             }
           }
         }
@@ -867,6 +947,10 @@
         "rust": {
           "name": "ShortcutScope",
           "signature": "pub enum ShortcutScope"
+        },
+        "swift": {
+          "name": "ShortcutScope",
+          "signature": "enum ShortcutScope: CInt"
         }
       },
       "members": [
@@ -905,6 +989,10 @@
             "rust": {
               "name": "ShortcutScope::Global",
               "signature": "Global = 0"
+            },
+            "swift": {
+              "name": "global",
+              "signature": "case global = 0"
             }
           }
         },
@@ -943,6 +1031,10 @@
             "rust": {
               "name": "ShortcutScope::Application",
               "signature": "Application = 1"
+            },
+            "swift": {
+              "name": "application",
+              "signature": "case application = 1"
             }
           }
         }
@@ -983,6 +1075,10 @@
         "rust": {
           "name": "ShortcutEvent",
           "signature": "pub enum ShortcutEvent"
+        },
+        "swift": {
+          "name": "ShortcutEvent",
+          "signature": "enum ShortcutEvent"
         }
       },
       "members": [
@@ -1021,6 +1117,10 @@
             "rust": {
               "name": "shortcut_id",
               "signature": "shortcut_id: ShortcutId"
+            },
+            "swift": {
+              "name": "shortcutId",
+              "signature": "var shortcutId: ShortcutId"
             }
           }
         },
@@ -1060,6 +1160,10 @@
             "rust": {
               "name": "accelerator",
               "signature": "accelerator: Option<String>"
+            },
+            "swift": {
+              "name": "accelerator",
+              "signature": "var accelerator: String?"
             }
           }
         },
@@ -1098,6 +1202,10 @@
             "rust": {
               "name": "ShortcutEvent::Activated",
               "signature": "Activated { shortcut_id: ShortcutId, accelerator: Option<String> }"
+            },
+            "swift": {
+              "name": "activated",
+              "signature": "case activated(shortcutId: ShortcutId, accelerator: String?)"
             }
           }
         },
@@ -1136,6 +1244,10 @@
             "rust": {
               "name": "ShortcutEvent::Registered",
               "signature": "Registered { shortcut_id: ShortcutId, accelerator: Option<String> }"
+            },
+            "swift": {
+              "name": "registered",
+              "signature": "case registered(shortcutId: ShortcutId, accelerator: String?)"
             }
           }
         },
@@ -1174,6 +1286,10 @@
             "rust": {
               "name": "ShortcutEvent::Unregistered",
               "signature": "Unregistered { shortcut_id: ShortcutId, accelerator: Option<String> }"
+            },
+            "swift": {
+              "name": "unregistered",
+              "signature": "case unregistered(shortcutId: ShortcutId, accelerator: String?)"
             }
           }
         },
@@ -1212,6 +1328,10 @@
             "rust": {
               "name": "ShortcutEvent::RegistrationFailed",
               "signature": "RegistrationFailed { shortcut_id: ShortcutId, accelerator: Option<String>, error_message: Option<String> }"
+            },
+            "swift": {
+              "name": "registrationFailed",
+              "signature": "case registrationFailed(shortcutId: ShortcutId, accelerator: String?, errorMessage: String?)"
             }
           }
         },
@@ -1251,6 +1371,10 @@
             "rust": {
               "name": "error_message",
               "signature": "error_message: Option<String>"
+            },
+            "swift": {
+              "name": "errorMessage",
+              "signature": "var errorMessage: String?"
             }
           }
         },
@@ -1295,6 +1419,10 @@
             "rust": {
               "name": "ShortcutEvent::Released",
               "signature": "Released { shortcut_id: ShortcutId, accelerator: Option<String> }"
+            },
+            "swift": {
+              "name": "released",
+              "signature": "case released(shortcutId: ShortcutId, accelerator: String?)"
             }
           }
         }
@@ -1327,6 +1455,10 @@
         "rust": {
           "name": "ShortcutId",
           "signature": "pub type ShortcutId = u32;"
+        },
+        "swift": {
+          "name": "ShortcutId",
+          "signature": "typealias ShortcutId = UInt32"
         }
       }
     }

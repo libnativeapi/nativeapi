@@ -139,6 +139,13 @@ const baseBindings = [
     command: 'git clone --recursive https://github.com/libnativeapi/nativeapi.git',
     docs: 'bindings/go',
   },
+  {
+    id: 'swift',
+    name: 'Swift',
+    color: '#F05138',
+    command: 'git clone --recursive https://github.com/libnativeapi/nativeapi.git',
+    docs: 'bindings/swift',
+  },
 ] as const
 
 type Binding = (typeof baseBindings)[number]['id']

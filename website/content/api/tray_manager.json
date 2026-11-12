@@ -48,6 +48,10 @@
         "rust": {
           "name": "TrayManager",
           "signature": "pub struct TrayManager"
+        },
+        "swift": {
+          "name": "TrayManager",
+          "signature": "final class TrayManager: Sendable"
         }
       },
       "members": [
@@ -87,6 +91,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "func isSupported() -> Bool"
             }
           }
         },
@@ -138,6 +146,10 @@
             "rust": {
               "name": "get",
               "signature": "pub fn get(id: TrayIconId) -> Option<TrayIcon>"
+            },
+            "swift": {
+              "name": "get",
+              "signature": "func get(_ id: TrayIconId) -> TrayIcon?"
             }
           }
         },
@@ -183,6 +195,10 @@
             "rust": {
               "name": "get_all",
               "signature": "pub fn get_all() -> Vec<TrayIcon>"
+            },
+            "swift": {
+              "name": "getAll",
+              "signature": "func getAll() -> [TrayIcon]"
             }
           }
         }

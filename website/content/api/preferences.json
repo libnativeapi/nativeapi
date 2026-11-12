@@ -48,6 +48,10 @@
         "rust": {
           "name": "Preferences",
           "signature": "pub struct Preferences"
+        },
+        "swift": {
+          "name": "Preferences",
+          "signature": "class Preferences"
         }
       },
       "members": [
@@ -86,6 +90,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> Preferences?"
             }
           }
         },
@@ -129,6 +137,10 @@
             "rust": {
               "name": "with_scope",
               "signature": "pub fn with_scope(scope: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithScope",
+              "signature": "class func createWithScope(_ scope: String) -> Preferences?"
             }
           }
         },
@@ -177,6 +189,10 @@
             "rust": {
               "name": "set",
               "signature": "pub fn set(&self, key: &str, value: &str) -> bool"
+            },
+            "swift": {
+              "name": "set",
+              "signature": "func set(_ key: String, value: String) -> Bool"
             }
           }
         },
@@ -225,6 +241,10 @@
             "rust": {
               "name": "get",
               "signature": "pub fn get(&self, key: &str, default_value: &str) -> Option<String>"
+            },
+            "swift": {
+              "name": "get",
+              "signature": "func get(_ key: String, defaultValue: String) -> String?"
             }
           }
         },
@@ -269,6 +289,10 @@
             "rust": {
               "name": "remove",
               "signature": "pub fn remove(&self, key: &str) -> bool"
+            },
+            "swift": {
+              "name": "remove",
+              "signature": "func remove(_ key: String) -> Bool"
             }
           }
         },
@@ -307,6 +331,10 @@
             "rust": {
               "name": "clear",
               "signature": "pub fn clear(&self) -> bool"
+            },
+            "swift": {
+              "name": "clear",
+              "signature": "func clear() -> Bool"
             }
           }
         },
@@ -351,6 +379,10 @@
             "rust": {
               "name": "contains",
               "signature": "pub fn contains(&self, key: &str) -> bool"
+            },
+            "swift": {
+              "name": "contains",
+              "signature": "func contains(_ key: String) -> Bool"
             }
           }
         },
@@ -389,6 +421,10 @@
             "rust": {
               "name": "keys",
               "signature": "pub fn keys(&self) -> Vec<String>"
+            },
+            "swift": {
+              "name": "keys",
+              "signature": "var keys: [String]"
             }
           }
         },
@@ -427,6 +463,10 @@
             "rust": {
               "name": "size",
               "signature": "pub fn size(&self) -> std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "size",
+              "signature": "var size: CUnsignedLong"
             }
           }
         },
@@ -465,6 +505,10 @@
             "rust": {
               "name": "all",
               "signature": "pub fn all(&self) -> std::collections::HashMap<String, String>"
+            },
+            "swift": {
+              "name": "all",
+              "signature": "var all: [String: String]"
             }
           }
         },
@@ -503,6 +547,10 @@
             "rust": {
               "name": "scope",
               "signature": "pub fn scope(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "scope",
+              "signature": "var scope: String?"
             }
           }
         }

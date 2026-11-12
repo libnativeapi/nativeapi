@@ -38,6 +38,10 @@
         "rust": {
           "name": "Placement",
           "signature": "pub enum Placement"
+        },
+        "swift": {
+          "name": "Placement",
+          "signature": "enum Placement: CInt"
         }
       },
       "members": [
@@ -75,6 +79,10 @@
             "rust": {
               "name": "Placement::Top",
               "signature": "Top = 0"
+            },
+            "swift": {
+              "name": "top",
+              "signature": "case top = 0"
             }
           }
         },
@@ -112,6 +120,10 @@
             "rust": {
               "name": "Placement::TopStart",
               "signature": "TopStart = 1"
+            },
+            "swift": {
+              "name": "topStart",
+              "signature": "case topStart = 1"
             }
           }
         },
@@ -149,6 +161,10 @@
             "rust": {
               "name": "Placement::TopEnd",
               "signature": "TopEnd = 2"
+            },
+            "swift": {
+              "name": "topEnd",
+              "signature": "case topEnd = 2"
             }
           }
         },
@@ -186,6 +202,10 @@
             "rust": {
               "name": "Placement::Right",
               "signature": "Right = 3"
+            },
+            "swift": {
+              "name": "right",
+              "signature": "case right = 3"
             }
           }
         },
@@ -223,6 +243,10 @@
             "rust": {
               "name": "Placement::RightStart",
               "signature": "RightStart = 4"
+            },
+            "swift": {
+              "name": "rightStart",
+              "signature": "case rightStart = 4"
             }
           }
         },
@@ -260,6 +284,10 @@
             "rust": {
               "name": "Placement::RightEnd",
               "signature": "RightEnd = 5"
+            },
+            "swift": {
+              "name": "rightEnd",
+              "signature": "case rightEnd = 5"
             }
           }
         },
@@ -297,6 +325,10 @@
             "rust": {
               "name": "Placement::Bottom",
               "signature": "Bottom = 6"
+            },
+            "swift": {
+              "name": "bottom",
+              "signature": "case bottom = 6"
             }
           }
         },
@@ -334,6 +366,10 @@
             "rust": {
               "name": "Placement::BottomStart",
               "signature": "BottomStart = 7"
+            },
+            "swift": {
+              "name": "bottomStart",
+              "signature": "case bottomStart = 7"
             }
           }
         },
@@ -371,6 +407,10 @@
             "rust": {
               "name": "Placement::BottomEnd",
               "signature": "BottomEnd = 8"
+            },
+            "swift": {
+              "name": "bottomEnd",
+              "signature": "case bottomEnd = 8"
             }
           }
         },
@@ -408,6 +448,10 @@
             "rust": {
               "name": "Placement::Left",
               "signature": "Left = 9"
+            },
+            "swift": {
+              "name": "left",
+              "signature": "case left = 9"
             }
           }
         },
@@ -445,6 +489,10 @@
             "rust": {
               "name": "Placement::LeftStart",
               "signature": "LeftStart = 10"
+            },
+            "swift": {
+              "name": "leftStart",
+              "signature": "case leftStart = 10"
             }
           }
         },
@@ -482,6 +530,10 @@
             "rust": {
               "name": "Placement::LeftEnd",
               "signature": "LeftEnd = 11"
+            },
+            "swift": {
+              "name": "leftEnd",
+              "signature": "case leftEnd = 11"
             }
           }
         }

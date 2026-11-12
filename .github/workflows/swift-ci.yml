@@ -1,0 +1,64 @@
+name: Swift CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bindings/swift/**"
+      - "core"
+      - "examples/swift_*/**"
+      - "tools/codegen/**"
+      - "codegen"
+      - ".github/workflows/swift-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "bindings/swift/**"
+      - "core"
+      - "examples/swift_*/**"
+      - "tools/codegen/**"
+      - "codegen"
+      - ".github/workflows/swift-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout core
+        run: git submodule update --init core
+      - name: Show toolchain
+        run: |
+          xcrun swift --version
+          xcodebuild -version
+      - name: Build
+        working-directory: bindings/swift
+        run: xcrun swift build
+      - name: Test
+        working-directory: bindings/swift
+        run: xcrun swift test
+      - name: Build examples
+        run: |
+          xcrun swift build --package-path examples/swift_window_example
+          xcrun swift build --package-path examples/swift_display_example
+
+  generated:
+    name: Check generated Swift API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init core
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - run: cargo test --manifest-path tools/codegen/Cargo.toml -p codegen-bindings
+      - run: ./codegen check --lang swift

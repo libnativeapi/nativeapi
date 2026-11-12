@@ -1,13 +1,13 @@
 # codegen
 
-从 C++ 头文件自动生成 **C ABI** 以及 **Rust / Dart / C# / JS / Python / Go** 各端 FFI 绑定的代码生成工具。
+从 C++ 头文件自动生成 **C ABI** 以及 **Rust / Dart / C# / JS / Python / Go / Swift** 各端 FFI 绑定的代码生成工具。
 
 ## 工作流程
 
 ```
 ┌──────────────┐   ┌──────────────────────┐   ┌────────────┐   ┌──────────────────┐
 │  C++ Header  │──→│     codegen-capi     │──→│  IR (JSON) │──→│ codegen-bindings │
-│   (core/src) │   │  libclang 解析 + IR   │   │            │   │   six bindings   │
+│   (core/src) │   │  libclang 解析 + IR   │   │            │   │ seven bindings   │
 │              │   │  生成 C ABI + 伞头文件 │   │            │   │                  │
 └──────────────┘   └──────────────────────┘   └────────────┘   └──────────────────┘
 ```
@@ -31,7 +31,7 @@ tools/codegen/
 ├── shared/       # codegen-shared：parser（libclang）、IR 模型与序列化、
 │                 #   naming（命名工具 + 跨头文件类型索引）、文件写入/校验、API_HEADERS 清单
 ├── capi/         # codegen-capi（bin）：C API（.h + .cpp）与 umbrella header 生成
-└── bindings/     # codegen-bindings（bin）：Rust / Dart / C# / JS / Python / Go FFI 绑定生成
+└── bindings/     # codegen-bindings（bin）：Rust / Dart / C# / JS / Python / Go / Swift 绑定生成
 ```
 
 ## 运行
@@ -42,7 +42,7 @@ tools/codegen/
 ```bash
 ./codegen                    # 全量：C ABI → 所有绑定
 ./codegen capi               # 只生成 C ABI
-./codegen bindings           # 只生成绑定（--lang rust,dart,csharp,js,python,go 可选子集）
+./codegen bindings           # 只生成绑定（--lang rust,dart,csharp,js,python,go,swift 可选子集）
 ./codegen check              # 只读校验，生成物过期时非零退出（给 CI 用）
 ./codegen sync               # 改完 core 后的一键联动（见下）
 ./codegen --dump-ir ir.json  # 把中间 IR 保留到指定路径调试
@@ -75,7 +75,8 @@ bindgen / dart 未安装时对应步骤跳过并告警。
 6. JS / TS → `bindings/js/src/` + `bindings/js/lib/`
 7. Python → `bindings/python/nativeapi/`
 8. Go → `bindings/go/nativeapi.gen.go` + `bindings/go/bridge.gen.h`
-9. API 参考 → `website/content/api/`（`index.json` + 每个头文件一个 JSON，供网站 `/api` 页面使用）
+9. Swift → `bindings/swift/Sources/NativeAPI/`（按头文件分文件，另加 `Support.swift`）
+10. API 参考 → `website/content/api/`（`index.json` + 每个头文件一个 JSON，供网站 `/api` 页面使用）
 
 ### API 参考
 
@@ -87,7 +88,7 @@ parser 用 libclang 读取头文件里的 doxygen 注释（`@brief` / `@param` /
 每个生成器的 `reference()` 返回它为各符号生成的名字与声明，必须与渲染绑定调用同一个
 签名辅助函数，不能另写一套命名或类型规则；某绑定不生成的符号不出现在它的 reference 里，
 网站显示为"该语言不可用"。`codegen-bindings --api-reference <dir>` 把 IR 文档、C++ 签名与
-六个绑定的 reference 汇总成 JSON（`bindings/src/api_reference.rs`），
+七个绑定的 reference 汇总成 JSON（`bindings/src/api_reference.rs`），
 `--dump-reference <file>` 可导出原始 reference 便于排查。JSON 无法写注释，生成标记是
 首个键 `"$comment"`。
 
@@ -100,6 +101,12 @@ C ABI 没有详细原因的失败只包装 `ErrOperationFailed`，不猜测平�
 单例生成导出的无状态值及其方法，例如 `DisplayManager.All()`、`Application.Run()`；
 实现类型保持私有，调用不需要创建或释放 Manager。
 Go 的原生构建、主线程约束及示例见 [bindings/go/README.md](../../bindings/go/README.md)。
+
+Swift 生成物镜像 `core/src/` 的目录结构（`foundation/geometry.h` → `Sources/NativeAPI/Foundation/Geometry.swift`），
+`Support.swift` 与各模块一样由生成器维护。Swift 包通过 SwiftPM 直接编译 `core/` 子模块
+（`Sources/CNativeAPI/core` 是指向仓库根 `core/` 的符号链接），不需要 CMake，也没有额外的原生库。
+Swift 源码由 Xcode 自带工具链构建，生成器不做格式化。构建、所有权与事件说明见
+[bindings/swift/README.md](../../bindings/swift/README.md)。
 
 `core/src/capi/` 的公开 ABI 由本工具生成，手写支持层为
 `string_utils_c.{h,cpp}`（字符串 / 值容器）、`user_data.h`（回调资源）和

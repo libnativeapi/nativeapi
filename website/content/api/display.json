@@ -38,6 +38,10 @@
         "rust": {
           "name": "Display",
           "signature": "pub struct Display"
+        },
+        "swift": {
+          "name": "Display",
+          "signature": "class Display"
         }
       },
       "members": [
@@ -87,6 +91,10 @@
             "rust": {
               "name": "new",
               "signature": "pub unsafe fn new(display: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create(_ display: UnsafeMutableRawPointer?) -> Display?"
             }
           }
         },
@@ -121,6 +129,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> DisplayId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: DisplayId"
             }
           }
         },
@@ -155,6 +167,10 @@
             "rust": {
               "name": "name",
               "signature": "pub fn name(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "name",
+              "signature": "var name: String?"
             }
           }
         },
@@ -189,6 +205,10 @@
             "rust": {
               "name": "position",
               "signature": "pub fn position(&self) -> Point"
+            },
+            "swift": {
+              "name": "position",
+              "signature": "var position: Point"
             }
           }
         },
@@ -223,6 +243,10 @@
             "rust": {
               "name": "size",
               "signature": "pub fn size(&self) -> Size"
+            },
+            "swift": {
+              "name": "size",
+              "signature": "var size: Size"
             }
           }
         },
@@ -257,6 +281,10 @@
             "rust": {
               "name": "work_area",
               "signature": "pub fn work_area(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "workArea",
+              "signature": "var workArea: Rectangle"
             }
           }
         },
@@ -291,6 +319,10 @@
             "rust": {
               "name": "scale_factor",
               "signature": "pub fn scale_factor(&self) -> f64"
+            },
+            "swift": {
+              "name": "scaleFactor",
+              "signature": "var scaleFactor: Double"
             }
           }
         },
@@ -325,6 +357,10 @@
             "rust": {
               "name": "is_primary",
               "signature": "pub fn is_primary(&self) -> bool"
+            },
+            "swift": {
+              "name": "isPrimary",
+              "signature": "var isPrimary: Bool"
             }
           }
         },
@@ -359,6 +395,10 @@
             "rust": {
               "name": "orientation",
               "signature": "pub fn orientation(&self) -> DisplayOrientation"
+            },
+            "swift": {
+              "name": "orientation",
+              "signature": "var orientation: DisplayOrientation"
             }
           }
         },
@@ -393,6 +433,10 @@
             "rust": {
               "name": "refresh_rate",
               "signature": "pub fn refresh_rate(&self) -> i32"
+            },
+            "swift": {
+              "name": "refreshRate",
+              "signature": "var refreshRate: CInt"
             }
           }
         },
@@ -436,6 +480,10 @@
             "rust": {
               "name": "bit_depth",
               "signature": "pub fn bit_depth(&self) -> i32"
+            },
+            "swift": {
+              "name": "bitDepth",
+              "signature": "var bitDepth: CInt"
             }
           }
         }
@@ -475,6 +523,10 @@
         "rust": {
           "name": "DisplayOrientation",
           "signature": "pub enum DisplayOrientation"
+        },
+        "swift": {
+          "name": "DisplayOrientation",
+          "signature": "enum DisplayOrientation: CInt"
         }
       },
       "members": [
@@ -509,6 +561,10 @@
             "rust": {
               "name": "DisplayOrientation::Portrait",
               "signature": "Portrait = 0"
+            },
+            "swift": {
+              "name": "portrait",
+              "signature": "case portrait = 0"
             }
           }
         },
@@ -543,6 +599,10 @@
             "rust": {
               "name": "DisplayOrientation::Landscape",
               "signature": "Landscape = 90"
+            },
+            "swift": {
+              "name": "landscape",
+              "signature": "case landscape = 90"
             }
           }
         },
@@ -577,6 +637,10 @@
             "rust": {
               "name": "DisplayOrientation::PortraitFlipped",
               "signature": "PortraitFlipped = 180"
+            },
+            "swift": {
+              "name": "portraitFlipped",
+              "signature": "case portraitFlipped = 180"
             }
           }
         },
@@ -611,6 +675,10 @@
             "rust": {
               "name": "DisplayOrientation::LandscapeFlipped",
               "signature": "LandscapeFlipped = 270"
+            },
+            "swift": {
+              "name": "landscapeFlipped",
+              "signature": "case landscapeFlipped = 270"
             }
           }
         }
@@ -651,6 +719,10 @@
         "rust": {
           "name": "DisplayEvent",
           "signature": "pub enum DisplayEvent"
+        },
+        "swift": {
+          "name": "DisplayEvent",
+          "signature": "enum DisplayEvent"
         }
       },
       "members": [
@@ -689,6 +761,10 @@
             "rust": {
               "name": "display",
               "signature": "display: DisplayRef"
+            },
+            "swift": {
+              "name": "display",
+              "signature": "var display: Display?"
             }
           }
         },
@@ -727,6 +803,10 @@
             "rust": {
               "name": "DisplayEvent::Added",
               "signature": "Added { display: DisplayRef }"
+            },
+            "swift": {
+              "name": "added",
+              "signature": "case added(display: Display?)"
             }
           }
         },
@@ -765,6 +845,10 @@
             "rust": {
               "name": "DisplayEvent::Removed",
               "signature": "Removed { display: DisplayRef }"
+            },
+            "swift": {
+              "name": "removed",
+              "signature": "case removed(display: Display?)"
             }
           }
         },
@@ -803,6 +887,10 @@
             "rust": {
               "name": "DisplayEvent::Changed",
               "signature": "Changed { display: DisplayRef }"
+            },
+            "swift": {
+              "name": "changed",
+              "signature": "case changed(display: Display?)"
             }
           }
         }
@@ -839,6 +927,10 @@
         "rust": {
           "name": "DisplayId",
           "signature": "pub type DisplayId = u32;"
+        },
+        "swift": {
+          "name": "DisplayId",
+          "signature": "typealias DisplayId = UInt32"
         }
       }
     }

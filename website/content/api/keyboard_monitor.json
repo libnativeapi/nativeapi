@@ -38,6 +38,10 @@
         "rust": {
           "name": "KeyboardMonitor",
           "signature": "pub struct KeyboardMonitor"
+        },
+        "swift": {
+          "name": "KeyboardMonitor",
+          "signature": "class KeyboardMonitor"
         }
       },
       "members": [
@@ -72,6 +76,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> KeyboardMonitor?"
             }
           }
         },
@@ -106,6 +114,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&KeyboardEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (KeyboardEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -150,6 +162,10 @@
             "rust": {
               "name": "start",
               "signature": "pub fn start(&self)"
+            },
+            "swift": {
+              "name": "start",
+              "signature": "func start() -> Void"
             }
           }
         },
@@ -194,6 +210,10 @@
             "rust": {
               "name": "stop",
               "signature": "pub fn stop(&self)"
+            },
+            "swift": {
+              "name": "stop",
+              "signature": "func stop() -> Void"
             }
           }
         },
@@ -238,6 +258,10 @@
             "rust": {
               "name": "is_monitoring",
               "signature": "pub fn is_monitoring(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMonitoring",
+              "signature": "var isMonitoring: Bool"
             }
           }
         }

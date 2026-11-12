@@ -48,6 +48,10 @@
         "rust": {
           "name": "Window",
           "signature": "pub struct Window"
+        },
+        "swift": {
+          "name": "Window",
+          "signature": "class Window"
         }
       },
       "members": [
@@ -92,6 +96,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> Window?"
             }
           }
         },
@@ -141,6 +149,10 @@
             "rust": {
               "name": "with_native_window",
               "signature": "pub unsafe fn with_native_window(native_window: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithNativeWindow",
+              "signature": "class func createWithNativeWindow(_ nativeWindow: UnsafeMutableRawPointer?) -> Window?"
             }
           }
         },
@@ -175,6 +187,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&WindowEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (WindowEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -213,6 +229,10 @@
             "rust": {
               "name": "is_close_supported",
               "signature": "pub fn is_close_supported() -> bool"
+            },
+            "swift": {
+              "name": "isCloseSupported",
+              "signature": "static func isCloseSupported() -> Bool"
             }
           }
         },
@@ -262,6 +282,10 @@
             "rust": {
               "name": "close",
               "signature": "pub fn close(&self) -> bool"
+            },
+            "swift": {
+              "name": "close",
+              "signature": "func close() -> Bool"
             }
           }
         },
@@ -300,6 +324,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> WindowId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: WindowId"
             }
           }
         },
@@ -345,6 +373,10 @@
             "rust": {
               "name": "native_number",
               "signature": "pub fn native_number(&self) -> WindowNumber"
+            },
+            "swift": {
+              "name": "nativeNumber",
+              "signature": "var nativeNumber: WindowNumber"
             }
           }
         },
@@ -384,6 +416,10 @@
             "rust": {
               "name": "content_view",
               "signature": "pub fn content_view(&self) -> Option<View>"
+            },
+            "swift": {
+              "name": "contentView",
+              "signature": "var contentView: View?"
             }
           }
         },
@@ -428,6 +464,10 @@
             "rust": {
               "name": "focus",
               "signature": "pub fn focus(&self)"
+            },
+            "swift": {
+              "name": "focus",
+              "signature": "func focus() -> Void"
             }
           }
         },
@@ -472,6 +512,10 @@
             "rust": {
               "name": "blur",
               "signature": "pub fn blur(&self)"
+            },
+            "swift": {
+              "name": "blur",
+              "signature": "func blur() -> Void"
             }
           }
         },
@@ -510,6 +554,10 @@
             "rust": {
               "name": "is_focused",
               "signature": "pub fn is_focused(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFocused",
+              "signature": "var isFocused: Bool"
             }
           }
         },
@@ -554,6 +602,10 @@
             "rust": {
               "name": "show",
               "signature": "pub fn show(&self)"
+            },
+            "swift": {
+              "name": "show",
+              "signature": "func show() -> Void"
             }
           }
         },
@@ -592,6 +644,10 @@
             "rust": {
               "name": "show_inactive",
               "signature": "pub fn show_inactive(&self)"
+            },
+            "swift": {
+              "name": "showInactive",
+              "signature": "func showInactive() -> Void"
             }
           }
         },
@@ -630,6 +686,10 @@
             "rust": {
               "name": "hide",
               "signature": "pub fn hide(&self)"
+            },
+            "swift": {
+              "name": "hide",
+              "signature": "func hide() -> Void"
             }
           }
         },
@@ -674,6 +734,10 @@
             "rust": {
               "name": "is_visible",
               "signature": "pub fn is_visible(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisible",
+              "signature": "var isVisible: Bool"
             }
           }
         },
@@ -719,6 +783,10 @@
             "rust": {
               "name": "occlusion_state",
               "signature": "pub fn occlusion_state(&self) -> WindowOcclusionState"
+            },
+            "swift": {
+              "name": "occlusionState",
+              "signature": "var occlusionState: WindowOcclusionState"
             }
           }
         },
@@ -762,6 +830,10 @@
             "rust": {
               "name": "is_occlusion_state_supported",
               "signature": "pub fn is_occlusion_state_supported() -> bool"
+            },
+            "swift": {
+              "name": "isOcclusionStateSupported",
+              "signature": "static func isOcclusionStateSupported() -> Bool"
             }
           }
         },
@@ -800,6 +872,10 @@
             "rust": {
               "name": "maximize",
               "signature": "pub fn maximize(&self)"
+            },
+            "swift": {
+              "name": "maximize",
+              "signature": "func maximize() -> Void"
             }
           }
         },
@@ -851,6 +927,10 @@
             "rust": {
               "name": "set_maximized_vertically",
               "signature": "pub fn set_maximized_vertically(&self, is_maximized_vertically: bool) -> bool"
+            },
+            "swift": {
+              "name": "setMaximizedVertically",
+              "signature": "func setMaximizedVertically(_ isMaximizedVertically: Bool) -> Bool"
             }
           }
         },
@@ -895,6 +975,10 @@
             "rust": {
               "name": "is_maximized_vertically",
               "signature": "pub fn is_maximized_vertically(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMaximizedVertically",
+              "signature": "var isMaximizedVertically: Bool"
             }
           }
         },
@@ -933,6 +1017,10 @@
             "rust": {
               "name": "is_vertical_maximize_supported",
               "signature": "pub fn is_vertical_maximize_supported() -> bool"
+            },
+            "swift": {
+              "name": "isVerticalMaximizeSupported",
+              "signature": "static func isVerticalMaximizeSupported() -> Bool"
             }
           }
         },
@@ -988,6 +1076,10 @@
             "rust": {
               "name": "dock",
               "signature": "pub fn dock(&self, side: WindowDockSide, width: f64) -> bool"
+            },
+            "swift": {
+              "name": "dock",
+              "signature": "func dock(_ side: WindowDockSide, width: Double) -> Bool"
             }
           }
         },
@@ -1032,6 +1124,10 @@
             "rust": {
               "name": "undock",
               "signature": "pub fn undock(&self) -> bool"
+            },
+            "swift": {
+              "name": "undock",
+              "signature": "func undock() -> Bool"
             }
           }
         },
@@ -1076,6 +1172,10 @@
             "rust": {
               "name": "dock_side",
               "signature": "pub fn dock_side(&self) -> WindowDockSide"
+            },
+            "swift": {
+              "name": "dockSide",
+              "signature": "var dockSide: WindowDockSide"
             }
           }
         },
@@ -1114,6 +1214,10 @@
             "rust": {
               "name": "is_docking_supported",
               "signature": "pub fn is_docking_supported() -> bool"
+            },
+            "swift": {
+              "name": "isDockingSupported",
+              "signature": "static func isDockingSupported() -> Bool"
             }
           }
         },
@@ -1152,6 +1256,10 @@
             "rust": {
               "name": "unmaximize",
               "signature": "pub fn unmaximize(&self)"
+            },
+            "swift": {
+              "name": "unmaximize",
+              "signature": "func unmaximize() -> Void"
             }
           }
         },
@@ -1190,6 +1298,10 @@
             "rust": {
               "name": "is_maximized",
               "signature": "pub fn is_maximized(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMaximized",
+              "signature": "var isMaximized: Bool"
             }
           }
         },
@@ -1228,6 +1340,10 @@
             "rust": {
               "name": "minimize",
               "signature": "pub fn minimize(&self)"
+            },
+            "swift": {
+              "name": "minimize",
+              "signature": "func minimize() -> Void"
             }
           }
         },
@@ -1266,6 +1382,10 @@
             "rust": {
               "name": "restore",
               "signature": "pub fn restore(&self)"
+            },
+            "swift": {
+              "name": "restore",
+              "signature": "func restore() -> Void"
             }
           }
         },
@@ -1304,6 +1424,10 @@
             "rust": {
               "name": "is_minimized",
               "signature": "pub fn is_minimized(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMinimized",
+              "signature": "var isMinimized: Bool"
             }
           }
         },
@@ -1354,6 +1478,10 @@
             "rust": {
               "name": "set_full_screen",
               "signature": "pub fn set_full_screen(&self, is_full_screen: bool)"
+            },
+            "swift": {
+              "name": "setFullScreen",
+              "signature": "func setFullScreen(_ isFullScreen: Bool) -> Void"
             }
           }
         },
@@ -1398,6 +1526,10 @@
             "rust": {
               "name": "is_full_screen",
               "signature": "pub fn is_full_screen(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFullScreen",
+              "signature": "var isFullScreen: Bool"
             }
           }
         },
@@ -1442,6 +1574,10 @@
             "rust": {
               "name": "set_bounds",
               "signature": "pub fn set_bounds(&self, bounds: &Rectangle)"
+            },
+            "swift": {
+              "name": "setBounds",
+              "signature": "func setBounds(_ bounds: Rectangle) -> Void"
             }
           }
         },
@@ -1493,6 +1629,10 @@
             "rust": {
               "name": "animate_bounds",
               "signature": "pub fn animate_bounds(&self, bounds: &Rectangle) -> bool"
+            },
+            "swift": {
+              "name": "animateBounds",
+              "signature": "func animateBounds(_ bounds: Rectangle) -> Bool"
             }
           }
         },
@@ -1531,6 +1671,10 @@
             "rust": {
               "name": "is_bounds_animation_supported",
               "signature": "pub fn is_bounds_animation_supported() -> bool"
+            },
+            "swift": {
+              "name": "isBoundsAnimationSupported",
+              "signature": "static func isBoundsAnimationSupported() -> Bool"
             }
           }
         },
@@ -1570,6 +1714,10 @@
             "rust": {
               "name": "bounds",
               "signature": "pub fn bounds(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "bounds",
+              "signature": "var bounds: Rectangle"
             }
           }
         },
@@ -1614,6 +1762,10 @@
             "rust": {
               "name": "set_content_bounds",
               "signature": "pub fn set_content_bounds(&self, bounds: &Rectangle)"
+            },
+            "swift": {
+              "name": "setContentBounds",
+              "signature": "func setContentBounds(_ bounds: Rectangle) -> Void"
             }
           }
         },
@@ -1653,6 +1805,10 @@
             "rust": {
               "name": "content_bounds",
               "signature": "pub fn content_bounds(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "contentBounds",
+              "signature": "var contentBounds: Rectangle"
             }
           }
         },
@@ -1701,6 +1857,10 @@
             "rust": {
               "name": "set_size",
               "signature": "pub fn set_size(&self, size: &Size, animate: bool)"
+            },
+            "swift": {
+              "name": "setSize",
+              "signature": "func setSize(_ size: Size, animate: Bool) -> Void"
             }
           }
         },
@@ -1739,6 +1899,10 @@
             "rust": {
               "name": "size",
               "signature": "pub fn size(&self) -> Size"
+            },
+            "swift": {
+              "name": "size",
+              "signature": "var size: Size"
             }
           }
         },
@@ -1783,6 +1947,10 @@
             "rust": {
               "name": "set_content_size",
               "signature": "pub fn set_content_size(&self, size: &Size)"
+            },
+            "swift": {
+              "name": "setContentSize",
+              "signature": "func setContentSize(_ size: Size) -> Void"
             }
           }
         },
@@ -1821,6 +1989,10 @@
             "rust": {
               "name": "content_size",
               "signature": "pub fn content_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "contentSize",
+              "signature": "var contentSize: Size"
             }
           }
         },
@@ -1865,6 +2037,10 @@
             "rust": {
               "name": "set_minimum_size",
               "signature": "pub fn set_minimum_size(&self, size: &Size)"
+            },
+            "swift": {
+              "name": "setMinimumSize",
+              "signature": "func setMinimumSize(_ size: Size) -> Void"
             }
           }
         },
@@ -1903,6 +2079,10 @@
             "rust": {
               "name": "minimum_size",
               "signature": "pub fn minimum_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "minimumSize",
+              "signature": "var minimumSize: Size"
             }
           }
         },
@@ -1947,6 +2127,10 @@
             "rust": {
               "name": "set_maximum_size",
               "signature": "pub fn set_maximum_size(&self, size: &Size)"
+            },
+            "swift": {
+              "name": "setMaximumSize",
+              "signature": "func setMaximumSize(_ size: Size) -> Void"
             }
           }
         },
@@ -1985,6 +2169,10 @@
             "rust": {
               "name": "maximum_size",
               "signature": "pub fn maximum_size(&self) -> Size"
+            },
+            "swift": {
+              "name": "maximumSize",
+              "signature": "var maximumSize: Size"
             }
           }
         },
@@ -2035,6 +2223,10 @@
             "rust": {
               "name": "set_aspect_ratio",
               "signature": "pub fn set_aspect_ratio(&self, aspect_ratio: f64)"
+            },
+            "swift": {
+              "name": "setAspectRatio",
+              "signature": "func setAspectRatio(_ aspectRatio: Double) -> Void"
             }
           }
         },
@@ -2074,6 +2266,10 @@
             "rust": {
               "name": "aspect_ratio",
               "signature": "pub fn aspect_ratio(&self) -> f64"
+            },
+            "swift": {
+              "name": "aspectRatio",
+              "signature": "var aspectRatio: Double"
             }
           }
         },
@@ -2118,6 +2314,10 @@
             "rust": {
               "name": "set_resizable",
               "signature": "pub fn set_resizable(&self, is_resizable: bool)"
+            },
+            "swift": {
+              "name": "setResizable",
+              "signature": "func setResizable(_ isResizable: Bool) -> Void"
             }
           }
         },
@@ -2156,6 +2356,10 @@
             "rust": {
               "name": "is_resizable",
               "signature": "pub fn is_resizable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isResizable",
+              "signature": "var isResizable: Bool"
             }
           }
         },
@@ -2200,6 +2404,10 @@
             "rust": {
               "name": "set_movable",
               "signature": "pub fn set_movable(&self, is_movable: bool)"
+            },
+            "swift": {
+              "name": "setMovable",
+              "signature": "func setMovable(_ isMovable: Bool) -> Void"
             }
           }
         },
@@ -2238,6 +2446,10 @@
             "rust": {
               "name": "is_movable",
               "signature": "pub fn is_movable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMovable",
+              "signature": "var isMovable: Bool"
             }
           }
         },
@@ -2288,6 +2500,10 @@
             "rust": {
               "name": "set_minimizable",
               "signature": "pub fn set_minimizable(&self, is_minimizable: bool)"
+            },
+            "swift": {
+              "name": "setMinimizable",
+              "signature": "func setMinimizable(_ isMinimizable: Bool) -> Void"
             }
           }
         },
@@ -2332,6 +2548,10 @@
             "rust": {
               "name": "is_minimizable",
               "signature": "pub fn is_minimizable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMinimizable",
+              "signature": "var isMinimizable: Bool"
             }
           }
         },
@@ -2382,6 +2602,10 @@
             "rust": {
               "name": "set_maximizable",
               "signature": "pub fn set_maximizable(&self, is_maximizable: bool)"
+            },
+            "swift": {
+              "name": "setMaximizable",
+              "signature": "func setMaximizable(_ isMaximizable: Bool) -> Void"
             }
           }
         },
@@ -2426,6 +2650,10 @@
             "rust": {
               "name": "is_maximizable",
               "signature": "pub fn is_maximizable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMaximizable",
+              "signature": "var isMaximizable: Bool"
             }
           }
         },
@@ -2476,6 +2704,10 @@
             "rust": {
               "name": "set_full_screenable",
               "signature": "pub fn set_full_screenable(&self, is_full_screenable: bool)"
+            },
+            "swift": {
+              "name": "setFullScreenable",
+              "signature": "func setFullScreenable(_ isFullScreenable: Bool) -> Void"
             }
           }
         },
@@ -2520,6 +2752,10 @@
             "rust": {
               "name": "is_full_screenable",
               "signature": "pub fn is_full_screenable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFullScreenable",
+              "signature": "var isFullScreenable: Bool"
             }
           }
         },
@@ -2570,6 +2806,10 @@
             "rust": {
               "name": "set_closable",
               "signature": "pub fn set_closable(&self, is_closable: bool)"
+            },
+            "swift": {
+              "name": "setClosable",
+              "signature": "func setClosable(_ isClosable: Bool) -> Void"
             }
           }
         },
@@ -2614,6 +2854,10 @@
             "rust": {
               "name": "is_closable",
               "signature": "pub fn is_closable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isClosable",
+              "signature": "var isClosable: Bool"
             }
           }
         },
@@ -2664,6 +2908,10 @@
             "rust": {
               "name": "set_window_control_buttons_visible",
               "signature": "pub fn set_window_control_buttons_visible(&self, is_visible: bool)"
+            },
+            "swift": {
+              "name": "setWindowControlButtonsVisible",
+              "signature": "func setWindowControlButtonsVisible(_ isVisible: Bool) -> Void"
             }
           }
         },
@@ -2712,6 +2960,10 @@
             "rust": {
               "name": "is_window_control_buttons_visible",
               "signature": "pub fn is_window_control_buttons_visible(&self) -> bool"
+            },
+            "swift": {
+              "name": "isWindowControlButtonsVisible",
+              "signature": "var isWindowControlButtonsVisible: Bool"
             }
           }
         },
@@ -2756,6 +3008,10 @@
             "rust": {
               "name": "set_always_on_top",
               "signature": "pub fn set_always_on_top(&self, is_always_on_top: bool)"
+            },
+            "swift": {
+              "name": "setAlwaysOnTop",
+              "signature": "func setAlwaysOnTop(_ isAlwaysOnTop: Bool) -> Void"
             }
           }
         },
@@ -2794,6 +3050,10 @@
             "rust": {
               "name": "is_always_on_top",
               "signature": "pub fn is_always_on_top(&self) -> bool"
+            },
+            "swift": {
+              "name": "isAlwaysOnTop",
+              "signature": "var isAlwaysOnTop: Bool"
             }
           }
         },
@@ -2844,6 +3104,10 @@
             "rust": {
               "name": "set_always_on_bottom",
               "signature": "pub fn set_always_on_bottom(&self, is_always_on_bottom: bool)"
+            },
+            "swift": {
+              "name": "setAlwaysOnBottom",
+              "signature": "func setAlwaysOnBottom(_ isAlwaysOnBottom: Bool) -> Void"
             }
           }
         },
@@ -2882,6 +3146,10 @@
             "rust": {
               "name": "is_always_on_bottom",
               "signature": "pub fn is_always_on_bottom(&self) -> bool"
+            },
+            "swift": {
+              "name": "isAlwaysOnBottom",
+              "signature": "var isAlwaysOnBottom: Bool"
             }
           }
         },
@@ -2933,6 +3201,10 @@
             "rust": {
               "name": "set_parent_window",
               "signature": "pub fn set_parent_window(&self, parent: Option<&Window>) -> bool"
+            },
+            "swift": {
+              "name": "setParentWindow",
+              "signature": "func setParentWindow(_ parent: Window?) -> Bool"
             }
           }
         },
@@ -2978,6 +3250,10 @@
             "rust": {
               "name": "parent_window",
               "signature": "pub fn parent_window(&self) -> Option<Window>"
+            },
+            "swift": {
+              "name": "parentWindow",
+              "signature": "var parentWindow: Window?"
             }
           }
         },
@@ -3028,6 +3304,10 @@
             "rust": {
               "name": "set_non_activating",
               "signature": "pub fn set_non_activating(&self, is_non_activating: bool)"
+            },
+            "swift": {
+              "name": "setNonActivating",
+              "signature": "func setNonActivating(_ isNonActivating: Bool) -> Void"
             }
           }
         },
@@ -3072,6 +3352,10 @@
             "rust": {
               "name": "is_non_activating",
               "signature": "pub fn is_non_activating(&self) -> bool"
+            },
+            "swift": {
+              "name": "isNonActivating",
+              "signature": "var isNonActivating: Bool"
             }
           }
         },
@@ -3116,6 +3400,10 @@
             "rust": {
               "name": "set_position",
               "signature": "pub fn set_position(&self, point: &Point)"
+            },
+            "swift": {
+              "name": "setPosition",
+              "signature": "func setPosition(_ point: Point) -> Void"
             }
           }
         },
@@ -3154,6 +3442,10 @@
             "rust": {
               "name": "position",
               "signature": "pub fn position(&self) -> Point"
+            },
+            "swift": {
+              "name": "position",
+              "signature": "var position: Point"
             }
           }
         },
@@ -3192,6 +3484,10 @@
             "rust": {
               "name": "center",
               "signature": "pub fn center(&self)"
+            },
+            "swift": {
+              "name": "center",
+              "signature": "func center() -> Void"
             }
           }
         },
@@ -3235,6 +3531,10 @@
             "rust": {
               "name": "set_title",
               "signature": "pub fn set_title(&self, title: &str)"
+            },
+            "swift": {
+              "name": "setTitle",
+              "signature": "func setTitle(_ title: String) -> Void"
             }
           }
         },
@@ -3273,6 +3573,10 @@
             "rust": {
               "name": "title",
               "signature": "pub fn title(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "title",
+              "signature": "var title: String?"
             }
           }
         },
@@ -3310,6 +3614,10 @@
             "rust": {
               "name": "set_title_bar_colors",
               "signature": "pub fn set_title_bar_colors(&self, background: &Color, foreground: &Color) -> bool"
+            },
+            "swift": {
+              "name": "setTitleBarColors",
+              "signature": "func setTitleBarColors(_ background: Color, foreground: Color) -> Bool"
             }
           }
         },
@@ -3344,6 +3652,10 @@
             "rust": {
               "name": "reset_title_bar_colors",
               "signature": "pub fn reset_title_bar_colors(&self) -> bool"
+            },
+            "swift": {
+              "name": "resetTitleBarColors",
+              "signature": "func resetTitleBarColors() -> Bool"
             }
           }
         },
@@ -3395,6 +3707,10 @@
             "rust": {
               "name": "set_frameless",
               "signature": "pub fn set_frameless(&self, is_frameless: bool) -> bool"
+            },
+            "swift": {
+              "name": "setFrameless",
+              "signature": "func setFrameless(_ isFrameless: Bool) -> Bool"
             }
           }
         },
@@ -3440,6 +3756,10 @@
             "rust": {
               "name": "is_frameless",
               "signature": "pub fn is_frameless(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFrameless",
+              "signature": "var isFrameless: Bool"
             }
           }
         },
@@ -3490,6 +3810,10 @@
             "rust": {
               "name": "set_title_bar_style",
               "signature": "pub fn set_title_bar_style(&self, style: TitleBarStyle)"
+            },
+            "swift": {
+              "name": "setTitleBarStyle",
+              "signature": "func setTitleBarStyle(_ style: TitleBarStyle) -> Void"
             }
           }
         },
@@ -3534,6 +3858,10 @@
             "rust": {
               "name": "title_bar_style",
               "signature": "pub fn title_bar_style(&self) -> TitleBarStyle"
+            },
+            "swift": {
+              "name": "titleBarStyle",
+              "signature": "var titleBarStyle: TitleBarStyle"
             }
           }
         },
@@ -3585,6 +3913,10 @@
             "rust": {
               "name": "set_corner_preference",
               "signature": "pub fn set_corner_preference(&self, preference: WindowCornerPreference) -> bool"
+            },
+            "swift": {
+              "name": "setCornerPreference",
+              "signature": "func setCornerPreference(_ preference: WindowCornerPreference) -> Bool"
             }
           }
         },
@@ -3630,6 +3962,10 @@
             "rust": {
               "name": "corner_preference",
               "signature": "pub fn corner_preference(&self) -> WindowCornerPreference"
+            },
+            "swift": {
+              "name": "cornerPreference",
+              "signature": "var cornerPreference: WindowCornerPreference"
             }
           }
         },
@@ -3674,6 +4010,10 @@
             "rust": {
               "name": "is_corner_preference_supported",
               "signature": "pub fn is_corner_preference_supported() -> bool"
+            },
+            "swift": {
+              "name": "isCornerPreferenceSupported",
+              "signature": "static func isCornerPreferenceSupported() -> Bool"
             }
           }
         },
@@ -3725,6 +4065,10 @@
             "rust": {
               "name": "set_content_under_title_bar",
               "signature": "pub fn set_content_under_title_bar(&self, is_content_under_title_bar: bool) -> bool"
+            },
+            "swift": {
+              "name": "setContentUnderTitleBar",
+              "signature": "func setContentUnderTitleBar(_ isContentUnderTitleBar: Bool) -> Bool"
             }
           }
         },
@@ -3769,6 +4113,10 @@
             "rust": {
               "name": "is_content_under_title_bar",
               "signature": "pub fn is_content_under_title_bar(&self) -> bool"
+            },
+            "swift": {
+              "name": "isContentUnderTitleBar",
+              "signature": "var isContentUnderTitleBar: Bool"
             }
           }
         },
@@ -3813,6 +4161,10 @@
             "rust": {
               "name": "is_content_under_title_bar_supported",
               "signature": "pub fn is_content_under_title_bar_supported() -> bool"
+            },
+            "swift": {
+              "name": "isContentUnderTitleBarSupported",
+              "signature": "static func isContentUnderTitleBarSupported() -> Bool"
             }
           }
         },
@@ -3864,6 +4216,10 @@
             "rust": {
               "name": "set_content_protection",
               "signature": "pub fn set_content_protection(&self, is_content_protected: bool) -> bool"
+            },
+            "swift": {
+              "name": "setContentProtection",
+              "signature": "func setContentProtection(_ isContentProtected: Bool) -> Bool"
             }
           }
         },
@@ -3908,6 +4264,10 @@
             "rust": {
               "name": "is_content_protected",
               "signature": "pub fn is_content_protected(&self) -> bool"
+            },
+            "swift": {
+              "name": "isContentProtected",
+              "signature": "var isContentProtected: Bool"
             }
           }
         },
@@ -3952,6 +4312,10 @@
             "rust": {
               "name": "is_content_protection_supported",
               "signature": "pub fn is_content_protection_supported() -> bool"
+            },
+            "swift": {
+              "name": "isContentProtectionSupported",
+              "signature": "static func isContentProtectionSupported() -> Bool"
             }
           }
         },
@@ -4002,6 +4366,10 @@
             "rust": {
               "name": "set_has_shadow",
               "signature": "pub fn set_has_shadow(&self, has_shadow: bool)"
+            },
+            "swift": {
+              "name": "setHasShadow",
+              "signature": "func setHasShadow(_ hasShadow: Bool) -> Void"
             }
           }
         },
@@ -4046,6 +4414,10 @@
             "rust": {
               "name": "has_shadow",
               "signature": "pub fn has_shadow(&self) -> bool"
+            },
+            "swift": {
+              "name": "hasShadow",
+              "signature": "var hasShadow: Bool"
             }
           }
         },
@@ -4091,6 +4463,10 @@
             "rust": {
               "name": "set_custom_shadow",
               "signature": "pub fn set_custom_shadow(&self, shadow: Option<&WindowShadow>) -> bool"
+            },
+            "swift": {
+              "name": "setCustomShadow",
+              "signature": "func setCustomShadow(_ shadow: WindowShadow?) -> Bool"
             }
           }
         },
@@ -4128,6 +4504,10 @@
             "rust": {
               "name": "custom_shadow",
               "signature": "pub fn custom_shadow(&self) -> Option<WindowShadow>"
+            },
+            "swift": {
+              "name": "customShadow",
+              "signature": "var customShadow: WindowShadow?"
             }
           }
         },
@@ -4172,6 +4552,10 @@
             "rust": {
               "name": "set_opacity",
               "signature": "pub fn set_opacity(&self, opacity: f32)"
+            },
+            "swift": {
+              "name": "setOpacity",
+              "signature": "func setOpacity(_ opacity: Float) -> Void"
             }
           }
         },
@@ -4210,6 +4594,10 @@
             "rust": {
               "name": "opacity",
               "signature": "pub fn opacity(&self) -> f32"
+            },
+            "swift": {
+              "name": "opacity",
+              "signature": "var opacity: Float"
             }
           }
         },
@@ -4261,6 +4649,10 @@
             "rust": {
               "name": "set_visual_effect",
               "signature": "pub fn set_visual_effect(&self, effect: VisualEffect) -> bool"
+            },
+            "swift": {
+              "name": "setVisualEffect",
+              "signature": "func setVisualEffect(_ effect: VisualEffect) -> Bool"
             }
           }
         },
@@ -4306,6 +4698,10 @@
             "rust": {
               "name": "visual_effect",
               "signature": "pub fn visual_effect(&self) -> VisualEffect"
+            },
+            "swift": {
+              "name": "visualEffect",
+              "signature": "var visualEffect: VisualEffect"
             }
           }
         },
@@ -4356,6 +4752,10 @@
             "rust": {
               "name": "is_visual_effect_supported",
               "signature": "pub fn is_visual_effect_supported(effect: VisualEffect) -> bool"
+            },
+            "swift": {
+              "name": "isVisualEffectSupported",
+              "signature": "static func isVisualEffectSupported(_ effect: VisualEffect) -> Bool"
             }
           }
         },
@@ -4407,6 +4807,10 @@
             "rust": {
               "name": "set_shape",
               "signature": "pub fn set_shape(&self, shape: Option<&WindowShape>) -> bool"
+            },
+            "swift": {
+              "name": "setShape",
+              "signature": "func setShape(_ shape: WindowShape?) -> Bool"
             }
           }
         },
@@ -4444,6 +4848,10 @@
             "rust": {
               "name": "is_shaped",
               "signature": "pub fn is_shaped(&self) -> bool"
+            },
+            "swift": {
+              "name": "isShaped",
+              "signature": "var isShaped: Bool"
             }
           }
         },
@@ -4481,6 +4889,10 @@
             "rust": {
               "name": "is_shape_supported",
               "signature": "pub fn is_shape_supported() -> bool"
+            },
+            "swift": {
+              "name": "isShapeSupported",
+              "signature": "static func isShapeSupported() -> Bool"
             }
           }
         },
@@ -4532,6 +4944,10 @@
             "rust": {
               "name": "set_input_shape",
               "signature": "pub fn set_input_shape(&self, shape: Option<&WindowShape>) -> bool"
+            },
+            "swift": {
+              "name": "setInputShape",
+              "signature": "func setInputShape(_ shape: WindowShape?) -> Bool"
             }
           }
         },
@@ -4576,6 +4992,10 @@
             "rust": {
               "name": "is_input_shaped",
               "signature": "pub fn is_input_shaped(&self) -> bool"
+            },
+            "swift": {
+              "name": "isInputShaped",
+              "signature": "var isInputShaped: Bool"
             }
           }
         },
@@ -4613,6 +5033,10 @@
             "rust": {
               "name": "is_input_shape_supported",
               "signature": "pub fn is_input_shape_supported() -> bool"
+            },
+            "swift": {
+              "name": "isInputShapeSupported",
+              "signature": "static func isInputShapeSupported() -> Bool"
             }
           }
         },
@@ -4663,6 +5087,10 @@
             "rust": {
               "name": "set_background_color",
               "signature": "pub fn set_background_color(&self, color: &Color)"
+            },
+            "swift": {
+              "name": "setBackgroundColor",
+              "signature": "func setBackgroundColor(_ color: Color) -> Void"
             }
           }
         },
@@ -4701,6 +5129,10 @@
             "rust": {
               "name": "background_color",
               "signature": "pub fn background_color(&self) -> Color"
+            },
+            "swift": {
+              "name": "backgroundColor",
+              "signature": "var backgroundColor: Color"
             }
           }
         },
@@ -4745,6 +5177,10 @@
             "rust": {
               "name": "set_visible_on_all_workspaces",
               "signature": "pub fn set_visible_on_all_workspaces(&self, is_visible_on_all_workspaces: bool)"
+            },
+            "swift": {
+              "name": "setVisibleOnAllWorkspaces",
+              "signature": "func setVisibleOnAllWorkspaces(_ isVisibleOnAllWorkspaces: Bool) -> Void"
             }
           }
         },
@@ -4783,6 +5219,10 @@
             "rust": {
               "name": "is_visible_on_all_workspaces",
               "signature": "pub fn is_visible_on_all_workspaces(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisibleOnAllWorkspaces",
+              "signature": "var isVisibleOnAllWorkspaces: Bool"
             }
           }
         },
@@ -4834,6 +5274,10 @@
             "rust": {
               "name": "set_visible_on_full_screen",
               "signature": "pub fn set_visible_on_full_screen(&self, is_visible_on_full_screen: bool) -> bool"
+            },
+            "swift": {
+              "name": "setVisibleOnFullScreen",
+              "signature": "func setVisibleOnFullScreen(_ isVisibleOnFullScreen: Bool) -> Bool"
             }
           }
         },
@@ -4878,6 +5322,10 @@
             "rust": {
               "name": "is_visible_on_full_screen",
               "signature": "pub fn is_visible_on_full_screen(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisibleOnFullScreen",
+              "signature": "var isVisibleOnFullScreen: Bool"
             }
           }
         },
@@ -4916,6 +5364,10 @@
             "rust": {
               "name": "is_visible_on_full_screen_supported",
               "signature": "pub fn is_visible_on_full_screen_supported() -> bool"
+            },
+            "swift": {
+              "name": "isVisibleOnFullScreenSupported",
+              "signature": "static func isVisibleOnFullScreenSupported() -> Bool"
             }
           }
         },
@@ -4961,6 +5413,10 @@
             "rust": {
               "name": "grab_keyboard",
               "signature": "pub fn grab_keyboard(&self) -> bool"
+            },
+            "swift": {
+              "name": "grabKeyboard",
+              "signature": "func grabKeyboard() -> Bool"
             }
           }
         },
@@ -5005,6 +5461,10 @@
             "rust": {
               "name": "ungrab_keyboard",
               "signature": "pub fn ungrab_keyboard(&self) -> bool"
+            },
+            "swift": {
+              "name": "ungrabKeyboard",
+              "signature": "func ungrabKeyboard() -> Bool"
             }
           }
         },
@@ -5049,6 +5509,10 @@
             "rust": {
               "name": "is_keyboard_grabbed",
               "signature": "pub fn is_keyboard_grabbed(&self) -> bool"
+            },
+            "swift": {
+              "name": "isKeyboardGrabbed",
+              "signature": "var isKeyboardGrabbed: Bool"
             }
           }
         },
@@ -5087,6 +5551,10 @@
             "rust": {
               "name": "is_keyboard_grab_supported",
               "signature": "pub fn is_keyboard_grab_supported() -> bool"
+            },
+            "swift": {
+              "name": "isKeyboardGrabSupported",
+              "signature": "static func isKeyboardGrabSupported() -> Bool"
             }
           }
         },
@@ -5137,6 +5605,10 @@
             "rust": {
               "name": "set_visible_in_taskbar",
               "signature": "pub fn set_visible_in_taskbar(&self, is_visible_in_taskbar: bool)"
+            },
+            "swift": {
+              "name": "setVisibleInTaskbar",
+              "signature": "func setVisibleInTaskbar(_ isVisibleInTaskbar: Bool) -> Void"
             }
           }
         },
@@ -5181,6 +5653,10 @@
             "rust": {
               "name": "is_visible_in_taskbar",
               "signature": "pub fn is_visible_in_taskbar(&self) -> bool"
+            },
+            "swift": {
+              "name": "isVisibleInTaskbar",
+              "signature": "var isVisibleInTaskbar: Bool"
             }
           }
         },
@@ -5236,6 +5712,10 @@
             "rust": {
               "name": "set_ignore_mouse_events",
               "signature": "pub fn set_ignore_mouse_events(&self, is_ignore_mouse_events: bool, forward: bool) -> bool"
+            },
+            "swift": {
+              "name": "setIgnoreMouseEvents",
+              "signature": "func setIgnoreMouseEvents(_ isIgnoreMouseEvents: Bool, forward: Bool) -> Bool"
             }
           }
         },
@@ -5274,6 +5754,10 @@
             "rust": {
               "name": "is_ignore_mouse_events",
               "signature": "pub fn is_ignore_mouse_events(&self) -> bool"
+            },
+            "swift": {
+              "name": "isIgnoreMouseEvents",
+              "signature": "var isIgnoreMouseEvents: Bool"
             }
           }
         },
@@ -5311,6 +5795,10 @@
             "rust": {
               "name": "is_mouse_move_forwarding_enabled",
               "signature": "pub fn is_mouse_move_forwarding_enabled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isMouseMoveForwardingEnabled",
+              "signature": "var isMouseMoveForwardingEnabled: Bool"
             }
           }
         },
@@ -5349,6 +5837,10 @@
             "rust": {
               "name": "is_mouse_move_forwarding_supported",
               "signature": "pub fn is_mouse_move_forwarding_supported() -> bool"
+            },
+            "swift": {
+              "name": "isMouseMoveForwardingSupported",
+              "signature": "static func isMouseMoveForwardingSupported() -> Bool"
             }
           }
         },
@@ -5399,6 +5891,10 @@
             "rust": {
               "name": "set_focusable",
               "signature": "pub fn set_focusable(&self, is_focusable: bool)"
+            },
+            "swift": {
+              "name": "setFocusable",
+              "signature": "func setFocusable(_ isFocusable: Bool) -> Void"
             }
           }
         },
@@ -5437,6 +5933,10 @@
             "rust": {
               "name": "is_focusable",
               "signature": "pub fn is_focusable(&self) -> bool"
+            },
+            "swift": {
+              "name": "isFocusable",
+              "signature": "var isFocusable: Bool"
             }
           }
         },
@@ -5488,6 +5988,10 @@
             "rust": {
               "name": "show_system_menu",
               "signature": "pub fn show_system_menu(&self, position: &Point) -> bool"
+            },
+            "swift": {
+              "name": "showSystemMenu",
+              "signature": "func showSystemMenu(_ position: Point) -> Bool"
             }
           }
         },
@@ -5532,6 +6036,10 @@
             "rust": {
               "name": "is_system_menu_supported",
               "signature": "pub fn is_system_menu_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSystemMenuSupported",
+              "signature": "static func isSystemMenuSupported() -> Bool"
             }
           }
         },
@@ -5583,6 +6091,10 @@
             "rust": {
               "name": "set_maximize_button_bounds",
               "signature": "pub fn set_maximize_button_bounds(&self, bounds: &Rectangle) -> bool"
+            },
+            "swift": {
+              "name": "setMaximizeButtonBounds",
+              "signature": "func setMaximizeButtonBounds(_ bounds: Rectangle) -> Bool"
             }
           }
         },
@@ -5627,6 +6139,10 @@
             "rust": {
               "name": "maximize_button_bounds",
               "signature": "pub fn maximize_button_bounds(&self) -> Rectangle"
+            },
+            "swift": {
+              "name": "maximizeButtonBounds",
+              "signature": "var maximizeButtonBounds: Rectangle"
             }
           }
         },
@@ -5670,6 +6186,10 @@
             "rust": {
               "name": "is_maximize_button_bounds_supported",
               "signature": "pub fn is_maximize_button_bounds_supported() -> bool"
+            },
+            "swift": {
+              "name": "isMaximizeButtonBoundsSupported",
+              "signature": "static func isMaximizeButtonBoundsSupported() -> Bool"
             }
           }
         },
@@ -5715,6 +6235,10 @@
             "rust": {
               "name": "perform_title_bar_double_click",
               "signature": "pub fn perform_title_bar_double_click(&self) -> bool"
+            },
+            "swift": {
+              "name": "performTitleBarDoubleClick",
+              "signature": "func performTitleBarDoubleClick() -> Bool"
             }
           }
         },
@@ -5759,6 +6283,10 @@
             "rust": {
               "name": "start_dragging",
               "signature": "pub fn start_dragging(&self)"
+            },
+            "swift": {
+              "name": "startDragging",
+              "signature": "func startDragging() -> Void"
             }
           }
         },
@@ -5809,6 +6337,10 @@
             "rust": {
               "name": "start_resizing",
               "signature": "pub fn start_resizing(&self, edge: ResizeEdge)"
+            },
+            "swift": {
+              "name": "startResizing",
+              "signature": "func startResizing(_ edge: ResizeEdge) -> Void"
             }
           }
         }
@@ -5855,6 +6387,10 @@
         "rust": {
           "name": "TitleBarStyle",
           "signature": "pub enum TitleBarStyle"
+        },
+        "swift": {
+          "name": "TitleBarStyle",
+          "signature": "enum TitleBarStyle: CInt"
         }
       },
       "members": [
@@ -5892,6 +6428,10 @@
             "rust": {
               "name": "TitleBarStyle::Normal",
               "signature": "Normal = 0"
+            },
+            "swift": {
+              "name": "normal",
+              "signature": "case normal = 0"
             }
           }
         },
@@ -5930,6 +6470,10 @@
             "rust": {
               "name": "TitleBarStyle::Hidden",
               "signature": "Hidden = 1"
+            },
+            "swift": {
+              "name": "hidden",
+              "signature": "case hidden = 1"
             }
           }
         }
@@ -5975,6 +6519,10 @@
         "rust": {
           "name": "WindowDockSide",
           "signature": "pub enum WindowDockSide"
+        },
+        "swift": {
+          "name": "WindowDockSide",
+          "signature": "enum WindowDockSide: CInt"
         }
       },
       "members": [
@@ -6012,6 +6560,10 @@
             "rust": {
               "name": "WindowDockSide::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -6049,6 +6601,10 @@
             "rust": {
               "name": "WindowDockSide::Left",
               "signature": "Left = 1"
+            },
+            "swift": {
+              "name": "left",
+              "signature": "case left = 1"
             }
           }
         },
@@ -6086,6 +6642,10 @@
             "rust": {
               "name": "WindowDockSide::Right",
               "signature": "Right = 2"
+            },
+            "swift": {
+              "name": "right",
+              "signature": "case right = 2"
             }
           }
         }
@@ -6131,6 +6691,10 @@
         "rust": {
           "name": "WindowCornerPreference",
           "signature": "pub enum WindowCornerPreference"
+        },
+        "swift": {
+          "name": "WindowCornerPreference",
+          "signature": "enum WindowCornerPreference: CInt"
         }
       },
       "members": [
@@ -6168,6 +6732,10 @@
             "rust": {
               "name": "WindowCornerPreference::Default",
               "signature": "Default = 0"
+            },
+            "swift": {
+              "name": "`default`",
+              "signature": "case `default` = 0"
             }
           }
         },
@@ -6205,6 +6773,10 @@
             "rust": {
               "name": "WindowCornerPreference::DoNotRound",
               "signature": "DoNotRound = 1"
+            },
+            "swift": {
+              "name": "doNotRound",
+              "signature": "case doNotRound = 1"
             }
           }
         },
@@ -6242,6 +6814,10 @@
             "rust": {
               "name": "WindowCornerPreference::Round",
               "signature": "Round = 2"
+            },
+            "swift": {
+              "name": "round",
+              "signature": "case round = 2"
             }
           }
         },
@@ -6279,6 +6855,10 @@
             "rust": {
               "name": "WindowCornerPreference::RoundSmall",
               "signature": "RoundSmall = 3"
+            },
+            "swift": {
+              "name": "roundSmall",
+              "signature": "case roundSmall = 3"
             }
           }
         }
@@ -6319,6 +6899,10 @@
         "rust": {
           "name": "WindowProperty",
           "signature": "pub enum WindowProperty"
+        },
+        "swift": {
+          "name": "WindowProperty",
+          "signature": "enum WindowProperty: CInt"
         }
       },
       "members": [
@@ -6356,6 +6940,10 @@
             "rust": {
               "name": "WindowProperty::Title",
               "signature": "Title = 0"
+            },
+            "swift": {
+              "name": "title",
+              "signature": "case title = 0"
             }
           }
         },
@@ -6393,6 +6981,10 @@
             "rust": {
               "name": "WindowProperty::Resizable",
               "signature": "Resizable = 1"
+            },
+            "swift": {
+              "name": "resizable",
+              "signature": "case resizable = 1"
             }
           }
         },
@@ -6430,6 +7022,10 @@
             "rust": {
               "name": "WindowProperty::Movable",
               "signature": "Movable = 2"
+            },
+            "swift": {
+              "name": "movable",
+              "signature": "case movable = 2"
             }
           }
         },
@@ -6467,6 +7063,10 @@
             "rust": {
               "name": "WindowProperty::Minimizable",
               "signature": "Minimizable = 3"
+            },
+            "swift": {
+              "name": "minimizable",
+              "signature": "case minimizable = 3"
             }
           }
         },
@@ -6504,6 +7104,10 @@
             "rust": {
               "name": "WindowProperty::Maximizable",
               "signature": "Maximizable = 4"
+            },
+            "swift": {
+              "name": "maximizable",
+              "signature": "case maximizable = 4"
             }
           }
         },
@@ -6541,6 +7145,10 @@
             "rust": {
               "name": "WindowProperty::FullScreenable",
               "signature": "FullScreenable = 5"
+            },
+            "swift": {
+              "name": "fullScreenable",
+              "signature": "case fullScreenable = 5"
             }
           }
         },
@@ -6578,6 +7186,10 @@
             "rust": {
               "name": "WindowProperty::Closable",
               "signature": "Closable = 6"
+            },
+            "swift": {
+              "name": "closable",
+              "signature": "case closable = 6"
             }
           }
         },
@@ -6615,6 +7227,10 @@
             "rust": {
               "name": "WindowProperty::WindowControlButtonsVisible",
               "signature": "WindowControlButtonsVisible = 7"
+            },
+            "swift": {
+              "name": "windowControlButtonsVisible",
+              "signature": "case windowControlButtonsVisible = 7"
             }
           }
         },
@@ -6652,6 +7268,10 @@
             "rust": {
               "name": "WindowProperty::AlwaysOnTop",
               "signature": "AlwaysOnTop = 8"
+            },
+            "swift": {
+              "name": "alwaysOnTop",
+              "signature": "case alwaysOnTop = 8"
             }
           }
         },
@@ -6689,6 +7309,10 @@
             "rust": {
               "name": "WindowProperty::AlwaysOnBottom",
               "signature": "AlwaysOnBottom = 9"
+            },
+            "swift": {
+              "name": "alwaysOnBottom",
+              "signature": "case alwaysOnBottom = 9"
             }
           }
         },
@@ -6726,6 +7350,10 @@
             "rust": {
               "name": "WindowProperty::TitleBarStyle",
               "signature": "TitleBarStyle = 10"
+            },
+            "swift": {
+              "name": "titleBarStyle",
+              "signature": "case titleBarStyle = 10"
             }
           }
         },
@@ -6763,6 +7391,10 @@
             "rust": {
               "name": "WindowProperty::Frameless",
               "signature": "Frameless = 11"
+            },
+            "swift": {
+              "name": "frameless",
+              "signature": "case frameless = 11"
             }
           }
         }
@@ -6808,6 +7440,10 @@
         "rust": {
           "name": "WindowOcclusionState",
           "signature": "pub enum WindowOcclusionState"
+        },
+        "swift": {
+          "name": "WindowOcclusionState",
+          "signature": "enum WindowOcclusionState: CInt"
         }
       },
       "members": [
@@ -6845,6 +7481,10 @@
             "rust": {
               "name": "WindowOcclusionState::Unknown",
               "signature": "Unknown = 0"
+            },
+            "swift": {
+              "name": "unknown",
+              "signature": "case unknown = 0"
             }
           }
         },
@@ -6882,6 +7522,10 @@
             "rust": {
               "name": "WindowOcclusionState::Visible",
               "signature": "Visible = 1"
+            },
+            "swift": {
+              "name": "visible",
+              "signature": "case visible = 1"
             }
           }
         },
@@ -6919,6 +7563,10 @@
             "rust": {
               "name": "WindowOcclusionState::Occluded",
               "signature": "Occluded = 2"
+            },
+            "swift": {
+              "name": "occluded",
+              "signature": "case occluded = 2"
             }
           }
         }
@@ -6965,6 +7613,10 @@
         "rust": {
           "name": "VisualEffect",
           "signature": "pub enum VisualEffect"
+        },
+        "swift": {
+          "name": "VisualEffect",
+          "signature": "enum VisualEffect: CInt"
         }
       },
       "members": [
@@ -7002,6 +7654,10 @@
             "rust": {
               "name": "VisualEffect::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -7039,6 +7695,10 @@
             "rust": {
               "name": "VisualEffect::Blur",
               "signature": "Blur = 1"
+            },
+            "swift": {
+              "name": "blur",
+              "signature": "case blur = 1"
             }
           }
         },
@@ -7076,6 +7736,10 @@
             "rust": {
               "name": "VisualEffect::Acrylic",
               "signature": "Acrylic = 2"
+            },
+            "swift": {
+              "name": "acrylic",
+              "signature": "case acrylic = 2"
             }
           }
         },
@@ -7113,6 +7777,10 @@
             "rust": {
               "name": "VisualEffect::Mica",
               "signature": "Mica = 3"
+            },
+            "swift": {
+              "name": "mica",
+              "signature": "case mica = 3"
             }
           }
         },
@@ -7150,6 +7818,10 @@
             "rust": {
               "name": "VisualEffect::MicaAlt",
               "signature": "MicaAlt = 4"
+            },
+            "swift": {
+              "name": "micaAlt",
+              "signature": "case micaAlt = 4"
             }
           }
         },
@@ -7187,6 +7859,10 @@
             "rust": {
               "name": "VisualEffect::Hud",
               "signature": "Hud = 5"
+            },
+            "swift": {
+              "name": "hud",
+              "signature": "case hud = 5"
             }
           }
         },
@@ -7224,6 +7900,10 @@
             "rust": {
               "name": "VisualEffect::Popover",
               "signature": "Popover = 6"
+            },
+            "swift": {
+              "name": "popover",
+              "signature": "case popover = 6"
             }
           }
         },
@@ -7261,6 +7941,10 @@
             "rust": {
               "name": "VisualEffect::Menu",
               "signature": "Menu = 7"
+            },
+            "swift": {
+              "name": "menu",
+              "signature": "case menu = 7"
             }
           }
         }
@@ -7301,6 +7985,10 @@
         "rust": {
           "name": "ResizeEdge",
           "signature": "pub enum ResizeEdge"
+        },
+        "swift": {
+          "name": "ResizeEdge",
+          "signature": "enum ResizeEdge: CInt"
         }
       },
       "members": [
@@ -7338,6 +8026,10 @@
             "rust": {
               "name": "ResizeEdge::Top",
               "signature": "Top = 0"
+            },
+            "swift": {
+              "name": "top",
+              "signature": "case top = 0"
             }
           }
         },
@@ -7375,6 +8067,10 @@
             "rust": {
               "name": "ResizeEdge::Left",
               "signature": "Left = 1"
+            },
+            "swift": {
+              "name": "left",
+              "signature": "case left = 1"
             }
           }
         },
@@ -7412,6 +8108,10 @@
             "rust": {
               "name": "ResizeEdge::Right",
               "signature": "Right = 2"
+            },
+            "swift": {
+              "name": "right",
+              "signature": "case right = 2"
             }
           }
         },
@@ -7449,6 +8149,10 @@
             "rust": {
               "name": "ResizeEdge::Bottom",
               "signature": "Bottom = 3"
+            },
+            "swift": {
+              "name": "bottom",
+              "signature": "case bottom = 3"
             }
           }
         },
@@ -7486,6 +8190,10 @@
             "rust": {
               "name": "ResizeEdge::TopLeft",
               "signature": "TopLeft = 4"
+            },
+            "swift": {
+              "name": "topLeft",
+              "signature": "case topLeft = 4"
             }
           }
         },
@@ -7523,6 +8231,10 @@
             "rust": {
               "name": "ResizeEdge::TopRight",
               "signature": "TopRight = 5"
+            },
+            "swift": {
+              "name": "topRight",
+              "signature": "case topRight = 5"
             }
           }
         },
@@ -7560,6 +8272,10 @@
             "rust": {
               "name": "ResizeEdge::BottomLeft",
               "signature": "BottomLeft = 6"
+            },
+            "swift": {
+              "name": "bottomLeft",
+              "signature": "case bottomLeft = 6"
             }
           }
         },
@@ -7597,6 +8313,10 @@
             "rust": {
               "name": "ResizeEdge::BottomRight",
               "signature": "BottomRight = 7"
+            },
+            "swift": {
+              "name": "bottomRight",
+              "signature": "case bottomRight = 7"
             }
           }
         }
@@ -7637,6 +8357,10 @@
         "rust": {
           "name": "WindowEvent",
           "signature": "pub enum WindowEvent"
+        },
+        "swift": {
+          "name": "WindowEvent",
+          "signature": "enum WindowEvent"
         }
       },
       "members": [
@@ -7675,6 +8399,10 @@
             "rust": {
               "name": "window_id",
               "signature": "window_id: WindowId"
+            },
+            "swift": {
+              "name": "windowId",
+              "signature": "var windowId: WindowId"
             }
           }
         },
@@ -7713,6 +8441,10 @@
             "rust": {
               "name": "WindowEvent::Focused",
               "signature": "Focused { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "focused",
+              "signature": "case focused(windowId: WindowId)"
             }
           }
         },
@@ -7751,6 +8483,10 @@
             "rust": {
               "name": "WindowEvent::Blurred",
               "signature": "Blurred { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "blurred",
+              "signature": "case blurred(windowId: WindowId)"
             }
           }
         },
@@ -7795,6 +8531,10 @@
             "rust": {
               "name": "WindowEvent::Minimized",
               "signature": "Minimized { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "minimized",
+              "signature": "case minimized(windowId: WindowId)"
             }
           }
         },
@@ -7839,6 +8579,10 @@
             "rust": {
               "name": "WindowEvent::Maximized",
               "signature": "Maximized { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "maximized",
+              "signature": "case maximized(windowId: WindowId)"
             }
           }
         },
@@ -7883,6 +8627,10 @@
             "rust": {
               "name": "WindowEvent::Restored",
               "signature": "Restored { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "restored",
+              "signature": "case restored(windowId: WindowId)"
             }
           }
         },
@@ -7927,6 +8675,10 @@
             "rust": {
               "name": "WindowEvent::Moved",
               "signature": "Moved { window_id: WindowId, new_position: Point }"
+            },
+            "swift": {
+              "name": "moved",
+              "signature": "case moved(windowId: WindowId, newPosition: Point)"
             }
           }
         },
@@ -7966,6 +8718,10 @@
             "rust": {
               "name": "new_position",
               "signature": "new_position: Point"
+            },
+            "swift": {
+              "name": "newPosition",
+              "signature": "var newPosition: Point"
             }
           }
         },
@@ -8010,6 +8766,10 @@
             "rust": {
               "name": "WindowEvent::Resized",
               "signature": "Resized { window_id: WindowId, new_size: Size }"
+            },
+            "swift": {
+              "name": "resized",
+              "signature": "case resized(windowId: WindowId, newSize: Size)"
             }
           }
         },
@@ -8049,6 +8809,10 @@
             "rust": {
               "name": "new_size",
               "signature": "new_size: Size"
+            },
+            "swift": {
+              "name": "newSize",
+              "signature": "var newSize: Size"
             }
           }
         },
@@ -8093,6 +8857,10 @@
             "rust": {
               "name": "WindowEvent::Created",
               "signature": "Created { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "created",
+              "signature": "case created(windowId: WindowId)"
             }
           }
         },
@@ -8137,6 +8905,10 @@
             "rust": {
               "name": "WindowEvent::Closed",
               "signature": "Closed { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "closed",
+              "signature": "case closed(windowId: WindowId)"
             }
           }
         },
@@ -8181,6 +8953,10 @@
             "rust": {
               "name": "WindowEvent::EnteredFullScreen",
               "signature": "EnteredFullScreen { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "enteredFullScreen",
+              "signature": "case enteredFullScreen(windowId: WindowId)"
             }
           }
         },
@@ -8225,6 +9001,10 @@
             "rust": {
               "name": "WindowEvent::ExitedFullScreen",
               "signature": "ExitedFullScreen { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "exitedFullScreen",
+              "signature": "case exitedFullScreen(windowId: WindowId)"
             }
           }
         },
@@ -8262,6 +9042,10 @@
             "rust": {
               "name": "WindowEvent::CloseRequested",
               "signature": "CloseRequested { window_id: WindowId, request: EventRequestRef }"
+            },
+            "swift": {
+              "name": "closeRequested",
+              "signature": "case closeRequested(windowId: WindowId, request: EventRequest?)"
             }
           }
         },
@@ -8297,6 +9081,10 @@
             "rust": {
               "name": "request",
               "signature": "request: EventRequestRef"
+            },
+            "swift": {
+              "name": "request",
+              "signature": "var request: EventRequest?"
             }
           }
         },
@@ -8341,6 +9129,10 @@
             "rust": {
               "name": "WindowEvent::PropertyChanged",
               "signature": "PropertyChanged { window_id: WindowId, property: WindowProperty }"
+            },
+            "swift": {
+              "name": "propertyChanged",
+              "signature": "case propertyChanged(windowId: WindowId, property: WindowProperty)"
             }
           }
         },
@@ -8379,6 +9171,10 @@
             "rust": {
               "name": "property",
               "signature": "property: WindowProperty"
+            },
+            "swift": {
+              "name": "property",
+              "signature": "var property: WindowProperty"
             }
           }
         },
@@ -8423,6 +9219,10 @@
             "rust": {
               "name": "WindowEvent::OcclusionChanged",
               "signature": "OcclusionChanged { window_id: WindowId, occlusion_state: WindowOcclusionState }"
+            },
+            "swift": {
+              "name": "occlusionChanged",
+              "signature": "case occlusionChanged(windowId: WindowId, occlusionState: WindowOcclusionState)"
             }
           }
         },
@@ -8461,6 +9261,10 @@
             "rust": {
               "name": "occlusion_state",
               "signature": "occlusion_state: WindowOcclusionState"
+            },
+            "swift": {
+              "name": "occlusionState",
+              "signature": "var occlusionState: WindowOcclusionState"
             }
           }
         },
@@ -8504,6 +9308,10 @@
             "rust": {
               "name": "WindowEvent::Docked",
               "signature": "Docked { window_id: WindowId, side: WindowDockSide }"
+            },
+            "swift": {
+              "name": "docked",
+              "signature": "case docked(windowId: WindowId, side: WindowDockSide)"
             }
           }
         },
@@ -8542,6 +9350,10 @@
             "rust": {
               "name": "side",
               "signature": "side: WindowDockSide"
+            },
+            "swift": {
+              "name": "side",
+              "signature": "var side: WindowDockSide"
             }
           }
         },
@@ -8585,6 +9397,10 @@
             "rust": {
               "name": "WindowEvent::Undocked",
               "signature": "Undocked { window_id: WindowId }"
+            },
+            "swift": {
+              "name": "undocked",
+              "signature": "case undocked(windowId: WindowId)"
             }
           }
         }
@@ -8621,6 +9437,10 @@
         "rust": {
           "name": "WindowId",
           "signature": "pub type WindowId = u32;"
+        },
+        "swift": {
+          "name": "WindowId",
+          "signature": "typealias WindowId = UInt32"
         }
       }
     },
@@ -8654,6 +9474,10 @@
         "rust": {
           "name": "WindowNumber",
           "signature": "pub type WindowNumber = i64;"
+        },
+        "swift": {
+          "name": "WindowNumber",
+          "signature": "typealias WindowNumber = Int64"
         }
       }
     }

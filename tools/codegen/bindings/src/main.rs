@@ -17,11 +17,12 @@ mod js;
 mod python;
 mod reference;
 mod rust;
+mod swift;
 
 #[derive(Debug, Parser)]
 #[command(name = "codegen-bindings")]
 #[command(
-    about = "Generate Rust/Dart/C#/JS/Python/Go FFI bindings from the IR emitted by codegen-capi."
+    about = "Generate Rust/Dart/C#/JS/Python/Go/Swift FFI bindings from the IR emitted by codegen-capi."
 )]
 struct CliArgs {
     /// Path to the IR JSON emitted by `codegen-capi --emit-ir`.
@@ -62,6 +63,10 @@ struct CliArgs {
     /// Path to the Go binding (bindings/go).
     #[arg(long)]
     go: Option<PathBuf>,
+
+    /// Path to the Swift binding (bindings/swift).
+    #[arg(long)]
+    swift: Option<PathBuf>,
 
     /// Directory to write the API reference JSON into (one file per header
     /// plus `index.json`), for the website. Covers every binding, whichever
@@ -108,6 +113,7 @@ fn main() -> Result<()> {
     let csharp_out = binding_out(args.csharp.as_deref(), "src");
     let js_out = args.js.clone();
     let python_out = binding_out(args.python.as_deref(), "nativeapi");
+    let swift_out = binding_out(args.swift.as_deref(), "Sources/NativeAPI");
 
     report_binding("rust", &rust_out);
     report_binding("dart", &dart_out);
@@ -115,6 +121,7 @@ fn main() -> Result<()> {
     report_binding("js", &js_out);
     report_binding("python", &python_out);
     report_binding("go", &args.go);
+    report_binding("swift", &swift_out);
 
     let json = std::fs::read_to_string(&args.ir)
         .with_context(|| format!("failed to read IR from {}", args.ir.display()))?;
@@ -159,6 +166,9 @@ fn main() -> Result<()> {
     if let Some(out) = &args.go {
         files.extend(go::generate(&api, out));
     }
+    if let Some(out) = &swift_out {
+        files.push(swift::generate_support(&api, out));
+    }
     if let Some(out) = &args.api_reference {
         let references = references(&api, &origins, prefix);
         files.extend(api_reference::generate(&api, &references, &src_dir, out));
@@ -193,6 +203,9 @@ fn main() -> Result<()> {
         if let Some(out) = &python_out {
             files.push(python::generate(&api, header, &origins, out, prefix));
         }
+        if let Some(out) = &swift_out {
+            files.push(swift::generate(&api, header, &origins, out, prefix, subdir));
+        }
     }
 
     // Format before both writing and checking, so generation and Dart CI
@@ -223,6 +236,7 @@ fn references(
         ("js", js::reference(api, origins, prefix)),
         ("python", python::reference(api, origins, prefix)),
         ("go", go::reference(api, origins, prefix)),
+        ("swift", swift::reference(api, origins, prefix)),
     ]
     .into_iter()
     .collect()

@@ -1,0 +1,4 @@
+module CNativeAPI {
+  umbrella header "nativeapi.h"
+  export *
+}

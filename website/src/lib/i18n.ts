@@ -40,7 +40,7 @@ const messages = {
     metadata: {
       title: 'nativeapi - Native desktop APIs for every language',
       description:
-        'nativeapi gives Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python and Go one native API for windows, tray icons, menus, displays, keyboard, dialogs and storage, built on a single C++ core.',
+        'nativeapi gives Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python, Go and Swift one native API for windows, tray icons, menus, displays, keyboard, dialogs and storage, built on a single C++ core.',
     },
     header: {
       menu: 'Menu',
@@ -59,7 +59,7 @@ const messages = {
       heroLine2: 'for ',
       heroHighlight: 'every language',
       heroDescription:
-        'Windows, tray icons, menus, displays, keyboard, dialogs and storage — implemented once in C++ on each platform, with generated bindings for Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python and Go.',
+        'Windows, tray icons, menus, displays, keyboard, dialogs and storage — implemented once in C++ on each platform, with generated bindings for Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python, Go and Swift.',
       installCta: 'Get started',
       readDocs: 'Read the docs',
       heroNote: 'macOS, Windows and Linux — plus Android and iOS from Dart',
@@ -100,9 +100,9 @@ const messages = {
         },
         {
           category: 'Generated bindings',
-          title: 'One header, six idiomatic APIs',
+          title: 'One header, seven idiomatic APIs',
           details:
-            'The C++ headers are the source of truth. A code generator derives the C ABI and every binding from them, following each language’s own conventions, so a new API reaches all six at once.',
+            'The C++ headers are the source of truth. A code generator derives the C ABI and every binding from them, following each language’s own conventions, so a new API reaches all seven at once.',
         },
       ],
       viewDocs: 'View documentation',
@@ -141,7 +141,7 @@ const messages = {
             'The same code drives the native implementation on macOS, Windows and Linux.',
         },
       ],
-      nativeCli: 'One repository, one core, six bindings — all MIT licensed',
+      nativeCli: 'One repository, one core, seven bindings — all MIT licensed',
       communityTitle: 'Built in the open',
       communityDescription:
         'nativeapi is developed on GitHub: the C++ core, the code generator, every binding and the examples. Report a native bug, request an API, or help bring a binding to production.',
@@ -151,12 +151,12 @@ const messages = {
         {
           question: 'What is nativeapi?',
           answer:
-            'nativeapi is a C++ library with native implementations of desktop system APIs — windows, tray icons, menus, displays, keyboard, dialogs, storage and more — plus generated bindings that expose it to Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python and Go.',
+            'nativeapi is a C++ library with native implementations of desktop system APIs — windows, tray icons, menus, displays, keyboard, dialogs, storage and more — plus generated bindings that expose it to Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python, Go and Swift.',
         },
         {
           question: 'Which languages and platforms are supported?',
           answer:
-            'Every binding runs on macOS, Windows and Linux. The Dart binding also runs on Android and iOS. The Dart and Rust packages are published; the C#, JavaScript, Python and Go bindings are built from source for now.',
+            'Every binding runs on macOS, Windows and Linux. The Dart binding also runs on Android and iOS. The Dart and Rust packages are published; the C#, JavaScript, Python, Go and Swift bindings are built from source for now.',
         },
         {
           question: 'Is it ready for production?',
@@ -189,6 +189,7 @@ const messages = {
         'Node.js, Deno and Bun — not yet on npm, build from source.',
         'ctypes, Python 3.10+ — prototype, build from source.',
         'cgo, Go 1.22+ — build the shared library from source.',
+        'SwiftPM, macOS 11+ — build the package from source.',
       ],
     },
     footer: {
@@ -216,7 +217,7 @@ const messages = {
     metadata: {
       title: 'nativeapi - あらゆる言語のためのネイティブデスクトップ API',
       description:
-        'nativeapi は、ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージのネイティブ API を、1つの C++ コアから Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go に提供します。',
+        'nativeapi は、ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージのネイティブ API を、1つの C++ コアから Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go、Swift に提供します。',
     },
     header: {
       menu: 'メニュー',
@@ -235,7 +236,7 @@ const messages = {
       heroLine2: '',
       heroHighlight: 'あらゆる言語へ',
       heroDescription:
-        'ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージ。各プラットフォーム向けに C++ で一度だけ実装し、Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go のバインディングを自動生成します。',
+        'ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージ。各プラットフォーム向けに C++ で一度だけ実装し、Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go、Swift のバインディングを自動生成します。',
       installCta: '始める',
       readDocs: 'ドキュメントを読む',
       heroNote: 'macOS、Windows、Linux に対応。Dart では Android と iOS も',
@@ -327,12 +328,12 @@ const messages = {
         {
           question: 'nativeapi とは？',
           answer:
-            'ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージなどのデスクトップシステム API をネイティブ実装した C++ ライブラリと、それを Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go に公開する生成バインディングです。',
+            'ウィンドウ、トレイアイコン、メニュー、ディスプレイ、キーボード、ダイアログ、ストレージなどのデスクトップシステム API をネイティブ実装した C++ ライブラリと、それを Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go、Swift に公開する生成バインディングです。',
         },
         {
           question: 'どの言語とプラットフォームに対応していますか？',
           answer:
-            'すべてのバインディングが macOS、Windows、Linux で動作し、Dart バインディングは Android と iOS にも対応します。Dart と Rust のパッケージは公開済みで、C#、JavaScript、Python、Go は現在ソースからビルドします。',
+            'すべてのバインディングが macOS、Windows、Linux で動作し、Dart バインディングは Android と iOS にも対応します。Dart と Rust のパッケージは公開済みで、C#、JavaScript、Python、Go、Swift は現在ソースからビルドします。',
         },
         {
           question: '本番環境で使えますか？',
@@ -365,6 +366,7 @@ const messages = {
         'Node.js、Deno、Bun 向け。npm は未公開、ソースからビルドします。',
         'ctypes、Python 3.10+。プロトタイプ、ソースからビルドします。',
         'cgo、Go 1.22+。共有ライブラリをソースからビルドします。',
+        'SwiftPM、macOS 11+。パッケージをソースからビルドします。',
       ],
     },
     footer: {
@@ -389,7 +391,7 @@ const messages = {
     metadata: {
       title: 'nativeapi - 面向所有语言的原生桌面 API',
       description:
-        'nativeapi 基于同一个 C++ 核心，为 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python 和 Go 提供窗口、托盘图标、菜单、显示器、键盘、对话框与存储等原生 API。',
+        'nativeapi 基于同一个 C++ 核心，为 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go 和 Swift 提供窗口、托盘图标、菜单、显示器、键盘、对话框与存储等原生 API。',
     },
     header: {
       menu: '菜单',
@@ -408,7 +410,7 @@ const messages = {
       heroLine2: '',
       heroHighlight: '适用于每一种语言',
       heroDescription:
-        '窗口、托盘图标、菜单、显示器、键盘、对话框与存储——在各个平台上用 C++ 实现一次，再为 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python 和 Go 生成绑定。',
+        '窗口、托盘图标、菜单、显示器、键盘、对话框与存储——在各个平台上用 C++ 实现一次，再为 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go 和 Swift 生成绑定。',
       installCta: '开始使用',
       readDocs: '阅读文档',
       heroNote: '支持 macOS、Windows 和 Linux，Dart 还支持 Android 与 iOS',
@@ -449,9 +451,9 @@ const messages = {
         },
         {
           category: '生成的绑定',
-          title: '一份头文件，六套地道的 API',
+          title: '一份头文件，七套地道的 API',
           details:
-            'C++ 头文件是唯一的事实来源。代码生成器从中导出 C ABI 和每个绑定，并遵循各语言自身的惯例，新 API 会同时抵达全部六种语言。',
+            'C++ 头文件是唯一的事实来源。代码生成器从中导出 C ABI 和每个绑定，并遵循各语言自身的惯例，新 API 会同时抵达全部七种语言。',
         },
       ],
       viewDocs: '查看使用文档',
@@ -489,7 +491,7 @@ const messages = {
           description: '同一份代码在 macOS、Windows 和 Linux 上驱动原生实现。',
         },
       ],
-      nativeCli: '一个仓库、一个核心、六种绑定，全部以 MIT 许可开源',
+      nativeCli: '一个仓库、一个核心、七种绑定，全部以 MIT 许可开源',
       communityTitle: '开放开发',
       communityDescription:
         'C++ 核心、代码生成器、每个绑定和示例都在 GitHub 上开发。欢迎报告原生问题、提出 API 需求，或帮助某个绑定走向生产可用。',
@@ -499,12 +501,12 @@ const messages = {
         {
           question: 'nativeapi 是什么？',
           answer:
-            'nativeapi 是一个 C++ 库，原生实现了窗口、托盘图标、菜单、显示器、键盘、对话框、存储等桌面系统 API，并通过生成的绑定提供给 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python 和 Go。',
+            'nativeapi 是一个 C++ 库，原生实现了窗口、托盘图标、菜单、显示器、键盘、对话框、存储等桌面系统 API，并通过生成的绑定提供给 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python、Go 和 Swift。',
         },
         {
           question: '支持哪些语言和平台？',
           answer:
-            '所有绑定都运行在 macOS、Windows 和 Linux 上，Dart 绑定还支持 Android 和 iOS。Dart 与 Rust 的包已经发布；C#、JavaScript、Python 和 Go 目前需从源码构建。',
+            '所有绑定都运行在 macOS、Windows 和 Linux 上，Dart 绑定还支持 Android 和 iOS。Dart 与 Rust 的包已经发布；C#、JavaScript、Python、Go 和 Swift 目前需从源码构建。',
         },
         {
           question: '可以用于生产环境吗？',
@@ -537,6 +539,7 @@ const messages = {
         '支持 Node.js、Deno 和 Bun，尚未发布到 npm，需从源码构建。',
         'ctypes，Python 3.10+，原型阶段，需从源码构建。',
         'cgo，Go 1.22+，需从源码构建共享库。',
+        'SwiftPM，macOS 11+，需从源码构建包。',
       ],
     },
     footer: {

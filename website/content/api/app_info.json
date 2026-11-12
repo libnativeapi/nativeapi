@@ -38,6 +38,10 @@
         "rust": {
           "name": "AppInfo",
           "signature": "pub struct AppInfo"
+        },
+        "swift": {
+          "name": "AppInfo",
+          "signature": "final class AppInfo: Sendable"
         }
       },
       "members": [
@@ -77,6 +81,10 @@
             "rust": {
               "name": "get_name",
               "signature": "pub fn get_name() -> Option<String>"
+            },
+            "swift": {
+              "name": "getName",
+              "signature": "func getName() -> String?"
             }
           }
         },
@@ -116,6 +124,10 @@
             "rust": {
               "name": "get_identifier",
               "signature": "pub fn get_identifier() -> Option<String>"
+            },
+            "swift": {
+              "name": "getIdentifier",
+              "signature": "func getIdentifier() -> String?"
             }
           }
         },
@@ -155,6 +167,10 @@
             "rust": {
               "name": "get_version",
               "signature": "pub fn get_version() -> Option<String>"
+            },
+            "swift": {
+              "name": "getVersion",
+              "signature": "func getVersion() -> String?"
             }
           }
         },
@@ -194,6 +210,10 @@
             "rust": {
               "name": "get_build_number",
               "signature": "pub fn get_build_number() -> Option<String>"
+            },
+            "swift": {
+              "name": "getBuildNumber",
+              "signature": "func getBuildNumber() -> String?"
             }
           }
         }

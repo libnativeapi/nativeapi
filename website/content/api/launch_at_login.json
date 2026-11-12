@@ -38,6 +38,10 @@
         "rust": {
           "name": "LaunchAtLogin",
           "signature": "pub struct LaunchAtLogin"
+        },
+        "swift": {
+          "name": "LaunchAtLogin",
+          "signature": "class LaunchAtLogin"
         }
       },
       "members": [
@@ -76,6 +80,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> LaunchAtLogin?"
             }
           }
         },
@@ -120,6 +128,10 @@
             "rust": {
               "name": "with_id",
               "signature": "pub fn with_id(id: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithId",
+              "signature": "class func createWithId(_ id: String) -> LaunchAtLogin?"
             }
           }
         },
@@ -167,6 +179,10 @@
             "rust": {
               "name": "with_id_and_display_name",
               "signature": "pub fn with_id_and_display_name(id: &str, display_name: &str) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithIdAndDisplayName",
+              "signature": "class func createWithIdAndDisplayName(_ id: String, displayName: String) -> LaunchAtLogin?"
             }
           }
         },
@@ -205,6 +221,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "static func isSupported() -> Bool"
             }
           }
         },
@@ -243,6 +263,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: String?"
             }
           }
         },
@@ -281,6 +305,10 @@
             "rust": {
               "name": "display_name",
               "signature": "pub fn display_name(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "displayName",
+              "signature": "var displayName: String?"
             }
           }
         },
@@ -332,6 +360,10 @@
             "rust": {
               "name": "set_display_name",
               "signature": "pub fn set_display_name(&self, display_name: &str) -> bool"
+            },
+            "swift": {
+              "name": "setDisplayName",
+              "signature": "func setDisplayName(_ displayName: String) -> Bool"
             }
           }
         },
@@ -387,6 +419,10 @@
             "rust": {
               "name": "set_program",
               "signature": "pub fn set_program(&self, executable_path: &str, arguments: &[String]) -> bool"
+            },
+            "swift": {
+              "name": "setProgram",
+              "signature": "func setProgram(_ executablePath: String, arguments: [String]) -> Bool"
             }
           }
         },
@@ -426,6 +462,10 @@
             "rust": {
               "name": "executable_path",
               "signature": "pub fn executable_path(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "executablePath",
+              "signature": "var executablePath: String?"
             }
           }
         },
@@ -465,6 +505,10 @@
             "rust": {
               "name": "arguments",
               "signature": "pub fn arguments(&self) -> Vec<String>"
+            },
+            "swift": {
+              "name": "arguments",
+              "signature": "var arguments: [String]"
             }
           }
         },
@@ -510,6 +554,10 @@
             "rust": {
               "name": "enable",
               "signature": "pub fn enable(&self) -> bool"
+            },
+            "swift": {
+              "name": "enable",
+              "signature": "func enable() -> Bool"
             }
           }
         },
@@ -548,6 +596,10 @@
             "rust": {
               "name": "disable",
               "signature": "pub fn disable(&self) -> bool"
+            },
+            "swift": {
+              "name": "disable",
+              "signature": "func disable() -> Bool"
             }
           }
         },
@@ -593,6 +645,10 @@
             "rust": {
               "name": "is_enabled",
               "signature": "pub fn is_enabled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isEnabled",
+              "signature": "var isEnabled: Bool"
             }
           }
         }

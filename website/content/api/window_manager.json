@@ -48,6 +48,10 @@
         "rust": {
           "name": "WindowManager",
           "signature": "pub struct WindowManager"
+        },
+        "swift": {
+          "name": "WindowManager",
+          "signature": "final class WindowManager: Sendable"
         }
       },
       "members": [
@@ -82,6 +86,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&WindowEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (WindowEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -127,6 +135,10 @@
             "rust": {
               "name": "get",
               "signature": "pub fn get(id: WindowId) -> Option<Window>"
+            },
+            "swift": {
+              "name": "get",
+              "signature": "func get(_ id: WindowId) -> Window?"
             }
           }
         },
@@ -166,6 +178,10 @@
             "rust": {
               "name": "get_all",
               "signature": "pub fn get_all() -> Vec<Window>"
+            },
+            "swift": {
+              "name": "getAll",
+              "signature": "func getAll() -> [Window]"
             }
           }
         },
@@ -205,6 +221,10 @@
             "rust": {
               "name": "get_current",
               "signature": "pub fn get_current() -> Option<Window>"
+            },
+            "swift": {
+              "name": "getCurrent",
+              "signature": "func getCurrent() -> Window?"
             }
           }
         },
@@ -260,6 +280,10 @@
             "rust": {
               "name": "get_window_at_point",
               "signature": "pub fn get_window_at_point(point: &Point, excluded_window_id: WindowId) -> Option<Window>"
+            },
+            "swift": {
+              "name": "getWindowAtPoint",
+              "signature": "func getWindowAtPoint(_ point: Point, excludedWindowId: WindowId) -> Window?"
             }
           }
         },
@@ -294,6 +318,10 @@
             "rust": {
               "name": "set_will_show_hook",
               "signature": "pub fn set_will_show_hook(hook: Option<Box<dyn Fn(u32)>>)"
+            },
+            "swift": {
+              "name": "setWillShowHook",
+              "signature": "func setWillShowHook(_ hook: ((UInt32) -> Void)?) -> Void"
             }
           }
         },
@@ -328,6 +356,10 @@
             "rust": {
               "name": "set_will_hide_hook",
               "signature": "pub fn set_will_hide_hook(hook: Option<Box<dyn Fn(u32)>>)"
+            },
+            "swift": {
+              "name": "setWillHideHook",
+              "signature": "func setWillHideHook(_ hook: ((UInt32) -> Void)?) -> Void"
             }
           }
         },
@@ -362,6 +394,10 @@
             "rust": {
               "name": "has_will_show_hook",
               "signature": "pub fn has_will_show_hook() -> bool"
+            },
+            "swift": {
+              "name": "hasWillShowHook",
+              "signature": "func hasWillShowHook() -> Bool"
             }
           }
         },
@@ -396,6 +432,10 @@
             "rust": {
               "name": "has_will_hide_hook",
               "signature": "pub fn has_will_hide_hook() -> bool"
+            },
+            "swift": {
+              "name": "hasWillHideHook",
+              "signature": "func hasWillHideHook() -> Bool"
             }
           }
         },
@@ -430,6 +470,10 @@
             "rust": {
               "name": "handle_will_show",
               "signature": "pub fn handle_will_show(id: WindowId)"
+            },
+            "swift": {
+              "name": "handleWillShow",
+              "signature": "func handleWillShow(_ id: WindowId) -> Void"
             }
           }
         },
@@ -464,6 +508,10 @@
             "rust": {
               "name": "handle_will_hide",
               "signature": "pub fn handle_will_hide(id: WindowId)"
+            },
+            "swift": {
+              "name": "handleWillHide",
+              "signature": "func handleWillHide(_ id: WindowId) -> Void"
             }
           }
         },
@@ -501,6 +549,10 @@
             "rust": {
               "name": "call_original_show",
               "signature": "pub fn call_original_show(id: WindowId) -> bool"
+            },
+            "swift": {
+              "name": "callOriginalShow",
+              "signature": "func callOriginalShow(_ id: WindowId) -> Bool"
             }
           }
         },
@@ -535,6 +587,10 @@
             "rust": {
               "name": "call_original_hide",
               "signature": "pub fn call_original_hide(id: WindowId) -> bool"
+            },
+            "swift": {
+              "name": "callOriginalHide",
+              "signature": "func callOriginalHide(_ id: WindowId) -> Bool"
             }
           }
         }

@@ -18,7 +18,7 @@ import {
 
 /* ------------------------------------------------------------------ */
 /*  Hero — a desktop: an editor cycling the same four calls through    */
-/*  all six bindings, and the native window those calls produce. The   */
+/*  all seven bindings, and the native window those calls produce. The */
 /*  language tab, the code, the active chip and the window's caption   */
 /*  switch together on one discrete SMIL clock; without SMIL the       */
 /*  TypeScript frame stays put.                                        */
@@ -103,6 +103,18 @@ const languages: {
       [['win.', 'p'], ['SetTitle', 'fn'], ['(', 'p'], ['"Hello"', 'str'], [')', 'p']],
       [['win.', 'p'], ['Center', 'fn'], ['()', 'p']],
       [['win.', 'p'], ['Show', 'fn'], ['()', 'p']],
+    ],
+  },
+  {
+    ext: 'swift',
+    name: 'Swift',
+    file: 'main.swift',
+    color: '#F05138',
+    lines: [
+      [['let ', 'kw'], ['window = ', 'p'], ['Window', 'type'], ['.', 'p'], ['create', 'fn'], ['()!', 'p']],
+      [['window.', 'p'], ['setTitle', 'fn'], ['(', 'p'], ['"Hello"', 'str'], [')', 'p']],
+      [['window.', 'p'], ['center', 'fn'], ['()', 'p']],
+      [['window.', 'p'], ['show', 'fn'], ['()', 'p']],
     ],
   },
 ]

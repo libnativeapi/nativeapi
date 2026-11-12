@@ -38,6 +38,10 @@
         "rust": {
           "name": "KeyboardAccelerator",
           "signature": "pub struct KeyboardAccelerator"
+        },
+        "swift": {
+          "name": "KeyboardAccelerator",
+          "signature": "struct KeyboardAccelerator"
         }
       },
       "members": [
@@ -75,6 +79,10 @@
             "rust": {
               "name": "modifiers",
               "signature": "pub modifiers: ModifierKey"
+            },
+            "swift": {
+              "name": "modifiers",
+              "signature": "var modifiers: ModifierKey"
             }
           }
         },
@@ -112,6 +120,10 @@
             "rust": {
               "name": "key",
               "signature": "pub key: Option<String>"
+            },
+            "swift": {
+              "name": "key",
+              "signature": "var key: String?"
             }
           }
         },
@@ -138,6 +150,10 @@
             "python": {
               "name": "to_string",
               "signature": "def to_string(self) -> str:"
+            },
+            "swift": {
+              "name": "toString",
+              "signature": "func toString() -> String?"
             }
           }
         },
@@ -164,6 +180,10 @@
             "python": {
               "name": "is_empty",
               "signature": "def is_empty(self) -> bool:"
+            },
+            "swift": {
+              "name": "isEmpty",
+              "signature": "var isEmpty: Bool"
             }
           }
         }
@@ -204,6 +224,10 @@
         "rust": {
           "name": "ModifierKey",
           "signature": "pub enum ModifierKey"
+        },
+        "swift": {
+          "name": "ModifierKey",
+          "signature": "struct ModifierKey: OptionSet"
         }
       },
       "members": [
@@ -278,6 +302,10 @@
             "rust": {
               "name": "ModifierKey::Shift",
               "signature": "Shift = 1"
+            },
+            "swift": {
+              "name": "shift",
+              "signature": "static let shift: ModifierKey = 1"
             }
           }
         },
@@ -315,6 +343,10 @@
             "rust": {
               "name": "ModifierKey::Ctrl",
               "signature": "Ctrl = 2"
+            },
+            "swift": {
+              "name": "ctrl",
+              "signature": "static let ctrl: ModifierKey = 2"
             }
           }
         },
@@ -352,6 +384,10 @@
             "rust": {
               "name": "ModifierKey::Alt",
               "signature": "Alt = 4"
+            },
+            "swift": {
+              "name": "alt",
+              "signature": "static let alt: ModifierKey = 4"
             }
           }
         },
@@ -389,6 +425,10 @@
             "rust": {
               "name": "ModifierKey::Meta",
               "signature": "Meta = 8"
+            },
+            "swift": {
+              "name": "meta",
+              "signature": "static let meta: ModifierKey = 8"
             }
           }
         },
@@ -426,6 +466,10 @@
             "rust": {
               "name": "ModifierKey::Fn",
               "signature": "Fn = 16"
+            },
+            "swift": {
+              "name": "fn",
+              "signature": "static let fn: ModifierKey = 16"
             }
           }
         },
@@ -463,6 +507,10 @@
             "rust": {
               "name": "ModifierKey::CapsLock",
               "signature": "CapsLock = 32"
+            },
+            "swift": {
+              "name": "capsLock",
+              "signature": "static let capsLock: ModifierKey = 32"
             }
           }
         },
@@ -500,6 +548,10 @@
             "rust": {
               "name": "ModifierKey::NumLock",
               "signature": "NumLock = 64"
+            },
+            "swift": {
+              "name": "numLock",
+              "signature": "static let numLock: ModifierKey = 64"
             }
           }
         },
@@ -537,6 +589,10 @@
             "rust": {
               "name": "ModifierKey::ScrollLock",
               "signature": "ScrollLock = 128"
+            },
+            "swift": {
+              "name": "scrollLock",
+              "signature": "static let scrollLock: ModifierKey = 128"
             }
           }
         }
@@ -577,6 +633,10 @@
         "rust": {
           "name": "KeyboardEvent",
           "signature": "pub enum KeyboardEvent"
+        },
+        "swift": {
+          "name": "KeyboardEvent",
+          "signature": "enum KeyboardEvent"
         }
       },
       "members": [
@@ -615,6 +675,10 @@
             "rust": {
               "name": "keycode",
               "signature": "keycode: i32"
+            },
+            "swift": {
+              "name": "keycode",
+              "signature": "var keycode: CInt"
             }
           }
         },
@@ -653,6 +717,10 @@
             "rust": {
               "name": "KeyboardEvent::KeyPressed",
               "signature": "KeyPressed { keycode: i32 }"
+            },
+            "swift": {
+              "name": "keyPressed",
+              "signature": "case keyPressed(keycode: CInt)"
             }
           }
         },
@@ -691,6 +759,10 @@
             "rust": {
               "name": "KeyboardEvent::KeyReleased",
               "signature": "KeyReleased { keycode: i32 }"
+            },
+            "swift": {
+              "name": "keyReleased",
+              "signature": "case keyReleased(keycode: CInt)"
             }
           }
         },
@@ -729,6 +801,10 @@
             "rust": {
               "name": "KeyboardEvent::ModifierKeysChanged",
               "signature": "ModifierKeysChanged { keycode: i32, modifier_keys: u32 }"
+            },
+            "swift": {
+              "name": "modifierKeysChanged",
+              "signature": "case modifierKeysChanged(keycode: CInt, modifierKeys: UInt32)"
             }
           }
         },
@@ -768,6 +844,10 @@
             "rust": {
               "name": "modifier_keys",
               "signature": "modifier_keys: u32"
+            },
+            "swift": {
+              "name": "modifierKeys",
+              "signature": "var modifierKeys: UInt32"
             }
           }
         }

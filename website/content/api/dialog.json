@@ -38,6 +38,10 @@
         "rust": {
           "name": "DialogModality",
           "signature": "pub enum DialogModality"
+        },
+        "swift": {
+          "name": "DialogModality",
+          "signature": "enum DialogModality: CInt"
         }
       },
       "members": [
@@ -76,6 +80,10 @@
             "rust": {
               "name": "DialogModality::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -114,6 +122,10 @@
             "rust": {
               "name": "DialogModality::Application",
               "signature": "Application = 1"
+            },
+            "swift": {
+              "name": "application",
+              "signature": "case application = 1"
             }
           }
         },
@@ -152,6 +164,10 @@
             "rust": {
               "name": "DialogModality::Window",
               "signature": "Window = 2"
+            },
+            "swift": {
+              "name": "window",
+              "signature": "case window = 2"
             }
           }
         }

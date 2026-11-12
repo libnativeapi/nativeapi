@@ -44,6 +44,10 @@
         "rust": {
           "name": "ProtocolHandler",
           "signature": "pub struct ProtocolHandler"
+        },
+        "swift": {
+          "name": "ProtocolHandler",
+          "signature": "final class ProtocolHandler: Sendable"
         }
       },
       "members": [
@@ -78,6 +82,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&ProtocolHandlerEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (ProtocolHandlerEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -115,6 +123,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "func isSupported() -> Bool"
             }
           }
         },
@@ -165,6 +177,10 @@
             "rust": {
               "name": "register",
               "signature": "pub fn register(scheme: &str) -> bool"
+            },
+            "swift": {
+              "name": "register",
+              "signature": "func register(_ scheme: String) -> Bool"
             }
           }
         },
@@ -209,6 +225,10 @@
             "rust": {
               "name": "get_initial_url",
               "signature": "pub fn get_initial_url() -> Option<String>"
+            },
+            "swift": {
+              "name": "getInitialUrl",
+              "signature": "func getInitialUrl() -> String?"
             }
           }
         }
@@ -248,6 +268,10 @@
         "rust": {
           "name": "ProtocolHandlerEvent",
           "signature": "pub enum ProtocolHandlerEvent"
+        },
+        "swift": {
+          "name": "ProtocolHandlerEvent",
+          "signature": "enum ProtocolHandlerEvent"
         }
       },
       "members": [
@@ -285,6 +309,10 @@
             "rust": {
               "name": "ProtocolHandlerEvent::ProtocolUrlReceived",
               "signature": "ProtocolUrlReceived { url: Option<String> }"
+            },
+            "swift": {
+              "name": "protocolUrlReceived",
+              "signature": "case protocolUrlReceived(url: String?)"
             }
           }
         },
@@ -323,6 +351,10 @@
             "rust": {
               "name": "url",
               "signature": "url: Option<String>"
+            },
+            "swift": {
+              "name": "url",
+              "signature": "var url: String?"
             }
           }
         }

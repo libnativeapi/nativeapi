@@ -48,6 +48,10 @@
         "rust": {
           "name": "MenuItem",
           "signature": "pub struct MenuItem"
+        },
+        "swift": {
+          "name": "MenuItem",
+          "signature": "class MenuItem"
         }
       },
       "members": [
@@ -96,6 +100,10 @@
             "rust": {
               "name": "with_label_and_type",
               "signature": "pub fn with_label_and_type(label: &str, r#type: MenuItemType) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithLabelAndType",
+              "signature": "class func createWithLabelAndType(_ label: String, type: MenuItemType) -> MenuItem?"
             }
           }
         },
@@ -140,6 +148,10 @@
             "rust": {
               "name": "with_native_item",
               "signature": "pub unsafe fn with_native_item(native_item: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithNativeItem",
+              "signature": "class func createWithNativeItem(_ nativeItem: UnsafeMutableRawPointer?) -> MenuItem?"
             }
           }
         },
@@ -174,6 +186,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&MenuEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (MenuEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -213,6 +229,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> MenuItemId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: MenuItemId"
             }
           }
         },
@@ -251,6 +271,10 @@
             "rust": {
               "name": "r#type",
               "signature": "pub fn r#type(&self) -> MenuItemType"
+            },
+            "swift": {
+              "name": "type",
+              "signature": "var type: MenuItemType"
             }
           }
         },
@@ -295,6 +319,10 @@
             "rust": {
               "name": "set_label",
               "signature": "pub fn set_label(&self, label: Option<&str>)"
+            },
+            "swift": {
+              "name": "setLabel",
+              "signature": "func setLabel(_ label: String?) -> Void"
             }
           }
         },
@@ -333,6 +361,10 @@
             "rust": {
               "name": "label",
               "signature": "pub fn label(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "label",
+              "signature": "var label: String?"
             }
           }
         },
@@ -377,6 +409,10 @@
             "rust": {
               "name": "set_icon",
               "signature": "pub fn set_icon(&self, image: Option<&Image>)"
+            },
+            "swift": {
+              "name": "setIcon",
+              "signature": "func setIcon(_ image: Image?) -> Void"
             }
           }
         },
@@ -415,6 +451,10 @@
             "rust": {
               "name": "icon",
               "signature": "pub fn icon(&self) -> Option<Image>"
+            },
+            "swift": {
+              "name": "icon",
+              "signature": "var icon: Image?"
             }
           }
         },
@@ -459,6 +499,10 @@
             "rust": {
               "name": "set_tooltip",
               "signature": "pub fn set_tooltip(&self, tooltip: Option<&str>)"
+            },
+            "swift": {
+              "name": "setTooltip",
+              "signature": "func setTooltip(_ tooltip: String?) -> Void"
             }
           }
         },
@@ -497,6 +541,10 @@
             "rust": {
               "name": "tooltip",
               "signature": "pub fn tooltip(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "tooltip",
+              "signature": "var tooltip: String?"
             }
           }
         },
@@ -541,6 +589,10 @@
             "rust": {
               "name": "set_accelerator",
               "signature": "pub fn set_accelerator(&self, accelerator: Option<&KeyboardAccelerator>)"
+            },
+            "swift": {
+              "name": "setAccelerator",
+              "signature": "func setAccelerator(_ accelerator: KeyboardAccelerator?) -> Void"
             }
           }
         },
@@ -579,6 +631,10 @@
             "rust": {
               "name": "accelerator",
               "signature": "pub fn accelerator(&self) -> KeyboardAccelerator"
+            },
+            "swift": {
+              "name": "accelerator",
+              "signature": "var accelerator: KeyboardAccelerator"
             }
           }
         },
@@ -623,6 +679,10 @@
             "rust": {
               "name": "set_enabled",
               "signature": "pub fn set_enabled(&self, enabled: bool)"
+            },
+            "swift": {
+              "name": "setEnabled",
+              "signature": "func setEnabled(_ enabled: Bool) -> Void"
             }
           }
         },
@@ -661,6 +721,10 @@
             "rust": {
               "name": "is_enabled",
               "signature": "pub fn is_enabled(&self) -> bool"
+            },
+            "swift": {
+              "name": "isEnabled",
+              "signature": "var isEnabled: Bool"
             }
           }
         },
@@ -705,6 +769,10 @@
             "rust": {
               "name": "set_state",
               "signature": "pub fn set_state(&self, state: MenuItemState)"
+            },
+            "swift": {
+              "name": "setState",
+              "signature": "func setState(_ state: MenuItemState) -> Void"
             }
           }
         },
@@ -743,6 +811,10 @@
             "rust": {
               "name": "state",
               "signature": "pub fn state(&self) -> MenuItemState"
+            },
+            "swift": {
+              "name": "state",
+              "signature": "var state: MenuItemState"
             }
           }
         },
@@ -787,6 +859,10 @@
             "rust": {
               "name": "set_radio_group",
               "signature": "pub fn set_radio_group(&self, group_id: i32)"
+            },
+            "swift": {
+              "name": "setRadioGroup",
+              "signature": "func setRadioGroup(_ groupId: CInt) -> Void"
             }
           }
         },
@@ -825,6 +901,10 @@
             "rust": {
               "name": "radio_group",
               "signature": "pub fn radio_group(&self) -> i32"
+            },
+            "swift": {
+              "name": "radioGroup",
+              "signature": "var radioGroup: CInt"
             }
           }
         },
@@ -869,6 +949,10 @@
             "rust": {
               "name": "set_submenu",
               "signature": "pub fn set_submenu(&self, submenu: Option<&Menu>)"
+            },
+            "swift": {
+              "name": "setSubmenu",
+              "signature": "func setSubmenu(_ submenu: Menu?) -> Void"
             }
           }
         },
@@ -907,6 +991,10 @@
             "rust": {
               "name": "submenu",
               "signature": "pub fn submenu(&self) -> Option<Menu>"
+            },
+            "swift": {
+              "name": "submenu",
+              "signature": "var submenu: Menu?"
             }
           }
         }
@@ -957,6 +1045,10 @@
         "rust": {
           "name": "Menu",
           "signature": "pub struct Menu"
+        },
+        "swift": {
+          "name": "Menu",
+          "signature": "class Menu"
         }
       },
       "members": [
@@ -995,6 +1087,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> Menu?"
             }
           }
         },
@@ -1039,6 +1135,10 @@
             "rust": {
               "name": "with_native_menu",
               "signature": "pub unsafe fn with_native_menu(native_menu: *mut std::ffi::c_void) -> Option<Self>"
+            },
+            "swift": {
+              "name": "createWithNativeMenu",
+              "signature": "class func createWithNativeMenu(_ nativeMenu: UnsafeMutableRawPointer?) -> Menu?"
             }
           }
         },
@@ -1073,6 +1173,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&MenuEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (MenuEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -1112,6 +1216,10 @@
             "rust": {
               "name": "id",
               "signature": "pub fn id(&self) -> MenuId"
+            },
+            "swift": {
+              "name": "id",
+              "signature": "var id: MenuId"
             }
           }
         },
@@ -1149,6 +1257,10 @@
             "rust": {
               "name": "set_backend",
               "signature": "pub fn set_backend(&self, backend: MenuBackend) -> bool"
+            },
+            "swift": {
+              "name": "setBackend",
+              "signature": "func setBackend(_ backend: MenuBackend) -> Bool"
             }
           }
         },
@@ -1183,6 +1295,10 @@
             "rust": {
               "name": "backend",
               "signature": "pub fn backend(&self) -> MenuBackend"
+            },
+            "swift": {
+              "name": "backend",
+              "signature": "var backend: MenuBackend"
             }
           }
         },
@@ -1220,6 +1336,10 @@
             "rust": {
               "name": "is_backend_supported",
               "signature": "pub fn is_backend_supported(backend: MenuBackend) -> bool"
+            },
+            "swift": {
+              "name": "isBackendSupported",
+              "signature": "static func isBackendSupported(_ backend: MenuBackend) -> Bool"
             }
           }
         },
@@ -1264,6 +1384,10 @@
             "rust": {
               "name": "add_item",
               "signature": "pub fn add_item(&self, item: Option<&MenuItem>)"
+            },
+            "swift": {
+              "name": "addItem",
+              "signature": "func addItem(_ item: MenuItem?) -> Void"
             }
           }
         },
@@ -1312,6 +1436,10 @@
             "rust": {
               "name": "insert_item",
               "signature": "pub fn insert_item(&self, index: std::os::raw::c_ulong, item: Option<&MenuItem>)"
+            },
+            "swift": {
+              "name": "insertItem",
+              "signature": "func insertItem(_ index: CUnsignedLong, item: MenuItem?) -> Void"
             }
           }
         },
@@ -1357,6 +1485,10 @@
             "rust": {
               "name": "remove_item",
               "signature": "pub fn remove_item(&self, item: Option<&MenuItem>) -> bool"
+            },
+            "swift": {
+              "name": "removeItem",
+              "signature": "func removeItem(_ item: MenuItem?) -> Bool"
             }
           }
         },
@@ -1402,6 +1534,10 @@
             "rust": {
               "name": "remove_item_by_id",
               "signature": "pub fn remove_item_by_id(&self, item_id: MenuItemId) -> bool"
+            },
+            "swift": {
+              "name": "removeItemById",
+              "signature": "func removeItemById(_ itemId: MenuItemId) -> Bool"
             }
           }
         },
@@ -1447,6 +1583,10 @@
             "rust": {
               "name": "remove_item_at",
               "signature": "pub fn remove_item_at(&self, index: std::os::raw::c_ulong) -> bool"
+            },
+            "swift": {
+              "name": "removeItemAt",
+              "signature": "func removeItemAt(_ index: CUnsignedLong) -> Bool"
             }
           }
         },
@@ -1485,6 +1625,10 @@
             "rust": {
               "name": "clear",
               "signature": "pub fn clear(&self)"
+            },
+            "swift": {
+              "name": "clear",
+              "signature": "func clear() -> Void"
             }
           }
         },
@@ -1523,6 +1667,10 @@
             "rust": {
               "name": "add_separator",
               "signature": "pub fn add_separator(&self)"
+            },
+            "swift": {
+              "name": "addSeparator",
+              "signature": "func addSeparator() -> Void"
             }
           }
         },
@@ -1566,6 +1714,10 @@
             "rust": {
               "name": "insert_separator",
               "signature": "pub fn insert_separator(&self, index: std::os::raw::c_ulong)"
+            },
+            "swift": {
+              "name": "insertSeparator",
+              "signature": "func insertSeparator(_ index: CUnsignedLong) -> Void"
             }
           }
         },
@@ -1604,6 +1756,10 @@
             "rust": {
               "name": "item_count",
               "signature": "pub fn item_count(&self) -> std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "itemCount",
+              "signature": "var itemCount: CUnsignedLong"
             }
           }
         },
@@ -1649,6 +1805,10 @@
             "rust": {
               "name": "get_item_at",
               "signature": "pub fn get_item_at(&self, index: std::os::raw::c_ulong) -> Option<MenuItem>"
+            },
+            "swift": {
+              "name": "getItemAt",
+              "signature": "func getItemAt(_ index: CUnsignedLong) -> MenuItem?"
             }
           }
         },
@@ -1694,6 +1854,10 @@
             "rust": {
               "name": "get_item_by_id",
               "signature": "pub fn get_item_by_id(&self, item_id: MenuItemId) -> Option<MenuItem>"
+            },
+            "swift": {
+              "name": "getItemById",
+              "signature": "func getItemById(_ itemId: MenuItemId) -> MenuItem?"
             }
           }
         },
@@ -1733,6 +1897,10 @@
             "rust": {
               "name": "all_items",
               "signature": "pub fn all_items(&self) -> Vec<MenuItem>"
+            },
+            "swift": {
+              "name": "allItems",
+              "signature": "var allItems: [MenuItem]"
             }
           }
         },
@@ -1788,6 +1956,10 @@
             "rust": {
               "name": "open",
               "signature": "pub fn open(&self, strategy: &PositioningStrategy, placement: Placement) -> bool"
+            },
+            "swift": {
+              "name": "`open`",
+              "signature": "func `open`(_ strategy: PositioningStrategy, placement: Placement) -> Bool"
             }
           }
         },
@@ -1832,6 +2004,10 @@
             "rust": {
               "name": "close",
               "signature": "pub fn close(&self) -> bool"
+            },
+            "swift": {
+              "name": "close",
+              "signature": "func close() -> Bool"
             }
           }
         }
@@ -1871,6 +2047,10 @@
         "rust": {
           "name": "MenuBackend",
           "signature": "pub enum MenuBackend"
+        },
+        "swift": {
+          "name": "MenuBackend",
+          "signature": "enum MenuBackend: CInt"
         }
       },
       "members": [
@@ -1905,6 +2085,10 @@
             "rust": {
               "name": "MenuBackend::Native",
               "signature": "Native = 0"
+            },
+            "swift": {
+              "name": "native",
+              "signature": "case native = 0"
             }
           }
         },
@@ -1939,6 +2123,10 @@
             "rust": {
               "name": "MenuBackend::WinUi3",
               "signature": "WinUi3 = 1"
+            },
+            "swift": {
+              "name": "winUi3",
+              "signature": "case winUi3 = 1"
             }
           }
         }
@@ -1979,6 +2167,10 @@
         "rust": {
           "name": "MenuItemType",
           "signature": "pub enum MenuItemType"
+        },
+        "swift": {
+          "name": "MenuItemType",
+          "signature": "enum MenuItemType: CInt"
         }
       },
       "members": [
@@ -2016,6 +2208,10 @@
             "rust": {
               "name": "MenuItemType::Normal",
               "signature": "Normal = 0"
+            },
+            "swift": {
+              "name": "normal",
+              "signature": "case normal = 0"
             }
           }
         },
@@ -2053,6 +2249,10 @@
             "rust": {
               "name": "MenuItemType::Checkbox",
               "signature": "Checkbox = 1"
+            },
+            "swift": {
+              "name": "checkbox",
+              "signature": "case checkbox = 1"
             }
           }
         },
@@ -2090,6 +2290,10 @@
             "rust": {
               "name": "MenuItemType::Radio",
               "signature": "Radio = 2"
+            },
+            "swift": {
+              "name": "radio",
+              "signature": "case radio = 2"
             }
           }
         },
@@ -2127,6 +2331,10 @@
             "rust": {
               "name": "MenuItemType::Separator",
               "signature": "Separator = 3"
+            },
+            "swift": {
+              "name": "separator",
+              "signature": "case separator = 3"
             }
           }
         },
@@ -2164,6 +2372,10 @@
             "rust": {
               "name": "MenuItemType::Submenu",
               "signature": "Submenu = 4"
+            },
+            "swift": {
+              "name": "submenu",
+              "signature": "case submenu = 4"
             }
           }
         }
@@ -2204,6 +2416,10 @@
         "rust": {
           "name": "MenuItemState",
           "signature": "pub enum MenuItemState"
+        },
+        "swift": {
+          "name": "MenuItemState",
+          "signature": "enum MenuItemState: CInt"
         }
       },
       "members": [
@@ -2241,6 +2457,10 @@
             "rust": {
               "name": "MenuItemState::Unchecked",
               "signature": "Unchecked = 0"
+            },
+            "swift": {
+              "name": "unchecked",
+              "signature": "case unchecked = 0"
             }
           }
         },
@@ -2278,6 +2498,10 @@
             "rust": {
               "name": "MenuItemState::Checked",
               "signature": "Checked = 1"
+            },
+            "swift": {
+              "name": "checked",
+              "signature": "case checked = 1"
             }
           }
         },
@@ -2315,6 +2539,10 @@
             "rust": {
               "name": "MenuItemState::Mixed",
               "signature": "Mixed = 2"
+            },
+            "swift": {
+              "name": "mixed",
+              "signature": "case mixed = 2"
             }
           }
         }
@@ -2355,6 +2583,10 @@
         "rust": {
           "name": "MenuEvent",
           "signature": "pub enum MenuEvent"
+        },
+        "swift": {
+          "name": "MenuEvent",
+          "signature": "enum MenuEvent"
         }
       },
       "members": [
@@ -2393,6 +2625,10 @@
             "rust": {
               "name": "MenuEvent::Opened",
               "signature": "Opened { menu_id: MenuId }"
+            },
+            "swift": {
+              "name": "opened",
+              "signature": "case opened(menuId: MenuId)"
             }
           }
         },
@@ -2428,6 +2664,10 @@
             "rust": {
               "name": "menu_id",
               "signature": "menu_id: MenuId"
+            },
+            "swift": {
+              "name": "menuId",
+              "signature": "var menuId: MenuId"
             }
           }
         },
@@ -2466,6 +2706,10 @@
             "rust": {
               "name": "MenuEvent::Closed",
               "signature": "Closed { menu_id: MenuId }"
+            },
+            "swift": {
+              "name": "closed",
+              "signature": "case closed(menuId: MenuId)"
             }
           }
         },
@@ -2501,6 +2745,10 @@
             "rust": {
               "name": "menu_id",
               "signature": "menu_id: MenuId"
+            },
+            "swift": {
+              "name": "menuId",
+              "signature": "var menuId: MenuId"
             }
           }
         },
@@ -2539,6 +2787,10 @@
             "rust": {
               "name": "MenuEvent::ItemClicked",
               "signature": "ItemClicked { item_id: MenuItemId }"
+            },
+            "swift": {
+              "name": "itemClicked",
+              "signature": "case itemClicked(itemId: MenuItemId)"
             }
           }
         },
@@ -2574,6 +2826,10 @@
             "rust": {
               "name": "item_id",
               "signature": "item_id: MenuItemId"
+            },
+            "swift": {
+              "name": "itemId",
+              "signature": "var itemId: MenuItemId"
             }
           }
         },
@@ -2612,6 +2868,10 @@
             "rust": {
               "name": "MenuEvent::ItemSubmenuOpened",
               "signature": "ItemSubmenuOpened { item_id: MenuItemId }"
+            },
+            "swift": {
+              "name": "itemSubmenuOpened",
+              "signature": "case itemSubmenuOpened(itemId: MenuItemId)"
             }
           }
         },
@@ -2647,6 +2907,10 @@
             "rust": {
               "name": "item_id",
               "signature": "item_id: MenuItemId"
+            },
+            "swift": {
+              "name": "itemId",
+              "signature": "var itemId: MenuItemId"
             }
           }
         },
@@ -2685,6 +2949,10 @@
             "rust": {
               "name": "MenuEvent::ItemSubmenuClosed",
               "signature": "ItemSubmenuClosed { item_id: MenuItemId }"
+            },
+            "swift": {
+              "name": "itemSubmenuClosed",
+              "signature": "case itemSubmenuClosed(itemId: MenuItemId)"
             }
           }
         },
@@ -2720,6 +2988,10 @@
             "rust": {
               "name": "item_id",
               "signature": "item_id: MenuItemId"
+            },
+            "swift": {
+              "name": "itemId",
+              "signature": "var itemId: MenuItemId"
             }
           }
         }
@@ -2752,6 +3024,10 @@
         "rust": {
           "name": "MenuId",
           "signature": "pub type MenuId = u32;"
+        },
+        "swift": {
+          "name": "MenuId",
+          "signature": "typealias MenuId = UInt32"
         }
       }
     },
@@ -2782,6 +3058,10 @@
         "rust": {
           "name": "MenuItemId",
           "signature": "pub type MenuItemId = u32;"
+        },
+        "swift": {
+          "name": "MenuItemId",
+          "signature": "typealias MenuItemId = UInt32"
         }
       }
     }

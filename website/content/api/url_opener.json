@@ -43,6 +43,10 @@
         "rust": {
           "name": "UrlOpener",
           "signature": "pub struct UrlOpener"
+        },
+        "swift": {
+          "name": "UrlOpener",
+          "signature": "final class UrlOpener: Sendable"
         }
       },
       "members": [
@@ -77,6 +81,10 @@
             "rust": {
               "name": "is_supported",
               "signature": "pub fn is_supported() -> bool"
+            },
+            "swift": {
+              "name": "isSupported",
+              "signature": "func isSupported() -> Bool"
             }
           }
         },
@@ -114,6 +122,10 @@
             "rust": {
               "name": "can_open",
               "signature": "pub fn can_open(url: &str) -> bool"
+            },
+            "swift": {
+              "name": "canOpen",
+              "signature": "func canOpen(_ url: String) -> Bool"
             }
           }
         },
@@ -151,6 +163,10 @@
             "rust": {
               "name": "open",
               "signature": "pub fn open(url: &str) -> UrlOpenResult"
+            },
+            "swift": {
+              "name": "`open`",
+              "signature": "func `open`(_ url: String) -> UrlOpenResult"
             }
           }
         }
@@ -187,6 +203,10 @@
         "rust": {
           "name": "UrlOpenResult",
           "signature": "pub struct UrlOpenResult"
+        },
+        "swift": {
+          "name": "UrlOpenResult",
+          "signature": "struct UrlOpenResult"
         }
       },
       "members": [
@@ -221,6 +241,10 @@
             "rust": {
               "name": "success",
               "signature": "pub success: bool"
+            },
+            "swift": {
+              "name": "success",
+              "signature": "var success: Bool"
             }
           }
         },
@@ -255,6 +279,10 @@
             "rust": {
               "name": "error_code",
               "signature": "pub error_code: UrlOpenErrorCode"
+            },
+            "swift": {
+              "name": "errorCode",
+              "signature": "var errorCode: UrlOpenErrorCode"
             }
           }
         },
@@ -289,6 +317,10 @@
             "rust": {
               "name": "error_message",
               "signature": "pub error_message: Option<String>"
+            },
+            "swift": {
+              "name": "errorMessage",
+              "signature": "var errorMessage: String?"
             }
           }
         }
@@ -325,6 +357,10 @@
         "rust": {
           "name": "UrlOpenErrorCode",
           "signature": "pub enum UrlOpenErrorCode"
+        },
+        "swift": {
+          "name": "UrlOpenErrorCode",
+          "signature": "enum UrlOpenErrorCode: CInt"
         }
       },
       "members": [
@@ -359,6 +395,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::None",
               "signature": "None = 0"
+            },
+            "swift": {
+              "name": "none",
+              "signature": "case none = 0"
             }
           }
         },
@@ -393,6 +433,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::InvalidUrlEmpty",
               "signature": "InvalidUrlEmpty = 1"
+            },
+            "swift": {
+              "name": "invalidUrlEmpty",
+              "signature": "case invalidUrlEmpty = 1"
             }
           }
         },
@@ -427,6 +471,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::InvalidUrlMissingScheme",
               "signature": "InvalidUrlMissingScheme = 2"
+            },
+            "swift": {
+              "name": "invalidUrlMissingScheme",
+              "signature": "case invalidUrlMissingScheme = 2"
             }
           }
         },
@@ -461,6 +509,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::InvalidUrlUnsupportedScheme",
               "signature": "InvalidUrlUnsupportedScheme = 3"
+            },
+            "swift": {
+              "name": "invalidUrlUnsupportedScheme",
+              "signature": "case invalidUrlUnsupportedScheme = 3"
             }
           }
         },
@@ -495,6 +547,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::UnsupportedPlatform",
               "signature": "UnsupportedPlatform = 4"
+            },
+            "swift": {
+              "name": "unsupportedPlatform",
+              "signature": "case unsupportedPlatform = 4"
             }
           }
         },
@@ -529,6 +585,10 @@
             "rust": {
               "name": "UrlOpenErrorCode::InvocationFailed",
               "signature": "InvocationFailed = 5"
+            },
+            "swift": {
+              "name": "invocationFailed",
+              "signature": "case invocationFailed = 5"
             }
           }
         }

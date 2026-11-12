@@ -44,6 +44,10 @@
         "rust": {
           "name": "Color",
           "signature": "pub struct Color"
+        },
+        "swift": {
+          "name": "Color",
+          "signature": "struct Color"
         }
       },
       "members": [
@@ -81,6 +85,10 @@
             "rust": {
               "name": "r",
               "signature": "pub r: u8"
+            },
+            "swift": {
+              "name": "r",
+              "signature": "var r: UInt8"
             }
           }
         },
@@ -118,6 +126,10 @@
             "rust": {
               "name": "g",
               "signature": "pub g: u8"
+            },
+            "swift": {
+              "name": "g",
+              "signature": "var g: UInt8"
             }
           }
         },
@@ -155,6 +167,10 @@
             "rust": {
               "name": "b",
               "signature": "pub b: u8"
+            },
+            "swift": {
+              "name": "b",
+              "signature": "var b: UInt8"
             }
           }
         },
@@ -192,6 +208,10 @@
             "rust": {
               "name": "a",
               "signature": "pub a: u8"
+            },
+            "swift": {
+              "name": "a",
+              "signature": "var a: UInt8"
             }
           }
         },
@@ -214,6 +234,10 @@
             "python": {
               "name": "TRANSPARENT",
               "signature": "TRANSPARENT: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "transparent",
+              "signature": "static let transparent: Color"
             }
           }
         },
@@ -236,6 +260,10 @@
             "python": {
               "name": "BLACK",
               "signature": "BLACK: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "black",
+              "signature": "static let black: Color"
             }
           }
         },
@@ -258,6 +286,10 @@
             "python": {
               "name": "WHITE",
               "signature": "WHITE: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "white",
+              "signature": "static let white: Color"
             }
           }
         },
@@ -280,6 +312,10 @@
             "python": {
               "name": "RED",
               "signature": "RED: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "red",
+              "signature": "static let red: Color"
             }
           }
         },
@@ -302,6 +338,10 @@
             "python": {
               "name": "GREEN",
               "signature": "GREEN: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "green",
+              "signature": "static let green: Color"
             }
           }
         },
@@ -324,6 +364,10 @@
             "python": {
               "name": "BLUE",
               "signature": "BLUE: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "blue",
+              "signature": "static let blue: Color"
             }
           }
         },
@@ -346,6 +390,10 @@
             "python": {
               "name": "YELLOW",
               "signature": "YELLOW: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "yellow",
+              "signature": "static let yellow: Color"
             }
           }
         },
@@ -368,6 +416,10 @@
             "python": {
               "name": "CYAN",
               "signature": "CYAN: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "cyan",
+              "signature": "static let cyan: Color"
             }
           }
         },
@@ -390,6 +442,10 @@
             "python": {
               "name": "MAGENTA",
               "signature": "MAGENTA: ClassVar[Color]"
+            },
+            "swift": {
+              "name": "magenta",
+              "signature": "static let magenta: Color"
             }
           }
         },
@@ -435,6 +491,10 @@
             "python": {
               "name": "from_rgba",
               "signature": "@classmethod\ndef from_rgba(cls, red: int, green: int, blue: int, alpha: int) -> Color:"
+            },
+            "swift": {
+              "name": "fromRgba",
+              "signature": "static func fromRgba(_ red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) -> Color"
             }
           }
         },
@@ -468,6 +528,10 @@
             "python": {
               "name": "from_hex",
               "signature": "@classmethod\ndef from_hex(cls, hex: str) -> Color:"
+            },
+            "swift": {
+              "name": "fromHex",
+              "signature": "static func fromHex(_ hex: String) -> Color"
             }
           }
         },
@@ -494,6 +558,10 @@
             "python": {
               "name": "to_rgba",
               "signature": "def to_rgba(self) -> int:"
+            },
+            "swift": {
+              "name": "toRgba",
+              "signature": "func toRgba() -> UInt32"
             }
           }
         },
@@ -520,6 +588,10 @@
             "python": {
               "name": "to_argb",
               "signature": "def to_argb(self) -> int:"
+            },
+            "swift": {
+              "name": "toArgb",
+              "signature": "func toArgb() -> UInt32"
             }
           }
         }

@@ -28,6 +28,10 @@
     {
       "id": "go",
       "label": "Go"
+    },
+    {
+      "id": "swift",
+      "label": "Swift"
     }
   ],
   "modules": [
@@ -46,7 +50,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -60,7 +65,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -74,7 +80,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -94,7 +101,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -108,7 +116,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -122,7 +131,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -136,7 +146,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -156,7 +167,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -176,7 +188,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -190,7 +203,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -204,7 +218,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -224,7 +239,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -238,7 +254,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -258,7 +275,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -278,7 +296,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -298,7 +317,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -318,7 +338,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -332,7 +353,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -346,7 +368,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -359,7 +382,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -379,7 +403,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -399,7 +424,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -412,7 +438,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -425,7 +452,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -445,7 +473,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -459,7 +488,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -479,7 +509,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -499,7 +530,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -519,7 +551,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -539,7 +572,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -559,7 +593,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -579,7 +614,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -593,7 +629,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -613,7 +650,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -626,7 +664,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -639,7 +678,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -659,7 +699,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -672,7 +713,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -692,7 +734,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -712,7 +755,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -732,7 +776,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -752,7 +797,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -766,7 +812,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -780,7 +827,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -794,7 +842,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -808,7 +857,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -822,7 +872,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -836,7 +887,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -850,7 +902,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -864,7 +917,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -878,7 +932,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -891,7 +946,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -911,7 +967,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -925,7 +982,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -939,7 +997,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -953,7 +1012,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -967,7 +1027,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -981,7 +1042,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -995,7 +1057,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1009,7 +1072,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1023,7 +1087,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1036,7 +1101,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1049,7 +1115,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1069,7 +1136,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1089,7 +1157,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1103,7 +1172,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1123,7 +1193,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1137,7 +1208,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1151,7 +1223,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1171,7 +1244,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1185,7 +1259,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1205,7 +1280,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1219,7 +1295,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1239,7 +1316,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1253,7 +1331,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1267,7 +1346,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1281,7 +1361,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1295,7 +1376,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1309,7 +1391,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1321,7 +1404,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1333,7 +1417,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1353,7 +1438,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1367,7 +1453,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1381,7 +1468,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1395,7 +1483,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1407,7 +1496,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1427,7 +1517,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1447,7 +1538,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1461,7 +1553,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1475,7 +1568,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1489,7 +1583,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1501,7 +1596,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1521,7 +1617,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1533,7 +1630,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1553,7 +1651,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]
@@ -1573,7 +1672,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1587,7 +1687,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         },
         {
@@ -1601,7 +1702,8 @@
             "go",
             "js",
             "python",
-            "rust"
+            "rust",
+            "swift"
           ]
         }
       ]

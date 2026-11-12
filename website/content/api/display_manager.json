@@ -44,6 +44,10 @@
         "rust": {
           "name": "DisplayManager",
           "signature": "pub struct DisplayManager"
+        },
+        "swift": {
+          "name": "DisplayManager",
+          "signature": "final class DisplayManager: Sendable"
         }
       },
       "members": [
@@ -78,6 +82,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&DisplayEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (DisplayEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -116,6 +124,10 @@
             "rust": {
               "name": "get_all",
               "signature": "pub fn get_all() -> Vec<Display>"
+            },
+            "swift": {
+              "name": "getAll",
+              "signature": "func getAll() -> [Display]"
             }
           }
         },
@@ -155,6 +167,10 @@
             "rust": {
               "name": "get_primary",
               "signature": "pub fn get_primary() -> Option<Display>"
+            },
+            "swift": {
+              "name": "getPrimary",
+              "signature": "func getPrimary() -> Display?"
             }
           }
         },
@@ -204,6 +220,10 @@
             "rust": {
               "name": "get_cursor_position",
               "signature": "pub fn get_cursor_position() -> Point"
+            },
+            "swift": {
+              "name": "getCursorPosition",
+              "signature": "func getCursorPosition() -> Point"
             }
           }
         }

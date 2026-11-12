@@ -38,6 +38,10 @@
         "rust": {
           "name": "WindowShadow",
           "signature": "pub struct WindowShadow"
+        },
+        "swift": {
+          "name": "WindowShadow",
+          "signature": "class WindowShadow"
         }
       },
       "members": [
@@ -72,6 +76,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> WindowShadow?"
             }
           }
         },
@@ -109,6 +117,10 @@
             "rust": {
               "name": "set_color",
               "signature": "pub fn set_color(&self, color: &Color)"
+            },
+            "swift": {
+              "name": "setColor",
+              "signature": "func setColor(_ color: Color) -> Void"
             }
           }
         },
@@ -146,6 +158,10 @@
             "rust": {
               "name": "color",
               "signature": "pub fn color(&self) -> Color"
+            },
+            "swift": {
+              "name": "color",
+              "signature": "var color: Color"
             }
           }
         },
@@ -183,6 +199,10 @@
             "rust": {
               "name": "set_blur_radius",
               "signature": "pub fn set_blur_radius(&self, radius: f64) -> bool"
+            },
+            "swift": {
+              "name": "setBlurRadius",
+              "signature": "func setBlurRadius(_ radius: Double) -> Bool"
             }
           }
         },
@@ -220,6 +240,10 @@
             "rust": {
               "name": "blur_radius",
               "signature": "pub fn blur_radius(&self) -> f64"
+            },
+            "swift": {
+              "name": "blurRadius",
+              "signature": "var blurRadius: Double"
             }
           }
         },
@@ -257,6 +281,10 @@
             "rust": {
               "name": "set_offset",
               "signature": "pub fn set_offset(&self, offset: &Point) -> bool"
+            },
+            "swift": {
+              "name": "setOffset",
+              "signature": "func setOffset(_ offset: Point) -> Bool"
             }
           }
         },
@@ -294,6 +322,10 @@
             "rust": {
               "name": "offset",
               "signature": "pub fn offset(&self) -> Point"
+            },
+            "swift": {
+              "name": "offset",
+              "signature": "var offset: Point"
             }
           }
         }

@@ -44,6 +44,10 @@
         "rust": {
           "name": "AccessibilityManager",
           "signature": "pub struct AccessibilityManager"
+        },
+        "swift": {
+          "name": "AccessibilityManager",
+          "signature": "final class AccessibilityManager: Sendable"
         }
       },
       "members": [
@@ -92,6 +96,10 @@
             "rust": {
               "name": "enable",
               "signature": "pub fn enable()"
+            },
+            "swift": {
+              "name": "enable",
+              "signature": "func enable() -> Void"
             }
           }
         },
@@ -137,6 +145,10 @@
             "rust": {
               "name": "is_enabled",
               "signature": "pub fn is_enabled() -> bool"
+            },
+            "swift": {
+              "name": "isEnabled",
+              "signature": "func isEnabled() -> Bool"
             }
           }
         }

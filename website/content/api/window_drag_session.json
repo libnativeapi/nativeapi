@@ -38,6 +38,10 @@
         "rust": {
           "name": "WindowDragSession",
           "signature": "pub struct WindowDragSession"
+        },
+        "swift": {
+          "name": "WindowDragSession",
+          "signature": "class WindowDragSession"
         }
       },
       "members": [
@@ -72,6 +76,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> WindowDragSession?"
             }
           }
         },
@@ -106,6 +114,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(&self, callback: impl Fn(&WindowDragEvent) + 'static) -> ListenerId\npub fn remove_listener(&self, listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (WindowDragEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -161,6 +173,10 @@
             "rust": {
               "name": "start",
               "signature": "pub fn start(&self, window: Option<&Window>, anchor: &Point) -> bool"
+            },
+            "swift": {
+              "name": "start",
+              "signature": "func start(_ window: Window?, anchor: Point) -> Bool"
             }
           }
         },
@@ -199,6 +215,10 @@
             "rust": {
               "name": "cancel",
               "signature": "pub fn cancel(&self)"
+            },
+            "swift": {
+              "name": "cancel",
+              "signature": "func cancel() -> Void"
             }
           }
         },
@@ -236,6 +256,10 @@
             "rust": {
               "name": "is_active",
               "signature": "pub fn is_active(&self) -> bool"
+            },
+            "swift": {
+              "name": "isActive",
+              "signature": "var isActive: Bool"
             }
           }
         },
@@ -273,6 +297,10 @@
             "rust": {
               "name": "window_id",
               "signature": "pub fn window_id(&self) -> WindowId"
+            },
+            "swift": {
+              "name": "windowId",
+              "signature": "var windowId: WindowId"
             }
           }
         },
@@ -310,6 +338,10 @@
             "rust": {
               "name": "anchor",
               "signature": "pub fn anchor(&self) -> Point"
+            },
+            "swift": {
+              "name": "anchor",
+              "signature": "var anchor: Point"
             }
           }
         }
@@ -350,6 +382,10 @@
         "rust": {
           "name": "WindowDragEvent",
           "signature": "pub enum WindowDragEvent"
+        },
+        "swift": {
+          "name": "WindowDragEvent",
+          "signature": "enum WindowDragEvent"
         }
       },
       "members": [
@@ -387,6 +423,10 @@
             "rust": {
               "name": "window_id",
               "signature": "window_id: WindowId"
+            },
+            "swift": {
+              "name": "windowId",
+              "signature": "var windowId: WindowId"
             }
           }
         },
@@ -424,6 +464,10 @@
             "rust": {
               "name": "cursor_position",
               "signature": "cursor_position: Point"
+            },
+            "swift": {
+              "name": "cursorPosition",
+              "signature": "var cursorPosition: Point"
             }
           }
         },
@@ -462,6 +506,10 @@
             "rust": {
               "name": "WindowDragEvent::Moved",
               "signature": "Moved { window_id: WindowId, cursor_position: Point }"
+            },
+            "swift": {
+              "name": "moved",
+              "signature": "case moved(windowId: WindowId, cursorPosition: Point)"
             }
           }
         },
@@ -499,6 +547,10 @@
             "rust": {
               "name": "WindowDragEvent::Ended",
               "signature": "Ended { window_id: WindowId, cursor_position: Point }"
+            },
+            "swift": {
+              "name": "ended",
+              "signature": "case ended(windowId: WindowId, cursorPosition: Point)"
             }
           }
         },
@@ -536,6 +588,10 @@
             "rust": {
               "name": "WindowDragEvent::Cancelled",
               "signature": "Cancelled { window_id: WindowId, cursor_position: Point }"
+            },
+            "swift": {
+              "name": "cancelled",
+              "signature": "case cancelled(windowId: WindowId, cursorPosition: Point)"
             }
           }
         }

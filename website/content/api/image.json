@@ -52,6 +52,10 @@
         "rust": {
           "name": "Image",
           "signature": "pub struct Image"
+        },
+        "swift": {
+          "name": "Image",
+          "signature": "class Image"
         }
       },
       "members": [
@@ -103,6 +107,10 @@
             "rust": {
               "name": "from_file",
               "signature": "pub fn from_file(file_path: &str) -> Option<Image>"
+            },
+            "swift": {
+              "name": "fromFile",
+              "signature": "static func fromFile(_ filePath: String) -> Image?"
             }
           }
         },
@@ -154,6 +162,10 @@
             "rust": {
               "name": "from_base64",
               "signature": "pub fn from_base64(base64_data: &str) -> Option<Image>"
+            },
+            "swift": {
+              "name": "fromBase64",
+              "signature": "static func fromBase64(_ base64Data: String) -> Image?"
             }
           }
         },
@@ -192,6 +204,10 @@
             "rust": {
               "name": "size",
               "signature": "pub fn size(&self) -> Size"
+            },
+            "swift": {
+              "name": "size",
+              "signature": "var size: Size"
             }
           }
         },
@@ -230,6 +246,10 @@
             "rust": {
               "name": "format",
               "signature": "pub fn format(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "format",
+              "signature": "var format: String?"
             }
           }
         },
@@ -269,6 +289,10 @@
             "rust": {
               "name": "to_base64",
               "signature": "pub fn to_base64(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "toBase64",
+              "signature": "func toBase64() -> String?"
             }
           }
         },
@@ -320,6 +344,10 @@
             "rust": {
               "name": "save_to_file",
               "signature": "pub fn save_to_file(&self, file_path: &str) -> bool"
+            },
+            "swift": {
+              "name": "saveToFile",
+              "signature": "func saveToFile(_ filePath: String) -> Bool"
             }
           }
         }

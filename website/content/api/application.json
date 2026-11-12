@@ -48,6 +48,10 @@
         "rust": {
           "name": "Application",
           "signature": "pub struct Application"
+        },
+        "swift": {
+          "name": "Application",
+          "signature": "final class Application: Sendable"
         }
       },
       "members": [
@@ -82,6 +86,10 @@
             "rust": {
               "name": "add_listener",
               "signature": "pub fn add_listener(callback: impl Fn(&ApplicationEvent) + 'static) -> ListenerId\npub fn remove_listener(listener_id: ListenerId) -> bool"
+            },
+            "swift": {
+              "name": "addListener",
+              "signature": "func addListener(_ callback: @escaping (ApplicationEvent) -> Void) -> ListenerId\nfunc removeListener(_ listenerId: ListenerId) -> Bool"
             }
           }
         },
@@ -127,6 +135,10 @@
             "rust": {
               "name": "run",
               "signature": "pub fn run() -> i32"
+            },
+            "swift": {
+              "name": "run",
+              "signature": "func run() -> CInt"
             }
           }
         },
@@ -178,6 +190,10 @@
             "rust": {
               "name": "run_with_window",
               "signature": "pub fn run_with_window(window: Option<&Window>) -> i32"
+            },
+            "swift": {
+              "name": "runWithWindow",
+              "signature": "func runWithWindow(_ window: Window?) -> CInt"
             }
           }
         },
@@ -228,6 +244,10 @@
             "rust": {
               "name": "quit",
               "signature": "pub fn quit(exit_code: i32)"
+            },
+            "swift": {
+              "name": "quit",
+              "signature": "func quit(_ exitCode: CInt) -> Void"
             }
           }
         },
@@ -272,6 +292,10 @@
             "rust": {
               "name": "is_running",
               "signature": "pub fn is_running() -> bool"
+            },
+            "swift": {
+              "name": "isRunning",
+              "signature": "func isRunning() -> Bool"
             }
           }
         },
@@ -316,6 +340,10 @@
             "rust": {
               "name": "is_single_instance",
               "signature": "pub fn is_single_instance() -> bool"
+            },
+            "swift": {
+              "name": "isSingleInstance",
+              "signature": "func isSingleInstance() -> Bool"
             }
           }
         },
@@ -361,6 +389,10 @@
             "rust": {
               "name": "show",
               "signature": "pub fn show() -> bool"
+            },
+            "swift": {
+              "name": "show",
+              "signature": "func show() -> Bool"
             }
           }
         },
@@ -406,6 +438,10 @@
             "rust": {
               "name": "hide",
               "signature": "pub fn hide() -> bool"
+            },
+            "swift": {
+              "name": "hide",
+              "signature": "func hide() -> Bool"
             }
           }
         },
@@ -455,6 +491,10 @@
             "rust": {
               "name": "is_visible",
               "signature": "pub fn is_visible() -> bool"
+            },
+            "swift": {
+              "name": "isVisible",
+              "signature": "func isVisible() -> Bool"
             }
           }
         },
@@ -506,6 +546,10 @@
             "rust": {
               "name": "set_icon",
               "signature": "pub fn set_icon(icon_path: &str) -> bool"
+            },
+            "swift": {
+              "name": "setIcon",
+              "signature": "func setIcon(_ iconPath: String) -> Bool"
             }
           }
         },
@@ -551,6 +595,10 @@
             "rust": {
               "name": "set_dock_icon_visible",
               "signature": "pub fn set_dock_icon_visible(visible: bool) -> bool"
+            },
+            "swift": {
+              "name": "setDockIconVisible",
+              "signature": "func setDockIconVisible(_ visible: Bool) -> Bool"
             }
           }
         },
@@ -601,6 +649,10 @@
             "rust": {
               "name": "set_progress_bar",
               "signature": "pub fn set_progress_bar(progress: f64) -> bool"
+            },
+            "swift": {
+              "name": "setProgressBar",
+              "signature": "func setProgressBar(_ progress: Double) -> Bool"
             }
           }
         },
@@ -651,6 +703,10 @@
             "rust": {
               "name": "set_badge_label",
               "signature": "pub fn set_badge_label(label: &str) -> bool"
+            },
+            "swift": {
+              "name": "setBadgeLabel",
+              "signature": "func setBadgeLabel(_ label: String) -> Bool"
             }
           }
         },
@@ -701,6 +757,10 @@
             "rust": {
               "name": "set_brightness",
               "signature": "pub fn set_brightness(brightness: Brightness) -> bool"
+            },
+            "swift": {
+              "name": "setBrightness",
+              "signature": "func setBrightness(_ brightness: Brightness) -> Bool"
             }
           }
         },
@@ -746,6 +806,10 @@
             "rust": {
               "name": "set_menu_bar",
               "signature": "pub fn set_menu_bar(menu: Option<&Menu>) -> bool"
+            },
+            "swift": {
+              "name": "setMenuBar",
+              "signature": "func setMenuBar(_ menu: Menu?) -> Bool"
             }
           }
         },
@@ -791,6 +855,10 @@
             "rust": {
               "name": "get_primary_window",
               "signature": "pub fn get_primary_window() -> Option<Window>"
+            },
+            "swift": {
+              "name": "getPrimaryWindow",
+              "signature": "func getPrimaryWindow() -> Window?"
             }
           }
         },
@@ -841,6 +909,10 @@
             "rust": {
               "name": "set_primary_window",
               "signature": "pub fn set_primary_window(window: Option<&Window>)"
+            },
+            "swift": {
+              "name": "setPrimaryWindow",
+              "signature": "func setPrimaryWindow(_ window: Window?) -> Void"
             }
           }
         },
@@ -880,6 +952,10 @@
             "rust": {
               "name": "get_all_windows",
               "signature": "pub fn get_all_windows() -> Vec<Window>"
+            },
+            "swift": {
+              "name": "getAllWindows",
+              "signature": "func getAllWindows() -> [Window]"
             }
           }
         }
@@ -920,6 +996,10 @@
         "rust": {
           "name": "Brightness",
           "signature": "pub enum Brightness"
+        },
+        "swift": {
+          "name": "Brightness",
+          "signature": "enum Brightness: CInt"
         }
       },
       "members": [
@@ -957,6 +1037,10 @@
             "rust": {
               "name": "Brightness::System",
               "signature": "System = 0"
+            },
+            "swift": {
+              "name": "system",
+              "signature": "case system = 0"
             }
           }
         },
@@ -994,6 +1078,10 @@
             "rust": {
               "name": "Brightness::Light",
               "signature": "Light = 1"
+            },
+            "swift": {
+              "name": "light",
+              "signature": "case light = 1"
             }
           }
         },
@@ -1031,6 +1119,10 @@
             "rust": {
               "name": "Brightness::Dark",
               "signature": "Dark = 2"
+            },
+            "swift": {
+              "name": "dark",
+              "signature": "case dark = 2"
             }
           }
         }
@@ -1070,6 +1162,10 @@
         "rust": {
           "name": "ApplicationEvent",
           "signature": "pub enum ApplicationEvent"
+        },
+        "swift": {
+          "name": "ApplicationEvent",
+          "signature": "enum ApplicationEvent"
         }
       },
       "members": [
@@ -1107,6 +1203,10 @@
             "rust": {
               "name": "ApplicationEvent::Started",
               "signature": "Started"
+            },
+            "swift": {
+              "name": "started",
+              "signature": "case started"
             }
           }
         },
@@ -1144,6 +1244,10 @@
             "rust": {
               "name": "ApplicationEvent::Exiting",
               "signature": "Exiting { exit_code: i32 }"
+            },
+            "swift": {
+              "name": "exiting",
+              "signature": "case exiting(exitCode: CInt)"
             }
           }
         },
@@ -1179,6 +1283,10 @@
             "rust": {
               "name": "exit_code",
               "signature": "exit_code: i32"
+            },
+            "swift": {
+              "name": "exitCode",
+              "signature": "var exitCode: CInt"
             }
           }
         },
@@ -1216,6 +1324,10 @@
             "rust": {
               "name": "ApplicationEvent::Activated",
               "signature": "Activated"
+            },
+            "swift": {
+              "name": "activated",
+              "signature": "case activated"
             }
           }
         },
@@ -1253,6 +1365,10 @@
             "rust": {
               "name": "ApplicationEvent::Deactivated",
               "signature": "Deactivated"
+            },
+            "swift": {
+              "name": "deactivated",
+              "signature": "case deactivated"
             }
           }
         },
@@ -1291,6 +1407,10 @@
             "rust": {
               "name": "ApplicationEvent::QuitRequested",
               "signature": "QuitRequested { request: EventRequestRef }"
+            },
+            "swift": {
+              "name": "quitRequested",
+              "signature": "case quitRequested(request: EventRequest?)"
             }
           }
         },
@@ -1330,6 +1450,10 @@
             "rust": {
               "name": "request",
               "signature": "request: EventRequestRef"
+            },
+            "swift": {
+              "name": "request",
+              "signature": "var request: EventRequest?"
             }
           }
         }

@@ -15,5 +15,11 @@ __pycache__/
 examples/csharp_*/bin/
 examples/csharp_*/obj/
 
+# Swift (SwiftPM)
+bindings/swift/.build/
+bindings/swift/Package.resolved
+examples/swift_*/.build/
+examples/swift_*/Package.resolved
+
 # JS (npm workspace at the root)
 /node_modules/

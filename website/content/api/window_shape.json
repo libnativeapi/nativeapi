@@ -38,6 +38,10 @@
         "rust": {
           "name": "WindowShape",
           "signature": "pub struct WindowShape"
+        },
+        "swift": {
+          "name": "WindowShape",
+          "signature": "class WindowShape"
         }
       },
       "members": [
@@ -72,6 +76,10 @@
             "rust": {
               "name": "new",
               "signature": "pub fn new() -> Option<Self>"
+            },
+            "swift": {
+              "name": "create",
+              "signature": "class func create() -> WindowShape?"
             }
           }
         },
@@ -116,6 +124,10 @@
             "rust": {
               "name": "add_point",
               "signature": "pub fn add_point(&self, point: &Point) -> bool"
+            },
+            "swift": {
+              "name": "addPoint",
+              "signature": "func addPoint(_ point: Point) -> Bool"
             }
           }
         },
@@ -153,6 +165,10 @@
             "rust": {
               "name": "clear",
               "signature": "pub fn clear(&self)"
+            },
+            "swift": {
+              "name": "clear",
+              "signature": "func clear() -> Void"
             }
           }
         },
@@ -190,6 +206,10 @@
             "rust": {
               "name": "point_count",
               "signature": "pub fn point_count(&self) -> std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "pointCount",
+              "signature": "var pointCount: CUnsignedLong"
             }
           }
         },
@@ -227,6 +247,10 @@
             "rust": {
               "name": "get_point_at",
               "signature": "pub fn get_point_at(&self, index: std::os::raw::c_ulong) -> Point"
+            },
+            "swift": {
+              "name": "getPointAt",
+              "signature": "func getPointAt(_ index: CUnsignedLong) -> Point"
             }
           }
         }
