@@ -89,7 +89,7 @@ def os_shortcut_taken():
 
 
 def main():
-    project = ROOT / 'bindings/dart/hotkey_manager/packages/hotkey_manager/example'
+    project = ROOT / 'bindings/dart/hotkey_manager/example'
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--executable', type=Path)
     args = parser.parse_args()

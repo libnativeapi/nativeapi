@@ -20,7 +20,7 @@ import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-PACKAGE = ROOT / 'bindings/dart/hotkey_manager/packages/hotkey_manager'
+PACKAGE = ROOT / 'bindings/dart/hotkey_manager'
 
 
 def run(command, cwd=PACKAGE, env=None):
