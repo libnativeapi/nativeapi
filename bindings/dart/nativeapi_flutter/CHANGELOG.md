@@ -1,4 +1,4 @@
-## 0.5.11
+## 0.6.0
 
 - **Breaking:** requires Flutter 3.50 / Dart 3.14. `package:nativeapi_flutter/windowing.dart` works with Flutter's renamed multi-window API (`WindowController`, `Window`, formerly `RegularWindowController`, `RegularWindow`).
 - macOS: preserve a pending Flutter quit decision when AppKit acknowledges synchronous cancellation, so approving the later Dart response exits normally ([nativeapi-core#65](https://github.com/libnativeapi/nativeapi-core/issues/65)).

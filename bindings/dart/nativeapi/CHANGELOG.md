@@ -1,4 +1,4 @@
-## 0.5.11
+## 0.6.0
 
 - **Breaking:** requires Flutter 3.50 / Dart 3.14. The experimental `runNativeApp()` in `package:nativeapi/standalone.dart` still depends on VM APIs that Dart 3.14 removed, so it cannot be compiled with this constraint until it is ported.
 - macOS: preserve a pending Flutter quit decision when AppKit acknowledges synchronous cancellation, so approving the later Dart response exits normally ([nativeapi-core#65](https://github.com/libnativeapi/nativeapi-core/issues/65)).
