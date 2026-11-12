@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart' as native;
 
 void main() {

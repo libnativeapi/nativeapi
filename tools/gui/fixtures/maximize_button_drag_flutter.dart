@@ -2,7 +2,7 @@
 // flutter build windows --debug -t <workspace>/tools/gui/fixtures/maximize_button_drag_flutter.dart
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nativeapi/nativeapi.dart' as na;
 import 'package:nativeapi_flutter/nativeapi_flutter.dart'
     show MaximizeButtonArea;
