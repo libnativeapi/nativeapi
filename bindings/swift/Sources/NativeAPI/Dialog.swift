@@ -20,6 +20,6 @@ public enum DialogModality: CInt {
   }
 
   var raw: native_dialog_modality_t {
-    native_dialog_modality_t(rawValue: UInt32(self.rawValue))
+    native_dialog_modality_t(rawValue: numericCast(self.rawValue))
   }
 }

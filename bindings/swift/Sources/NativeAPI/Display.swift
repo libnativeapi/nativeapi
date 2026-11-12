@@ -24,7 +24,7 @@ public enum DisplayOrientation: CInt {
   }
 
   var raw: native_display_orientation_t {
-    native_display_orientation_t(rawValue: UInt32(self.rawValue))
+    native_display_orientation_t(rawValue: numericCast(self.rawValue))
   }
 }
 

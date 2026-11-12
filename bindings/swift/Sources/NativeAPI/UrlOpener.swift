@@ -26,7 +26,7 @@ public enum UrlOpenErrorCode: CInt {
   }
 
   var raw: native_url_open_error_code_t {
-    native_url_open_error_code_t(rawValue: UInt32(self.rawValue))
+    native_url_open_error_code_t(rawValue: numericCast(self.rawValue))
   }
 }
 

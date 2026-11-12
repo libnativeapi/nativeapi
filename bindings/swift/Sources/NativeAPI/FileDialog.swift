@@ -22,7 +22,7 @@ public enum FileDialogMode: CInt {
   }
 
   var raw: native_file_dialog_mode_t {
-    native_file_dialog_mode_t(rawValue: UInt32(self.rawValue))
+    native_file_dialog_mode_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -43,7 +43,7 @@ public enum FileDialogResult: CInt {
   }
 
   var raw: native_file_dialog_result_t {
-    native_file_dialog_result_t(rawValue: UInt32(self.rawValue))
+    native_file_dialog_result_t(rawValue: numericCast(self.rawValue))
   }
 }
 

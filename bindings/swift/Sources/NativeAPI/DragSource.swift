@@ -22,7 +22,7 @@ public enum DragOperation: CInt {
   }
 
   var raw: native_drag_operation_t {
-    native_drag_operation_t(rawValue: UInt32(self.rawValue))
+    native_drag_operation_t(rawValue: numericCast(self.rawValue))
   }
 }
 

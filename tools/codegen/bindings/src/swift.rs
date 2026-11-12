@@ -264,7 +264,7 @@ fn generate_swift_enum(out: &mut String, item: &Enum, prefix: &str) {
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "  var raw: {c_ty} {{").unwrap();
-    writeln!(out, "    {c_ty}(rawValue: UInt32(self.rawValue))").unwrap();
+    writeln!(out, "    {c_ty}(rawValue: numericCast(self.rawValue))").unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out, "}}").unwrap();
     writeln!(out).unwrap();
@@ -286,11 +286,11 @@ fn generate_swift_option_set(out: &mut String, item: &Enum, c_ty: &str) {
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "  init(raw: {c_ty}) {{").unwrap();
-    writeln!(out, "    self.init(rawValue: UInt32(raw.rawValue))").unwrap();
+    writeln!(out, "    self.init(rawValue: numericCast(raw.rawValue))").unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "  var raw: {c_ty} {{").unwrap();
-    writeln!(out, "    {c_ty}(rawValue: rawValue)").unwrap();
+    writeln!(out, "    {c_ty}(rawValue: numericCast(rawValue))").unwrap();
     writeln!(out, "  }}").unwrap();
     writeln!(out).unwrap();
     for variant in &item.variants {

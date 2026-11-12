@@ -22,7 +22,7 @@ public enum MenuBackend: CInt {
   }
 
   var raw: native_menu_backend_t {
-    native_menu_backend_t(rawValue: UInt32(self.rawValue))
+    native_menu_backend_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -45,7 +45,7 @@ public enum MenuItemType: CInt {
   }
 
   var raw: native_menu_item_type_t {
-    native_menu_item_type_t(rawValue: UInt32(self.rawValue))
+    native_menu_item_type_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -64,7 +64,7 @@ public enum MenuItemState: CInt {
   }
 
   var raw: native_menu_item_state_t {
-    native_menu_item_state_t(rawValue: UInt32(self.rawValue))
+    native_menu_item_state_t(rawValue: numericCast(self.rawValue))
   }
 }
 
