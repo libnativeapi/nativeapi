@@ -94,7 +94,7 @@ public class FileDialog {
     let extensionsPointers = extensions.map { strdup($0) }
     defer { extensionsPointers.forEach { free($0) } }
     var extensionsList = native_string_list_t()
-    extensionsList.count = extensionsPointers.count
+    extensionsList.count = numericCast(extensionsPointers.count)
     if !extensionsPointers.isEmpty {
       extensionsList.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: extensionsPointers.count)
       for (index, pointer) in extensionsPointers.enumerated() { extensionsList.items[index] = pointer }

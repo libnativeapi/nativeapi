@@ -941,7 +941,7 @@ fn render_param_bindings(
                 )
                 .unwrap();
                 writeln!(out, "{indent}var {name}List = native_string_list_t()").unwrap();
-                writeln!(out, "{indent}{name}List.count = {name}Pointers.count").unwrap();
+                writeln!(out, "{indent}{name}List.count = numericCast({name}Pointers.count)").unwrap();
                 writeln!(out, "{indent}if !{name}Pointers.isEmpty {{").unwrap();
                 writeln!(
                     out,
@@ -973,7 +973,7 @@ fn render_param_bindings(
                 )
                 .unwrap();
                 writeln!(out, "{indent}var {name}Map = native_string_map_t()").unwrap();
-                writeln!(out, "{indent}{name}Map.count = {name}Keys.count").unwrap();
+                writeln!(out, "{indent}{name}Map.count = numericCast({name}Keys.count)").unwrap();
                 writeln!(out, "{indent}if !{name}Keys.isEmpty {{").unwrap();
                 writeln!(
                     out,
@@ -1461,7 +1461,7 @@ fn swift_field_to_raw(
                 "{indent}  let pointers = self.{public}.map {{ strdup($0) }}"
             )
             .unwrap();
-            writeln!(out, "{indent}  raw.{raw}.count = pointers.count").unwrap();
+            writeln!(out, "{indent}  raw.{raw}.count = numericCast(pointers.count)").unwrap();
             writeln!(
                 out,
                 "{indent}  raw.{raw}.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: pointers.count)"
@@ -1486,7 +1486,7 @@ fn swift_field_to_raw(
                 "{indent}  let values = self.{public}.values.map {{ strdup($0) }}"
             )
             .unwrap();
-            writeln!(out, "{indent}  raw.{raw}.count = keys.count").unwrap();
+            writeln!(out, "{indent}  raw.{raw}.count = numericCast(keys.count)").unwrap();
             writeln!(
                 out,
                 "{indent}  raw.{raw}.keys = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: keys.count)"

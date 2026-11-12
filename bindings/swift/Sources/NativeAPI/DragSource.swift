@@ -89,7 +89,7 @@ public class DragSource {
     let filePathsPointers = filePaths.map { strdup($0) }
     defer { filePathsPointers.forEach { free($0) } }
     var filePathsList = native_string_list_t()
-    filePathsList.count = filePathsPointers.count
+    filePathsList.count = numericCast(filePathsPointers.count)
     if !filePathsPointers.isEmpty {
       filePathsList.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: filePathsPointers.count)
       for (index, pointer) in filePathsPointers.enumerated() { filePathsList.items[index] = pointer }
