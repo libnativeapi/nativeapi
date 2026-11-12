@@ -22,7 +22,7 @@ public enum DragOperation: CInt {
   }
 
   var raw: native_drag_operation_t {
-    native_drag_operation_t(rawValue: UInt32(self.rawValue))
+    native_drag_operation_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -89,7 +89,7 @@ public class DragSource {
     let filePathsPointers = filePaths.map { strdup($0) }
     defer { filePathsPointers.forEach { free($0) } }
     var filePathsList = native_string_list_t()
-    filePathsList.count = filePathsPointers.count
+    filePathsList.count = numericCast(filePathsPointers.count)
     if !filePathsPointers.isEmpty {
       filePathsList.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: filePathsPointers.count)
       for (index, pointer) in filePathsPointers.enumerated() { filePathsList.items[index] = pointer }

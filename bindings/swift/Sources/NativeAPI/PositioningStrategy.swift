@@ -20,7 +20,7 @@ public enum PositioningStrategyType: CInt {
   }
 
   var raw: native_positioning_strategy_type_t {
-    native_positioning_strategy_type_t(rawValue: UInt32(self.rawValue))
+    native_positioning_strategy_type_t(rawValue: numericCast(self.rawValue))
   }
 }
 

@@ -20,7 +20,7 @@ public enum ShortcutScope: CInt {
   }
 
   var raw: native_shortcut_scope_t {
-    native_shortcut_scope_t(rawValue: UInt32(self.rawValue))
+    native_shortcut_scope_t(rawValue: numericCast(self.rawValue))
   }
 }
 

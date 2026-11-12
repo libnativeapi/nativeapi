@@ -1,0 +1,5 @@
+module CXI [system] {
+  header "shim.h"
+  link "Xi"
+  export *
+}

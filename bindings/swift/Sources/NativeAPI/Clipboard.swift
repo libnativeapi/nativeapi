@@ -31,7 +31,7 @@ extension ClipboardData {
     raw.image = self.image?.nativeHandle ?? 0
     if !self.filePaths.isEmpty {
       let pointers = self.filePaths.map { strdup($0) }
-      raw.file_paths.count = pointers.count
+      raw.file_paths.count = numericCast(pointers.count)
       raw.file_paths.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: pointers.count)
       for (index, pointer) in pointers.enumerated() { raw.file_paths.items[index] = pointer }
     }
@@ -157,7 +157,7 @@ public final class Clipboard: Sendable {
     let filePathsPointers = filePaths.map { strdup($0) }
     defer { filePathsPointers.forEach { free($0) } }
     var filePathsList = native_string_list_t()
-    filePathsList.count = filePathsPointers.count
+    filePathsList.count = numericCast(filePathsPointers.count)
     if !filePathsPointers.isEmpty {
       filePathsList.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: filePathsPointers.count)
       for (index, pointer) in filePathsPointers.enumerated() { filePathsList.items[index] = pointer }

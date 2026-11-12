@@ -22,7 +22,7 @@ public enum ViewLayout: CInt {
   }
 
   var raw: native_view_layout_t {
-    native_view_layout_t(rawValue: UInt32(self.rawValue))
+    native_view_layout_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -43,7 +43,7 @@ public enum ViewAlignment: CInt {
   }
 
   var raw: native_view_alignment_t {
-    native_view_alignment_t(rawValue: UInt32(self.rawValue))
+    native_view_alignment_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -62,7 +62,7 @@ public enum TextAlignment: CInt {
   }
 
   var raw: native_text_alignment_t {
-    native_text_alignment_t(rawValue: UInt32(self.rawValue))
+    native_text_alignment_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -79,7 +79,7 @@ public enum ViewBackend: CInt {
   }
 
   var raw: native_view_backend_t {
-    native_view_backend_t(rawValue: UInt32(self.rawValue))
+    native_view_backend_t(rawValue: numericCast(self.rawValue))
   }
 }
 

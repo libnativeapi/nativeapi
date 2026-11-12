@@ -22,7 +22,7 @@ public enum MessageDialogResult: CInt {
   }
 
   var raw: native_message_dialog_result_t {
-    native_message_dialog_result_t(rawValue: UInt32(self.rawValue))
+    native_message_dialog_result_t(rawValue: numericCast(self.rawValue))
   }
 }
 

@@ -13,11 +13,11 @@ public struct ModifierKey: OptionSet, Sendable {
   }
 
   init(raw: native_modifier_key_t) {
-    self.init(rawValue: UInt32(raw.rawValue))
+    self.init(rawValue: numericCast(raw.rawValue))
   }
 
   var raw: native_modifier_key_t {
-    native_modifier_key_t(rawValue: rawValue)
+    native_modifier_key_t(rawValue: numericCast(rawValue))
   }
 
   public static let shift = ModifierKey(rawValue: 1)

@@ -24,7 +24,7 @@ public enum ContextMenuTrigger: CInt {
   }
 
   var raw: native_context_menu_trigger_t {
-    native_context_menu_trigger_t(rawValue: UInt32(self.rawValue))
+    native_context_menu_trigger_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -41,7 +41,7 @@ public enum TrayIconPosition: CInt {
   }
 
   var raw: native_tray_icon_position_t {
-    native_tray_icon_position_t(rawValue: UInt32(self.rawValue))
+    native_tray_icon_position_t(rawValue: numericCast(self.rawValue))
   }
 }
 

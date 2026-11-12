@@ -38,6 +38,6 @@ public enum Placement: CInt {
   }
 
   var raw: native_placement_t {
-    native_placement_t(rawValue: UInt32(self.rawValue))
+    native_placement_t(rawValue: numericCast(self.rawValue))
   }
 }

@@ -88,7 +88,7 @@ public class LaunchAtLogin {
     let argumentsPointers = arguments.map { strdup($0) }
     defer { argumentsPointers.forEach { free($0) } }
     var argumentsList = native_string_list_t()
-    argumentsList.count = argumentsPointers.count
+    argumentsList.count = numericCast(argumentsPointers.count)
     if !argumentsPointers.isEmpty {
       argumentsList.items = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: argumentsPointers.count)
       for (index, pointer) in argumentsPointers.enumerated() { argumentsList.items[index] = pointer }

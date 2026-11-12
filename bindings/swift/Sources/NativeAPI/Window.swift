@@ -22,7 +22,7 @@ public enum TitleBarStyle: CInt {
   }
 
   var raw: native_title_bar_style_t {
-    native_title_bar_style_t(rawValue: UInt32(self.rawValue))
+    native_title_bar_style_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -41,7 +41,7 @@ public enum WindowDockSide: CInt {
   }
 
   var raw: native_window_dock_side_t {
-    native_window_dock_side_t(rawValue: UInt32(self.rawValue))
+    native_window_dock_side_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -62,7 +62,7 @@ public enum WindowCornerPreference: CInt {
   }
 
   var raw: native_window_corner_preference_t {
-    native_window_corner_preference_t(rawValue: UInt32(self.rawValue))
+    native_window_corner_preference_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -99,7 +99,7 @@ public enum WindowProperty: CInt {
   }
 
   var raw: native_window_property_t {
-    native_window_property_t(rawValue: UInt32(self.rawValue))
+    native_window_property_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -118,7 +118,7 @@ public enum WindowOcclusionState: CInt {
   }
 
   var raw: native_window_occlusion_state_t {
-    native_window_occlusion_state_t(rawValue: UInt32(self.rawValue))
+    native_window_occlusion_state_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -147,7 +147,7 @@ public enum VisualEffect: CInt {
   }
 
   var raw: native_visual_effect_t {
-    native_visual_effect_t(rawValue: UInt32(self.rawValue))
+    native_visual_effect_t(rawValue: numericCast(self.rawValue))
   }
 }
 
@@ -176,7 +176,7 @@ public enum ResizeEdge: CInt {
   }
 
   var raw: native_resize_edge_t {
-    native_resize_edge_t(rawValue: UInt32(self.rawValue))
+    native_resize_edge_t(rawValue: numericCast(self.rawValue))
   }
 }
 

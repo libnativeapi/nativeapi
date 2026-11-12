@@ -20,7 +20,7 @@ public enum Brightness: CInt {
   }
 
   var raw: native_brightness_t {
-    native_brightness_t(rawValue: UInt32(self.rawValue))
+    native_brightness_t(rawValue: numericCast(self.rawValue))
   }
 }
 
