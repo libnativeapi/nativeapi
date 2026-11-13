@@ -2374,6 +2374,7 @@ const (
 	ViewEventButtonClicked      ViewEventType = 2
 	ViewEventTextFieldChanged   ViewEventType = 3
 	ViewEventTextFieldSubmitted ViewEventType = 4
+	ViewEventUpdating           ViewEventType = 5
 )
 
 // ViewEvent copies an event payload. Handle fields are borrowed until the callback returns.
@@ -2394,6 +2395,7 @@ func fromCViewEvent(raw *C.native_view_event_t) ViewEvent {
 	case ViewEventTextFieldChanged:
 		value.Text = C.GoString(C.go_native_view_event_t_text_field_changed_Text(raw))
 	case ViewEventTextFieldSubmitted:
+	case ViewEventUpdating:
 	}
 	return value
 }
@@ -2478,6 +2480,43 @@ func ViewSetDefaultBackend(backend ViewBackend) error {
 func ViewDefaultBackend() ViewBackend {
 	result := C.native_view_get_default_backend()
 	return ViewBackend(result)
+}
+
+// ViewBeginUpdates invokes the native BeginUpdates operation.
+func ViewBeginUpdates() {
+	C.native_view_begin_updates()
+}
+
+// ViewEndUpdates invokes the native EndUpdates operation.
+func ViewEndUpdates(redraw bool) {
+	C.native_view_end_updates(C.bool(redraw))
+}
+
+// ViewIsUpdating invokes the native IsUpdating operation.
+func ViewIsUpdating() bool {
+	result := C.native_view_is_updating()
+	return bool(result)
+}
+
+// RequestUpdate invokes the native RequestUpdate operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (v *View) RequestUpdate() error {
+	result := C.native_view_request_update(C.native_view_t(v.nativeHandleValue()))
+	if !bool(result) {
+		return nativeError("View.RequestUpdate")
+	}
+	return nil
+}
+
+// CancelUpdate invokes the native CancelUpdate operation.
+func (v *View) CancelUpdate() {
+	C.native_view_cancel_update(C.native_view_t(v.nativeHandleValue()))
+}
+
+// IsUpdatePending invokes the native IsUpdatePending operation.
+func (v *View) IsUpdatePending() bool {
+	result := C.native_view_is_update_pending(C.native_view_t(v.nativeHandleValue()))
+	return bool(result)
 }
 
 // ID invokes the native GetId operation.

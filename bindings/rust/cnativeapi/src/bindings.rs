@@ -378,6 +378,7 @@ pub const NATIVE_VIEW_EVENT_TYPE_BLURRED: native_view_event_type_t = 1;
 pub const NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED: native_view_event_type_t = 2;
 pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED: native_view_event_type_t = 3;
 pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED: native_view_event_type_t = 4;
+pub const NATIVE_VIEW_EVENT_TYPE_UPDATING: native_view_event_type_t = 5;
 #[doc = " Which concrete ViewEvent arrived."]
 pub type native_view_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One ViewEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -456,6 +457,24 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_view_get_default_backend() -> native_view_backend_t;
+}
+unsafe extern "C" {
+    pub fn native_view_begin_updates();
+}
+unsafe extern "C" {
+    pub fn native_view_end_updates(redraw: bool);
+}
+unsafe extern "C" {
+    pub fn native_view_is_updating() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_view_request_update(view: native_view_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_view_cancel_update(view: native_view_t);
+}
+unsafe extern "C" {
+    pub fn native_view_is_update_pending(view: native_view_t) -> bool;
 }
 unsafe extern "C" {
     pub fn native_view_get_id(view: native_view_t) -> native_view_id_t;

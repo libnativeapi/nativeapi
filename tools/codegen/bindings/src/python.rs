@@ -579,7 +579,7 @@ fn render_header_functions(
     if lines.is_empty() {
         return;
     }
-    let path = header.path.to_string_lossy();
+    let path = header.path.to_string_lossy().replace('\\', "/");
     let name = path.rsplit("/src/").next().unwrap_or(&path);
     writeln!(out, "\n# {name}\n").unwrap();
     for line in lines {
@@ -833,7 +833,7 @@ fn public_module(api: &Api, header: &Header, origins: &TypeOrigins, prefix: &str
     }
 
     let mut out = String::from(BANNER);
-    let path = header.path.to_string_lossy();
+    let path = header.path.to_string_lossy().replace('\\', "/");
     let name = path.rsplit("/src/").next().unwrap_or(&path);
     writeln!(out, "\"\"\"Generated from {name}.\"\"\"\n").unwrap();
     writeln!(out, "from __future__ import annotations\n").unwrap();

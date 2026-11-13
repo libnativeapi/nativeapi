@@ -351,6 +351,282 @@
           }
         },
         {
+          "key": "View::BeginUpdates",
+          "kind": "static",
+          "doc": {
+            "summary": "Begins a nested batch of view updates on the current UI thread.",
+            "details": "All views on this thread participate, including detached and borrowed views. Layout is coalesced until the matching outermost EndUpdates(). Stored properties change immediately; native geometry may lag until the batch ends. Pair every call with EndUpdates() on the same thread, without pumping the event loop inside the batch. This is not a rollback transaction.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: Fully supported - Coalesces the shared view layout.\n- Windows: Fully supported - Also batches Win32 moves and defers geometry and visibility repaint; other control properties may update immediately. WinUI3 coalesces shared layout and uses its native rendering scheduler.\n- Linux: Fully supported - Coalesces shared layout; GTK schedules painting.\n- Android: Not applicable - Views are unsupported.\n- iOS: Not applicable - Views are unsupported.\n- OpenHarmony: Fully supported - Coalesces layout on the owning UI thread."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "BeginUpdates",
+              "signature": "static void BeginUpdates()"
+            },
+            "csharp": {
+              "name": "BeginUpdates",
+              "signature": "public static void BeginUpdates()"
+            },
+            "dart": {
+              "name": "beginUpdates",
+              "signature": "static void beginUpdates()"
+            },
+            "go": {
+              "name": "ViewBeginUpdates",
+              "signature": "func ViewBeginUpdates()"
+            },
+            "js": {
+              "name": "beginUpdates",
+              "signature": "static beginUpdates(): void"
+            },
+            "python": {
+              "name": "begin_updates",
+              "signature": "@staticmethod\ndef begin_updates() -> None:"
+            },
+            "rust": {
+              "name": "begin_updates",
+              "signature": "pub fn begin_updates()"
+            },
+            "swift": {
+              "name": "beginUpdates",
+              "signature": "static func beginUpdates() -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::EndUpdates",
+          "kind": "static",
+          "doc": {
+            "summary": "Ends a batch, applying pending layout at the outermost boundary.",
+            "details": "An unmatched call is ignored. Win32 repaint is scheduled, never forced synchronously, so callers can finish publishing their own drawing first.",
+            "params": [
+              {
+                "name": "redraw",
+                "text": "Whether the outermost call requests Win32 geometry and visibility repaint. Pass false when a host renderer publishes its own damage. Inner calls do not change the outer call's choice. Other backends retain their native paint scheduling."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "see",
+                "text": "BeginUpdates() for platform availability and pairing requirements."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "EndUpdates",
+              "signature": "static void EndUpdates(bool redraw)"
+            },
+            "csharp": {
+              "name": "EndUpdates",
+              "signature": "public static void EndUpdates(bool redraw)"
+            },
+            "dart": {
+              "name": "endUpdates",
+              "signature": "static void endUpdates(bool redraw)"
+            },
+            "go": {
+              "name": "ViewEndUpdates",
+              "signature": "func ViewEndUpdates(redraw bool)"
+            },
+            "js": {
+              "name": "endUpdates",
+              "signature": "static endUpdates(redraw: boolean): void"
+            },
+            "python": {
+              "name": "end_updates",
+              "signature": "@staticmethod\ndef end_updates(redraw: bool) -> None:"
+            },
+            "rust": {
+              "name": "end_updates",
+              "signature": "pub fn end_updates(redraw: bool)"
+            },
+            "swift": {
+              "name": "endUpdates",
+              "signature": "static func endUpdates(_ redraw: Bool) -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::IsUpdating",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if this UI thread has an open view update batch.",
+            "returns": "true between BeginUpdates() and its matching EndUpdates()."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsUpdating",
+              "signature": "static bool IsUpdating()"
+            },
+            "csharp": {
+              "name": "IsUpdating",
+              "signature": "public static bool IsUpdating()"
+            },
+            "dart": {
+              "name": "isUpdating",
+              "signature": "static bool isUpdating()"
+            },
+            "go": {
+              "name": "ViewIsUpdating",
+              "signature": "func ViewIsUpdating() bool"
+            },
+            "js": {
+              "name": "isUpdating",
+              "signature": "static isUpdating(): boolean"
+            },
+            "python": {
+              "name": "is_updating",
+              "signature": "@staticmethod\ndef is_updating() -> bool:"
+            },
+            "rust": {
+              "name": "is_updating",
+              "signature": "pub fn is_updating() -> bool"
+            },
+            "swift": {
+              "name": "isUpdating",
+              "signature": "static func isUpdating() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "View::RequestUpdate",
+          "kind": "method",
+          "doc": {
+            "summary": "Requests a coalesced asynchronous ViewUpdatingEvent.",
+            "details": "Call on the owning UI thread. The view must have shared ownership. This schedules state publication, not an animation or a continuous frame loop. Destruction or CancelUpdate cancels delivery. Listeners must not pump events.",
+            "returns": "false if unsupported, not shared-owned, or scheduling failed.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: Supported - Coalesced main-thread dispatch; AppKit owns painting.\n- Windows: Supported for Win32 - Coalesced per UI thread using the observed desktop refresh period (60 Hz fallback), followed by pending native paint. Input may defer delivery. This is not a vsync or frame-rate guarantee.\n- Linux: Supported - Coalesced main-thread dispatch; GTK owns painting.\n- Android: Not applicable - Views are unsupported; returns false.\n- iOS: Not applicable - Views are unsupported; returns false.\n- OpenHarmony: Supported - Coalesced dispatch through the initialized UI host."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "RequestUpdate",
+              "signature": "bool RequestUpdate()"
+            },
+            "csharp": {
+              "name": "RequestUpdate",
+              "signature": "public bool RequestUpdate()"
+            },
+            "dart": {
+              "name": "requestUpdate",
+              "signature": "bool requestUpdate()"
+            },
+            "go": {
+              "name": "RequestUpdate",
+              "signature": "func (v *View) RequestUpdate() error"
+            },
+            "js": {
+              "name": "requestUpdate",
+              "signature": "requestUpdate(): boolean"
+            },
+            "python": {
+              "name": "request_update",
+              "signature": "def request_update(self) -> bool:"
+            },
+            "rust": {
+              "name": "request_update",
+              "signature": "pub fn request_update(&self) -> bool"
+            },
+            "swift": {
+              "name": "requestUpdate",
+              "signature": "func requestUpdate() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "View::CancelUpdate",
+          "kind": "method",
+          "doc": {
+            "summary": "Cancels this view's pending update without running its listeners."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "CancelUpdate",
+              "signature": "void CancelUpdate()"
+            },
+            "csharp": {
+              "name": "CancelUpdate",
+              "signature": "public void CancelUpdate()"
+            },
+            "dart": {
+              "name": "cancelUpdate",
+              "signature": "void cancelUpdate()"
+            },
+            "go": {
+              "name": "CancelUpdate",
+              "signature": "func (v *View) CancelUpdate()"
+            },
+            "js": {
+              "name": "cancelUpdate",
+              "signature": "cancelUpdate(): void"
+            },
+            "python": {
+              "name": "cancel_update",
+              "signature": "def cancel_update(self) -> None:"
+            },
+            "rust": {
+              "name": "cancel_update",
+              "signature": "pub fn cancel_update(&self)"
+            },
+            "swift": {
+              "name": "cancelUpdate",
+              "signature": "func cancelUpdate() -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::IsUpdatePending",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if a requested update is awaiting delivery.",
+            "returns": "true after a successful RequestUpdate until delivery or cancellation."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsUpdatePending",
+              "signature": "bool IsUpdatePending() const"
+            },
+            "csharp": {
+              "name": "IsUpdatePending",
+              "signature": "public bool IsUpdatePending"
+            },
+            "dart": {
+              "name": "isUpdatePending",
+              "signature": "bool get isUpdatePending"
+            },
+            "go": {
+              "name": "IsUpdatePending",
+              "signature": "func (v *View) IsUpdatePending() bool"
+            },
+            "js": {
+              "name": "isUpdatePending",
+              "signature": "get isUpdatePending(): boolean"
+            },
+            "python": {
+              "name": "is_update_pending",
+              "signature": "@property\ndef is_update_pending(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_update_pending",
+              "signature": "pub fn is_update_pending(&self) -> bool"
+            },
+            "swift": {
+              "name": "isUpdatePending",
+              "signature": "var isUpdatePending: Bool"
+            }
+          }
+        },
+        {
           "key": "View::GetId",
           "kind": "method",
           "doc": {
@@ -4670,6 +4946,48 @@
             "swift": {
               "name": "textFieldSubmitted",
               "signature": "case textFieldSubmitted(viewId: ViewId)"
+            }
+          }
+        },
+        {
+          "key": "ViewUpdatingEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "A requested view update is ready to publish on the owning UI thread.",
+            "details": "Repeated RequestUpdate calls coalesce. Listeners publish their current state; a request made by a listener is delivered in a later update, never recursively."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ViewUpdatingEvent",
+              "signature": "class ViewUpdatingEvent : public ViewEvent"
+            },
+            "csharp": {
+              "name": "ViewEvent.Updating",
+              "signature": "public sealed record Updating(uint ViewId) : ViewEvent;"
+            },
+            "dart": {
+              "name": "ViewUpdatingEvent",
+              "signature": "final class ViewUpdatingEvent extends ViewEvent"
+            },
+            "go": {
+              "name": "ViewEventUpdating",
+              "signature": "const ViewEventUpdating ViewEventType = 5"
+            },
+            "js": {
+              "name": "Extract<ViewEvent, { type: \"updating\" }>",
+              "signature": "| { type: \"updating\"; viewId: ViewId }"
+            },
+            "python": {
+              "name": "ViewUpdatingEvent",
+              "signature": "@dataclass(frozen=True)\nclass ViewUpdatingEvent(ViewEvent):"
+            },
+            "rust": {
+              "name": "ViewEvent::Updating",
+              "signature": "Updating { view_id: ViewId }"
+            },
+            "swift": {
+              "name": "updating",
+              "signature": "case updating(viewId: ViewId)"
             }
           }
         }

@@ -1,6 +1,6 @@
 # nativeapi for Swift
 
-Native desktop APIs for Swift on macOS, backed by the libnativeapi C ABI.
+Native desktop APIs for Swift on macOS, Windows and Linux, backed by the libnativeapi C ABI.
 The generated API covers windows, views, menus, tray icons, displays, keyboard,
 dialogs, preferences, storage and the other APIs currently exposed by the C ABI.
 
@@ -11,8 +11,8 @@ yet.
 
 ## Requirements
 
-- macOS 11 or later (the binding is built and tested on macOS; the core also
-  supports Windows and Linux, where SwiftPM would need each platform's setup)
+- macOS 11 or later, Windows with the official Swift toolchain and Visual
+  Studio C++ build tools, or Linux with GTK 3, X11 and XI development packages
 - Swift 5.9 or later (Xcode 15+); the package builds in Swift 5 language mode
 - The `core` submodule checked out:
 
@@ -55,6 +55,21 @@ Build and test the package itself from `bindings/swift`:
 swift build
 swift test
 ```
+
+On Windows, enable Developer Mode for symlinks and prepare the source link
+before building (also works when Git checked it out as a plain text file):
+
+```powershell
+./scripts/prepare-windows.ps1
+swift build
+swift test
+```
+
+The Windows target compiles the Win32 backend, without the optional WinUI 3
+layer. Core is compiled into the Swift executable, which links the Windows
+system libraries.
+Use a Swift version compatible with the installed MSVC headers. Swift 6.4.2
+has been used for the Windows source build.
 
 ## API conventions
 

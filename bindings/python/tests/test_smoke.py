@@ -26,6 +26,19 @@ def test_every_export_resolves():
         assert getattr(nativeapi, name) is not None, name
 
 
+def test_view_update_batches_cross_the_c_abi():
+    view = nativeapi.View
+    assert not view.is_updating()
+    view.begin_updates()
+    try:
+        view.begin_updates()
+        view.end_updates(False)
+        assert view.is_updating()
+    finally:
+        view.end_updates(True)
+    assert not view.is_updating()
+
+
 def test_structs_round_trip_through_the_c_abi():
     assert Color.from_hex("#ff8000") == Color(255, 128, 0, 255)
     assert Color.from_rgba(1, 2, 3, 4).to_rgba() == 0x01020304

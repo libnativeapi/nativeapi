@@ -139,6 +139,10 @@ sealed class ViewEvent {
             .value) {
       return TextFieldSubmittedEvent(viewId: raw.view_id);
     }
+    if (raw.typeAsInt ==
+        c.native_view_event_type_t.NATIVE_VIEW_EVENT_TYPE_UPDATING.value) {
+      return ViewUpdatingEvent(viewId: raw.view_id);
+    }
     return null;
   }
 }
@@ -174,6 +178,13 @@ final class TextFieldChangedEvent extends ViewEvent {
 
 final class TextFieldSubmittedEvent extends ViewEvent {
   const TextFieldSubmittedEvent({required this.viewId});
+
+  @override
+  final ViewId viewId;
+}
+
+final class ViewUpdatingEvent extends ViewEvent {
+  const ViewUpdatingEvent({required this.viewId});
 
   @override
   final ViewId viewId;
@@ -237,6 +248,30 @@ class View implements ffi.Finalizable {
   static ViewBackend getDefaultBackend() {
     final raw = c.native_view_get_default_backend();
     return ViewBackend.fromValue(raw.value);
+  }
+
+  static void beginUpdates() {
+    c.native_view_begin_updates();
+  }
+
+  static void endUpdates(bool redraw) {
+    c.native_view_end_updates(redraw);
+  }
+
+  static bool isUpdating() {
+    return c.native_view_is_updating();
+  }
+
+  bool requestUpdate() {
+    return c.native_view_request_update(nativeHandle);
+  }
+
+  void cancelUpdate() {
+    c.native_view_cancel_update(nativeHandle);
+  }
+
+  bool get isUpdatePending {
+    return c.native_view_is_update_pending(nativeHandle);
   }
 
   ViewId get id {

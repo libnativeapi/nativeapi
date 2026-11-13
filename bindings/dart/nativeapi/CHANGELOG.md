@@ -1,5 +1,9 @@
 ## 0.6.0
 
+- Add cancellable `View.requestUpdate()` notifications. Windows coalesces publication on the owning UI thread and drains pending native paint after each update.
+
+- Add nested `View.beginUpdates()` / `View.endUpdates(redraw)` batches to coalesce layout. Windows also batches native moves and schedules geometry and visibility repaint after publication; self-rendering hosts can pass `false` to publish their own damage. Unchanged properties and absolute translations avoid redundant layout.
+
 - **Breaking:** requires Flutter 3.50 / Dart 3.14. The experimental `runNativeApp()` in `package:nativeapi/standalone.dart` still depends on VM APIs that Dart 3.14 removed, so it cannot be compiled with this constraint until it is ported.
 - macOS: preserve a pending Flutter quit decision when AppKit acknowledges synchronous cancellation, so approving the later Dart response exits normally ([nativeapi-core#65](https://github.com/libnativeapi/nativeapi-core/issues/65)).
 - Linux: implement tray context menu popups and dismissal on X11, including double-click triggers. Document the native Wayland requirement to use host-rendered `Clicked` or `RightClicked` menus ([nativeapi-core#88](https://github.com/libnativeapi/nativeapi-core/issues/88)).

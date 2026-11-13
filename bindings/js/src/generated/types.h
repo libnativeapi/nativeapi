@@ -503,6 +503,9 @@ inline Value ToValue(const native_view_event_t& event) {
     case NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED:
       result.Set("type", Value::String("textFieldSubmitted"));
       break;
+    case NATIVE_VIEW_EVENT_TYPE_UPDATING:
+      result.Set("type", Value::String("updating"));
+      break;
     default:
       return Value::Null();
   }

@@ -90,6 +90,7 @@ public enum ViewEvent {
   case buttonClicked(viewId: ViewId)
   case textFieldChanged(viewId: ViewId, text: String?)
   case textFieldSubmitted(viewId: ViewId)
+  case updating(viewId: ViewId)
 
   init?(raw: native_view_event_t) {
     switch raw.type {
@@ -98,6 +99,7 @@ public enum ViewEvent {
     case NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED: self = .buttonClicked(viewId: raw.view_id)
     case NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED: self = .textFieldChanged(viewId: raw.view_id, text: raw.data.text_field_changed.text.map { String(cString: $0) })
     case NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED: self = .textFieldSubmitted(viewId: raw.view_id)
+    case NATIVE_VIEW_EVENT_TYPE_UPDATING: self = .updating(viewId: raw.view_id)
     default: return nil
     }
   }
@@ -159,6 +161,30 @@ public class View {
 
   public static func getDefaultBackend() -> ViewBackend {
     return ViewBackend(raw: native_view_get_default_backend())
+  }
+
+  public static func beginUpdates() -> Void {
+    native_view_begin_updates()
+  }
+
+  public static func endUpdates(_ redraw: Bool) -> Void {
+    native_view_end_updates(redraw)
+  }
+
+  public static func isUpdating() -> Bool {
+    return native_view_is_updating()
+  }
+
+  public func requestUpdate() -> Bool {
+    return native_view_request_update(nativeHandle)
+  }
+
+  public func cancelUpdate() -> Void {
+    native_view_cancel_update(nativeHandle)
+  }
+
+  public var isUpdatePending: Bool {
+    return native_view_is_update_pending(nativeHandle)
   }
 
   public var id: ViewId {

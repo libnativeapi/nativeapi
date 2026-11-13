@@ -1840,6 +1840,18 @@ native_view_set_default_backend = function(
     ],
 )
 native_view_get_default_backend = function("native_view_get_default_backend", c_int, [])
+native_view_begin_updates = function("native_view_begin_updates", None, [])
+native_view_end_updates = function("native_view_end_updates", None, [c_bool])
+native_view_is_updating = function("native_view_is_updating", c_bool, [])
+native_view_request_update = function("native_view_request_update", c_bool, [c_uint64])
+native_view_cancel_update = function("native_view_cancel_update", None, [c_uint64])
+native_view_is_update_pending = function(
+    "native_view_is_update_pending",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
 native_view_get_id = function("native_view_get_id", c_uint, [c_uint64])
 native_view_get_backend = function("native_view_get_backend", c_int, [c_uint64])
 native_view_add_subview = function(

@@ -47,6 +47,7 @@ public abstract record ViewEvent
     public sealed record ButtonClicked(uint ViewId) : ViewEvent;
     public sealed record TextFieldChanged(uint ViewId, string? Text) : ViewEvent;
     public sealed record TextFieldSubmitted(uint ViewId) : ViewEvent;
+    public sealed record Updating(uint ViewId) : ViewEvent;
 
     internal static ViewEvent? FromRaw(in native_view_event_t raw)
     {
@@ -57,6 +58,7 @@ public abstract record ViewEvent
             case 2: return new ButtonClicked(raw.view_id);
             case 3: return new TextFieldChanged(raw.view_id, Marshal.PtrToStringUTF8(raw.data.text_field_changed.text));
             case 4: return new TextFieldSubmitted(raw.view_id);
+            case 5: return new Updating(raw.view_id);
             default: return null;
         }
     }
@@ -127,6 +129,42 @@ public partial class View : IDisposable
     {
         var rawResult = Interop.native_view_get_default_backend();
         return (ViewBackend)rawResult;
+    }
+
+    public static void BeginUpdates()
+    {
+        Interop.native_view_begin_updates();
+    }
+
+    public static void EndUpdates(bool redraw)
+    {
+        Interop.native_view_end_updates(redraw);
+    }
+
+    public static bool IsUpdating()
+    {
+        var rawResult = Interop.native_view_is_updating();
+        return rawResult;
+    }
+
+    public bool RequestUpdate()
+    {
+        var rawResult = Interop.native_view_request_update(NativeHandle);
+        return rawResult;
+    }
+
+    public void CancelUpdate()
+    {
+        Interop.native_view_cancel_update(NativeHandle);
+    }
+
+    public bool IsUpdatePending
+    {
+        get
+        {
+            var rawResult = Interop.native_view_is_update_pending(NativeHandle);
+            return rawResult;
+        }
     }
 
     public uint Id

@@ -65,6 +65,8 @@ final class EventLog {
         _add(source, 'focused');
       case ViewBlurredEvent():
         _add(source, 'blurred');
+      case ViewUpdatingEvent():
+        _add(source, 'updating');
     }
   }
 
