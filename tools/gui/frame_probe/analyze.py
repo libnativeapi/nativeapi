@@ -124,6 +124,28 @@ def analyze(capture, producer):
         result["matched_frame_intervals"] = statistics_for(
             [(b - a) * 1000 / frequency for a, b in itertools.pairwise(times)]
         )
+        result["matched_display_cycle_histogram"] = dict(
+            sorted(
+                collections.Counter(
+                    round((b - a) * refresh_hz / frequency)
+                    for a, b in itertools.pairwise(times)
+                ).items()
+            )
+        )
+        # Count complete one-second windows; exclude the partial last window.
+        result["matched_frames_per_second"] = (
+            [
+                sum(
+                    times[0] + second * frequency
+                    <= t
+                    < times[0] + (second + 1) * frequency
+                    for t in times
+                )
+                for second in range(int((times[-1] - times[0]) / frequency))
+            ]
+            if times
+            else []
+        )
         result["matched_intervals_over_33_34_ms"] = sum(
             (b - a) * 1000 / frequency > 33.34 for a, b in itertools.pairwise(times)
         )

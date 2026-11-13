@@ -28,6 +28,9 @@ The observer validates and decodes the strip independently from desktop pixels;
 the analyzer reports the first observation of each producer ID, missing IDs,
 intervals and update-to-composed-marker latency. Capture must continue briefly
 after the final producer sample to observe its asynchronous presentation.
+The matched-ID report also includes refresh-cycle counts and complete one-second
+frame counts. Use these to check sustained cadence; an average near 60 Hz alone
+does not establish smooth presentation. Missing producer IDs remain explicit.
 
 This marker is test instrumentation, not part of a production UI. Its cost and
 the observer's CPU/readback load remain in the paced test. Observing a marker
