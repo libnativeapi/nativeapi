@@ -351,6 +351,150 @@
           }
         },
         {
+          "key": "View::BeginUpdates",
+          "kind": "static",
+          "doc": {
+            "summary": "Begins a nested batch of view updates on the current UI thread.",
+            "details": "All views on this thread participate, including detached and borrowed views. Layout is coalesced until the matching outermost EndUpdates(). Stored properties change immediately; native geometry may lag until the batch ends. Pair every call with EndUpdates() on the same thread, without pumping the event loop inside the batch. This is not a rollback transaction.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: Fully supported - Coalesces the shared view layout.\n- Windows: Fully supported - Also batches Win32 moves and defers geometry and visibility repaint; other control properties may update immediately. WinUI3 coalesces shared layout and uses its native rendering scheduler.\n- Linux: Fully supported - Coalesces shared layout; GTK schedules painting.\n- Android: Not applicable - Views are unsupported.\n- iOS: Not applicable - Views are unsupported.\n- OpenHarmony: Fully supported - Coalesces layout on the owning UI thread."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "BeginUpdates",
+              "signature": "static void BeginUpdates()"
+            },
+            "csharp": {
+              "name": "BeginUpdates",
+              "signature": "public static void BeginUpdates()"
+            },
+            "dart": {
+              "name": "beginUpdates",
+              "signature": "static void beginUpdates()"
+            },
+            "go": {
+              "name": "ViewBeginUpdates",
+              "signature": "func ViewBeginUpdates()"
+            },
+            "js": {
+              "name": "beginUpdates",
+              "signature": "static beginUpdates(): void"
+            },
+            "python": {
+              "name": "begin_updates",
+              "signature": "@staticmethod\ndef begin_updates() -> None:"
+            },
+            "rust": {
+              "name": "begin_updates",
+              "signature": "pub fn begin_updates()"
+            },
+            "swift": {
+              "name": "beginUpdates",
+              "signature": "static func beginUpdates() -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::EndUpdates",
+          "kind": "static",
+          "doc": {
+            "summary": "Ends a batch, applying pending layout at the outermost boundary.",
+            "details": "An unmatched call is ignored. Win32 repaint is scheduled, never forced synchronously, so callers can finish publishing their own drawing first.",
+            "params": [
+              {
+                "name": "redraw",
+                "text": "Whether the outermost call requests Win32 geometry and visibility repaint. Pass false when a host renderer publishes its own damage. Inner calls do not change the outer call's choice. Other backends retain their native paint scheduling."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "see",
+                "text": "BeginUpdates() for platform availability and pairing requirements."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "EndUpdates",
+              "signature": "static void EndUpdates(bool redraw)"
+            },
+            "csharp": {
+              "name": "EndUpdates",
+              "signature": "public static void EndUpdates(bool redraw)"
+            },
+            "dart": {
+              "name": "endUpdates",
+              "signature": "static void endUpdates(bool redraw)"
+            },
+            "go": {
+              "name": "ViewEndUpdates",
+              "signature": "func ViewEndUpdates(redraw bool)"
+            },
+            "js": {
+              "name": "endUpdates",
+              "signature": "static endUpdates(redraw: boolean): void"
+            },
+            "python": {
+              "name": "end_updates",
+              "signature": "@staticmethod\ndef end_updates(redraw: bool) -> None:"
+            },
+            "rust": {
+              "name": "end_updates",
+              "signature": "pub fn end_updates(redraw: bool)"
+            },
+            "swift": {
+              "name": "endUpdates",
+              "signature": "static func endUpdates(_ redraw: Bool) -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::IsUpdating",
+          "kind": "static",
+          "doc": {
+            "summary": "Checks if this UI thread has an open view update batch.",
+            "returns": "true between BeginUpdates() and its matching EndUpdates()."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsUpdating",
+              "signature": "static bool IsUpdating()"
+            },
+            "csharp": {
+              "name": "IsUpdating",
+              "signature": "public static bool IsUpdating()"
+            },
+            "dart": {
+              "name": "isUpdating",
+              "signature": "static bool isUpdating()"
+            },
+            "go": {
+              "name": "ViewIsUpdating",
+              "signature": "func ViewIsUpdating() bool"
+            },
+            "js": {
+              "name": "isUpdating",
+              "signature": "static isUpdating(): boolean"
+            },
+            "python": {
+              "name": "is_updating",
+              "signature": "@staticmethod\ndef is_updating() -> bool:"
+            },
+            "rust": {
+              "name": "is_updating",
+              "signature": "pub fn is_updating() -> bool"
+            },
+            "swift": {
+              "name": "isUpdating",
+              "signature": "static func isUpdating() -> Bool"
+            }
+          }
+        },
+        {
           "key": "View::GetId",
           "kind": "method",
           "doc": {

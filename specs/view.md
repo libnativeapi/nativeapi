@@ -193,9 +193,22 @@ Window ──shared_ptr──▶ root View (包装窗口内容区)
   View 按各自首选（或固有）尺寸排开所需的大小——主轴首尾相接加间距，交叉轴取最大，
   再加内边距；flex 子 View 也按自然尺寸计入。所以嵌套的行列不设 `SetPreferredSize()`
   也不会塌成 0。Absolute 容器的固有尺寸是 0（子 View 自己定位）。
-- 布局是**同步的**：任何影响布局的 setter（增删子 View、`SetFrame`、`SetPreferredSize`、
-  `SetFlex`、`SetVisible`、固有尺寸型控件的 `SetText`）都在返回前重排该容器及其祖先。
-  简单实现优先；发现性能问题再引入延迟到下一轮主循环的 dirty 标记。
+- 默认布局仍然同步。`View::BeginUpdates()` / `EndUpdates()` 是 UI 线程级、可嵌套的
+  显式批次，覆盖该线程上的所有 View（含游离和借用的原生视图）；只在最外层结束时
+  重排 dirty 子树，祖先已 dirty 时合并后代请求。调用必须成对，批次内不运行事件循环。
+  这不是回滚事务：属性立即更新，原生几何可能在结束时才发布。
+- 相同属性不触发布局；Absolute 子 View 的纯平移不改变自身子布局或祖先固有尺寸，
+  因而不重排整棵树；尺寸变化只重排该子树。Row / Column 的尺寸提示和内容变化仍
+  向根传递布局请求。批次内销毁或重挂的 View 不留下失效的布局请求。
+- Windows 的批次把同父 HWND 的平移交给 `DeferWindowPos`，尺寸变化立即应用供后续
+  嵌套布局和 hit region 使用；几何和可见性变化使用 `SWP_NOREDRAW`，结束时合并受损
+  区域并排队重绘，不强制同步 paint，也不用会改变可见性标志的 `WM_SETREDRAW`。
+  其他原生控件属性仍可立即生效。其他后端共用布局合并，绘制由各自原生调度器负责。
+- 自绘宿主在最外层使用 `EndUpdates(false)` 接管 Windows 几何 / 可见性变化的重绘
+  排队，避免「nativeapi 先 invalidate，宿主再 validate 后重画」的重复区域计算。
+  默认 `true` 保持普通原生控件自动重绘；内层调用不改变外层选择。
+- Windows 的逻辑坐标转像素在正负半像素使用相同的舍入方向，保证跨越零点的整数
+  像素平移不会多跳一像素；子 View 的位置始终相对原生父 View 计算。
 - `SetVisible(false)` 的子 View 不占位（等价 Flutter 的 `Visibility` 而非 `Opacity`）。
 - 根 View 的尺寸随窗口内容区变化（macOS `NSViewFrameDidChangeNotification`、Windows
   `WM_SIZE`、GTK `size-allocate`）；变化后重排一次。

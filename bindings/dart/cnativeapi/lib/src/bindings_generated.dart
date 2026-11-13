@@ -2562,6 +2562,9 @@ external int native_view_add_listener_async(
 @ffi.Native<ffi.Void Function(native_view_t$1, native_view_t$1)>()
 external void native_view_add_subview(int view, int subview);
 
+@ffi.Native<ffi.Void Function()>()
+external void native_view_begin_updates();
+
 @ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_blur(int view);
 
@@ -2577,6 +2580,9 @@ external int native_view_create();
 external int native_view_create_with_native_view(
   ffi.Pointer<ffi.Void> native_view,
 );
+
+@ffi.Native<ffi.Void Function(ffi.Bool)>()
+external void native_view_end_updates(bool redraw);
 
 @ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_focus(int view);
@@ -2694,6 +2700,9 @@ external bool native_view_is_focused(int view);
 
 @ffi.Native<ffi.Bool Function()>()
 external bool native_view_is_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_view_is_updating();
 
 @ffi.Native<ffi.Bool Function(native_view_t$1)>()
 external bool native_view_is_visible(int view);

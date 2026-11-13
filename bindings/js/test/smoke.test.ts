@@ -3,7 +3,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { Color, NativeObject, Preferences, Shortcut, ShortcutManager, ShortcutScope } from "../lib/index.ts";
+import { Color, NativeObject, Preferences, Shortcut, ShortcutManager, ShortcutScope, View } from "../lib/index.ts";
+
+test("nested view batches cross the C ABI", () => {
+  assert.equal(View.isUpdating(), false);
+  View.beginUpdates();
+  try {
+    View.beginUpdates();
+    View.endUpdates(false);
+    assert.equal(View.isUpdating(), true);
+  } finally {
+    View.endUpdates(true);
+  }
+  assert.equal(View.isUpdating(), false);
+});
 
 test("structs round-trip through the C ABI", () => {
   assert.deepEqual(Color.fromHex("#ff8000"), { r: 255, g: 128, b: 0, a: 255 });

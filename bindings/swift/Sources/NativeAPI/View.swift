@@ -161,6 +161,18 @@ public class View {
     return ViewBackend(raw: native_view_get_default_backend())
   }
 
+  public static func beginUpdates() -> Void {
+    native_view_begin_updates()
+  }
+
+  public static func endUpdates(_ redraw: Bool) -> Void {
+    native_view_end_updates(redraw)
+  }
+
+  public static func isUpdating() -> Bool {
+    return native_view_is_updating()
+  }
+
   public var id: ViewId {
     return native_view_get_id(nativeHandle)
   }

@@ -134,6 +134,19 @@ class View(_rt.NativeObject):
         raw = _C.native_view_get_default_backend()
         return _rt.to_enum(ViewBackend, raw)
 
+    @staticmethod
+    def begin_updates() -> None:
+        _C.native_view_begin_updates()
+
+    @staticmethod
+    def end_updates(redraw: bool) -> None:
+        _C.native_view_end_updates(redraw)
+
+    @staticmethod
+    def is_updating() -> bool:
+        raw = _C.native_view_is_updating()
+        return raw
+
     @property
     def id(self) -> ViewId:
         raw = _C.native_view_get_id(self._handle)

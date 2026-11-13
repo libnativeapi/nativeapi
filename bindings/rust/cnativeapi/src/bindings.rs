@@ -458,6 +458,15 @@ unsafe extern "C" {
     pub fn native_view_get_default_backend() -> native_view_backend_t;
 }
 unsafe extern "C" {
+    pub fn native_view_begin_updates();
+}
+unsafe extern "C" {
+    pub fn native_view_end_updates(redraw: bool);
+}
+unsafe extern "C" {
+    pub fn native_view_is_updating() -> bool;
+}
+unsafe extern "C" {
     pub fn native_view_get_id(view: native_view_t) -> native_view_id_t;
 }
 unsafe extern "C" {

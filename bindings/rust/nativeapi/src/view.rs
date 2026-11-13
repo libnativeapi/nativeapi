@@ -199,6 +199,24 @@ impl View {
         }
     }
 
+    pub fn begin_updates() {
+        unsafe {
+            cnativeapi::native_view_begin_updates();
+        }
+    }
+
+    pub fn end_updates(redraw: bool) {
+        unsafe {
+            cnativeapi::native_view_end_updates(redraw);
+        }
+    }
+
+    pub fn is_updating() -> bool {
+        unsafe {
+            cnativeapi::native_view_is_updating()
+        }
+    }
+
     pub fn id(&self) -> ViewId {
         unsafe {
             cnativeapi::native_view_get_id(self.handle)

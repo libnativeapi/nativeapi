@@ -122,7 +122,8 @@ let package = Package(
   name: "NativeAPI",
   platforms: [.macOS(.v11)],
   products: [
-    .library(name: "NativeAPI", targets: ["NativeAPI"])
+    .library(name: "NativeAPI", targets: ["NativeAPI"]),
+    .library(name: "CNativeAPI", targets: ["CNativeAPI"])
   ],
   targets: systemTargets + [
     .target(

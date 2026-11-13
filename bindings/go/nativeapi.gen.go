@@ -2480,6 +2480,22 @@ func ViewDefaultBackend() ViewBackend {
 	return ViewBackend(result)
 }
 
+// ViewBeginUpdates invokes the native BeginUpdates operation.
+func ViewBeginUpdates() {
+	C.native_view_begin_updates()
+}
+
+// ViewEndUpdates invokes the native EndUpdates operation.
+func ViewEndUpdates(redraw bool) {
+	C.native_view_end_updates(C.bool(redraw))
+}
+
+// ViewIsUpdating invokes the native IsUpdating operation.
+func ViewIsUpdating() bool {
+	result := C.native_view_is_updating()
+	return bool(result)
+}
+
 // ID invokes the native GetId operation.
 func (v *View) ID() ViewID {
 	result := C.native_view_get_id(C.native_view_t(v.nativeHandleValue()))

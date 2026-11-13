@@ -129,6 +129,22 @@ public partial class View : IDisposable
         return (ViewBackend)rawResult;
     }
 
+    public static void BeginUpdates()
+    {
+        Interop.native_view_begin_updates();
+    }
+
+    public static void EndUpdates(bool redraw)
+    {
+        Interop.native_view_end_updates(redraw);
+    }
+
+    public static bool IsUpdating()
+    {
+        var rawResult = Interop.native_view_is_updating();
+        return rawResult;
+    }
+
     public uint Id
     {
         get

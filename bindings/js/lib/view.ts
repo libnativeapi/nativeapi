@@ -77,6 +77,18 @@ export class View extends NativeObject {
     return native.native_view_get_default_backend();
   }
 
+  static beginUpdates(): void {
+    native.native_view_begin_updates();
+  }
+
+  static endUpdates(redraw: boolean): void {
+    native.native_view_end_updates(redraw);
+  }
+
+  static isUpdating(): boolean {
+    return native.native_view_is_updating();
+  }
+
   get id(): ViewId {
     return native.native_view_get_id(this.nativeHandle);
   }

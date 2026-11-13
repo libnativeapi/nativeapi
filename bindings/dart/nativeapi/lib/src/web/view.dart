@@ -139,6 +139,12 @@ class View {
 
   static ViewBackend getDefaultBackend() => unsupported();
 
+  static void beginUpdates() => unsupported();
+
+  static void endUpdates(bool redraw) => unsupported();
+
+  static bool isUpdating() => unsupported();
+
   ViewId get id => unsupported();
 
   ViewBackend get backend => unsupported();

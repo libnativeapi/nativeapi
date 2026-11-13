@@ -239,6 +239,18 @@ class View implements ffi.Finalizable {
     return ViewBackend.fromValue(raw.value);
   }
 
+  static void beginUpdates() {
+    c.native_view_begin_updates();
+  }
+
+  static void endUpdates(bool redraw) {
+    c.native_view_end_updates(redraw);
+  }
+
+  static bool isUpdating() {
+    return c.native_view_is_updating();
+  }
+
   ViewId get id {
     return c.native_view_get_id(nativeHandle);
   }
