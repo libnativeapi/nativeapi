@@ -2569,6 +2569,9 @@ external void native_view_begin_updates();
 external void native_view_blur(int view);
 
 @ffi.Native<ffi.Void Function(native_view_t$1)>()
+external void native_view_cancel_update(int view);
+
+@ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_clear_subviews(int view);
 
 /// Creates a View instance; release it with native_view_free().
@@ -2701,6 +2704,9 @@ external bool native_view_is_focused(int view);
 @ffi.Native<ffi.Bool Function()>()
 external bool native_view_is_supported();
 
+@ffi.Native<ffi.Bool Function(native_view_t$1)>()
+external bool native_view_is_update_pending(int view);
+
 @ffi.Native<ffi.Bool Function()>()
 external bool native_view_is_updating();
 
@@ -2724,6 +2730,9 @@ external bool native_view_remove_subview(int view, int subview);
 
 @ffi.Native<ffi.Bool Function(native_view_t$1, ffi.UnsignedLong)>()
 external bool native_view_remove_subview_at(int view, int index);
+
+@ffi.Native<ffi.Bool Function(native_view_t$1)>()
+external bool native_view_request_update(int view);
 
 @ffi.Native<ffi.Void Function(native_view_t$1, ffi.UnsignedInt)>(
   symbol: 'native_view_set_alignment',
@@ -5877,7 +5886,8 @@ enum native_view_event_type_t {
   NATIVE_VIEW_EVENT_TYPE_BLURRED(1),
   NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED(2),
   NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED(3),
-  NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED(4);
+  NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED(4),
+  NATIVE_VIEW_EVENT_TYPE_UPDATING(5);
 
   final int value;
   const native_view_event_type_t(this.value);
@@ -5888,6 +5898,7 @@ enum native_view_event_type_t {
     2 => NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED,
     3 => NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED,
     4 => NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED,
+    5 => NATIVE_VIEW_EVENT_TYPE_UPDATING,
     _ => throw ArgumentError(
       'Unknown value for native_view_event_type_t: $value',
     ),

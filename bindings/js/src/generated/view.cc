@@ -151,6 +151,51 @@ napi_value Js_native_view_is_updating(napi_env env, napi_callback_info info) {
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_view_request_update(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_view_request_update(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_view_cancel_update(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_view_cancel_update(self); });
+  return Undefined(env);
+}
+
+napi_value Js_native_view_is_update_pending(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_view_is_update_pending(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_view_get_id(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1457,6 +1502,9 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_view_begin_updates", Js_native_view_begin_updates);
   Export(env, exports, "native_view_end_updates", Js_native_view_end_updates);
   Export(env, exports, "native_view_is_updating", Js_native_view_is_updating);
+  Export(env, exports, "native_view_request_update", Js_native_view_request_update);
+  Export(env, exports, "native_view_cancel_update", Js_native_view_cancel_update);
+  Export(env, exports, "native_view_is_update_pending", Js_native_view_is_update_pending);
   Export(env, exports, "native_view_get_id", Js_native_view_get_id);
   Export(env, exports, "native_view_get_backend", Js_native_view_get_backend);
   Export(env, exports, "native_view_add_subview", Js_native_view_add_subview);

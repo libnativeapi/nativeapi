@@ -63,6 +63,8 @@ class ViewEvent:
             )
         if raw.type == 4:
             return TextFieldSubmittedEvent(raw.view_id)
+        if raw.type == 5:
+            return ViewUpdatingEvent(raw.view_id)
         return None
 
 
@@ -88,6 +90,11 @@ class TextFieldChangedEvent(ViewEvent):
 
 @dataclass(frozen=True)
 class TextFieldSubmittedEvent(ViewEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class ViewUpdatingEvent(ViewEvent):
     pass
 
 
@@ -145,6 +152,18 @@ class View(_rt.NativeObject):
     @staticmethod
     def is_updating() -> bool:
         raw = _C.native_view_is_updating()
+        return raw
+
+    def request_update(self) -> bool:
+        raw = _C.native_view_request_update(self._handle)
+        return raw
+
+    def cancel_update(self) -> None:
+        _C.native_view_cancel_update(self._handle)
+
+    @property
+    def is_update_pending(self) -> bool:
+        raw = _C.native_view_is_update_pending(self._handle)
         return raw
 
     @property

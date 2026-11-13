@@ -116,6 +116,7 @@ pub enum ViewEvent {
     ButtonClicked { view_id: ViewId },
     TextFieldChanged { view_id: ViewId, text: Option<String> },
     TextFieldSubmitted { view_id: ViewId },
+    Updating { view_id: ViewId },
 }
 
 impl ViewEvent {
@@ -126,6 +127,7 @@ impl ViewEvent {
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED => Self::ButtonClicked { view_id: raw.view_id },
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED => Self::TextFieldChanged { view_id: raw.view_id, text: if raw.data.text_field_changed.text.is_null() { None } else { Some(CStr::from_ptr(raw.data.text_field_changed.text).to_string_lossy().into_owned()) } },
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED => Self::TextFieldSubmitted { view_id: raw.view_id },
+            cnativeapi::NATIVE_VIEW_EVENT_TYPE_UPDATING => Self::Updating { view_id: raw.view_id },
             _ => return None,
         })
     }
@@ -214,6 +216,24 @@ impl View {
     pub fn is_updating() -> bool {
         unsafe {
             cnativeapi::native_view_is_updating()
+        }
+    }
+
+    pub fn request_update(&self) -> bool {
+        unsafe {
+            cnativeapi::native_view_request_update(self.handle)
+        }
+    }
+
+    pub fn cancel_update(&self) {
+        unsafe {
+            cnativeapi::native_view_cancel_update(self.handle);
+        }
+    }
+
+    pub fn is_update_pending(&self) -> bool {
+        unsafe {
+            cnativeapi::native_view_is_update_pending(self.handle)
         }
     }
 

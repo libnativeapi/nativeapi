@@ -121,6 +121,13 @@ final class TextFieldSubmittedEvent extends ViewEvent {
   final ViewId viewId;
 }
 
+final class ViewUpdatingEvent extends ViewEvent {
+  const ViewUpdatingEvent({required this.viewId});
+
+  @override
+  final ViewId viewId;
+}
+
 class View {
   View.fromHandle(this.nativeHandle);
   View.borrowed(this.nativeHandle);
@@ -144,6 +151,12 @@ class View {
   static void endUpdates(bool redraw) => unsupported();
 
   static bool isUpdating() => unsupported();
+
+  bool requestUpdate() => unsupported();
+
+  void cancelUpdate() => unsupported();
+
+  bool get isUpdatePending => unsupported();
 
   ViewId get id => unsupported();
 

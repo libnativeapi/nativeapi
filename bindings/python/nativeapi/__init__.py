@@ -189,6 +189,7 @@ from .view import (
     ViewFocusedEvent,
     ViewId,
     ViewLayout,
+    ViewUpdatingEvent,
 )
 from .window import (
     ResizeEdge,
@@ -359,6 +360,7 @@ __all__ = [
     "ViewFocusedEvent",
     "ViewId",
     "ViewLayout",
+    "ViewUpdatingEvent",
     "VisualEffect",
     "Window",
     "WindowBlurredEvent",

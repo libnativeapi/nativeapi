@@ -42,7 +42,8 @@ export type ViewEvent =
   | { type: "blurred"; viewId: ViewId }
   | { type: "buttonClicked"; viewId: ViewId }
   | { type: "textFieldChanged"; viewId: ViewId; text: string | null }
-  | { type: "textFieldSubmitted"; viewId: ViewId };
+  | { type: "textFieldSubmitted"; viewId: ViewId }
+  | { type: "updating"; viewId: ViewId };
 
 /** A native View, held through an owned handle. */
 export class View extends NativeObject {
@@ -87,6 +88,18 @@ export class View extends NativeObject {
 
   static isUpdating(): boolean {
     return native.native_view_is_updating();
+  }
+
+  requestUpdate(): boolean {
+    return native.native_view_request_update(this.nativeHandle);
+  }
+
+  cancelUpdate(): void {
+    native.native_view_cancel_update(this.nativeHandle);
+  }
+
+  get isUpdatePending(): boolean {
+    return native.native_view_is_update_pending(this.nativeHandle);
   }
 
   get id(): ViewId {
