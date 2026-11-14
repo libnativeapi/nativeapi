@@ -7,6 +7,11 @@ through the next nativeapi release. No package release was made during testing.
 verified GTK background-priority fix but remains open for KDE/FlView confirmation.
 #596 remains open because its reported performance regression was not reproduced.
 
+Follow-up on 2026-11-14: #594's remaining non-RGBA XWayland case now has a core
+fallback, runner guidance and Flutter 3.50 measurements. See the
+[shadow visual verification](window_shadow_visual_verification.md) for current
+results and the separately observed geometry limitations.
+
 ## #593: completion must return before an approved close can destroy the engine
 
 Event acknowledgment releases its payload, then posts the implicit vote to the
