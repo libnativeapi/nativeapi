@@ -30,3 +30,4 @@ nativeapi 为 Dart/Flutter、Rust、C#、JavaScript/TypeScript、Python 和 Go �
 
 - [快速开始](getting-started.md)——安装绑定并打开第一个窗口。
 - [架构](architecture.md)——核心、C ABI 与生成的绑定如何协同。
+- [Protocol handler 迁移指南](https://github.com/leanflutter/protocol_handler/blob/main/MIGRATION.md)——Android、iOS、macOS、Windows 的自定义协议、启动 URL、入站事件和监听器清理。

@@ -30,3 +30,4 @@ nativeapi gives Dart/Flutter, Rust, C#, JavaScript/TypeScript, Python and Go one
 
 - [Getting started](getting-started.md) — install a binding and open your first window.
 - [Architecture](architecture.md) — how the core, the C ABI and the generated bindings fit together.
+- [Protocol handler migration](https://github.com/leanflutter/protocol_handler/blob/main/MIGRATION.md) — custom schemes, launch URLs, incoming events and cleanup on Android, iOS, macOS and Windows.

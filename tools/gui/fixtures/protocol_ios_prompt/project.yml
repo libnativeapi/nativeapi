@@ -1,0 +1,33 @@
+name: ProtocolPrompt
+options:
+  deploymentTarget:
+    iOS: '17.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  PromptHost:
+    type: application
+    platform: iOS
+    sources: [Host]
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: dev.libnativeapi.protocolPromptHost
+  PromptTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: PromptHost
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: dev.libnativeapi.protocolPromptTests
+      TEST_TARGET_NAME: PromptHost
+schemes:
+  ProtocolPrompt:
+    build:
+      targets:
+        PromptHost: all
+        PromptTests: [test]
+    test:
+      targets: [PromptTests]

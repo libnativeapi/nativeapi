@@ -1,10 +1,10 @@
 # 自定义协议（深链接）
 
-> 状态：已实施（Windows / Android / iOS 的实机验证见 §6）
+> 状态：已实施（桌面实机、移动端模拟器的验证见 §6）
 > 适用范围：`core/src/protocol_handler.h`、`protocol_handler.cpp`、`protocol_handler_dispatch.h`、
 >   `core/src/platform/*/protocol_handler_*`，以及 leanflutter `protocol_handler` 插件
 >   （子模块 `bindings/dart/protocol_handler`）的原生部分
-> 核实基准：2026-11-09
+> 核实基准：2026-11-14
 
 `ProtocolHandler` 处理的是**入站** URL：应用自己的 scheme 被系统交给本进程。出站链接是
 `UrlOpener` 的事，两者不共享代码。
@@ -49,7 +49,12 @@ delegate。所以 core 提供两条宿主通道，由一段在引擎启动时就
   NUL 的 UTF-8 URL。接收窗口建在拥有窗口、泵 Win32 消息的那个线程上（`FindUiThreadId`），
   并对 `WM_COPYDATA` 放开 UIPI 过滤。
 
-Flutter 侧的接入在 leanflutter `protocol_handler` 0.3（Dart API 与 0.2 相同，底层是本模块）。
+Flutter 侧的接入在 leanflutter `protocol_handler` 0.3（保留 0.2 的监听器与流 API，底层是本模块）。
+其中 `register()` 的返回值改为 `Future<bool>`；逐项对应与各平台配置见
+[迁移指南](https://github.com/leanflutter/protocol_handler/blob/main/MIGRATION.md)。
+iOS 的 application / scene delegate 都由 Flutter 弱引用；插件须调用
+`registrar.publish(instance)` 让 engine 持有实例，否则注册结束后 URL 回调会丢失。
+此生命周期修复尚未发布到 pub.dev，暂用插件 `main`（见其 CHANGELOG 的 Unreleased）。
 其他宿主（原生 C++ 应用）在 macOS 上于应用完成启动前调 `ProtocolHandler::GetInstance()` 即可，
 在移动端自行实现上表的转发。
 
@@ -67,7 +72,7 @@ Android 的 Context 优先取桥接类给的，其次取 NativeActivity 宿主 `
 
 ## 4. 绑定
 
-C ABI 与六个绑定由 codegen 生成：`register`、`getInitialUrl`（可空字符串）与事件监听。
+C ABI 与各语言绑定由 codegen 生成：`register`、`getInitialUrl`（可空字符串）与事件监听。
 Dart 的 `protocol_handler` 门面在其上提供 `ProtocolListener`、`listeners` / `hasListeners`、
 `onUrlReceived` 流；流与监听器共用一个原生监听，最后一个取消时退订，之后到达的 URL 回到 core 排队。
 
@@ -84,9 +89,12 @@ Dart 的 `protocol_handler` 门面在其上提供 `ProtocolListener`、`listener
 - `core/tests/protocol_handler_test.cpp`：经宿主通道验证初始 URL、晚到启动 URL、32 条队列
   溢出与顺序、监听器移除后排队与补发、scheme 校验。
 - `protocol_handler` 的 `flutter test`：监听器的增删与快照、`getInitialUrl`、非法 scheme。
-- macOS 实机（`protocol_handler/example`，debug，App Sandbox 开）：从链接冷启动时初始 URL 正确
-  且同时收到事件；运行中打开链接收到事件；`register` 对已声明 scheme 返回 true。
-- iOS 模拟器、Android 模拟器、Windows：见提交说明；未列出的即未验证。
+- 2026-11-14 的四平台系统 URL 验证及边界见
+  [验证报告](../tools/gui/protocol_handler_verification.md)，复现入口为
+  `tools/gui/verify_protocol_handler.py`。通过系统投递验证普通/冷/热启动、编码 URL、重复
+  激活、对象监听器与流、取消订阅、队列补发和初始 URL 稳定性；不使用宿主桥模拟入站事件。
+- Windows 是未打包应用；MSIX 配置已记录，打包激活未实测。移动端使用模拟器，
+  不等同于物理设备或所有生命周期场景的验证。
 
 ## 7. 检查单
 
