@@ -112,10 +112,13 @@ systemTargets = []
 excludes += platformExcludes.map { "core/src/platform/\($0)" }
 
 let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-if FileManager.default.fileExists(
-  atPath: packageDirectory.appendingPathComponent("Sources/CNativeAPI/core/build").path
-) {
-  excludes.append("core/build")
+// Core may have several independent CMake builds (build-wm, build-issue29,
+// etc.). Never compile their compiler-id probes into the Swift library.
+let coreDirectory = packageDirectory.appendingPathComponent("Sources/CNativeAPI/core")
+for entry in (try? FileManager.default.contentsOfDirectory(atPath: coreDirectory.path)) ?? [] {
+  if entry.hasPrefix("build") || entry == ".build" {
+    excludes.append("core/" + entry)
+  }
 }
 
 let package = Package(
