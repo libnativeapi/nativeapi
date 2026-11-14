@@ -1,3 +1,7 @@
+## 0.6.1
+
+- Windows: keep the owning window active while tracking a window-relative popup menu ([nativeapi-core#94](https://github.com/libnativeapi/nativeapi-core/pull/94)).
+
 ## 0.6.0
 
 - **Breaking:** requires Flutter 3.50 / Dart 3.14.
