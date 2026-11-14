@@ -128,6 +128,23 @@ class MyEvent : public Event {
   Cocoa / Win32 / GTK / Flutter 循环的应用**不得**调它——嵌套第二个循环会引入
   重入 bug。
 
+### 3.3 Windows 窗口发现不能同步等待另一个 HWND 线程
+
+`WindowManager` 的 WinEvent 回调在安装 hook 的线程执行，但所发现的 HWND 可能属于
+同一进程的另一个线程，例如 `file_picker` 在独立 STA 上显示的 owned COM 文件对话框。
+包装该 HWND 时，生命周期 subclass 安装与首次属性快照必须经 `PostToThread` 异步交给
+HWND 所属线程；不能在 owner/platform 线程等待逐个 getter 完成，否则会与对话框的
+焦点初始化互相等待（[#29](https://github.com/libnativeapi/nativeapi/issues/29)）。
+
+延后任务只捕获 HWND、WindowId 和线程 ID，不捕获可能已经析构的 C++ 包装对象；执行前
+重新核对身份，窗口已销毁或 ID 已改变时直接跳过。同线程路径仍立即安装并读取，只有
+subclass 安装成功且此前未跟踪时才初始化属性基线；已有窗口不会重复初始化或产生伪变化事件。
+显式跨线程属性操作仍按原有同步接口执行，本规则针对自动发现/包装窗口时的内部工作。
+
+回归包括暂缓处理已投递任务的窗口线程、后续原生属性通知与 registry 清理，以及真实
+owned/unowned `IFileSaveDialog` / `IFileOpenDialog` 的可响应性和模态状态；详见
+[Windows 文件对话框验证](../tools/gui/owned_file_dialog_verification.md)。
+
 ## 4. 惰性监听：`Start` / `StopEventListening`
 
 平台事件监控（全局快捷键钩子、`NSNotification` 观察者、GTK 信号）应该按需开关，
