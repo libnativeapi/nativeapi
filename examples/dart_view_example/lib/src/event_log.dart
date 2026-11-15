@@ -67,6 +67,11 @@ final class EventLog {
         _add(source, 'blurred');
       case ViewUpdatingEvent():
         _add(source, 'updating');
+      case ViewResizedEvent(:final newSize):
+        _add(
+          source,
+          'resized → ${newSize.width.round()}×${newSize.height.round()}',
+        );
     }
   }
 
