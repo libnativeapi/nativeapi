@@ -2375,14 +2375,16 @@ const (
 	ViewEventTextFieldChanged   ViewEventType = 3
 	ViewEventTextFieldSubmitted ViewEventType = 4
 	ViewEventUpdating           ViewEventType = 5
+	ViewEventResized            ViewEventType = 6
 )
 
 // ViewEvent copies an event payload. Handle fields are borrowed until the callback returns.
 // Only fields belonging to Type are populated.
 type ViewEvent struct {
-	Type   ViewEventType
-	ViewID ViewID
-	Text   string
+	Type    ViewEventType
+	ViewID  ViewID
+	Text    string
+	NewSize Size
 }
 
 func fromCViewEvent(raw *C.native_view_event_t) ViewEvent {
@@ -2396,6 +2398,8 @@ func fromCViewEvent(raw *C.native_view_event_t) ViewEvent {
 		value.Text = C.GoString(C.go_native_view_event_t_text_field_changed_Text(raw))
 	case ViewEventTextFieldSubmitted:
 	case ViewEventUpdating:
+	case ViewEventResized:
+		value.NewSize = fromCSize(C.go_native_view_event_t_resized_NewSize(raw))
 	}
 	return value
 }
@@ -2741,6 +2745,23 @@ func (v *View) Tooltip() *string {
 	return optionalStringFromC(result)
 }
 
+// SetAccessibilityLabel invokes the native SetAccessibilityLabel operation.
+func (v *View) SetAccessibilityLabel(label *string) {
+	var cArg0 *C.char
+	if label != nil {
+		cArg0 = C.CString(*label)
+		defer C.free(unsafe.Pointer(cArg0))
+	}
+	C.native_view_set_accessibility_label(C.native_view_t(v.nativeHandleValue()), cArg0)
+}
+
+// AccessibilityLabel invokes the native GetAccessibilityLabel operation.
+func (v *View) AccessibilityLabel() *string {
+	result := C.native_view_get_accessibility_label(C.native_view_t(v.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return optionalStringFromC(result)
+}
+
 // Focus invokes the native Focus operation.
 func (v *View) Focus() {
 	C.native_view_focus(C.native_view_t(v.nativeHandleValue()))
@@ -2863,6 +2884,34 @@ func (l *Label) FontSize() float64 {
 	return float64(result)
 }
 
+// SetFontFamily invokes the native SetFontFamily operation.
+func (l *Label) SetFontFamily(family *string) {
+	var cArg0 *C.char
+	if family != nil {
+		cArg0 = C.CString(*family)
+		defer C.free(unsafe.Pointer(cArg0))
+	}
+	C.native_label_set_font_family(C.native_label_t(l.nativeHandleValue()), cArg0)
+}
+
+// FontFamily invokes the native GetFontFamily operation.
+func (l *Label) FontFamily() *string {
+	result := C.native_label_get_font_family(C.native_label_t(l.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return optionalStringFromC(result)
+}
+
+// SetFontWeight invokes the native SetFontWeight operation.
+func (l *Label) SetFontWeight(weight int32) {
+	C.native_label_set_font_weight(C.native_label_t(l.nativeHandleValue()), C.int(weight))
+}
+
+// FontWeight invokes the native GetFontWeight operation.
+func (l *Label) FontWeight() int32 {
+	result := C.native_label_get_font_weight(C.native_label_t(l.nativeHandleValue()))
+	return int32(result)
+}
+
 // SetTextAlignment invokes the native SetTextAlignment operation.
 func (l *Label) SetTextAlignment(alignment TextAlignment) {
 	C.native_label_set_text_alignment(C.native_label_t(l.nativeHandleValue()), C.native_text_alignment_t(alignment))
@@ -2927,6 +2976,45 @@ func (b *Button) Text() string {
 	result := C.native_button_get_text(C.native_button_t(b.nativeHandleValue()))
 	defer C.free_c_str(result)
 	return C.GoString(result)
+}
+
+// SetFontSize invokes the native SetFontSize operation.
+func (b *Button) SetFontSize(size float64) {
+	C.native_button_set_font_size(C.native_button_t(b.nativeHandleValue()), C.double(size))
+}
+
+// FontSize invokes the native GetFontSize operation.
+func (b *Button) FontSize() float64 {
+	result := C.native_button_get_font_size(C.native_button_t(b.nativeHandleValue()))
+	return float64(result)
+}
+
+// SetFontFamily invokes the native SetFontFamily operation.
+func (b *Button) SetFontFamily(family *string) {
+	var cArg0 *C.char
+	if family != nil {
+		cArg0 = C.CString(*family)
+		defer C.free(unsafe.Pointer(cArg0))
+	}
+	C.native_button_set_font_family(C.native_button_t(b.nativeHandleValue()), cArg0)
+}
+
+// FontFamily invokes the native GetFontFamily operation.
+func (b *Button) FontFamily() *string {
+	result := C.native_button_get_font_family(C.native_button_t(b.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return optionalStringFromC(result)
+}
+
+// SetFontWeight invokes the native SetFontWeight operation.
+func (b *Button) SetFontWeight(weight int32) {
+	C.native_button_set_font_weight(C.native_button_t(b.nativeHandleValue()), C.int(weight))
+}
+
+// FontWeight invokes the native GetFontWeight operation.
+func (b *Button) FontWeight() int32 {
+	result := C.native_button_get_font_weight(C.native_button_t(b.nativeHandleValue()))
+	return int32(result)
 }
 
 // TextField owns a native handle. Call Release on the UI thread when done.
@@ -3008,6 +3096,34 @@ func (tf *TextField) FontSize() float64 {
 	return float64(result)
 }
 
+// SetFontFamily invokes the native SetFontFamily operation.
+func (tf *TextField) SetFontFamily(family *string) {
+	var cArg0 *C.char
+	if family != nil {
+		cArg0 = C.CString(*family)
+		defer C.free(unsafe.Pointer(cArg0))
+	}
+	C.native_text_field_set_font_family(C.native_text_field_t(tf.nativeHandleValue()), cArg0)
+}
+
+// FontFamily invokes the native GetFontFamily operation.
+func (tf *TextField) FontFamily() *string {
+	result := C.native_text_field_get_font_family(C.native_text_field_t(tf.nativeHandleValue()))
+	defer C.free_c_str(result)
+	return optionalStringFromC(result)
+}
+
+// SetFontWeight invokes the native SetFontWeight operation.
+func (tf *TextField) SetFontWeight(weight int32) {
+	C.native_text_field_set_font_weight(C.native_text_field_t(tf.nativeHandleValue()), C.int(weight))
+}
+
+// FontWeight invokes the native GetFontWeight operation.
+func (tf *TextField) FontWeight() int32 {
+	result := C.native_text_field_get_font_weight(C.native_text_field_t(tf.nativeHandleValue()))
+	return int32(result)
+}
+
 // SetTextAlignment invokes the native SetTextAlignment operation.
 func (tf *TextField) SetTextAlignment(alignment TextAlignment) {
 	C.native_text_field_set_text_alignment(C.native_text_field_t(tf.nativeHandleValue()), C.native_text_alignment_t(alignment))
@@ -3066,6 +3182,17 @@ func (tf *TextField) SetMultiline(isMultiline bool) {
 // IsMultiline invokes the native IsMultiline operation.
 func (tf *TextField) IsMultiline() bool {
 	result := C.native_text_field_is_multiline(C.native_text_field_t(tf.nativeHandleValue()))
+	return bool(result)
+}
+
+// SetBordered invokes the native SetBordered operation.
+func (tf *TextField) SetBordered(isBordered bool) {
+	C.native_text_field_set_bordered(C.native_text_field_t(tf.nativeHandleValue()), C.bool(isBordered))
+}
+
+// IsBordered invokes the native IsBordered operation.
+func (tf *TextField) IsBordered() bool {
+	result := C.native_text_field_is_bordered(C.native_text_field_t(tf.nativeHandleValue()))
 	return bool(result)
 }
 
@@ -3212,22 +3339,23 @@ const (
 type WindowEventType int32
 
 const (
-	WindowEventFocused           WindowEventType = 0
-	WindowEventBlurred           WindowEventType = 1
-	WindowEventMinimized         WindowEventType = 2
-	WindowEventMaximized         WindowEventType = 3
-	WindowEventRestored          WindowEventType = 4
-	WindowEventMoved             WindowEventType = 5
-	WindowEventResized           WindowEventType = 6
-	WindowEventCreated           WindowEventType = 7
-	WindowEventClosed            WindowEventType = 8
-	WindowEventEnteredFullScreen WindowEventType = 9
-	WindowEventExitedFullScreen  WindowEventType = 10
-	WindowEventCloseRequested    WindowEventType = 11
-	WindowEventPropertyChanged   WindowEventType = 12
-	WindowEventOcclusionChanged  WindowEventType = 13
-	WindowEventDocked            WindowEventType = 14
-	WindowEventUndocked          WindowEventType = 15
+	WindowEventFocused            WindowEventType = 0
+	WindowEventBlurred            WindowEventType = 1
+	WindowEventMinimized          WindowEventType = 2
+	WindowEventMaximized          WindowEventType = 3
+	WindowEventRestored           WindowEventType = 4
+	WindowEventMoved              WindowEventType = 5
+	WindowEventResized            WindowEventType = 6
+	WindowEventCreated            WindowEventType = 7
+	WindowEventClosed             WindowEventType = 8
+	WindowEventEnteredFullScreen  WindowEventType = 9
+	WindowEventExitedFullScreen   WindowEventType = 10
+	WindowEventCloseRequested     WindowEventType = 11
+	WindowEventPropertyChanged    WindowEventType = 12
+	WindowEventOcclusionChanged   WindowEventType = 13
+	WindowEventDocked             WindowEventType = 14
+	WindowEventUndocked           WindowEventType = 15
+	WindowEventScaleFactorChanged WindowEventType = 16
 )
 
 // WindowEvent copies an event payload. Handle fields are borrowed until the callback returns.
@@ -3241,6 +3369,7 @@ type WindowEvent struct {
 	Property       WindowProperty
 	OcclusionState WindowOcclusionState
 	Side           WindowDockSide
+	ScaleFactor    float64
 }
 
 func fromCWindowEvent(raw *C.native_window_event_t) WindowEvent {
@@ -3269,6 +3398,8 @@ func fromCWindowEvent(raw *C.native_window_event_t) WindowEvent {
 	case WindowEventDocked:
 		value.Side = WindowDockSide(C.go_native_window_event_t_docked_Side(raw))
 	case WindowEventUndocked:
+	case WindowEventScaleFactorChanged:
+		value.ScaleFactor = float64(C.go_native_window_event_t_scale_factor_changed_ScaleFactor(raw))
 	}
 	return value
 }

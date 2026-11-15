@@ -91,6 +91,7 @@ public enum ViewEvent {
   case textFieldChanged(viewId: ViewId, text: String?)
   case textFieldSubmitted(viewId: ViewId)
   case updating(viewId: ViewId)
+  case resized(viewId: ViewId, newSize: Size)
 
   init?(raw: native_view_event_t) {
     switch raw.type {
@@ -100,6 +101,7 @@ public enum ViewEvent {
     case NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED: self = .textFieldChanged(viewId: raw.view_id, text: raw.data.text_field_changed.text.map { String(cString: $0) })
     case NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED: self = .textFieldSubmitted(viewId: raw.view_id)
     case NATIVE_VIEW_EVENT_TYPE_UPDATING: self = .updating(viewId: raw.view_id)
+    case NATIVE_VIEW_EVENT_TYPE_RESIZED: self = .resized(viewId: raw.view_id, newSize: Size(raw: raw.data.resized.new_size))
     default: return nil
     }
   }
@@ -353,6 +355,18 @@ public class View {
     return String(cString: value)
   }
 
+  public func setAccessibilityLabel(_ label: String?) -> Void {
+    let labelCString = label.map { strdup($0) } ?? nil
+    defer { free(labelCString) }
+    native_view_set_accessibility_label(nativeHandle, labelCString)
+  }
+
+  public var accessibilityLabel: String? {
+    guard let value = native_view_get_accessibility_label(nativeHandle) else { return nil }
+    defer { free_c_str(value) }
+    return String(cString: value)
+  }
+
   public func focus() -> Void {
     native_view_focus(nativeHandle)
   }
@@ -434,6 +448,26 @@ public class Label: View {
     return native_label_get_font_size(nativeHandle)
   }
 
+  public func setFontFamily(_ family: String?) -> Void {
+    let familyCString = family.map { strdup($0) } ?? nil
+    defer { free(familyCString) }
+    native_label_set_font_family(nativeHandle, familyCString)
+  }
+
+  public var fontFamily: String? {
+    guard let value = native_label_get_font_family(nativeHandle) else { return nil }
+    defer { free_c_str(value) }
+    return String(cString: value)
+  }
+
+  public func setFontWeight(_ weight: CInt) -> Void {
+    native_label_set_font_weight(nativeHandle, weight)
+  }
+
+  public var fontWeight: CInt {
+    return native_label_get_font_weight(nativeHandle)
+  }
+
   public func setTextAlignment(_ alignment: TextAlignment) -> Void {
     native_label_set_text_alignment(nativeHandle, alignment.raw)
   }
@@ -469,6 +503,34 @@ public class Button: View {
     guard let value = native_button_get_text(nativeHandle) else { return nil }
     defer { free_c_str(value) }
     return String(cString: value)
+  }
+
+  public func setFontSize(_ size: Double) -> Void {
+    native_button_set_font_size(nativeHandle, size)
+  }
+
+  public var fontSize: Double {
+    return native_button_get_font_size(nativeHandle)
+  }
+
+  public func setFontFamily(_ family: String?) -> Void {
+    let familyCString = family.map { strdup($0) } ?? nil
+    defer { free(familyCString) }
+    native_button_set_font_family(nativeHandle, familyCString)
+  }
+
+  public var fontFamily: String? {
+    guard let value = native_button_get_font_family(nativeHandle) else { return nil }
+    defer { free_c_str(value) }
+    return String(cString: value)
+  }
+
+  public func setFontWeight(_ weight: CInt) -> Void {
+    native_button_set_font_weight(nativeHandle, weight)
+  }
+
+  public var fontWeight: CInt {
+    return native_button_get_font_weight(nativeHandle)
   }
 
 }
@@ -517,6 +579,26 @@ public class TextField: View {
     return native_text_field_get_font_size(nativeHandle)
   }
 
+  public func setFontFamily(_ family: String?) -> Void {
+    let familyCString = family.map { strdup($0) } ?? nil
+    defer { free(familyCString) }
+    native_text_field_set_font_family(nativeHandle, familyCString)
+  }
+
+  public var fontFamily: String? {
+    guard let value = native_text_field_get_font_family(nativeHandle) else { return nil }
+    defer { free_c_str(value) }
+    return String(cString: value)
+  }
+
+  public func setFontWeight(_ weight: CInt) -> Void {
+    native_text_field_set_font_weight(nativeHandle, weight)
+  }
+
+  public var fontWeight: CInt {
+    return native_text_field_get_font_weight(nativeHandle)
+  }
+
   public func setTextAlignment(_ alignment: TextAlignment) -> Void {
     native_text_field_set_text_alignment(nativeHandle, alignment.raw)
   }
@@ -559,6 +641,14 @@ public class TextField: View {
 
   public var isMultiline: Bool {
     return native_text_field_is_multiline(nativeHandle)
+  }
+
+  public func setBordered(_ isBordered: Bool) -> Void {
+    native_text_field_set_bordered(nativeHandle, isBordered)
+  }
+
+  public var isBordered: Bool {
+    return native_text_field_is_bordered(nativeHandle)
   }
 
 }

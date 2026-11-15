@@ -379,6 +379,7 @@ pub const NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED: native_view_event_type_t = 2;
 pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED: native_view_event_type_t = 3;
 pub const NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED: native_view_event_type_t = 4;
 pub const NATIVE_VIEW_EVENT_TYPE_UPDATING: native_view_event_type_t = 5;
+pub const NATIVE_VIEW_EVENT_TYPE_RESIZED: native_view_event_type_t = 6;
 #[doc = " Which concrete ViewEvent arrived."]
 pub type native_view_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One ViewEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -393,6 +394,7 @@ pub struct native_view_event_t {
 #[derive(Copy, Clone)]
 pub union native_view_event_t__bindgen_ty_1 {
     pub text_field_changed: native_view_event_t__bindgen_ty_1__bindgen_ty_1,
+    pub resized: native_view_event_t__bindgen_ty_1__bindgen_ty_2,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -407,6 +409,11 @@ impl Default for native_view_event_t__bindgen_ty_1__bindgen_ty_1 {
             s.assume_init()
         }
     }
+}
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_view_event_t__bindgen_ty_1__bindgen_ty_2 {
+    pub new_size: native_size_t,
 }
 impl Default for native_view_event_t__bindgen_ty_1 {
     fn default() -> Self {
@@ -596,6 +603,16 @@ unsafe extern "C" {
     pub fn native_view_get_tooltip(view: native_view_t) -> *mut ::std::os::raw::c_char;
 }
 unsafe extern "C" {
+    pub fn native_view_set_accessibility_label(
+        view: native_view_t,
+        label: *const ::std::os::raw::c_char,
+    );
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_view_get_accessibility_label(view: native_view_t) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
     pub fn native_view_focus(view: native_view_t);
 }
 unsafe extern "C" {
@@ -669,6 +686,22 @@ unsafe extern "C" {
     pub fn native_label_get_font_size(label: native_label_t) -> f64;
 }
 unsafe extern "C" {
+    pub fn native_label_set_font_family(
+        label: native_label_t,
+        family: *const ::std::os::raw::c_char,
+    );
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_label_get_font_family(label: native_label_t) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    pub fn native_label_set_font_weight(label: native_label_t, weight: ::std::os::raw::c_int);
+}
+unsafe extern "C" {
+    pub fn native_label_get_font_weight(label: native_label_t) -> ::std::os::raw::c_int;
+}
+unsafe extern "C" {
     pub fn native_label_set_text_alignment(
         label: native_label_t,
         alignment: native_text_alignment_t,
@@ -691,6 +724,28 @@ unsafe extern "C" {
 unsafe extern "C" {
     #[doc = " Caller owns the returned string; free it with free_c_str()."]
     pub fn native_button_get_text(button: native_button_t) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    pub fn native_button_set_font_size(button: native_button_t, size: f64);
+}
+unsafe extern "C" {
+    pub fn native_button_get_font_size(button: native_button_t) -> f64;
+}
+unsafe extern "C" {
+    pub fn native_button_set_font_family(
+        button: native_button_t,
+        family: *const ::std::os::raw::c_char,
+    );
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_button_get_font_family(button: native_button_t) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    pub fn native_button_set_font_weight(button: native_button_t, weight: ::std::os::raw::c_int);
+}
+unsafe extern "C" {
+    pub fn native_button_get_font_weight(button: native_button_t) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
@@ -723,6 +778,29 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_text_field_get_font_size(text_field: native_text_field_t) -> f64;
+}
+unsafe extern "C" {
+    pub fn native_text_field_set_font_family(
+        text_field: native_text_field_t,
+        family: *const ::std::os::raw::c_char,
+    );
+}
+unsafe extern "C" {
+    #[doc = " Caller owns the returned string; free it with free_c_str()."]
+    pub fn native_text_field_get_font_family(
+        text_field: native_text_field_t,
+    ) -> *mut ::std::os::raw::c_char;
+}
+unsafe extern "C" {
+    pub fn native_text_field_set_font_weight(
+        text_field: native_text_field_t,
+        weight: ::std::os::raw::c_int,
+    );
+}
+unsafe extern "C" {
+    pub fn native_text_field_get_font_weight(
+        text_field: native_text_field_t,
+    ) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn native_text_field_set_text_alignment(
@@ -764,6 +842,12 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_text_field_is_multiline(text_field: native_text_field_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_text_field_set_bordered(text_field: native_text_field_t, is_bordered: bool);
+}
+unsafe extern "C" {
+    pub fn native_text_field_is_bordered(text_field: native_text_field_t) -> bool;
 }
 unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
@@ -929,6 +1013,7 @@ pub const NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED: native_window_event_type_t 
 pub const NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED: native_window_event_type_t = 13;
 pub const NATIVE_WINDOW_EVENT_TYPE_DOCKED: native_window_event_type_t = 14;
 pub const NATIVE_WINDOW_EVENT_TYPE_UNDOCKED: native_window_event_type_t = 15;
+pub const NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED: native_window_event_type_t = 16;
 #[doc = " Which concrete WindowEvent arrived."]
 pub type native_window_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One WindowEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -948,6 +1033,7 @@ pub union native_window_event_t__bindgen_ty_1 {
     pub property_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_4,
     pub occlusion_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_5,
     pub docked: native_window_event_t__bindgen_ty_1__bindgen_ty_6,
+    pub scale_factor_changed: native_window_event_t__bindgen_ty_1__bindgen_ty_7,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -1005,6 +1091,11 @@ impl Default for native_window_event_t__bindgen_ty_1__bindgen_ty_6 {
             s.assume_init()
         }
     }
+}
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_window_event_t__bindgen_ty_1__bindgen_ty_7 {
+    pub scale_factor: f64,
 }
 impl Default for native_window_event_t__bindgen_ty_1 {
     fn default() -> Self {

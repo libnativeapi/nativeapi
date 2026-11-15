@@ -66,4 +66,55 @@ final class NativeAPITests: XCTestCase {
     RunLoop.main.run(until: Date().addingTimeInterval(0.05))
     XCTAssertEqual(ticks, 2)
   }
+
+  @MainActor
+  func testViewTypographyBorderedAccessibilityAndResize() throws {
+    let container = try XCTUnwrap(View.create())
+    defer { container.dispose() }
+    container.setFrame(Rectangle(x: 0, y: 0, width: 120, height: 80))
+
+    var resizedSizes: [Size] = []
+    let listenerId = container.addListener { event in
+      if case let .resized(_, newSize) = event {
+        resizedSizes.append(newSize)
+      }
+    }
+    defer { _ = container.removeListener(listenerId) }
+
+    container.setFrame(Rectangle(x: 0, y: 0, width: 240, height: 140))
+    XCTAssertEqual(resizedSizes.last?.width, 240)
+    XCTAssertEqual(resizedSizes.last?.height, 140)
+
+    container.setAccessibilityLabel("Primary toolbar")
+    XCTAssertEqual(container.accessibilityLabel, "Primary toolbar")
+    container.setAccessibilityLabel(nil)
+    XCTAssertNil(container.accessibilityLabel)
+
+    let label = try XCTUnwrap(Label.create("Hello"))
+    defer { label.dispose() }
+    label.setFontFamily("Menlo")
+    label.setFontWeight(700)
+    XCTAssertEqual(label.fontFamily, "Menlo")
+    XCTAssertEqual(label.fontWeight, 700)
+
+    let button = try XCTUnwrap(Button.create("Save"))
+    defer { button.dispose() }
+    button.setFontSize(15)
+    button.setFontFamily("Helvetica")
+    button.setFontWeight(600)
+    XCTAssertEqual(button.fontSize, 15, accuracy: 0.5)
+    XCTAssertEqual(button.fontFamily, "Helvetica")
+    XCTAssertEqual(button.fontWeight, 600)
+
+    let field = try XCTUnwrap(TextField.create("Draft"))
+    defer { field.dispose() }
+    XCTAssertTrue(field.isBordered)
+    field.setBordered(false)
+    XCTAssertFalse(field.isBordered)
+    field.setFontFamily("Menlo")
+    field.setFontSize(13)
+    field.setFontWeight(500)
+    XCTAssertEqual(field.fontFamily, "Menlo")
+    XCTAssertEqual(field.fontWeight, 500)
+  }
 }

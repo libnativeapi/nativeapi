@@ -30,6 +30,7 @@ extern void goEvent_native_notification_event_t(uintptr_t handle, native_notific
 static inline void go_native_notification_event_callback_t(const native_notification_event_t* event, void* data) { goEvent_native_notification_event_t(*(uintptr_t*)data, (native_notification_event_t*)event); }
 static inline native_notification_event_callback_t go_get_native_notification_event_callback_t(void) { return go_native_notification_event_callback_t; }
 static inline char* go_native_view_event_t_text_field_changed_Text(const native_view_event_t* event) { return event->data.text_field_changed.text; }
+static inline native_size_t go_native_view_event_t_resized_NewSize(const native_view_event_t* event) { return event->data.resized.new_size; }
 extern void goEvent_native_view_event_t(uintptr_t handle, native_view_event_t* event);
 static inline void go_native_view_event_callback_t(const native_view_event_t* event, void* data) { goEvent_native_view_event_t(*(uintptr_t*)data, (native_view_event_t*)event); }
 static inline native_view_event_callback_t go_get_native_view_event_callback_t(void) { return go_native_view_event_callback_t; }
@@ -39,6 +40,7 @@ static inline native_event_request_t go_native_window_event_t_close_requested_Re
 static inline native_window_property_t go_native_window_event_t_property_changed_Property(const native_window_event_t* event) { return event->data.property_changed.property; }
 static inline native_window_occlusion_state_t go_native_window_event_t_occlusion_changed_OcclusionState(const native_window_event_t* event) { return event->data.occlusion_changed.occlusion_state; }
 static inline native_window_dock_side_t go_native_window_event_t_docked_Side(const native_window_event_t* event) { return event->data.docked.side; }
+static inline double go_native_window_event_t_scale_factor_changed_ScaleFactor(const native_window_event_t* event) { return event->data.scale_factor_changed.scale_factor; }
 extern void goEvent_native_window_event_t(uintptr_t handle, native_window_event_t* event);
 static inline void go_native_window_event_callback_t(const native_window_event_t* event, void* data) { goEvent_native_window_event_t(*(uintptr_t*)data, (native_window_event_t*)event); }
 static inline native_window_event_callback_t go_get_native_window_event_callback_t(void) { return go_native_window_event_callback_t; }

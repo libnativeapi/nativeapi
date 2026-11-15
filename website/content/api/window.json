@@ -9403,6 +9403,97 @@
               "signature": "case undocked(windowId: WindowId)"
             }
           }
+        },
+        {
+          "key": "WindowScaleFactorChangedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "Event class for a change of the window's backing pixel scale factor.",
+            "details": "Emitted when the window moves to a display with a different DPI or when the operating system changes the display scale factor of the window's screen.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Supported - NSWindowDidChangeBackingPropertiesNotification\n- Windows: ✅ Supported - WM_DPICHANGED and per-window DPI changes\n- Linux: ✅ Supported - GtkWidget scale-factor notifications\n- Android: ❌ Not applicable - Never emitted\n- iOS: ❌ Not applicable - Never emitted\n- OpenHarmony: ✅ Supported - Window density and geometry notifications"
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "WindowScaleFactorChangedEvent",
+              "signature": "class WindowScaleFactorChangedEvent : public WindowEvent"
+            },
+            "csharp": {
+              "name": "WindowEvent.ScaleFactorChanged",
+              "signature": "public sealed record ScaleFactorChanged(uint WindowId, double ScaleFactor) : WindowEvent;"
+            },
+            "dart": {
+              "name": "WindowScaleFactorChangedEvent",
+              "signature": "final class WindowScaleFactorChangedEvent extends WindowEvent"
+            },
+            "go": {
+              "name": "WindowEventScaleFactorChanged",
+              "signature": "const WindowEventScaleFactorChanged WindowEventType = 16"
+            },
+            "js": {
+              "name": "Extract<WindowEvent, { type: \"scaleFactorChanged\" }>",
+              "signature": "| { type: \"scaleFactorChanged\"; windowId: WindowId; scaleFactor: number }"
+            },
+            "python": {
+              "name": "WindowScaleFactorChangedEvent",
+              "signature": "@dataclass(frozen=True)\nclass WindowScaleFactorChangedEvent(WindowEvent):"
+            },
+            "rust": {
+              "name": "WindowEvent::ScaleFactorChanged",
+              "signature": "ScaleFactorChanged { window_id: WindowId, scale_factor: f64 }"
+            },
+            "swift": {
+              "name": "scaleFactorChanged",
+              "signature": "case scaleFactorChanged(windowId: WindowId, scaleFactor: Double)"
+            }
+          }
+        },
+        {
+          "key": "WindowScaleFactorChangedEvent::ScaleFactor",
+          "kind": "field",
+          "parent": "WindowScaleFactorChangedEvent",
+          "doc": {
+            "summary": "Gets the window's new backing scale factor (1.0 at standard DPI).",
+            "returns": "The new scale factor."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ScaleFactor",
+              "signature": "double GetScaleFactor() const"
+            },
+            "csharp": {
+              "name": "ScaleFactor",
+              "signature": "double ScaleFactor"
+            },
+            "dart": {
+              "name": "scaleFactor",
+              "signature": "final double scaleFactor"
+            },
+            "go": {
+              "name": "ScaleFactor",
+              "signature": "ScaleFactor float64"
+            },
+            "js": {
+              "name": "scaleFactor",
+              "signature": "scaleFactor: number"
+            },
+            "python": {
+              "name": "scale_factor",
+              "signature": "scale_factor: float"
+            },
+            "rust": {
+              "name": "scale_factor",
+              "signature": "scale_factor: f64"
+            },
+            "swift": {
+              "name": "scaleFactor",
+              "signature": "var scaleFactor: Double"
+            }
+          }
         }
       ]
     },

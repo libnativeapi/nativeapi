@@ -138,6 +138,10 @@ class native_view_event_text_field_changed_t(Structure):
     pass
 
 
+class native_view_event_resized_t(Structure):
+    pass
+
+
 class native_view_event_data_t(Union):
     pass
 
@@ -167,6 +171,10 @@ class native_window_event_occlusion_changed_t(Structure):
 
 
 class native_window_event_docked_t(Structure):
+    pass
+
+
+class native_window_event_scale_factor_changed_t(Structure):
     pass
 
 
@@ -490,8 +498,12 @@ native_notification_event_t._fields_ = [
 native_view_event_text_field_changed_t._fields_ = [
     ("text", c_char_p),
 ]
+native_view_event_resized_t._fields_ = [
+    ("new_size", native_size_t),
+]
 native_view_event_data_t._fields_ = [
     ("text_field_changed", native_view_event_text_field_changed_t),
+    ("resized", native_view_event_resized_t),
 ]
 native_view_event_t._fields_ = [
     ("type", c_int),
@@ -516,6 +528,9 @@ native_window_event_occlusion_changed_t._fields_ = [
 native_window_event_docked_t._fields_ = [
     ("side", c_int),
 ]
+native_window_event_scale_factor_changed_t._fields_ = [
+    ("scale_factor", c_double),
+]
 native_window_event_data_t._fields_ = [
     ("moved", native_window_event_moved_t),
     ("resized", native_window_event_resized_t),
@@ -523,6 +538,7 @@ native_window_event_data_t._fields_ = [
     ("property_changed", native_window_event_property_changed_t),
     ("occlusion_changed", native_window_event_occlusion_changed_t),
     ("docked", native_window_event_docked_t),
+    ("scale_factor_changed", native_window_event_scale_factor_changed_t),
 ]
 native_window_event_t._fields_ = [
     ("type", c_int),
@@ -2014,6 +2030,21 @@ native_view_set_tooltip = function(
     ],
 )
 native_view_get_tooltip = function("native_view_get_tooltip", c_void_p, [c_uint64])
+native_view_set_accessibility_label = function(
+    "native_view_set_accessibility_label",
+    None,
+    [
+        c_uint64,
+        c_char_p,
+    ],
+)
+native_view_get_accessibility_label = function(
+    "native_view_get_accessibility_label",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
 native_view_focus = function("native_view_focus", None, [c_uint64])
 native_view_blur = function("native_view_blur", None, [c_uint64])
 native_view_is_focused = function("native_view_is_focused", c_bool, [c_uint64])
@@ -2069,6 +2100,36 @@ native_label_get_font_size = function(
         c_uint64,
     ],
 )
+native_label_set_font_family = function(
+    "native_label_set_font_family",
+    None,
+    [
+        c_uint64,
+        c_char_p,
+    ],
+)
+native_label_get_font_family = function(
+    "native_label_get_font_family",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+native_label_set_font_weight = function(
+    "native_label_set_font_weight",
+    None,
+    [
+        c_uint64,
+        c_int,
+    ],
+)
+native_label_get_font_weight = function(
+    "native_label_get_font_weight",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
 native_label_set_text_alignment = function(
     "native_label_set_text_alignment",
     None,
@@ -2088,6 +2149,51 @@ native_button_free = function("native_button_free", None, [c_uint64])
 native_button_create = function("native_button_create", c_uint64, [c_char_p])
 native_button_set_text = function("native_button_set_text", None, [c_uint64, c_char_p])
 native_button_get_text = function("native_button_get_text", c_void_p, [c_uint64])
+native_button_set_font_size = function(
+    "native_button_set_font_size",
+    None,
+    [
+        c_uint64,
+        c_double,
+    ],
+)
+native_button_get_font_size = function(
+    "native_button_get_font_size",
+    c_double,
+    [
+        c_uint64,
+    ],
+)
+native_button_set_font_family = function(
+    "native_button_set_font_family",
+    None,
+    [
+        c_uint64,
+        c_char_p,
+    ],
+)
+native_button_get_font_family = function(
+    "native_button_get_font_family",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+native_button_set_font_weight = function(
+    "native_button_set_font_weight",
+    None,
+    [
+        c_uint64,
+        c_int,
+    ],
+)
+native_button_get_font_weight = function(
+    "native_button_get_font_weight",
+    c_int,
+    [
+        c_uint64,
+    ],
+)
 native_text_field_free = function("native_text_field_free", None, [c_uint64])
 native_text_field_create = function("native_text_field_create", c_uint64, [c_char_p])
 native_text_field_set_text = function(
@@ -2131,6 +2237,36 @@ native_text_field_set_font_size = function(
 native_text_field_get_font_size = function(
     "native_text_field_get_font_size",
     c_double,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_set_font_family = function(
+    "native_text_field_set_font_family",
+    None,
+    [
+        c_uint64,
+        c_char_p,
+    ],
+)
+native_text_field_get_font_family = function(
+    "native_text_field_get_font_family",
+    c_void_p,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_set_font_weight = function(
+    "native_text_field_set_font_weight",
+    None,
+    [
+        c_uint64,
+        c_int,
+    ],
+)
+native_text_field_get_font_weight = function(
+    "native_text_field_get_font_weight",
+    c_int,
     [
         c_uint64,
     ],
@@ -2205,6 +2341,21 @@ native_text_field_set_multiline = function(
 )
 native_text_field_is_multiline = function(
     "native_text_field_is_multiline",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_set_bordered = function(
+    "native_text_field_set_bordered",
+    None,
+    [
+        c_uint64,
+        c_bool,
+    ],
+)
+native_text_field_is_bordered = function(
+    "native_text_field_is_bordered",
     c_bool,
     [
         c_uint64,

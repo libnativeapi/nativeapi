@@ -19,12 +19,19 @@ public struct native_view_event_t
     public struct DataUnion
     {
         [FieldOffset(0)] public TextFieldChangedData text_field_changed;
+        [FieldOffset(0)] public ResizedData resized;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct TextFieldChangedData
     {
         public IntPtr text;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ResizedData
+    {
+        public native_size_t new_size;
     }
 }
 
@@ -40,6 +47,10 @@ public delegate void ViewEventNativeCallback(IntPtr evt, IntPtr userData);
 
 public static partial class Interop
 {
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_text_field_is_bordered(ulong self);
+
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_text_field_is_editable(ulong self);
@@ -104,10 +115,19 @@ public static partial class Interop
     public static extern CULong native_view_get_subview_count(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_button_get_font_family(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_button_get_text(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_label_get_font_family(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_label_get_text(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_text_field_get_font_family(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_text_field_get_placeholder(ulong self);
@@ -116,10 +136,16 @@ public static partial class Interop
     public static extern IntPtr native_text_field_get_text(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr native_view_get_accessibility_label(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_view_get_native_object(ulong handle);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr native_view_get_tooltip(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern double native_button_get_font_size(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern double native_label_get_font_size(ulong self);
@@ -134,7 +160,16 @@ public static partial class Interop
     public static extern double native_view_get_spacing(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int native_button_get_font_weight(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int native_label_get_font_weight(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_label_get_text_alignment(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int native_text_field_get_font_weight(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_text_field_get_text_alignment(ulong self);
@@ -215,6 +250,15 @@ public static partial class Interop
     public static extern void native_button_free(ulong handle);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_button_set_font_family(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? family);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_button_set_font_size(ulong self, double size);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_button_set_font_weight(ulong self, int weight);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_button_set_text(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? text);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -227,7 +271,13 @@ public static partial class Interop
     public static extern void native_label_free(ulong handle);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_label_set_font_family(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? family);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_label_set_font_size(ulong self, double size);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_label_set_font_weight(ulong self, int weight);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_label_set_text(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? text);
@@ -242,10 +292,19 @@ public static partial class Interop
     public static extern void native_text_field_free(ulong handle);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_text_field_set_bordered(ulong self, [MarshalAs(UnmanagedType.I1)] bool isBordered);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_text_field_set_editable(ulong self, [MarshalAs(UnmanagedType.I1)] bool isEditable);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_text_field_set_font_family(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? family);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_text_field_set_font_size(ulong self, double size);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_text_field_set_font_weight(ulong self, int weight);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_text_field_set_multiline(ulong self, [MarshalAs(UnmanagedType.I1)] bool isMultiline);
@@ -294,6 +353,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_view_list_release(ref native_view_list_t list);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_view_set_accessibility_label(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? label);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_view_set_alignment(ulong self, int alignment);

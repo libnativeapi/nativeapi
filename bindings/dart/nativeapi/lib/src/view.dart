@@ -143,6 +143,13 @@ sealed class ViewEvent {
         c.native_view_event_type_t.NATIVE_VIEW_EVENT_TYPE_UPDATING.value) {
       return ViewUpdatingEvent(viewId: raw.view_id);
     }
+    if (raw.typeAsInt ==
+        c.native_view_event_type_t.NATIVE_VIEW_EVENT_TYPE_RESIZED.value) {
+      return ViewResizedEvent(
+        viewId: raw.view_id,
+        newSize: Size.fromNative(raw.data.resized.new_size),
+      );
+    }
     return null;
   }
 }
@@ -188,6 +195,14 @@ final class ViewUpdatingEvent extends ViewEvent {
 
   @override
   final ViewId viewId;
+}
+
+final class ViewResizedEvent extends ViewEvent {
+  const ViewResizedEvent({required this.viewId, required this.newSize});
+
+  @override
+  final ViewId viewId;
+  final Size newSize;
 }
 
 class View implements ffi.Finalizable {
@@ -461,6 +476,22 @@ class View implements ffi.Finalizable {
     return result;
   }
 
+  set accessibilityLabel(String? value) {
+    final valueNative = value == null
+        ? ffi.nullptr
+        : value.toNativeUtf8().cast<ffi.Char>();
+    c.native_view_set_accessibility_label(nativeHandle, valueNative);
+    if (valueNative != ffi.nullptr) pkg_ffi.calloc.free(valueNative);
+  }
+
+  String? get accessibilityLabel {
+    final resultPointer = c.native_view_get_accessibility_label(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
   void focus() {
     c.native_view_focus(nativeHandle);
   }
@@ -570,6 +601,30 @@ class Label extends View {
     return c.native_label_get_font_size(nativeHandle);
   }
 
+  set fontFamily(String? value) {
+    final valueNative = value == null
+        ? ffi.nullptr
+        : value.toNativeUtf8().cast<ffi.Char>();
+    c.native_label_set_font_family(nativeHandle, valueNative);
+    if (valueNative != ffi.nullptr) pkg_ffi.calloc.free(valueNative);
+  }
+
+  String? get fontFamily {
+    final resultPointer = c.native_label_get_font_family(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
+  set fontWeight(int value) {
+    c.native_label_set_font_weight(nativeHandle, value);
+  }
+
+  int get fontWeight {
+    return c.native_label_get_font_weight(nativeHandle);
+  }
+
   set textAlignment(TextAlignment value) {
     c.native_label_set_text_alignment(nativeHandle, value.raw);
   }
@@ -609,6 +664,38 @@ class Button extends View {
     final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
     c.free_c_str(resultPointer);
     return result;
+  }
+
+  set fontSize(double value) {
+    c.native_button_set_font_size(nativeHandle, value);
+  }
+
+  double get fontSize {
+    return c.native_button_get_font_size(nativeHandle);
+  }
+
+  set fontFamily(String? value) {
+    final valueNative = value == null
+        ? ffi.nullptr
+        : value.toNativeUtf8().cast<ffi.Char>();
+    c.native_button_set_font_family(nativeHandle, valueNative);
+    if (valueNative != ffi.nullptr) pkg_ffi.calloc.free(valueNative);
+  }
+
+  String? get fontFamily {
+    final resultPointer = c.native_button_get_font_family(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
+  set fontWeight(int value) {
+    c.native_button_set_font_weight(nativeHandle, value);
+  }
+
+  int get fontWeight {
+    return c.native_button_get_font_weight(nativeHandle);
   }
 }
 
@@ -662,6 +749,30 @@ class TextField extends View {
     return c.native_text_field_get_font_size(nativeHandle);
   }
 
+  set fontFamily(String? value) {
+    final valueNative = value == null
+        ? ffi.nullptr
+        : value.toNativeUtf8().cast<ffi.Char>();
+    c.native_text_field_set_font_family(nativeHandle, valueNative);
+    if (valueNative != ffi.nullptr) pkg_ffi.calloc.free(valueNative);
+  }
+
+  String? get fontFamily {
+    final resultPointer = c.native_text_field_get_font_family(nativeHandle);
+    if (resultPointer == ffi.nullptr) return null;
+    final result = resultPointer.cast<pkg_ffi.Utf8>().toDartString();
+    c.free_c_str(resultPointer);
+    return result;
+  }
+
+  set fontWeight(int value) {
+    c.native_text_field_set_font_weight(nativeHandle, value);
+  }
+
+  int get fontWeight {
+    return c.native_text_field_get_font_weight(nativeHandle);
+  }
+
   set textAlignment(TextAlignment value) {
     c.native_text_field_set_text_alignment(nativeHandle, value.raw);
   }
@@ -709,6 +820,14 @@ class TextField extends View {
 
   bool get isMultiline {
     return c.native_text_field_is_multiline(nativeHandle);
+  }
+
+  set isBordered(bool value) {
+    c.native_text_field_set_bordered(nativeHandle, value);
+  }
+
+  bool get isBordered {
+    return c.native_text_field_is_bordered(nativeHandle);
   }
 }
 

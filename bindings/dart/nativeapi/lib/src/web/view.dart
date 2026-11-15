@@ -128,6 +128,14 @@ final class ViewUpdatingEvent extends ViewEvent {
   final ViewId viewId;
 }
 
+final class ViewResizedEvent extends ViewEvent {
+  const ViewResizedEvent({required this.viewId, required this.newSize});
+
+  @override
+  final ViewId viewId;
+  final Size newSize;
+}
+
 class View {
   View.fromHandle(this.nativeHandle);
   View.borrowed(this.nativeHandle);
@@ -228,6 +236,10 @@ class View {
 
   String? get tooltip => unsupported();
 
+  set accessibilityLabel(String? value) => unsupported();
+
+  String? get accessibilityLabel => unsupported();
+
   void focus() => unsupported();
 
   void blur() => unsupported();
@@ -258,6 +270,14 @@ class Label extends View {
 
   double get fontSize => unsupported();
 
+  set fontFamily(String? value) => unsupported();
+
+  String? get fontFamily => unsupported();
+
+  set fontWeight(int value) => unsupported();
+
+  int get fontWeight => unsupported();
+
   set textAlignment(TextAlignment value) => unsupported();
 
   TextAlignment get textAlignment => unsupported();
@@ -272,6 +292,18 @@ class Button extends View {
   set text(String value) => unsupported();
 
   String? get text => unsupported();
+
+  set fontSize(double value) => unsupported();
+
+  double get fontSize => unsupported();
+
+  set fontFamily(String? value) => unsupported();
+
+  String? get fontFamily => unsupported();
+
+  set fontWeight(int value) => unsupported();
+
+  int get fontWeight => unsupported();
 }
 
 class TextField extends View {
@@ -292,6 +324,14 @@ class TextField extends View {
 
   double get fontSize => unsupported();
 
+  set fontFamily(String? value) => unsupported();
+
+  String? get fontFamily => unsupported();
+
+  set fontWeight(int value) => unsupported();
+
+  int get fontWeight => unsupported();
+
   set textAlignment(TextAlignment value) => unsupported();
 
   TextAlignment get textAlignment => unsupported();
@@ -311,6 +351,10 @@ class TextField extends View {
   set isMultiline(bool value) => unsupported();
 
   bool get isMultiline => unsupported();
+
+  set isBordered(bool value) => unsupported();
+
+  bool get isBordered => unsupported();
 }
 
 class ImageView extends View {

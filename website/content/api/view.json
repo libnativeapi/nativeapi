@@ -2199,6 +2199,101 @@
           }
         },
         {
+          "key": "View::SetAccessibilityLabel",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the accessible name announced by assistive technologies.",
+            "params": [
+              {
+                "name": "label",
+                "text": "The accessible label, or std::nullopt to restore the control's default accessible name."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Native NSAccessibility label.\n- Windows: ✅ MSAA / UI Automation accessible name for Win32 and WinUI 3.\n- Linux: ✅ ATK accessible object name.\n- Android: ❌ Stores the value without applying it.\n- iOS: ❌ Stores the value without applying it.\n- OpenHarmony: ✅ Native ArkUI NODE_ACCESSIBILITY_TEXT attribute."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetAccessibilityLabel",
+              "signature": "void SetAccessibilityLabel(std::optional<std::string> label)"
+            },
+            "csharp": {
+              "name": "SetAccessibilityLabel",
+              "signature": "public void SetAccessibilityLabel(string? label)"
+            },
+            "dart": {
+              "name": "accessibilityLabel",
+              "signature": "set accessibilityLabel(String? value)"
+            },
+            "go": {
+              "name": "SetAccessibilityLabel",
+              "signature": "func (v *View) SetAccessibilityLabel(label *string)"
+            },
+            "js": {
+              "name": "setAccessibilityLabel",
+              "signature": "setAccessibilityLabel(label: string | null): void"
+            },
+            "python": {
+              "name": "set_accessibility_label",
+              "signature": "def set_accessibility_label(self, label: str | None) -> None:\n@accessibility_label.setter\ndef accessibility_label(self, value: str | None) -> None:"
+            },
+            "rust": {
+              "name": "set_accessibility_label",
+              "signature": "pub fn set_accessibility_label(&self, label: Option<&str>)"
+            },
+            "swift": {
+              "name": "setAccessibilityLabel",
+              "signature": "func setAccessibilityLabel(_ label: String?) -> Void"
+            }
+          }
+        },
+        {
+          "key": "View::GetAccessibilityLabel",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the accessible name set on this view.",
+            "returns": "The text set by SetAccessibilityLabel(), or std::nullopt."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetAccessibilityLabel",
+              "signature": "std::optional<std::string> GetAccessibilityLabel() const"
+            },
+            "csharp": {
+              "name": "AccessibilityLabel",
+              "signature": "public string? AccessibilityLabel"
+            },
+            "dart": {
+              "name": "accessibilityLabel",
+              "signature": "String? get accessibilityLabel"
+            },
+            "go": {
+              "name": "AccessibilityLabel",
+              "signature": "func (v *View) AccessibilityLabel() *string"
+            },
+            "js": {
+              "name": "accessibilityLabel",
+              "signature": "get accessibilityLabel(): string | null"
+            },
+            "python": {
+              "name": "accessibility_label",
+              "signature": "@property\ndef accessibility_label(self) -> str | None:"
+            },
+            "rust": {
+              "name": "accessibility_label",
+              "signature": "pub fn accessibility_label(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "accessibilityLabel",
+              "signature": "var accessibilityLabel: String?"
+            }
+          }
+        },
+        {
           "key": "View::Focus",
           "kind": "method",
           "doc": {
@@ -2686,6 +2781,184 @@
           }
         },
         {
+          "key": "Label::SetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the font family name.",
+            "params": [
+              {
+                "name": "family",
+                "text": "Family name (for example \"Menlo\" or \"monospace\"), or std::nullopt to restore the platform UI font."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontFamily",
+              "signature": "void SetFontFamily(std::optional<std::string> family)"
+            },
+            "csharp": {
+              "name": "SetFontFamily",
+              "signature": "public void SetFontFamily(string? family)"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "set fontFamily(String? value)"
+            },
+            "go": {
+              "name": "SetFontFamily",
+              "signature": "func (l *Label) SetFontFamily(family *string)"
+            },
+            "js": {
+              "name": "setFontFamily",
+              "signature": "setFontFamily(family: string | null): void"
+            },
+            "python": {
+              "name": "set_font_family",
+              "signature": "def set_font_family(self, family: str | None) -> None:\n@font_family.setter\ndef font_family(self, value: str | None) -> None:"
+            },
+            "rust": {
+              "name": "set_font_family",
+              "signature": "pub fn set_font_family(&self, family: Option<&str>)"
+            },
+            "swift": {
+              "name": "setFontFamily",
+              "signature": "func setFontFamily(_ family: String?) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Label::GetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the font family name.",
+            "returns": "The family set by SetFontFamily(), or std::nullopt for the default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontFamily",
+              "signature": "std::optional<std::string> GetFontFamily() const"
+            },
+            "csharp": {
+              "name": "FontFamily",
+              "signature": "public string? FontFamily"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "String? get fontFamily"
+            },
+            "go": {
+              "name": "FontFamily",
+              "signature": "func (l *Label) FontFamily() *string"
+            },
+            "js": {
+              "name": "fontFamily",
+              "signature": "get fontFamily(): string | null"
+            },
+            "python": {
+              "name": "font_family",
+              "signature": "@property\ndef font_family(self) -> str | None:"
+            },
+            "rust": {
+              "name": "font_family",
+              "signature": "pub fn font_family(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "fontFamily",
+              "signature": "var fontFamily: String?"
+            }
+          }
+        },
+        {
+          "key": "Label::SetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the numeric font weight.",
+            "params": [
+              {
+                "name": "weight",
+                "text": "OpenType/CSS weight in 100..900 (400 regular, 700 bold); 0 restores the platform default weight."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontWeight",
+              "signature": "void SetFontWeight(int weight)"
+            },
+            "csharp": {
+              "name": "SetFontWeight",
+              "signature": "public void SetFontWeight(int weight)"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "set fontWeight(int value)"
+            },
+            "go": {
+              "name": "SetFontWeight",
+              "signature": "func (l *Label) SetFontWeight(weight int32)"
+            },
+            "js": {
+              "name": "setFontWeight",
+              "signature": "setFontWeight(weight: number): void"
+            },
+            "python": {
+              "name": "set_font_weight",
+              "signature": "def set_font_weight(self, weight: int) -> None:\n@font_weight.setter\ndef font_weight(self, value: int) -> None:"
+            },
+            "rust": {
+              "name": "set_font_weight",
+              "signature": "pub fn set_font_weight(&self, weight: i32)"
+            },
+            "swift": {
+              "name": "setFontWeight",
+              "signature": "func setFontWeight(_ weight: CInt) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Label::GetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the numeric font weight.",
+            "returns": "The weight in 100..900, or 0 while at the platform default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontWeight",
+              "signature": "int GetFontWeight() const"
+            },
+            "csharp": {
+              "name": "FontWeight",
+              "signature": "public int FontWeight"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "int get fontWeight"
+            },
+            "go": {
+              "name": "FontWeight",
+              "signature": "func (l *Label) FontWeight() int32"
+            },
+            "js": {
+              "name": "fontWeight",
+              "signature": "get fontWeight(): number"
+            },
+            "python": {
+              "name": "font_weight",
+              "signature": "@property\ndef font_weight(self) -> int:"
+            },
+            "rust": {
+              "name": "font_weight",
+              "signature": "pub fn font_weight(&self) -> i32"
+            },
+            "swift": {
+              "name": "fontWeight",
+              "signature": "var fontWeight: CInt"
+            }
+          }
+        },
+        {
           "key": "Label::SetTextAlignment",
           "kind": "method",
           "doc": {
@@ -2956,6 +3229,273 @@
             "swift": {
               "name": "text",
               "signature": "var text: String?"
+            }
+          }
+        },
+        {
+          "key": "Button::SetFontSize",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the font size.",
+            "params": [
+              {
+                "name": "size",
+                "text": "Size in points; 0 restores the platform default."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontSize",
+              "signature": "void SetFontSize(double size)"
+            },
+            "csharp": {
+              "name": "SetFontSize",
+              "signature": "public void SetFontSize(double size)"
+            },
+            "dart": {
+              "name": "fontSize",
+              "signature": "set fontSize(double value)"
+            },
+            "go": {
+              "name": "SetFontSize",
+              "signature": "func (b *Button) SetFontSize(size float64)"
+            },
+            "js": {
+              "name": "setFontSize",
+              "signature": "setFontSize(size: number): void"
+            },
+            "python": {
+              "name": "set_font_size",
+              "signature": "def set_font_size(self, size: float) -> None:\n@font_size.setter\ndef font_size(self, value: float) -> None:"
+            },
+            "rust": {
+              "name": "set_font_size",
+              "signature": "pub fn set_font_size(&self, size: f64)"
+            },
+            "swift": {
+              "name": "setFontSize",
+              "signature": "func setFontSize(_ size: Double) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Button::GetFontSize",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the font size.",
+            "returns": "The size in points; 0 while at the platform default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontSize",
+              "signature": "double GetFontSize() const"
+            },
+            "csharp": {
+              "name": "FontSize",
+              "signature": "public double FontSize"
+            },
+            "dart": {
+              "name": "fontSize",
+              "signature": "double get fontSize"
+            },
+            "go": {
+              "name": "FontSize",
+              "signature": "func (b *Button) FontSize() float64"
+            },
+            "js": {
+              "name": "fontSize",
+              "signature": "get fontSize(): number"
+            },
+            "python": {
+              "name": "font_size",
+              "signature": "@property\ndef font_size(self) -> float:"
+            },
+            "rust": {
+              "name": "font_size",
+              "signature": "pub fn font_size(&self) -> f64"
+            },
+            "swift": {
+              "name": "fontSize",
+              "signature": "var fontSize: Double"
+            }
+          }
+        },
+        {
+          "key": "Button::SetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the font family name.",
+            "params": [
+              {
+                "name": "family",
+                "text": "Family name (for example \"Menlo\" or \"monospace\"), or std::nullopt to restore the platform UI font."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontFamily",
+              "signature": "void SetFontFamily(std::optional<std::string> family)"
+            },
+            "csharp": {
+              "name": "SetFontFamily",
+              "signature": "public void SetFontFamily(string? family)"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "set fontFamily(String? value)"
+            },
+            "go": {
+              "name": "SetFontFamily",
+              "signature": "func (b *Button) SetFontFamily(family *string)"
+            },
+            "js": {
+              "name": "setFontFamily",
+              "signature": "setFontFamily(family: string | null): void"
+            },
+            "python": {
+              "name": "set_font_family",
+              "signature": "def set_font_family(self, family: str | None) -> None:\n@font_family.setter\ndef font_family(self, value: str | None) -> None:"
+            },
+            "rust": {
+              "name": "set_font_family",
+              "signature": "pub fn set_font_family(&self, family: Option<&str>)"
+            },
+            "swift": {
+              "name": "setFontFamily",
+              "signature": "func setFontFamily(_ family: String?) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Button::GetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the font family name.",
+            "returns": "The family set by SetFontFamily(), or std::nullopt for the default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontFamily",
+              "signature": "std::optional<std::string> GetFontFamily() const"
+            },
+            "csharp": {
+              "name": "FontFamily",
+              "signature": "public string? FontFamily"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "String? get fontFamily"
+            },
+            "go": {
+              "name": "FontFamily",
+              "signature": "func (b *Button) FontFamily() *string"
+            },
+            "js": {
+              "name": "fontFamily",
+              "signature": "get fontFamily(): string | null"
+            },
+            "python": {
+              "name": "font_family",
+              "signature": "@property\ndef font_family(self) -> str | None:"
+            },
+            "rust": {
+              "name": "font_family",
+              "signature": "pub fn font_family(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "fontFamily",
+              "signature": "var fontFamily: String?"
+            }
+          }
+        },
+        {
+          "key": "Button::SetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the numeric font weight.",
+            "params": [
+              {
+                "name": "weight",
+                "text": "OpenType/CSS weight in 100..900 (400 regular, 700 bold); 0 restores the platform default weight."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontWeight",
+              "signature": "void SetFontWeight(int weight)"
+            },
+            "csharp": {
+              "name": "SetFontWeight",
+              "signature": "public void SetFontWeight(int weight)"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "set fontWeight(int value)"
+            },
+            "go": {
+              "name": "SetFontWeight",
+              "signature": "func (b *Button) SetFontWeight(weight int32)"
+            },
+            "js": {
+              "name": "setFontWeight",
+              "signature": "setFontWeight(weight: number): void"
+            },
+            "python": {
+              "name": "set_font_weight",
+              "signature": "def set_font_weight(self, weight: int) -> None:\n@font_weight.setter\ndef font_weight(self, value: int) -> None:"
+            },
+            "rust": {
+              "name": "set_font_weight",
+              "signature": "pub fn set_font_weight(&self, weight: i32)"
+            },
+            "swift": {
+              "name": "setFontWeight",
+              "signature": "func setFontWeight(_ weight: CInt) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Button::GetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the numeric font weight.",
+            "returns": "The weight in 100..900, or 0 while at the platform default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontWeight",
+              "signature": "int GetFontWeight() const"
+            },
+            "csharp": {
+              "name": "FontWeight",
+              "signature": "public int FontWeight"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "int get fontWeight"
+            },
+            "go": {
+              "name": "FontWeight",
+              "signature": "func (b *Button) FontWeight() int32"
+            },
+            "js": {
+              "name": "fontWeight",
+              "signature": "get fontWeight(): number"
+            },
+            "python": {
+              "name": "font_weight",
+              "signature": "@property\ndef font_weight(self) -> int:"
+            },
+            "rust": {
+              "name": "font_weight",
+              "signature": "pub fn font_weight(&self) -> i32"
+            },
+            "swift": {
+              "name": "fontWeight",
+              "signature": "var fontWeight: CInt"
             }
           }
         }
@@ -3319,6 +3859,184 @@
             "swift": {
               "name": "fontSize",
               "signature": "var fontSize: Double"
+            }
+          }
+        },
+        {
+          "key": "TextField::SetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the font family name.",
+            "params": [
+              {
+                "name": "family",
+                "text": "Family name (for example \"Menlo\" or \"monospace\"), or std::nullopt to restore the platform UI font."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontFamily",
+              "signature": "void SetFontFamily(std::optional<std::string> family)"
+            },
+            "csharp": {
+              "name": "SetFontFamily",
+              "signature": "public void SetFontFamily(string? family)"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "set fontFamily(String? value)"
+            },
+            "go": {
+              "name": "SetFontFamily",
+              "signature": "func (tf *TextField) SetFontFamily(family *string)"
+            },
+            "js": {
+              "name": "setFontFamily",
+              "signature": "setFontFamily(family: string | null): void"
+            },
+            "python": {
+              "name": "set_font_family",
+              "signature": "def set_font_family(self, family: str | None) -> None:\n@font_family.setter\ndef font_family(self, value: str | None) -> None:"
+            },
+            "rust": {
+              "name": "set_font_family",
+              "signature": "pub fn set_font_family(&self, family: Option<&str>)"
+            },
+            "swift": {
+              "name": "setFontFamily",
+              "signature": "func setFontFamily(_ family: String?) -> Void"
+            }
+          }
+        },
+        {
+          "key": "TextField::GetFontFamily",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the font family name.",
+            "returns": "The family set by SetFontFamily(), or std::nullopt for the default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontFamily",
+              "signature": "std::optional<std::string> GetFontFamily() const"
+            },
+            "csharp": {
+              "name": "FontFamily",
+              "signature": "public string? FontFamily"
+            },
+            "dart": {
+              "name": "fontFamily",
+              "signature": "String? get fontFamily"
+            },
+            "go": {
+              "name": "FontFamily",
+              "signature": "func (tf *TextField) FontFamily() *string"
+            },
+            "js": {
+              "name": "fontFamily",
+              "signature": "get fontFamily(): string | null"
+            },
+            "python": {
+              "name": "font_family",
+              "signature": "@property\ndef font_family(self) -> str | None:"
+            },
+            "rust": {
+              "name": "font_family",
+              "signature": "pub fn font_family(&self) -> Option<String>"
+            },
+            "swift": {
+              "name": "fontFamily",
+              "signature": "var fontFamily: String?"
+            }
+          }
+        },
+        {
+          "key": "TextField::SetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the numeric font weight.",
+            "params": [
+              {
+                "name": "weight",
+                "text": "OpenType/CSS weight in 100..900 (400 regular, 700 bold); 0 restores the platform default weight."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetFontWeight",
+              "signature": "void SetFontWeight(int weight)"
+            },
+            "csharp": {
+              "name": "SetFontWeight",
+              "signature": "public void SetFontWeight(int weight)"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "set fontWeight(int value)"
+            },
+            "go": {
+              "name": "SetFontWeight",
+              "signature": "func (tf *TextField) SetFontWeight(weight int32)"
+            },
+            "js": {
+              "name": "setFontWeight",
+              "signature": "setFontWeight(weight: number): void"
+            },
+            "python": {
+              "name": "set_font_weight",
+              "signature": "def set_font_weight(self, weight: int) -> None:\n@font_weight.setter\ndef font_weight(self, value: int) -> None:"
+            },
+            "rust": {
+              "name": "set_font_weight",
+              "signature": "pub fn set_font_weight(&self, weight: i32)"
+            },
+            "swift": {
+              "name": "setFontWeight",
+              "signature": "func setFontWeight(_ weight: CInt) -> Void"
+            }
+          }
+        },
+        {
+          "key": "TextField::GetFontWeight",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the numeric font weight.",
+            "returns": "The weight in 100..900, or 0 while at the platform default."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetFontWeight",
+              "signature": "int GetFontWeight() const"
+            },
+            "csharp": {
+              "name": "FontWeight",
+              "signature": "public int FontWeight"
+            },
+            "dart": {
+              "name": "fontWeight",
+              "signature": "int get fontWeight"
+            },
+            "go": {
+              "name": "FontWeight",
+              "signature": "func (tf *TextField) FontWeight() int32"
+            },
+            "js": {
+              "name": "fontWeight",
+              "signature": "get fontWeight(): number"
+            },
+            "python": {
+              "name": "font_weight",
+              "signature": "@property\ndef font_weight(self) -> int:"
+            },
+            "rust": {
+              "name": "font_weight",
+              "signature": "pub fn font_weight(&self) -> i32"
+            },
+            "swift": {
+              "name": "fontWeight",
+              "signature": "var fontWeight: CInt"
             }
           }
         },
@@ -3776,6 +4494,95 @@
             "swift": {
               "name": "isMultiline",
               "signature": "var isMultiline: Bool"
+            }
+          }
+        },
+        {
+          "key": "TextField::SetBordered",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets whether the field draws its standard system border and bezel.",
+            "params": [
+              {
+                "name": "is_bordered",
+                "text": "true for the standard border (the default), false for a chromeless field embedded inside custom host drawing."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetBordered",
+              "signature": "void SetBordered(bool is_bordered)"
+            },
+            "csharp": {
+              "name": "SetBordered",
+              "signature": "public void SetBordered(bool isBordered)"
+            },
+            "dart": {
+              "name": "isBordered",
+              "signature": "set isBordered(bool value)"
+            },
+            "go": {
+              "name": "SetBordered",
+              "signature": "func (tf *TextField) SetBordered(isBordered bool)"
+            },
+            "js": {
+              "name": "setBordered",
+              "signature": "setBordered(isBordered: boolean): void"
+            },
+            "python": {
+              "name": "set_bordered",
+              "signature": "def set_bordered(self, is_bordered: bool) -> None:"
+            },
+            "rust": {
+              "name": "set_bordered",
+              "signature": "pub fn set_bordered(&self, is_bordered: bool)"
+            },
+            "swift": {
+              "name": "setBordered",
+              "signature": "func setBordered(_ isBordered: Bool) -> Void"
+            }
+          }
+        },
+        {
+          "key": "TextField::IsBordered",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if the field draws its standard system border.",
+            "returns": "true unless SetBordered(false) was called."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsBordered",
+              "signature": "bool IsBordered() const"
+            },
+            "csharp": {
+              "name": "IsBordered",
+              "signature": "public bool IsBordered"
+            },
+            "dart": {
+              "name": "isBordered",
+              "signature": "bool get isBordered"
+            },
+            "go": {
+              "name": "IsBordered",
+              "signature": "func (tf *TextField) IsBordered() bool"
+            },
+            "js": {
+              "name": "isBordered",
+              "signature": "get isBordered(): boolean"
+            },
+            "python": {
+              "name": "is_bordered",
+              "signature": "@property\ndef is_bordered(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_bordered",
+              "signature": "pub fn is_bordered(&self) -> bool"
+            },
+            "swift": {
+              "name": "isBordered",
+              "signature": "var isBordered: Bool"
             }
           }
         }
@@ -4988,6 +5795,87 @@
             "swift": {
               "name": "updating",
               "signature": "case updating(viewId: ViewId)"
+            }
+          }
+        },
+        {
+          "key": "ViewResizedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "A view's frame size changed after native layout or allocation.",
+            "details": "On a window's root view, emitted after any Row or Column subview layout pass triggered by the resize has completed, so listeners reading GetFrame() on subviews observe updated geometry."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ViewResizedEvent",
+              "signature": "class ViewResizedEvent : public ViewEvent"
+            },
+            "csharp": {
+              "name": "ViewEvent.Resized",
+              "signature": "public sealed record Resized(uint ViewId, Size NewSize) : ViewEvent;"
+            },
+            "dart": {
+              "name": "ViewResizedEvent",
+              "signature": "final class ViewResizedEvent extends ViewEvent"
+            },
+            "go": {
+              "name": "ViewEventResized",
+              "signature": "const ViewEventResized ViewEventType = 6"
+            },
+            "js": {
+              "name": "Extract<ViewEvent, { type: \"resized\" }>",
+              "signature": "| { type: \"resized\"; viewId: ViewId; newSize: Size }"
+            },
+            "python": {
+              "name": "ViewResizedEvent",
+              "signature": "@dataclass(frozen=True)\nclass ViewResizedEvent(ViewEvent):"
+            },
+            "rust": {
+              "name": "ViewEvent::Resized",
+              "signature": "Resized { view_id: ViewId, new_size: Size }"
+            },
+            "swift": {
+              "name": "resized",
+              "signature": "case resized(viewId: ViewId, newSize: Size)"
+            }
+          }
+        },
+        {
+          "key": "ViewResizedEvent::NewSize",
+          "kind": "field",
+          "parent": "ViewResizedEvent",
+          "signatures": {
+            "cpp": {
+              "name": "NewSize",
+              "signature": "Size GetNewSize() const"
+            },
+            "csharp": {
+              "name": "NewSize",
+              "signature": "Size NewSize"
+            },
+            "dart": {
+              "name": "newSize",
+              "signature": "final Size newSize"
+            },
+            "go": {
+              "name": "NewSize",
+              "signature": "NewSize Size"
+            },
+            "js": {
+              "name": "newSize",
+              "signature": "newSize: Size"
+            },
+            "python": {
+              "name": "new_size",
+              "signature": "new_size: _geometry.Size"
+            },
+            "rust": {
+              "name": "new_size",
+              "signature": "new_size: Size"
+            },
+            "swift": {
+              "name": "newSize",
+              "signature": "var newSize: Size"
             }
           }
         }

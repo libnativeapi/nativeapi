@@ -48,6 +48,7 @@ public abstract record ViewEvent
     public sealed record TextFieldChanged(uint ViewId, string? Text) : ViewEvent;
     public sealed record TextFieldSubmitted(uint ViewId) : ViewEvent;
     public sealed record Updating(uint ViewId) : ViewEvent;
+    public sealed record Resized(uint ViewId, Size NewSize) : ViewEvent;
 
     internal static ViewEvent? FromRaw(in native_view_event_t raw)
     {
@@ -59,6 +60,7 @@ public abstract record ViewEvent
             case 3: return new TextFieldChanged(raw.view_id, Marshal.PtrToStringUTF8(raw.data.text_field_changed.text));
             case 4: return new TextFieldSubmitted(raw.view_id);
             case 5: return new Updating(raw.view_id);
+            case 6: return new Resized(raw.view_id, Size.FromRaw(in raw.data.resized.new_size));
             default: return null;
         }
     }
@@ -429,6 +431,20 @@ public partial class View : IDisposable
         }
     }
 
+    public void SetAccessibilityLabel(string? label)
+    {
+        Interop.native_view_set_accessibility_label(NativeHandle, label);
+    }
+
+    public string? AccessibilityLabel
+    {
+        get
+        {
+            var rawResult = Interop.native_view_get_accessibility_label(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
     public void Focus()
     {
         Interop.native_view_focus(NativeHandle);
@@ -536,6 +552,34 @@ public partial class Label : View
         }
     }
 
+    public void SetFontFamily(string? family)
+    {
+        Interop.native_label_set_font_family(NativeHandle, family);
+    }
+
+    public string? FontFamily
+    {
+        get
+        {
+            var rawResult = Interop.native_label_get_font_family(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
+    public void SetFontWeight(int weight)
+    {
+        Interop.native_label_set_font_weight(NativeHandle, weight);
+    }
+
+    public int FontWeight
+    {
+        get
+        {
+            var rawResult = Interop.native_label_get_font_weight(NativeHandle);
+            return rawResult;
+        }
+    }
+
     public void SetTextAlignment(TextAlignment alignment)
     {
         Interop.native_label_set_text_alignment(NativeHandle, (int)alignment);
@@ -575,6 +619,48 @@ public partial class Button : View
         {
             var rawResult = Interop.native_button_get_text(NativeHandle);
             return Interop.ConsumeString(rawResult);
+        }
+    }
+
+    public void SetFontSize(double size)
+    {
+        Interop.native_button_set_font_size(NativeHandle, size);
+    }
+
+    public double FontSize
+    {
+        get
+        {
+            var rawResult = Interop.native_button_get_font_size(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public void SetFontFamily(string? family)
+    {
+        Interop.native_button_set_font_family(NativeHandle, family);
+    }
+
+    public string? FontFamily
+    {
+        get
+        {
+            var rawResult = Interop.native_button_get_font_family(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
+    public void SetFontWeight(int weight)
+    {
+        Interop.native_button_set_font_weight(NativeHandle, weight);
+    }
+
+    public int FontWeight
+    {
+        get
+        {
+            var rawResult = Interop.native_button_get_font_weight(NativeHandle);
+            return rawResult;
         }
     }
 
@@ -631,6 +717,34 @@ public partial class TextField : View
         get
         {
             var rawResult = Interop.native_text_field_get_font_size(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public void SetFontFamily(string? family)
+    {
+        Interop.native_text_field_set_font_family(NativeHandle, family);
+    }
+
+    public string? FontFamily
+    {
+        get
+        {
+            var rawResult = Interop.native_text_field_get_font_family(NativeHandle);
+            return Interop.ConsumeString(rawResult);
+        }
+    }
+
+    public void SetFontWeight(int weight)
+    {
+        Interop.native_text_field_set_font_weight(NativeHandle, weight);
+    }
+
+    public int FontWeight
+    {
+        get
+        {
+            var rawResult = Interop.native_text_field_get_font_weight(NativeHandle);
             return rawResult;
         }
     }
@@ -701,6 +815,20 @@ public partial class TextField : View
         get
         {
             var rawResult = Interop.native_text_field_is_multiline(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public void SetBordered(bool isBordered)
+    {
+        Interop.native_text_field_set_bordered(NativeHandle, isBordered);
+    }
+
+    public bool IsBordered
+    {
+        get
+        {
+            var rawResult = Interop.native_text_field_is_bordered(NativeHandle);
             return rawResult;
         }
     }

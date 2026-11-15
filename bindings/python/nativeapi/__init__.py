@@ -189,6 +189,7 @@ from .view import (
     ViewFocusedEvent,
     ViewId,
     ViewLayout,
+    ViewResizedEvent,
     ViewUpdatingEvent,
 )
 from .window import (
@@ -218,6 +219,7 @@ from .window import (
     WindowPropertyChangedEvent,
     WindowResizedEvent,
     WindowRestoredEvent,
+    WindowScaleFactorChangedEvent,
     WindowUndockedEvent,
 )
 from .window_drag_session import (
@@ -360,6 +362,7 @@ __all__ = [
     "ViewFocusedEvent",
     "ViewId",
     "ViewLayout",
+    "ViewResizedEvent",
     "ViewUpdatingEvent",
     "VisualEffect",
     "Window",
@@ -391,6 +394,7 @@ __all__ = [
     "WindowPropertyChangedEvent",
     "WindowResizedEvent",
     "WindowRestoredEvent",
+    "WindowScaleFactorChangedEvent",
     "WindowShadow",
     "WindowShape",
     "WindowUndockedEvent",

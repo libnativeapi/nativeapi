@@ -506,6 +506,10 @@ inline Value ToValue(const native_view_event_t& event) {
     case NATIVE_VIEW_EVENT_TYPE_UPDATING:
       result.Set("type", Value::String("updating"));
       break;
+    case NATIVE_VIEW_EVENT_TYPE_RESIZED:
+      result.Set("type", Value::String("resized"));
+      result.Set("newSize", ToValue(event.data.resized.new_size));
+      break;
     default:
       return Value::Null();
   }
@@ -569,6 +573,10 @@ inline Value ToValue(const native_window_event_t& event) {
       break;
     case NATIVE_WINDOW_EVENT_TYPE_UNDOCKED:
       result.Set("type", Value::String("undocked"));
+      break;
+    case NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED:
+      result.Set("type", Value::String("scaleFactorChanged"));
+      result.Set("scaleFactor", Value::Number(static_cast<double>(event.data.scale_factor_changed.scale_factor)));
       break;
     default:
       return Value::Null();

@@ -198,6 +198,7 @@ public enum WindowEvent {
   case occlusionChanged(windowId: WindowId, occlusionState: WindowOcclusionState)
   case docked(windowId: WindowId, side: WindowDockSide)
   case undocked(windowId: WindowId)
+  case scaleFactorChanged(windowId: WindowId, scaleFactor: Double)
 
   init?(raw: native_window_event_t) {
     switch raw.type {
@@ -217,6 +218,7 @@ public enum WindowEvent {
     case NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED: self = .occlusionChanged(windowId: raw.window_id, occlusionState: WindowOcclusionState(raw: raw.data.occlusion_changed.occlusion_state))
     case NATIVE_WINDOW_EVENT_TYPE_DOCKED: self = .docked(windowId: raw.window_id, side: WindowDockSide(raw: raw.data.docked.side))
     case NATIVE_WINDOW_EVENT_TYPE_UNDOCKED: self = .undocked(windowId: raw.window_id)
+    case NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED: self = .scaleFactorChanged(windowId: raw.window_id, scaleFactor: raw.data.scale_factor_changed.scale_factor)
     default: return nil
     }
   }

@@ -303,6 +303,16 @@ sealed class WindowEvent {
         c.native_window_event_type_t.NATIVE_WINDOW_EVENT_TYPE_UNDOCKED.value) {
       return WindowUndockedEvent(windowId: raw.window_id);
     }
+    if (raw.typeAsInt ==
+        c
+            .native_window_event_type_t
+            .NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED
+            .value) {
+      return WindowScaleFactorChangedEvent(
+        windowId: raw.window_id,
+        scaleFactor: raw.data.scale_factor_changed.scale_factor,
+      );
+    }
     return null;
   }
 }
@@ -432,6 +442,17 @@ final class WindowUndockedEvent extends WindowEvent {
 
   @override
   final WindowId windowId;
+}
+
+final class WindowScaleFactorChangedEvent extends WindowEvent {
+  const WindowScaleFactorChangedEvent({
+    required this.windowId,
+    required this.scaleFactor,
+  });
+
+  @override
+  final WindowId windowId;
+  final double scaleFactor;
 }
 
 class Window implements ffi.Finalizable {

@@ -169,7 +169,29 @@ external void native_button_free(int button);
 
 /// Caller owns the returned string; free it with free_c_str().
 @ffi.Native<ffi.Pointer<ffi.Char> Function(native_button_t)>()
+external ffi.Pointer<ffi.Char> native_button_get_font_family(int button);
+
+@ffi.Native<ffi.Double Function(native_button_t)>()
+external double native_button_get_font_size(int button);
+
+@ffi.Native<ffi.Int Function(native_button_t)>()
+external int native_button_get_font_weight(int button);
+
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_button_t)>()
 external ffi.Pointer<ffi.Char> native_button_get_text(int button);
+
+@ffi.Native<ffi.Void Function(native_button_t, ffi.Pointer<ffi.Char>)>()
+external void native_button_set_font_family(
+  int button,
+  ffi.Pointer<ffi.Char> family,
+);
+
+@ffi.Native<ffi.Void Function(native_button_t, ffi.Double)>()
+external void native_button_set_font_size(int button, double size);
+
+@ffi.Native<ffi.Void Function(native_button_t, ffi.Int)>()
+external void native_button_set_font_weight(int button, int weight);
 
 @ffi.Native<ffi.Void Function(native_button_t, ffi.Pointer<ffi.Char>)>()
 external void native_button_set_text(int button, ffi.Pointer<ffi.Char> text);
@@ -971,8 +993,15 @@ external int native_label_create(ffi.Pointer<ffi.Char> text);
 @ffi.Native<ffi.Void Function(native_label_t)>()
 external void native_label_free(int label);
 
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_label_t)>()
+external ffi.Pointer<ffi.Char> native_label_get_font_family(int label);
+
 @ffi.Native<ffi.Double Function(native_label_t)>()
 external double native_label_get_font_size(int label);
+
+@ffi.Native<ffi.Int Function(native_label_t)>()
+external int native_label_get_font_weight(int label);
 
 /// Caller owns the returned string; free it with free_c_str().
 @ffi.Native<ffi.Pointer<ffi.Char> Function(native_label_t)>()
@@ -994,8 +1023,17 @@ native_text_alignment_t native_label_get_text_alignment(
 @ffi.Native<native_color_t Function(native_label_t)>()
 external native_color_t native_label_get_text_color(int label);
 
+@ffi.Native<ffi.Void Function(native_label_t, ffi.Pointer<ffi.Char>)>()
+external void native_label_set_font_family(
+  int label,
+  ffi.Pointer<ffi.Char> family,
+);
+
 @ffi.Native<ffi.Void Function(native_label_t, ffi.Double)>()
 external void native_label_set_font_size(int label, double size);
+
+@ffi.Native<ffi.Void Function(native_label_t, ffi.Int)>()
+external void native_label_set_font_weight(int label, int weight);
 
 @ffi.Native<ffi.Void Function(native_label_t, ffi.Pointer<ffi.Char>)>()
 external void native_label_set_text(int label, ffi.Pointer<ffi.Char> text);
@@ -2197,8 +2235,17 @@ external int native_text_field_create(ffi.Pointer<ffi.Char> text);
 @ffi.Native<ffi.Void Function(native_text_field_t)>()
 external void native_text_field_free(int text_field);
 
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_text_field_t)>()
+external ffi.Pointer<ffi.Char> native_text_field_get_font_family(
+  int text_field,
+);
+
 @ffi.Native<ffi.Double Function(native_text_field_t)>()
 external double native_text_field_get_font_size(int text_field);
+
+@ffi.Native<ffi.Int Function(native_text_field_t)>()
+external int native_text_field_get_font_weight(int text_field);
 
 /// Caller owns the returned string; free it with free_c_str().
 @ffi.Native<ffi.Pointer<ffi.Char> Function(native_text_field_t)>()
@@ -2227,6 +2274,9 @@ native_text_alignment_t native_text_field_get_text_alignment(
 external native_color_t native_text_field_get_text_color(int text_field);
 
 @ffi.Native<ffi.Bool Function(native_text_field_t)>()
+external bool native_text_field_is_bordered(int text_field);
+
+@ffi.Native<ffi.Bool Function(native_text_field_t)>()
 external bool native_text_field_is_editable(int text_field);
 
 @ffi.Native<ffi.Bool Function(native_text_field_t)>()
@@ -2236,10 +2286,22 @@ external bool native_text_field_is_multiline(int text_field);
 external bool native_text_field_is_secure(int text_field);
 
 @ffi.Native<ffi.Void Function(native_text_field_t, ffi.Bool)>()
+external void native_text_field_set_bordered(int text_field, bool is_bordered);
+
+@ffi.Native<ffi.Void Function(native_text_field_t, ffi.Bool)>()
 external void native_text_field_set_editable(int text_field, bool is_editable);
+
+@ffi.Native<ffi.Void Function(native_text_field_t, ffi.Pointer<ffi.Char>)>()
+external void native_text_field_set_font_family(
+  int text_field,
+  ffi.Pointer<ffi.Char> family,
+);
 
 @ffi.Native<ffi.Void Function(native_text_field_t, ffi.Double)>()
 external void native_text_field_set_font_size(int text_field, double size);
+
+@ffi.Native<ffi.Void Function(native_text_field_t, ffi.Int)>()
+external void native_text_field_set_font_weight(int text_field, int weight);
 
 @ffi.Native<ffi.Void Function(native_text_field_t, ffi.Bool)>()
 external void native_text_field_set_multiline(
@@ -2595,6 +2657,10 @@ external void native_view_focus(int view);
 @ffi.Native<ffi.Void Function(native_view_t$1)>()
 external void native_view_free(int view);
 
+/// Caller owns the returned string; free it with free_c_str().
+@ffi.Native<ffi.Pointer<ffi.Char> Function(native_view_t$1)>()
+external ffi.Pointer<ffi.Char> native_view_get_accessibility_label(int view);
+
 @ffi.Native<ffi.UnsignedInt Function(native_view_t$1)>(
   symbol: 'native_view_get_alignment',
 )
@@ -2733,6 +2799,12 @@ external bool native_view_remove_subview_at(int view, int index);
 
 @ffi.Native<ffi.Bool Function(native_view_t$1)>()
 external bool native_view_request_update(int view);
+
+@ffi.Native<ffi.Void Function(native_view_t$1, ffi.Pointer<ffi.Char>)>()
+external void native_view_set_accessibility_label(
+  int view,
+  ffi.Pointer<ffi.Char> label,
+);
 
 @ffi.Native<ffi.Void Function(native_view_t$1, ffi.UnsignedInt)>(
   symbol: 'native_view_set_alignment',
@@ -3800,21 +3872,15 @@ final class UnnamedStruct$16 extends ffi.Struct {
 }
 
 final class UnnamedStruct$17 extends ffi.Struct {
-  external native_point_t new_position;
-}
-
-final class UnnamedStruct$18 extends ffi.Struct {
   external native_size_t new_size;
 }
 
-final class UnnamedStruct$19 extends ffi.Struct {
-  @native_event_request_t()
-  external int request;
+final class UnnamedStruct$18 extends ffi.Struct {
+  external native_point_t new_position;
+}
 
-  static ffi.Pointer<UnnamedStruct$19> $allocate(
-    ffi.Allocator $allocator, {
-    required int request,
-  }) => $allocator<UnnamedStruct$19>()..ref.request = request;
+final class UnnamedStruct$19 extends ffi.Struct {
+  external native_size_t new_size;
 }
 
 final class UnnamedStruct$2 extends ffi.Struct {
@@ -3832,6 +3898,16 @@ final class UnnamedStruct$2 extends ffi.Struct {
 }
 
 final class UnnamedStruct$20 extends ffi.Struct {
+  @native_event_request_t()
+  external int request;
+
+  static ffi.Pointer<UnnamedStruct$20> $allocate(
+    ffi.Allocator $allocator, {
+    required int request,
+  }) => $allocator<UnnamedStruct$20>()..ref.request = request;
+}
+
+final class UnnamedStruct$21 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int propertyAsInt;
 
@@ -3839,13 +3915,13 @@ final class UnnamedStruct$20 extends ffi.Struct {
       native_window_property_t.fromValue(propertyAsInt);
   set property(native_window_property_t value) => propertyAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$20> $allocate(
+  static ffi.Pointer<UnnamedStruct$21> $allocate(
     ffi.Allocator $allocator, {
     required native_window_property_t property,
-  }) => $allocator<UnnamedStruct$20>()..ref.property = property;
+  }) => $allocator<UnnamedStruct$21>()..ref.property = property;
 }
 
-final class UnnamedStruct$21 extends ffi.Struct {
+final class UnnamedStruct$22 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int occlusion_stateAsInt;
 
@@ -3854,13 +3930,13 @@ final class UnnamedStruct$21 extends ffi.Struct {
   set occlusion_state(native_window_occlusion_state_t value) =>
       occlusion_stateAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$21> $allocate(
+  static ffi.Pointer<UnnamedStruct$22> $allocate(
     ffi.Allocator $allocator, {
     required native_window_occlusion_state_t occlusion_state,
-  }) => $allocator<UnnamedStruct$21>()..ref.occlusion_state = occlusion_state;
+  }) => $allocator<UnnamedStruct$22>()..ref.occlusion_state = occlusion_state;
 }
 
-final class UnnamedStruct$22 extends ffi.Struct {
+final class UnnamedStruct$23 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int sideAsInt;
 
@@ -3868,10 +3944,20 @@ final class UnnamedStruct$22 extends ffi.Struct {
       native_window_dock_side_t.fromValue(sideAsInt);
   set side(native_window_dock_side_t value) => sideAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$22> $allocate(
+  static ffi.Pointer<UnnamedStruct$23> $allocate(
     ffi.Allocator $allocator, {
     required native_window_dock_side_t side,
-  }) => $allocator<UnnamedStruct$22>()..ref.side = side;
+  }) => $allocator<UnnamedStruct$23>()..ref.side = side;
+}
+
+final class UnnamedStruct$24 extends ffi.Struct {
+  @ffi.Double()
+  external double scale_factor;
+
+  static ffi.Pointer<UnnamedStruct$24> $allocate(
+    ffi.Allocator $allocator, {
+    required double scale_factor,
+  }) => $allocator<UnnamedStruct$24>()..ref.scale_factor = scale_factor;
 }
 
 final class UnnamedStruct$3 extends ffi.Struct {
@@ -3951,17 +4037,19 @@ final class UnnamedUnion$1 extends ffi.Union {
 }
 
 final class UnnamedUnion$10 extends ffi.Union {
-  external UnnamedStruct$17 moved;
+  external UnnamedStruct$18 moved;
 
-  external UnnamedStruct$18 resized;
+  external UnnamedStruct$19 resized;
 
-  external UnnamedStruct$19 close_requested;
+  external UnnamedStruct$20 close_requested;
 
-  external UnnamedStruct$20 property_changed;
+  external UnnamedStruct$21 property_changed;
 
-  external UnnamedStruct$21 occlusion_changed;
+  external UnnamedStruct$22 occlusion_changed;
 
-  external UnnamedStruct$22 docked;
+  external UnnamedStruct$23 docked;
+
+  external UnnamedStruct$24 scale_factor_changed;
 }
 
 final class UnnamedUnion$2 extends ffi.Union {
@@ -4006,6 +4094,8 @@ final class UnnamedUnion$8 extends ffi.Union {
 
 final class UnnamedUnion$9 extends ffi.Union {
   external UnnamedStruct$16 text_field_changed;
+
+  external UnnamedStruct$17 resized;
 }
 
 typedef native_application_event_callback_t =
@@ -5887,7 +5977,8 @@ enum native_view_event_type_t {
   NATIVE_VIEW_EVENT_TYPE_BUTTON_CLICKED(2),
   NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED(3),
   NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED(4),
-  NATIVE_VIEW_EVENT_TYPE_UPDATING(5);
+  NATIVE_VIEW_EVENT_TYPE_UPDATING(5),
+  NATIVE_VIEW_EVENT_TYPE_RESIZED(6);
 
   final int value;
   const native_view_event_type_t(this.value);
@@ -5899,6 +5990,7 @@ enum native_view_event_type_t {
     3 => NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED,
     4 => NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED,
     5 => NATIVE_VIEW_EVENT_TYPE_UPDATING,
+    6 => NATIVE_VIEW_EVENT_TYPE_RESIZED,
     _ => throw ArgumentError(
       'Unknown value for native_view_event_type_t: $value',
     ),
@@ -6152,7 +6244,8 @@ enum native_window_event_type_t {
   NATIVE_WINDOW_EVENT_TYPE_PROPERTY_CHANGED(12),
   NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED(13),
   NATIVE_WINDOW_EVENT_TYPE_DOCKED(14),
-  NATIVE_WINDOW_EVENT_TYPE_UNDOCKED(15);
+  NATIVE_WINDOW_EVENT_TYPE_UNDOCKED(15),
+  NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED(16);
 
   final int value;
   const native_window_event_type_t(this.value);
@@ -6174,6 +6267,7 @@ enum native_window_event_type_t {
     13 => NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED,
     14 => NATIVE_WINDOW_EVENT_TYPE_DOCKED,
     15 => NATIVE_WINDOW_EVENT_TYPE_UNDOCKED,
+    16 => NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED,
     _ => throw ArgumentError(
       'Unknown value for native_window_event_type_t: $value',
     ),

@@ -97,7 +97,8 @@ export type WindowEvent =
   | { type: "propertyChanged"; windowId: WindowId; property: WindowProperty }
   | { type: "occlusionChanged"; windowId: WindowId; occlusionState: WindowOcclusionState }
   | { type: "docked"; windowId: WindowId; side: WindowDockSide }
-  | { type: "undocked"; windowId: WindowId };
+  | { type: "undocked"; windowId: WindowId }
+  | { type: "scaleFactorChanged"; windowId: WindowId; scaleFactor: number };
 
 /** A native Window, held through an owned handle. */
 export class Window extends NativeObject {

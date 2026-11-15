@@ -43,7 +43,8 @@ export type ViewEvent =
   | { type: "buttonClicked"; viewId: ViewId }
   | { type: "textFieldChanged"; viewId: ViewId; text: string | null }
   | { type: "textFieldSubmitted"; viewId: ViewId }
-  | { type: "updating"; viewId: ViewId };
+  | { type: "updating"; viewId: ViewId }
+  | { type: "resized"; viewId: ViewId; newSize: Size };
 
 /** A native View, held through an owned handle. */
 export class View extends NativeObject {
@@ -242,6 +243,14 @@ export class View extends NativeObject {
     return native.native_view_get_tooltip(this.nativeHandle);
   }
 
+  setAccessibilityLabel(label: string | null): void {
+    native.native_view_set_accessibility_label(this.nativeHandle, label);
+  }
+
+  get accessibilityLabel(): string | null {
+    return native.native_view_get_accessibility_label(this.nativeHandle);
+  }
+
   focus(): void {
     native.native_view_focus(this.nativeHandle);
   }
@@ -309,6 +318,22 @@ export class Label extends View {
     return native.native_label_get_font_size(this.nativeHandle);
   }
 
+  setFontFamily(family: string | null): void {
+    native.native_label_set_font_family(this.nativeHandle, family);
+  }
+
+  get fontFamily(): string | null {
+    return native.native_label_get_font_family(this.nativeHandle);
+  }
+
+  setFontWeight(weight: number): void {
+    native.native_label_set_font_weight(this.nativeHandle, weight);
+  }
+
+  get fontWeight(): number {
+    return native.native_label_get_font_weight(this.nativeHandle);
+  }
+
   setTextAlignment(alignment: TextAlignment): void {
     native.native_label_set_text_alignment(this.nativeHandle, alignment);
   }
@@ -336,6 +361,30 @@ export class Button extends View {
 
   get text(): string {
     return native.native_button_get_text(this.nativeHandle);
+  }
+
+  setFontSize(size: number): void {
+    native.native_button_set_font_size(this.nativeHandle, size);
+  }
+
+  get fontSize(): number {
+    return native.native_button_get_font_size(this.nativeHandle);
+  }
+
+  setFontFamily(family: string | null): void {
+    native.native_button_set_font_family(this.nativeHandle, family);
+  }
+
+  get fontFamily(): string | null {
+    return native.native_button_get_font_family(this.nativeHandle);
+  }
+
+  setFontWeight(weight: number): void {
+    native.native_button_set_font_weight(this.nativeHandle, weight);
+  }
+
+  get fontWeight(): number {
+    return native.native_button_get_font_weight(this.nativeHandle);
   }
 }
 
@@ -373,6 +422,22 @@ export class TextField extends View {
 
   get fontSize(): number {
     return native.native_text_field_get_font_size(this.nativeHandle);
+  }
+
+  setFontFamily(family: string | null): void {
+    native.native_text_field_set_font_family(this.nativeHandle, family);
+  }
+
+  get fontFamily(): string | null {
+    return native.native_text_field_get_font_family(this.nativeHandle);
+  }
+
+  setFontWeight(weight: number): void {
+    native.native_text_field_set_font_weight(this.nativeHandle, weight);
+  }
+
+  get fontWeight(): number {
+    return native.native_text_field_get_font_weight(this.nativeHandle);
   }
 
   setTextAlignment(alignment: TextAlignment): void {
@@ -413,6 +478,14 @@ export class TextField extends View {
 
   get isMultiline(): boolean {
     return native.native_text_field_is_multiline(this.nativeHandle);
+  }
+
+  setBordered(isBordered: boolean): void {
+    native.native_text_field_set_bordered(this.nativeHandle, isBordered);
+  }
+
+  get isBordered(): boolean {
+    return native.native_text_field_is_bordered(this.nativeHandle);
   }
 }
 

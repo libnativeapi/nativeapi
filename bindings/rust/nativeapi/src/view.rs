@@ -117,6 +117,7 @@ pub enum ViewEvent {
     TextFieldChanged { view_id: ViewId, text: Option<String> },
     TextFieldSubmitted { view_id: ViewId },
     Updating { view_id: ViewId },
+    Resized { view_id: ViewId, new_size: Size },
 }
 
 impl ViewEvent {
@@ -128,6 +129,7 @@ impl ViewEvent {
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_CHANGED => Self::TextFieldChanged { view_id: raw.view_id, text: if raw.data.text_field_changed.text.is_null() { None } else { Some(CStr::from_ptr(raw.data.text_field_changed.text).to_string_lossy().into_owned()) } },
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_TEXT_FIELD_SUBMITTED => Self::TextFieldSubmitted { view_id: raw.view_id },
             cnativeapi::NATIVE_VIEW_EVENT_TYPE_UPDATING => Self::Updating { view_id: raw.view_id },
+            cnativeapi::NATIVE_VIEW_EVENT_TYPE_RESIZED => Self::Resized { view_id: raw.view_id, new_size: Size::from_raw(&raw.data.resized.new_size) },
             _ => return None,
         })
     }
@@ -474,6 +476,25 @@ impl View {
         }
     }
 
+    pub fn set_accessibility_label(&self, label: Option<&str>) {
+        let label_native = label.map(|value| CString::new(value).expect("string argument contains interior nul byte"));
+        unsafe {
+            cnativeapi::native_view_set_accessibility_label(self.handle, label_native.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()));
+        }
+    }
+
+    pub fn accessibility_label(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_view_get_accessibility_label(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
     pub fn focus(&self) {
         unsafe {
             cnativeapi::native_view_focus(self.handle);
@@ -650,6 +671,37 @@ impl Label {
         }
     }
 
+    pub fn set_font_family(&self, family: Option<&str>) {
+        let family_native = family.map(|value| CString::new(value).expect("string argument contains interior nul byte"));
+        unsafe {
+            cnativeapi::native_label_set_font_family(self.handle, family_native.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()));
+        }
+    }
+
+    pub fn font_family(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_label_get_font_family(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
+    pub fn set_font_weight(&self, weight: i32) {
+        unsafe {
+            cnativeapi::native_label_set_font_weight(self.handle, weight);
+        }
+    }
+
+    pub fn font_weight(&self) -> i32 {
+        unsafe {
+            cnativeapi::native_label_get_font_weight(self.handle)
+        }
+    }
+
     pub fn set_text_alignment(&self, alignment: TextAlignment) {
         unsafe {
             cnativeapi::native_label_set_text_alignment(self.handle, alignment.to_raw());
@@ -759,6 +811,49 @@ impl Button {
             let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
             cnativeapi::free_c_str(ptr);
             Some(value)
+        }
+    }
+
+    pub fn set_font_size(&self, size: f64) {
+        unsafe {
+            cnativeapi::native_button_set_font_size(self.handle, size);
+        }
+    }
+
+    pub fn font_size(&self) -> f64 {
+        unsafe {
+            cnativeapi::native_button_get_font_size(self.handle)
+        }
+    }
+
+    pub fn set_font_family(&self, family: Option<&str>) {
+        let family_native = family.map(|value| CString::new(value).expect("string argument contains interior nul byte"));
+        unsafe {
+            cnativeapi::native_button_set_font_family(self.handle, family_native.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()));
+        }
+    }
+
+    pub fn font_family(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_button_get_font_family(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
+    pub fn set_font_weight(&self, weight: i32) {
+        unsafe {
+            cnativeapi::native_button_set_font_weight(self.handle, weight);
+        }
+    }
+
+    pub fn font_weight(&self) -> i32 {
+        unsafe {
+            cnativeapi::native_button_get_font_weight(self.handle)
         }
     }
 
@@ -888,6 +983,37 @@ impl TextField {
         }
     }
 
+    pub fn set_font_family(&self, family: Option<&str>) {
+        let family_native = family.map(|value| CString::new(value).expect("string argument contains interior nul byte"));
+        unsafe {
+            cnativeapi::native_text_field_set_font_family(self.handle, family_native.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()));
+        }
+    }
+
+    pub fn font_family(&self) -> Option<String> {
+        unsafe {
+            let ptr = cnativeapi::native_text_field_get_font_family(self.handle);
+            if ptr.is_null() {
+                return None;
+            }
+            let value = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            cnativeapi::free_c_str(ptr);
+            Some(value)
+        }
+    }
+
+    pub fn set_font_weight(&self, weight: i32) {
+        unsafe {
+            cnativeapi::native_text_field_set_font_weight(self.handle, weight);
+        }
+    }
+
+    pub fn font_weight(&self) -> i32 {
+        unsafe {
+            cnativeapi::native_text_field_get_font_weight(self.handle)
+        }
+    }
+
     pub fn set_text_alignment(&self, alignment: TextAlignment) {
         unsafe {
             cnativeapi::native_text_field_set_text_alignment(self.handle, alignment.to_raw());
@@ -952,6 +1078,18 @@ impl TextField {
     pub fn is_multiline(&self) -> bool {
         unsafe {
             cnativeapi::native_text_field_is_multiline(self.handle)
+        }
+    }
+
+    pub fn set_bordered(&self, is_bordered: bool) {
+        unsafe {
+            cnativeapi::native_text_field_set_bordered(self.handle, is_bordered);
+        }
+    }
+
+    pub fn is_bordered(&self) -> bool {
+        unsafe {
+            cnativeapi::native_text_field_is_bordered(self.handle)
         }
     }
 

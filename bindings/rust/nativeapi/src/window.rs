@@ -238,6 +238,7 @@ pub enum WindowEvent {
     OcclusionChanged { window_id: WindowId, occlusion_state: WindowOcclusionState },
     Docked { window_id: WindowId, side: WindowDockSide },
     Undocked { window_id: WindowId },
+    ScaleFactorChanged { window_id: WindowId, scale_factor: f64 },
 }
 
 impl WindowEvent {
@@ -259,6 +260,7 @@ impl WindowEvent {
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_OCCLUSION_CHANGED => Self::OcclusionChanged { window_id: raw.window_id, occlusion_state: WindowOcclusionState::from_raw(raw.data.occlusion_changed.occlusion_state) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_DOCKED => Self::Docked { window_id: raw.window_id, side: WindowDockSide::from_raw(raw.data.docked.side) },
             cnativeapi::NATIVE_WINDOW_EVENT_TYPE_UNDOCKED => Self::Undocked { window_id: raw.window_id },
+            cnativeapi::NATIVE_WINDOW_EVENT_TYPE_SCALE_FACTOR_CHANGED => Self::ScaleFactorChanged { window_id: raw.window_id, scale_factor: raw.data.scale_factor_changed.scale_factor },
             _ => return None,
         })
     }

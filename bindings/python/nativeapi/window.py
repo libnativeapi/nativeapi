@@ -142,6 +142,11 @@ class WindowEvent:
             )
         if raw.type == 15:
             return WindowUndockedEvent(raw.window_id)
+        if raw.type == 16:
+            return WindowScaleFactorChangedEvent(
+                raw.window_id,
+                raw.data.scale_factor_changed.scale_factor,
+            )
         return None
 
 
@@ -223,6 +228,11 @@ class WindowDockedEvent(WindowEvent):
 @dataclass(frozen=True)
 class WindowUndockedEvent(WindowEvent):
     pass
+
+
+@dataclass(frozen=True)
+class WindowScaleFactorChangedEvent(WindowEvent):
+    scale_factor: float
 
 
 class Window(_rt.NativeObject):

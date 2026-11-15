@@ -802,6 +802,42 @@ napi_value Js_native_view_get_tooltip(napi_env env, napi_callback_info info) {
   return value.ToJs(env);
 }
 
+napi_value Js_native_view_set_accessibility_label(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  const char* p0 = {};
+  if (!GetOptionalString(env, args[1], arena, &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_view_set_accessibility_label(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_view_get_accessibility_label(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_view_get_accessibility_label(self); });
+  Value value = Value::String(result);
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
 napi_value Js_native_view_focus(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1021,6 +1057,76 @@ napi_value Js_native_label_get_font_size(napi_env env, napi_callback_info info) 
   return Value::Number(static_cast<double>(result)).ToJs(env);
 }
 
+napi_value Js_native_label_set_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  const char* p0 = {};
+  if (!GetOptionalString(env, args[1], arena, &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_label_set_font_family(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_label_get_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_label_get_font_family(self); });
+  Value value = Value::String(result);
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_label_set_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  int p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_label_set_font_weight(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_label_get_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_label_get_font_weight(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
 napi_value Js_native_label_set_text_alignment(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1119,6 +1225,110 @@ napi_value Js_native_button_get_text(napi_env env, napi_callback_info info) {
   Value value = Value::String(result ? result : "");
   free_c_str(result);
   return value.ToJs(env);
+}
+
+napi_value Js_native_button_set_font_size(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  double p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_button_set_font_size(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_button_get_font_size(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_button_get_font_size(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_button_set_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  const char* p0 = {};
+  if (!GetOptionalString(env, args[1], arena, &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_button_set_font_family(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_button_get_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_button_get_font_family(self); });
+  Value value = Value::String(result);
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_button_set_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  int p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_button_set_font_weight(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_button_get_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_button_get_font_weight(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
 }
 
 napi_value Js_native_text_field_create(napi_env env, napi_callback_info info) {
@@ -1253,6 +1463,76 @@ napi_value Js_native_text_field_get_font_size(napi_env env, napi_callback_info i
     return nullptr;
   }
   auto result = OnMainThread([&] { return native_text_field_get_font_size(self); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_text_field_set_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  const char* p0 = {};
+  if (!GetOptionalString(env, args[1], arena, &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_text_field_set_font_family(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_text_field_get_font_family(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_text_field_get_font_family(self); });
+  Value value = Value::String(result);
+  free_c_str(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_text_field_set_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  int p0 = {};
+  if (!GetNumber(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_text_field_set_font_weight(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_text_field_get_font_weight(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_text_field_get_font_weight(self); });
   return Value::Number(static_cast<double>(result)).ToJs(env);
 }
 
@@ -1428,6 +1708,40 @@ napi_value Js_native_text_field_is_multiline(napi_env env, napi_callback_info in
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_text_field_set_bordered(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  bool p0 = {};
+  if (!GetBool(env, args[1], &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_text_field_set_bordered(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_text_field_is_bordered(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_text_field_is_bordered(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_image_view_create(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1540,6 +1854,8 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_view_get_background_color", Js_native_view_get_background_color);
   Export(env, exports, "native_view_set_tooltip", Js_native_view_set_tooltip);
   Export(env, exports, "native_view_get_tooltip", Js_native_view_get_tooltip);
+  Export(env, exports, "native_view_set_accessibility_label", Js_native_view_set_accessibility_label);
+  Export(env, exports, "native_view_get_accessibility_label", Js_native_view_get_accessibility_label);
   Export(env, exports, "native_view_focus", Js_native_view_focus);
   Export(env, exports, "native_view_blur", Js_native_view_blur);
   Export(env, exports, "native_view_is_focused", Js_native_view_is_focused);
@@ -1553,12 +1869,22 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_label_get_text_color", Js_native_label_get_text_color);
   Export(env, exports, "native_label_set_font_size", Js_native_label_set_font_size);
   Export(env, exports, "native_label_get_font_size", Js_native_label_get_font_size);
+  Export(env, exports, "native_label_set_font_family", Js_native_label_set_font_family);
+  Export(env, exports, "native_label_get_font_family", Js_native_label_get_font_family);
+  Export(env, exports, "native_label_set_font_weight", Js_native_label_set_font_weight);
+  Export(env, exports, "native_label_get_font_weight", Js_native_label_get_font_weight);
   Export(env, exports, "native_label_set_text_alignment", Js_native_label_set_text_alignment);
   Export(env, exports, "native_label_get_text_alignment", Js_native_label_get_text_alignment);
   Export(env, exports, "native_button_create", Js_native_button_create);
   Export(env, exports, "native_button_free", Js_native_button_free);
   Export(env, exports, "native_button_set_text", Js_native_button_set_text);
   Export(env, exports, "native_button_get_text", Js_native_button_get_text);
+  Export(env, exports, "native_button_set_font_size", Js_native_button_set_font_size);
+  Export(env, exports, "native_button_get_font_size", Js_native_button_get_font_size);
+  Export(env, exports, "native_button_set_font_family", Js_native_button_set_font_family);
+  Export(env, exports, "native_button_get_font_family", Js_native_button_get_font_family);
+  Export(env, exports, "native_button_set_font_weight", Js_native_button_set_font_weight);
+  Export(env, exports, "native_button_get_font_weight", Js_native_button_get_font_weight);
   Export(env, exports, "native_text_field_create", Js_native_text_field_create);
   Export(env, exports, "native_text_field_free", Js_native_text_field_free);
   Export(env, exports, "native_text_field_set_text", Js_native_text_field_set_text);
@@ -1567,6 +1893,10 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_text_field_get_text_color", Js_native_text_field_get_text_color);
   Export(env, exports, "native_text_field_set_font_size", Js_native_text_field_set_font_size);
   Export(env, exports, "native_text_field_get_font_size", Js_native_text_field_get_font_size);
+  Export(env, exports, "native_text_field_set_font_family", Js_native_text_field_set_font_family);
+  Export(env, exports, "native_text_field_get_font_family", Js_native_text_field_get_font_family);
+  Export(env, exports, "native_text_field_set_font_weight", Js_native_text_field_set_font_weight);
+  Export(env, exports, "native_text_field_get_font_weight", Js_native_text_field_get_font_weight);
   Export(env, exports, "native_text_field_set_text_alignment", Js_native_text_field_set_text_alignment);
   Export(env, exports, "native_text_field_get_text_alignment", Js_native_text_field_get_text_alignment);
   Export(env, exports, "native_text_field_set_placeholder", Js_native_text_field_set_placeholder);
@@ -1577,6 +1907,8 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_text_field_is_secure", Js_native_text_field_is_secure);
   Export(env, exports, "native_text_field_set_multiline", Js_native_text_field_set_multiline);
   Export(env, exports, "native_text_field_is_multiline", Js_native_text_field_is_multiline);
+  Export(env, exports, "native_text_field_set_bordered", Js_native_text_field_set_bordered);
+  Export(env, exports, "native_text_field_is_bordered", Js_native_text_field_is_bordered);
   Export(env, exports, "native_image_view_create", Js_native_image_view_create);
   Export(env, exports, "native_image_view_free", Js_native_image_view_free);
   Export(env, exports, "native_image_view_set_image", Js_native_image_view_set_image);

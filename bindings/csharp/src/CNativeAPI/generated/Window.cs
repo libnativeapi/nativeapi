@@ -24,6 +24,7 @@ public struct native_window_event_t
         [FieldOffset(0)] public PropertyChangedData property_changed;
         [FieldOffset(0)] public OcclusionChangedData occlusion_changed;
         [FieldOffset(0)] public DockedData docked;
+        [FieldOffset(0)] public ScaleFactorChangedData scale_factor_changed;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -60,6 +61,12 @@ public struct native_window_event_t
     public struct DockedData
     {
         public int side;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ScaleFactorChangedData
+    {
+        public double scale_factor;
     }
 }
 

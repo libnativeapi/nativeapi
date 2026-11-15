@@ -302,6 +302,17 @@ final class WindowUndockedEvent extends WindowEvent {
   final WindowId windowId;
 }
 
+final class WindowScaleFactorChangedEvent extends WindowEvent {
+  const WindowScaleFactorChangedEvent({
+    required this.windowId,
+    required this.scaleFactor,
+  });
+
+  @override
+  final WindowId windowId;
+  final double scaleFactor;
+}
+
 class Window {
   Window.fromHandle(this.nativeHandle);
   Window.borrowed(this.nativeHandle);

@@ -65,6 +65,11 @@ class ViewEvent:
             return TextFieldSubmittedEvent(raw.view_id)
         if raw.type == 5:
             return ViewUpdatingEvent(raw.view_id)
+        if raw.type == 6:
+            return ViewResizedEvent(
+                raw.view_id,
+                _geometry.Size._from_c(raw.data.resized.new_size),
+            )
         return None
 
 
@@ -96,6 +101,11 @@ class TextFieldSubmittedEvent(ViewEvent):
 @dataclass(frozen=True)
 class ViewUpdatingEvent(ViewEvent):
     pass
+
+
+@dataclass(frozen=True)
+class ViewResizedEvent(ViewEvent):
+    new_size: _geometry.Size
 
 
 class View(_rt.NativeObject):
@@ -310,6 +320,14 @@ class View(_rt.NativeObject):
         raw = _C.native_view_get_tooltip(self._handle)
         return _rt.take_optional_str(raw)
 
+    def set_accessibility_label(self, label: str | None) -> None:
+        _C.native_view_set_accessibility_label(self._handle, _rt.encode_optional(label))
+
+    @property
+    def accessibility_label(self) -> str | None:
+        raw = _C.native_view_get_accessibility_label(self._handle)
+        return _rt.take_optional_str(raw)
+
     def focus(self) -> None:
         _C.native_view_focus(self._handle)
 
@@ -361,6 +379,10 @@ class View(_rt.NativeObject):
     @tooltip.setter
     def tooltip(self, value: str | None) -> None:
         self.set_tooltip(value)
+
+    @accessibility_label.setter
+    def accessibility_label(self, value: str | None) -> None:
+        self.set_accessibility_label(value)
 
     def add_listener(self, callback: Callable[[ViewEvent], None]) -> int:
         """Calls `callback` with every ViewEvent this View emits.
@@ -430,6 +452,22 @@ class Label(View):
         raw = _C.native_label_get_font_size(self._handle)
         return raw
 
+    def set_font_family(self, family: str | None) -> None:
+        _C.native_label_set_font_family(self._handle, _rt.encode_optional(family))
+
+    @property
+    def font_family(self) -> str | None:
+        raw = _C.native_label_get_font_family(self._handle)
+        return _rt.take_optional_str(raw)
+
+    def set_font_weight(self, weight: int) -> None:
+        _C.native_label_set_font_weight(self._handle, weight)
+
+    @property
+    def font_weight(self) -> int:
+        raw = _C.native_label_get_font_weight(self._handle)
+        return raw
+
     def set_text_alignment(self, alignment: TextAlignment) -> None:
         _C.native_label_set_text_alignment(self._handle, int(alignment))
 
@@ -449,6 +487,14 @@ class Label(View):
     @font_size.setter
     def font_size(self, value: float) -> None:
         self.set_font_size(value)
+
+    @font_family.setter
+    def font_family(self, value: str | None) -> None:
+        self.set_font_family(value)
+
+    @font_weight.setter
+    def font_weight(self, value: int) -> None:
+        self.set_font_weight(value)
 
     @text_alignment.setter
     def text_alignment(self, value: TextAlignment) -> None:
@@ -478,9 +524,45 @@ class Button(View):
         raw = _C.native_button_get_text(self._handle)
         return _rt.take_str(raw)
 
+    def set_font_size(self, size: float) -> None:
+        _C.native_button_set_font_size(self._handle, size)
+
+    @property
+    def font_size(self) -> float:
+        raw = _C.native_button_get_font_size(self._handle)
+        return raw
+
+    def set_font_family(self, family: str | None) -> None:
+        _C.native_button_set_font_family(self._handle, _rt.encode_optional(family))
+
+    @property
+    def font_family(self) -> str | None:
+        raw = _C.native_button_get_font_family(self._handle)
+        return _rt.take_optional_str(raw)
+
+    def set_font_weight(self, weight: int) -> None:
+        _C.native_button_set_font_weight(self._handle, weight)
+
+    @property
+    def font_weight(self) -> int:
+        raw = _C.native_button_get_font_weight(self._handle)
+        return raw
+
     @text.setter
     def text(self, value: str) -> None:
         self.set_text(value)
+
+    @font_size.setter
+    def font_size(self, value: float) -> None:
+        self.set_font_size(value)
+
+    @font_family.setter
+    def font_family(self, value: str | None) -> None:
+        self.set_font_family(value)
+
+    @font_weight.setter
+    def font_weight(self, value: int) -> None:
+        self.set_font_weight(value)
 
 
 class TextField(View):
@@ -520,6 +602,22 @@ class TextField(View):
     @property
     def font_size(self) -> float:
         raw = _C.native_text_field_get_font_size(self._handle)
+        return raw
+
+    def set_font_family(self, family: str | None) -> None:
+        _C.native_text_field_set_font_family(self._handle, _rt.encode_optional(family))
+
+    @property
+    def font_family(self) -> str | None:
+        raw = _C.native_text_field_get_font_family(self._handle)
+        return _rt.take_optional_str(raw)
+
+    def set_font_weight(self, weight: int) -> None:
+        _C.native_text_field_set_font_weight(self._handle, weight)
+
+    @property
+    def font_weight(self) -> int:
+        raw = _C.native_text_field_get_font_weight(self._handle)
         return raw
 
     def set_text_alignment(self, alignment: TextAlignment) -> None:
@@ -565,6 +663,14 @@ class TextField(View):
         raw = _C.native_text_field_is_multiline(self._handle)
         return raw
 
+    def set_bordered(self, is_bordered: bool) -> None:
+        _C.native_text_field_set_bordered(self._handle, is_bordered)
+
+    @property
+    def is_bordered(self) -> bool:
+        raw = _C.native_text_field_is_bordered(self._handle)
+        return raw
+
     @text.setter
     def text(self, value: str) -> None:
         self.set_text(value)
@@ -576,6 +682,14 @@ class TextField(View):
     @font_size.setter
     def font_size(self, value: float) -> None:
         self.set_font_size(value)
+
+    @font_family.setter
+    def font_family(self, value: str | None) -> None:
+        self.set_font_family(value)
+
+    @font_weight.setter
+    def font_weight(self, value: int) -> None:
+        self.set_font_weight(value)
 
     @text_alignment.setter
     def text_alignment(self, value: TextAlignment) -> None:

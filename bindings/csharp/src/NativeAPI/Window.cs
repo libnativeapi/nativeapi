@@ -98,6 +98,7 @@ public abstract record WindowEvent
     public sealed record OcclusionChanged(uint WindowId, WindowOcclusionState OcclusionState) : WindowEvent;
     public sealed record Docked(uint WindowId, WindowDockSide Side) : WindowEvent;
     public sealed record Undocked(uint WindowId) : WindowEvent;
+    public sealed record ScaleFactorChanged(uint WindowId, double ScaleFactor) : WindowEvent;
 
     internal static WindowEvent? FromRaw(in native_window_event_t raw)
     {
@@ -119,6 +120,7 @@ public abstract record WindowEvent
             case 13: return new OcclusionChanged(raw.window_id, (WindowOcclusionState)raw.data.occlusion_changed.occlusion_state);
             case 14: return new Docked(raw.window_id, (WindowDockSide)raw.data.docked.side);
             case 15: return new Undocked(raw.window_id);
+            case 16: return new ScaleFactorChanged(raw.window_id, raw.data.scale_factor_changed.scale_factor);
             default: return null;
         }
     }
