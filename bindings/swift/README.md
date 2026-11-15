@@ -71,6 +71,32 @@ system libraries.
 Use a Swift version compatible with the installed MSVC headers. Swift 6.4.2
 has been used for the Windows source build.
 
+## Build for HarmonyOS PC
+
+Use Swift 6.4.2 with its ARM64 Static Linux SDK and DevEco Studio's HarmonyOS
+NDK (API 26 is used by the SwiftUIPort HAP). Build the generated Swift binding
+against the extracted ARM64 sysroot:
+
+```sh
+bash scripts/build-ohos.sh /path/to/musl-1.2.5.sdk/aarch64 /path/to/swift-objects
+```
+
+The script produces `NativeAPI.o` and `NativeAPI.swiftmodule`. Set
+`SWIFT_TOOLCHAIN_BIN` to the Swift 6.4.2 toolchain's `usr/bin` to use it
+without Swiftly. Pass the output directory and `Sources/CNativeAPI/include`
+as Swift import paths when compiling the consumer.
+
+In the HAP's CMake project, add `bindings/swift/ohos` with `add_subdirectory`
+and link `nativeapi_swift_ohos`, `NativeAPI.o`, and the Swift runtime into the
+UIAbility's shared library. CMake builds the core with the HarmonyOS NDK.
+The N-API module calls `nativeapi::ohos::Initialize(env)` on the ArkTS UI
+thread before using NativeAPI. Attach the `UIAbilityContext` with
+`AttachContext` in `onCreate` and release it with `DetachContext` in
+`onDestroy`. Include `ohos_runtime.h` for these functions.
+
+This workflow uses the Static Linux SDK for Swift objects and the HarmonyOS
+NDK for the native host. The desktop SwiftPM workflow above uses the host SDK.
+
 ## API conventions
 
 - **Constructors and factories** are static, and return `nil` when the native
