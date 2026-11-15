@@ -90,10 +90,10 @@ View                      具体类：无外观的容器，唯一能有子 View 
 
 | 类 | 自己的方法 | 自己的事件 | macOS | Windows | Linux (GTK 3) |
 |---|---|---|---|---|---|
-| `View` | 树、几何、布局、可见 / 启用 / 背景 / tooltip / 焦点（§6） | `ViewFocusedEvent`、`ViewBlurredEvent` | 翻转坐标的 `NSView` 子类 | 注册一个窗口类的子 `HWND` | `GtkFixed` |
-| `Label` | `Text`、`TextColor`、`FontSize`、`TextAlignment` | — | 不可编辑 `NSTextField` | `STATIC` | `GtkLabel` |
-| `Button` | `Text` | `ButtonClickedEvent` | `NSButton`（push） | `BUTTON` / `BS_PUSHBUTTON` | `GtkButton` |
-| `TextField` | `Text`、`TextColor`、`FontSize`、`TextAlignment`、`Placeholder`、`Editable`、`Secure`、`Multiline` | `TextFieldChangedEvent`、`TextFieldSubmittedEvent` | `NSTextField` / `NSSecureTextField` / `NSTextView` | `EDIT` | `GtkEntry` / `GtkTextView` |
+| `View` | 树、几何、布局、可见 / 启用 / 背景 / tooltip / accessibilityLabel / 焦点（§6） | `ViewFocusedEvent`、`ViewBlurredEvent`、`ViewResizedEvent`、`ViewUpdatingEvent` | 翻转坐标的 `NSView` 子类 | 注册一个窗口类的子 `HWND` | `GtkFixed` |
+| `Label` | `Text`、`TextColor`、`FontSize`、`FontFamily`、`FontWeight`、`TextAlignment` | — | 不可编辑 `NSTextField` | `STATIC` | `GtkLabel` |
+| `Button` | `Text`、`FontSize`、`FontFamily`、`FontWeight` | `ButtonClickedEvent` | `NSButton`（push） | `BUTTON` / `BS_PUSHBUTTON` | `GtkButton` |
+| `TextField` | `Text`、`TextColor`、`FontSize`、`FontFamily`、`FontWeight`、`TextAlignment`、`Placeholder`、`Editable`、`Secure`、`Multiline`、`Bordered` | `TextFieldChangedEvent`、`TextFieldSubmittedEvent` | `NSTextField` / `NSSecureTextField` / `NSTextView` | `EDIT` | `GtkEntry` / `GtkTextView` |
 | `ImageView` | `Image` | — | `NSImageView` | `STATIC` / `SS_BITMAP` | `GtkImage` |
 
 命名说明：
@@ -274,6 +274,16 @@ class ViewBlurredEvent : public ViewEvent {
   std::string GetTypeName() const override { return "ViewBlurredEvent"; }
 };
 
+class ViewResizedEvent : public ViewEvent {
+ public:
+  ViewResizedEvent(ViewId view_id, Size new_size)
+      : ViewEvent(view_id), new_size_(new_size) {}
+  Size GetNewSize() const { return new_size_; }
+  std::string GetTypeName() const override { return "ViewResizedEvent"; }
+ private:
+  Size new_size_;
+};
+
 /** A Button was activated by mouse or keyboard. */
 class ButtonClickedEvent : public ViewEvent {
  public:
@@ -391,6 +401,8 @@ class View : public EventEmitter<ViewEvent>,
   Color GetBackgroundColor() const;
   void SetTooltip(const std::optional<std::string>& tooltip);
   std::optional<std::string> GetTooltip() const;
+  void SetAccessibilityLabel(const std::optional<std::string>& label);
+  std::optional<std::string> GetAccessibilityLabel() const;
   void Focus();
   void Blur();
   bool IsFocused() const;
@@ -426,6 +438,10 @@ class Label : public View {
   /** 0 restores the platform default size. */
   void SetFontSize(double size);
   double GetFontSize() const;
+  void SetFontFamily(const std::optional<std::string>& family);
+  std::optional<std::string> GetFontFamily() const;
+  void SetFontWeight(int weight);
+  int GetFontWeight() const;
   void SetTextAlignment(TextAlignment alignment);
   TextAlignment GetTextAlignment() const;
 };
@@ -438,6 +454,12 @@ class Button : public View {
 
   void SetText(const std::string& text);
   std::string GetText() const;
+  void SetFontSize(double size);
+  double GetFontSize() const;
+  void SetFontFamily(const std::optional<std::string>& family);
+  std::optional<std::string> GetFontFamily() const;
+  void SetFontWeight(int weight);
+  int GetFontWeight() const;
 };
 
 /** Text entry. Emits TextFieldChangedEvent and TextFieldSubmittedEvent. */
@@ -452,6 +474,10 @@ class TextField : public View {
   Color GetTextColor() const;
   void SetFontSize(double size);
   double GetFontSize() const;
+  void SetFontFamily(const std::optional<std::string>& family);
+  std::optional<std::string> GetFontFamily() const;
+  void SetFontWeight(int weight);
+  int GetFontWeight() const;
   void SetTextAlignment(TextAlignment alignment);
   TextAlignment GetTextAlignment() const;
   void SetPlaceholder(const std::optional<std::string>& placeholder);
@@ -464,6 +490,9 @@ class TextField : public View {
   /** Multi-line text; Enter inserts a newline instead of emitting TextFieldSubmittedEvent. */
   void SetMultiline(bool is_multiline);
   bool IsMultiline() const;
+  /** Standard system border/bezel (true by default; false for chromeless host embedding). */
+  void SetBordered(bool is_bordered);
+  bool IsBordered() const;
 };
 
 /** Shows an Image, scaled to fit while keeping its aspect ratio. */
@@ -655,9 +684,6 @@ HWND 容器，反之亦然。所以 `InsertSubview` 在共享代码里直接拒�
 - **焦点事件的覆盖面**：macOS 只有 `TextField` 发 `ViewFocusedEvent` / `ViewBlurredEvent`
   （成为第一响应者 / 字段编辑器结束时），按钮默认不接受键盘焦点所以不发；Windows / Linux
   按各自控件的焦点通知发，按钮也发。
-- **没有视图级的尺寸变化事件**：Linux 上 `WindowResizedEvent` 早于 GTK 给内容分配尺寸，
-  在它的监听器里读到的子视图 frame 还是旧的。需要「布局完成」的时机再加
-  `ViewResizedEvent`。
 - **后续控件**，按需要加、每个一步：`Checkbox`（`SetChecked` / `CheckboxToggledEvent`）、
   `Dropdown`（`SetItems` / `SetSelectedIndex` / `DropdownSelectionChangedEvent`）、
   `Slider`（`SetMinimumValue` / `SetMaximumValue` / `SetValue` / `SliderValueChangedEvent`）、
@@ -669,9 +695,7 @@ HWND 容器，反之亦然。所以 `InsertSubview` 在共享代码里直接拒�
   里加实现。
 - **`Switch` / `RadioGroup`**：Windows 经典控件没有原生 switch；radio 需要分组语义。
   等 WinUI3 backend 或有人要。
-- **可访问性标签**：`SetAccessibilityLabel` 在三平台都便宜，但 `AccessibilityManager`
-  的形态未定（[managers.md](managers.md) §5），先不引入第二处 accessibility 词汇。
-- **`Text*` 四属性的重复声明**：`Checkbox` 等带文本的控件加进来时，重新评估抽
+- **`Text*` / `Font*` 属性的重复声明**：`Checkbox` 等带文本的控件加进来时，重新评估抽
   `TextView` 中间层是否值得让句柄表的基类链多走一级（它已支持到 4 层）。
 
 ## 10. 检查单（再加控件时用）
