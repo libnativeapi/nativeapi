@@ -43,7 +43,13 @@ final class NativeAPITests: XCTestCase {
   func testKeyboardAcceleratorRoundTrip() {
     let accelerator = KeyboardAccelerator(modifiers: .meta, key: "k")
     XCTAssertFalse(accelerator.isEmpty)
-    XCTAssertEqual(accelerator.toString(), "Cmd+k")
+    #if os(macOS)
+      XCTAssertEqual(accelerator.toString(), "Cmd+k")
+    #elseif os(Windows)
+      XCTAssertEqual(accelerator.toString(), "Win+k")
+    #else
+      XCTAssertEqual(accelerator.toString(), "Super+k")
+    #endif
 
     let combined = KeyboardAccelerator(modifiers: [.meta, .shift], key: "k")
     XCTAssertEqual(combined.modifiers.rawValue, 9)
@@ -52,19 +58,42 @@ final class NativeAPITests: XCTestCase {
 
   @MainActor
   func testRunLoopTimerFiresAndInvalidatesReentrantly() {
-    let fired = expectation(description: "RunLoopTimer fires and stops cleanly")
     var ticks = 0
+    var mainQueueRan = false
     var timer: RunLoopTimer?
-    timer = RunLoopTimer(milliseconds: 10) {
-      ticks += 1
-      if ticks == 2 {
-        timer?.invalidate()
-        fired.fulfill()
+    #if os(macOS)
+      let fired = expectation(description: "RunLoopTimer fires and stops cleanly")
+      timer = RunLoopTimer(milliseconds: 10) {
+        ticks += 1
+        if ticks == 2 {
+          timer?.invalidate()
+          DispatchQueue.main.async {
+            mainQueueRan = true
+            fired.fulfill()
+          }
+        }
       }
-    }
-    wait(for: [fired], timeout: 2.0)
-    RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+      wait(for: [fired], timeout: 2.0)
+      RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+    #else
+      var stopper: RunLoopTimer?
+      timer = RunLoopTimer(milliseconds: 10) {
+        ticks += 1
+        if ticks == 2 {
+          timer?.invalidate()
+          DispatchQueue.main.async {
+            mainQueueRan = true
+          }
+          stopper = RunLoopTimer(milliseconds: 30) {
+            stopper?.invalidate()
+            Application.shared.quit(0)
+          }
+        }
+      }
+      XCTAssertEqual(Application.shared.run(), 0)
+    #endif
     XCTAssertEqual(ticks, 2)
+    XCTAssertTrue(mainQueueRan)
   }
 
   @MainActor
