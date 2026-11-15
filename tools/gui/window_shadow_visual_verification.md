@@ -1,5 +1,9 @@
 # Linux shadow visuals — window_manager #594
 
+The RGBA XWayland and non-CSD Wayland size failures recorded below were fixed in
+the [2026-11-15 follow-up](window_shadow_size_verification.md). This report retains
+the original 2026-11-14 results for comparison.
+
 Verified on 2026-11-14 with KWin 6.8.1, Breeze, GTK 3.24.52 and a private
 1920×1000 output configured to 125% through `kscreen-doctor`. The compositor runs
 on the `omarchy` Linux host with software rendering, independently of its logged-on

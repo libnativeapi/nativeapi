@@ -26,6 +26,12 @@ extern "C" G_MODULE_EXPORT int shadow_test_inspect(int fitted) {
   const int h = gtk_widget_get_allocated_height(content);
   const int sw = gtk_widget_get_allocated_width(widget);
   const int sh = gtk_widget_get_allocated_height(widget);
+  int gw = 0, gh = 0;
+  gtk_window_get_size(shadow_test_window, &gw, &gh);
+  g_print("GTK size=%d,%d border=%u csd=%d decorated=%d\n", gw, gh,
+          gtk_container_get_border_width(GTK_CONTAINER(widget)),
+          gtk_style_context_has_class(gtk_widget_get_style_context(widget), "csd"),
+          gtk_window_get_decorated(shadow_test_window));
   int errors = 0;
   g_print("SURFACE depth=%d alpha=%d content=%d,%d,%d,%d allocation=%d,%d\n",
           gdk_visual_get_depth(gdk_window_get_visual(surface)), alpha, x,y,w,h,sw,sh);

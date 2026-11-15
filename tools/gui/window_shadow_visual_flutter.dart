@@ -47,7 +47,16 @@ Future<void> main() async {
     await settle();
     failures += inspect(0);
   }
-  for (var cycle = 0; cycle < 2; cycle++) {
+  for (var cycle = 0; cycle < 3; cycle++) {
+    window.hide();
+    window.show();
+    await settle();
+    failures += inspect(0);
+  }
+  final maximizeCycles = Platform.environment['WM_SKIP_MAXIMIZE'] == '1'
+      ? 0
+      : 2;
+  for (var cycle = 0; cycle < maximizeCycles; cycle++) {
     window.maximize();
     await settle();
     failures += inspect(1);
