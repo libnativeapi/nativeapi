@@ -51,10 +51,12 @@ public final class Application: Sendable {
   private init() {}
 
   public func run() -> CInt {
+    native_swift_install_main_queue()
     return native_application_run()
   }
 
   public func runWithWindow(_ window: Window?) -> CInt {
+    native_swift_install_main_queue()
     return native_application_run_with_window(window?.nativeHandle ?? 0)
   }
 

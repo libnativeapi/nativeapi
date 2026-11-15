@@ -49,4 +49,21 @@ final class NativeAPITests: XCTestCase {
     XCTAssertEqual(combined.modifiers.rawValue, 9)
     XCTAssertTrue(combined.toString()?.contains("Shift") == true)
   }
+
+  @MainActor
+  func testRunLoopTimerFiresAndInvalidatesReentrantly() {
+    let fired = expectation(description: "RunLoopTimer fires and stops cleanly")
+    var ticks = 0
+    var timer: RunLoopTimer?
+    timer = RunLoopTimer(milliseconds: 10) {
+      ticks += 1
+      if ticks == 2 {
+        timer?.invalidate()
+        fired.fulfill()
+      }
+    }
+    wait(for: [fired], timeout: 2.0)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+    XCTAssertEqual(ticks, 2)
+  }
 }

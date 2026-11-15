@@ -11,7 +11,8 @@ sdk="$(cd "$1" && pwd)"
 mkdir -p "$2"
 output="$(cd "$2" && pwd)"
 resources="$sdk/usr/lib/swift_static"
-if [[ ! -d "$resources/linux-static" ]]; then
+libraries="$resources/linux-static"
+if [[ ! -d "$libraries" ]]; then
   echo "Expected the ARM64 sysroot from the Swift Static Linux SDK." >&2
   exit 1
 fi
@@ -26,9 +27,11 @@ fi
 
 if [[ -n "${SWIFT_TOOLCHAIN_BIN:-}" ]]; then
   swiftc=("$SWIFT_TOOLCHAIN_BIN/swiftc")
+  ar=("$SWIFT_TOOLCHAIN_BIN/llvm-ar")
   toolchain=()
 else
   swiftc=(swiftly run swiftc)
+  ar=(swiftly run llvm-ar)
   toolchain=(+6.4.2)
 fi
 
@@ -43,3 +46,15 @@ while IFS= read -r -d '' source; do sources+=("$source"); done \
   -I "$binding/Sources/CNativeAPI/include" -emit-object -emit-module -module-name NativeAPI \
   -emit-module-path "$output/NativeAPI.swiftmodule" -o "$output/NativeAPI.o" \
   "${sources[@]}" ${toolchain[@]+"${toolchain[@]}"}
+
+# Stage the Swift/Foundation static archives and strip the local-exec TLS
+# exception object so the resulting archives link cleanly into an OHOS .so.
+for name in swiftCore swift_Concurrency swift_StringProcessing swift_RegexParser \
+  swiftMusl swiftSynchronization swiftDispatch dispatch BlocksRuntime \
+  Foundation FoundationEssentials FoundationInternationalization CoreFoundation \
+  _FoundationCShims _FoundationCollections _FoundationICU; do
+  cp "$libraries/lib$name.a" "$output/"
+done
+cp "$libraries/aarch64/swiftrt.o" "$sdk/usr/lib/libc++.a" "$sdk/usr/lib/libc++abi.a" \
+  "$sdk/usr/lib/libfts.a" "$output/"
+"${ar[@]}" d "$output/libc++abi.a" cxa_exception_storage.cpp.o ${toolchain[@]+"${toolchain[@]}"}

@@ -730,6 +730,9 @@ fn generate_swift_method(
     let body_indent = format!("{indent}  ");
 
     writeln!(out, "{indent}public {declaration} {{").unwrap();
+    if class.name == "Application" && (method.name == "Run" || method.name == "RunWithWindow") {
+        writeln!(out, "{body_indent}native_swift_install_main_queue()").unwrap();
+    }
     render_param_bindings(out, api, &method.params, prefix, &body_indent);
 
     let symbol = c_method_symbol(prefix, class, method);
