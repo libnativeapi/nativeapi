@@ -2061,6 +2061,8 @@ pub const NATIVE_APPLICATION_EVENT_TYPE_EXITING: native_application_event_type_t
 pub const NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED: native_application_event_type_t = 2;
 pub const NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED: native_application_event_type_t = 3;
 pub const NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED: native_application_event_type_t = 4;
+pub const NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED: native_application_event_type_t =
+    5;
 #[doc = " Which concrete ApplicationEvent arrived."]
 pub type native_application_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One ApplicationEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -2075,6 +2077,7 @@ pub struct native_application_event_t {
 pub union native_application_event_t__bindgen_ty_1 {
     pub exiting: native_application_event_t__bindgen_ty_1__bindgen_ty_1,
     pub quit_requested: native_application_event_t__bindgen_ty_1__bindgen_ty_2,
+    pub system_brightness_changed: native_application_event_t__bindgen_ty_1__bindgen_ty_3,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -2085,6 +2088,20 @@ pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_1 {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_2 {
     pub request: native_event_request_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_3 {
+    pub brightness: native_brightness_t,
+}
+impl Default for native_application_event_t__bindgen_ty_1__bindgen_ty_3 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
 }
 impl Default for native_application_event_t__bindgen_ty_1 {
     fn default() -> Self {
@@ -2155,6 +2172,9 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_application_set_brightness(brightness: native_brightness_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_application_get_system_brightness() -> native_brightness_t;
 }
 unsafe extern "C" {
     pub fn native_application_set_menu_bar(menu: native_menu_t) -> bool;

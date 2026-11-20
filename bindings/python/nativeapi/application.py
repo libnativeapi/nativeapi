@@ -39,6 +39,10 @@ class ApplicationEvent:
             return ApplicationQuitRequestedEvent(
                 _event_request.EventRequest._borrowed(raw.data.quit_requested.request),
             )
+        if raw.type == 5:
+            return ApplicationSystemBrightnessChangedEvent(
+                _rt.to_enum(Brightness, raw.data.system_brightness_changed.brightness),
+            )
         return None
 
 
@@ -65,6 +69,11 @@ class ApplicationDeactivatedEvent(ApplicationEvent):
 @dataclass(frozen=True)
 class ApplicationQuitRequestedEvent(ApplicationEvent):
     request: _event_request.EventRequest | None
+
+
+@dataclass(frozen=True)
+class ApplicationSystemBrightnessChangedEvent(ApplicationEvent):
+    brightness: Brightness
 
 
 class Application:
@@ -152,6 +161,11 @@ class Application:
     def set_brightness(brightness: Brightness) -> bool:
         raw = _C.native_application_set_brightness(int(brightness))
         return raw
+
+    @staticmethod
+    def get_system_brightness() -> Brightness:
+        raw = _C.native_application_get_system_brightness()
+        return _rt.to_enum(Brightness, raw)
 
     @staticmethod
     def set_menu_bar(menu: _menu.Menu | None) -> bool:

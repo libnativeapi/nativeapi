@@ -19,6 +19,7 @@ public struct native_application_event_t
     {
         [FieldOffset(0)] public ExitingData exiting;
         [FieldOffset(0)] public QuitRequestedData quit_requested;
+        [FieldOffset(0)] public SystemBrightnessChangedData system_brightness_changed;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -31,6 +32,12 @@ public struct native_application_event_t
     public struct QuitRequestedData
     {
         public ulong request;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemBrightnessChangedData
+    {
+        public int brightness;
     }
 }
 
@@ -86,6 +93,9 @@ public static partial class Interop
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_application_show();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int native_application_get_system_brightness();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern int native_application_run();

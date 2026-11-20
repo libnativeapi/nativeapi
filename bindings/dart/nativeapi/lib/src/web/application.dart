@@ -56,6 +56,12 @@ final class ApplicationQuitRequestedEvent extends ApplicationEvent {
   final EventRequest request;
 }
 
+final class ApplicationSystemBrightnessChangedEvent extends ApplicationEvent {
+  const ApplicationSystemBrightnessChangedEvent({required this.brightness});
+
+  final Brightness brightness;
+}
+
 class Application {
   const Application._();
 
@@ -86,6 +92,8 @@ class Application {
   bool setBadgeLabel(String label) => unsupported();
 
   bool setBrightness(Brightness brightness) => unsupported();
+
+  Brightness getSystemBrightness() => unsupported();
 
   bool setMenuBar(Menu? menu) => unsupported();
 

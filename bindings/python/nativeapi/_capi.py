@@ -286,6 +286,10 @@ class native_application_event_quit_requested_t(Structure):
     pass
 
 
+class native_application_event_system_brightness_changed_t(Structure):
+    pass
+
+
 class native_application_event_data_t(Union):
     pass
 
@@ -646,9 +650,13 @@ native_application_event_exiting_t._fields_ = [
 native_application_event_quit_requested_t._fields_ = [
     ("request", c_uint64),
 ]
+native_application_event_system_brightness_changed_t._fields_ = [
+    ("brightness", c_int),
+]
 native_application_event_data_t._fields_ = [
     ("exiting", native_application_event_exiting_t),
     ("quit_requested", native_application_event_quit_requested_t),
+    ("system_brightness_changed", native_application_event_system_brightness_changed_t),
 ]
 native_application_event_t._fields_ = [
     ("type", c_int),
@@ -4501,6 +4509,12 @@ native_application_set_brightness = function(
     c_bool,
     [
         c_int,
+    ],
+)
+native_application_get_system_brightness = function(
+    "native_application_get_system_brightness",
+    c_int,
+    [
     ],
 )
 native_application_set_menu_bar = function(

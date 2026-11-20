@@ -177,6 +177,17 @@ napi_value Js_native_application_set_brightness(napi_env env, napi_callback_info
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_application_get_system_brightness(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_application_get_system_brightness(); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
 napi_value Js_native_application_set_menu_bar(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -284,6 +295,7 @@ void RegisterApplication(napi_env env, napi_value exports) {
   Export(env, exports, "native_application_set_progress_bar", Js_native_application_set_progress_bar);
   Export(env, exports, "native_application_set_badge_label", Js_native_application_set_badge_label);
   Export(env, exports, "native_application_set_brightness", Js_native_application_set_brightness);
+  Export(env, exports, "native_application_get_system_brightness", Js_native_application_get_system_brightness);
   Export(env, exports, "native_application_set_menu_bar", Js_native_application_set_menu_bar);
   Export(env, exports, "native_application_get_primary_window", Js_native_application_get_primary_window);
   Export(env, exports, "native_application_set_primary_window", Js_native_application_set_primary_window);

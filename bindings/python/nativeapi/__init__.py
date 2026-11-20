@@ -22,6 +22,7 @@ from .application import (
     ApplicationExitingEvent,
     ApplicationQuitRequestedEvent,
     ApplicationStartedEvent,
+    ApplicationSystemBrightnessChangedEvent,
     Brightness,
 )
 from .clipboard import (
@@ -249,6 +250,7 @@ __all__ = [
     "ApplicationExitingEvent",
     "ApplicationQuitRequestedEvent",
     "ApplicationStartedEvent",
+    "ApplicationSystemBrightnessChangedEvent",
     "Brightness",
     "Button",
     "ButtonClickedEvent",

@@ -803,6 +803,10 @@ inline Value ToValue(const native_application_event_t& event) {
       result.Set("type", Value::String("quitRequested"));
       result.Set("request", Value::BigInt(event.data.quit_requested.request));
       break;
+    case NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED:
+      result.Set("type", Value::String("systemBrightnessChanged"));
+      result.Set("brightness", Value::Number(static_cast<double>(event.data.system_brightness_changed.brightness)));
+      break;
     default:
       return Value::Null();
   }

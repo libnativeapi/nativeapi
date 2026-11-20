@@ -6374,19 +6374,21 @@ const (
 type ApplicationEventType int32
 
 const (
-	ApplicationEventStarted       ApplicationEventType = 0
-	ApplicationEventExiting       ApplicationEventType = 1
-	ApplicationEventActivated     ApplicationEventType = 2
-	ApplicationEventDeactivated   ApplicationEventType = 3
-	ApplicationEventQuitRequested ApplicationEventType = 4
+	ApplicationEventStarted                 ApplicationEventType = 0
+	ApplicationEventExiting                 ApplicationEventType = 1
+	ApplicationEventActivated               ApplicationEventType = 2
+	ApplicationEventDeactivated             ApplicationEventType = 3
+	ApplicationEventQuitRequested           ApplicationEventType = 4
+	ApplicationEventSystemBrightnessChanged ApplicationEventType = 5
 )
 
 // ApplicationEvent copies an event payload. Handle fields are borrowed until the callback returns.
 // Only fields belonging to Type are populated.
 type ApplicationEvent struct {
-	Type     ApplicationEventType
-	ExitCode int32
-	Request  *EventRequest
+	Type       ApplicationEventType
+	ExitCode   int32
+	Request    *EventRequest
+	Brightness Brightness
 }
 
 func fromCApplicationEvent(raw *C.native_application_event_t) ApplicationEvent {
@@ -6399,6 +6401,8 @@ func fromCApplicationEvent(raw *C.native_application_event_t) ApplicationEvent {
 	case ApplicationEventDeactivated:
 	case ApplicationEventQuitRequested:
 		value.Request = wrapEventRequest(uint64(C.go_native_application_event_t_quit_requested_Request(raw)), true)
+	case ApplicationEventSystemBrightnessChanged:
+		value.Brightness = Brightness(C.go_native_application_event_t_system_brightness_changed_Brightness(raw))
 	}
 	return value
 }
@@ -6521,6 +6525,12 @@ func (a application) SetBrightness(brightness Brightness) error {
 		return nativeError("Application.SetBrightness")
 	}
 	return nil
+}
+
+// SystemBrightness invokes the native GetSystemBrightness operation.
+func (a application) SystemBrightness() Brightness {
+	result := C.native_application_get_system_brightness()
+	return Brightness(result)
 }
 
 // SetMenuBar invokes the native SetMenuBar operation.

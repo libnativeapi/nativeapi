@@ -18,7 +18,8 @@ export type ApplicationEvent =
   | { type: "exiting"; exitCode: number }
   | { type: "activated" }
   | { type: "deactivated" }
-  | { type: "quitRequested"; request: EventRequest | null };
+  | { type: "quitRequested"; request: EventRequest | null }
+  | { type: "systemBrightnessChanged"; brightness: Brightness };
 
 export class Application {
   private constructor() {}
@@ -76,6 +77,10 @@ export class Application {
 
   static setBrightness(brightness: Brightness): boolean {
     return native.native_application_set_brightness(brightness);
+  }
+
+  static getSystemBrightness(): Brightness {
+    return native.native_application_get_system_brightness();
   }
 
   static setMenuBar(menu: Menu | null): boolean {

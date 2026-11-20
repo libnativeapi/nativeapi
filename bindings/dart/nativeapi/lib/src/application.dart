@@ -79,6 +79,17 @@ sealed class ApplicationEvent {
         request: EventRequest.borrowed(raw.data.quit_requested.request),
       );
     }
+    if (raw.typeAsInt ==
+        c
+            .native_application_event_type_t
+            .NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED
+            .value) {
+      return ApplicationSystemBrightnessChangedEvent(
+        brightness: Brightness.fromValue(
+          raw.data.system_brightness_changed.brightnessAsInt,
+        ),
+      );
+    }
     return null;
   }
 }
@@ -105,6 +116,12 @@ final class ApplicationQuitRequestedEvent extends ApplicationEvent {
   const ApplicationQuitRequestedEvent({required this.request});
 
   final EventRequest request;
+}
+
+final class ApplicationSystemBrightnessChangedEvent extends ApplicationEvent {
+  const ApplicationSystemBrightnessChangedEvent({required this.brightness});
+
+  final Brightness brightness;
 }
 
 class Application {
@@ -169,6 +186,11 @@ class Application {
 
   bool setBrightness(Brightness brightness) {
     return c.native_application_set_brightness(brightness.raw);
+  }
+
+  Brightness getSystemBrightness() {
+    final raw = c.native_application_get_system_brightness();
+    return Brightness.fromValue(raw.value);
   }
 
   bool setMenuBar(Menu? menu) {

@@ -103,6 +103,17 @@ external native_window_list_t native_application_get_all_windows();
 @ffi.Native<native_window_t Function()>()
 external int native_application_get_primary_window();
 
+@ffi.Native<ffi.UnsignedInt Function()>(
+  symbol: 'native_application_get_system_brightness',
+)
+external int _native_application_get_system_brightness();
+
+native_brightness_t native_application_get_system_brightness() {
+  return native_brightness_t.fromValue(
+    _native_application_get_system_brightness(),
+  );
+}
+
 @ffi.Native<ffi.Bool Function()>()
 external bool native_application_hide();
 
@@ -3806,40 +3817,40 @@ final class UnnamedStruct$1 extends ffi.Struct {
 }
 
 final class UnnamedStruct$10 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> argument;
+  @native_menu_item_id_t()
+  external int item_id;
 
   static ffi.Pointer<UnnamedStruct$10> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> argument,
-  }) => $allocator<UnnamedStruct$10>()..ref.argument = argument;
+    required int item_id,
+  }) => $allocator<UnnamedStruct$10>()..ref.item_id = item_id;
 }
 
 final class UnnamedStruct$11 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> url;
+  external ffi.Pointer<ffi.Char> argument;
 
   static ffi.Pointer<UnnamedStruct$11> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> url,
-  }) => $allocator<UnnamedStruct$11>()..ref.url = url;
+    required ffi.Pointer<ffi.Char> argument,
+  }) => $allocator<UnnamedStruct$11>()..ref.argument = argument;
 }
 
 final class UnnamedStruct$12 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> error_message;
+  external ffi.Pointer<ffi.Char> url;
 
   static ffi.Pointer<UnnamedStruct$12> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> error_message,
-  }) => $allocator<UnnamedStruct$12>()..ref.error_message = error_message;
+    required ffi.Pointer<ffi.Char> url,
+  }) => $allocator<UnnamedStruct$12>()..ref.url = url;
 }
 
 final class UnnamedStruct$13 extends ffi.Struct {
-  @native_tray_icon_id_t()
-  external int tray_icon_id;
+  external ffi.Pointer<ffi.Char> error_message;
 
   static ffi.Pointer<UnnamedStruct$13> $allocate(
     ffi.Allocator $allocator, {
-    required int tray_icon_id,
-  }) => $allocator<UnnamedStruct$13>()..ref.tray_icon_id = tray_icon_id;
+    required ffi.Pointer<ffi.Char> error_message,
+  }) => $allocator<UnnamedStruct$13>()..ref.error_message = error_message;
 }
 
 final class UnnamedStruct$14 extends ffi.Struct {
@@ -3863,51 +3874,61 @@ final class UnnamedStruct$15 extends ffi.Struct {
 }
 
 final class UnnamedStruct$16 extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> text;
+  @native_tray_icon_id_t()
+  external int tray_icon_id;
 
   static ffi.Pointer<UnnamedStruct$16> $allocate(
     ffi.Allocator $allocator, {
-    required ffi.Pointer<ffi.Char> text,
-  }) => $allocator<UnnamedStruct$16>()..ref.text = text;
+    required int tray_icon_id,
+  }) => $allocator<UnnamedStruct$16>()..ref.tray_icon_id = tray_icon_id;
 }
 
 final class UnnamedStruct$17 extends ffi.Struct {
-  external native_size_t new_size;
+  external ffi.Pointer<ffi.Char> text;
+
+  static ffi.Pointer<UnnamedStruct$17> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Char> text,
+  }) => $allocator<UnnamedStruct$17>()..ref.text = text;
 }
 
 final class UnnamedStruct$18 extends ffi.Struct {
-  external native_point_t new_position;
+  external native_size_t new_size;
 }
 
 final class UnnamedStruct$19 extends ffi.Struct {
-  external native_size_t new_size;
+  external native_point_t new_position;
 }
 
 final class UnnamedStruct$2 extends ffi.Struct {
   @ffi.UnsignedInt()
-  external int operationAsInt;
+  external int brightnessAsInt;
 
-  native_drag_operation_t get operation =>
-      native_drag_operation_t.fromValue(operationAsInt);
-  set operation(native_drag_operation_t value) => operationAsInt = value.value;
+  native_brightness_t get brightness =>
+      native_brightness_t.fromValue(brightnessAsInt);
+  set brightness(native_brightness_t value) => brightnessAsInt = value.value;
 
   static ffi.Pointer<UnnamedStruct$2> $allocate(
     ffi.Allocator $allocator, {
-    required native_drag_operation_t operation,
-  }) => $allocator<UnnamedStruct$2>()..ref.operation = operation;
+    required native_brightness_t brightness,
+  }) => $allocator<UnnamedStruct$2>()..ref.brightness = brightness;
 }
 
 final class UnnamedStruct$20 extends ffi.Struct {
-  @native_event_request_t()
-  external int request;
-
-  static ffi.Pointer<UnnamedStruct$20> $allocate(
-    ffi.Allocator $allocator, {
-    required int request,
-  }) => $allocator<UnnamedStruct$20>()..ref.request = request;
+  external native_size_t new_size;
 }
 
 final class UnnamedStruct$21 extends ffi.Struct {
+  @native_event_request_t()
+  external int request;
+
+  static ffi.Pointer<UnnamedStruct$21> $allocate(
+    ffi.Allocator $allocator, {
+    required int request,
+  }) => $allocator<UnnamedStruct$21>()..ref.request = request;
+}
+
+final class UnnamedStruct$22 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int propertyAsInt;
 
@@ -3915,13 +3936,13 @@ final class UnnamedStruct$21 extends ffi.Struct {
       native_window_property_t.fromValue(propertyAsInt);
   set property(native_window_property_t value) => propertyAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$21> $allocate(
+  static ffi.Pointer<UnnamedStruct$22> $allocate(
     ffi.Allocator $allocator, {
     required native_window_property_t property,
-  }) => $allocator<UnnamedStruct$21>()..ref.property = property;
+  }) => $allocator<UnnamedStruct$22>()..ref.property = property;
 }
 
-final class UnnamedStruct$22 extends ffi.Struct {
+final class UnnamedStruct$23 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int occlusion_stateAsInt;
 
@@ -3930,13 +3951,13 @@ final class UnnamedStruct$22 extends ffi.Struct {
   set occlusion_state(native_window_occlusion_state_t value) =>
       occlusion_stateAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$22> $allocate(
+  static ffi.Pointer<UnnamedStruct$23> $allocate(
     ffi.Allocator $allocator, {
     required native_window_occlusion_state_t occlusion_state,
-  }) => $allocator<UnnamedStruct$22>()..ref.occlusion_state = occlusion_state;
+  }) => $allocator<UnnamedStruct$23>()..ref.occlusion_state = occlusion_state;
 }
 
-final class UnnamedStruct$23 extends ffi.Struct {
+final class UnnamedStruct$24 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int sideAsInt;
 
@@ -3944,46 +3965,50 @@ final class UnnamedStruct$23 extends ffi.Struct {
       native_window_dock_side_t.fromValue(sideAsInt);
   set side(native_window_dock_side_t value) => sideAsInt = value.value;
 
-  static ffi.Pointer<UnnamedStruct$23> $allocate(
+  static ffi.Pointer<UnnamedStruct$24> $allocate(
     ffi.Allocator $allocator, {
     required native_window_dock_side_t side,
-  }) => $allocator<UnnamedStruct$23>()..ref.side = side;
+  }) => $allocator<UnnamedStruct$24>()..ref.side = side;
 }
 
-final class UnnamedStruct$24 extends ffi.Struct {
+final class UnnamedStruct$25 extends ffi.Struct {
   @ffi.Double()
   external double scale_factor;
 
-  static ffi.Pointer<UnnamedStruct$24> $allocate(
+  static ffi.Pointer<UnnamedStruct$25> $allocate(
     ffi.Allocator $allocator, {
     required double scale_factor,
-  }) => $allocator<UnnamedStruct$24>()..ref.scale_factor = scale_factor;
+  }) => $allocator<UnnamedStruct$25>()..ref.scale_factor = scale_factor;
 }
 
 final class UnnamedStruct$3 extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int operationAsInt;
+
+  native_drag_operation_t get operation =>
+      native_drag_operation_t.fromValue(operationAsInt);
+  set operation(native_drag_operation_t value) => operationAsInt = value.value;
+
+  static ffi.Pointer<UnnamedStruct$3> $allocate(
+    ffi.Allocator $allocator, {
+    required native_drag_operation_t operation,
+  }) => $allocator<UnnamedStruct$3>()..ref.operation = operation;
+}
+
+final class UnnamedStruct$4 extends ffi.Struct {
   external native_string_list_t file_paths;
 
   external ffi.Pointer<ffi.Char> text;
 }
 
-final class UnnamedStruct$4 extends ffi.Struct {
+final class UnnamedStruct$5 extends ffi.Struct {
   @ffi.UnsignedInt()
   external int modifier_keys;
 
-  static ffi.Pointer<UnnamedStruct$4> $allocate(
-    ffi.Allocator $allocator, {
-    required int modifier_keys,
-  }) => $allocator<UnnamedStruct$4>()..ref.modifier_keys = modifier_keys;
-}
-
-final class UnnamedStruct$5 extends ffi.Struct {
-  @native_menu_id_t()
-  external int menu_id;
-
   static ffi.Pointer<UnnamedStruct$5> $allocate(
     ffi.Allocator $allocator, {
-    required int menu_id,
-  }) => $allocator<UnnamedStruct$5>()..ref.menu_id = menu_id;
+    required int modifier_keys,
+  }) => $allocator<UnnamedStruct$5>()..ref.modifier_keys = modifier_keys;
 }
 
 final class UnnamedStruct$6 extends ffi.Struct {
@@ -3997,13 +4022,13 @@ final class UnnamedStruct$6 extends ffi.Struct {
 }
 
 final class UnnamedStruct$7 extends ffi.Struct {
-  @native_menu_item_id_t()
-  external int item_id;
+  @native_menu_id_t()
+  external int menu_id;
 
   static ffi.Pointer<UnnamedStruct$7> $allocate(
     ffi.Allocator $allocator, {
-    required int item_id,
-  }) => $allocator<UnnamedStruct$7>()..ref.item_id = item_id;
+    required int menu_id,
+  }) => $allocator<UnnamedStruct$7>()..ref.menu_id = menu_id;
 }
 
 final class UnnamedStruct$8 extends ffi.Struct {
@@ -4030,72 +4055,74 @@ final class UnnamedUnion extends ffi.Union {
   external UnnamedStruct exiting;
 
   external UnnamedStruct$1 quit_requested;
+
+  external UnnamedStruct$2 system_brightness_changed;
 }
 
 final class UnnamedUnion$1 extends ffi.Union {
-  external UnnamedStruct$2 ended;
+  external UnnamedStruct$3 ended;
 }
 
 final class UnnamedUnion$10 extends ffi.Union {
-  external UnnamedStruct$18 moved;
+  external UnnamedStruct$19 moved;
 
-  external UnnamedStruct$19 resized;
+  external UnnamedStruct$20 resized;
 
-  external UnnamedStruct$20 close_requested;
+  external UnnamedStruct$21 close_requested;
 
-  external UnnamedStruct$21 property_changed;
+  external UnnamedStruct$22 property_changed;
 
-  external UnnamedStruct$22 occlusion_changed;
+  external UnnamedStruct$23 occlusion_changed;
 
-  external UnnamedStruct$23 docked;
+  external UnnamedStruct$24 docked;
 
-  external UnnamedStruct$24 scale_factor_changed;
+  external UnnamedStruct$25 scale_factor_changed;
 }
 
 final class UnnamedUnion$2 extends ffi.Union {
-  external UnnamedStruct$3 dropped;
+  external UnnamedStruct$4 dropped;
 }
 
 final class UnnamedUnion$3 extends ffi.Union {
-  external UnnamedStruct$4 modifier_keys_changed;
+  external UnnamedStruct$5 modifier_keys_changed;
 }
 
 final class UnnamedUnion$4 extends ffi.Union {
-  external UnnamedStruct$5 opened;
+  external UnnamedStruct$6 opened;
 
-  external UnnamedStruct$6 closed;
+  external UnnamedStruct$7 closed;
 
-  external UnnamedStruct$7 item_clicked;
+  external UnnamedStruct$8 item_clicked;
 
-  external UnnamedStruct$8 item_submenu_opened;
+  external UnnamedStruct$9 item_submenu_opened;
 
-  external UnnamedStruct$9 item_submenu_closed;
+  external UnnamedStruct$10 item_submenu_closed;
 }
 
 final class UnnamedUnion$5 extends ffi.Union {
-  external UnnamedStruct$10 activated;
+  external UnnamedStruct$11 activated;
 }
 
 final class UnnamedUnion$6 extends ffi.Union {
-  external UnnamedStruct$11 protocol_url_received;
+  external UnnamedStruct$12 protocol_url_received;
 }
 
 final class UnnamedUnion$7 extends ffi.Union {
-  external UnnamedStruct$12 registration_failed;
+  external UnnamedStruct$13 registration_failed;
 }
 
 final class UnnamedUnion$8 extends ffi.Union {
-  external UnnamedStruct$13 clicked;
+  external UnnamedStruct$14 clicked;
 
-  external UnnamedStruct$14 right_clicked;
+  external UnnamedStruct$15 right_clicked;
 
-  external UnnamedStruct$15 double_clicked;
+  external UnnamedStruct$16 double_clicked;
 }
 
 final class UnnamedUnion$9 extends ffi.Union {
-  external UnnamedStruct$16 text_field_changed;
+  external UnnamedStruct$17 text_field_changed;
 
-  external UnnamedStruct$17 resized;
+  external UnnamedStruct$18 resized;
 }
 
 typedef native_application_event_callback_t =
@@ -4146,7 +4173,8 @@ enum native_application_event_type_t {
   NATIVE_APPLICATION_EVENT_TYPE_EXITING(1),
   NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED(2),
   NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED(3),
-  NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED(4);
+  NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED(4),
+  NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED(5);
 
   final int value;
   const native_application_event_type_t(this.value);
@@ -4158,6 +4186,7 @@ enum native_application_event_type_t {
         2 => NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED,
         3 => NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED,
         4 => NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED,
+        5 => NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED,
         _ => throw ArgumentError(
           'Unknown value for native_application_event_type_t: $value',
         ),

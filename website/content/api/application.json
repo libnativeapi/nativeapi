@@ -765,6 +765,55 @@
           }
         },
         {
+          "key": "Application::GetSystemBrightness",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the operating system's current light or dark appearance.",
+            "details": "This reads the system preference rather than any application override applied with SetBrightness(). Subscribe to ApplicationSystemBrightnessChangedEvent to observe runtime changes.",
+            "returns": "Brightness::Light or Brightness::Dark when known, or Brightness::System when the platform cannot determine it.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Fully supported - Reads AppleInterfaceStyle and observes AppleInterfaceThemeChangedNotification.\n- Windows: ✅ Fully supported - Reads HKCU AppsUseLightTheme and observes WM_SETTINGCHANGE (ImmersiveColorSet).\n- Linux: ✅ Supported - Reads XDG Desktop Portal org.freedesktop.appearance color-scheme with GtkSettings fallback, and observes portal changes.\n- Android: ❌ Not implemented - Always returns Brightness::System.\n- iOS: ⚠️ Query only - Reads UIScreen.mainScreen.traitCollection on iOS 13+.\n- OpenHarmony: ⚠️ Query only - Reads owning Ability context.config.colorMode."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetSystemBrightness",
+              "signature": "Brightness GetSystemBrightness() const"
+            },
+            "csharp": {
+              "name": "GetSystemBrightness",
+              "signature": "public Brightness GetSystemBrightness()"
+            },
+            "dart": {
+              "name": "getSystemBrightness",
+              "signature": "Brightness getSystemBrightness()"
+            },
+            "go": {
+              "name": "SystemBrightness",
+              "signature": "func (a application) SystemBrightness() Brightness"
+            },
+            "js": {
+              "name": "getSystemBrightness",
+              "signature": "static getSystemBrightness(): Brightness"
+            },
+            "python": {
+              "name": "get_system_brightness",
+              "signature": "@staticmethod\ndef get_system_brightness() -> Brightness:"
+            },
+            "rust": {
+              "name": "get_system_brightness",
+              "signature": "pub fn get_system_brightness() -> Brightness"
+            },
+            "swift": {
+              "name": "getSystemBrightness",
+              "signature": "func getSystemBrightness() -> Brightness"
+            }
+          }
+        },
+        {
           "key": "Application::SetMenuBar",
           "kind": "method",
           "doc": {
@@ -966,7 +1015,7 @@
       "kind": "enum",
       "doc": {
         "summary": "Light or dark appearance for the application's user interface.",
-        "details": "Passed to Application::SetBrightness() to override the appearance the operating system would otherwise apply to this application's windows."
+        "details": "Passed to Application::SetBrightness() to override the appearance the operating system would otherwise apply to this application's windows, and returned by Application::GetSystemBrightness()."
       },
       "signatures": {
         "cpp": {
@@ -1007,7 +1056,7 @@
           "key": "Brightness::System",
           "kind": "variant",
           "doc": {
-            "summary": "Follow the operating system's current appearance setting."
+            "summary": "Follow the operating system's current appearance setting, or unknown."
           },
           "signatures": {
             "cpp": {
@@ -1454,6 +1503,90 @@
             "swift": {
               "name": "request",
               "signature": "var request: EventRequest?"
+            }
+          }
+        },
+        {
+          "key": "ApplicationSystemBrightnessChangedEvent",
+          "kind": "variant",
+          "doc": {
+            "summary": "Event emitted when the operating system's light or dark appearance changes."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ApplicationSystemBrightnessChangedEvent",
+              "signature": "class ApplicationSystemBrightnessChangedEvent : public ApplicationEvent"
+            },
+            "csharp": {
+              "name": "ApplicationEvent.SystemBrightnessChanged",
+              "signature": "public sealed record SystemBrightnessChanged(Brightness Brightness) : ApplicationEvent;"
+            },
+            "dart": {
+              "name": "ApplicationSystemBrightnessChangedEvent",
+              "signature": "final class ApplicationSystemBrightnessChangedEvent extends ApplicationEvent"
+            },
+            "go": {
+              "name": "ApplicationEventSystemBrightnessChanged",
+              "signature": "const ApplicationEventSystemBrightnessChanged ApplicationEventType = 5"
+            },
+            "js": {
+              "name": "Extract<ApplicationEvent, { type: \"systemBrightnessChanged\" }>",
+              "signature": "| { type: \"systemBrightnessChanged\"; brightness: Brightness }"
+            },
+            "python": {
+              "name": "ApplicationSystemBrightnessChangedEvent",
+              "signature": "@dataclass(frozen=True)\nclass ApplicationSystemBrightnessChangedEvent(ApplicationEvent):"
+            },
+            "rust": {
+              "name": "ApplicationEvent::SystemBrightnessChanged",
+              "signature": "SystemBrightnessChanged { brightness: Brightness }"
+            },
+            "swift": {
+              "name": "systemBrightnessChanged",
+              "signature": "case systemBrightnessChanged(brightness: Brightness)"
+            }
+          }
+        },
+        {
+          "key": "ApplicationSystemBrightnessChangedEvent::Brightness",
+          "kind": "field",
+          "parent": "ApplicationSystemBrightnessChangedEvent",
+          "doc": {
+            "summary": "Gets the operating system's new appearance.",
+            "returns": "Brightness::Light or Brightness::Dark."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "Brightness",
+              "signature": "Brightness GetBrightness() const"
+            },
+            "csharp": {
+              "name": "Brightness",
+              "signature": "Brightness Brightness"
+            },
+            "dart": {
+              "name": "brightness",
+              "signature": "final Brightness brightness"
+            },
+            "go": {
+              "name": "Brightness",
+              "signature": "Brightness Brightness"
+            },
+            "js": {
+              "name": "brightness",
+              "signature": "brightness: Brightness"
+            },
+            "python": {
+              "name": "brightness",
+              "signature": "brightness: Brightness"
+            },
+            "rust": {
+              "name": "brightness",
+              "signature": "brightness: Brightness"
+            },
+            "swift": {
+              "name": "brightness",
+              "signature": "var brightness: Brightness"
             }
           }
         }
