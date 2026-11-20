@@ -15,6 +15,7 @@ pub type ListenerId = cnativeapi::native_listener_id_t;
 pub struct ClipboardData {
     pub text: Option<String>,
     pub html: Option<String>,
+    pub rtf: Option<String>,
     pub image: Option<Image>,
     pub file_paths: Vec<String>,
 }
@@ -24,6 +25,7 @@ impl ClipboardData {
         Self {
             text: if raw.text.is_null() { None } else { Some(CStr::from_ptr(raw.text).to_string_lossy().into_owned()) },
             html: if raw.html.is_null() { None } else { Some(CStr::from_ptr(raw.html).to_string_lossy().into_owned()) },
+            rtf: if raw.rtf.is_null() { None } else { Some(CStr::from_ptr(raw.rtf).to_string_lossy().into_owned()) },
             image: Image::from_raw(cnativeapi::native_handle_retain(raw.image)),
             file_paths: if raw.file_paths.items.is_null() { Vec::new() } else { (0..raw.file_paths.count as usize).filter_map(|index| { let ptr = *raw.file_paths.items.add(index); if ptr.is_null() { None } else { Some(CStr::from_ptr(ptr).to_string_lossy().into_owned()) } }).collect() },
         }
@@ -35,18 +37,20 @@ impl ClipboardData {
         raw.text = text_owned.as_ref().map_or(std::ptr::null_mut(), |v| v.as_ptr() as *mut _);
         let html_owned = self.html.as_deref().map(|v| CString::new(v).expect("interior NUL"));
         raw.html = html_owned.as_ref().map_or(std::ptr::null_mut(), |v| v.as_ptr() as *mut _);
+        let rtf_owned = self.rtf.as_deref().map(|v| CString::new(v).expect("interior NUL"));
+        raw.rtf = rtf_owned.as_ref().map_or(std::ptr::null_mut(), |v| v.as_ptr() as *mut _);
         raw.image = self.image.as_ref().map_or(0, |v| v.as_raw());
         let file_paths_owned: Vec<CString> = self.file_paths.iter().map(|v| CString::new(v.as_str()).expect("interior NUL")).collect();
         let mut file_paths_items: Vec<*mut std::os::raw::c_char> = file_paths_owned.iter().map(|v| v.as_ptr() as *mut _).collect();
         raw.file_paths = cnativeapi::native_string_list_t { items: file_paths_items.as_mut_ptr(), count: file_paths_items.len() as _ };
-        RawOfClipboardData { raw, _owned: (text_owned, html_owned, file_paths_owned, file_paths_items) }
+        RawOfClipboardData { raw, _owned: (text_owned, html_owned, rtf_owned, file_paths_owned, file_paths_items) }
     }
 }
 
 /// `ClipboardData` in its C form, keeping any borrowed buffers alive.
 pub(crate) struct RawOfClipboardData {
     pub(crate) raw: cnativeapi::native_clipboard_data_t,
-    _owned: (Option<CString>, Option<CString>, Vec<CString>, Vec<*mut std::os::raw::c_char>),
+    _owned: (Option<CString>, Option<CString>, Option<CString>, Vec<CString>, Vec<*mut std::os::raw::c_char>),
 }
 
 /// One `ClipboardEvent`, in its concrete form.
@@ -157,6 +161,32 @@ impl Clipboard {
         }
     }
 
+    pub fn read_rtf(callback: impl Fn(bool, Option<String>) + 'static) {
+        unsafe extern "C" fn trampoline(arg0: bool, arg1: *const std::os::raw::c_char, delivery: cnativeapi::native_event_delivery_t, user_data: *mut std::ffi::c_void) {
+            struct Delivery(cnativeapi::native_event_delivery_t);
+            impl Drop for Delivery { fn drop(&mut self) { unsafe { cnativeapi::native_event_delivery_complete(self.0, true); } } }
+            let _delivery = Delivery(delivery);
+            if !cnativeapi::native_event_delivery_is_active(delivery) { return; }
+            if user_data.is_null() {
+                return;
+            }
+            let callback = &*(user_data as *const std::sync::Arc<dyn Fn(bool, Option<String>)>);
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback(arg0, if arg1.is_null() { None } else { Some(CStr::from_ptr(arg1).to_string_lossy().into_owned()) })));
+        }
+        fn into_user_data(callback: std::sync::Arc<dyn Fn(bool, Option<String>)>) -> *mut std::ffi::c_void {
+            Box::into_raw(Box::new(callback)) as *mut std::ffi::c_void
+        }
+        unsafe extern "C" fn release(user_data: *mut std::ffi::c_void) {
+            if !user_data.is_null() {
+                drop(Box::from_raw(user_data as *mut std::sync::Arc<dyn Fn(bool, Option<String>)>));
+            }
+        }
+        let callback_user_data = into_user_data(std::sync::Arc::new(callback));
+        unsafe {
+            cnativeapi::native_clipboard_read_rtf(Some(trampoline), callback_user_data, Some(release));
+        }
+    }
+
     pub fn read_image(callback: impl Fn(bool, Option<Image>) + 'static) {
         unsafe extern "C" fn trampoline(arg0: bool, arg1: u64, delivery: cnativeapi::native_event_delivery_t, user_data: *mut std::ffi::c_void) {
             struct Delivery(cnativeapi::native_event_delivery_t);
@@ -209,6 +239,33 @@ impl Clipboard {
         }
     }
 
+    pub fn read_format_base64(format: &str, callback: impl Fn(bool, Option<String>) + 'static) {
+        let format_native = CString::new(format).expect("string argument contains interior nul byte");
+        unsafe extern "C" fn trampoline(arg0: bool, arg1: *const std::os::raw::c_char, delivery: cnativeapi::native_event_delivery_t, user_data: *mut std::ffi::c_void) {
+            struct Delivery(cnativeapi::native_event_delivery_t);
+            impl Drop for Delivery { fn drop(&mut self) { unsafe { cnativeapi::native_event_delivery_complete(self.0, true); } } }
+            let _delivery = Delivery(delivery);
+            if !cnativeapi::native_event_delivery_is_active(delivery) { return; }
+            if user_data.is_null() {
+                return;
+            }
+            let callback = &*(user_data as *const std::sync::Arc<dyn Fn(bool, Option<String>)>);
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback(arg0, if arg1.is_null() { None } else { Some(CStr::from_ptr(arg1).to_string_lossy().into_owned()) })));
+        }
+        fn into_user_data(callback: std::sync::Arc<dyn Fn(bool, Option<String>)>) -> *mut std::ffi::c_void {
+            Box::into_raw(Box::new(callback)) as *mut std::ffi::c_void
+        }
+        unsafe extern "C" fn release(user_data: *mut std::ffi::c_void) {
+            if !user_data.is_null() {
+                drop(Box::from_raw(user_data as *mut std::sync::Arc<dyn Fn(bool, Option<String>)>));
+            }
+        }
+        let callback_user_data = into_user_data(std::sync::Arc::new(callback));
+        unsafe {
+            cnativeapi::native_clipboard_read_format_base64(format_native.as_ptr(), Some(trampoline), callback_user_data, Some(release));
+        }
+    }
+
     pub fn write(data: &ClipboardData) -> bool {
         if data.text.as_ref().is_some_and(|s| s.contains('\0')) || data.html.as_ref().is_some_and(|s| s.contains('\0')) || data.file_paths.iter().any(|s| s.contains('\0')) { return false; }
         let data_raw = data.to_raw();
@@ -230,6 +287,13 @@ impl Clipboard {
         let html_native = CString::new(html).expect("string argument contains interior nul byte");
         unsafe {
             cnativeapi::native_clipboard_write_html(html_native.as_ptr())
+        }
+    }
+
+    pub fn write_rtf(rtf: &str) -> bool {
+        let rtf_native = CString::new(rtf).expect("string argument contains interior nul byte");
+        unsafe {
+            cnativeapi::native_clipboard_write_rtf(rtf_native.as_ptr())
         }
     }
 
@@ -256,9 +320,66 @@ impl Clipboard {
         }
     }
 
+    pub fn write_format_base64(format: &str, base64_data: &str) -> bool {
+        let format_native = CString::new(format).expect("string argument contains interior nul byte");
+        let base64_data_native = CString::new(base64_data).expect("string argument contains interior nul byte");
+        unsafe {
+            cnativeapi::native_clipboard_write_format_base64(format_native.as_ptr(), base64_data_native.as_ptr())
+        }
+    }
+
     pub fn clear() -> bool {
         unsafe {
             cnativeapi::native_clipboard_clear()
+        }
+    }
+
+    pub fn get_change_count() -> i64 {
+        unsafe {
+            cnativeapi::native_clipboard_get_change_count()
+        }
+    }
+
+    pub fn is_concealed() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_is_concealed()
+        }
+    }
+
+    pub fn has_text() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_has_text()
+        }
+    }
+
+    pub fn has_html() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_has_html()
+        }
+    }
+
+    pub fn has_rtf() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_has_rtf()
+        }
+    }
+
+    pub fn has_image() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_has_image()
+        }
+    }
+
+    pub fn has_file_paths() -> bool {
+        unsafe {
+            cnativeapi::native_clipboard_has_file_paths()
+        }
+    }
+
+    pub fn has_format(format: &str) -> bool {
+        let format_native = CString::new(format).expect("string argument contains interior nul byte");
+        unsafe {
+            cnativeapi::native_clipboard_has_format(format_native.as_ptr())
         }
     }
 

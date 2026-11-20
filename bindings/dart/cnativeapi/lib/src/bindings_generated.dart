@@ -247,8 +247,32 @@ external void native_clipboard_data_free(
   ffi.Pointer<native_clipboard_data_t> value,
 );
 
+@ffi.Native<ffi.LongLong Function()>()
+external int native_clipboard_get_change_count();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_has_file_paths();
+
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
+external bool native_clipboard_has_format(ffi.Pointer<ffi.Char> format);
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_has_html();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_has_image();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_has_rtf();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_has_text();
+
 @ffi.Native<ffi.Bool Function()>()
 external bool native_clipboard_is_change_monitoring_supported();
+
+@ffi.Native<ffi.Bool Function()>()
+external bool native_clipboard_is_concealed();
 
 @ffi.Native<ffi.Bool Function()>()
 external bool native_clipboard_is_monitoring();
@@ -284,6 +308,21 @@ external void native_clipboard_read_file_paths(
 
 @ffi.Native<
   ffi.Void Function(
+    ffi.Pointer<ffi.Char>,
+    native_clipboard_read_format_base64_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_format_base64(
+  ffi.Pointer<ffi.Char> format,
+  native_clipboard_read_format_base64_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
     native_clipboard_read_html_callback_t,
     ffi.Pointer<ffi.Void>,
     native_release_user_data_t,
@@ -304,6 +343,19 @@ external void native_clipboard_read_html(
 >()
 external void native_clipboard_read_image(
   native_clipboard_read_image_callback_t callback,
+  ffi.Pointer<ffi.Void> callback_user_data,
+  native_release_user_data_t callback_release_user_data,
+);
+
+@ffi.Native<
+  ffi.Void Function(
+    native_clipboard_read_rtf_callback_t,
+    ffi.Pointer<ffi.Void>,
+    native_release_user_data_t,
+  )
+>()
+external void native_clipboard_read_rtf(
+  native_clipboard_read_rtf_callback_t callback,
   ffi.Pointer<ffi.Void> callback_user_data,
   native_release_user_data_t callback_release_user_data,
 );
@@ -333,11 +385,20 @@ external bool native_clipboard_write_file_paths(
   native_string_list_t file_paths,
 );
 
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>()
+external bool native_clipboard_write_format_base64(
+  ffi.Pointer<ffi.Char> format,
+  ffi.Pointer<ffi.Char> base64_data,
+);
+
 @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
 external bool native_clipboard_write_html(ffi.Pointer<ffi.Char> html);
 
 @ffi.Native<ffi.Bool Function(native_image_t)>()
 external bool native_clipboard_write_image(int image);
+
+@ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
+external bool native_clipboard_write_rtf(ffi.Pointer<ffi.Char> rtf);
 
 @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.Char>)>()
 external bool native_clipboard_write_text(ffi.Pointer<ffi.Char> text);
@@ -4238,6 +4299,8 @@ final class native_clipboard_data_t extends ffi.Struct {
 
   external ffi.Pointer<ffi.Char> html;
 
+  external ffi.Pointer<ffi.Char> rtf;
+
   @native_image_t()
   external int image;
 
@@ -4337,6 +4400,26 @@ typedef Dartnative_clipboard_read_file_paths_callback_tFunction = void Function(
 );
 
 /// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_format_base64_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_format_base64_callback_tFunction>
+    >;
+typedef native_clipboard_read_format_base64_callback_tFunction =
+    ffi.Void Function(
+      ffi.Bool arg0,
+      ffi.Pointer<ffi.Char> arg1,
+      native_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+typedef Dartnative_clipboard_read_format_base64_callback_tFunction =
+    void Function(
+      bool arg0,
+      ffi.Pointer<ffi.Char> arg1,
+      Dartnative_event_delivery_t delivery,
+      ffi.Pointer<ffi.Void> user_data,
+    );
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
 typedef native_clipboard_read_html_callback_t =
     ffi.Pointer<
       ffi.NativeFunction<native_clipboard_read_html_callback_tFunction>
@@ -4368,6 +4451,24 @@ typedef native_clipboard_read_image_callback_tFunction = ffi.Void Function(
 typedef Dartnative_clipboard_read_image_callback_tFunction = void Function(
   bool arg0,
   Dartnative_image_t arg1,
+  Dartnative_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+
+/// Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once.
+typedef native_clipboard_read_rtf_callback_t =
+    ffi.Pointer<
+      ffi.NativeFunction<native_clipboard_read_rtf_callback_tFunction>
+    >;
+typedef native_clipboard_read_rtf_callback_tFunction = ffi.Void Function(
+  ffi.Bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
+  native_event_delivery_t delivery,
+  ffi.Pointer<ffi.Void> user_data,
+);
+typedef Dartnative_clipboard_read_rtf_callback_tFunction = void Function(
+  bool arg0,
+  ffi.Pointer<ffi.Char> arg1,
   Dartnative_event_delivery_t delivery,
   ffi.Pointer<ffi.Void> user_data,
 );

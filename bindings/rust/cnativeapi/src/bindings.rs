@@ -2300,6 +2300,15 @@ pub type native_clipboard_read_html_callback_t = ::std::option::Option<
     ),
 >;
 #[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_rtf_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
 pub type native_clipboard_read_image_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         arg0: bool,
@@ -2317,11 +2326,21 @@ pub type native_clipboard_read_file_paths_callback_t = ::std::option::Option<
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_format_base64_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct native_clipboard_data_t {
     pub text: *mut ::std::os::raw::c_char,
     pub html: *mut ::std::os::raw::c_char,
+    pub rtf: *mut ::std::os::raw::c_char,
     pub image: native_image_t,
     pub file_paths: native_string_list_t,
 }
@@ -2397,6 +2416,13 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn native_clipboard_read_rtf(
+        callback: native_clipboard_read_rtf_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
     pub fn native_clipboard_read_image(
         callback: native_clipboard_read_image_callback_t,
         callback_user_data: *mut ::std::os::raw::c_void,
@@ -2411,6 +2437,14 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn native_clipboard_read_format_base64(
+        format: *const ::std::os::raw::c_char,
+        callback: native_clipboard_read_format_base64_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
     pub fn native_clipboard_write(data: native_clipboard_data_t) -> bool;
 }
 unsafe extern "C" {
@@ -2420,13 +2454,46 @@ unsafe extern "C" {
     pub fn native_clipboard_write_html(html: *const ::std::os::raw::c_char) -> bool;
 }
 unsafe extern "C" {
+    pub fn native_clipboard_write_rtf(rtf: *const ::std::os::raw::c_char) -> bool;
+}
+unsafe extern "C" {
     pub fn native_clipboard_write_image(image: native_image_t) -> bool;
 }
 unsafe extern "C" {
     pub fn native_clipboard_write_file_paths(file_paths: native_string_list_t) -> bool;
 }
 unsafe extern "C" {
+    pub fn native_clipboard_write_format_base64(
+        format: *const ::std::os::raw::c_char,
+        base64_data: *const ::std::os::raw::c_char,
+    ) -> bool;
+}
+unsafe extern "C" {
     pub fn native_clipboard_clear() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_get_change_count() -> ::std::os::raw::c_longlong;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_is_concealed() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_text() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_html() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_rtf() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_image() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_file_paths() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_format(format: *const ::std::os::raw::c_char) -> bool;
 }
 unsafe extern "C" {
     pub fn native_clipboard_is_monitoring() -> bool;

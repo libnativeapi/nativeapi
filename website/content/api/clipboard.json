@@ -295,6 +295,47 @@
           }
         },
         {
+          "key": "Clipboard::ReadRtf",
+          "kind": "method",
+          "doc": {
+            "summary": "Reads an RTF payload; successful absence is nullopt. @param callback Completion."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ReadRtf",
+              "signature": "void ReadRtf(std::function<void(bool, std::optional<std::string>)> callback)"
+            },
+            "csharp": {
+              "name": "ReadRtf",
+              "signature": "public void ReadRtf(Action<bool, string?> callback)\npublic System.Threading.Tasks.Task<string?> ReadRtfAsync()"
+            },
+            "dart": {
+              "name": "readRtf",
+              "signature": "void readRtf(void Function(bool, String?) callback)\nFuture<String?> readRtfAsync()"
+            },
+            "go": {
+              "name": "ReadRtf",
+              "signature": "func (c clipboard) ReadRtf(callback func(bool, *string))"
+            },
+            "js": {
+              "name": "readRtf",
+              "signature": "static readRtf(callback: (arg0: boolean, arg1: string | null) => void): void\nstatic readRtfAsync(): Promise<string | null>"
+            },
+            "python": {
+              "name": "read_rtf",
+              "signature": "@staticmethod\ndef read_rtf(callback: Callable[[bool, str | None], None]) -> None:\n@staticmethod\nasync def read_rtf_async() -> str | None:"
+            },
+            "rust": {
+              "name": "read_rtf",
+              "signature": "pub fn read_rtf(callback: impl Fn(bool, Option<String>) + 'static)"
+            },
+            "swift": {
+              "name": "readRtf",
+              "signature": "func readRtf(_ callback: @escaping (Bool, String?) -> Void) -> Void"
+            }
+          }
+        },
+        {
           "key": "Clipboard::ReadImage",
           "kind": "method",
           "doc": {
@@ -373,6 +414,57 @@
             "swift": {
               "name": "readFilePaths",
               "signature": "func readFilePaths(_ callback: @escaping (Bool, [String]) -> Void) -> Void"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::ReadFormatBase64",
+          "kind": "method",
+          "doc": {
+            "summary": "Reads a custom/registered clipboard format encoded as Base64.",
+            "params": [
+              {
+                "name": "format",
+                "text": "Platform format identifier (e.g. UTI on macOS, registered format name on Windows, MIME target on Linux)."
+              },
+              {
+                "name": "callback",
+                "text": "Completion; successful absence is nullopt."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "ReadFormatBase64",
+              "signature": "void ReadFormatBase64(std::string format, std::function<void(bool, std::optional<std::string>)> callback)"
+            },
+            "csharp": {
+              "name": "ReadFormatBase64",
+              "signature": "public void ReadFormatBase64(string format, Action<bool, string?> callback)"
+            },
+            "dart": {
+              "name": "readFormatBase64",
+              "signature": "void readFormatBase64(String format, void Function(bool, String?) callback)"
+            },
+            "go": {
+              "name": "ReadFormatBase64",
+              "signature": "func (c clipboard) ReadFormatBase64(format string, callback func(bool, *string))"
+            },
+            "js": {
+              "name": "readFormatBase64",
+              "signature": "static readFormatBase64(format: string, callback: (arg0: boolean, arg1: string | null) => void): void"
+            },
+            "python": {
+              "name": "read_format_base64",
+              "signature": "@staticmethod\ndef read_format_base64(\n    format: str,\n    callback: Callable[[bool, str | None], None],\n) -> None:"
+            },
+            "rust": {
+              "name": "read_format_base64",
+              "signature": "pub fn read_format_base64(format: &str, callback: impl Fn(bool, Option<String>) + 'static)"
+            },
+            "swift": {
+              "name": "readFormatBase64",
+              "signature": "func readFormatBase64(_ format: String, callback: @escaping (Bool, String?) -> Void) -> Void"
             }
           }
         },
@@ -519,6 +611,47 @@
           }
         },
         {
+          "key": "Clipboard::WriteRtf",
+          "kind": "method",
+          "doc": {
+            "summary": "Writes only RTF. @param rtf UTF-8 RTF payload. @return false on failure."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "WriteRtf",
+              "signature": "bool WriteRtf(std::string rtf)"
+            },
+            "csharp": {
+              "name": "WriteRtf",
+              "signature": "public bool WriteRtf(string rtf)"
+            },
+            "dart": {
+              "name": "writeRtf",
+              "signature": "bool writeRtf(String rtf)"
+            },
+            "go": {
+              "name": "WriteRtf",
+              "signature": "func (c clipboard) WriteRtf(rtf string) error"
+            },
+            "js": {
+              "name": "writeRtf",
+              "signature": "static writeRtf(rtf: string): boolean"
+            },
+            "python": {
+              "name": "write_rtf",
+              "signature": "@staticmethod\ndef write_rtf(rtf: str) -> bool:"
+            },
+            "rust": {
+              "name": "write_rtf",
+              "signature": "pub fn write_rtf(rtf: &str) -> bool"
+            },
+            "swift": {
+              "name": "writeRtf",
+              "signature": "func writeRtf(_ rtf: String) -> Bool"
+            }
+          }
+        },
+        {
           "key": "Clipboard::WriteImage",
           "kind": "method",
           "doc": {
@@ -601,6 +734,58 @@
           }
         },
         {
+          "key": "Clipboard::WriteFormatBase64",
+          "kind": "method",
+          "doc": {
+            "summary": "Replaces the clipboard with raw bytes for a custom format (Base64-encoded).",
+            "params": [
+              {
+                "name": "format",
+                "text": "Platform format identifier."
+              },
+              {
+                "name": "base64_data",
+                "text": "Base64-encoded payload."
+              }
+            ],
+            "returns": "false on failure or unsupported platform."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "WriteFormatBase64",
+              "signature": "bool WriteFormatBase64(std::string format, std::string base64_data)"
+            },
+            "csharp": {
+              "name": "WriteFormatBase64",
+              "signature": "public bool WriteFormatBase64(string format, string base64Data)"
+            },
+            "dart": {
+              "name": "writeFormatBase64",
+              "signature": "bool writeFormatBase64(String format, String base64Data)"
+            },
+            "go": {
+              "name": "WriteFormatBase64",
+              "signature": "func (c clipboard) WriteFormatBase64(format, base64Data string) error"
+            },
+            "js": {
+              "name": "writeFormatBase64",
+              "signature": "static writeFormatBase64(format: string, base64Data: string): boolean"
+            },
+            "python": {
+              "name": "write_format_base64",
+              "signature": "@staticmethod\ndef write_format_base64(format: str, base64_data: str) -> bool:"
+            },
+            "rust": {
+              "name": "write_format_base64",
+              "signature": "pub fn write_format_base64(format: &str, base64_data: &str) -> bool"
+            },
+            "swift": {
+              "name": "writeFormatBase64",
+              "signature": "func writeFormatBase64(_ format: String, base64Data: String) -> Bool"
+            }
+          }
+        },
+        {
           "key": "Clipboard::Clear",
           "kind": "method",
           "doc": {
@@ -638,6 +823,336 @@
             "swift": {
               "name": "clear",
               "signature": "func clear() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::GetChangeCount",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the platform clipboard change sequence number.",
+            "returns": "Monotonic change count on macOS, Windows and iOS; best-effort or 0 elsewhere."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetChangeCount",
+              "signature": "long long GetChangeCount() const"
+            },
+            "csharp": {
+              "name": "GetChangeCount",
+              "signature": "public long GetChangeCount()"
+            },
+            "dart": {
+              "name": "getChangeCount",
+              "signature": "int getChangeCount()"
+            },
+            "go": {
+              "name": "ChangeCount",
+              "signature": "func (c clipboard) ChangeCount() int64"
+            },
+            "js": {
+              "name": "getChangeCount",
+              "signature": "static getChangeCount(): number"
+            },
+            "python": {
+              "name": "get_change_count",
+              "signature": "@staticmethod\ndef get_change_count() -> int:"
+            },
+            "rust": {
+              "name": "get_change_count",
+              "signature": "pub fn get_change_count() -> i64"
+            },
+            "swift": {
+              "name": "getChangeCount",
+              "signature": "func getChangeCount() -> Int64"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::IsConcealed",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks whether the current clipboard content is marked concealed or sensitive.",
+            "details": "Detects password-manager concealment markers (macOS org.nspasteboard.ConcealedType / AutoGeneratedType, Windows ExcludeClipboardContentFromMonitorProcessing / CanIncludeInClipboardHistory = 0)."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsConcealed",
+              "signature": "bool IsConcealed() const"
+            },
+            "csharp": {
+              "name": "IsConcealed",
+              "signature": "public bool IsConcealed()"
+            },
+            "dart": {
+              "name": "isConcealed",
+              "signature": "bool isConcealed()"
+            },
+            "go": {
+              "name": "IsConcealed",
+              "signature": "func (c clipboard) IsConcealed() bool"
+            },
+            "js": {
+              "name": "isConcealed",
+              "signature": "static isConcealed(): boolean"
+            },
+            "python": {
+              "name": "is_concealed",
+              "signature": "@staticmethod\ndef is_concealed() -> bool:"
+            },
+            "rust": {
+              "name": "is_concealed",
+              "signature": "pub fn is_concealed() -> bool"
+            },
+            "swift": {
+              "name": "isConcealed",
+              "signature": "func isConcealed() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasText",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if plain text is currently available without decoding it."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasText",
+              "signature": "bool HasText() const"
+            },
+            "csharp": {
+              "name": "HasText",
+              "signature": "public bool HasText()"
+            },
+            "dart": {
+              "name": "hasText",
+              "signature": "bool hasText()"
+            },
+            "go": {
+              "name": "HasText",
+              "signature": "func (c clipboard) HasText() bool"
+            },
+            "js": {
+              "name": "hasText",
+              "signature": "static hasText(): boolean"
+            },
+            "python": {
+              "name": "has_text",
+              "signature": "@staticmethod\ndef has_text() -> bool:"
+            },
+            "rust": {
+              "name": "has_text",
+              "signature": "pub fn has_text() -> bool"
+            },
+            "swift": {
+              "name": "hasText",
+              "signature": "func hasText() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasHtml",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if HTML is currently available without decoding it."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasHtml",
+              "signature": "bool HasHtml() const"
+            },
+            "csharp": {
+              "name": "HasHtml",
+              "signature": "public bool HasHtml()"
+            },
+            "dart": {
+              "name": "hasHtml",
+              "signature": "bool hasHtml()"
+            },
+            "go": {
+              "name": "HasHTML",
+              "signature": "func (c clipboard) HasHTML() bool"
+            },
+            "js": {
+              "name": "hasHtml",
+              "signature": "static hasHtml(): boolean"
+            },
+            "python": {
+              "name": "has_html",
+              "signature": "@staticmethod\ndef has_html() -> bool:"
+            },
+            "rust": {
+              "name": "has_html",
+              "signature": "pub fn has_html() -> bool"
+            },
+            "swift": {
+              "name": "hasHtml",
+              "signature": "func hasHtml() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasRtf",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if RTF is currently available without decoding it."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasRtf",
+              "signature": "bool HasRtf() const"
+            },
+            "csharp": {
+              "name": "HasRtf",
+              "signature": "public bool HasRtf()"
+            },
+            "dart": {
+              "name": "hasRtf",
+              "signature": "bool hasRtf()"
+            },
+            "go": {
+              "name": "HasRtf",
+              "signature": "func (c clipboard) HasRtf() bool"
+            },
+            "js": {
+              "name": "hasRtf",
+              "signature": "static hasRtf(): boolean"
+            },
+            "python": {
+              "name": "has_rtf",
+              "signature": "@staticmethod\ndef has_rtf() -> bool:"
+            },
+            "rust": {
+              "name": "has_rtf",
+              "signature": "pub fn has_rtf() -> bool"
+            },
+            "swift": {
+              "name": "hasRtf",
+              "signature": "func hasRtf() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasImage",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if an image is currently available without decoding it."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasImage",
+              "signature": "bool HasImage() const"
+            },
+            "csharp": {
+              "name": "HasImage",
+              "signature": "public bool HasImage()"
+            },
+            "dart": {
+              "name": "hasImage",
+              "signature": "bool hasImage()"
+            },
+            "go": {
+              "name": "HasImage",
+              "signature": "func (c clipboard) HasImage() bool"
+            },
+            "js": {
+              "name": "hasImage",
+              "signature": "static hasImage(): boolean"
+            },
+            "python": {
+              "name": "has_image",
+              "signature": "@staticmethod\ndef has_image() -> bool:"
+            },
+            "rust": {
+              "name": "has_image",
+              "signature": "pub fn has_image() -> bool"
+            },
+            "swift": {
+              "name": "hasImage",
+              "signature": "func hasImage() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasFilePaths",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if local file paths are currently available without decoding them."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasFilePaths",
+              "signature": "bool HasFilePaths() const"
+            },
+            "csharp": {
+              "name": "HasFilePaths",
+              "signature": "public bool HasFilePaths()"
+            },
+            "dart": {
+              "name": "hasFilePaths",
+              "signature": "bool hasFilePaths()"
+            },
+            "go": {
+              "name": "HasFilePaths",
+              "signature": "func (c clipboard) HasFilePaths() bool"
+            },
+            "js": {
+              "name": "hasFilePaths",
+              "signature": "static hasFilePaths(): boolean"
+            },
+            "python": {
+              "name": "has_file_paths",
+              "signature": "@staticmethod\ndef has_file_paths() -> bool:"
+            },
+            "rust": {
+              "name": "has_file_paths",
+              "signature": "pub fn has_file_paths() -> bool"
+            },
+            "swift": {
+              "name": "hasFilePaths",
+              "signature": "func hasFilePaths() -> Bool"
+            }
+          }
+        },
+        {
+          "key": "Clipboard::HasFormat",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if a custom/registered format is currently available."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "HasFormat",
+              "signature": "bool HasFormat(std::string format) const"
+            },
+            "csharp": {
+              "name": "HasFormat",
+              "signature": "public bool HasFormat(string format)"
+            },
+            "dart": {
+              "name": "hasFormat",
+              "signature": "bool hasFormat(String format)"
+            },
+            "go": {
+              "name": "HasFormat",
+              "signature": "func (c clipboard) HasFormat(format string) bool"
+            },
+            "js": {
+              "name": "hasFormat",
+              "signature": "static hasFormat(format: string): boolean"
+            },
+            "python": {
+              "name": "has_format",
+              "signature": "@staticmethod\ndef has_format(format: str) -> bool:"
+            },
+            "rust": {
+              "name": "has_format",
+              "signature": "pub fn has_format(format: &str) -> bool"
+            },
+            "swift": {
+              "name": "hasFormat",
+              "signature": "func hasFormat(_ format: String) -> Bool"
             }
           }
         },
@@ -804,6 +1319,47 @@
             "swift": {
               "name": "html",
               "signature": "var html: String?"
+            }
+          }
+        },
+        {
+          "key": "ClipboardData::rtf",
+          "kind": "field",
+          "doc": {
+            "summary": "UTF-8 Rich Text Format (RTF) payload; nullopt when absent."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "rtf",
+              "signature": "std::optional<std::string> rtf"
+            },
+            "csharp": {
+              "name": "Rtf",
+              "signature": "public string? Rtf;"
+            },
+            "dart": {
+              "name": "rtf",
+              "signature": "final String? rtf"
+            },
+            "go": {
+              "name": "Rtf",
+              "signature": "Rtf *string"
+            },
+            "js": {
+              "name": "rtf",
+              "signature": "rtf?: string | null"
+            },
+            "python": {
+              "name": "rtf",
+              "signature": "rtf: str | None = None"
+            },
+            "rust": {
+              "name": "rtf",
+              "signature": "pub rtf: Option<String>"
+            },
+            "swift": {
+              "name": "rtf",
+              "signature": "var rtf: String?"
             }
           }
         },

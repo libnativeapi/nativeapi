@@ -19,12 +19,14 @@ class ClipboardData {
   const ClipboardData({
     this.text,
     this.html,
+    this.rtf,
     this.image,
     this.filePaths = const [],
   });
 
   final String? text;
   final String? html;
+  final String? rtf;
   final Image? image;
   final List<String> filePaths;
 
@@ -34,15 +36,17 @@ class ClipboardData {
       (other is ClipboardData &&
           other.text == text &&
           other.html == html &&
+          other.rtf == rtf &&
           other.image == image &&
           _listEquals(other.filePaths, filePaths));
 
   @override
-  int get hashCode => Object.hash(text, html, image, Object.hashAll(filePaths));
+  int get hashCode =>
+      Object.hash(text, html, rtf, image, Object.hashAll(filePaths));
 
   @override
   String toString() =>
-      'ClipboardData(text: $text, html: $html, image: $image, filePaths: $filePaths)';
+      'ClipboardData(text: $text, html: $html, rtf: $rtf, image: $image, filePaths: $filePaths)';
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;
@@ -60,6 +64,9 @@ class ClipboardData {
         html: raw.html == ffi.nullptr
             ? null
             : raw.html.cast<pkg_ffi.Utf8>().toDartString(),
+        rtf: raw.rtf == ffi.nullptr
+            ? null
+            : raw.rtf.cast<pkg_ffi.Utf8>().toDartString(),
         image: raw.image == 0
             ? null
             : Image.fromHandle(c.native_handle_retain(raw.image)),
@@ -75,6 +82,7 @@ class ClipboardData {
     final pointer = pkg_ffi.calloc<c.native_clipboard_data_t>();
     pointer.ref.text = text?.toNativeUtf8().cast<ffi.Char>() ?? ffi.nullptr;
     pointer.ref.html = html?.toNativeUtf8().cast<ffi.Char>() ?? ffi.nullptr;
+    pointer.ref.rtf = rtf?.toNativeUtf8().cast<ffi.Char>() ?? ffi.nullptr;
     pointer.ref.image = image?.nativeHandle ?? 0;
     final filePathsItems = pkg_ffi.calloc<ffi.Pointer<ffi.Char>>(
       filePaths.length,
@@ -93,6 +101,9 @@ class ClipboardData {
     }
     if (pointer.ref.html != ffi.nullptr) {
       pkg_ffi.calloc.free(pointer.ref.html);
+    }
+    if (pointer.ref.rtf != ffi.nullptr) {
+      pkg_ffi.calloc.free(pointer.ref.rtf);
     }
     for (var i = 0; i < pointer.ref.file_paths.count; ++i) {
       pkg_ffi.calloc.free(pointer.ref.file_paths.items[i]);
@@ -243,6 +254,41 @@ class Clipboard {
     );
   }
 
+  void readRtf(void Function(bool, String?) callback) {
+    final callbackCallable =
+        ffi.NativeCallable<
+          ffi.Void Function(
+            ffi.Bool,
+            ffi.Pointer<ffi.Char>,
+            ffi.Uint64,
+            ffi.Pointer<ffi.Void>,
+          )
+        >.listener((
+          bool arg0,
+          ffi.Pointer<ffi.Char> arg1,
+          int delivery,
+          ffi.Pointer<ffi.Void> _,
+        ) {
+          try {
+            if (c.native_event_delivery_is_active(delivery)) {
+              callback(
+                arg0,
+                arg1 == ffi.nullptr
+                    ? null
+                    : arg1.cast<pkg_ffi.Utf8>().toDartString(),
+              );
+            }
+          } finally {
+            c.native_event_delivery_complete(delivery, true);
+          }
+        });
+    c.native_clipboard_read_rtf(
+      callbackCallable.nativeFunction.cast(),
+      NativeCallbacks.userData(callbackCallable),
+      NativeCallbacks.release,
+    );
+  }
+
   void readImage(void Function(bool, Image?) callback) {
     final callbackCallable =
         ffi.NativeCallable<
@@ -322,6 +368,44 @@ class Clipboard {
     );
   }
 
+  void readFormatBase64(String format, void Function(bool, String?) callback) {
+    final formatNative = format.toNativeUtf8().cast<ffi.Char>();
+    final callbackCallable =
+        ffi.NativeCallable<
+          ffi.Void Function(
+            ffi.Bool,
+            ffi.Pointer<ffi.Char>,
+            ffi.Uint64,
+            ffi.Pointer<ffi.Void>,
+          )
+        >.listener((
+          bool arg0,
+          ffi.Pointer<ffi.Char> arg1,
+          int delivery,
+          ffi.Pointer<ffi.Void> _,
+        ) {
+          try {
+            if (c.native_event_delivery_is_active(delivery)) {
+              callback(
+                arg0,
+                arg1 == ffi.nullptr
+                    ? null
+                    : arg1.cast<pkg_ffi.Utf8>().toDartString(),
+              );
+            }
+          } finally {
+            c.native_event_delivery_complete(delivery, true);
+          }
+        });
+    c.native_clipboard_read_format_base64(
+      formatNative,
+      callbackCallable.nativeFunction.cast(),
+      NativeCallbacks.userData(callbackCallable),
+      NativeCallbacks.release,
+    );
+    pkg_ffi.calloc.free(formatNative);
+  }
+
   bool write(ClipboardData data) {
     if (!_validText(data.text) ||
         !_validText(data.html) ||
@@ -354,6 +438,13 @@ class Clipboard {
     return result;
   }
 
+  bool writeRtf(String rtf) {
+    final rtfNative = rtf.toNativeUtf8().cast<ffi.Char>();
+    final result = c.native_clipboard_write_rtf(rtfNative);
+    pkg_ffi.calloc.free(rtfNative);
+    return result;
+  }
+
   bool writeImage(Image? image) {
     return c.native_clipboard_write_image(image?.nativeHandle ?? 0);
   }
@@ -380,8 +471,55 @@ class Clipboard {
     return result;
   }
 
+  bool writeFormatBase64(String format, String base64Data) {
+    final formatNative = format.toNativeUtf8().cast<ffi.Char>();
+    final base64DataNative = base64Data.toNativeUtf8().cast<ffi.Char>();
+    final result = c.native_clipboard_write_format_base64(
+      formatNative,
+      base64DataNative,
+    );
+    pkg_ffi.calloc.free(formatNative);
+    pkg_ffi.calloc.free(base64DataNative);
+    return result;
+  }
+
   bool clear() {
     return c.native_clipboard_clear();
+  }
+
+  int getChangeCount() {
+    return c.native_clipboard_get_change_count();
+  }
+
+  bool isConcealed() {
+    return c.native_clipboard_is_concealed();
+  }
+
+  bool hasText() {
+    return c.native_clipboard_has_text();
+  }
+
+  bool hasHtml() {
+    return c.native_clipboard_has_html();
+  }
+
+  bool hasRtf() {
+    return c.native_clipboard_has_rtf();
+  }
+
+  bool hasImage() {
+    return c.native_clipboard_has_image();
+  }
+
+  bool hasFilePaths() {
+    return c.native_clipboard_has_file_paths();
+  }
+
+  bool hasFormat(String format) {
+    final formatNative = format.toNativeUtf8().cast<ffi.Char>();
+    final result = c.native_clipboard_has_format(formatNative);
+    pkg_ffi.calloc.free(formatNative);
+    return result;
   }
 
   bool isMonitoring() {
@@ -432,6 +570,18 @@ class Clipboard {
   Future<String?> readHtmlAsync() {
     final completer = Completer<String?>();
     readHtml((success, value) {
+      if (success) {
+        completer.complete(value);
+      } else {
+        completer.completeError(StateError('Clipboard operation failed'));
+      }
+    });
+    return completer.future;
+  }
+
+  Future<String?> readRtfAsync() {
+    final completer = Completer<String?>();
+    readRtf((success, value) {
       if (success) {
         completer.complete(value);
       } else {

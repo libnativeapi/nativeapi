@@ -427,6 +427,7 @@ native_window_event_callback_t = CFUNCTYPE(
 native_clipboard_data_t._fields_ = [
     ("text", c_char_p),
     ("html", c_char_p),
+    ("rtf", c_char_p),
     ("image", c_uint64),
     ("file_paths", native_string_list_t),
 ]
@@ -752,6 +753,15 @@ native_clipboard_read_html = function(
         native_release_user_data_t,
     ],
 )
+native_clipboard_read_rtf = function(
+    "native_clipboard_read_rtf",
+    None,
+    [
+        native_callback_bool_std_optional_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
 native_clipboard_read_image = function(
     "native_clipboard_read_image",
     None,
@@ -766,6 +776,16 @@ native_clipboard_read_file_paths = function(
     None,
     [
         native_callback_bool_std_vector_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_format_base64 = function(
+    "native_clipboard_read_format_base64",
+    None,
+    [
+        c_char_p,
+        native_callback_bool_std_optional_std_string_payload_t,
         c_void_p,
         native_release_user_data_t,
     ],
@@ -791,6 +811,7 @@ native_clipboard_write_html = function(
         c_char_p,
     ],
 )
+native_clipboard_write_rtf = function("native_clipboard_write_rtf", c_bool, [c_char_p])
 native_clipboard_write_image = function(
     "native_clipboard_write_image",
     c_bool,
@@ -805,7 +826,39 @@ native_clipboard_write_file_paths = function(
         native_string_list_t,
     ],
 )
+native_clipboard_write_format_base64 = function(
+    "native_clipboard_write_format_base64",
+    c_bool,
+    [
+        c_char_p,
+        c_char_p,
+    ],
+)
 native_clipboard_clear = function("native_clipboard_clear", c_bool, [])
+native_clipboard_get_change_count = function(
+    "native_clipboard_get_change_count",
+    c_longlong,
+    [
+    ],
+)
+native_clipboard_is_concealed = function("native_clipboard_is_concealed", c_bool, [])
+native_clipboard_has_text = function("native_clipboard_has_text", c_bool, [])
+native_clipboard_has_html = function("native_clipboard_has_html", c_bool, [])
+native_clipboard_has_rtf = function("native_clipboard_has_rtf", c_bool, [])
+native_clipboard_has_image = function("native_clipboard_has_image", c_bool, [])
+native_clipboard_has_file_paths = function(
+    "native_clipboard_has_file_paths",
+    c_bool,
+    [
+    ],
+)
+native_clipboard_has_format = function(
+    "native_clipboard_has_format",
+    c_bool,
+    [
+        c_char_p,
+    ],
+)
 native_clipboard_is_monitoring = function("native_clipboard_is_monitoring", c_bool, [])
 native_clipboard_add_listener = function(
     "native_clipboard_add_listener",

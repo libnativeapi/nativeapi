@@ -13,20 +13,22 @@ public struct ClipboardData
 {
     public string? Text;
     public string? Html;
+    public string? Rtf;
     public Image? Image;
     public string[] FilePaths;
 
-    public ClipboardData(string? text, string? html, Image? image, string[] filePaths)
+    public ClipboardData(string? text, string? html, string? rtf, Image? image, string[] filePaths)
     {
         Text = text;
         Html = html;
+        Rtf = rtf;
         Image = image;
         FilePaths = filePaths;
     }
 
     internal static ClipboardData FromRaw(in native_clipboard_data_t raw)
     {
-        return new ClipboardData(Marshal.PtrToStringUTF8(raw.text), Marshal.PtrToStringUTF8(raw.html), raw.image == 0 ? null : new Image(Interop.native_handle_retain(raw.image)), Interop.ReadStringList(in raw.file_paths));
+        return new ClipboardData(Marshal.PtrToStringUTF8(raw.text), Marshal.PtrToStringUTF8(raw.html), Marshal.PtrToStringUTF8(raw.rtf), raw.image == 0 ? null : new Image(Interop.native_handle_retain(raw.image)), Interop.ReadStringList(in raw.file_paths));
     }
 
     internal native_clipboard_data_t ToRaw()
@@ -34,6 +36,7 @@ public struct ClipboardData
         var raw = new native_clipboard_data_t();
         raw.text = Marshal.StringToCoTaskMemUTF8(Text);
         raw.html = Marshal.StringToCoTaskMemUTF8(Html);
+        raw.rtf = Marshal.StringToCoTaskMemUTF8(Rtf);
         raw.image = Image?.NativeHandle ?? 0;
         var file_pathsValues = FilePaths ?? Array.Empty<string>();
         raw.file_paths.count = new CLong(file_pathsValues.Length);
@@ -48,6 +51,8 @@ public struct ClipboardData
         raw.text = IntPtr.Zero;
         Marshal.FreeCoTaskMem(raw.html);
         raw.html = IntPtr.Zero;
+        Marshal.FreeCoTaskMem(raw.rtf);
+        raw.rtf = IntPtr.Zero;
         for (var i = 0; i < (int)raw.file_paths.count.Value; ++i) Marshal.FreeCoTaskMem(Marshal.ReadIntPtr(raw.file_paths.items, i * IntPtr.Size));
         Marshal.FreeCoTaskMem(raw.file_paths.items);
         raw.file_paths = default;
@@ -108,6 +113,12 @@ public sealed partial class Clipboard
         Interop.native_clipboard_read_html(nativeCallback, CallbackKeeper.Hold(nativeCallback), CallbackKeeper.Release);
     }
 
+    public void ReadRtf(Action<bool, string?> callback)
+    {
+        ClipboardReadRtfCallbackNativeCallback nativeCallback = (arg0, arg1, delivery, userData) => { try { if (!Interop.native_event_delivery_is_active(delivery)) return; callback(arg0, Marshal.PtrToStringUTF8(arg1)); } catch (Exception) { } finally { Interop.native_event_delivery_complete(delivery, true); } };
+        Interop.native_clipboard_read_rtf(nativeCallback, CallbackKeeper.Hold(nativeCallback), CallbackKeeper.Release);
+    }
+
     public void ReadImage(Action<bool, Image?> callback)
     {
         ClipboardReadImageCallbackNativeCallback nativeCallback = (arg0, arg1, delivery, userData) => { try { if (!Interop.native_event_delivery_is_active(delivery)) return; callback(arg0, arg1 == 0 ? null : new Image(Interop.native_handle_retain(arg1))); } catch (Exception) { } finally { Interop.native_event_delivery_complete(delivery, true); } };
@@ -118,6 +129,12 @@ public sealed partial class Clipboard
     {
         ClipboardReadFilePathsCallbackNativeCallback nativeCallback = (arg0, arg1, delivery, userData) => { try { if (!Interop.native_event_delivery_is_active(delivery)) return; var raw1 = Marshal.PtrToStructure<native_string_list_t>(arg1); callback(arg0, Interop.ReadStringList(in raw1)); } catch (Exception) { } finally { Interop.native_event_delivery_complete(delivery, true); } };
         Interop.native_clipboard_read_file_paths(nativeCallback, CallbackKeeper.Hold(nativeCallback), CallbackKeeper.Release);
+    }
+
+    public void ReadFormatBase64(string format, Action<bool, string?> callback)
+    {
+        ClipboardReadFormatBase64CallbackNativeCallback nativeCallback = (arg0, arg1, delivery, userData) => { try { if (!Interop.native_event_delivery_is_active(delivery)) return; callback(arg0, Marshal.PtrToStringUTF8(arg1)); } catch (Exception) { } finally { Interop.native_event_delivery_complete(delivery, true); } };
+        Interop.native_clipboard_read_format_base64(format, nativeCallback, CallbackKeeper.Hold(nativeCallback), CallbackKeeper.Release);
     }
 
     public bool Write(ClipboardData data)
@@ -143,6 +160,12 @@ public sealed partial class Clipboard
         return rawResult;
     }
 
+    public bool WriteRtf(string rtf)
+    {
+        var rawResult = Interop.native_clipboard_write_rtf(rtf);
+        return rawResult;
+    }
+
     public bool WriteImage(Image? image)
     {
         var rawResult = Interop.native_clipboard_write_image(image?.NativeHandle ?? 0);
@@ -161,9 +184,63 @@ public sealed partial class Clipboard
         return rawResult;
     }
 
+    public bool WriteFormatBase64(string format, string base64Data)
+    {
+        var rawResult = Interop.native_clipboard_write_format_base64(format, base64Data);
+        return rawResult;
+    }
+
     public bool Clear()
     {
         var rawResult = Interop.native_clipboard_clear();
+        return rawResult;
+    }
+
+    public long GetChangeCount()
+    {
+        var rawResult = Interop.native_clipboard_get_change_count();
+        return rawResult;
+    }
+
+    public bool IsConcealed()
+    {
+        var rawResult = Interop.native_clipboard_is_concealed();
+        return rawResult;
+    }
+
+    public bool HasText()
+    {
+        var rawResult = Interop.native_clipboard_has_text();
+        return rawResult;
+    }
+
+    public bool HasHtml()
+    {
+        var rawResult = Interop.native_clipboard_has_html();
+        return rawResult;
+    }
+
+    public bool HasRtf()
+    {
+        var rawResult = Interop.native_clipboard_has_rtf();
+        return rawResult;
+    }
+
+    public bool HasImage()
+    {
+        var rawResult = Interop.native_clipboard_has_image();
+        return rawResult;
+    }
+
+    public bool HasFilePaths()
+    {
+        var rawResult = Interop.native_clipboard_has_file_paths();
+        return rawResult;
+    }
+
+    public bool HasFormat(string format)
+    {
+        var rawResult = Interop.native_clipboard_has_format(format);
         return rawResult;
     }
 
@@ -196,6 +273,12 @@ public sealed partial class Clipboard
     {
         var completion = new System.Threading.Tasks.TaskCompletionSource<string?>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
         ReadHtml((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
+        return completion.Task;
+    }
+    public System.Threading.Tasks.Task<string?> ReadRtfAsync()
+    {
+        var completion = new System.Threading.Tasks.TaskCompletionSource<string?>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
+        ReadRtf((success, value) => { if (success) completion.TrySetResult(value); else completion.TrySetException(new InvalidOperationException("Clipboard operation failed")); });
         return completion.Task;
     }
     public System.Threading.Tasks.Task<Image?> ReadImageAsync()

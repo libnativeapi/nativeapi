@@ -84,6 +84,7 @@ inline Value ToValue(const native_clipboard_data_t& value) {
   Value result = Value::Object();
   result.Set("text", Value::String(value.text));
   result.Set("html", Value::String(value.html));
+  result.Set("rtf", Value::String(value.rtf));
   result.Set("image", Value::BigInt(value.image));
   result.Set("filePaths", CopyStringList(value.file_paths));
   return result;
@@ -107,6 +108,14 @@ inline bool FromJs(napi_env env, napi_value value, native_clipboard_data_t* out,
   }
   if (field != nullptr) {
     if (!GetString(env, field, arena, &out->html)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "rtf", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetString(env, field, arena, &out->rtf)) {
       return false;
     }
   }

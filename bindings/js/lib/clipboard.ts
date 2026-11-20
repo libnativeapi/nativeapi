@@ -15,6 +15,7 @@ function validClipboardText(value: string | null | undefined): boolean {
 export interface ClipboardData {
   text?: string | null;
   html?: string | null;
+  rtf?: string | null;
   image?: Image | null;
   filePaths?: string[];
 }
@@ -66,6 +67,17 @@ export class Clipboard {
     }));
   }
 
+  static readRtf(callback: (arg0: boolean, arg1: string | null) => void): void {
+    native.native_clipboard_read_rtf((arg0: any, arg1: any, delivery: bigint) => deliverEvent(delivery, () => [arg0, arg1] as const, (values) => callback(...values)));
+  }
+
+  static readRtfAsync(): Promise<string | null> {
+    return new Promise((resolve, reject) => this.readRtf((success, value) => {
+      if (success) resolve(value);
+      else reject(new Error("nativeapi: operation failed"));
+    }));
+  }
+
   static readImage(callback: (arg0: boolean, arg1: Image | null) => void): void {
     native.native_clipboard_read_image((arg0: any, arg1: any, delivery: bigint) => deliverEvent(delivery, () => [arg0, (arg1 ? new Image(native.retainHandle(arg1)) : null)] as const, (values) => callback(...values)));
   }
@@ -88,6 +100,10 @@ export class Clipboard {
     }));
   }
 
+  static readFormatBase64(format: string, callback: (arg0: boolean, arg1: string | null) => void): void {
+    native.native_clipboard_read_format_base64(format, (arg0: any, arg1: any, delivery: bigint) => deliverEvent(delivery, () => [arg0, arg1] as const, (values) => callback(...values)));
+  }
+
   static write(data: ClipboardData): boolean {
     if (!validClipboardText(data.text) || !validClipboardText(data.html) || (data.filePaths ?? []).some(path => !validClipboardText(path))) return false;
     return native.native_clipboard_write(({ ...data, image: data.image?.nativeHandle ?? 0n }));
@@ -103,6 +119,10 @@ export class Clipboard {
     return native.native_clipboard_write_html(html);
   }
 
+  static writeRtf(rtf: string): boolean {
+    return native.native_clipboard_write_rtf(rtf);
+  }
+
   static writeImage(image: Image | null): boolean {
     return native.native_clipboard_write_image(image?.nativeHandle ?? 0n);
   }
@@ -112,8 +132,44 @@ export class Clipboard {
     return native.native_clipboard_write_file_paths(filePaths);
   }
 
+  static writeFormatBase64(format: string, base64Data: string): boolean {
+    return native.native_clipboard_write_format_base64(format, base64Data);
+  }
+
   static clear(): boolean {
     return native.native_clipboard_clear();
+  }
+
+  static getChangeCount(): number {
+    return native.native_clipboard_get_change_count();
+  }
+
+  static isConcealed(): boolean {
+    return native.native_clipboard_is_concealed();
+  }
+
+  static hasText(): boolean {
+    return native.native_clipboard_has_text();
+  }
+
+  static hasHtml(): boolean {
+    return native.native_clipboard_has_html();
+  }
+
+  static hasRtf(): boolean {
+    return native.native_clipboard_has_rtf();
+  }
+
+  static hasImage(): boolean {
+    return native.native_clipboard_has_image();
+  }
+
+  static hasFilePaths(): boolean {
+    return native.native_clipboard_has_file_paths();
+  }
+
+  static hasFormat(format: string): boolean {
+    return native.native_clipboard_has_format(format);
   }
 
   static isMonitoring(): boolean {
