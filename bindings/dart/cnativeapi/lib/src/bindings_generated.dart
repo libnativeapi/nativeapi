@@ -2264,6 +2264,9 @@ external ffi.Pointer<ffi.Char> native_text_field_get_placeholder(
   int text_field,
 );
 
+@ffi.Native<native_text_range_t Function(native_text_field_t)>()
+external native_text_range_t native_text_field_get_selection(int text_field);
+
 /// Caller owns the returned string; free it with free_c_str().
 @ffi.Native<ffi.Pointer<ffi.Char> Function(native_text_field_t)>()
 external ffi.Pointer<ffi.Char> native_text_field_get_text(int text_field);
@@ -2286,6 +2289,9 @@ external native_color_t native_text_field_get_text_color(int text_field);
 
 @ffi.Native<ffi.Bool Function(native_text_field_t)>()
 external bool native_text_field_is_bordered(int text_field);
+
+@ffi.Native<ffi.Bool Function(native_text_field_t)>()
+external bool native_text_field_is_composing(int text_field);
 
 @ffi.Native<ffi.Bool Function(native_text_field_t)>()
 external bool native_text_field_is_editable(int text_field);
@@ -2328,6 +2334,12 @@ external void native_text_field_set_placeholder(
 
 @ffi.Native<ffi.Void Function(native_text_field_t, ffi.Bool)>()
 external void native_text_field_set_secure(int text_field, bool is_secure);
+
+@ffi.Native<ffi.Void Function(native_text_field_t, native_text_range_t)>()
+external void native_text_field_set_selection(
+  int text_field,
+  native_text_range_t range,
+);
 
 @ffi.Native<ffi.Void Function(native_text_field_t, ffi.Pointer<ffi.Char>)>()
 external void native_text_field_set_text(
@@ -5753,6 +5765,22 @@ enum native_text_alignment_t {
 /// including its listener registration.
 typedef native_text_field_t = ffi.Uint64;
 typedef Dartnative_text_field_t = int;
+
+final class native_text_range_t extends ffi.Struct {
+  @ffi.UnsignedLong()
+  external int start;
+
+  @ffi.UnsignedLong()
+  external int length;
+
+  static ffi.Pointer<native_text_range_t> $allocate(
+    ffi.Allocator $allocator, {
+    required int start,
+    required int length,
+  }) => $allocator<native_text_range_t>()
+    ..ref.start = start
+    ..ref.length = length;
+}
 
 enum native_title_bar_style_t {
   NATIVE_TITLE_BAR_STYLE_NORMAL(0),

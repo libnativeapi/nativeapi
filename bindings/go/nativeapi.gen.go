@@ -2365,6 +2365,30 @@ const (
 	ViewBackendWinUI3 ViewBackend = 1
 )
 
+// TextRange holds the native TextRange value.
+type TextRange struct {
+	Start  uint64
+	Length uint64
+}
+
+func fromCTextRange(raw C.native_text_range_t) TextRange {
+	return TextRange{
+		Start:  uint64(raw.start),
+		Length: uint64(raw.length),
+	}
+}
+func toCTextRange(value TextRange) (C.native_text_range_t, func()) {
+	var raw C.native_text_range_t
+	var cleanup []func()
+	raw.start = C.ulong(value.Start)
+	raw.length = C.ulong(value.Length)
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
 // ViewEventType identifies the active event variant.
 type ViewEventType int32
 
@@ -3193,6 +3217,25 @@ func (tf *TextField) SetBordered(isBordered bool) {
 // IsBordered invokes the native IsBordered operation.
 func (tf *TextField) IsBordered() bool {
 	result := C.native_text_field_is_bordered(C.native_text_field_t(tf.nativeHandleValue()))
+	return bool(result)
+}
+
+// SetSelection invokes the native SetSelection operation.
+func (tf *TextField) SetSelection(rangeValue TextRange) {
+	cArg0, cArg0Cleanup := toCTextRange(rangeValue)
+	defer cArg0Cleanup()
+	C.native_text_field_set_selection(C.native_text_field_t(tf.nativeHandleValue()), cArg0)
+}
+
+// Selection invokes the native GetSelection operation.
+func (tf *TextField) Selection() TextRange {
+	result := C.native_text_field_get_selection(C.native_text_field_t(tf.nativeHandleValue()))
+	return fromCTextRange(result)
+}
+
+// IsComposing invokes the native IsComposing operation.
+func (tf *TextField) IsComposing() bool {
+	result := C.native_text_field_is_composing(C.native_text_field_t(tf.nativeHandleValue()))
 	return bool(result)
 }
 

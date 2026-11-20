@@ -862,6 +862,21 @@
           ]
         },
         {
+          "key": "TextRange",
+          "kind": "struct",
+          "summary": "A UTF-16 code-unit selection or caret range inside a TextField.",
+          "languages": [
+            "cpp",
+            "csharp",
+            "dart",
+            "go",
+            "js",
+            "python",
+            "rust",
+            "swift"
+          ]
+        },
+        {
           "key": "ViewLayout",
           "kind": "enum",
           "summary": "How a View places its subviews.",

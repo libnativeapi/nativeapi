@@ -1742,6 +1742,56 @@ napi_value Js_native_text_field_is_bordered(napi_env env, napi_callback_info inf
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_text_field_set_selection(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  native_text_range_t p0 = {};
+  if (!FromJs(env, args[1], &p0, arena)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_text_field_set_selection(self, p0); });
+  return Undefined(env);
+}
+
+napi_value Js_native_text_field_get_selection(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_text_field_get_selection(self); });
+  Value value = ToValue(result);
+  return value.ToJs(env);
+}
+
+napi_value Js_native_text_field_is_composing(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  uint64_t self = 0;
+  if (!GetHandle(env, args[0], &self)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_text_field_is_composing(self); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_image_view_create(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -1909,6 +1959,9 @@ void RegisterView(napi_env env, napi_value exports) {
   Export(env, exports, "native_text_field_is_multiline", Js_native_text_field_is_multiline);
   Export(env, exports, "native_text_field_set_bordered", Js_native_text_field_set_bordered);
   Export(env, exports, "native_text_field_is_bordered", Js_native_text_field_is_bordered);
+  Export(env, exports, "native_text_field_set_selection", Js_native_text_field_set_selection);
+  Export(env, exports, "native_text_field_get_selection", Js_native_text_field_get_selection);
+  Export(env, exports, "native_text_field_is_composing", Js_native_text_field_is_composing);
   Export(env, exports, "native_image_view_create", Js_native_image_view_create);
   Export(env, exports, "native_image_view_free", Js_native_image_view_free);
   Export(env, exports, "native_image_view_set_image", Js_native_image_view_set_image);

@@ -4585,6 +4585,156 @@
               "signature": "var isBordered: Bool"
             }
           }
+        },
+        {
+          "key": "TextField::SetSelection",
+          "kind": "method",
+          "doc": {
+            "summary": "Sets the text selection or caret position in UTF-16 code units.",
+            "details": "Out-of-bounds offsets are clamped to the current text length.",
+            "params": [
+              {
+                "name": "range",
+                "text": "Start offset and selection length in UTF-16 code units."
+              }
+            ],
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Supported while the field is being edited (has an active field editor).\n- Windows: ✅ Fully supported on Win32 and WinUI 3.\n- Linux: ✅ Fully supported on single-line and multi-line fields.\n- Android: ❌ Not applicable - Ignored.\n- iOS: ❌ Not applicable - Ignored.\n- OpenHarmony: ❌ Not implemented - Ignored."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "SetSelection",
+              "signature": "void SetSelection(TextRange range)"
+            },
+            "csharp": {
+              "name": "SetSelection",
+              "signature": "public void SetSelection(TextRange range)"
+            },
+            "dart": {
+              "name": "selection",
+              "signature": "set selection(TextRange value)"
+            },
+            "go": {
+              "name": "SetSelection",
+              "signature": "func (tf *TextField) SetSelection(rangeValue TextRange)"
+            },
+            "js": {
+              "name": "setSelection",
+              "signature": "setSelection(range: TextRange): void"
+            },
+            "python": {
+              "name": "set_selection",
+              "signature": "def set_selection(self, range: TextRange) -> None:\n@selection.setter\ndef selection(self, value: TextRange) -> None:"
+            },
+            "rust": {
+              "name": "set_selection",
+              "signature": "pub fn set_selection(&self, range: &TextRange)"
+            },
+            "swift": {
+              "name": "setSelection",
+              "signature": "func setSelection(_ range: TextRange) -> Void"
+            }
+          }
+        },
+        {
+          "key": "TextField::GetSelection",
+          "kind": "method",
+          "doc": {
+            "summary": "Gets the current text selection or caret range in UTF-16 code units.",
+            "returns": "The selected range, or `{0, 0}` when unavailable.",
+            "notes": [
+              {
+                "kind": "see",
+                "text": "SetSelection() for platform availability."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "GetSelection",
+              "signature": "TextRange GetSelection() const"
+            },
+            "csharp": {
+              "name": "Selection",
+              "signature": "public TextRange Selection"
+            },
+            "dart": {
+              "name": "selection",
+              "signature": "TextRange get selection"
+            },
+            "go": {
+              "name": "Selection",
+              "signature": "func (tf *TextField) Selection() TextRange"
+            },
+            "js": {
+              "name": "selection",
+              "signature": "get selection(): TextRange"
+            },
+            "python": {
+              "name": "selection",
+              "signature": "@property\ndef selection(self) -> TextRange:"
+            },
+            "rust": {
+              "name": "selection",
+              "signature": "pub fn selection(&self) -> TextRange"
+            },
+            "swift": {
+              "name": "selection",
+              "signature": "var selection: TextRange"
+            }
+          }
+        },
+        {
+          "key": "TextField::IsComposing",
+          "kind": "method",
+          "doc": {
+            "summary": "Checks if an input method (IME) composition is currently active.",
+            "returns": "true while uncommitted IME preedit text is present, false otherwise.",
+            "notes": [
+              {
+                "kind": "note",
+                "text": "Platform availability:\n- macOS: ✅ Checks NSTextInputClient hasMarkedText on the active field editor.\n- Windows: ✅ Checks IMM32 composition string on Win32; false on WinUI 3.\n- Linux: ⚠️ Tracks GTK preedit state on single-line entries.\n- Android: ❌ Always false.\n- iOS: ❌ Always false.\n- OpenHarmony: ❌ Always false."
+              }
+            ]
+          },
+          "signatures": {
+            "cpp": {
+              "name": "IsComposing",
+              "signature": "bool IsComposing() const"
+            },
+            "csharp": {
+              "name": "IsComposing",
+              "signature": "public bool IsComposing"
+            },
+            "dart": {
+              "name": "isComposing",
+              "signature": "bool get isComposing"
+            },
+            "go": {
+              "name": "IsComposing",
+              "signature": "func (tf *TextField) IsComposing() bool"
+            },
+            "js": {
+              "name": "isComposing",
+              "signature": "get isComposing(): boolean"
+            },
+            "python": {
+              "name": "is_composing",
+              "signature": "@property\ndef is_composing(self) -> bool:"
+            },
+            "rust": {
+              "name": "is_composing",
+              "signature": "pub fn is_composing(&self) -> bool"
+            },
+            "swift": {
+              "name": "isComposing",
+              "signature": "var isComposing: Bool"
+            }
+          }
         }
       ]
     },
@@ -4762,6 +4912,132 @@
             "swift": {
               "name": "image",
               "signature": "var image: Image?"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "TextRange",
+      "kind": "struct",
+      "doc": {
+        "summary": "A UTF-16 code-unit selection or caret range inside a TextField.",
+        "details": "`start` is the zero-based offset from the beginning of the text and `length` is the number of selected code units (0 for a collapsed caret)."
+      },
+      "signatures": {
+        "cpp": {
+          "name": "TextRange",
+          "signature": "struct TextRange"
+        },
+        "csharp": {
+          "name": "TextRange",
+          "signature": "public struct TextRange"
+        },
+        "dart": {
+          "name": "TextRange",
+          "signature": "class TextRange"
+        },
+        "go": {
+          "name": "TextRange",
+          "signature": "type TextRange struct"
+        },
+        "js": {
+          "name": "TextRange",
+          "signature": "export interface TextRange"
+        },
+        "python": {
+          "name": "TextRange",
+          "signature": "@dataclass\nclass TextRange:"
+        },
+        "rust": {
+          "name": "TextRange",
+          "signature": "pub struct TextRange"
+        },
+        "swift": {
+          "name": "TextRange",
+          "signature": "struct TextRange"
+        }
+      },
+      "members": [
+        {
+          "key": "TextRange::start",
+          "kind": "field",
+          "doc": {
+            "summary": "Zero-based start offset in UTF-16 code units."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "start",
+              "signature": "unsigned long start"
+            },
+            "csharp": {
+              "name": "Start",
+              "signature": "public ulong Start;"
+            },
+            "dart": {
+              "name": "start",
+              "signature": "final int start"
+            },
+            "go": {
+              "name": "Start",
+              "signature": "Start uint64"
+            },
+            "js": {
+              "name": "start",
+              "signature": "start: number"
+            },
+            "python": {
+              "name": "start",
+              "signature": "start: int = 0"
+            },
+            "rust": {
+              "name": "start",
+              "signature": "pub start: std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "start",
+              "signature": "var start: CUnsignedLong"
+            }
+          }
+        },
+        {
+          "key": "TextRange::length",
+          "kind": "field",
+          "doc": {
+            "summary": "Number of selected UTF-16 code units; 0 represents a caret."
+          },
+          "signatures": {
+            "cpp": {
+              "name": "length",
+              "signature": "unsigned long length"
+            },
+            "csharp": {
+              "name": "Length",
+              "signature": "public ulong Length;"
+            },
+            "dart": {
+              "name": "length",
+              "signature": "final int length"
+            },
+            "go": {
+              "name": "Length",
+              "signature": "Length uint64"
+            },
+            "js": {
+              "name": "length",
+              "signature": "length: number"
+            },
+            "python": {
+              "name": "length",
+              "signature": "length: int = 0"
+            },
+            "rust": {
+              "name": "length",
+              "signature": "pub length: std::os::raw::c_ulong"
+            },
+            "swift": {
+              "name": "length",
+              "signature": "var length: CUnsignedLong"
             }
           }
         }

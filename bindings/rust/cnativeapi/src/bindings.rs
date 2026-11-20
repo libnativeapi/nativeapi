@@ -349,6 +349,12 @@ pub type native_text_alignment_t = ::std::os::raw::c_uint;
 pub const NATIVE_VIEW_BACKEND_NATIVE: native_view_backend_t = 0;
 pub const NATIVE_VIEW_BACKEND_WIN_UI3: native_view_backend_t = 1;
 pub type native_view_backend_t = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_text_range_t {
+    pub start: ::std::os::raw::c_ulong,
+    pub length: ::std::os::raw::c_ulong,
+}
 #[doc = " Owning list of View handles."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -848,6 +854,18 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_text_field_is_bordered(text_field: native_text_field_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_text_field_set_selection(
+        text_field: native_text_field_t,
+        range: native_text_range_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_text_field_get_selection(text_field: native_text_field_t) -> native_text_range_t;
+}
+unsafe extern "C" {
+    pub fn native_text_field_is_composing(text_field: native_text_field_t) -> bool;
 }
 unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]

@@ -134,6 +134,10 @@ class native_notification_event_t(Structure):
     pass
 
 
+class native_text_range_t(Structure):
+    pass
+
+
 class native_view_event_text_field_changed_t(Structure):
     pass
 
@@ -498,6 +502,10 @@ native_notification_event_data_t._fields_ = [
 native_notification_event_t._fields_ = [
     ("type", c_int),
     ("data", native_notification_event_data_t),
+]
+native_text_range_t._fields_ = [
+    ("start", c_ulong),
+    ("length", c_ulong),
 ]
 native_view_event_text_field_changed_t._fields_ = [
     ("text", c_char_p),
@@ -2364,6 +2372,28 @@ native_text_field_set_bordered = function(
 )
 native_text_field_is_bordered = function(
     "native_text_field_is_bordered",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_set_selection = function(
+    "native_text_field_set_selection",
+    None,
+    [
+        c_uint64,
+        native_text_range_t,
+    ],
+)
+native_text_field_get_selection = function(
+    "native_text_field_get_selection",
+    native_text_range_t,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_is_composing = function(
+    "native_text_field_is_composing",
     c_bool,
     [
         c_uint64,

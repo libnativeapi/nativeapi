@@ -83,6 +83,29 @@ public enum ViewBackend: CInt {
   }
 }
 
+public struct TextRange {
+  public var start: CUnsignedLong
+  public var length: CUnsignedLong
+
+  public init(start: CUnsignedLong, length: CUnsignedLong) {
+    self.start = start
+    self.length = length
+  }
+}
+
+extension TextRange {
+  init(raw: native_text_range_t) {
+    self.init(start: raw.start, length: raw.length)
+  }
+
+  func toRaw() -> native_text_range_t {
+    var raw = native_text_range_t()
+    raw.start = self.start
+    raw.length = self.length
+    return raw
+  }
+}
+
 /// One `ViewEvent`, in its concrete form.
 public enum ViewEvent {
   case focused(viewId: ViewId)
@@ -649,6 +672,19 @@ public class TextField: View {
 
   public var isBordered: Bool {
     return native_text_field_is_bordered(nativeHandle)
+  }
+
+  public func setSelection(_ range: TextRange) -> Void {
+    let rangeRaw = range.toRaw()
+    native_text_field_set_selection(nativeHandle, rangeRaw)
+  }
+
+  public var selection: TextRange {
+    return TextRange(raw: native_text_field_get_selection(nativeHandle))
+  }
+
+  public var isComposing: Bool {
+    return native_text_field_is_composing(nativeHandle)
   }
 
 }

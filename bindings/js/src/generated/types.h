@@ -66,6 +66,8 @@ inline Value ToValue(const native_url_open_result_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_url_open_result_t* out, Arena& arena);
 inline Value ToValue(const native_protocol_handler_event_t& event);
 inline Value ToValue(const native_notification_event_t& event);
+inline Value ToValue(const native_text_range_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_text_range_t* out, Arena& arena);
 inline Value ToValue(const native_view_event_t& event);
 inline Value ToValue(const native_window_event_t& event);
 inline Value ToValue(const native_window_drag_event_t& event);
@@ -482,6 +484,37 @@ inline Value ToValue(const native_notification_event_t& event) {
       return Value::Null();
   }
   return result;
+}
+
+inline Value ToValue(const native_text_range_t& value) {
+  Value result = Value::Object();
+  result.Set("start", Value::Number(static_cast<double>(value.start)));
+  result.Set("length", Value::Number(static_cast<double>(value.length)));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_text_range_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "TextRange")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "start", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->start)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "length", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->length)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 inline Value ToValue(const native_view_event_t& event) {
