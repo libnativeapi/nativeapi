@@ -1,3 +1,7 @@
+## Unreleased
+
+- Windows: resolve the current process window across Dart isolate threads and hidden startup windows, including after a Flutter hot restart ([#49](https://github.com/libnativeapi/nativeapi/issues/49)).
+
 ## 0.6.1
 
 - Windows: keep the owning window active while tracking a window-relative popup menu ([nativeapi-core#94](https://github.com/libnativeapi/nativeapi-core/pull/94)).
