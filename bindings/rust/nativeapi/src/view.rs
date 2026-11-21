@@ -108,6 +108,34 @@ impl ViewBackend {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TextRange {
+    pub start: std::os::raw::c_ulong,
+    pub length: std::os::raw::c_ulong,
+}
+
+impl TextRange {
+    pub(crate) unsafe fn from_raw(raw: &cnativeapi::native_text_range_t) -> Self {
+        Self {
+            start: raw.start,
+            length: raw.length,
+        }
+    }
+
+    pub(crate) fn to_raw(&self) -> RawOfTextRange {
+        let mut raw = cnativeapi::native_text_range_t::default();
+        raw.start = self.start;
+        raw.length = self.length;
+        RawOfTextRange { raw, _owned: () }
+    }
+}
+
+/// `TextRange` in its C form, keeping any borrowed buffers alive.
+pub(crate) struct RawOfTextRange {
+    pub(crate) raw: cnativeapi::native_text_range_t,
+    _owned: (),
+}
+
 /// One `ViewEvent`, in its concrete form.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ViewEvent {
@@ -1090,6 +1118,26 @@ impl TextField {
     pub fn is_bordered(&self) -> bool {
         unsafe {
             cnativeapi::native_text_field_is_bordered(self.handle)
+        }
+    }
+
+    pub fn set_selection(&self, range: &TextRange) {
+        let range_raw = range.to_raw();
+        unsafe {
+            cnativeapi::native_text_field_set_selection(self.handle, range_raw.raw);
+        }
+    }
+
+    pub fn selection(&self) -> TextRange {
+        unsafe {
+            let raw = cnativeapi::native_text_field_get_selection(self.handle);
+            TextRange::from_raw(&raw)
+        }
+    }
+
+    pub fn is_composing(&self) -> bool {
+        unsafe {
+            cnativeapi::native_text_field_is_composing(self.handle)
         }
     }
 

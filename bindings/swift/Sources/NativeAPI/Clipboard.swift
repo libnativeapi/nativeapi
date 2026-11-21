@@ -8,12 +8,14 @@ import Foundation
 public struct ClipboardData {
   public var text: String?
   public var html: String?
+  public var rtf: String?
   public var image: Image?
   public var filePaths: [String]
 
-  public init(text: String? = nil, html: String? = nil, image: Image? = nil, filePaths: [String] = []) {
+  public init(text: String? = nil, html: String? = nil, rtf: String? = nil, image: Image? = nil, filePaths: [String] = []) {
     self.text = text
     self.html = html
+    self.rtf = rtf
     self.image = image
     self.filePaths = filePaths
   }
@@ -21,13 +23,14 @@ public struct ClipboardData {
 
 extension ClipboardData {
   init(raw: native_clipboard_data_t) {
-    self.init(text: raw.text.map { String(cString: $0) }, html: raw.html.map { String(cString: $0) }, image: nativeapiOwned(raw.image) { Image(nativeHandle: $0) }, filePaths: nativeapiStringList(raw.file_paths))
+    self.init(text: raw.text.map { String(cString: $0) }, html: raw.html.map { String(cString: $0) }, rtf: raw.rtf.map { String(cString: $0) }, image: nativeapiOwned(raw.image) { Image(nativeHandle: $0) }, filePaths: nativeapiStringList(raw.file_paths))
   }
 
   func toRaw() -> native_clipboard_data_t {
     var raw = native_clipboard_data_t()
     raw.text = self.text.map { strdup($0) }
     raw.html = self.html.map { strdup($0) }
+    raw.rtf = self.rtf.map { strdup($0) }
     raw.image = self.image?.nativeHandle ?? 0
     if !self.filePaths.isEmpty {
       let pointers = self.filePaths.map { strdup($0) }
@@ -43,6 +46,8 @@ extension ClipboardData {
     raw.text = nil
     free(raw.html)
     raw.html = nil
+    free(raw.rtf)
+    raw.rtf = nil
     if let items = raw.file_paths.items {
       for index in 0..<Int(raw.file_paths.count) {
         free(items[index])
@@ -110,6 +115,16 @@ public final class Clipboard: Sendable {
     native_clipboard_read_html(callbackTrampoline, callbackContext, nativeapiReleaseUserData)
   }
 
+  public func readRtf(_ callback: @escaping (Bool, String?) -> Void) -> Void {
+    let callbackContext = Unmanaged.passRetained(CallbackBox2<Bool, String?>(callback)).toOpaque()
+    let callbackTrampoline: @convention(c) (Bool, UnsafePointer<CChar>?, native_event_delivery_t, UnsafeMutableRawPointer?) -> Void = { arg0, arg1, delivery, userData in
+      defer { _ = native_event_delivery_complete(delivery, true) }
+      guard let userData else { return }
+      Unmanaged<CallbackBox2<Bool, String?>>.fromOpaque(userData).takeUnretainedValue().body(arg0, arg1.map { String(cString: $0) })
+    }
+    native_clipboard_read_rtf(callbackTrampoline, callbackContext, nativeapiReleaseUserData)
+  }
+
   public func readImage(_ callback: @escaping (Bool, Image?) -> Void) -> Void {
     let callbackContext = Unmanaged.passRetained(CallbackBox2<Bool, Image?>(callback)).toOpaque()
     let callbackTrampoline: @convention(c) (Bool, native_image_t, native_event_delivery_t, UnsafeMutableRawPointer?) -> Void = { arg0, arg1, delivery, userData in
@@ -131,6 +146,18 @@ public final class Clipboard: Sendable {
     native_clipboard_read_file_paths(callbackTrampoline, callbackContext, nativeapiReleaseUserData)
   }
 
+  public func readFormatBase64(_ format: String, callback: @escaping (Bool, String?) -> Void) -> Void {
+    let formatCString = strdup(format)
+    defer { free(formatCString) }
+    let callbackContext = Unmanaged.passRetained(CallbackBox2<Bool, String?>(callback)).toOpaque()
+    let callbackTrampoline: @convention(c) (Bool, UnsafePointer<CChar>?, native_event_delivery_t, UnsafeMutableRawPointer?) -> Void = { arg0, arg1, delivery, userData in
+      defer { _ = native_event_delivery_complete(delivery, true) }
+      guard let userData else { return }
+      Unmanaged<CallbackBox2<Bool, String?>>.fromOpaque(userData).takeUnretainedValue().body(arg0, arg1.map { String(cString: $0) })
+    }
+    native_clipboard_read_format_base64(formatCString, callbackTrampoline, callbackContext, nativeapiReleaseUserData)
+  }
+
   public func write(_ data: ClipboardData) -> Bool {
     var dataRaw = data.toRaw()
     defer { ClipboardData.releaseRaw(&dataRaw) }
@@ -147,6 +174,12 @@ public final class Clipboard: Sendable {
     let htmlCString = strdup(html)
     defer { free(htmlCString) }
     return native_clipboard_write_html(htmlCString)
+  }
+
+  public func writeRtf(_ rtf: String) -> Bool {
+    let rtfCString = strdup(rtf)
+    defer { free(rtfCString) }
+    return native_clipboard_write_rtf(rtfCString)
   }
 
   public func writeImage(_ image: Image?) -> Bool {
@@ -166,8 +199,50 @@ public final class Clipboard: Sendable {
     return native_clipboard_write_file_paths(filePathsList)
   }
 
+  public func writeFormatBase64(_ format: String, base64Data: String) -> Bool {
+    let formatCString = strdup(format)
+    defer { free(formatCString) }
+    let base64DataCString = strdup(base64Data)
+    defer { free(base64DataCString) }
+    return native_clipboard_write_format_base64(formatCString, base64DataCString)
+  }
+
   public func clear() -> Bool {
     return native_clipboard_clear()
+  }
+
+  public func getChangeCount() -> Int64 {
+    return native_clipboard_get_change_count()
+  }
+
+  public func isConcealed() -> Bool {
+    return native_clipboard_is_concealed()
+  }
+
+  public func hasText() -> Bool {
+    return native_clipboard_has_text()
+  }
+
+  public func hasHtml() -> Bool {
+    return native_clipboard_has_html()
+  }
+
+  public func hasRtf() -> Bool {
+    return native_clipboard_has_rtf()
+  }
+
+  public func hasImage() -> Bool {
+    return native_clipboard_has_image()
+  }
+
+  public func hasFilePaths() -> Bool {
+    return native_clipboard_has_file_paths()
+  }
+
+  public func hasFormat(_ format: String) -> Bool {
+    let formatCString = strdup(format)
+    defer { free(formatCString) }
+    return native_clipboard_has_format(formatCString)
   }
 
   public func isMonitoring() -> Bool {

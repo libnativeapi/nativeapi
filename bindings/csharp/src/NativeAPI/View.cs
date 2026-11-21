@@ -37,6 +37,31 @@ public enum ViewBackend
     WinUi3 = 1,
 }
 
+public struct TextRange
+{
+    public ulong Start;
+    public ulong Length;
+
+    public TextRange(ulong start, ulong length)
+    {
+        Start = start;
+        Length = length;
+    }
+
+    internal static TextRange FromRaw(in native_text_range_t raw)
+    {
+        return new TextRange((ulong)raw.start.Value, (ulong)raw.length.Value);
+    }
+
+    internal native_text_range_t ToRaw()
+    {
+        var raw = new native_text_range_t();
+        raw.start = new CULong(checked((nuint)Start));
+        raw.length = new CULong(checked((nuint)Length));
+        return raw;
+    }
+}
+
 /// <summary>One ViewEvent, in its concrete form.</summary>
 public abstract record ViewEvent
 {
@@ -829,6 +854,30 @@ public partial class TextField : View
         get
         {
             var rawResult = Interop.native_text_field_is_bordered(NativeHandle);
+            return rawResult;
+        }
+    }
+
+    public void SetSelection(TextRange range)
+    {
+        var rawRange = range.ToRaw();
+        Interop.native_text_field_set_selection(NativeHandle, rawRange);
+    }
+
+    public TextRange Selection
+    {
+        get
+        {
+            var rawResult = Interop.native_text_field_get_selection(NativeHandle);
+            return TextRange.FromRaw(in rawResult);
+        }
+    }
+
+    public bool IsComposing
+    {
+        get
+        {
+            var rawResult = Interop.native_text_field_is_composing(NativeHandle);
             return rawResult;
         }
     }

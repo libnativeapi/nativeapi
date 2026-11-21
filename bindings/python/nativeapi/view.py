@@ -42,6 +42,22 @@ class ViewBackend(enum.IntEnum):
     WIN_UI3 = 1
 
 
+@dataclass
+class TextRange:
+    start: int = 0
+    length: int = 0
+
+    @classmethod
+    def _from_c(cls, raw: _C.native_text_range_t) -> TextRange:
+        return cls(raw.start, raw.length)
+
+    def _to_c(self) -> _C.native_text_range_t:
+        raw = _C.native_text_range_t()
+        raw.start = self.start
+        raw.length = self.length
+        return raw
+
+
 @dataclass(frozen=True)
 class ViewEvent:
     """Base of every ViewEvent; listeners receive one of its subclasses."""
@@ -671,6 +687,19 @@ class TextField(View):
         raw = _C.native_text_field_is_bordered(self._handle)
         return raw
 
+    def set_selection(self, range: TextRange) -> None:
+        _C.native_text_field_set_selection(self._handle, range._to_c())
+
+    @property
+    def selection(self) -> TextRange:
+        raw = _C.native_text_field_get_selection(self._handle)
+        return TextRange._from_c(raw)
+
+    @property
+    def is_composing(self) -> bool:
+        raw = _C.native_text_field_is_composing(self._handle)
+        return raw
+
     @text.setter
     def text(self, value: str) -> None:
         self.set_text(value)
@@ -698,6 +727,10 @@ class TextField(View):
     @placeholder.setter
     def placeholder(self, value: str | None) -> None:
         self.set_placeholder(value)
+
+    @selection.setter
+    def selection(self, value: TextRange) -> None:
+        self.set_selection(value)
 
 
 class ImageView(View):

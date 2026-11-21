@@ -26,6 +26,9 @@ fn main() {
             println!("[app] quit requested");
             Application::quit(0);
         }
+        ApplicationEvent::SystemBrightnessChanged { brightness } => {
+            println!("[app] system brightness changed: {brightness:?}");
+        }
     });
 
     println!("Single instance: {}", Application::is_single_instance());

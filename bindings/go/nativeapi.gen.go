@@ -17,6 +17,7 @@ import (
 type ClipboardData struct {
 	Text      *string
 	HTML      *string
+	Rtf       *string
 	Image     *Image
 	FilePaths []string
 }
@@ -25,6 +26,7 @@ func fromCClipboardData(raw C.native_clipboard_data_t) ClipboardData {
 	return ClipboardData{
 		Text:      optionalStringFromC(raw.text),
 		HTML:      optionalStringFromC(raw.html),
+		Rtf:       optionalStringFromC(raw.rtf),
 		Image:     wrapImage(uint64(C.native_handle_retain(raw.image)), false),
 		FilePaths: stringsFromC(raw.file_paths),
 	}
@@ -44,10 +46,16 @@ func toCClipboardData(value ClipboardData) (C.native_clipboard_data_t, func()) {
 		cleanup = append(cleanup, func() { C.free(unsafe.Pointer(cField1)) })
 	}
 	raw.html = cField1
+	var cField2 *C.char
+	if value.Rtf != nil {
+		cField2 = C.CString(*value.Rtf)
+		cleanup = append(cleanup, func() { C.free(unsafe.Pointer(cField2)) })
+	}
+	raw.rtf = cField2
 	raw.image = C.native_image_t(value.Image.nativeHandleValue())
-	cField3, cField3Cleanup := stringsToC(value.FilePaths)
-	cleanup = append(cleanup, func() { cField3Cleanup() })
-	raw.file_paths = cField3
+	cField4, cField4Cleanup := stringsToC(value.FilePaths)
+	cleanup = append(cleanup, func() { cField4Cleanup() })
+	raw.file_paths = cField4
 	return raw, func() {
 		for i := len(cleanup) - 1; i >= 0; i-- {
 			cleanup[i]()
@@ -138,6 +146,19 @@ func (c clipboard) ReadHTML(callback func(bool, *string)) {
 	C.native_clipboard_read_html(cArg0Fn, cArg0Data, cArg0Release)
 }
 
+// ReadRtf invokes the native ReadRtf operation.
+func (c clipboard) ReadRtf(callback func(bool, *string)) {
+	var cArg0Fn C.native_clipboard_read_rtf_callback_t
+	var cArg0Data unsafe.Pointer
+	var cArg0Release C.native_release_user_data_t
+	if callback != nil {
+		cArg0Data = newCallback(callback)
+		cArg0Fn = C.native_clipboard_read_rtf_callback_t(C.go_get_native_clipboard_read_rtf_callback_t())
+		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_rtf(cArg0Fn, cArg0Data, cArg0Release)
+}
+
 // ReadImage invokes the native ReadImage operation.
 func (c clipboard) ReadImage(callback func(bool, *Image)) {
 	var cArg0Fn C.native_clipboard_read_image_callback_t
@@ -162,6 +183,21 @@ func (c clipboard) ReadFilePaths(callback func(bool, []string)) {
 		cArg0Release = C.native_release_user_data_t(C.go_get_release_callback())
 	}
 	C.native_clipboard_read_file_paths(cArg0Fn, cArg0Data, cArg0Release)
+}
+
+// ReadFormatBase64 invokes the native ReadFormatBase64 operation.
+func (c clipboard) ReadFormatBase64(format string, callback func(bool, *string)) {
+	cArg0 := C.CString(format)
+	defer C.free(unsafe.Pointer(cArg0))
+	var cArg1Fn C.native_clipboard_read_format_base64_callback_t
+	var cArg1Data unsafe.Pointer
+	var cArg1Release C.native_release_user_data_t
+	if callback != nil {
+		cArg1Data = newCallback(callback)
+		cArg1Fn = C.native_clipboard_read_format_base64_callback_t(C.go_get_native_clipboard_read_format_base64_callback_t())
+		cArg1Release = C.native_release_user_data_t(C.go_get_release_callback())
+	}
+	C.native_clipboard_read_format_base64(cArg0, cArg1Fn, cArg1Data, cArg1Release)
 }
 
 // Write invokes the native Write operation.
@@ -209,6 +245,18 @@ func (c clipboard) WriteHTML(html string) error {
 	return nil
 }
 
+// WriteRtf invokes the native WriteRtf operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteRtf(rtf string) error {
+	cArg0 := C.CString(rtf)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_clipboard_write_rtf(cArg0)
+	if !bool(result) {
+		return nativeError("Clipboard.WriteRtf")
+	}
+	return nil
+}
+
 // WriteImage invokes the native WriteImage operation.
 // Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
 func (c clipboard) WriteImage(image *Image) error {
@@ -234,6 +282,20 @@ func (c clipboard) WriteFilePaths(filePaths []string) error {
 	return nil
 }
 
+// WriteFormatBase64 invokes the native WriteFormatBase64 operation.
+// Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
+func (c clipboard) WriteFormatBase64(format, base64Data string) error {
+	cArg0 := C.CString(format)
+	defer C.free(unsafe.Pointer(cArg0))
+	cArg1 := C.CString(base64Data)
+	defer C.free(unsafe.Pointer(cArg1))
+	result := C.native_clipboard_write_format_base64(cArg0, cArg1)
+	if !bool(result) {
+		return nativeError("Clipboard.WriteFormatBase64")
+	}
+	return nil
+}
+
 // Clear invokes the native Clear operation.
 // Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
 func (c clipboard) Clear() error {
@@ -242,6 +304,56 @@ func (c clipboard) Clear() error {
 		return nativeError("Clipboard.Clear")
 	}
 	return nil
+}
+
+// ChangeCount invokes the native GetChangeCount operation.
+func (c clipboard) ChangeCount() int64 {
+	result := C.native_clipboard_get_change_count()
+	return int64(result)
+}
+
+// IsConcealed invokes the native IsConcealed operation.
+func (c clipboard) IsConcealed() bool {
+	result := C.native_clipboard_is_concealed()
+	return bool(result)
+}
+
+// HasText invokes the native HasText operation.
+func (c clipboard) HasText() bool {
+	result := C.native_clipboard_has_text()
+	return bool(result)
+}
+
+// HasHTML invokes the native HasHtml operation.
+func (c clipboard) HasHTML() bool {
+	result := C.native_clipboard_has_html()
+	return bool(result)
+}
+
+// HasRtf invokes the native HasRtf operation.
+func (c clipboard) HasRtf() bool {
+	result := C.native_clipboard_has_rtf()
+	return bool(result)
+}
+
+// HasImage invokes the native HasImage operation.
+func (c clipboard) HasImage() bool {
+	result := C.native_clipboard_has_image()
+	return bool(result)
+}
+
+// HasFilePaths invokes the native HasFilePaths operation.
+func (c clipboard) HasFilePaths() bool {
+	result := C.native_clipboard_has_file_paths()
+	return bool(result)
+}
+
+// HasFormat invokes the native HasFormat operation.
+func (c clipboard) HasFormat(format string) bool {
+	cArg0 := C.CString(format)
+	defer C.free(unsafe.Pointer(cArg0))
+	result := C.native_clipboard_has_format(cArg0)
+	return bool(result)
 }
 
 // IsMonitoring invokes the native IsMonitoring operation.
@@ -2365,6 +2477,30 @@ const (
 	ViewBackendWinUI3 ViewBackend = 1
 )
 
+// TextRange holds the native TextRange value.
+type TextRange struct {
+	Start  uint64
+	Length uint64
+}
+
+func fromCTextRange(raw C.native_text_range_t) TextRange {
+	return TextRange{
+		Start:  uint64(raw.start),
+		Length: uint64(raw.length),
+	}
+}
+func toCTextRange(value TextRange) (C.native_text_range_t, func()) {
+	var raw C.native_text_range_t
+	var cleanup []func()
+	raw.start = C.ulong(value.Start)
+	raw.length = C.ulong(value.Length)
+	return raw, func() {
+		for i := len(cleanup) - 1; i >= 0; i-- {
+			cleanup[i]()
+		}
+	}
+}
+
 // ViewEventType identifies the active event variant.
 type ViewEventType int32
 
@@ -3193,6 +3329,25 @@ func (tf *TextField) SetBordered(isBordered bool) {
 // IsBordered invokes the native IsBordered operation.
 func (tf *TextField) IsBordered() bool {
 	result := C.native_text_field_is_bordered(C.native_text_field_t(tf.nativeHandleValue()))
+	return bool(result)
+}
+
+// SetSelection invokes the native SetSelection operation.
+func (tf *TextField) SetSelection(rangeValue TextRange) {
+	cArg0, cArg0Cleanup := toCTextRange(rangeValue)
+	defer cArg0Cleanup()
+	C.native_text_field_set_selection(C.native_text_field_t(tf.nativeHandleValue()), cArg0)
+}
+
+// Selection invokes the native GetSelection operation.
+func (tf *TextField) Selection() TextRange {
+	result := C.native_text_field_get_selection(C.native_text_field_t(tf.nativeHandleValue()))
+	return fromCTextRange(result)
+}
+
+// IsComposing invokes the native IsComposing operation.
+func (tf *TextField) IsComposing() bool {
+	result := C.native_text_field_is_composing(C.native_text_field_t(tf.nativeHandleValue()))
 	return bool(result)
 }
 
@@ -6374,19 +6529,21 @@ const (
 type ApplicationEventType int32
 
 const (
-	ApplicationEventStarted       ApplicationEventType = 0
-	ApplicationEventExiting       ApplicationEventType = 1
-	ApplicationEventActivated     ApplicationEventType = 2
-	ApplicationEventDeactivated   ApplicationEventType = 3
-	ApplicationEventQuitRequested ApplicationEventType = 4
+	ApplicationEventStarted                 ApplicationEventType = 0
+	ApplicationEventExiting                 ApplicationEventType = 1
+	ApplicationEventActivated               ApplicationEventType = 2
+	ApplicationEventDeactivated             ApplicationEventType = 3
+	ApplicationEventQuitRequested           ApplicationEventType = 4
+	ApplicationEventSystemBrightnessChanged ApplicationEventType = 5
 )
 
 // ApplicationEvent copies an event payload. Handle fields are borrowed until the callback returns.
 // Only fields belonging to Type are populated.
 type ApplicationEvent struct {
-	Type     ApplicationEventType
-	ExitCode int32
-	Request  *EventRequest
+	Type       ApplicationEventType
+	ExitCode   int32
+	Request    *EventRequest
+	Brightness Brightness
 }
 
 func fromCApplicationEvent(raw *C.native_application_event_t) ApplicationEvent {
@@ -6399,6 +6556,8 @@ func fromCApplicationEvent(raw *C.native_application_event_t) ApplicationEvent {
 	case ApplicationEventDeactivated:
 	case ApplicationEventQuitRequested:
 		value.Request = wrapEventRequest(uint64(C.go_native_application_event_t_quit_requested_Request(raw)), true)
+	case ApplicationEventSystemBrightnessChanged:
+		value.Brightness = Brightness(C.go_native_application_event_t_system_brightness_changed_Brightness(raw))
 	}
 	return value
 }
@@ -6523,6 +6682,12 @@ func (a application) SetBrightness(brightness Brightness) error {
 	return nil
 }
 
+// SystemBrightness invokes the native GetSystemBrightness operation.
+func (a application) SystemBrightness() Brightness {
+	result := C.native_application_get_system_brightness()
+	return Brightness(result)
+}
+
 // SetMenuBar invokes the native SetMenuBar operation.
 // Failure wraps ErrOperationFailed; the native ABI provides no detailed cause.
 func (a application) SetMenuBar(menu *Menu) error {
@@ -6634,6 +6799,15 @@ func goCall_native_clipboard_read_file_paths_callback_t(handle C.uintptr_t, arg0
 	cgo.Handle(handle).Value().(func(bool, []string))(bool(arg0), stringsFromC(*(*C.native_string_list_t)(arg1)))
 }
 
+//export goCall_native_clipboard_read_format_base64_callback_t
+func goCall_native_clipboard_read_format_base64_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *string))(bool(arg0), optionalStringFromC((*C.char)(arg1)))
+}
+
 //export goCall_native_clipboard_read_html_callback_t
 func goCall_native_clipboard_read_html_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
 	defer C.native_event_delivery_complete(delivery, true)
@@ -6650,6 +6824,15 @@ func goCall_native_clipboard_read_image_callback_t(handle C.uintptr_t, arg0 C.bo
 		return
 	}
 	cgo.Handle(handle).Value().(func(bool, *Image))(bool(arg0), wrapImage(uint64(C.native_handle_retain(arg1)), false))
+}
+
+//export goCall_native_clipboard_read_rtf_callback_t
+func goCall_native_clipboard_read_rtf_callback_t(handle C.uintptr_t, arg0 C.bool, arg1 unsafe.Pointer, delivery C.native_event_delivery_t) {
+	defer C.native_event_delivery_complete(delivery, true)
+	if !bool(C.native_event_delivery_is_active(delivery)) {
+		return
+	}
+	cgo.Handle(handle).Value().(func(bool, *string))(bool(arg0), optionalStringFromC((*C.char)(arg1)))
 }
 
 //export goCall_native_clipboard_read_text_callback_t

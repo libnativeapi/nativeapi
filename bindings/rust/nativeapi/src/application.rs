@@ -44,6 +44,7 @@ pub enum ApplicationEvent {
     Activated,
     Deactivated,
     QuitRequested { request: EventRequestRef },
+    SystemBrightnessChanged { brightness: Brightness },
 }
 
 impl ApplicationEvent {
@@ -54,6 +55,7 @@ impl ApplicationEvent {
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED => Self::Activated,
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED => Self::Deactivated,
             cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED => Self::QuitRequested { request: EventRequestRef::from_raw(raw.data.quit_requested.request) },
+            cnativeapi::NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED => Self::SystemBrightnessChanged { brightness: Brightness::from_raw(raw.data.system_brightness_changed.brightness) },
             _ => return None,
         })
     }
@@ -139,6 +141,12 @@ impl Application {
     pub fn set_brightness(brightness: Brightness) -> bool {
         unsafe {
             cnativeapi::native_application_set_brightness(brightness.to_raw())
+        }
+    }
+
+    pub fn get_system_brightness() -> Brightness {
+        unsafe {
+            Brightness::from_raw(cnativeapi::native_application_get_system_brightness())
         }
     }
 

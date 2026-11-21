@@ -134,6 +134,10 @@ class native_notification_event_t(Structure):
     pass
 
 
+class native_text_range_t(Structure):
+    pass
+
+
 class native_view_event_text_field_changed_t(Structure):
     pass
 
@@ -286,6 +290,10 @@ class native_application_event_quit_requested_t(Structure):
     pass
 
 
+class native_application_event_system_brightness_changed_t(Structure):
+    pass
+
+
 class native_application_event_data_t(Union):
     pass
 
@@ -419,6 +427,7 @@ native_window_event_callback_t = CFUNCTYPE(
 native_clipboard_data_t._fields_ = [
     ("text", c_char_p),
     ("html", c_char_p),
+    ("rtf", c_char_p),
     ("image", c_uint64),
     ("file_paths", native_string_list_t),
 ]
@@ -494,6 +503,10 @@ native_notification_event_data_t._fields_ = [
 native_notification_event_t._fields_ = [
     ("type", c_int),
     ("data", native_notification_event_data_t),
+]
+native_text_range_t._fields_ = [
+    ("start", c_ulong),
+    ("length", c_ulong),
 ]
 native_view_event_text_field_changed_t._fields_ = [
     ("text", c_char_p),
@@ -646,9 +659,13 @@ native_application_event_exiting_t._fields_ = [
 native_application_event_quit_requested_t._fields_ = [
     ("request", c_uint64),
 ]
+native_application_event_system_brightness_changed_t._fields_ = [
+    ("brightness", c_int),
+]
 native_application_event_data_t._fields_ = [
     ("exiting", native_application_event_exiting_t),
     ("quit_requested", native_application_event_quit_requested_t),
+    ("system_brightness_changed", native_application_event_system_brightness_changed_t),
 ]
 native_application_event_t._fields_ = [
     ("type", c_int),
@@ -736,6 +753,15 @@ native_clipboard_read_html = function(
         native_release_user_data_t,
     ],
 )
+native_clipboard_read_rtf = function(
+    "native_clipboard_read_rtf",
+    None,
+    [
+        native_callback_bool_std_optional_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
 native_clipboard_read_image = function(
     "native_clipboard_read_image",
     None,
@@ -750,6 +776,16 @@ native_clipboard_read_file_paths = function(
     None,
     [
         native_callback_bool_std_vector_std_string_payload_t,
+        c_void_p,
+        native_release_user_data_t,
+    ],
+)
+native_clipboard_read_format_base64 = function(
+    "native_clipboard_read_format_base64",
+    None,
+    [
+        c_char_p,
+        native_callback_bool_std_optional_std_string_payload_t,
         c_void_p,
         native_release_user_data_t,
     ],
@@ -775,6 +811,7 @@ native_clipboard_write_html = function(
         c_char_p,
     ],
 )
+native_clipboard_write_rtf = function("native_clipboard_write_rtf", c_bool, [c_char_p])
 native_clipboard_write_image = function(
     "native_clipboard_write_image",
     c_bool,
@@ -789,7 +826,39 @@ native_clipboard_write_file_paths = function(
         native_string_list_t,
     ],
 )
+native_clipboard_write_format_base64 = function(
+    "native_clipboard_write_format_base64",
+    c_bool,
+    [
+        c_char_p,
+        c_char_p,
+    ],
+)
 native_clipboard_clear = function("native_clipboard_clear", c_bool, [])
+native_clipboard_get_change_count = function(
+    "native_clipboard_get_change_count",
+    c_longlong,
+    [
+    ],
+)
+native_clipboard_is_concealed = function("native_clipboard_is_concealed", c_bool, [])
+native_clipboard_has_text = function("native_clipboard_has_text", c_bool, [])
+native_clipboard_has_html = function("native_clipboard_has_html", c_bool, [])
+native_clipboard_has_rtf = function("native_clipboard_has_rtf", c_bool, [])
+native_clipboard_has_image = function("native_clipboard_has_image", c_bool, [])
+native_clipboard_has_file_paths = function(
+    "native_clipboard_has_file_paths",
+    c_bool,
+    [
+    ],
+)
+native_clipboard_has_format = function(
+    "native_clipboard_has_format",
+    c_bool,
+    [
+        c_char_p,
+    ],
+)
 native_clipboard_is_monitoring = function("native_clipboard_is_monitoring", c_bool, [])
 native_clipboard_add_listener = function(
     "native_clipboard_add_listener",
@@ -2356,6 +2425,28 @@ native_text_field_set_bordered = function(
 )
 native_text_field_is_bordered = function(
     "native_text_field_is_bordered",
+    c_bool,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_set_selection = function(
+    "native_text_field_set_selection",
+    None,
+    [
+        c_uint64,
+        native_text_range_t,
+    ],
+)
+native_text_field_get_selection = function(
+    "native_text_field_get_selection",
+    native_text_range_t,
+    [
+        c_uint64,
+    ],
+)
+native_text_field_is_composing = function(
+    "native_text_field_is_composing",
     c_bool,
     [
         c_uint64,
@@ -4501,6 +4592,12 @@ native_application_set_brightness = function(
     c_bool,
     [
         c_int,
+    ],
+)
+native_application_get_system_brightness = function(
+    "native_application_get_system_brightness",
+    c_int,
+    [
     ],
 )
 native_application_set_menu_bar = function(

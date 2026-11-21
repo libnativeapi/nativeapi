@@ -37,6 +37,11 @@ export const ViewBackend = {
 } as const;
 export type ViewBackend = (typeof ViewBackend)[keyof typeof ViewBackend];
 
+export interface TextRange {
+  start: number;
+  length: number;
+}
+
 export type ViewEvent =
   | { type: "focused"; viewId: ViewId }
   | { type: "blurred"; viewId: ViewId }
@@ -486,6 +491,18 @@ export class TextField extends View {
 
   get isBordered(): boolean {
     return native.native_text_field_is_bordered(this.nativeHandle);
+  }
+
+  setSelection(range: TextRange): void {
+    native.native_text_field_set_selection(this.nativeHandle, range);
+  }
+
+  get selection(): TextRange {
+    return native.native_text_field_get_selection(this.nativeHandle);
+  }
+
+  get isComposing(): boolean {
+    return native.native_text_field_is_composing(this.nativeHandle);
   }
 }
 

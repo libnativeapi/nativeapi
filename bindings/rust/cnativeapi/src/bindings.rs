@@ -349,6 +349,12 @@ pub type native_text_alignment_t = ::std::os::raw::c_uint;
 pub const NATIVE_VIEW_BACKEND_NATIVE: native_view_backend_t = 0;
 pub const NATIVE_VIEW_BACKEND_WIN_UI3: native_view_backend_t = 1;
 pub type native_view_backend_t = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct native_text_range_t {
+    pub start: ::std::os::raw::c_ulong,
+    pub length: ::std::os::raw::c_ulong,
+}
 #[doc = " Owning list of View handles."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -848,6 +854,18 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_text_field_is_bordered(text_field: native_text_field_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_text_field_set_selection(
+        text_field: native_text_field_t,
+        range: native_text_range_t,
+    );
+}
+unsafe extern "C" {
+    pub fn native_text_field_get_selection(text_field: native_text_field_t) -> native_text_range_t;
+}
+unsafe extern "C" {
+    pub fn native_text_field_is_composing(text_field: native_text_field_t) -> bool;
 }
 unsafe extern "C" {
     #[doc = " Releases the caller's reference. Safe to call with an invalid or\n already-released handle."]
@@ -2061,6 +2079,8 @@ pub const NATIVE_APPLICATION_EVENT_TYPE_EXITING: native_application_event_type_t
 pub const NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED: native_application_event_type_t = 2;
 pub const NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED: native_application_event_type_t = 3;
 pub const NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED: native_application_event_type_t = 4;
+pub const NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED: native_application_event_type_t =
+    5;
 #[doc = " Which concrete ApplicationEvent arrived."]
 pub type native_application_event_type_t = ::std::os::raw::c_uint;
 #[doc = " One ApplicationEvent, tagged by its concrete type.\n\n Synchronous callbacks borrow this payload until they return. Async callbacks\n borrow it until event_delivery_complete. Copy anything needed after that."]
@@ -2075,6 +2095,7 @@ pub struct native_application_event_t {
 pub union native_application_event_t__bindgen_ty_1 {
     pub exiting: native_application_event_t__bindgen_ty_1__bindgen_ty_1,
     pub quit_requested: native_application_event_t__bindgen_ty_1__bindgen_ty_2,
+    pub system_brightness_changed: native_application_event_t__bindgen_ty_1__bindgen_ty_3,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
@@ -2085,6 +2106,20 @@ pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_1 {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_2 {
     pub request: native_event_request_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct native_application_event_t__bindgen_ty_1__bindgen_ty_3 {
+    pub brightness: native_brightness_t,
+}
+impl Default for native_application_event_t__bindgen_ty_1__bindgen_ty_3 {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
 }
 impl Default for native_application_event_t__bindgen_ty_1 {
     fn default() -> Self {
@@ -2155,6 +2190,9 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn native_application_set_brightness(brightness: native_brightness_t) -> bool;
+}
+unsafe extern "C" {
+    pub fn native_application_get_system_brightness() -> native_brightness_t;
 }
 unsafe extern "C" {
     pub fn native_application_set_menu_bar(menu: native_menu_t) -> bool;
@@ -2262,6 +2300,15 @@ pub type native_clipboard_read_html_callback_t = ::std::option::Option<
     ),
 >;
 #[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_rtf_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
 pub type native_clipboard_read_image_callback_t = ::std::option::Option<
     unsafe extern "C" fn(
         arg0: bool,
@@ -2279,11 +2326,21 @@ pub type native_clipboard_read_file_paths_callback_t = ::std::option::Option<
         user_data: *mut ::std::os::raw::c_void,
     ),
 >;
+#[doc = " Arguments are borrowed until event_delivery_complete(delivery, ...), which is required exactly once."]
+pub type native_clipboard_read_format_base64_callback_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg0: bool,
+        arg1: *const ::std::os::raw::c_char,
+        delivery: native_event_delivery_t,
+        user_data: *mut ::std::os::raw::c_void,
+    ),
+>;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct native_clipboard_data_t {
     pub text: *mut ::std::os::raw::c_char,
     pub html: *mut ::std::os::raw::c_char,
+    pub rtf: *mut ::std::os::raw::c_char,
     pub image: native_image_t,
     pub file_paths: native_string_list_t,
 }
@@ -2359,6 +2416,13 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn native_clipboard_read_rtf(
+        callback: native_clipboard_read_rtf_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
     pub fn native_clipboard_read_image(
         callback: native_clipboard_read_image_callback_t,
         callback_user_data: *mut ::std::os::raw::c_void,
@@ -2373,6 +2437,14 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn native_clipboard_read_format_base64(
+        format: *const ::std::os::raw::c_char,
+        callback: native_clipboard_read_format_base64_callback_t,
+        callback_user_data: *mut ::std::os::raw::c_void,
+        callback_release_user_data: native_release_user_data_t,
+    );
+}
+unsafe extern "C" {
     pub fn native_clipboard_write(data: native_clipboard_data_t) -> bool;
 }
 unsafe extern "C" {
@@ -2382,13 +2454,46 @@ unsafe extern "C" {
     pub fn native_clipboard_write_html(html: *const ::std::os::raw::c_char) -> bool;
 }
 unsafe extern "C" {
+    pub fn native_clipboard_write_rtf(rtf: *const ::std::os::raw::c_char) -> bool;
+}
+unsafe extern "C" {
     pub fn native_clipboard_write_image(image: native_image_t) -> bool;
 }
 unsafe extern "C" {
     pub fn native_clipboard_write_file_paths(file_paths: native_string_list_t) -> bool;
 }
 unsafe extern "C" {
+    pub fn native_clipboard_write_format_base64(
+        format: *const ::std::os::raw::c_char,
+        base64_data: *const ::std::os::raw::c_char,
+    ) -> bool;
+}
+unsafe extern "C" {
     pub fn native_clipboard_clear() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_get_change_count() -> ::std::os::raw::c_longlong;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_is_concealed() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_text() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_html() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_rtf() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_image() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_file_paths() -> bool;
+}
+unsafe extern "C" {
+    pub fn native_clipboard_has_format(format: *const ::std::os::raw::c_char) -> bool;
 }
 unsafe extern "C" {
     pub fn native_clipboard_is_monitoring() -> bool;

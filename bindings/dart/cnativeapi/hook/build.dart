@@ -125,7 +125,11 @@ void main(List<String> args) async {
       flags: flags,
       language: Language.cpp,
       std: 'c++17',
-      optimizationLevel: OptimizationLevel.oS,
+      // MSVC's /Os is only a size preference, unlike Clang/GCC's -Os. Keep
+      // the existing /O2 optimization on Windows.
+      optimizationLevel: targetOS == OS.windows
+          ? OptimizationLevel.o3
+          : OptimizationLevel.oS,
       // Native assets package this one library; no Gradle CMake target supplies
       // libc++_shared.so. Keep the NDK runtime inside our Android library.
       cppLinkStdLib: targetOS == OS.android ? 'c++_static' : null,

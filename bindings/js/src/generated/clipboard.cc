@@ -73,6 +73,21 @@ napi_value Js_native_clipboard_read_html(napi_env env, napi_callback_info info) 
   return Undefined(env);
 }
 
+napi_value Js_native_clipboard_read_rtf(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  Callback* p0 = nullptr;
+  if (!GetCallback(env, args[0], /*optional=*/false, &p0)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_clipboard_read_rtf(+[](bool arg0, const char* arg1, native_event_delivery_t delivery, void* user_data) { Callback::DispatchEvent(user_data, {Value::Bool(arg0), Value::String(arg1)}, delivery); }, p0, &Callback::ReleaseUserData); });
+  return Undefined(env);
+}
+
 napi_value Js_native_clipboard_read_image(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -100,6 +115,25 @@ napi_value Js_native_clipboard_read_file_paths(napi_env env, napi_callback_info 
     return nullptr;
   }
   OnMainThread([&] { return native_clipboard_read_file_paths(+[](bool arg0, const native_string_list_t* arg1, native_event_delivery_t delivery, void* user_data) { Callback::DispatchEvent(user_data, {Value::Bool(arg0), CopyStringList((*arg1))}, delivery); }, p0, &Callback::ReleaseUserData); });
+  return Undefined(env);
+}
+
+napi_value Js_native_clipboard_read_format_base64(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  Callback* p1 = nullptr;
+  if (!GetCallback(env, args[1], /*optional=*/false, &p1)) {
+    return nullptr;
+  }
+  OnMainThread([&] { return native_clipboard_read_format_base64(p0, +[](bool arg0, const char* arg1, native_event_delivery_t delivery, void* user_data) { Callback::DispatchEvent(user_data, {Value::Bool(arg0), Value::String(arg1)}, delivery); }, p1, &Callback::ReleaseUserData); });
   return Undefined(env);
 }
 
@@ -148,6 +182,21 @@ napi_value Js_native_clipboard_write_html(napi_env env, napi_callback_info info)
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_clipboard_write_rtf(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_clipboard_write_rtf(p0); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_clipboard_write_image(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -178,6 +227,25 @@ napi_value Js_native_clipboard_write_file_paths(napi_env env, napi_callback_info
   return Value::Bool(result).ToJs(env);
 }
 
+napi_value Js_native_clipboard_write_format_base64(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  const char* p1 = {};
+  if (!GetString(env, args[1], arena, &p1)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_clipboard_write_format_base64(p0, p1); });
+  return Value::Bool(result).ToJs(env);
+}
+
 napi_value Js_native_clipboard_clear(napi_env env, napi_callback_info info) {
   Args args(env, info);
   if (!args.ok()) {
@@ -186,6 +254,98 @@ napi_value Js_native_clipboard_clear(napi_env env, napi_callback_info info) {
   Arena arena;
   (void)arena;
   auto result = OnMainThread([&] { return native_clipboard_clear(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_get_change_count(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_get_change_count(); });
+  return Value::Number(static_cast<double>(result)).ToJs(env);
+}
+
+napi_value Js_native_clipboard_is_concealed(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_is_concealed(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_text(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_has_text(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_html(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_has_html(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_rtf(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_has_rtf(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_image(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_has_image(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_file_paths(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  auto result = OnMainThread([&] { return native_clipboard_has_file_paths(); });
+  return Value::Bool(result).ToJs(env);
+}
+
+napi_value Js_native_clipboard_has_format(napi_env env, napi_callback_info info) {
+  Args args(env, info);
+  if (!args.ok()) {
+    return nullptr;
+  }
+  Arena arena;
+  (void)arena;
+  const char* p0 = {};
+  if (!GetString(env, args[0], arena, &p0)) {
+    return nullptr;
+  }
+  auto result = OnMainThread([&] { return native_clipboard_has_format(p0); });
   return Value::Bool(result).ToJs(env);
 }
 
@@ -241,14 +401,26 @@ void RegisterClipboard(napi_env env, napi_value exports) {
   Export(env, exports, "native_clipboard_read", Js_native_clipboard_read);
   Export(env, exports, "native_clipboard_read_text", Js_native_clipboard_read_text);
   Export(env, exports, "native_clipboard_read_html", Js_native_clipboard_read_html);
+  Export(env, exports, "native_clipboard_read_rtf", Js_native_clipboard_read_rtf);
   Export(env, exports, "native_clipboard_read_image", Js_native_clipboard_read_image);
   Export(env, exports, "native_clipboard_read_file_paths", Js_native_clipboard_read_file_paths);
+  Export(env, exports, "native_clipboard_read_format_base64", Js_native_clipboard_read_format_base64);
   Export(env, exports, "native_clipboard_write", Js_native_clipboard_write);
   Export(env, exports, "native_clipboard_write_text", Js_native_clipboard_write_text);
   Export(env, exports, "native_clipboard_write_html", Js_native_clipboard_write_html);
+  Export(env, exports, "native_clipboard_write_rtf", Js_native_clipboard_write_rtf);
   Export(env, exports, "native_clipboard_write_image", Js_native_clipboard_write_image);
   Export(env, exports, "native_clipboard_write_file_paths", Js_native_clipboard_write_file_paths);
+  Export(env, exports, "native_clipboard_write_format_base64", Js_native_clipboard_write_format_base64);
   Export(env, exports, "native_clipboard_clear", Js_native_clipboard_clear);
+  Export(env, exports, "native_clipboard_get_change_count", Js_native_clipboard_get_change_count);
+  Export(env, exports, "native_clipboard_is_concealed", Js_native_clipboard_is_concealed);
+  Export(env, exports, "native_clipboard_has_text", Js_native_clipboard_has_text);
+  Export(env, exports, "native_clipboard_has_html", Js_native_clipboard_has_html);
+  Export(env, exports, "native_clipboard_has_rtf", Js_native_clipboard_has_rtf);
+  Export(env, exports, "native_clipboard_has_image", Js_native_clipboard_has_image);
+  Export(env, exports, "native_clipboard_has_file_paths", Js_native_clipboard_has_file_paths);
+  Export(env, exports, "native_clipboard_has_format", Js_native_clipboard_has_format);
   Export(env, exports, "native_clipboard_is_monitoring", Js_native_clipboard_is_monitoring);
   Export(env, exports, "native_clipboard_add_listener", Js_native_clipboard_add_listener);
   Export(env, exports, "native_clipboard_remove_listener", Js_native_clipboard_remove_listener);

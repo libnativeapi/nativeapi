@@ -78,6 +78,24 @@ enum ViewBackend {
   };
 }
 
+class TextRange {
+  const TextRange({required this.start, required this.length});
+
+  final int start;
+  final int length;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TextRange && other.start == start && other.length == length);
+
+  @override
+  int get hashCode => Object.hash(start, length);
+
+  @override
+  String toString() => 'TextRange(start: $start, length: $length)';
+}
+
 /// One `ViewEvent`, in its concrete form.
 sealed class ViewEvent {
   const ViewEvent();
@@ -355,6 +373,12 @@ class TextField extends View {
   set isBordered(bool value) => unsupported();
 
   bool get isBordered => unsupported();
+
+  set selection(TextRange value) => unsupported();
+
+  TextRange get selection => unsupported();
+
+  bool get isComposing => unsupported();
 }
 
 class ImageView extends View {

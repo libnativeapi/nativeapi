@@ -13,12 +13,14 @@ class ClipboardData {
   const ClipboardData({
     this.text,
     this.html,
+    this.rtf,
     this.image,
     this.filePaths = const [],
   });
 
   final String? text;
   final String? html;
+  final String? rtf;
   final Image? image;
   final List<String> filePaths;
 
@@ -28,15 +30,17 @@ class ClipboardData {
       (other is ClipboardData &&
           other.text == text &&
           other.html == html &&
+          other.rtf == rtf &&
           other.image == image &&
           _listEquals(other.filePaths, filePaths));
 
   @override
-  int get hashCode => Object.hash(text, html, image, Object.hashAll(filePaths));
+  int get hashCode =>
+      Object.hash(text, html, rtf, image, Object.hashAll(filePaths));
 
   @override
   String toString() =>
-      'ClipboardData(text: $text, html: $html, image: $image, filePaths: $filePaths)';
+      'ClipboardData(text: $text, html: $html, rtf: $rtf, image: $image, filePaths: $filePaths)';
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;
@@ -71,9 +75,14 @@ class Clipboard {
 
   void readHtml(void Function(bool, String?) callback) => unsupported();
 
+  void readRtf(void Function(bool, String?) callback) => unsupported();
+
   void readImage(void Function(bool, Image?) callback) => unsupported();
 
   void readFilePaths(void Function(bool, List<String>) callback) =>
+      unsupported();
+
+  void readFormatBase64(String format, void Function(bool, String?) callback) =>
       unsupported();
 
   bool write(ClipboardData data) => unsupported();
@@ -82,11 +91,31 @@ class Clipboard {
 
   bool writeHtml(String html) => unsupported();
 
+  bool writeRtf(String rtf) => unsupported();
+
   bool writeImage(Image? image) => unsupported();
 
   bool writeFilePaths(List<String> filePaths) => unsupported();
 
+  bool writeFormatBase64(String format, String base64Data) => unsupported();
+
   bool clear() => unsupported();
+
+  int getChangeCount() => unsupported();
+
+  bool isConcealed() => unsupported();
+
+  bool hasText() => unsupported();
+
+  bool hasHtml() => unsupported();
+
+  bool hasRtf() => unsupported();
+
+  bool hasImage() => unsupported();
+
+  bool hasFilePaths() => unsupported();
+
+  bool hasFormat(String format) => unsupported();
 
   bool isMonitoring() => unsupported();
 
@@ -117,6 +146,18 @@ class Clipboard {
   Future<String?> readHtmlAsync() {
     final completer = Completer<String?>();
     readHtml((success, value) {
+      if (success) {
+        completer.complete(value);
+      } else {
+        completer.completeError(StateError('Clipboard operation failed'));
+      }
+    });
+    return completer.future;
+  }
+
+  Future<String?> readRtfAsync() {
+    final completer = Completer<String?>();
+    readRtf((success, value) {
       if (success) {
         completer.complete(value);
       } else {

@@ -22,6 +22,7 @@ from .application import (
     ApplicationExitingEvent,
     ApplicationQuitRequestedEvent,
     ApplicationStartedEvent,
+    ApplicationSystemBrightnessChangedEvent,
     Brightness,
 )
 from .clipboard import (
@@ -181,6 +182,7 @@ from .view import (
     TextField,
     TextFieldChangedEvent,
     TextFieldSubmittedEvent,
+    TextRange,
     View,
     ViewAlignment,
     ViewBackend,
@@ -249,6 +251,7 @@ __all__ = [
     "ApplicationExitingEvent",
     "ApplicationQuitRequestedEvent",
     "ApplicationStartedEvent",
+    "ApplicationSystemBrightnessChangedEvent",
     "Brightness",
     "Button",
     "ButtonClickedEvent",
@@ -342,6 +345,7 @@ __all__ = [
     "TextField",
     "TextFieldChangedEvent",
     "TextFieldSubmittedEvent",
+    "TextRange",
     "TitleBarStyle",
     "TrayIcon",
     "TrayIconClickedEvent",

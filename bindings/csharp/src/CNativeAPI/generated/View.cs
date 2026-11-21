@@ -9,6 +9,13 @@ using System.Runtime.InteropServices;
 namespace CNativeAPI;
 
 [StructLayout(LayoutKind.Sequential)]
+public struct native_text_range_t
+{
+    public CULong start;
+    public CULong length;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct native_view_event_t
 {
     public int type;
@@ -50,6 +57,10 @@ public static partial class Interop
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_text_field_is_bordered(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_text_field_is_composing(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -208,6 +219,9 @@ public static partial class Interop
     public static extern native_size_t native_view_get_preferred_size(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern native_text_range_t native_text_field_get_selection(ulong self);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern native_view_list_t native_view_get_subviews(ulong self);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -314,6 +328,9 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_text_field_set_secure(ulong self, [MarshalAs(UnmanagedType.I1)] bool isSecure);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_text_field_set_selection(ulong self, native_text_range_t range);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_text_field_set_text(ulong self, [MarshalAs(UnmanagedType.LPUTF8Str)] string? text);

@@ -13,6 +13,7 @@ public struct native_clipboard_data_t
 {
     public IntPtr text;
     public IntPtr html;
+    public IntPtr rtf;
     public ulong image;
     public native_string_list_t file_paths;
 }
@@ -33,10 +34,16 @@ public delegate void ClipboardReadCallbackNativeCallback([MarshalAs(UnmanagedTyp
 public delegate void ClipboardReadFilePathsCallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, IntPtr arg1, ulong delivery, IntPtr userData);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void ClipboardReadFormatBase64CallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, IntPtr arg1, ulong delivery, IntPtr userData);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void ClipboardReadHtmlCallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, IntPtr arg1, ulong delivery, IntPtr userData);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void ClipboardReadImageCallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, ulong arg1, ulong delivery, IntPtr userData);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void ClipboardReadRtfCallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, IntPtr arg1, ulong delivery, IntPtr userData);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void ClipboardReadTextCallbackNativeCallback([MarshalAs(UnmanagedType.I1)] bool arg0, IntPtr arg1, ulong delivery, IntPtr userData);
@@ -49,7 +56,35 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_file_paths();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_format([MarshalAs(UnmanagedType.LPUTF8Str)] string? format);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_html();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_image();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_rtf();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_has_text();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_clipboard_is_change_monitoring_supported();
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_is_concealed();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -73,6 +108,10 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_write_format_base64([MarshalAs(UnmanagedType.LPUTF8Str)] string? format, [MarshalAs(UnmanagedType.LPUTF8Str)] string? base64Data);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_clipboard_write_html([MarshalAs(UnmanagedType.LPUTF8Str)] string? html);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
@@ -81,7 +120,14 @@ public static partial class Interop
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool native_clipboard_write_rtf([MarshalAs(UnmanagedType.LPUTF8Str)] string? rtf);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
     public static extern bool native_clipboard_write_text([MarshalAs(UnmanagedType.LPUTF8Str)] string? text);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern long native_clipboard_get_change_count();
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern ulong native_clipboard_add_listener(ClipboardEventNativeCallback callback, IntPtr userData, ReleaseUserDataNativeCallback releaseUserData);
@@ -96,10 +142,16 @@ public static partial class Interop
     public static extern void native_clipboard_read_file_paths(ClipboardReadFilePathsCallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_clipboard_read_format_base64([MarshalAs(UnmanagedType.LPUTF8Str)] string? format, ClipboardReadFormatBase64CallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_clipboard_read_html(ClipboardReadHtmlCallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_clipboard_read_image(ClipboardReadImageCallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);
+
+    [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void native_clipboard_read_rtf(ClipboardReadRtfCallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);
 
     [DllImport(Libraries.NativeApi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void native_clipboard_read_text(ClipboardReadTextCallbackNativeCallback callback, IntPtr callback_user_data, ReleaseUserDataNativeCallback callback_release_user_data);

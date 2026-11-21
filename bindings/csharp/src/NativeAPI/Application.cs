@@ -26,6 +26,7 @@ public abstract record ApplicationEvent
     public sealed record Activated : ApplicationEvent;
     public sealed record Deactivated : ApplicationEvent;
     public sealed record QuitRequested(EventRequest Request) : ApplicationEvent;
+    public sealed record SystemBrightnessChanged(Brightness Brightness) : ApplicationEvent;
 
     internal static ApplicationEvent? FromRaw(in native_application_event_t raw)
     {
@@ -36,6 +37,7 @@ public abstract record ApplicationEvent
             case 2: return new Activated();
             case 3: return new Deactivated();
             case 4: return new QuitRequested(new EventRequest(raw.data.quit_requested.request, ownsHandle: false));
+            case 5: return new SystemBrightnessChanged((Brightness)raw.data.system_brightness_changed.brightness);
             default: return null;
         }
     }
@@ -123,6 +125,12 @@ public sealed partial class Application
     {
         var rawResult = Interop.native_application_set_brightness((int)brightness);
         return rawResult;
+    }
+
+    public Brightness GetSystemBrightness()
+    {
+        var rawResult = Interop.native_application_get_system_brightness();
+        return (Brightness)rawResult;
     }
 
     public bool SetMenuBar(Menu? menu)

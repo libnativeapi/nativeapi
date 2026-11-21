@@ -76,6 +76,7 @@ static inline void go_native_shortcut_event_callback_t(const native_shortcut_eve
 static inline native_shortcut_event_callback_t go_get_native_shortcut_event_callback_t(void) { return go_native_shortcut_event_callback_t; }
 static inline int go_native_application_event_t_exiting_ExitCode(const native_application_event_t* event) { return event->data.exiting.exit_code; }
 static inline native_event_request_t go_native_application_event_t_quit_requested_Request(const native_application_event_t* event) { return event->data.quit_requested.request; }
+static inline native_brightness_t go_native_application_event_t_system_brightness_changed_Brightness(const native_application_event_t* event) { return event->data.system_brightness_changed.brightness; }
 extern void goEvent_native_application_event_t(uintptr_t handle, native_application_event_t* event);
 static inline void go_native_application_event_callback_t(const native_application_event_t* event, void* data) { goEvent_native_application_event_t(*(uintptr_t*)data, (native_application_event_t*)event); }
 static inline native_application_event_callback_t go_get_native_application_event_callback_t(void) { return go_native_application_event_callback_t; }
@@ -85,12 +86,18 @@ static inline native_clipboard_read_callback_t go_get_native_clipboard_read_call
 extern void goCall_native_clipboard_read_file_paths_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
 static inline void go_native_clipboard_read_file_paths_callback_t(bool arg0, const native_string_list_t* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_file_paths_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
 static inline native_clipboard_read_file_paths_callback_t go_get_native_clipboard_read_file_paths_callback_t(void) { return go_native_clipboard_read_file_paths_callback_t; }
+extern void goCall_native_clipboard_read_format_base64_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_format_base64_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_format_base64_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_format_base64_callback_t go_get_native_clipboard_read_format_base64_callback_t(void) { return go_native_clipboard_read_format_base64_callback_t; }
 extern void goCall_native_clipboard_read_html_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
 static inline void go_native_clipboard_read_html_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_html_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
 static inline native_clipboard_read_html_callback_t go_get_native_clipboard_read_html_callback_t(void) { return go_native_clipboard_read_html_callback_t; }
 extern void goCall_native_clipboard_read_image_callback_t(uintptr_t handle, bool arg0, native_image_t arg1, native_event_delivery_t delivery);
 static inline void go_native_clipboard_read_image_callback_t(bool arg0, native_image_t arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_image_callback_t(*(uintptr_t*)data, arg0, arg1, delivery); }
 static inline native_clipboard_read_image_callback_t go_get_native_clipboard_read_image_callback_t(void) { return go_native_clipboard_read_image_callback_t; }
+extern void goCall_native_clipboard_read_rtf_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
+static inline void go_native_clipboard_read_rtf_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_rtf_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
+static inline native_clipboard_read_rtf_callback_t go_get_native_clipboard_read_rtf_callback_t(void) { return go_native_clipboard_read_rtf_callback_t; }
 extern void goCall_native_clipboard_read_text_callback_t(uintptr_t handle, bool arg0, void* arg1, native_event_delivery_t delivery);
 static inline void go_native_clipboard_read_text_callback_t(bool arg0, const char* arg1, native_event_delivery_t delivery, void* data) { goCall_native_clipboard_read_text_callback_t(*(uintptr_t*)data, arg0, (void*)arg1, delivery); }
 static inline native_clipboard_read_text_callback_t go_get_native_clipboard_read_text_callback_t(void) { return go_native_clipboard_read_text_callback_t; }

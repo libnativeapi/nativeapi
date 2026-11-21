@@ -66,6 +66,8 @@ inline Value ToValue(const native_url_open_result_t& value);
 inline bool FromJs(napi_env env, napi_value value, native_url_open_result_t* out, Arena& arena);
 inline Value ToValue(const native_protocol_handler_event_t& event);
 inline Value ToValue(const native_notification_event_t& event);
+inline Value ToValue(const native_text_range_t& value);
+inline bool FromJs(napi_env env, napi_value value, native_text_range_t* out, Arena& arena);
 inline Value ToValue(const native_view_event_t& event);
 inline Value ToValue(const native_window_event_t& event);
 inline Value ToValue(const native_window_drag_event_t& event);
@@ -82,6 +84,7 @@ inline Value ToValue(const native_clipboard_data_t& value) {
   Value result = Value::Object();
   result.Set("text", Value::String(value.text));
   result.Set("html", Value::String(value.html));
+  result.Set("rtf", Value::String(value.rtf));
   result.Set("image", Value::BigInt(value.image));
   result.Set("filePaths", CopyStringList(value.file_paths));
   return result;
@@ -105,6 +108,14 @@ inline bool FromJs(napi_env env, napi_value value, native_clipboard_data_t* out,
   }
   if (field != nullptr) {
     if (!GetString(env, field, arena, &out->html)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "rtf", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetString(env, field, arena, &out->rtf)) {
       return false;
     }
   }
@@ -484,6 +495,37 @@ inline Value ToValue(const native_notification_event_t& event) {
   return result;
 }
 
+inline Value ToValue(const native_text_range_t& value) {
+  Value result = Value::Object();
+  result.Set("start", Value::Number(static_cast<double>(value.start)));
+  result.Set("length", Value::Number(static_cast<double>(value.length)));
+  return result;
+}
+
+inline bool FromJs(napi_env env, napi_value value, native_text_range_t* out, Arena& arena) {
+  if (!ExpectObject(env, value, "TextRange")) {
+    return false;
+  }
+  napi_value field = nullptr;
+  if (!GetField(env, value, "start", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->start)) {
+      return false;
+    }
+  }
+  if (!GetField(env, value, "length", &field)) {
+    return false;
+  }
+  if (field != nullptr) {
+    if (!GetNumber(env, field, &out->length)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 inline Value ToValue(const native_view_event_t& event) {
   Value result = Value::Object();
   switch (event.type) {
@@ -802,6 +844,10 @@ inline Value ToValue(const native_application_event_t& event) {
     case NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED:
       result.Set("type", Value::String("quitRequested"));
       result.Set("request", Value::BigInt(event.data.quit_requested.request));
+      break;
+    case NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED:
+      result.Set("type", Value::String("systemBrightnessChanged"));
+      result.Set("brightness", Value::Number(static_cast<double>(event.data.system_brightness_changed.brightness)));
       break;
     default:
       return Value::Null();

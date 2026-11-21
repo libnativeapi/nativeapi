@@ -16,6 +16,7 @@ from . import image as _image
 class ClipboardData:
     text: str | None = None
     html: str | None = None
+    rtf: str | None = None
     image: _image.Image | None = None
     file_paths: list[str] = field(default_factory=list)
 
@@ -24,6 +25,7 @@ class ClipboardData:
         return cls(
             None if raw.text is None else _rt.decode(raw.text),
             None if raw.html is None else _rt.decode(raw.html),
+            None if raw.rtf is None else _rt.decode(raw.rtf),
             _image.Image._owned(_rt.retain_handle(raw.image)),
             _rt.read_str_list(raw.file_paths),
         )
@@ -32,6 +34,7 @@ class ClipboardData:
         raw = _C.native_clipboard_data_t()
         raw.text = _rt.encode_optional(self.text)
         raw.html = _rt.encode_optional(self.html)
+        raw.rtf = _rt.encode_optional(self.rtf)
         raw.image = _rt.handle_of(self.image)
         raw.file_paths = _rt.str_list(self.file_paths)
         return raw
@@ -136,6 +139,28 @@ class Clipboard:
         return await _rt.read_async(Clipboard.read_html)
 
     @staticmethod
+    def read_rtf(callback: Callable[[bool, str | None], None]) -> None:
+        native_callback = _rt.make_callback(
+            _C.native_callback_bool_std_optional_std_string_payload_t,
+            lambda a0, a1, delivery, _user_data: _rt.deliver_callback(
+                delivery,
+                lambda: callback(
+                    bool(a0),
+                    None if a1 is None else _rt.decode(a1)
+                ),
+            ),
+        )
+        _C.native_clipboard_read_rtf(
+            native_callback,
+            _rt.user_data(native_callback),
+            _rt.release_user_data,
+        )
+
+    @staticmethod
+    async def read_rtf_async() -> str | None:
+        return await _rt.read_async(Clipboard.read_rtf)
+
+    @staticmethod
     def read_image(callback: Callable[[bool, _image.Image | None], None]) -> None:
         native_callback = _rt.make_callback(
             _C.native_callback_bool_image_payload_t,
@@ -180,6 +205,28 @@ class Clipboard:
         return await _rt.read_async(Clipboard.read_file_paths)
 
     @staticmethod
+    def read_format_base64(
+        format: str,
+        callback: Callable[[bool, str | None], None],
+    ) -> None:
+        native_callback = _rt.make_callback(
+            _C.native_callback_bool_std_optional_std_string_payload_t,
+            lambda a0, a1, delivery, _user_data: _rt.deliver_callback(
+                delivery,
+                lambda: callback(
+                    bool(a0),
+                    None if a1 is None else _rt.decode(a1)
+                ),
+            ),
+        )
+        _C.native_clipboard_read_format_base64(
+            _rt.encode(format),
+            native_callback,
+            _rt.user_data(native_callback),
+            _rt.release_user_data,
+        )
+
+    @staticmethod
     def write(data: ClipboardData) -> bool:
         if (
             not _rt.valid_clipboard_text(data.text)
@@ -205,6 +252,11 @@ class Clipboard:
         return raw
 
     @staticmethod
+    def write_rtf(rtf: str) -> bool:
+        raw = _C.native_clipboard_write_rtf(_rt.encode(rtf))
+        return raw
+
+    @staticmethod
     def write_image(image: _image.Image | None) -> bool:
         raw = _C.native_clipboard_write_image(_rt.handle_of(image))
         return raw
@@ -217,8 +269,56 @@ class Clipboard:
         return raw
 
     @staticmethod
+    def write_format_base64(format: str, base64_data: str) -> bool:
+        raw = _C.native_clipboard_write_format_base64(
+            _rt.encode(format),
+            _rt.encode(base64_data),
+        )
+        return raw
+
+    @staticmethod
     def clear() -> bool:
         raw = _C.native_clipboard_clear()
+        return raw
+
+    @staticmethod
+    def get_change_count() -> int:
+        raw = _C.native_clipboard_get_change_count()
+        return raw
+
+    @staticmethod
+    def is_concealed() -> bool:
+        raw = _C.native_clipboard_is_concealed()
+        return raw
+
+    @staticmethod
+    def has_text() -> bool:
+        raw = _C.native_clipboard_has_text()
+        return raw
+
+    @staticmethod
+    def has_html() -> bool:
+        raw = _C.native_clipboard_has_html()
+        return raw
+
+    @staticmethod
+    def has_rtf() -> bool:
+        raw = _C.native_clipboard_has_rtf()
+        return raw
+
+    @staticmethod
+    def has_image() -> bool:
+        raw = _C.native_clipboard_has_image()
+        return raw
+
+    @staticmethod
+    def has_file_paths() -> bool:
+        raw = _C.native_clipboard_has_file_paths()
+        return raw
+
+    @staticmethod
+    def has_format(format: str) -> bool:
+        raw = _C.native_clipboard_has_format(_rt.encode(format))
         return raw
 
     @staticmethod

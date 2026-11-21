@@ -94,6 +94,39 @@ enum ViewBackend {
   c.native_view_backend_t get raw => c.native_view_backend_t.fromValue(value);
 }
 
+class TextRange {
+  const TextRange({required this.start, required this.length});
+
+  final int start;
+  final int length;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TextRange && other.start == start && other.length == length);
+
+  @override
+  int get hashCode => Object.hash(start, length);
+
+  @override
+  String toString() => 'TextRange(start: $start, length: $length)';
+
+  factory TextRange.fromNative(c.native_text_range_t raw) =>
+      TextRange(start: raw.start, length: raw.length);
+
+  /// Allocates the C form; free it with [freeNative].
+  ffi.Pointer<c.native_text_range_t> allocNative() {
+    final pointer = pkg_ffi.calloc<c.native_text_range_t>();
+    pointer.ref.start = start;
+    pointer.ref.length = length;
+    return pointer;
+  }
+
+  static void freeNative(ffi.Pointer<c.native_text_range_t> pointer) {
+    pkg_ffi.calloc.free(pointer);
+  }
+}
+
 /// One `ViewEvent`, in its concrete form.
 sealed class ViewEvent {
   const ViewEvent();
@@ -828,6 +861,21 @@ class TextField extends View {
 
   bool get isBordered {
     return c.native_text_field_is_bordered(nativeHandle);
+  }
+
+  set selection(TextRange value) {
+    final valuePointer = value.allocNative();
+    c.native_text_field_set_selection(nativeHandle, valuePointer.ref);
+    TextRange.freeNative(valuePointer);
+  }
+
+  TextRange get selection {
+    final raw = c.native_text_field_get_selection(nativeHandle);
+    return TextRange.fromNative(raw);
+  }
+
+  bool get isComposing {
+    return c.native_text_field_is_composing(nativeHandle);
   }
 }
 

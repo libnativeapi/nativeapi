@@ -31,6 +31,7 @@ public enum ApplicationEvent {
   case activated
   case deactivated
   case quitRequested(request: EventRequest?)
+  case systemBrightnessChanged(brightness: Brightness)
 
   init?(raw: native_application_event_t) {
     switch raw.type {
@@ -39,6 +40,7 @@ public enum ApplicationEvent {
     case NATIVE_APPLICATION_EVENT_TYPE_ACTIVATED: self = .activated
     case NATIVE_APPLICATION_EVENT_TYPE_DEACTIVATED: self = .deactivated
     case NATIVE_APPLICATION_EVENT_TYPE_QUIT_REQUESTED: self = .quitRequested(request: nativeapiOwned(raw.data.quit_requested.request) { EventRequest(nativeHandle: $0) })
+    case NATIVE_APPLICATION_EVENT_TYPE_SYSTEM_BRIGHTNESS_CHANGED: self = .systemBrightnessChanged(brightness: Brightness(raw: raw.data.system_brightness_changed.brightness))
     default: return nil
     }
   }
@@ -106,6 +108,10 @@ public final class Application: Sendable {
 
   public func setBrightness(_ brightness: Brightness) -> Bool {
     return native_application_set_brightness(brightness.raw)
+  }
+
+  public func getSystemBrightness() -> Brightness {
+    return Brightness(raw: native_application_get_system_brightness())
   }
 
   public func setMenuBar(_ menu: Menu?) -> Bool {
