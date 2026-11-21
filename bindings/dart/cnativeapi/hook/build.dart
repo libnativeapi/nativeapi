@@ -114,6 +114,14 @@ void main(List<String> args) async {
         ]);
     }
 
+    if (targetOS == OS.linux || targetOS == OS.android) {
+      // libstdc++ marks some template instantiations default-visible even
+      // with -fvisibility=hidden. Keep the ELF export table to the C contract.
+      final exportMap = input.packageRoot.resolve('hook/cnativeapi.exports');
+      flags.add('-Wl,--version-script=${exportMap.toFilePath()}');
+      output.dependencies.add(exportMap);
+    }
+
     final builder = CBuilder.library(
       name: 'cnativeapi',
       assetName: 'cnativeapi.dart',

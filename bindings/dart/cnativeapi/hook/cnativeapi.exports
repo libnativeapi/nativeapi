@@ -1,0 +1,9 @@
+{
+  global:
+    native_*;
+    cnativeapi_*;
+    nativeapi_protocol_handler_host_*;
+    Java_dev_libnativeapi_nativeapi_ProtocolHandlerBridge_*;
+  local:
+    *;
+};
