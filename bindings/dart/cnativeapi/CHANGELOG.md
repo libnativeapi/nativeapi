@@ -1,3 +1,7 @@
+## Unreleased
+
+- Windows 11: suppress the DWM border for explicit frameless windows when they gain or lose focus; restore normal frame rendering when frameless mode is disabled ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
+
 ## 0.6.1
 
 - Windows: keep the owning window active while tracking a window-relative popup menu ([nativeapi-core#94](https://github.com/libnativeapi/nativeapi-core/pull/94)).

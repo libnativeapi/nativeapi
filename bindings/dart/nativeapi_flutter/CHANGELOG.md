@@ -1,3 +1,7 @@
+## Unreleased
+
+- Windows 11: keep explicit frameless Flutter windows free of the DWM border across focus changes ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
+
 ## 0.6.1
 
 - Windows: keep the owning window active while tracking a window-relative popup menu ([nativeapi-core#94](https://github.com/libnativeapi/nativeapi-core/pull/94)).
