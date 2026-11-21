@@ -30,13 +30,15 @@ def main():
         path = max(candidates, key=lambda p: p.stat().st_mtime)
     path = path.resolve()
     expected = set()
-    pattern = r'\bFFI_PLUGIN_EXPORT\s+[^;{}#]*?\b(native_\w+)\s*\('
+    pattern = r'\bFFI_PLUGIN_EXPORT\s+[^;{}#]*?\b([A-Za-z_]\w*)\s*\('
     for header in (ROOT / 'core/src/capi').glob('*.h'):
-        expected.update(re.findall(pattern, header.read_text()))
+        source = re.sub(r'^\s*#.*$', '', header.read_text(), flags=re.M)
+        source = re.sub(r'/\*.*?\*/|//[^\n]*', '', source, flags=re.S)
+        expected.update(re.findall(pattern, source))
     shim = (ROOT / 'bindings/dart/cnativeapi/src/event_loop.h').read_text()
     expected.update(re.findall(r'\bCNATIVEAPI_EXPORT\s+[^;{}#]*?\b(cnativeapi_\w+)\s*\(', shim))
     expected.update(('nativeapi_protocol_handler_host_attach', 'nativeapi_protocol_handler_host_deliver'))
-    assert {'native_window_create', 'native_handle_finalize'} <= expected, 'C API headers were not parsed'
+    assert {'native_window_create', 'native_handle_finalize', 'free_c_str'} <= expected, 'C API headers were not parsed'
     library = ctypes.CDLL(str(path))
     missing = sorted(name for name in expected if not hasattr(library, name))
     assert not missing, f'Missing public exports: {missing}'
