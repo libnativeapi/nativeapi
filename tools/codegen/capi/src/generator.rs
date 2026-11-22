@@ -612,6 +612,12 @@ fn render_cpp_converters(out: &mut String, header: &Header, capi_out: &Path, pre
 fn write_export_macro(out: &mut String) {
     writeln!(out, "#if _WIN32").unwrap();
     writeln!(out, "#define FFI_PLUGIN_EXPORT __declspec(dllexport)").unwrap();
+    writeln!(out, "#elif defined(__GNUC__) || defined(__clang__)").unwrap();
+    writeln!(
+        out,
+        "#define FFI_PLUGIN_EXPORT __attribute__((visibility(\"default\")))"
+    )
+    .unwrap();
     writeln!(out, "#else").unwrap();
     writeln!(out, "#define FFI_PLUGIN_EXPORT").unwrap();
     writeln!(out, "#endif").unwrap();

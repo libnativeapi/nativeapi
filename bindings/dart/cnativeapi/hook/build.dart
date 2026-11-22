@@ -59,6 +59,8 @@ void main(List<String> args) async {
     switch (targetOS) {
       case OS.macOS:
         flags.addAll(_objectiveCpp);
+        flags.addAll(_sizeAndVisibilityFlags);
+        flags.addAll(_appleLinkerStripFlags);
         // SMAppService is macOS 13+, so link ServiceManagement weakly. With a
         // normal link dyld refuses to load the whole library on macOS 12,
         // even when the app never calls launch-at-login.
@@ -73,8 +75,12 @@ void main(List<String> args) async {
         ];
       case OS.iOS:
         flags.addAll(_objectiveCpp);
+        flags.addAll(_sizeAndVisibilityFlags);
+        flags.addAll(_appleLinkerStripFlags);
         frameworks = ['UIKit', 'Foundation', 'CoreGraphics'];
       case OS.linux:
+        flags.addAll(_sizeAndVisibilityFlags);
+        flags.addAll(_elfLinkerStripFlags);
         flags.addAll(await _pkgConfig(['--cflags', ..._linuxPackages]));
         // Libraries go after the sources, where --as-needed keeps them.
         for (final flag in await _pkgConfig(['--libs', ..._linuxPackages])) {
@@ -88,6 +94,8 @@ void main(List<String> args) async {
         }
         flags.add('-pthread');
       case OS.android:
+        flags.addAll(_sizeAndVisibilityFlags);
+        flags.addAll(_elfLinkerStripFlags);
         libraries.addAll(['log', 'android']);
       case OS.windows:
         flags.addAll(['/EHsc', '/utf-8']);
@@ -106,6 +114,14 @@ void main(List<String> args) async {
         ]);
     }
 
+    if (targetOS == OS.linux || targetOS == OS.android) {
+      // libstdc++ marks some template instantiations default-visible even
+      // with -fvisibility=hidden. Keep the ELF export table to the C contract.
+      final exportMap = input.packageRoot.resolve('hook/cnativeapi.exports');
+      flags.add('-Wl,--version-script=${exportMap.toFilePath()}');
+      output.dependencies.add(exportMap);
+    }
+
     final builder = CBuilder.library(
       name: 'cnativeapi',
       assetName: 'cnativeapi.dart',
@@ -117,6 +133,11 @@ void main(List<String> args) async {
       flags: flags,
       language: Language.cpp,
       std: 'c++17',
+      // MSVC's /Os is only a size preference, unlike Clang/GCC's -Os. Keep
+      // the existing /O2 optimization on Windows.
+      optimizationLevel: targetOS == OS.windows
+          ? OptimizationLevel.o3
+          : OptimizationLevel.oS,
       // Native assets package this one library; no Gradle CMake target supplies
       // libc++_shared.so. Keep the NDK runtime inside our Android library.
       cppLinkStdLib: targetOS == OS.android ? 'c++_static' : null,
@@ -139,6 +160,24 @@ const _objectiveCpp = [
   '-fobjc-arc',
   '-DOBJC_OLD_DISPATCH_PROTOTYPES=0',
 ];
+
+/// Hide internal C++ symbols so only FFI_PLUGIN_EXPORT / CNATIVEAPI_EXPORT /
+/// host-bridge entry points are exported, and place functions/data in separate
+/// sections so the linker can dead-strip unused code.
+const _sizeAndVisibilityFlags = [
+  '-fvisibility=hidden',
+  '-fvisibility-inlines-hidden',
+  '-ffunction-sections',
+  '-fdata-sections',
+];
+
+const _elfLinkerStripFlags = [
+  '-Wl,--gc-sections',
+  '-Wl,--exclude-libs,ALL',
+  '-Wl,--strip-all',
+];
+
+const _appleLinkerStripFlags = ['-Wl,-dead_strip', '-Wl,-x'];
 
 const _linuxPackages = ['gtk+-3.0', 'x11', 'xi'];
 
