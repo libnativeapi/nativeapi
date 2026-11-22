@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Windows: keep `WindowManager.instance.getCurrent()` available after Flutter hot restart when the new isolate runs on a different thread ([#49](https://github.com/libnativeapi/nativeapi/issues/49)).
+- Windows 11: keep explicit frameless Flutter windows free of the DWM border across focus changes ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
 
 ## 0.6.1
 
