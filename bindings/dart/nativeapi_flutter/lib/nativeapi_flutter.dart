@@ -5,8 +5,8 @@
 /// types and `dart:ui`'s (`Offset`, `Size`, `Rect`, `Color`, `Brightness`).
 ///
 /// A few nativeapi names are not re-exported because Flutter already uses
-/// them: `Clipboard`, `ClipboardData`, `Brightness`, `Color`, `Display`, `EdgeInsets`, `Image` and `Size`
-/// would silently shadow `dart:ui` / `package:flutter`, and `ModifierKey`,
+/// them: `Clipboard`, `ClipboardData`, `Brightness`, `Color`, `Display`, `EdgeInsets`, `Image`, `Size`
+/// and `TextRange` would silently shadow `dart:ui` / `package:flutter`, and `ModifierKey`,
 /// `ShortcutManager`, `View` and `TextField` would be ambiguous with Flutter's.
 /// Values of those types still work through this library (the conversions
 /// below, `ImageAsset.fromAsset`); to name one — the native `View` family in
@@ -38,6 +38,7 @@ export 'package:nativeapi/nativeapi.dart'
         ShortcutManager,
         Size,
         TextField,
+        TextRange,
         View;
 
 export 'src/conversions.dart';
