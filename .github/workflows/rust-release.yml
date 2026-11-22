@@ -76,7 +76,7 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           args=()
-          if [[ "$RELEASE_TAG" == *-* ]]; then args+=(--prerelease); fi
+          if [[ "${RELEASE_TAG#rust-v}" == *-* ]]; then args+=(--prerelease); fi
           gh release create "$RELEASE_TAG" target/package/*.crate --verify-tag --generate-notes "${args[@]}"
       # rust-cache's post step walks target/ and trips over the unpacked
       # package, whose vendored core has its own tests/ tree.

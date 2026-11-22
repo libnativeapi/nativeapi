@@ -1,5 +1,9 @@
-## Unreleased
+## 0.6.2
 
+- Read system brightness, observe changes with `ApplicationSystemBrightnessChangedEvent`, and receive `ViewResizedEvent` and `WindowScaleFactorChangedEvent`. **Breaking for exhaustive switches:** handle the new cases when switching on `ApplicationEvent`, `ViewEvent`, or `WindowEvent`.
+- Set accessibility labels and control typography. Text fields also expose selection ranges, IME composition state, and border visibility.
+- Read and write RTF and custom clipboard formats, probe available formats, and query the clipboard change count and concealed-content flag.
+- Improve Windows drag-resize performance, Linux client sizing across shadow changes, and macOS fullscreen and always-on-top behavior.
 - Windows: resolve the current process window across Dart isolate threads and hidden startup windows, including after a Flutter hot restart ([#49](https://github.com/libnativeapi/nativeapi/issues/49)).
 - Windows 11: suppress the DWM border for explicit frameless windows when they gain or lose focus; restore normal frame rendering when frameless mode is disabled ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
 

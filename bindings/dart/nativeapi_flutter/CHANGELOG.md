@@ -1,5 +1,7 @@
-## Unreleased
+## 0.6.2
 
+- Update the re-exported native API with system brightness, window scale-factor changes, and native view resize events. **Breaking for exhaustive switches:** handle the new cases when switching on `ApplicationEvent`, `ViewEvent`, or `WindowEvent`.
+- Reduce the bundled native library size on Android, iOS, Linux, and macOS.
 - Windows: keep `WindowManager.instance.getCurrent()` available after Flutter hot restart when the new isolate runs on a different thread ([#49](https://github.com/libnativeapi/nativeapi/issues/49)).
 - Windows 11: keep explicit frameless Flutter windows free of the DWM border across focus changes ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
 

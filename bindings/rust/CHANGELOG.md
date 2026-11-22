@@ -1,4 +1,9 @@
-## Unreleased
+## 0.5.3
+
+- **Breaking.** `PositioningStrategy::relative_with_window_and_offset` now accepts `Option<&Window>`. Pass `Some(&window)` when positioning relative to an existing window.
+- **Breaking for exhaustive matches.** Handle new variants in `ApplicationEvent`, `ShortcutEvent`, `ViewEvent`, `WindowEvent` and `WindowProperty`. These cover system brightness, shortcut releases, view updates and resizing, window docking, scale changes and frameless state.
+- Read and write clipboard text, HTML, RTF, images, file paths and custom formats with `Clipboard`. Use `ProtocolHandler` to register URL schemes, read the initial URL and receive subsequent URLs.
+- Add window docking, vertical maximization and bounds animation where supported. Batch native view updates and read or set text-field selections.
 
 - Add explicit frameless window mode with alias-shared state and property events; title-bar changes restore the frame while shadow preferences stay independent.
 - Expose the macOS native window-server number for interoperability. Keep nativeapi window IDs unchanged.

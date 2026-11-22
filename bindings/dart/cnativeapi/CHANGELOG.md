@@ -1,5 +1,8 @@
-## Unreleased
+## 0.6.2
 
+- Reduce native library size on Android, iOS, Linux, and macOS by hiding internal C++ symbols and removing unused code.
+- Add FFI bindings for system brightness, native view typography and accessibility, text selection and IME state, and rich text and custom clipboard formats.
+- **Breaking for raw FFI consumers:** `native_clipboard_data_t` now includes an `rtf` pointer. Use the matching native library when exchanging this struct.
 - Windows: resolve the current process window across Dart isolate threads and hidden startup windows, including after a Flutter hot restart ([#49](https://github.com/libnativeapi/nativeapi/issues/49)).
 - Windows 11: suppress the DWM border for explicit frameless windows when they gain or lose focus; restore normal frame rendering when frameless mode is disabled ([#50](https://github.com/libnativeapi/nativeapi/issues/50)).
 
