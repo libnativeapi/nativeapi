@@ -14,6 +14,19 @@ It is a plain Dart package and does not depend on Flutter. Its [build hook](http
 
 Building needs a C++17 toolchain for the target: Xcode on macOS and iOS, the Android NDK, Visual Studio on Windows, and on Linux clang or GCC plus the GTK 3, X11 and Xi development packages (found with `pkg-config`).
 
+### Leaving the library out on some platforms
+
+An app that uses nativeapi on only some of its platforms can skip building and bundling the native library on the others. List them in the app's `pubspec.yaml`, or in the workspace root's if the app is in a pub workspace:
+
+```yaml
+hooks:
+  user_defines:
+    cnativeapi:
+      skip_platforms: [android, ios]
+```
+
+The names are `android`, `ios`, `linux`, `macos` and `windows`. On a skipped platform, importing the package works, but calling into nativeapi throws an `ArgumentError`, so guard those calls with a platform check.
+
 ## Usage
 
 ```dart
