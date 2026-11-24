@@ -18,6 +18,9 @@ void main(List<String> args) async {
       return;
     }
     final targetOS = input.config.code.targetOS;
+    if (_skippedPlatforms(input).contains(targetOS.name)) {
+      return;
+    }
     final core = _locateCore(input.packageRoot);
     final src = core.resolve('src/');
 
@@ -180,6 +183,26 @@ const _elfLinkerStripFlags = [
 const _appleLinkerStripFlags = ['-Wl,-dead_strip', '-Wl,-x'];
 
 const _linuxPackages = ['gtk+-3.0', 'x11', 'xi'];
+
+/// The platforms the app builds without the native library, from
+/// `hooks.user_defines.cnativeapi.skip_platforms` in its pubspec.
+Set<String> _skippedPlatforms(BuildInput input) {
+  final value = input.userDefines['skip_platforms'];
+  if (value == null) {
+    return const {};
+  }
+  final known = [
+    for (final os in [OS.android, OS.iOS, OS.linux, OS.macOS, OS.windows])
+      os.name,
+  ];
+  if (value is! List || !value.every(known.contains)) {
+    throw FormatException(
+      'hooks.user_defines.cnativeapi.skip_platforms must be a list of '
+      '${known.join(', ')}; got $value',
+    );
+  }
+  return value.cast<String>().toSet();
+}
 
 /// The core sources: a published package carries a copy in cxx_impl/ (vendored
 /// by the release workflow); inside the workspace repository the package
